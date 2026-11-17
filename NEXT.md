@@ -30,8 +30,9 @@ Last updated: 2026-11-17 (live pull from n8n and Airtable)
 - EmailGuard in the Claude desktop app: config is in place, but the `emailguard-mcp` program is not installed on Alex's Mac. The install steps are on app.emailguard.io/integrations/emailguard-mcp (login needed). Not needed for cloud sessions; EmailGuard already works there. Parked 2026-11-17.
 
 ## Agent build (one at a time, Alex approves each)
-- [x] Ada: `skills/ada-router/` (2026-11-17)
-- [ ] Atlas → Forge → Scout → Scribe → Riley → Sean → Cole → Sienna → Pixel, Lex, Ledger, Harper (short)
+- [x] All 13 built 2026-11-17: Ada (main session) + 12 sub-agents in `.claude/agents/`, skills in `skills/`.
+- [ ] Fill gaps: Josh's inbox process (Sean), Closers.io course beyond the first 13 docs (Cole), Sienna cadence/priorities, the short four (Pixel, Lex, Ledger, Harper).
+- [ ] Alex reviews each agent and corrects it.
 
 ## Next work, in order (Alex decides)
 1. Finish the foundation as the missing items arrive.

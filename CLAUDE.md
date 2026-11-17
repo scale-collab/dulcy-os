@@ -32,7 +32,7 @@ If Alex says something new in chat, the newest instruction wins, and you log it 
   - Ledger: business finance (short for now)
   - Harper: hiring and people operations (short for now)
   - Red Dog (trading) is personal and stays OUT of this repo.
-  - Skill files live in `skills/`. Agents not built yet are marked UNKNOWN until built.
+  - Skill files live in `skills/`; sub-agents in `.claude/agents/` (read-only: they look and draft, and Ada makes approved changes). Where knowledge is thin it is marked UNKNOWN.
 
 ## Stack
 Airtable (operating system: Campaign Center, Lead List Center, projects, CRM) · EmailBison (sending) · DiscoLike, LeadMagic, MillionVerifier, Clay (lists and verification) · EmailGuard (spam/placement) · Slack · Google Drive/Sheets · n8n/Make · Close · Apollo · Calendly · Xero.
@@ -60,6 +60,8 @@ Airtable (operating system: Campaign Center, Lead List Center, projects, CRM) ·
 | Company facts, channel status, goals | `company/` |
 | One file per client | `clients/` |
 | Specialist skills (also linked at `.claude/skills/` so Claude Code loads them) | `skills/` |
+| Sub-agents (one per specialist, read-only) | `.claude/agents/` |
+| Shared client/promise contract | `rules/client-promise-contract.md` |
 | Source SOPs (history, not validated as current) | `sops/drive-export/` |
 | n8n and automation notes | `automations/` |
 | Old Jarvis project (history only) | `legacy/` |
