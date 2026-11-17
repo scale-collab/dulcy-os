@@ -8,3 +8,4 @@ Newest at the bottom. Format: `date | decision | why | who`
 2026-11-17 | Move heavy logic out of Airtable custom scripts into small server code that Airtable calls; keep Airtable as screen and database | Long Airtable scripts freeze and load slowly. Full custom app deferred until logic is stable | Alex agreed direction, Claude recommendation
 2026-11-17 | Personal skills (fitness, nutrition, travel etc.) stay out of this repo | Business repo; personal data stays separate | Claude (reversible)
 2026-11-17 | Known wrong fact removed: "300+ clients" | It was from another agency's post pasted into notes | Alex
+2026-11-17 | n8n workflow exports may be stored in `automations/n8n-workflows/` if credentials are stripped and a secrets scan is clean | Alex wants all automations in GitHub so nothing is lost; credentials must never be committed | Alex (intent), Claude (guardrail)

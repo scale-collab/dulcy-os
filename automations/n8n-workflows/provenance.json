@@ -1,0 +1,42 @@
+[
+  {
+    "path": "/Users/alexwoung/Documents/Codex/2026-09-09/help-me-x20/work/overnight-recovery-nov17/qa.current.json",
+    "id": "MdXafHjQI3Sx8Hhxg6uh6",
+    "name": "[Lead List Center] 06 Automated QA",
+    "nodes": 27,
+    "mtime": 1794927620.7604237,
+    "updatedAt": "2026-11-14T03:19:04.561+00:00",
+    "file": "MdXafHjQI3Sx8Hhxg6uh6.json",
+    "status": "Local snapshot; not independently compared against live Nov17 workflow"
+  },
+  {
+    "path": "/Users/alexwoung/Documents/Codex/2026-09-09/help-me-x20/work/overnight-recovery-nov17/enrichment.current.json",
+    "id": "mWfsR4TbaUflfW-jyWaDE",
+    "name": "[Lead List Center] 05 DiscoGen Enrichment Run",
+    "nodes": 114,
+    "mtime": 1794927573.3907387,
+    "updatedAt": "2026-10-29T13:56:37.751+00:00",
+    "file": "mWfsR4TbaUflfW-jyWaDE.json",
+    "status": "Local snapshot; not independently compared against live Nov17 workflow"
+  },
+  {
+    "path": "/Users/alexwoung/Documents/Codex/2026-09-09/help-me-x20/work/mjj-evidence-gate-nov16/verification.current.readonly.json",
+    "id": "iEt4c3iRAh6yeP7lYMlI9",
+    "name": "[Lead List Center] 03 Verification Submit and Check",
+    "nodes": 349,
+    "mtime": 1794886390.1768909,
+    "updatedAt": "2026-11-11T23:22:44.866+00:00",
+    "file": "iEt4c3iRAh6yeP7lYMlI9.json",
+    "status": "Local snapshot; not independently compared against live Nov17 workflow"
+  },
+  {
+    "path": "/Users/alexwoung/Documents/Codex/2026-09-09/help-me-x20/work/campaign-review-citations-nov16/workflow.current.json",
+    "id": "foSoGQ1odW0puayH617Yp",
+    "name": "Campaign Over 60%",
+    "nodes": 26,
+    "mtime": 1794848354.8154662,
+    "updatedAt": "2026-11-11T20:12:01.054+00:00",
+    "file": "foSoGQ1odW0puayH617Yp.json",
+    "status": "Local snapshot; not independently compared against live Nov17 workflow"
+  }
+]

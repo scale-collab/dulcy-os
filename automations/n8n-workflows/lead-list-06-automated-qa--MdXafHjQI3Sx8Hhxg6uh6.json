@@ -1,0 +1,787 @@
+{
+  "name": "[Lead List Center] 06 Automated QA",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-list-automated-qa",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "166680ac-0637-4f45-9b84-ec94c0f51ca9",
+      "name": "QA Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        10160,
+        -9632
+      ],
+      "webhookId": "8f6bff05-a272-441a-9d55-79c14830080d"
+    },
+    {
+      "parameters": {
+        "jsCode": "// REVIEW ONLY: exact derivative exclusion. Quiet stop avoids error-handler side effects.\n{const raw=$input.first().json;let b=raw.body??raw;if(typeof b==='string'){try{b=JSON.parse(b);}catch{b=null;}}const id=String(b?.recordId??b?.record_id??'').trim();if(id==='rec7yReHLebtWCnOp'){return [];}}\nconst b=$input.first().json.body??$input.first().json,recordId=String(b.recordId??'').trim(),action=String(b.action??'').trim();if(!/^rec[A-Za-z0-9]+$/.test(recordId))throw new Error('A valid Airtable recordId is required.');if(action!=='Run Automated QA')throw new Error('This workflow only handles Run Automated QA. Received: '+action);return [{json:{recordId}}];"
+      },
+      "id": "3ea79539-a498-46ae-aa7d-320ee4e88efc",
+      "name": "Validate QA Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        10384,
+        -9632
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({success:true,accepted:true,message:'Automated QA accepted.'}) }}",
+        "options": {}
+      },
+      "id": "fba33877-6409-4c10-b892-d4b215467487",
+      "name": "Acknowledge QA",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        10608,
+        -9728
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblVOg9BkPOMmnitt/' + $('Validate QA Request').first().json.recordId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "16768d53-2c68-48aa-aa15-ed6d7733c12a",
+      "name": "Get QA Project",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        10608,
+        -9536
+      ],
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "parameters": {
+        "jsCode": "const project=$('Get QA Project').first().json, f=project.fields??{}, response=$input.first().json;\nconst linkedIds=[...new Set((f['Which Campaign?']??[]).map(v=>typeof v==='string'?v:v?.id).filter(Boolean))];\nconst records=Array.isArray(response.records)?response.records:response.id?[response]:[];\nconst configurationIssues=[];\nif(response.offset)configurationIssues.push('Linked campaign lookup was paginated; complete copy contract unavailable.');\nfor(const id of linkedIds)if(!records.some(r=>r.id===id))configurationIssues.push('Linked campaign record missing: '+id);\n\n// This list is being reused for a new campaign. Keep historical native links,\n// but do not make their obsolete copy contracts prerequisites for this reuse.\n// Exact scope and identities are deliberately bounded; ambiguity fails QA.\nlet contractIds=linkedIds;\nlet excludedHistoricalCampaignIds=[];\nlet qaContractScope='all-linked-campaigns';\nif(project.id==='rec4zihAIkBOgZVER'){\n const currentId='recO60T0nli1AR7ic';\n const history=new Map([['recnqphyqF1u3Xlvt',413],['recHNKL61Pi0zK2Ck',444]]);\n const expected=new Set([currentId,...history.keys()]);\n const scopeIssues=[];\n const scalar=v=>String(v&&typeof v==='object'?v.name??v.value??'':v??'').trim();\n const links=r=>(r.fields?.['Lead List']??[]).map(v=>typeof v==='string'?v:v?.id).filter(Boolean);\n const byId=id=>records.filter(r=>r.id===id);\n if(linkedIds.length!==expected.size||linkedIds.some(id=>!expected.has(id)))scopeIssues.push('Expected only the current Clutch campaign and its two preserved historical links.');\n if(records.some(r=>!expected.has(r.id)))scopeIssues.push('Unexpected fetched campaign record outside the exact Clutch scope.');\n for(const id of expected){\n  const matches=byId(id);\n  if(matches.length!==1){scopeIssues.push('Expected exactly one fetched campaign record: '+id);continue;}\n  const record=matches[0],status=scalar(record.fields?.['Campaign Status']).toLowerCase();\n  if(!linkedIds.includes(id)||!links(record).includes(project.id))scopeIssues.push('Campaign/list association is missing or inconsistent: '+id);\n  if(history.has(id)){\n   if(Number(record.fields?.ID)!==history.get(id)||status!=='inactive')scopeIssues.push('Historical campaign identity or Inactive status changed: '+id);\n  }else if(!['draft','waiting for approval','emails generated','spintax generated','uploaded','active'].includes(status))scopeIssues.push('Current Clutch campaign has an unsupported or historical status: '+id);\n }\n configurationIssues.push(...scopeIssues.map(message=>'Clutch current-campaign scope: '+message));\n contractIds=scopeIssues.length?[]:[currentId];\n excludedHistoricalCampaignIds=scopeIssues.length?[]:[...history.keys()];\n qaContractScope=scopeIssues.length?'clutch-current-campaign-hold':'clutch-current-campaign';\n}\n\nconst prompt=String(f['Custom Variables Requested']??'').trim();\nconst metadata=new Set(['reviewstatus','needsreview','sourceurl','sourceurls','researchnotes','reasoning','confidence','scopeconfirmation']);\nconst key=v=>String(v??'').toLowerCase().replace(/[^a-z0-9]/g,'');\nconst declaredVariables=[];\nfor(const match of prompt.matchAll(/^[ \\t]*#{1,6}[ \\t]*VARIABLE:[ \\t]*([^\\r\\n]*)/gim)){\n const name=match[1].trim();if(!/^[A-Za-z][A-Za-z0-9_ ]*$/.test(name)){configurationIssues.push('Unsupported variable declaration: '+name);continue;}if(!metadata.has(key(name)))declaredVariables.push(name);\n}\n// No natural-language or arbitrary JSON-key inference: only explicit variable declarations.\nif(prompt&&!declaredVariables.length&&!/^(?:none|no (?:custom )?variables(?: requested)?)[.!]?$/i.test(prompt)&&!/^\\s*#{1,6}\\s*VARIABLE:/im.test(prompt))configurationIssues.push('Custom Variables Requested has no supported explicit VARIABLE declarations; review its current variable contract.');\nconst phoneBlock=prompt.match(/^\\s*#{1,6}\\s*VARIABLE:\\s*PHONE\\s*$([\\s\\S]*?)(?=^\\s*#{1,6}\\s*VARIABLE:|(?![\\s\\S]))/im)?.[1]??'';\nconst permittedFallbackVariables=/(?:return|preserve)[\\s\\S]*?Not Found/i.test(phoneBlock)?['phone']:[];\nconst copyByOutput={},campaignContracts=[];\nconst recordName=r=>String(r.fields?.Name??r.fields?.['Campaign Name']??'').trim();\nconst linkedLists=r=>(r.fields?.['Lead List']??[]).map(v=>typeof v==='string'?v:v?.id).filter(Boolean).sort();\nconst positiveId=v=>{const n=Number(v);return Number.isFinite(n)&&n>0?n:null;};\nconst branchIds=r=>({own:positiveId(r.fields?.ID),direct:positiveId(r.fields?.['EmailBison Direct Campaign ID']),generic:positiveId(r.fields?.['EmailBison Generic Campaign ID'])});\nconst excludedTemplateIds=[];\nfor(const parent of records){\n if(!contractIds.includes(parent.id))continue;\n const name=recordName(parent);if(/ - (?:Direct|Generic) Emails$/i.test(name))continue;\n const direct=records.filter(r=>contractIds.includes(r.id)&&recordName(r)===name+' - Direct Emails');\n const generic=records.filter(r=>contractIds.includes(r.id)&&recordName(r)===name+' - Generic Emails');\n if(!direct.length&&!generic.length)continue;\n const pi=branchIds(parent),sameList=r=>JSON.stringify(linkedLists(r))===JSON.stringify(linkedLists(parent))&&linkedLists(r).includes(project.id);\n const d=direct[0],g=generic[0],di=d?branchIds(d):{},gi=g?branchIds(g):{};\n const valid=direct.length===1&&generic.length===1&&!pi.own&&!pi.direct&&!pi.generic&&String(parent.fields?.['Campaign Status']??'').toLowerCase()!=='active'&&sameList(parent)&&sameList(d)&&sameList(g)&&di.direct&&!di.generic&&(!di.own||di.own===di.direct)&&gi.generic&&!gi.direct&&(!gi.own||gi.own===gi.generic)&&di.direct!==gi.generic;\n if(valid)excludedTemplateIds.push(parent.id);else configurationIssues.push('Ambiguous split-campaign template/output relationship: '+parent.id);\n}\nconst build=record=>{\n const r=record.fields??{};\n const first=(...names)=>{for(const name of names){const v=r[name];if(v!==undefined&&v!==null&&v!=='')return v;}};\n const text=value=>{if(Array.isArray(value))value=value[0];if(value&&typeof value==='object')value=value.name??value.value??value.id;return value==null?'':String(value).trim().replace(/\\\\_/g,'_');};\n const bool=(value,fallback=false)=>value==null||value===''?fallback:typeof value==='boolean'?value:['true','1','yes','checked','on'].includes(String(value).toLowerCase());\n const number=(value,fallback)=>{if(Array.isArray(value))value=value[0];if(value&&typeof value==='object')value=value.name??value.value??value.id;const n=Number(value);return Number.isFinite(n)?n:fallback;};\n const countValue=value=>{if(value==null||value==='')return 0;if(Array.isArray(value))return value.length;if(typeof value==='object')value=value.count??value.value??value.name??0;const n=Number(value);return Number.isFinite(n)?n:0;};\n const campaignName=text(first('Name','Campaign Name'));\n/*\n * Build the final sequence.\n */\nconst variants = []\n\nfor (let step = 1; step <= 4; step++) {\n  const maxVariants = Math.max(\n    1,\n    Math.min(\n      10,\n      number(\n        first(\n          'Variants - Step ' + step,\n          'Number of variants - Step ' + step,\n          'Number of Variants - Step ' + step,\n          'Variants Step ' + step\n        ),\n        1\n      )\n    )\n  )\n\n  const threadReply =\n    step > 1 &&\n    bool(\n      first(\n        'Thread Reply - Step ' + step,\n        'Thread Reply Step ' + step,\n        'Step ' + step + ' Thread Reply'\n      ),\n      false\n    )\n\n  const stepVariants = []\n\n  for (let variant = 1; variant <= maxVariants; variant++) {\n    const subjectNames = [\n      'Campaign Email ' + step + ' Subject Version ' + variant,\n      'Campaign Subject ' + step + ' Version ' + variant,\n      'Campaign Email ' + step + ' Subject Spintax ' + variant,\n      'Campaign Email ' + step + ' Subject',\n    ]\n\n    const bodyNames = [\n      'Campaign Body ' + step + ' Version ' + variant,\n      'Campaign Email ' + step + ' Body Spintax ' + variant,\n      ...(variant === 1\n        ? ['Campaign Email ' + step + ' Body']\n        : []),\n    ]\n\n    const sourceStepOneVariant =\n      variants[0]?.[variant - 1] ?? variants[0]?.[0]\n\n    const sourceStepOneSubject = text(\n      sourceStepOneVariant?.subject\n    ).replace(/^(?:re:\\s*)+/i, '')\n\n    const subject =\n      threadReply && sourceStepOneSubject\n        ? sourceStepOneSubject\n        : text(first(...subjectNames))\n\n    const body = text(first(...bodyNames))\n\n    if (!subject && !body && variant === 1) break\n    if (!subject && !body && variant > 1) continue\n\n    if (!subject || !body) {\n      throw new Error(\n        'Step ' +\n          step +\n          ' variant ' +\n          variant +\n          ' is missing its final validated subject or body.'\n      )\n    }\n\n    stepVariants.push({\n      subject,\n      body,\n      threadReply,\n    })\n  }\n\n  if (stepVariants.length) {\n    variants.push(stepVariants)\n  }\n}\n\nif (!variants.length) {\n  throw new Error(\n    'No populated final sequence steps were found. Add validated copy to at least Step 1 before uploading.'\n  )\n}\n\n/*\n * Resolve Direct versus Generic.\n *\n * Split campaigns can still use their suffix.\n * Single unsuffixed campaigns are also supported.\n */\nconst explicitOutputType = text(\n  first(\n    'outputType',\n    'Output Type',\n    'Campaign Output Type',\n    'Lead Output Type',\n    'Email Type'\n  )\n).toLowerCase()\n\nconst genericLeadCount = Math.max(\n  0,\n  countValue(\n    first(\n      'genericLeadCount',\n      'Generic Lead Count',\n      'Final Generic Lead Count',\n      'Final Generic Count',\n      'Final Generic Leads',\n      'Generic Leads'\n    )\n  )\n)\n\nconst directLeadCount = Math.max(\n  0,\n  countValue(\n    first(\n      'directLeadCount',\n      'Direct Lead Count',\n      'Final Direct Lead Count',\n      'Final Direct Count',\n      'Final Direct Leads',\n      'Direct Leads'\n    )\n  )\n)\n\nconst hasGenericSuffix =\n  / - Generic Emails$/i.test(campaignName)\n\nconst hasDirectSuffix =\n  / - Direct Emails$/i.test(campaignName)\n\nlet outputType\n\nif (\n  ['generic', 'generic email', 'generic emails'].includes(\n    explicitOutputType\n  )\n) {\n  outputType = 'generic'\n} else if (\n  [\n    'direct',\n    'direct email',\n    'direct emails',\n    'named',\n    'named contacts',\n  ].includes(explicitOutputType)\n) {\n  outputType = 'direct'\n} else if (hasGenericSuffix) {\n  outputType = 'generic'\n} else if (hasDirectSuffix) {\n  outputType = 'direct'\n} else if (\n  genericLeadCount > 0 &&\n  directLeadCount === 0\n) {\n  outputType = 'generic'\n} else if (\n  directLeadCount > 0 &&\n  genericLeadCount === 0\n) {\n  outputType = 'direct'\n} else {\n  // Unsuffixed single campaigns are valid and default to Direct.\n  outputType = 'direct'\n}\n\nconst outputIsGeneric = outputType === 'generic'\n\n/*\n * Generic lists have no first name.\n * Remove the complete greeting instead of replacing it with \"Hey there\".\n */\nif(outputIsGeneric&&variants.some(step=>step.some(copy=>/\\{\\{\\s*FIRST_NAME\\s*\\}\\}/i.test(copy.subject+'\\n'+copy.body))))throw new Error('Generic double-brace FIRST_NAME is incompatible with upload transformation.');\nif (outputIsGeneric) {\n  const removeGenericGreeting = value =>\n    value\n      .replace(\n        /^(?:hey|hi|hello)\\s+\\{FIRST_NAME\\}\\s*[,!:\\-]?\\s*(?:\\r?\\n)+/gim,\n        ''\n      )\n      .replace(/\\{FIRST_NAME\\}/gi, '')\n      .replace(/^[ \\t]+/gm, '')\n      .replace(/\\n{3,}/g, '\\n\\n')\n      .trim()\n\n  for (const stepVariants of variants) {\n    for (const copy of stepVariants) {\n      copy.subject = removeGenericGreeting(copy.subject)\n      copy.body = removeGenericGreeting(copy.body)\n\n      if (\n        /\\{FIRST_NAME\\}/i.test(\n          copy.subject + '\\n' + copy.body\n        )\n      ) {\n        throw new Error(\n          'Generic-email copy still contains {FIRST_NAME}.'\n        )\n      }\n    }\n  }\n}\n\n\n\n return {recordId:record.id,name:campaignName,outputType,copy:variants.flatMap(step=>step.flatMap(v=>[v.subject,v.body])).join('\\n\\n')};\n};\nfor(const record of records){if(!contractIds.includes(record.id)||excludedTemplateIds.includes(record.id))continue;try{const c=build(record);campaignContracts.push(c);copyByOutput[c.outputType]=[copyByOutput[c.outputType],c.copy].filter(Boolean).join('\\n\\n');}catch(e){configurationIssues.push('Campaign '+record.id+': '+e.message);}}\nconst noLinkedCampaign=linkedIds.length===0;\nif(noLinkedCampaign){copyByOutput.direct='';copyByOutput.generic='';}\nconst preferred=[f['Lead List Link'],f['Google Sheet Link'],f['Google Sheets Link']];\nconst fallback=Object.values(f).find(v=>typeof v==='string'&&v.includes('docs.google.com/spreadsheets/d/'));\nconst url=String(preferred.find(v=>typeof v==='string'&&v.trim())??fallback??'').trim(),m=url.match(/\\/spreadsheets\\/d\\/([A-Za-z0-9_-]+)/);\nif(!m)throw new Error('Lead List Link must contain the project Google Sheet URL.');\nreturn [{json:{recordId:project.id??$('Validate QA Request').first().json.recordId,sheetId:m[1],sheetUrl:url,prompt,copyByOutput,permittedFallbackVariables,declaredVariables:[...new Set(declaredVariables)].filter(v=>project.id!=='rechmwZZ0DCPVKLMT'||key(v)!=='enrichmentflag'),configurationIssues,noLinkedCampaign,excludedTemplateIds,qaContractScope,qaContractRecordIds:contractIds,excludedHistoricalCampaignIds,campaignContracts,campaignCopy:campaignContracts.map(c=>c.copy).join('\\n\\n'),campaignRecordId:linkedIds[0]??'',campaignRecordIds:linkedIds,campaignName:campaignContracts.map(c=>c.name).join(' + '),recordName:String(f.Name??f['Lead List Name']??'Lead list')}}];\n"
+      },
+      "id": "75db8a1f-48f3-44cb-bd0c-7198e3a32c33",
+      "name": "Normalize QA Project",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        11056,
+        -9536
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblVOg9BkPOMmnitt/' + $json.recordId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"fields\": {\n    \"Processing Status\": \"Running\",\n    \"Processing Started At\": \"{{ $now.toISO() }}\",\n    \"Processing Completed At\": null,\n    \"Workflow Run ID\": \"{{ $execution.id }}\",\n    \"Last Workflow Message\": \"Automated QA is checking the campaign-ready lead dataset.\",\n    \"Last Workflow Error\": \"\",\n    \"QA Action\": null\n  }\n}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "5590b200-8e05-40b1-9e2c-225fe23a3c9c",
+      "name": "Mark QA Running",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        11280,
+        -9632
+      ],
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $json.sheetId + '?fields=sheets.properties' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "5a515c65-ecf2-4103-be0a-ec25f609afa7",
+      "name": "Get QA Source Metadata",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        11280,
+        -9440
+      ],
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "parameters": {
+        "jsCode": "const p=$('Normalize QA Project').first().json,titles=($input.first().json.sheets??[]).map(s=>String(s.properties?.title??''));\nconst finalTabs=['Final Direct','Final Generic'].filter(t=>titles.includes(t));\nconst fallbackOrder=['Final Export','Verification Good','Verified Leads'];\nconst sourceTabs=finalTabs.length?finalTabs:[fallbackOrder.find(t=>titles.includes(t))].filter(Boolean);\nif(!sourceTabs.length)throw new Error('No supported campaign-ready QA source exists. Expected Final Direct and/or Final Generic.');\nconst finalSources=sourceTabs.some(t=>t==='Final Direct'||t==='Final Generic');\nreturn [{json:{...p,sourceTabs,sourceTab:sourceTabs.join(' + '),enrichmentSkipped:!finalSources,hasQAReview:titles.includes('QA Review'),hasRequestedEnrichment:Boolean(String(p.prompt??'').trim())}}];"
+      },
+      "id": "b4f57a36-dfdd-4b0a-9cc9-71b9d7d89a6f",
+      "name": "Select QA Source Tab",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        11504,
+        -9440
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ (() => { const p=$json,base='https://sheets.googleapis.com/v4/spreadsheets/'+p.sheetId+'/values:batchGet?'; return base+p.sourceTabs.map(t=>'ranges='+encodeURIComponent(\"'\"+t+\"'!A:ZZ\")).join('&'); })() }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "36677476-9122-41a2-b736-8b565db1efc2",
+      "name": "Read Enriched Leads for QA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        11728,
+        -9440
+      ],
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input=$input.first().json,s=$('Select QA Source Tab').first().json,values=input.values??[];if(!s.enrichmentSkipped||values.length<2)return [{json:input}];const norm=v=>String(v??'').trim().toLowerCase().replace(/[^a-z0-9]/g,''),headers=values[0]??[],statusIndex=headers.map(norm).findIndex(h=>['verificationstatus','status','providerstatus'].includes(h));if(statusIndex<0)throw new Error('Verified Leads must contain Verification Status before QA can use the skipped-enrichment path.');const goodRows=values.slice(1).filter(row=>norm(row?.[statusIndex])==='good');if(!goodRows.length)throw new Error('Verified Leads contains no Good campaign-ready rows for QA.');return [{json:{...input,values:[headers,...goodRows]}}];"
+      },
+      "id": "cd4f090d-0072-4099-b5a9-06f10abd4022",
+      "name": "Prepare QA Source Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12848,
+        -9440
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $('Select QA Source Tab').first().json.sheetId + \"/values/Contacts!A:ZZ\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "61824f36-a7eb-4f83-91d5-e775ed3bfe98",
+      "name": "Read Contacts for Skipped QA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        13072,
+        -9440
+      ],
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "parameters": {
+        "jsCode": "const source=$('Prepare QA Source Rows').first().json,s=$('Select QA Source Tab').first().json;if(!s.enrichmentSkipped)return [{json:source}];const verified=source.values??[],contacts=$input.first().json.values??[];if(verified.length<2)throw new Error('No Good verified rows are available for QA.');if(contacts.length<2)throw new Error('Contacts has no rows for restoring the final lead fields before QA.');const norm=v=>String(v??'').replace(/^\\uFEFF/,'').trim().toLowerCase().replace(/[^a-z0-9]/g,''),vHeaders=(verified[0]??[]).map(v=>String(v??'').trim()),cHeaders=(contacts[0]??[]).map(v=>String(v??'').trim()),vKeys=vHeaders.map(norm),cKeys=cHeaders.map(norm),emailAliases=['email','emailaddress'],vEmail=vKeys.findIndex(k=>emailAliases.includes(k)),cEmail=cKeys.findIndex(k=>emailAliases.includes(k));if(vEmail<0||cEmail<0)throw new Error('Verified Leads and Contacts must both contain Email.');const contactsByEmail=new Map();for(const row of contacts.slice(1)){const email=String(row?.[cEmail]??'').trim().toLowerCase();if(email&&!contactsByEmail.has(email))contactsByEmail.set(email,row);}const mergedHeaders=[...vHeaders],mergedKeys=[...vKeys];for(let i=0;i<cHeaders.length;i++){if(cKeys[i]&&!mergedKeys.includes(cKeys[i])){mergedHeaders.push(cHeaders[i]);mergedKeys.push(cKeys[i]);}}const rows=verified.slice(1).map(vRow=>{const email=String(vRow?.[vEmail]??'').trim().toLowerCase(),cRow=contactsByEmail.get(email)??[];return mergedKeys.map(key=>{const vi=vKeys.indexOf(key),ci=cKeys.indexOf(key),vv=vi>=0?String(vRow?.[vi]??'').trim():'';return vv||(ci>=0?cRow?.[ci]??'':'');});});return [{json:{...source,values:[mergedHeaders,...rows],contactMatches:rows.filter((_,i)=>contactsByEmail.has(String(verified[i+1]?.[vEmail]??'').trim().toLowerCase())).length}}];"
+      },
+      "id": "6505df98-94f9-4218-ae4d-d3d132f15f00",
+      "name": "Merge Verified Good with Contacts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        13296,
+        -9440
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const p=$('Normalize QA Project').first().json, input=$input.first().json, values=input.values??[];\nif(values.length<2)throw new Error('The selected QA source tab has no data rows.');\nconst headers=(values[0]??[]).map(v=>String(v??'').trim());\nconst key=v=>String(v??'').trim().toLowerCase().replace(/[^a-z0-9]/g,'');\nconst aliases={email:['email','emailaddress'],firstname:['firstname','first'],lastname:['lastname','last'],company:['company','companyname'],domain:['domain','companydomain','website','companywebsite'],verificationstatus:['verificationstatus','emailstatus','status'],title:['title','jobtitle'],linkedinurl:['linkedinurl','linkedin','socialurl','sociallink','linkedinprofile']};\nconst canonical=v=>{const k=key(v);return Object.keys(aliases).find(n=>aliases[n].includes(k))??k;};\nconst display={company:'Company',firstname:'First Name',lastname:'Last Name',email:'Email',domain:'Domain',verificationstatus:'Verification Status',title:'Title',linkedinurl:'LinkedIn URL'};\nconst indices=new Map();headers.forEach((h,i)=>{const k=canonical(h);if(!indices.has(k))indices.set(k,[]);indices.get(k).push(i);});\nconst scalar=v=>(typeof v==='string'||typeof v==='number'&&Number.isFinite(v)||typeof v==='boolean');\nconst text=v=>String(v??'').trim();\nconst sentinel=/^(?:-|n\\/?a|na|none|none found|not found|could not find|unable to find|not available|unavailable|null|undefined|unknown|no result|no results|no match|no matches)$/i;\nconst structured=v=>{try{const parsed=JSON.parse(text(v));return parsed!==null&&typeof parsed==='object';}catch{return /^\\s*\\{\\s*[\"'][^\"']+[\"']\\s*:/.test(text(v));}};\nconst scopedPlaceholder=v=>['rechmwZZ0DCPVKLMT','rec468aQaOEYtdYL3'].includes(p.recordId)&&/^(?:review[ _-]+required|needs[ _-]+review)$/i.test(text(v));\nconst unusable=v=>scopedPlaceholder(v)||!scalar(v)||!text(v)||sentinel.test(text(v))||sentinel.test(text(v).replace(/[._-]+/g,' ').replace(/\\s+/g,' '))||structured(v)||/\\{\\{[\\s\\S]*?\\}\\}|\\$\\{[^}]*\\}|(?<!\\{)\\{[A-Za-z][A-Za-z0-9_]*\\}(?!\\})/.test(text(v));\nconst senderVars=new Set(['senderfullname']);\nconst parseCopy=s=>[...String(s??'').matchAll(/{{\\s*([A-Za-z][A-Za-z0-9_]*)\\s*}}|(?<!{){([A-Za-z][A-Za-z0-9_]*)}(?!})/g)].map(m=>canonical(m[1]??m[2])).filter(k=>!senderVars.has(k));\nconst genericTransform=s=>String(s??'').replace(/^(?:hey|hi|hello)\\s+\\{FIRST_NAME\\}\\s*[,!:\\-]?\\s*(?:\\r?\\n)+/gim,'').replace(/(?<!\\{)\\{FIRST_NAME\\}(?!\\})/gi,'').replace(/^[ \\t]+/gm,'').replace(/\\n{3,}/g,'\\n\\n').trim();\nconst hasOutputContract=p.copyByOutput&&typeof p.copyByOutput==='object';\nconst parentCopy=String(p.campaignCopy??'');\nconst directContract=hasOutputContract?String(p.copyByOutput.direct??''):parentCopy;\nconst explicitGenericContract=hasOutputContract?String(p.copyByOutput.generic??''):'';\nconst genericContract=explicitGenericContract.trim()?explicitGenericContract:genericTransform(directContract||parentCopy);\nconst genericDerivedFromParent=!explicitGenericContract.trim()&&!!genericContract.trim();\nconst copies={direct:directContract,generic:genericContract};\nconst declared=(p.declaredVariables??[]).map(canonical).filter(Boolean);\nconst fallbackVars=new Set((p.permittedFallbackVariables??[]).map(canonical));\nconst requiredByType=Object.fromEntries(['direct','generic'].map(type=>{const copyVars=parseCopy(copies[type]);return [type,new Set(['company','email',...(type==='direct'?['firstname']:[]),...declared.filter(v=>!fallbackVars.has(v)||copyVars.includes(v)),...copyVars])];}));\n// Exact non-factual fallback approved for these five Global Media lists only.\nconst approvedFallbackRecords=new Set(['recIFkrATPTfaKTL6','reckqe2RyCG9lFtxd','recld5q6hhTNdQfe3','recrkGYHA8qPMfUhe','recvN5BgjMnFbaEdE']);\nconst approvedFallback='the audience you\u2019re trying to reach';\nconst evidenceKeys=new Set(['personalizationsource','personalizationfact']);\nlet fallbackRows=0;\nconst configurationIssues=[...(p.configurationIssues??[])];\nconst rows=values.slice(1).map((row,i)=>({row:row??[],sourceTab:input.rowSourceTabs?.[i]??'',originalIndex:i})).filter(x=>x.row.some(v=>text(v)));\nif(!rows.length)throw new Error('The selected QA source tab has no data rows.');\nif(input.rowSourceTabs&&input.rowSourceTabs.length!==values.length-1)configurationIssues.push('Source-tab lineage does not match source rows.');\nconst issues=new Map(),counts=new Map(),missingColumns=new Set(),emailGroups=new Map();\nconst add=(i,label)=>{if(!issues.has(i))issues.set(i,new Set());if(!issues.get(i).has(label)){issues.get(i).add(label);counts.set(label,(counts.get(label)??0)+1);}};\nconst resolve=(row,k,sourceTab)=>{const localHeaders=input.sourceHeadersByTab?.[sourceTab];const localKeys=Array.isArray(localHeaders)?new Set(localHeaders.map(key)):null;const cols=(indices.get(k)??[]).filter(i=>!localKeys||localKeys.has(key(headers[i]))),populated=cols.map(i=>row[i]).filter(v=>text(v));const unique=[...new Set(populated.map(v=>scalar(v)?text(v).toLowerCase():JSON.stringify(v)))];return {exists:cols.length>0,value:populated[0],conflict:unique.length>1};};\nfor(let i=0;i<rows.length;i++){\n const {row,sourceTab}=rows[i],type=sourceTab==='Final Generic'?'generic':'direct';\n if(p.recordId==='rechmwZZ0DCPVKLMT'){const flag=resolve(row,'enrichmentflag',sourceTab);if(!flag.exists)add(i,'Missing required column: ENRICHMENT_FLAG');else if(text(flag.value))add(i,'Invalid required value: ENRICHMENT_FLAG (review hold)');}\n if(hasOutputContract&&!['Final Direct','Final Generic'].includes(sourceTab))configurationIssues.push('Missing or unsupported row output provenance: '+(sourceTab||'unknown')+'.');\n if(type==='generic'&&genericDerivedFromParent){const parents=(p.campaignContracts??[]).filter(c=>c&&c.outputType==='direct'&&String(c.copy??'').trim());if(parents.length!==1)configurationIssues.push('Generic QA requires exactly one linked parent campaign with validated sequence copy before campaign creation.');}\n if(hasOutputContract&&(typeof copies[type]!=='string'||(!copies[type].trim()&&p.noLinkedCampaign!==true)))configurationIssues.push('No current '+type+' campaign copy contract is available for '+(sourceTab||'unknown source')+'.');\n if(type==='generic'&&/\\{\\{\\s*FIRST_NAME\\s*\\}\\}/i.test(String(copies.generic??'')))configurationIssues.push('Generic double-brace FIRST_NAME is incompatible with the upload transformation.');\n const personalization=resolve(row,'personalization',sourceTab);\n const approvedNonfactualFallback=approvedFallbackRecords.has(p.recordId)&&!personalization.conflict&&personalization.value===approvedFallback;\n if(approvedNonfactualFallback)fallbackRows++;\n const renderedVariables=new Set(parseCopy(copies[type]));\n for(const k of requiredByType[type]){\n  const r=resolve(row,k,sourceTab),label=display[k]??k;\n  if(!r.exists){missingColumns.add(label);add(i,'Missing required column: '+label);continue;}\n  if(r.conflict){add(i,'Conflicting aliases: '+label);continue;}\n  if(approvedNonfactualFallback&&evidenceKeys.has(k)&&!renderedVariables.has(k))continue;\n  if(unusable(r.value)){add(i,'Invalid required value: '+label);continue;}\n  if(k==='email'&&!/^[^\\s@<>]+@[^\\s@<>]+\\.[^\\s@<>]+$/u.test(text(r.value)))add(i,'Invalid Email format');\n }\n const verification=resolve(row,'verificationstatus',sourceTab);\n if(!verification.exists||verification.conflict||text(verification.value).toLowerCase()!=='good')add(i,'Verification Status is not Good');\n const email=resolve(row,'email',sourceTab);if(!email.conflict&&!unusable(email.value)){const e=text(email.value).toLowerCase();if(!emailGroups.has(e))emailGroups.set(e,[]);emailGroups.get(e).push(i);}\n}\nconst duplicateGroups=[...emailGroups].filter(([,rr])=>rr.length>1);for(const [email,rr] of duplicateGroups)for(const i of rr)add(i,'Duplicate email: '+email);\nconst config=[...new Set(configurationIssues)];\nconst requiredPass=!config.length&&![...counts.keys()].some(x=>/^(Missing required|Invalid required|Conflicting aliases|Invalid Email)/.test(x));\nconst deliveryPass=![...counts.keys()].includes('Verification Status is not Good'),duplicatePass=!duplicateGroups.length,structuralPass=requiredPass&&deliveryPass&&duplicatePass;\nconst reviewBaseline=i=>JSON.stringify({v:1,recordId:p.recordId,sheetId:p.sheetId,tab:rows[i].sourceTab,email:text(resolve(rows[i].row,'email',rows[i].sourceTab).value).toLowerCase(),cells:Object.fromEntries(headers.map((h,c)=>[key(h),rows[i].row[c]??'']))});\nconst breakdown=[...counts.entries()],flaggedRows=[...issues].sort((a,b)=>a[0]-b[0]).map(([i,ii])=>[...headers.map((_,c)=>rows[i].row[c]??''),[...ii].join('; '),reviewBaseline(i)]);\nconst sample=[];if(!flaggedRows.length)for(let i=0;i<rows.length&&sample.length<25;i+=Math.max(1,Math.floor(rows.length/25)))sample.push([...headers.map((_,c)=>rows[i].row[c]??''),'Manual factual accuracy review required',reviewBaseline(i)]);\nconst vars=[...new Set([...parseCopy(copies.direct),...parseCopy(copies.generic),...declared])];\nconst checks=[['Rows reviewed',structuralPass?'PASS':'REVIEW',String(rows.length)],['Required personalization',requiredPass?'PASS':'FAIL','Direct: Company, First Name, Email; Generic: Company, Email; plus actual output copy and declared custom variables'],['Deliverability',deliveryPass?'PASS':'FAIL','Verification Status must be Good'],['Unique emails',duplicatePass?'PASS':'FAIL',duplicateGroups.length+' duplicate email values'],['Configuration',config.length?'FAIL':'PASS',config.join('; ')||'Current variable contract'],['Optional fields','INFO','Last Name, Domain and other fields are optional unless used in current copy or explicitly designated']];\nconst qaValues=[['QA Check','Result','Details'],...checks,...breakdown.map(([s,n])=>['Issue: '+s,'FAIL',n+' rows']),[],[...headers,'QA Flags','QA Baseline (system)'],...(flaggedRows.length?flaggedRows:sample)];\nconst summary=[(structuralPass?'Structural QA passed.':'Structural QA failed.')+' '+rows.length+' rows checked.',...(fallbackRows?[fallbackRows+' rows use the exact approved non-factual fallback; source/fact evidence is not claimed for those rows.']:[]),...config.map(s=>'Configuration review: '+s),...breakdown.map(([s,n])=>s+': '+n+' rows'),'Last Name and Domain are optional unless actually required by current copy or custom-variable declaration.','Open QA Review for affected rows. Factual accuracy review remains separate.'].join('\\n');\nreturn [{json:{...p,qaValues,rowCount:rows.length,requiredPass,deliveryPass,duplicatePass,schemaPass:!missingColumns.size&&!config.length,structuralPass,duplicateCount:duplicateGroups.length,rejectedRows:issues.size,sentinelCount:breakdown.filter(([label])=>label.startsWith('Invalid required value')).reduce((sum,[,n])=>sum+n,0),sampleSize:flaggedRows.length?0:sample.length,summary,requestedEnrichmentCount:declared.length,campaignVariableCount:vars.length,configurationIssues:config}}];\n"
+      },
+      "id": "9daced63-c23e-4dda-a6a3-ba553b03224f",
+      "name": "Analyze QA Source",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        13520,
+        -9440
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r=$input.first().json,s=$('Select QA Source Tab').first().json;return [{json:{...r,sourceTab:s.sourceTab,sourceTabs:s.sourceTabs,enrichmentSkipped:s.enrichmentSkipped}}];"
+      },
+      "id": "cc325863-9142-4165-bd4f-da1ec2ebf4b4",
+      "name": "Analyze Enriched Leads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        13744,
+        -9440
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $json.sheetId + '?fields=sheets.properties' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "7739872a-6e17-4813-87df-76025412e19e",
+      "name": "Get QA Spreadsheet Metadata",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        13968,
+        -9440
+      ],
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "parameters": {
+        "jsCode": "const meta=$input.first().json,p=$('Analyze Enriched Leads').first().json,found=(meta.sheets??[]).find(s=>s.properties?.title==='QA Review'),rows=Math.max(200,p.qaValues.length+20),cols=Math.max(30,p.qaValues.reduce((m,r)=>Math.max(m,r.length),0)+5);const requests=found?[{updateSheetProperties:{properties:{sheetId:found.properties.sheetId,gridProperties:{rowCount:Math.max(found.properties.gridProperties?.rowCount??0,rows),columnCount:Math.max(found.properties.gridProperties?.columnCount??0,cols)}},fields:'gridProperties.rowCount,gridProperties.columnCount'}}]:[{addSheet:{properties:{title:'QA Review',gridProperties:{rowCount:rows,columnCount:cols}}}}];return [{json:{...p,qaSheetId:found?.properties?.sheetId??null,requests}}];"
+      },
+      "id": "2ea61f72-9951-4ab8-a4f9-225cf79c489a",
+      "name": "Prepare QA Review Tab",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        14192,
+        -9440
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $json.sheetId + ':batchUpdate' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({requests:$json.requests}) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "1adb50cc-6ac0-4083-b770-6fea57bd6932",
+      "name": "Ensure QA Review Tab",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        14416,
+        -9440
+      ],
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "parameters": {
+        "jsCode": "const p=$('Prepare QA Review Tab').first().json,r=$input.first().json,created=(r.replies??[]).map(x=>x.addSheet?.properties?.sheetId).find(x=>x!==undefined&&x!==null),qaSheetId=p.qaSheetId??created;if(qaSheetId===undefined||qaSheetId===null)throw new Error('Google Sheets did not return the QA Review tab ID.');const qaSheetUrl='https://docs.google.com/spreadsheets/d/'+p.sheetId+'/edit#gid='+qaSheetId;return [{json:{...p,qaSheetId,qaSheetUrl}}];"
+      },
+      "id": "c9d1e1b9-38fa-4731-aa05-03b426db6411",
+      "name": "Resolve QA Review Link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        14640,
+        -9440
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $('Resolve QA Review Link').first().json.sheetId + \"/values/'QA Review'!A:ZZ:clear\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "{}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "5a4b0dd0-60f3-4a51-b12b-930c1c2f3463",
+      "name": "Clear QA Review",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        14864,
+        -9440
+      ],
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $('Resolve QA Review Link').first().json.sheetId + \"/values/'QA Review'!A1?valueInputOption=RAW\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({majorDimension:'ROWS',values:$('Resolve QA Review Link').first().json.qaValues}) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "49071455-bf7e-4a0e-881a-6ad8739e4f9b",
+      "name": "Write QA Review",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        15088,
+        -9440
+      ],
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "parameters": {
+        "jsCode": "const p=$('Resolve QA Review Link').first().json,passed=p.structuralPass,status=passed?'Passed':'Failed';return [{json:{recordId:p.recordId,body:{fields:{'Lead List Link':p.qaSheetUrl,'Required Fields Present':p.requiredPass,'Duplicate Check Passed':p.duplicatePass,'Final Schema Passed':p.schemaPass,'QA Status':status,'QA Summary':p.summary,'Duplicate Count':p.duplicateCount,'Rejected Count':p.rejectedRows,'Lead List Stage':passed?'Ready':'QA','Processing Progress':passed?1:5/7,'Processing Status':'Completed','Processing Started At':$('Mark QA Running').first().json.fields['Processing Started At'],'Processing Completed At':new Date().toISOString(),'Workflow Run ID':String($execution.id),'Last Workflow Message':p.summary+'\\nQA source: '+(p.sourceTabs??[p.sourceTab]).join(' + ')+'.','Last Workflow Error':'','QA Action':null}}}}];"
+      },
+      "id": "7aef3469-9138-47a2-8ccb-73cbfeaecee2",
+      "name": "Prepare QA Airtable Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        15312,
+        -9440
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblVOg9BkPOMmnitt/' + $json.recordId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "ab3b03e1-8af8-4d4f-93ae-4faa48bb7891",
+      "name": "Save QA Result to Airtable",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        15536,
+        -9440
+      ],
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "parameters": {
+        "url": "={{ (() => { const ids = [...new Set(($('Get QA Project').first().json.fields?.['Which Campaign?'] || []).map(v => typeof v === 'string' ? v : v?.id).filter(Boolean))]; if(ids.some(id => !/^rec[A-Za-z0-9]{14}$/.test(id))) throw new Error('Invalid linked campaign record ID'); const filter = ids.length ? 'OR(' + ids.map(id => \"RECORD_ID()='\" + id + \"'\").join(',') + ')' : 'FALSE()'; const fields = [\"fld5weZ6ED31dBlaz\",\"fldSsb4QjS9UyvKhj\", \"fldIX1lC9HGgbIaSh\", \"fldy3ufjXKaj3kuyV\", \"fldsWFQ4rPqSSUVqN\", \"fldRL9Q0XLFlJ9Mkn\", \"fldOea7FqzLEONcDS\", \"fld2unmibesFQ2Sqc\", \"fldlpfpmRywwxorso\", \"fldLWnxQ1MJqzuJdw\", \"fldNWDHIxnXfGW8Ab\", \"fldP4ulsGXBfud19j\", \"fldqTZ9n04F7e2BYz\", \"fldDIEpF3ehgbT3TL\", \"fldhvga1Oxtj1h7Ah\", \"fldmnF1I3GKnxKb9M\", \"fldpTCwHBh3OmRc5X\", \"fldY6SmDyHVWzTNRN\", \"fldNIQxQkubt8LAT0\", \"fldzT18PUxePQIYLJ\", \"fld7JbSeUeGRIErm6\", \"fldGoEivHNQeokI0Z\", \"fldaioqEyiX4R0cFe\", \"fldYltiXCNiZ4hY7c\", \"fldldnxDmZedvPxiA\", \"fldUgkCWdKXYNAOeL\", \"fldKz0E2wm8P9ULsO\", \"fldlXrUtSjJTNLToO\", \"fldZqLUgXXq15RQEv\", \"fldWCN46md7gMMpfE\", \"fldaPOITiLMyRYgi6\", \"fldRizOItAp7ndPtH\", \"fldVNhTFgPWCJiMYB\", \"fldB67zbrDgPUp40v\", \"fldUfhPjcFsh7UXF9\", \"fldPjuuM68KrldFRY\", \"fldj6TMQJYy0PxEko\", \"fld7ZeulbHEkOhiYu\", \"fldQUnGRfJB2Pq3sf\", \"fldeLeDeZnIBMZTsw\", \"fldffd3FJPmkwJ4OF\", \"fldh5zShUpiejUWxJ\", \"fldELB1aAnUjpdOjf\", \"fld269cnYHr7d1nyM\", \"fld5KiBJqlLTFioVd\", \"fldeSAOM4bSThfmfL\", \"fldn4oAU69Rxyk4JD\", \"fldlJXs0KXKCTcAgq\", \"fldYP195xUi9uU2xj\", \"fldwsJ2CUX7vKJLyS\", \"fldTzZpMocgWFftAV\", \"fldEiqBZaMqXmnxne\", \"fldslzMCS7SEe3I7X\", \"fldLJR5oklajdIUAw\", \"fldHfFuGNAQcQgeM3\", \"fldhwjgXT5at1lZdE\", \"fldfT20oJVFIV3k9i\", \"fldnxe2hocQKozF7X\", \"fld40AvWVaNakJP0c\", \"fldqK0H3nzJTViQAZ\", \"fldNmyOZABwwf8Zrf\", \"fldW50152mdlL95FR\", \"fld6fNVHFWLhlCQA2\", \"fld843jVk4TEbp17R\", \"fldOxB461R6EIjR9O\", \"fldGmPTaXPI5UYCZN\", \"fldXAS7fkrPyirfsW\", \"fldrGWlJrCSfuRD4J\", \"fldUs6DkNtvmuHRai\", \"fldMVNpTkxERw5kUd\", \"fldoudwsZC9QIspyo\", \"fldZNvFZQSX4ZZRFc\", \"fldIi2bZDYU31jOG7\", \"fldaWc4d8rxibk1Kl\", \"fld72eS0XGF4v8wxm\", \"flda9teKhD7HNEtAg\", \"fldxk8Jk6REOnfywZ\", \"fld5zTRHp6FMKeqei\", \"flduyuJMxVfLKGzCG\", \"fldV3H80JuOKTXacn\", \"fldlKUOgKPwh7W0QF\", \"fld0hZNG8SaaYDG58\", \"fld9FAwyjkYBgalHR\", \"fldzPRw7HfqhwZ28L\", \"fldpDLxWmse4nJBcP\", \"fldhdx9zN5mgx3lIq\", \"fldf4VOh7xCrwLSpJ\", \"fldAC8LPOwq2RO49f\", \"fldqkKfLEuig6UCeW\", \"fldPeVfO0LziIGIiY\", \"fldPAQUnc48MLQcaI\", \"fld155jQjONRleTh5\", \"fld1TwdtKYaYDF7Yz\", \"fld1IQZDf0wb1fND5\", \"fldID0Wh3orIgnqEI\", \"fldn2pmiudOZp4LcK\", \"fld8jZqAIXp05LRKN\", \"fldPZlps1UYASgR6V\", \"fldtQ8RnVQ17VYioe\", \"fldbzJ3WG3YAdJFeV\", \"fldE4eGYA2KRMUSl1\", \"fldK1Ks2AML5RKFCp\", \"fldUzeNxHa1bqfqum\", \"fldBVtKyNJljZvuoi\", \"fldRPN3LnxSxub66X\", \"fldoTGrstGZ8xop3e\", \"fldw65e2Kuwa4Z9a0\", \"fldGmqUM6obezXHAH\", \"fldpR7iTQbOty9uLd\", \"fldmN0Lzl8l07Cyj8\", \"fldZPh2n3BFzEh4MJ\", \"fld5NtM5Y6AhhUTvU\", \"fldtLpcBayQzBeDQ6\", \"fld7LSStrIkgH1uVt\", \"fld9HzCsPEeszQ88M\", \"fld5kG9v9GQjzm2jQ\", \"fldoDIurt9kCaM5rL\", \"flddV92G6jYSUvpsT\", \"fldDg56bivKopxIzQ\", \"fldlKMpKvfy9rIcAD\", \"fldQvdZNceJRzWMHD\", \"fld0wPzXsBdGT9mnv\", \"fldeFCOjeVnSRqtuy\", \"fldCMx0Vg0aAxCtqH\", \"fld0GmCGbZSqoIinb\", \"fldzD4h8939hhNeQ5\", \"fldTOpZrqh6WExOOc\", \"fldB7Vf1RAnyIZb7r\", \"fldd9fU7wNFTNQB0j\", \"fld8zzSiQMwejvoZ4\", \"fldpnrrUrJ8NPtxPC\", \"fldT1Jw7wLftwkuGK\", \"fld84zsDGhsUhmlGR\", \"fldfU5NmwnmNRnnVs\", \"fld2v562Wc1A1GxDX\", \"fldpwZgd0dOmqExPM\", \"fldwVcYUD2NHSqE2N\", \"fldku6TQEt8IQ0XQK\", \"fldzldrVpqHJdhaLf\", \"fldF6INyowVY6Ymkj\", \"fldZABZwE9SmnwMv3\", \"fldxSETE3D66RyWRH\", \"fldz66DfS1zAGHKcO\", \"fldUxqdktQwDc1OoC\", \"fld5UmGOG4X9EqHpL\", \"fldpwHUDMMDeXORek\", \"fld6h6ZPDeu2cgdTe\"]; return 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblAVAA6uBPaMj28P?filterByFormula=' + encodeURIComponent(filter) + '&pageSize=100&' + fields.map(id => 'fields%5B%5D=' + encodeURIComponent(id)).join('&'); })() }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "06ad3644-0b5c-4816-91d3-0e51950a425b",
+      "name": "Get QA Campaign",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        10832,
+        -9536
+      ],
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Select QA Source Tab').first().json.hasQAReview ? ('https://sheets.googleapis.com/v4/spreadsheets/' + $('Select QA Source Tab').first().json.sheetId + '/values/' + encodeURIComponent(\"'QA Review'!A:ZZ\")) : ('https://sheets.googleapis.com/v4/spreadsheets/' + $('Select QA Source Tab').first().json.sheetId + '/values/' + encodeURIComponent(\"'\" + $('Select QA Source Tab').first().json.sourceTabs[0] + \"'!A1:A1\")) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "d3a30eef-6ee9-4d3e-9440-b41e27d912c6",
+      "name": "Read Existing QA Corrections",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        11952,
+        -9440
+      ],
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "parameters": {
+        "jsCode": "const source=$('Read Enriched Leads for QA').first().json;\nconst review=$input.first().json.values??[];\nconst selection=$('Select QA Source Tab').first().json;\nconst quoteTab=name=>\"'\"+String(name).replace(/'/g,\"''\")+\"'\";\nconst columnLetter=index=>{let n=Number(index)+1,out='';while(n>0){n--;out=String.fromCharCode(65+n%26)+out;n=Math.floor(n/26);}return out;};\nconst norm=v=>String(v??'').replace(/^\\uFEFF/,'').trim().toLowerCase().replace(/[^a-z0-9]/g,'');\nconst parseTab=range=>String(range??'').split('!')[0].replace(/^'/,'').replace(/'$/,'').replace(/''/g,\"'\");\nconst parts=(source.valueRanges??[]).map((vr,i)=>({tab:parseTab(vr.range)||selection.sourceTabs?.[i]||'',values:vr.values??[]})).filter(p=>p.tab&&p.values.length);\nif(!parts.length)throw new Error('Final Direct and Final Generic contain no QA source rows.');\nconst combinedHeaders=[],combinedIndex=new Map();\nfor(const part of parts)for(const h of part.values[0]??[]){const k=norm(h);if(k&&!combinedIndex.has(k)){combinedIndex.set(k,combinedHeaders.length);combinedHeaders.push(String(h??'').trim());}}\nconst reviewHeaderRow=review.findIndex(row=>(row??[]).map(norm).includes('email')&&(row??[]).map(norm).includes('qaflags'));\nconst reviewHeaders=reviewHeaderRow>=0?(review[reviewHeaderRow]??[]).map(v=>String(v??'').trim()):[];\nconst reviewKeys=reviewHeaders.map(norm),reviewEmail=reviewKeys.findIndex(k=>['email','emailaddress'].includes(k));\nconst byEmail=new Map();\nconst baselineIndex=reviewKeys.indexOf('qabaselinesystem');\nconst project=$('Normalize QA Project').first().json;\nconst immutable=new Set(['email','emailaddress','domain','companydomain','verificationstatus','verificationprovider','sourceversion','emailtype','verificationpath','originalmillionverifierresult','originalemail']);\nlet legacyReviewRowsIgnored=0;\nif(reviewHeaderRow>=0&&reviewEmail>=0)for(const row of review.slice(reviewHeaderRow+1)){\n const email=String(row?.[reviewEmail]??'').trim().toLowerCase();if(!email)continue;\n if(baselineIndex<0||!row[baselineIndex]){legacyReviewRowsIgnored++;continue;}\n let b;try{b=JSON.parse(String(row[baselineIndex]));}catch{throw new Error('HOLD_QA_BASELINE_INVALID');}\n if(b.v!==1||b.recordId!==project.recordId||b.sheetId!==project.sheetId||b.email!==email||!selection.sourceTabs.includes(b.tab)||!b.cells||typeof b.cells!=='object'||Array.isArray(b.cells))throw new Error('HOLD_QA_BASELINE_BINDING');\n if(byEmail.has(email))throw new Error('HOLD_QA_DUPLICATE_REVIEW_IDENTITY');\n const edits={};for(let i=0;i<reviewKeys.length;i++){\n  const key=reviewKeys[i];if(!key||key==='qaflags'||key==='qabaselinesystem'||i===reviewEmail)continue;\n  if(!Object.prototype.hasOwnProperty.call(b.cells,key))throw new Error('HOLD_QA_BASELINE_COLUMNS');\n  const value=row[i]??'',prior=b.cells[key]??'';\n  if(String(value).trim()===String(prior).trim())continue;\n  if(immutable.has(key))throw new Error('HOLD_QA_IMMUTABLE_IDENTITY_EDIT: '+key);\n  edits[key]={value,prior};\n }\n byEmail.set(email,{tab:b.tab,edits,baseline:b.cells});\n}\nlet applied=0;const writeData=[],combinedRows=[],rowSourceTabs=[];\nfor(const part of parts){\n  const localHeaders=(part.values[0]??[]).map(v=>String(v??'').trim()),localKeys=localHeaders.map(norm),emailIndex=localKeys.findIndex(k=>['email','emailaddress'].includes(k));\n  if(emailIndex<0)throw new Error(part.tab+' must contain Email for QA.');\n  for(let r=1;r<part.values.length;r++){\n    const original=part.values[r]??[];if(!original.some(v=>String(v??'').trim()))continue;\n    const out=[...original],email=String(out[emailIndex]??'').trim().toLowerCase(),edits=byEmail.get(email);let changed=false;\n    if(edits){if(edits.tab!==part.tab)throw new Error('HOLD_QA_SOURCE_TAB_CHANGED');if(Object.keys(edits.edits).length){const occurrences=parts.reduce((sum,p)=>{const ei=(p.values[0]??[]).map(norm).findIndex(k=>['email','emailaddress'].includes(k));return sum+p.values.slice(1).filter(r=>String(r[ei]??'').trim().toLowerCase()===email).length;},0);if(occurrences!==1)throw new Error('HOLD_QA_DUPLICATE_SOURCE_IDENTITY');for(const k of immutable){const ci=localKeys.indexOf(k);if(ci>=0&&String(out[ci]??'').trim()!==String(edits.baseline[k]??'').trim())throw new Error('HOLD_QA_SOURCE_IDENTITY_CHANGED: '+k);}}for(const [key,edit] of Object.entries(edits.edits)){const ci=localKeys.indexOf(key);if(ci<0)throw new Error('HOLD_QA_EDIT_COLUMN_MISSING');const current=String(out[ci]??'').trim();if(current!==String(edit.prior).trim()&&current!==String(edit.value).trim())throw new Error('HOLD_QA_EDIT_CONFLICT: '+key);if(current!==String(edit.value).trim()){out[ci]=edit.value;writeData.push({range:quoteTab(part.tab)+'!'+columnLetter(ci)+(r+1),values:[[edit.value]]});changed=true;}}}\n    if(changed){applied++;}\n    const mapped=Array(combinedHeaders.length).fill('');for(let c=0;c<localKeys.length;c++){const target=combinedIndex.get(localKeys[c]);if(target!==undefined)mapped[target]=out[c]??'';}\n    combinedRows.push(mapped);rowSourceTabs.push(part.tab);\n  }\n}\nif(!writeData.length)for(const part of parts)writeData.push({range:quoteTab(part.tab)+'!A1',values:[[part.values?.[0]?.[0]??'']]});\nreturn [{json:{values:[combinedHeaders,...combinedRows],rowSourceTabs,sourceHeadersByTab:Object.fromEntries(parts.map(p=>[p.tab,p.values[0]??[]])),sourceTabs:parts.map(p=>p.tab),qaCorrectionsApplied:applied,legacyReviewRowsIgnored,qaSourceWriteData:writeData}}];\n"
+      },
+      "id": "f9a96fbb-47c8-4d19-9dc9-96985d3148c0",
+      "name": "Apply QA Corrections by Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12176,
+        -9440
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $('Select QA Source Tab').first().json.sheetId + '/values:batchUpdate' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({valueInputOption:'RAW',data:$('Apply QA Corrections by Email').first().json.qaSourceWriteData}) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "5e8144dd-39e8-4894-969d-50f0323f18e9",
+      "name": "Persist QA Corrections to Source",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        12400,
+        -9440
+      ],
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "parameters": {
+        "jsCode": "const corrected=$('Apply QA Corrections by Email').first().json;return [{json:corrected}];"
+      },
+      "id": "d9408a39-c889-4e39-8473-da2946eb5d8a",
+      "name": "Continue with Corrected QA Source",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12624,
+        -9440
+      ]
+    }
+  ],
+  "connections": {
+    "QA Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate QA Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate QA Request": {
+      "main": [
+        [
+          {
+            "node": "Acknowledge QA",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get QA Project",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get QA Project": {
+      "main": [
+        [
+          {
+            "node": "Get QA Campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize QA Project": {
+      "main": [
+        [
+          {
+            "node": "Mark QA Running",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get QA Source Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get QA Source Metadata": {
+      "main": [
+        [
+          {
+            "node": "Select QA Source Tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select QA Source Tab": {
+      "main": [
+        [
+          {
+            "node": "Read Enriched Leads for QA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Enriched Leads for QA": {
+      "main": [
+        [
+          {
+            "node": "Read Existing QA Corrections",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare QA Source Rows": {
+      "main": [
+        [
+          {
+            "node": "Read Contacts for Skipped QA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Contacts for Skipped QA": {
+      "main": [
+        [
+          {
+            "node": "Merge Verified Good with Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Verified Good with Contacts": {
+      "main": [
+        [
+          {
+            "node": "Analyze QA Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze QA Source": {
+      "main": [
+        [
+          {
+            "node": "Analyze Enriched Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Enriched Leads": {
+      "main": [
+        [
+          {
+            "node": "Get QA Spreadsheet Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get QA Spreadsheet Metadata": {
+      "main": [
+        [
+          {
+            "node": "Prepare QA Review Tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare QA Review Tab": {
+      "main": [
+        [
+          {
+            "node": "Ensure QA Review Tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ensure QA Review Tab": {
+      "main": [
+        [
+          {
+            "node": "Resolve QA Review Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve QA Review Link": {
+      "main": [
+        [
+          {
+            "node": "Clear QA Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clear QA Review": {
+      "main": [
+        [
+          {
+            "node": "Write QA Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write QA Review": {
+      "main": [
+        [
+          {
+            "node": "Prepare QA Airtable Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare QA Airtable Update": {
+      "main": [
+        [
+          {
+            "node": "Save QA Result to Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get QA Campaign": {
+      "main": [
+        [
+          {
+            "node": "Normalize QA Project",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Existing QA Corrections": {
+      "main": [
+        [
+          {
+            "node": "Apply QA Corrections by Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply QA Corrections by Email": {
+      "main": [
+        [
+          {
+            "node": "Persist QA Corrections to Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist QA Corrections to Source": {
+      "main": [
+        [
+          {
+            "node": "Continue with Corrected QA Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Continue with Corrected QA Source": {
+      "main": [
+        [
+          {
+            "node": "Prepare QA Source Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2026-08-26T20:22:04.634+00:00",
+  "updatedAt": "2026-11-14T03:19:04.561+00:00",
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "versionId": "2beeac1b-42f5-405c-b474-854ae469d60a",
+  "triggerCount": 1,
+  "id": "MdXafHjQI3Sx8Hhxg6uh6",
+  "meta": null,
+  "parentFolderId": "Fj74cu2XqUD0CmqW",
+  "isArchived": false,
+  "versionCounter": 83,
+  "description": null,
+  "activeVersionId": "2beeac1b-42f5-405c-b474-854ae469d60a"
+}

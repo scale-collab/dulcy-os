@@ -11,4 +11,4 @@ Private memory for Dulcy. Start with `CLAUDE.md`.
 - `legacy/`: old Jarvis project, history only
 - `handoff-provenance/`: where the first import came from
 
-No credentials, tokens, client prospect rows or workflow exports belong here.
+No credentials, tokens or client prospect rows belong here. Workflow exports are allowed only with credentials stripped and after a secrets scan (see `automations/n8n-workflows/`).
