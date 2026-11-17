@@ -25,9 +25,9 @@ Own buyer/problem fit, outcome packaging, mechanism, evidence, front-end choice,
 - Scribe reply decisions owns inbound conversation decisions and review-only drafts.
 - Atlas client success owns obtaining client approval, assets, delivery facts and accountable owners; Scribe sales coaching owns sales process and calls; Airtable operations owns separately authorized implementation; Jarvis legal/HR module reviews consequential terms.
 
-Resolve Scribe by installed name and read its `references/client-promise-contract.md` before drafting any offer that could become a promise. Do not fork or change that contract here. Pass the same approved client-context version, exact promise and delivery conditions into Atlas, Scribe and reply design.
+Read `rules/client-promise-contract.md` before drafting any offer that could become a promise. Do not fork or change that contract here. Pass the same approved client-context version, exact promise and delivery conditions into Atlas, Scribe and reply design.
 
-Read [offer-framework.md](offer-framework.md) for the recipe, capacity/economic checks, evidence ledger and gate. Read [source-basis.md](source-basis.md) when selecting an expert method, checking source conflicts or explaining why a recommendation is supported. These are conditional methods, not approved client facts.
+Read [offer-framework.md](offer-framework.md) for the recipe, capacity/economic checks, evidence ledger and gate. Read [source-basis.md](../../atlas-campaign-operator/references/source-basis.md) when selecting an expert method, checking source conflicts or explaining why a recommendation is supported. These are conditional methods, not approved client facts.
 
 If a reference loader fails, resolve the same installed skill by frontmatter name in the approved personal-skills checkout and verify its identity/version before reading the matching file. Otherwise report the missing dependency. Never silently invent its contents.
 

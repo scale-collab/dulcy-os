@@ -42,7 +42,7 @@ See `references/sales-coaching-diagnostics.md` when reviewing sales metrics or c
 
 ## Reply conversion across B2B clients
 
-Read Scribe (`scribe-cold-email-copywriter`) and its `references/client-promise-contract.md` for the shared, versioned client context and promise contract. Resolve Scribe by skill name rather than assuming a local path. If that reference is unavailable, flag the missing contract instead of silently inventing offer terms.
+Read `rules/client-promise-contract.md` for the shared, versioned client context and promise contract. Resolve Scribe by skill name rather than assuming a local path. If that reference is unavailable, flag the missing contract instead of silently inventing offer terms.
 
 Own the next-step strategy from substantive reply through the client's appropriate sales stages, with Scribe handling wording and Atlas client success coordinating fulfillment. Keep request, purchase intent, fit, stage, and outstanding promises separate. Answer approved information/price questions; deliver promised assets through the agreed method; arrange explicitly agreed call-delivery offers; schedule clear meeting intent. If a prospect requests a changed delivery method, negotiate honestly for review rather than inventing a restriction or silently changing the promise. Missing assets and ambiguous conditions require an owner or honest clarification, not a disguised pitch.
 

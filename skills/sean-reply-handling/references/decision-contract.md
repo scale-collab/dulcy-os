@@ -25,7 +25,7 @@ The objective is not to fill every slot mechanically. Omit irrelevant sections i
 
 ## Shared client context
 
-The canonical semantic contract is Scribe's `references/client-promise-contract.md`, version 1.1 or a verified later revision. Resolve it by installed skill name. This module consumes it; it does not redefine commercial approval.
+The canonical semantic contract is `rules/client-promise-contract.md`, version 1.1 or a verified later revision. Resolve it by installed skill name. This module consumes it; it does not redefine commercial approval.
 
 Bind campaign builder and replier to the same context and exact outbound promise. The bundle must include:
 - Identity and version: client/workspace/campaign/sender, approver, approval date and source links.

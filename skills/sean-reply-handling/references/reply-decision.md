@@ -22,7 +22,7 @@ Produce review-only decisions and drafts. Do not send messages, create platform 
 
 ## Load the right resources
 
-1. Read this skill’s `references/client-promise-contract.md` before deciding a substantive reply. This is the shared client/promise/settings contract used by campaign building and replies. Do not fork a competing contract. If unavailable, report the missing dependency; do not fill gaps from an old template.
+1. Read `rules/client-promise-contract.md` before deciding a substantive reply. This is the shared client/promise/settings contract used by campaign building and replies. Do not fork a competing contract. If unavailable, report the missing dependency; do not fill gaps from an old template.
 2. Read [decision-playbook.md](decision-playbook.md) for branch selection, meaningful questions, meeting readiness and varied B2B motions.
 3. Read [decision-contract.md](decision-contract.md) for coach output, evidence, handoffs and design requirements. For machine-readable evaluation use [contract-fixtures.json](../assets/contract-fixtures.json) with [check_reply_contract.py](../scripts/check_reply_contract.py).
 4. Read [evidence-and-evaluation.md](evidence-and-evaluation.md) when selecting examples, checking research coverage, measuring outcomes or evaluating a revision. It includes creator/Drive sources, historical limits, counterexamples and the held-out plan.
