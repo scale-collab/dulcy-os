@@ -21,3 +21,4 @@ Newest at the bottom. Format: `date | decision | why | who`
 2026-11-17 | Closers.io library fully read and added to Cole (parts A-D), ads to Pixel; Sean got 6-month reply history analysis, creator methods, Drive SOP findings | Alex: use Drive, history and reliable creators; Cole = everything in the Closers folder | Alex
 2026-11-17 | Reply rules: 2 specific times (no link); price = explain it depends + approved range + 2 times; keep following up until answer or stop; Josh sends normal replies, Alex tricky; RevReply not used | Alex answered conflicts between Drive SOPs, creators and Dulcy data | Alex
 2026-11-17 | Client files built for all 6 clients + Dulcy from Airtable, Slack, Drive, Fathom; historical inactive profiles saved in clients/historical | Alex: client folder from Slack and onboarding helps the agents | Alex
+2026-11-17 | Bounce/campaign health = Atlas, not Riley | Alex corrected Claude for routing a bounce check to Riley | Alex

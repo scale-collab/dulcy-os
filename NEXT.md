@@ -19,7 +19,7 @@ Last updated: 2026-11-17 (live pull from n8n and Airtable)
 
 ## URGENT (found 2026-11-17 while building client files; Alex decides)
 - Lead Flo asked in Slack today to cancel effective today and refund $375 plus the last payment. Not answered.
-- Bounce over 4% on campaigns still marked Active: Dulcy (2), Twenty West Internal (6 of 8), MJJ (3 of 4), Marketing Cartel (all 5). The rule is to pause and investigate. Check live EmailBison first: the Airtable status may be stale.
+- Bounce over 4% on campaigns still marked Active: Dulcy (2), Twenty West Internal (6 of 8), MJJ (3 of 4), Marketing Cartel (all 5). The rule is to pause and investigate. Atlas checks live EmailBison first: the Airtable status may be stale.
 - Marketing Cartel Email 1 P.S. lines may contain unverified proof claims ("doubled enrollments", rehab admissions). Check whether they're live.
 - Scroll Stop GDPR erasure request (2026-11-17), plus the appointment-audit list they requested.
 - Human Marketing: an SMS "stop calling" reply; confirm suppression.
