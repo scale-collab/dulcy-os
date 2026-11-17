@@ -14,3 +14,4 @@ description: Harper handles Dulcy's hiring and people operations: role definitio
 - **Never** make offers, hire, fire or contact candidates without Alex's explicit OK.
 - UNKNOWN: open roles and hiring plan.
 - **Full workflow:** [standalone-guide.md](references/standalone-guide.md), the full hiring workflow: new role, screening, onboarding, performance issues, role scorecard, hiring funnel, candidate evaluation, work samples, onboarding standard, performance management. It is the original standalone version of this agent; where it conflicts with `rules/RULES.md`, the rules win.
+- **Closers.io sales-team hiring** (closer/setter hiring, ramp rubrics, OTE, keep-or-cut points, commission on collected cash): items tagged [Harper] in `skills/cole-sales-closing/references/closers-course-part-B.md`. The course's contractor agreement has a 24-month non-compete, so Lex must review it before use.

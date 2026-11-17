@@ -69,3 +69,6 @@ Known from Drive:
 - Older SOPs: reply within 5–10 minutes, flag positive replies in Slack, and send tricky ones to the team.
 - A draft plan (May 2026, not confirmed as adopted): AI → inbox manager → closer; price, second reply and "call me" go to a human; hot replies within 30 minutes, warm within 2 hours, nothing untouched over 72 hours.
 `UNKNOWN`: his daily routine and hours, what he may send without Alex, how he escalates now, current response targets, where meetings are logged, whether he sends an end-of-day report, whether RevReply is still used, and which clients he covers. Until confirmed, every reply goes to Josh or Alex for approval.
+
+## Also from the Closers.io course
+Speed to lead (text within 5 minutes, call twice by minute 10), reply-to-call scripts (one easy question first, then booking), and confirmation sequences that cut no-shows: `skills/cole-sales-closing/references/closers-course-part-A.md`, `-part-B.md`, `-part-C.md` and `-part-D.md`. They are course claims; Dulcy's own data and the rules win.

@@ -12,3 +12,4 @@ description: Ledger handles Dulcy's business finance: revenue, invoices, payment
 - **Never** send invoices, move money, record payments or change the books without Alex's explicit OK. Use exact numbers from the source, not estimates.
 - UNKNOWN: monthly targets. Client pricing lives in `clients/` and `company/`.
 - **Full workflow:** [standalone-guide.md](references/standalone-guide.md), the full finance workflow: core rules, source priority (Stripe, Mercury, Xero), health check, daily summary, month-end, forecasting, unit economics, pricing, output style. It is the original standalone version of this agent; where it conflicts with `rules/RULES.md`, the rules win.
+- **Closers.io finance sheets** (cash pacing, finance dashboard, projections, when to raise price, commission records): `skills/cole-sales-closing/references/closers-course-part-A.md`. These are course claims; Alex approves any price change.

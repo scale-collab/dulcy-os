@@ -39,9 +39,23 @@ The core methods, short version:
 5. **First objection:** "money aside, is the process right for you?" → isolate the real objection → only then money. Payment plans come last.
 6. **Show rate:** a short booking window, a human confirming every call (right away, 24h, 8h, 1h and 15 minutes before), and never cancel unconfirmed calls.
 
-**Coverage (2026-11-17):** 45 of 198 lessons read, plus the 13 first-batch docs ([closers-source-catalog.md](references/closers-source-catalog.md)), plus 5 Cole Gordon "7FSA" Docs found in Alex's Drive (first objection, financial objections, uncertainty objections, closing patterns and risk mitigators, reframing).
-- The library itself has **no objection or closing lessons**. Those live in the separate 7FSA course, which is only partly in Drive.
-- Not found anywhere: a spouse/partner objection script, a closer call-review grading sheet, a re-offer or no-close follow-up, and a no-show rebooking script. Mark these `UNKNOWN`.
+**Coverage (2026-11-17): the whole library has been read** (198 lesson folders; one is empty), plus 5 Cole Gordon "7FSA" Docs from Alex's Drive. Detail by module:
+- [closers-methods.md](references/closers-methods.md): the core sales methods (45 lessons and the 7FSA Docs).
+- [closers-course-part-A.md](references/closers-course-part-A.md): Onboarding, Offers and Pricing, Setters, Live Calls, Fulfillment and Upsells, 8-Figure Ops, plus the tracker and ramp sheets with KPI formulas.
+- [closers-course-part-B.md](references/closers-course-part-B.md): Sales Teams (build, train, manage): scorecards, the 2-Call Close Tracker, comp and ramp rules. Items tagged [Harper] are for hiring.
+- [closers-course-part-C.md](references/closers-course-part-C.md), [closers-course-part-D.md](references/closers-course-part-D.md): Lead Generation (VSLs, DM ads, LinkedIn playbook, speed to lead, reply-to-call scripts) and Tech.
+- Ads modules: `skills/pixel-paid-ads/references/closers-ads.md`. First batch: [closers-source-catalog.md](references/closers-source-catalog.md).
+- The library has **no objection or closing lessons**; those are in the separate 7FSA course, of which only 5 Docs are in Drive.
+- Not found anywhere: a spouse/partner objection script, a per-call grading sheet (the weekly Closer Ramp rubric is the closest), a no-show rebooking script, and a no-close follow-up script or cadence. These are `UNKNOWN`.
+
+**Dulcy's sales scoreboard (course formulas; the thresholds are course claims, not Dulcy targets):**
+- Show % = live ÷ scheduled. Fix below 80%; urgent below 60%.
+- Offer % = offers ÷ live. Fix below 80% (about 60% is fine for niche B2B).
+- Close % = closes ÷ live. Fix below 25%; 30%+ is exceptional.
+- Commitment % = (deposits + closes) ÷ offers.
+- Collected % = cash collected ÷ sold.
+- Count booked calls and held calls separately.
+- For a 2-call process (discovery → sales call), use the 2-Call Close Tracker fields: Call 1 show %, Call 2 booked from Call 1, Call 2 show %, close %, and recurring vs one-time revenue kept separate.
 
 **Before using any script:**
 - Never copy the course's stats, case-study counts, guarantees or prices. Use only real Dulcy or client facts.
