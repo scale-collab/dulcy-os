@@ -85,3 +85,6 @@ Coordinate financial interpretation, legal decisions and other non-outbound doma
 ## Drive SOP source basis
 
 Read [drive-sop-basis.md](references/drive-sop-basis.md) when applying the company’s documented procedures, reviewing a source conflict or grounding a recommendation. It records the relevant reviewed methods and their limits. Current explicit instructions, approved client facts, actual promises, live selected settings and managed stage gates take precedence over historical examples. Jarvis’s `references/drive-source-catalog.md` records all 184 bounded-inventory sources, duplicates and precise read scope; linked but unread media is not integrated knowledge.
+
+## Build errors (added 2026-11-17)
+Before diagnosing any campaign-build error, read `rules/build-error-playbook.md` and `automations/n8n-workflows/campaign-center/BUILD-ERRORS-2026-11-17.md`. Key rules: never retry a whole top-up after an import checkpoint failure (reconcile the single failed import); log full response bodies on 422/invalid-request errors; EmailGuard "score above 1" is a fail-closed gate that needs a human task, not a retry; nodes that can pass 300 seconds belong in the server worker.
