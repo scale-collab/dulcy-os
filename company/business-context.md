@@ -9,8 +9,9 @@ Verified by Alex on 2026-11-17 unless marked UNKNOWN.
 - **Clients now:** 6 plus Dulcy itself.
 - **Team:** Alex; Josh (VA, inbox manager).
 - **Sales:** Almost all sales come from Dulcy's own cold email. Alex's replies book meetings.
-- **Pricing:** UNKNOWN (not on website). Add here.
-- **Goals / expected outcomes:** UNKNOWN. Add monthly revenue target and what "good" looks like per client.
+- **Pricing:** recorded per client in `client-pricing-and-goals-2026-11-17.md` (source: Dulcy P/L sheet, read 2026-11-17). Not on website.
+- **Dulcy revenue goals (MRR):** Oct $12-15k (historical), Nov $18-21k, Dec $21k minimum / $24k target. Close 2-3 new $3,000 accounts. Source: P/L goal tab. Targets, not results.
+- **Client business goals:** UNKNOWN for five of six clients. Do not infer from ICPs or examples. Details in `client-pricing-and-goals-2026-11-17.md`.
 
 ## What Alex expects from Claude
 Help generate more income and better client outcomes by running the campaign machine reliably: build campaigns without repeated errors, keep clients' campaigns topped up, catch problems (bounce, deliverability) early, and never lose past decisions.

@@ -1,0 +1,1382 @@
+{
+  "id": "KqkYFOs5AZ1RM3G-F1AWu",
+  "name": "[Campaign Center - GPT] Spintax and Spam QA",
+  "nodes": [
+    {
+      "id": "2a1ea9a4-54f5-4a4c-aa13-f714ea660c6d",
+      "code": null,
+      "name": "Campaign Center Spintax Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "disabled": null
+    },
+    {
+      "id": "8d1fafeb-85e1-48e4-b5a9-2253863a7bac",
+      "code": "const payload = $input.first().json.body ?? $input.first().json;\nconst recordId = payload.recordId;\nif (!recordId) throw new Error('recordId is required.');\n\nfunction plain(value) {\n  if (value == null) return '';\n  if (typeof value === 'object' && !Array.isArray(value) && value.name != null) return String(value.name);\n  return String(value);\n}\n\nfunction count(value, fallback = 1) {\n  const parsed = Number(plain(value).match(/\\d+/)?.[0] ?? fallback);\n  return Math.max(1, Math.min(10, Number.isFinite(parsed) ? parsed : fallback));\n}\n\nconst sources = [1, 2, 3, 4].map(step => {\n  const subject = plain(payload[`Subject Line Email ${step} (Review)`]).trim();\n  const body = plain(payload[`Script Copy Email ${step} (Review)`]).trim();\n  const requestedVariants = count(payload[`Number of variants - Step ${step}`], 1);\n  return {step, subject, body, requestedVariants};\n}).filter(email => email.subject || email.body);\n\nif (!sources.length) throw new Error('No approved Email 1-4 review copy was provided.');\nreturn [{json: {recordId, sourceEmails: sources}}];",
+      "name": "Normalize Campaign Input",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "ccfe719e-f85f-4dee-8413-1776bfdef1cd",
+      "code": null,
+      "name": "Generate Spintax Variants",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "disabled": null
+    },
+    {
+      "id": "7980b2fd-90b6-4d4b-b177-24903175b906",
+      "code": null,
+      "name": "Validate Generated Sequence",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "disabled": null
+    },
+    {
+      "id": "d22d4644-3819-4a12-a206-254ad144f6b3",
+      "code": "\nfunction lockApprovedNumbers(text, approved){\n return String(text).replace(/\\{([^{}]*\\|[^{}]*)\\}/g,(group,inner)=>{\n   const options=inner.split('|').map(x=>x.trim());\n   if(!options.some(x=>/\\d/.test(x)))return group;\n   const original=options.find(x=>String(approved).includes(x));\n   return original||group;\n });\n}\nfunction spinQuality(row){try{return checkedSpinQuality(row);}catch(error){return {spintaxValid:false,spintaxIssue:error.message,spintaxGroups:0,bodySpintaxGroups:0,spintaxCombinations:0};}}\n\nfunction spinStats(value) {\n  const text=String(value||''); let groups=0, substantive=0, combinations=1;\n  const masked=text.replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n  const rest=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside,offset)=>{\n    if(!inside.includes('|'))return whole;\n    const options=inside.split('|').map(x=>x.trim());\n    if(options.length>4||options.some(x=>!x)||new Set(options.map(x=>x.toLowerCase())).size!==options.length)throw new Error('Spintax has empty or duplicate alternatives');\n    const tagSignatures=options.map(option=>[...option.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|'));\n    if(new Set(tagSignatures).size!==1)throw new Error('Merge tags inside spintax must appear unchanged in every alternative');\n    groups++; combinations=Math.min(Number.MAX_SAFE_INTEGER,combinations*options.length);\n    if(!options.every(x=>/^(hi|hey|hello|dear|thanks|thank you|best|regards|cheers)[!, .]*$/i.test(x)))substantive++;\n    return '';\n  });\n  if(/[{}]/.test(rest))throw new Error('Malformed or nested spintax');\n  return {groups,substantive,combinations};\n}\nfunction checkedSpinQuality(row){\n  if(/\\{[^{}]*\\d[^{}]*\\|[^{}]*\\}|\\{[^{}]*\\|[^{}]*\\d[^{}]*\\}/.test(String(row.body)+' '+String(row.subject)))throw new Error('Keep approved numbers and time commitments fixed outside spintax groups');\n  const b=spinStats(row.body),s=spinStats(row.subject);\n  const words=String(row.approvedBody||row.body||'').split(/\\s+/).filter(Boolean).length;\n  const targetGroups=words>=150?6:words>=100?5:words>=50?4:3;\n  const targetCombinations=words>=50?32:18;\n  const tagPath=t=>{\n    const masked=String(t||'').replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n    const firstPath=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside)=>inside.includes('|')?inside.split('|')[0]:whole);\n    return [...firstPath.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|');\n  };\n  if(tagPath(row.body)!==tagPath(row.approvedBody)||tagPath(row.subject)!==tagPath(row.approvedSubject))throw new Error('Merge tags differ from approved copy');\n  const totalCombinations=Math.min(Number.MAX_SAFE_INTEGER,b.combinations*s.combinations);\n  const densityMet=b.substantive>=targetGroups&&totalCombinations>=targetCombinations;\n  return {spintaxGroups:b.groups+s.groups,bodySpintaxGroups:b.substantive,spintaxCombinations:totalCombinations,spintaxValid:true,spintaxIssue:'',spintaxDensityTargetGroups:targetGroups,spintaxDensityTargetCombinations:targetCombinations,spintaxDensityMet:densityMet};\n}\n\nfunction parts(text){\n const clean=String(text||'').replace(/\\\\_/g,'_').trim();\n const matches=[...clean.matchAll(/(?:^|\\n)[ \\t]*(?:Variant[ \\t]+([A-J]|\\d+)[ \\t]*[:.)-]?|(\\d+)[ \\t]*[-.)])[ \\t]*(?:\\r?\\n|$)/gi)];\n if(!matches.length)return [clean];\n if(clean.slice(0,matches[0].index).trim())throw new Error('Unexpected text before approved variant heading');\n return matches.map((m,i)=>{\n  const label=(m[1]||m[2]).toUpperCase();\n  const ordinal=/^[A-J]$/.test(label)?label.charCodeAt(0)-64:Number(label);\n  if(ordinal!==i+1)throw new Error('Approved variant headings must be unique and sequential');\n  const body=clean.slice(m.index+m[0].length,matches[i+1]?.index??clean.length).trim();\n  if(!body)throw new Error('Approved variant is empty');\n  return body;\n });\n}\n\nconst normalized=$('Normalize Campaign Input').first().json;\nconst reviewed=$input.first().json.output;\nif(!reviewed||!Array.isArray(reviewed.variants))throw new Error('Reviewed GPT sequence missing; never substitute original unspun copy');\nconst expected=new Map();\nfor(const email of normalized.sourceEmails){\n const bodies=parts(email.body),subjects=parts(email.subject);\n const count=Math.max(1,Math.min(10,Number(email.requestedVariants)||1));\n  if(subjects.length!==1&&subjects.length!==count)throw new Error('Approved subject variant count mismatch');\n if(bodies.length!==1&&bodies.length!==count)throw new Error('Approved variant count mismatch');\n for(let i=0;i<count;i++)expected.set(Number(email.step)+':'+String.fromCharCode(65+i),{approvedBody:bodies[bodies.length===1?0:i],approvedSubject:subjects[subjects.length===count?i:0]});\n}\nconst seen=new Set();\nconst rows=reviewed.variants.map(v=>{\n const step=Number(v.step),rawVariant=String(v.variant).trim().toUpperCase();\n const variant=/^(?:10|[1-9])$/.test(rawVariant)?String.fromCharCode(64+Number(rawVariant)):rawVariant;\n const key=step+':'+variant;\n if(!expected.has(key)||seen.has(key))throw new Error('Unexpected or duplicated GPT step/variant '+key);\n seen.add(key);\n if(typeof v.subject!=='string'||typeof v.body!=='string'||!v.body.trim())throw new Error('GPT copy is incomplete');\n const row={recordId:normalized.recordId,step,variant,subject:v.subject.replace(/\\\\_/g,'_').trim(),body:v.body.replace(/\\\\_/g,'_').trim(),...expected.get(key)};\n row.body=lockApprovedNumbers(row.body,row.approvedBody);row.subject=lockApprovedNumbers(row.subject,row.approvedSubject);\n return {json:{...row,...spinQuality(row)}};\n});\nif(seen.size!==expected.size)throw new Error('GPT sequence is missing requested variants');\nreturn rows;\n",
+      "name": "Prepare Variant Checks",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "6c42655b-2934-4bab-ab9f-57b902935e4e",
+      "code": null,
+      "name": "Loop Through Variants",
+      "type": "n8n-nodes-base.splitInBatches",
+      "disabled": null
+    },
+    {
+      "id": "49cacf29-5768-4fb0-a133-f7a1d78cd607",
+      "code": null,
+      "name": "EmailGuard Check 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "disabled": null
+    },
+    {
+      "id": "bf424ee1-92c1-45ee-bf2a-e59e767b7088",
+      "code": null,
+      "name": "Passed Check 1?",
+      "type": "n8n-nodes-base.if",
+      "disabled": null
+    },
+    {
+      "id": "3d789bb8-5f0c-4a9a-9da2-c3807e1f9dff",
+      "code": "function spinQuality(row){try{return checkedSpinQuality(row);}catch(error){return {spintaxValid:false,spintaxIssue:error.message,spintaxGroups:0,bodySpintaxGroups:0,spintaxCombinations:0};}}\n\nfunction spinStats(value) {\n  const text=String(value||''); let groups=0, substantive=0, combinations=1;\n  const masked=text.replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n  const rest=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside,offset)=>{\n    if(!inside.includes('|'))return whole;\n    const options=inside.split('|').map(x=>x.trim());\n    if(options.length>4||options.some(x=>!x)||new Set(options.map(x=>x.toLowerCase())).size!==options.length)throw new Error('Spintax has empty or duplicate alternatives');\n    const tagSignatures=options.map(option=>[...option.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|'));\n    if(new Set(tagSignatures).size!==1)throw new Error('Merge tags inside spintax must appear unchanged in every alternative');\n    groups++; combinations=Math.min(Number.MAX_SAFE_INTEGER,combinations*options.length);\n    if(!options.every(x=>/^(hi|hey|hello|dear|thanks|thank you|best|regards|cheers)[!, .]*$/i.test(x)))substantive++;\n    return '';\n  });\n  if(/[{}]/.test(rest))throw new Error('Malformed or nested spintax');\n  return {groups,substantive,combinations};\n}\nfunction checkedSpinQuality(row){\n  if(/\\{[^{}]*\\d[^{}]*\\|[^{}]*\\}|\\{[^{}]*\\|[^{}]*\\d[^{}]*\\}/.test(String(row.body)+' '+String(row.subject)))throw new Error('Keep approved numbers and time commitments fixed outside spintax groups');\n  const b=spinStats(row.body),s=spinStats(row.subject);\n  const words=String(row.approvedBody||row.body||'').split(/\\s+/).filter(Boolean).length;\n  const targetGroups=words>=150?6:words>=100?5:words>=50?4:3;\n  const targetCombinations=words>=50?32:18;\n  const tagPath=t=>{\n    const masked=String(t||'').replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n    const firstPath=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside)=>inside.includes('|')?inside.split('|')[0]:whole);\n    return [...firstPath.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|');\n  };\n  if(tagPath(row.body)!==tagPath(row.approvedBody)||tagPath(row.subject)!==tagPath(row.approvedSubject))throw new Error('Merge tags differ from approved copy');\n  const totalCombinations=Math.min(Number.MAX_SAFE_INTEGER,b.combinations*s.combinations);\n  const densityMet=b.substantive>=targetGroups&&totalCombinations>=targetCombinations;\n  return {spintaxGroups:b.groups+s.groups,bodySpintaxGroups:b.substantive,spintaxCombinations:totalCombinations,spintaxValid:true,spintaxIssue:'',spintaxDensityTargetGroups:targetGroups,spintaxDensityTargetCombinations:targetCombinations,spintaxDensityMet:densityMet};\n}\n\nconst result=$input.first().json;\nconst quality=spinQuality(result.context||{});\nif(result.ok!==true||result.isSpam!==false||!quality.spintaxValid)throw new Error('Final QA requires an explicit spam pass and structurally valid spintax');\nreturn [{json:{...result.context,...quality,spamScore:result.spamScore,spamWords:result.spamWords||[],qaStatus:'passed',passedOnCheck:1}}];",
+      "name": "Finalize Check 1",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "6f2b5b0e-32c8-4f8d-a319-a4819f11da52",
+      "code": null,
+      "name": "Repair Spam Attempt 1",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "disabled": null
+    },
+    {
+      "id": "0542d7b0-9050-46a2-b929-e701501b64ec",
+      "code": null,
+      "name": "Validate Repair 1",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "disabled": null
+    },
+    {
+      "id": "64388d81-808f-4a68-b821-f578df24b1ae",
+      "code": "\nfunction lockApprovedNumbers(text, approved){\n return String(text).replace(/\\{([^{}]*\\|[^{}]*)\\}/g,(group,inner)=>{\n   const options=inner.split('|').map(x=>x.trim());\n   if(!options.some(x=>/\\d/.test(x)))return group;\n   const original=options.find(x=>String(approved).includes(x));\n   return original||group;\n });\n}\nfunction spinQuality(row){try{return checkedSpinQuality(row);}catch(error){return {spintaxValid:false,spintaxIssue:error.message,spintaxGroups:0,bodySpintaxGroups:0,spintaxCombinations:0};}}\n\nfunction spinStats(value) {\n  const text=String(value||''); let groups=0, substantive=0, combinations=1;\n  const masked=text.replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n  const rest=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside,offset)=>{\n    if(!inside.includes('|'))return whole;\n    const options=inside.split('|').map(x=>x.trim());\n    if(options.length>4||options.some(x=>!x)||new Set(options.map(x=>x.toLowerCase())).size!==options.length)throw new Error('Spintax has empty or duplicate alternatives');\n    const tagSignatures=options.map(option=>[...option.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|'));\n    if(new Set(tagSignatures).size!==1)throw new Error('Merge tags inside spintax must appear unchanged in every alternative');\n    groups++; combinations=Math.min(Number.MAX_SAFE_INTEGER,combinations*options.length);\n    if(!options.every(x=>/^(hi|hey|hello|dear|thanks|thank you|best|regards|cheers)[!, .]*$/i.test(x)))substantive++;\n    return '';\n  });\n  if(/[{}]/.test(rest))throw new Error('Malformed or nested spintax');\n  return {groups,substantive,combinations};\n}\nfunction checkedSpinQuality(row){\n  if(/\\{[^{}]*\\d[^{}]*\\|[^{}]*\\}|\\{[^{}]*\\|[^{}]*\\d[^{}]*\\}/.test(String(row.body)+' '+String(row.subject)))throw new Error('Keep approved numbers and time commitments fixed outside spintax groups');\n  const b=spinStats(row.body),s=spinStats(row.subject);\n  const words=String(row.approvedBody||row.body||'').split(/\\s+/).filter(Boolean).length;\n  const targetGroups=words>=150?6:words>=100?5:words>=50?4:3;\n  const targetCombinations=words>=50?32:18;\n  const tagPath=t=>{\n    const masked=String(t||'').replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n    const firstPath=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside)=>inside.includes('|')?inside.split('|')[0]:whole);\n    return [...firstPath.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|');\n  };\n  if(tagPath(row.body)!==tagPath(row.approvedBody)||tagPath(row.subject)!==tagPath(row.approvedSubject))throw new Error('Merge tags differ from approved copy');\n  const totalCombinations=Math.min(Number.MAX_SAFE_INTEGER,b.combinations*s.combinations);\n  const densityMet=b.substantive>=targetGroups&&totalCombinations>=targetCombinations;\n  return {spintaxGroups:b.groups+s.groups,bodySpintaxGroups:b.substantive,spintaxCombinations:totalCombinations,spintaxValid:true,spintaxIssue:'',spintaxDensityTargetGroups:targetGroups,spintaxDensityTargetCombinations:targetCombinations,spintaxDensityMet:densityMet};\n}\n\nfunction lockNumericClaims(value) {\n  const source = JSON.stringify($('Normalize Campaign Input').first().json.sourceEmails);\n  const numbers = new Set(source.match(/\\b\\d+(?:\\.\\d+)?%?/g) || []);\n  return String(value).replace(/\\{([^{}]*\\|[^{}]*)\\}/g, (group, content) => {\n    const options = content.split('|').map(x => x.trim());\n    const numeric = options.filter(x => numbers.has(x));\n    return numeric.length === 1 ? numeric[0] : group;\n  });\n}\n\nfunction preciseRepair(value) {\n  const flags=(check.spamWords||[]).map(x=>String(x).toLowerCase().trim());\n  let text=String(value).replace(/(\\d)[\\u0000-\\u001f](?=\\d)/g,'$1-').replace(/[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]/g,' ');\n  if(flags.includes('beverage') && /Americas Food\\s*&\\s*Beverage/i.test(JSON.stringify($('Normalize Campaign Input').first().json.sourceEmails))) text=text.replace(/\\bAmericas Food\\s*&\\s*Beverage(?:\\s+Show)?/gi,'AFB Show');\n  if(flags.includes('#1')) text=text.replace(/\\bbooth\\s*#\\s*(\\d+)\\b/gi,'booth $1');\n  return lockNumericClaims(text)\n    .replace(/\\bfree leads\\b/gi, 'complimentary leads')\n    .replace(/\\bbest way\\b/gi, 'simple way')\n    .replace(/\\bleave this for another time\\b/gi, 'reach out another time');\n}\nconst repaired = $input.first().json.output;\nconst check = $('EmailGuard Check 1').item.json;\nif (!repaired || typeof repaired.subject !== 'string' || typeof repaired.body !== 'string' || !repaired.body.trim()) throw new Error('Repair did not return a complete subject and body');\n// Recheck the exact AI-reviewed copy. Never delete words or substitute fragments.\nconst row={...check.context,subject:preciseRepair(repaired.subject),body:preciseRepair(repaired.body),repairAttempt:1};\nrow.body=lockApprovedNumbers(row.body,row.approvedBody);row.subject=lockApprovedNumbers(row.subject,row.approvedSubject);\nreturn [{json:{...row,...spinQuality(row)}}];",
+      "name": "Prepare Recheck 1",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "b2bd8f4a-0246-4a0c-b491-0bc07d3fbbde",
+      "code": null,
+      "name": "EmailGuard Check 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "disabled": null
+    },
+    {
+      "id": "f49a26d4-d795-4190-ab4d-49cb042c690e",
+      "code": null,
+      "name": "Passed Check 2?",
+      "type": "n8n-nodes-base.if",
+      "disabled": null
+    },
+    {
+      "id": "cc4055f3-1bbb-40d0-a21f-ff19fc91d1d7",
+      "code": "function spinQuality(row){try{return checkedSpinQuality(row);}catch(error){return {spintaxValid:false,spintaxIssue:error.message,spintaxGroups:0,bodySpintaxGroups:0,spintaxCombinations:0};}}\n\nfunction spinStats(value) {\n  const text=String(value||''); let groups=0, substantive=0, combinations=1;\n  const masked=text.replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n  const rest=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside,offset)=>{\n    if(!inside.includes('|'))return whole;\n    const options=inside.split('|').map(x=>x.trim());\n    if(options.length>4||options.some(x=>!x)||new Set(options.map(x=>x.toLowerCase())).size!==options.length)throw new Error('Spintax has empty or duplicate alternatives');\n    const tagSignatures=options.map(option=>[...option.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|'));\n    if(new Set(tagSignatures).size!==1)throw new Error('Merge tags inside spintax must appear unchanged in every alternative');\n    groups++; combinations=Math.min(Number.MAX_SAFE_INTEGER,combinations*options.length);\n    if(!options.every(x=>/^(hi|hey|hello|dear|thanks|thank you|best|regards|cheers)[!, .]*$/i.test(x)))substantive++;\n    return '';\n  });\n  if(/[{}]/.test(rest))throw new Error('Malformed or nested spintax');\n  return {groups,substantive,combinations};\n}\nfunction checkedSpinQuality(row){\n  if(/\\{[^{}]*\\d[^{}]*\\|[^{}]*\\}|\\{[^{}]*\\|[^{}]*\\d[^{}]*\\}/.test(String(row.body)+' '+String(row.subject)))throw new Error('Keep approved numbers and time commitments fixed outside spintax groups');\n  const b=spinStats(row.body),s=spinStats(row.subject);\n  const words=String(row.approvedBody||row.body||'').split(/\\s+/).filter(Boolean).length;\n  const targetGroups=words>=150?6:words>=100?5:words>=50?4:3;\n  const targetCombinations=words>=50?32:18;\n  const tagPath=t=>{\n    const masked=String(t||'').replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n    const firstPath=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside)=>inside.includes('|')?inside.split('|')[0]:whole);\n    return [...firstPath.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|');\n  };\n  if(tagPath(row.body)!==tagPath(row.approvedBody)||tagPath(row.subject)!==tagPath(row.approvedSubject))throw new Error('Merge tags differ from approved copy');\n  const totalCombinations=Math.min(Number.MAX_SAFE_INTEGER,b.combinations*s.combinations);\n  const densityMet=b.substantive>=targetGroups&&totalCombinations>=targetCombinations;\n  return {spintaxGroups:b.groups+s.groups,bodySpintaxGroups:b.substantive,spintaxCombinations:totalCombinations,spintaxValid:true,spintaxIssue:'',spintaxDensityTargetGroups:targetGroups,spintaxDensityTargetCombinations:targetCombinations,spintaxDensityMet:densityMet};\n}\n\nconst result=$input.first().json;\nconst quality=spinQuality(result.context||{});\nif(result.ok!==true||result.isSpam!==false||!quality.spintaxValid)throw new Error('Final QA requires an explicit spam pass and structurally valid spintax');\nreturn [{json:{...result.context,...quality,spamScore:result.spamScore,spamWords:result.spamWords||[],qaStatus:'passed',passedOnCheck:2}}];",
+      "name": "Finalize Check 2",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "c8a6c858-3ea8-46f5-af45-7d802d204f87",
+      "code": null,
+      "name": "Repair Spam Attempt 2",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "disabled": null
+    },
+    {
+      "id": "262cc9c2-9dd2-43b9-acfe-b10a0647b1a6",
+      "code": null,
+      "name": "Validate Repair 2",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "disabled": null
+    },
+    {
+      "id": "ca855d76-6343-46a2-8817-960b339e5824",
+      "code": "\nfunction lockApprovedNumbers(text, approved){\n return String(text).replace(/\\{([^{}]*\\|[^{}]*)\\}/g,(group,inner)=>{\n   const options=inner.split('|').map(x=>x.trim());\n   if(!options.some(x=>/\\d/.test(x)))return group;\n   const original=options.find(x=>String(approved).includes(x));\n   return original||group;\n });\n}\nfunction spinQuality(row){try{return checkedSpinQuality(row);}catch(error){return {spintaxValid:false,spintaxIssue:error.message,spintaxGroups:0,bodySpintaxGroups:0,spintaxCombinations:0};}}\n\nfunction spinStats(value) {\n  const text=String(value||''); let groups=0, substantive=0, combinations=1;\n  const masked=text.replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n  const rest=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside,offset)=>{\n    if(!inside.includes('|'))return whole;\n    const options=inside.split('|').map(x=>x.trim());\n    if(options.length>4||options.some(x=>!x)||new Set(options.map(x=>x.toLowerCase())).size!==options.length)throw new Error('Spintax has empty or duplicate alternatives');\n    const tagSignatures=options.map(option=>[...option.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|'));\n    if(new Set(tagSignatures).size!==1)throw new Error('Merge tags inside spintax must appear unchanged in every alternative');\n    groups++; combinations=Math.min(Number.MAX_SAFE_INTEGER,combinations*options.length);\n    if(!options.every(x=>/^(hi|hey|hello|dear|thanks|thank you|best|regards|cheers)[!, .]*$/i.test(x)))substantive++;\n    return '';\n  });\n  if(/[{}]/.test(rest))throw new Error('Malformed or nested spintax');\n  return {groups,substantive,combinations};\n}\nfunction checkedSpinQuality(row){\n  if(/\\{[^{}]*\\d[^{}]*\\|[^{}]*\\}|\\{[^{}]*\\|[^{}]*\\d[^{}]*\\}/.test(String(row.body)+' '+String(row.subject)))throw new Error('Keep approved numbers and time commitments fixed outside spintax groups');\n  const b=spinStats(row.body),s=spinStats(row.subject);\n  const words=String(row.approvedBody||row.body||'').split(/\\s+/).filter(Boolean).length;\n  const targetGroups=words>=150?6:words>=100?5:words>=50?4:3;\n  const targetCombinations=words>=50?32:18;\n  const tagPath=t=>{\n    const masked=String(t||'').replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n    const firstPath=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside)=>inside.includes('|')?inside.split('|')[0]:whole);\n    return [...firstPath.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|');\n  };\n  if(tagPath(row.body)!==tagPath(row.approvedBody)||tagPath(row.subject)!==tagPath(row.approvedSubject))throw new Error('Merge tags differ from approved copy');\n  const totalCombinations=Math.min(Number.MAX_SAFE_INTEGER,b.combinations*s.combinations);\n  const densityMet=b.substantive>=targetGroups&&totalCombinations>=targetCombinations;\n  return {spintaxGroups:b.groups+s.groups,bodySpintaxGroups:b.substantive,spintaxCombinations:totalCombinations,spintaxValid:true,spintaxIssue:'',spintaxDensityTargetGroups:targetGroups,spintaxDensityTargetCombinations:targetCombinations,spintaxDensityMet:densityMet};\n}\n\nfunction lockNumericClaims(value) {\n  const source = JSON.stringify($('Normalize Campaign Input').first().json.sourceEmails);\n  const numbers = new Set(source.match(/\\b\\d+(?:\\.\\d+)?%?/g) || []);\n  return String(value).replace(/\\{([^{}]*\\|[^{}]*)\\}/g, (group, content) => {\n    const options = content.split('|').map(x => x.trim());\n    const numeric = options.filter(x => numbers.has(x));\n    return numeric.length === 1 ? numeric[0] : group;\n  });\n}\n\nfunction preciseRepair(value) {\n  const flags=(check.spamWords||[]).map(x=>String(x).toLowerCase().trim());\n  let text=String(value).replace(/(\\d)[\\u0000-\\u001f](?=\\d)/g,'$1-').replace(/[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]/g,' ');\n  if(flags.includes('beverage') && /Americas Food\\s*&\\s*Beverage/i.test(JSON.stringify($('Normalize Campaign Input').first().json.sourceEmails))) text=text.replace(/\\bAmericas Food\\s*&\\s*Beverage(?:\\s+Show)?/gi,'AFB Show');\n  if(flags.includes('#1')) text=text.replace(/\\bbooth\\s*#\\s*(\\d+)\\b/gi,'booth $1');\n  return lockNumericClaims(text)\n    .replace(/\\bfree leads\\b/gi, 'complimentary leads')\n    .replace(/\\bbest way\\b/gi, 'simple way')\n    .replace(/\\bleave this for another time\\b/gi, 'reach out another time');\n}\nconst repaired = $input.first().json.output;\nconst check = $('EmailGuard Check 2').item.json;\nif (!repaired || typeof repaired.subject !== 'string' || typeof repaired.body !== 'string' || !repaired.body.trim()) throw new Error('Repair did not return a complete subject and body');\n// Recheck the exact AI-reviewed copy. Never delete words or substitute fragments.\nconst row={...check.context,subject:preciseRepair(repaired.subject),body:preciseRepair(repaired.body),repairAttempt:2};\nrow.body=lockApprovedNumbers(row.body,row.approvedBody);row.subject=lockApprovedNumbers(row.subject,row.approvedSubject);\nreturn [{json:{...row,...spinQuality(row)}}];",
+      "name": "Prepare Recheck 2",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "8205422d-6e60-497a-92fb-2c97023154a5",
+      "code": null,
+      "name": "EmailGuard Check 3",
+      "type": "n8n-nodes-base.httpRequest",
+      "disabled": null
+    },
+    {
+      "id": "7ae7f957-b4a5-4a06-83ee-406e9f95c106",
+      "code": null,
+      "name": "Passed Check 3?",
+      "type": "n8n-nodes-base.if",
+      "disabled": null
+    },
+    {
+      "id": "ec67dfea-65de-457a-a5e5-2e2aea57c627",
+      "code": "function spinQuality(row){try{return checkedSpinQuality(row);}catch(error){return {spintaxValid:false,spintaxIssue:error.message,spintaxGroups:0,bodySpintaxGroups:0,spintaxCombinations:0};}}\n\nfunction spinStats(value) {\n  const text=String(value||''); let groups=0, substantive=0, combinations=1;\n  const masked=text.replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n  const rest=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside,offset)=>{\n    if(!inside.includes('|'))return whole;\n    const options=inside.split('|').map(x=>x.trim());\n    if(options.length>4||options.some(x=>!x)||new Set(options.map(x=>x.toLowerCase())).size!==options.length)throw new Error('Spintax has empty or duplicate alternatives');\n    const tagSignatures=options.map(option=>[...option.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|'));\n    if(new Set(tagSignatures).size!==1)throw new Error('Merge tags inside spintax must appear unchanged in every alternative');\n    groups++; combinations=Math.min(Number.MAX_SAFE_INTEGER,combinations*options.length);\n    if(!options.every(x=>/^(hi|hey|hello|dear|thanks|thank you|best|regards|cheers)[!, .]*$/i.test(x)))substantive++;\n    return '';\n  });\n  if(/[{}]/.test(rest))throw new Error('Malformed or nested spintax');\n  return {groups,substantive,combinations};\n}\nfunction checkedSpinQuality(row){\n  if(/\\{[^{}]*\\d[^{}]*\\|[^{}]*\\}|\\{[^{}]*\\|[^{}]*\\d[^{}]*\\}/.test(String(row.body)+' '+String(row.subject)))throw new Error('Keep approved numbers and time commitments fixed outside spintax groups');\n  const b=spinStats(row.body),s=spinStats(row.subject);\n  const words=String(row.approvedBody||row.body||'').split(/\\s+/).filter(Boolean).length;\n  const targetGroups=words>=150?6:words>=100?5:words>=50?4:3;\n  const targetCombinations=words>=50?32:18;\n  const tagPath=t=>{\n    const masked=String(t||'').replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n    const firstPath=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside)=>inside.includes('|')?inside.split('|')[0]:whole);\n    return [...firstPath.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|');\n  };\n  if(tagPath(row.body)!==tagPath(row.approvedBody)||tagPath(row.subject)!==tagPath(row.approvedSubject))throw new Error('Merge tags differ from approved copy');\n  const totalCombinations=Math.min(Number.MAX_SAFE_INTEGER,b.combinations*s.combinations);\n  const densityMet=b.substantive>=targetGroups&&totalCombinations>=targetCombinations;\n  return {spintaxGroups:b.groups+s.groups,bodySpintaxGroups:b.substantive,spintaxCombinations:totalCombinations,spintaxValid:true,spintaxIssue:'',spintaxDensityTargetGroups:targetGroups,spintaxDensityTargetCombinations:targetCombinations,spintaxDensityMet:densityMet};\n}\n\nconst result=$input.first().json;\nconst quality=spinQuality(result.context||{});\nif(result.ok!==true||result.isSpam!==false||!quality.spintaxValid)throw new Error('Final QA requires an explicit spam pass and structurally valid spintax');\nreturn [{json:{...result.context,...quality,spamScore:result.spamScore,spamWords:result.spamWords||[],qaStatus:'passed',passedOnCheck:3}}];",
+      "name": "Finalize Check 3",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "5051624b-26a6-443d-aa85-b87ba898f24c",
+      "code": "const r=$input.first().json; const c=r.context || {}; return [{json:{...c,spamScore:r.spamScore,spamWords:r.spamWords||[],qaStatus:'needs_review',passedOnCheck:null,reviewReason:'Spam or spintax QA still needs review after 5 repair attempts; latest draft retained for review.'}}];",
+      "name": "Stop for Manual Review",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "1521d9b5-222b-41be-ae03-c236e33dfdad",
+      "code": "const statusItems = (() => {\nconst results = $input.all().map(item => item.json);\nif (!results.length) throw new Error('No validated variants reached the final update.');\n\nconst stripGeneratedLabel = (value) => String(value ?? '')\n  .replace(/^\\s*(?:(?:variant|email)\\s*#?\\s*(?:\\d+|[A-Z])|step\\s*#?\\s*\\d+(?:\\s*variant\\s*#?\\s*[A-Z])?)\\s*(?:[:\\-\u2013\u2014])?\\s*(?:\\r?\\n)+/i, '')\n  .trimStart();\n\nconst recordId = results[0].recordId;\nconst expected = $('Prepare Variant Checks').all().map(x=>x.json);\nconst seen=new Set();\nfor(const r of results){const key=r.step+':'+r.variant;if(r.recordId!==recordId||seen.has(key))throw new Error('QA result identity or duplicate mismatch');seen.add(key);}\nif(results.length!==expected.length||expected.some(r=>!seen.has(r.step+':'+r.variant)))throw new Error('QA results are incomplete; no final copy saved');\nconst held=results.filter(r=>r.qaStatus!=='passed');\nif(held.length){return [{json:{id:recordId,create_spintax:false,'Processing Status':'Needs review','Workflow Stage':'Internal Review','Campaign Status':'Emails Generated','Workflow Message':'Spintax QA needs review for '+held.length+' variant(s). All variants were checked; final sequence has not been marked ready.','Workflow Error':held.map(r=>'Step '+r.step+' Variant '+r.variant+'; score '+r.spamScore+'; QA '+(r.spintaxIssue||r.qaStatus)+'; words '+JSON.stringify(r.spamWords)+'\\nSubject: '+r.subject+'\\n'+r.body).join('\\n\\n'),'Improvement Sugestion':JSON.stringify({status:'needs_review',executionId:$execution.id,variants:results})}}];}\nconst fields = {\n  id: recordId,\n  'Campaign Status': 'Spintax Generated',\n  create_spintax: false,\n  'Processing Status':'Completed',\n  'Workflow Stage':'Build Ready',\n  'Workflow Error':'',\n  'Workflow Message':'Spintax and spam QA passed for '+results.length+' variants. Execution '+$execution.id+'. Scores: '+results.map(r=>'Step '+r.step+' '+r.variant+'='+r.spamScore+' ('+r.spintaxGroups+' groups, '+r.spintaxCombinations+' combinations'+(r.spintaxDensityMet===false?'; below variation target':'')+')').join(', '),\n  'Improvement Sugestion':'',\n};\n\nfor (const result of results) {\n  const step = Number(result.step);\n  const variant = String(result.variant || 'a').toLowerCase();\n  const version = Math.max(1, variant.charCodeAt(0) - 96);\n  const subject = String(result.subject ?? '');\n  const body = stripGeneratedLabel(result.body);\n\n  if (step === 1) {\n    const subjectField = version === 1\n      ? 'Campaign Email 1 Subject Version 1'\n      : `Campaign Subject 1 Version ${version}`;\n    fields[subjectField] = subject;\n    fields[`Campaign Body 1 Version ${version}`] = body;\n  } else if (step === 2) {\n    fields['Campaign Email 2 Subject'] = subject;\n    fields['Campaign Body 2 Version 1'] = body;\n  } else if (step === 3) {\n    fields['Campaign Email 3 Subject'] = subject;\n    fields['Campaign Body 3 Version 1'] = body;\n  } else if (step === 4) {\n    const subjectField = version === 1\n      ? 'Campaign Email 4 Subject'\n      : `Campaign Email 4 Subject Version ${version}`;\n    fields[subjectField] = subject;\n    fields[`Campaign Body 4 Version ${version}`] = body;\n  }\n}\n\nreturn [{json: fields}];\n})();\nconst statusCompletedAt = new Date().toISOString();\nlet statusStartedAt = statusCompletedAt;\ntry { statusStartedAt = $('Prepare QA Running').first().json['Started At'] || statusCompletedAt; } catch {}\nreturn statusItems.map(item => ({...item,json:{...item.json,'Started At':statusStartedAt,'Completed At':statusCompletedAt,'Run ID':String($execution.id)}}));",
+      "name": "Build Airtable Sequence Update",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "139c508e-335b-4250-9c6c-c3b372261921",
+      "code": null,
+      "name": "Save Validated Sequence",
+      "type": "n8n-nodes-base.airtable",
+      "disabled": null
+    },
+    {
+      "id": "435e5742-6dc2-4bd5-81c9-d5f8bf57b8f8",
+      "code": null,
+      "name": "Sequence Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "disabled": null
+    },
+    {
+      "id": "858691e6-40e5-431d-b573-da3ffe72c7ea",
+      "code": null,
+      "name": "Subject Body Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "disabled": null
+    },
+    {
+      "id": "656dfcfb-bf22-4d3f-8708-d9908d1716db",
+      "code": null,
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "disabled": null
+    },
+    {
+      "id": "ea35cce2-8df0-4b82-8800-75c4a8ddccd0",
+      "code": null,
+      "name": "OpenAI Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "disabled": null
+    },
+    {
+      "id": "b141b27f-0330-4f60-97ce-76eda5c2c99b",
+      "code": null,
+      "name": "Repair Spam Attempt 3",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "disabled": null
+    },
+    {
+      "id": "d0c9dcad-9908-4d20-a836-ecb197f55418",
+      "code": null,
+      "name": "Validate Repair 3",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "disabled": null
+    },
+    {
+      "id": "822104c8-9459-4e9b-adbf-39de1af972b6",
+      "code": "\nfunction lockApprovedNumbers(text, approved){\n return String(text).replace(/\\{([^{}]*\\|[^{}]*)\\}/g,(group,inner)=>{\n   const options=inner.split('|').map(x=>x.trim());\n   if(!options.some(x=>/\\d/.test(x)))return group;\n   const original=options.find(x=>String(approved).includes(x));\n   return original||group;\n });\n}\nfunction spinQuality(row){try{return checkedSpinQuality(row);}catch(error){return {spintaxValid:false,spintaxIssue:error.message,spintaxGroups:0,bodySpintaxGroups:0,spintaxCombinations:0};}}\n\nfunction spinStats(value) {\n  const text=String(value||''); let groups=0, substantive=0, combinations=1;\n  const masked=text.replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n  const rest=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside,offset)=>{\n    if(!inside.includes('|'))return whole;\n    const options=inside.split('|').map(x=>x.trim());\n    if(options.length>4||options.some(x=>!x)||new Set(options.map(x=>x.toLowerCase())).size!==options.length)throw new Error('Spintax has empty or duplicate alternatives');\n    const tagSignatures=options.map(option=>[...option.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|'));\n    if(new Set(tagSignatures).size!==1)throw new Error('Merge tags inside spintax must appear unchanged in every alternative');\n    groups++; combinations=Math.min(Number.MAX_SAFE_INTEGER,combinations*options.length);\n    if(!options.every(x=>/^(hi|hey|hello|dear|thanks|thank you|best|regards|cheers)[!, .]*$/i.test(x)))substantive++;\n    return '';\n  });\n  if(/[{}]/.test(rest))throw new Error('Malformed or nested spintax');\n  return {groups,substantive,combinations};\n}\nfunction checkedSpinQuality(row){\n  if(/\\{[^{}]*\\d[^{}]*\\|[^{}]*\\}|\\{[^{}]*\\|[^{}]*\\d[^{}]*\\}/.test(String(row.body)+' '+String(row.subject)))throw new Error('Keep approved numbers and time commitments fixed outside spintax groups');\n  const b=spinStats(row.body),s=spinStats(row.subject);\n  const words=String(row.approvedBody||row.body||'').split(/\\s+/).filter(Boolean).length;\n  const targetGroups=words>=150?6:words>=100?5:words>=50?4:3;\n  const targetCombinations=words>=50?32:18;\n  const tagPath=t=>{\n    const masked=String(t||'').replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n    const firstPath=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside)=>inside.includes('|')?inside.split('|')[0]:whole);\n    return [...firstPath.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|');\n  };\n  if(tagPath(row.body)!==tagPath(row.approvedBody)||tagPath(row.subject)!==tagPath(row.approvedSubject))throw new Error('Merge tags differ from approved copy');\n  const totalCombinations=Math.min(Number.MAX_SAFE_INTEGER,b.combinations*s.combinations);\n  const densityMet=b.substantive>=targetGroups&&totalCombinations>=targetCombinations;\n  return {spintaxGroups:b.groups+s.groups,bodySpintaxGroups:b.substantive,spintaxCombinations:totalCombinations,spintaxValid:true,spintaxIssue:'',spintaxDensityTargetGroups:targetGroups,spintaxDensityTargetCombinations:targetCombinations,spintaxDensityMet:densityMet};\n}\n\nfunction lockNumericClaims(value) {\n  const source = JSON.stringify($('Normalize Campaign Input').first().json.sourceEmails);\n  const numbers = new Set(source.match(/\\b\\d+(?:\\.\\d+)?%?/g) || []);\n  return String(value).replace(/\\{([^{}]*\\|[^{}]*)\\}/g, (group, content) => {\n    const options = content.split('|').map(x => x.trim());\n    const numeric = options.filter(x => numbers.has(x));\n    return numeric.length === 1 ? numeric[0] : group;\n  });\n}\n\nfunction preciseRepair(value) {\n  const flags=(check.spamWords||[]).map(x=>String(x).toLowerCase().trim());\n  let text=String(value).replace(/(\\d)[\\u0000-\\u001f](?=\\d)/g,'$1-').replace(/[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]/g,' ');\n  if(flags.includes('beverage') && /Americas Food\\s*&\\s*Beverage/i.test(JSON.stringify($('Normalize Campaign Input').first().json.sourceEmails))) text=text.replace(/\\bAmericas Food\\s*&\\s*Beverage(?:\\s+Show)?/gi,'AFB Show');\n  if(flags.includes('#1')) text=text.replace(/\\bbooth\\s*#\\s*(\\d+)\\b/gi,'booth $1');\n  return lockNumericClaims(text)\n    .replace(/\\bfree leads\\b/gi, 'complimentary leads')\n    .replace(/\\bbest way\\b/gi, 'simple way')\n    .replace(/\\bleave this for another time\\b/gi, 'reach out another time');\n}\nconst repaired = $input.first().json.output;\nconst check = $('EmailGuard Check 3').item.json;\nif (!repaired || typeof repaired.subject !== 'string' || typeof repaired.body !== 'string' || !repaired.body.trim()) throw new Error('Repair did not return a complete subject and body');\n// Recheck the exact AI-reviewed copy. Never delete words or substitute fragments.\nconst row={...check.context,subject:preciseRepair(repaired.subject),body:preciseRepair(repaired.body),repairAttempt:3};\nrow.body=lockApprovedNumbers(row.body,row.approvedBody);row.subject=lockApprovedNumbers(row.subject,row.approvedSubject);\nreturn [{json:{...row,...spinQuality(row)}}];",
+      "name": "Prepare Recheck 3",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "e3156c0e-877a-4623-9b61-ead9d4d190bb",
+      "code": null,
+      "name": "EmailGuard Check 4",
+      "type": "n8n-nodes-base.httpRequest",
+      "disabled": null
+    },
+    {
+      "id": "c3e35e80-d838-475d-ac27-cbaead272ce4",
+      "code": null,
+      "name": "Passed Check 4?",
+      "type": "n8n-nodes-base.if",
+      "disabled": null
+    },
+    {
+      "id": "4e77eb0e-da83-473a-88f0-03480bf013ee",
+      "code": "function spinQuality(row){try{return checkedSpinQuality(row);}catch(error){return {spintaxValid:false,spintaxIssue:error.message,spintaxGroups:0,bodySpintaxGroups:0,spintaxCombinations:0};}}\n\nfunction spinStats(value) {\n  const text=String(value||''); let groups=0, substantive=0, combinations=1;\n  const masked=text.replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n  const rest=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside,offset)=>{\n    if(!inside.includes('|'))return whole;\n    const options=inside.split('|').map(x=>x.trim());\n    if(options.length>4||options.some(x=>!x)||new Set(options.map(x=>x.toLowerCase())).size!==options.length)throw new Error('Spintax has empty or duplicate alternatives');\n    const tagSignatures=options.map(option=>[...option.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|'));\n    if(new Set(tagSignatures).size!==1)throw new Error('Merge tags inside spintax must appear unchanged in every alternative');\n    groups++; combinations=Math.min(Number.MAX_SAFE_INTEGER,combinations*options.length);\n    if(!options.every(x=>/^(hi|hey|hello|dear|thanks|thank you|best|regards|cheers)[!, .]*$/i.test(x)))substantive++;\n    return '';\n  });\n  if(/[{}]/.test(rest))throw new Error('Malformed or nested spintax');\n  return {groups,substantive,combinations};\n}\nfunction checkedSpinQuality(row){\n  if(/\\{[^{}]*\\d[^{}]*\\|[^{}]*\\}|\\{[^{}]*\\|[^{}]*\\d[^{}]*\\}/.test(String(row.body)+' '+String(row.subject)))throw new Error('Keep approved numbers and time commitments fixed outside spintax groups');\n  const b=spinStats(row.body),s=spinStats(row.subject);\n  const words=String(row.approvedBody||row.body||'').split(/\\s+/).filter(Boolean).length;\n  const targetGroups=words>=150?6:words>=100?5:words>=50?4:3;\n  const targetCombinations=words>=50?32:18;\n  const tagPath=t=>{\n    const masked=String(t||'').replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n    const firstPath=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside)=>inside.includes('|')?inside.split('|')[0]:whole);\n    return [...firstPath.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|');\n  };\n  if(tagPath(row.body)!==tagPath(row.approvedBody)||tagPath(row.subject)!==tagPath(row.approvedSubject))throw new Error('Merge tags differ from approved copy');\n  const totalCombinations=Math.min(Number.MAX_SAFE_INTEGER,b.combinations*s.combinations);\n  const densityMet=b.substantive>=targetGroups&&totalCombinations>=targetCombinations;\n  return {spintaxGroups:b.groups+s.groups,bodySpintaxGroups:b.substantive,spintaxCombinations:totalCombinations,spintaxValid:true,spintaxIssue:'',spintaxDensityTargetGroups:targetGroups,spintaxDensityTargetCombinations:targetCombinations,spintaxDensityMet:densityMet};\n}\n\nconst result=$input.first().json;\nconst quality=spinQuality(result.context||{});\nif(result.ok!==true||result.isSpam!==false||!quality.spintaxValid)throw new Error('Final QA requires an explicit spam pass and structurally valid spintax');\nreturn [{json:{...result.context,...quality,spamScore:result.spamScore,spamWords:result.spamWords||[],qaStatus:'passed',passedOnCheck:4}}];",
+      "name": "Finalize Check 4",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "dac2b4bc-74be-442c-b089-1226e936a626",
+      "code": null,
+      "name": "Repair Spam Attempt 4",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "disabled": null
+    },
+    {
+      "id": "32c13cb2-f05e-42d5-807b-43e93b296e89",
+      "code": null,
+      "name": "Validate Repair 4",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "disabled": null
+    },
+    {
+      "id": "66825c6c-98c5-468d-8519-4bb39076deda",
+      "code": "\nfunction lockApprovedNumbers(text, approved){\n return String(text).replace(/\\{([^{}]*\\|[^{}]*)\\}/g,(group,inner)=>{\n   const options=inner.split('|').map(x=>x.trim());\n   if(!options.some(x=>/\\d/.test(x)))return group;\n   const original=options.find(x=>String(approved).includes(x));\n   return original||group;\n });\n}\nfunction spinQuality(row){try{return checkedSpinQuality(row);}catch(error){return {spintaxValid:false,spintaxIssue:error.message,spintaxGroups:0,bodySpintaxGroups:0,spintaxCombinations:0};}}\n\nfunction spinStats(value) {\n  const text=String(value||''); let groups=0, substantive=0, combinations=1;\n  const masked=text.replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n  const rest=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside,offset)=>{\n    if(!inside.includes('|'))return whole;\n    const options=inside.split('|').map(x=>x.trim());\n    if(options.length>4||options.some(x=>!x)||new Set(options.map(x=>x.toLowerCase())).size!==options.length)throw new Error('Spintax has empty or duplicate alternatives');\n    const tagSignatures=options.map(option=>[...option.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|'));\n    if(new Set(tagSignatures).size!==1)throw new Error('Merge tags inside spintax must appear unchanged in every alternative');\n    groups++; combinations=Math.min(Number.MAX_SAFE_INTEGER,combinations*options.length);\n    if(!options.every(x=>/^(hi|hey|hello|dear|thanks|thank you|best|regards|cheers)[!, .]*$/i.test(x)))substantive++;\n    return '';\n  });\n  if(/[{}]/.test(rest))throw new Error('Malformed or nested spintax');\n  return {groups,substantive,combinations};\n}\nfunction checkedSpinQuality(row){\n  if(/\\{[^{}]*\\d[^{}]*\\|[^{}]*\\}|\\{[^{}]*\\|[^{}]*\\d[^{}]*\\}/.test(String(row.body)+' '+String(row.subject)))throw new Error('Keep approved numbers and time commitments fixed outside spintax groups');\n  const b=spinStats(row.body),s=spinStats(row.subject);\n  const words=String(row.approvedBody||row.body||'').split(/\\s+/).filter(Boolean).length;\n  const targetGroups=words>=150?6:words>=100?5:words>=50?4:3;\n  const targetCombinations=words>=50?32:18;\n  const tagPath=t=>{\n    const masked=String(t||'').replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n    const firstPath=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside)=>inside.includes('|')?inside.split('|')[0]:whole);\n    return [...firstPath.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|');\n  };\n  if(tagPath(row.body)!==tagPath(row.approvedBody)||tagPath(row.subject)!==tagPath(row.approvedSubject))throw new Error('Merge tags differ from approved copy');\n  const totalCombinations=Math.min(Number.MAX_SAFE_INTEGER,b.combinations*s.combinations);\n  const densityMet=b.substantive>=targetGroups&&totalCombinations>=targetCombinations;\n  return {spintaxGroups:b.groups+s.groups,bodySpintaxGroups:b.substantive,spintaxCombinations:totalCombinations,spintaxValid:true,spintaxIssue:'',spintaxDensityTargetGroups:targetGroups,spintaxDensityTargetCombinations:targetCombinations,spintaxDensityMet:densityMet};\n}\n\nfunction lockNumericClaims(value) {\n  const source = JSON.stringify($('Normalize Campaign Input').first().json.sourceEmails);\n  const numbers = new Set(source.match(/\\b\\d+(?:\\.\\d+)?%?/g) || []);\n  return String(value).replace(/\\{([^{}]*\\|[^{}]*)\\}/g, (group, content) => {\n    const options = content.split('|').map(x => x.trim());\n    const numeric = options.filter(x => numbers.has(x));\n    return numeric.length === 1 ? numeric[0] : group;\n  });\n}\n\nfunction preciseRepair(value) {\n  const flags=(check.spamWords||[]).map(x=>String(x).toLowerCase().trim());\n  let text=String(value).replace(/(\\d)[\\u0000-\\u001f](?=\\d)/g,'$1-').replace(/[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]/g,' ');\n  if(flags.includes('beverage') && /Americas Food\\s*&\\s*Beverage/i.test(JSON.stringify($('Normalize Campaign Input').first().json.sourceEmails))) text=text.replace(/\\bAmericas Food\\s*&\\s*Beverage(?:\\s+Show)?/gi,'AFB Show');\n  if(flags.includes('#1')) text=text.replace(/\\bbooth\\s*#\\s*(\\d+)\\b/gi,'booth $1');\n  return lockNumericClaims(text)\n    .replace(/\\bfree leads\\b/gi, 'complimentary leads')\n    .replace(/\\bbest way\\b/gi, 'simple way')\n    .replace(/\\bleave this for another time\\b/gi, 'reach out another time');\n}\nconst repaired = $input.first().json.output;\nconst check = $('EmailGuard Check 4').item.json;\nif (!repaired || typeof repaired.subject !== 'string' || typeof repaired.body !== 'string' || !repaired.body.trim()) throw new Error('Repair did not return a complete subject and body');\n// Recheck the exact AI-reviewed copy. Never delete words or substitute fragments.\nconst row={...check.context,subject:preciseRepair(repaired.subject),body:preciseRepair(repaired.body),repairAttempt:4};\nrow.body=lockApprovedNumbers(row.body,row.approvedBody);row.subject=lockApprovedNumbers(row.subject,row.approvedSubject);\nreturn [{json:{...row,...spinQuality(row)}}];",
+      "name": "Prepare Recheck 4",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "e63c9f8f-ed21-4e7f-8c66-de479440aea9",
+      "code": null,
+      "name": "EmailGuard Check 5",
+      "type": "n8n-nodes-base.httpRequest",
+      "disabled": null
+    },
+    {
+      "id": "e9cd2f70-5954-4c39-8765-c891356fdcb8",
+      "code": null,
+      "name": "Passed Check 5?",
+      "type": "n8n-nodes-base.if",
+      "disabled": null
+    },
+    {
+      "id": "02f206be-6b48-4c4b-b395-3e25f45fa815",
+      "code": "function spinQuality(row){try{return checkedSpinQuality(row);}catch(error){return {spintaxValid:false,spintaxIssue:error.message,spintaxGroups:0,bodySpintaxGroups:0,spintaxCombinations:0};}}\n\nfunction spinStats(value) {\n  const text=String(value||''); let groups=0, substantive=0, combinations=1;\n  const masked=text.replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n  const rest=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside,offset)=>{\n    if(!inside.includes('|'))return whole;\n    const options=inside.split('|').map(x=>x.trim());\n    if(options.length>4||options.some(x=>!x)||new Set(options.map(x=>x.toLowerCase())).size!==options.length)throw new Error('Spintax has empty or duplicate alternatives');\n    const tagSignatures=options.map(option=>[...option.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|'));\n    if(new Set(tagSignatures).size!==1)throw new Error('Merge tags inside spintax must appear unchanged in every alternative');\n    groups++; combinations=Math.min(Number.MAX_SAFE_INTEGER,combinations*options.length);\n    if(!options.every(x=>/^(hi|hey|hello|dear|thanks|thank you|best|regards|cheers)[!, .]*$/i.test(x)))substantive++;\n    return '';\n  });\n  if(/[{}]/.test(rest))throw new Error('Malformed or nested spintax');\n  return {groups,substantive,combinations};\n}\nfunction checkedSpinQuality(row){\n  if(/\\{[^{}]*\\d[^{}]*\\|[^{}]*\\}|\\{[^{}]*\\|[^{}]*\\d[^{}]*\\}/.test(String(row.body)+' '+String(row.subject)))throw new Error('Keep approved numbers and time commitments fixed outside spintax groups');\n  const b=spinStats(row.body),s=spinStats(row.subject);\n  const words=String(row.approvedBody||row.body||'').split(/\\s+/).filter(Boolean).length;\n  const targetGroups=words>=150?6:words>=100?5:words>=50?4:3;\n  const targetCombinations=words>=50?32:18;\n  const tagPath=t=>{\n    const masked=String(t||'').replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n    const firstPath=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside)=>inside.includes('|')?inside.split('|')[0]:whole);\n    return [...firstPath.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|');\n  };\n  if(tagPath(row.body)!==tagPath(row.approvedBody)||tagPath(row.subject)!==tagPath(row.approvedSubject))throw new Error('Merge tags differ from approved copy');\n  const totalCombinations=Math.min(Number.MAX_SAFE_INTEGER,b.combinations*s.combinations);\n  const densityMet=b.substantive>=targetGroups&&totalCombinations>=targetCombinations;\n  return {spintaxGroups:b.groups+s.groups,bodySpintaxGroups:b.substantive,spintaxCombinations:totalCombinations,spintaxValid:true,spintaxIssue:'',spintaxDensityTargetGroups:targetGroups,spintaxDensityTargetCombinations:targetCombinations,spintaxDensityMet:densityMet};\n}\n\nconst result=$input.first().json;\nconst quality=spinQuality(result.context||{});\nif(result.ok!==true||result.isSpam!==false||!quality.spintaxValid)throw new Error('Final QA requires an explicit spam pass and structurally valid spintax');\nreturn [{json:{...result.context,...quality,spamScore:result.spamScore,spamWords:result.spamWords||[],qaStatus:'passed',passedOnCheck:5}}];",
+      "name": "Finalize Check 5",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "83cdce53-598d-4ba9-9578-8e89d9685c86",
+      "code": null,
+      "name": "Repair Spam Attempt 5",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "disabled": null
+    },
+    {
+      "id": "5b6e099e-ec76-40db-a6d5-a4fff6598e85",
+      "code": null,
+      "name": "Validate Repair 5",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "disabled": null
+    },
+    {
+      "id": "bcd233b0-4ae4-4658-983f-890835fa1ce3",
+      "code": "\nfunction lockApprovedNumbers(text, approved){\n return String(text).replace(/\\{([^{}]*\\|[^{}]*)\\}/g,(group,inner)=>{\n   const options=inner.split('|').map(x=>x.trim());\n   if(!options.some(x=>/\\d/.test(x)))return group;\n   const original=options.find(x=>String(approved).includes(x));\n   return original||group;\n });\n}\nfunction spinQuality(row){try{return checkedSpinQuality(row);}catch(error){return {spintaxValid:false,spintaxIssue:error.message,spintaxGroups:0,bodySpintaxGroups:0,spintaxCombinations:0};}}\n\nfunction spinStats(value) {\n  const text=String(value||''); let groups=0, substantive=0, combinations=1;\n  const masked=text.replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n  const rest=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside,offset)=>{\n    if(!inside.includes('|'))return whole;\n    const options=inside.split('|').map(x=>x.trim());\n    if(options.length>4||options.some(x=>!x)||new Set(options.map(x=>x.toLowerCase())).size!==options.length)throw new Error('Spintax has empty or duplicate alternatives');\n    const tagSignatures=options.map(option=>[...option.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|'));\n    if(new Set(tagSignatures).size!==1)throw new Error('Merge tags inside spintax must appear unchanged in every alternative');\n    groups++; combinations=Math.min(Number.MAX_SAFE_INTEGER,combinations*options.length);\n    if(!options.every(x=>/^(hi|hey|hello|dear|thanks|thank you|best|regards|cheers)[!, .]*$/i.test(x)))substantive++;\n    return '';\n  });\n  if(/[{}]/.test(rest))throw new Error('Malformed or nested spintax');\n  return {groups,substantive,combinations};\n}\nfunction checkedSpinQuality(row){\n  if(/\\{[^{}]*\\d[^{}]*\\|[^{}]*\\}|\\{[^{}]*\\|[^{}]*\\d[^{}]*\\}/.test(String(row.body)+' '+String(row.subject)))throw new Error('Keep approved numbers and time commitments fixed outside spintax groups');\n  const b=spinStats(row.body),s=spinStats(row.subject);\n  const words=String(row.approvedBody||row.body||'').split(/\\s+/).filter(Boolean).length;\n  const targetGroups=words>=150?6:words>=100?5:words>=50?4:3;\n  const targetCombinations=words>=50?32:18;\n  const tagPath=t=>{\n    const masked=String(t||'').replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n    const firstPath=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside)=>inside.includes('|')?inside.split('|')[0]:whole);\n    return [...firstPath.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|');\n  };\n  if(tagPath(row.body)!==tagPath(row.approvedBody)||tagPath(row.subject)!==tagPath(row.approvedSubject))throw new Error('Merge tags differ from approved copy');\n  const totalCombinations=Math.min(Number.MAX_SAFE_INTEGER,b.combinations*s.combinations);\n  const densityMet=b.substantive>=targetGroups&&totalCombinations>=targetCombinations;\n  return {spintaxGroups:b.groups+s.groups,bodySpintaxGroups:b.substantive,spintaxCombinations:totalCombinations,spintaxValid:true,spintaxIssue:'',spintaxDensityTargetGroups:targetGroups,spintaxDensityTargetCombinations:targetCombinations,spintaxDensityMet:densityMet};\n}\n\nfunction lockNumericClaims(value) {\n  const source = JSON.stringify($('Normalize Campaign Input').first().json.sourceEmails);\n  const numbers = new Set(source.match(/\\b\\d+(?:\\.\\d+)?%?/g) || []);\n  return String(value).replace(/\\{([^{}]*\\|[^{}]*)\\}/g, (group, content) => {\n    const options = content.split('|').map(x => x.trim());\n    const numeric = options.filter(x => numbers.has(x));\n    return numeric.length === 1 ? numeric[0] : group;\n  });\n}\n\nfunction preciseRepair(value) {\n  const flags=(check.spamWords||[]).map(x=>String(x).toLowerCase().trim());\n  let text=String(value).replace(/(\\d)[\\u0000-\\u001f](?=\\d)/g,'$1-').replace(/[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]/g,' ');\n  if(flags.includes('beverage') && /Americas Food\\s*&\\s*Beverage/i.test(JSON.stringify($('Normalize Campaign Input').first().json.sourceEmails))) text=text.replace(/\\bAmericas Food\\s*&\\s*Beverage(?:\\s+Show)?/gi,'AFB Show');\n  if(flags.includes('#1')) text=text.replace(/\\bbooth\\s*#\\s*(\\d+)\\b/gi,'booth $1');\n  return lockNumericClaims(text)\n    .replace(/\\bfree leads\\b/gi, 'complimentary leads')\n    .replace(/\\bbest way\\b/gi, 'simple way')\n    .replace(/\\bleave this for another time\\b/gi, 'reach out another time');\n}\nconst repaired = $input.first().json.output;\nconst check = $('EmailGuard Check 5').item.json;\nif (!repaired || typeof repaired.subject !== 'string' || typeof repaired.body !== 'string' || !repaired.body.trim()) throw new Error('Repair did not return a complete subject and body');\n// Recheck the exact AI-reviewed copy. Never delete words or substitute fragments.\nconst row={...check.context,subject:preciseRepair(repaired.subject),body:preciseRepair(repaired.body),repairAttempt:5};\nrow.body=lockApprovedNumbers(row.body,row.approvedBody);row.subject=lockApprovedNumbers(row.subject,row.approvedSubject);\nreturn [{json:{...row,...spinQuality(row)}}];",
+      "name": "Prepare Recheck 5",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "104adea0-3fb3-42dc-ae66-15cead38b877",
+      "code": null,
+      "name": "EmailGuard Check 6",
+      "type": "n8n-nodes-base.httpRequest",
+      "disabled": null
+    },
+    {
+      "id": "5747c668-d963-4378-8369-b5699b1e0e52",
+      "code": null,
+      "name": "Passed Check 6?",
+      "type": "n8n-nodes-base.if",
+      "disabled": null
+    },
+    {
+      "id": "a07e4697-bc43-4228-b87b-ff3a597a32b7",
+      "code": "function spinQuality(row){try{return checkedSpinQuality(row);}catch(error){return {spintaxValid:false,spintaxIssue:error.message,spintaxGroups:0,bodySpintaxGroups:0,spintaxCombinations:0};}}\n\nfunction spinStats(value) {\n  const text=String(value||''); let groups=0, substantive=0, combinations=1;\n  const masked=text.replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n  const rest=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside,offset)=>{\n    if(!inside.includes('|'))return whole;\n    const options=inside.split('|').map(x=>x.trim());\n    if(options.length>4||options.some(x=>!x)||new Set(options.map(x=>x.toLowerCase())).size!==options.length)throw new Error('Spintax has empty or duplicate alternatives');\n    const tagSignatures=options.map(option=>[...option.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|'));\n    if(new Set(tagSignatures).size!==1)throw new Error('Merge tags inside spintax must appear unchanged in every alternative');\n    groups++; combinations=Math.min(Number.MAX_SAFE_INTEGER,combinations*options.length);\n    if(!options.every(x=>/^(hi|hey|hello|dear|thanks|thank you|best|regards|cheers)[!, .]*$/i.test(x)))substantive++;\n    return '';\n  });\n  if(/[{}]/.test(rest))throw new Error('Malformed or nested spintax');\n  return {groups,substantive,combinations};\n}\nfunction checkedSpinQuality(row){\n  if(/\\{[^{}]*\\d[^{}]*\\|[^{}]*\\}|\\{[^{}]*\\|[^{}]*\\d[^{}]*\\}/.test(String(row.body)+' '+String(row.subject)))throw new Error('Keep approved numbers and time commitments fixed outside spintax groups');\n  const b=spinStats(row.body),s=spinStats(row.subject);\n  const words=String(row.approvedBody||row.body||'').split(/\\s+/).filter(Boolean).length;\n  const targetGroups=words>=150?6:words>=100?5:words>=50?4:3;\n  const targetCombinations=words>=50?32:18;\n  const tagPath=t=>{\n    const masked=String(t||'').replace(/\\{([A-Za-z_][A-Za-z0-9_]*)\\}/g,(whole,name)=>'\\uE000'+name+'\\uE001');\n    const firstPath=masked.replace(/\\{([^{}]*)\\}/g,(whole,inside)=>inside.includes('|')?inside.split('|')[0]:whole);\n    return [...firstPath.matchAll(/\\uE000([A-Za-z_][A-Za-z0-9_]*)\\uE001/g)].map(x=>x[1]).sort().join('|');\n  };\n  if(tagPath(row.body)!==tagPath(row.approvedBody)||tagPath(row.subject)!==tagPath(row.approvedSubject))throw new Error('Merge tags differ from approved copy');\n  const totalCombinations=Math.min(Number.MAX_SAFE_INTEGER,b.combinations*s.combinations);\n  const densityMet=b.substantive>=targetGroups&&totalCombinations>=targetCombinations;\n  return {spintaxGroups:b.groups+s.groups,bodySpintaxGroups:b.substantive,spintaxCombinations:totalCombinations,spintaxValid:true,spintaxIssue:'',spintaxDensityTargetGroups:targetGroups,spintaxDensityTargetCombinations:targetCombinations,spintaxDensityMet:densityMet};\n}\n\nconst result=$input.first().json;\nconst quality=spinQuality(result.context||{});\nif(result.ok!==true||result.isSpam!==false||!quality.spintaxValid)throw new Error('Final QA requires an explicit spam pass and structurally valid spintax');\nreturn [{json:{...result.context,...quality,spamScore:result.spamScore,spamWords:result.spamWords||[],qaStatus:'passed',passedOnCheck:6}}];",
+      "name": "Finalize Check 6",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "d161d319-ebbc-4a5d-9bed-37bd555d1fb1",
+      "code": "const statusStartedAt = new Date().toISOString();\nconst statusItems = (() => {\nconst n=$('Normalize Campaign Input').first().json;return [{json:{id:n.recordId,'Processing Status':'Running','Workflow Stage':'Spintax in Progress','Workflow Message':'Spintax QA is checking and repairing wording. Execution '+$execution.id,'Workflow Error':''}}];\n})();\nreturn statusItems.map(item => ({...item,json:{...item.json,'Started At':statusStartedAt,'Completed At':null,'Run ID':String($execution.id)}}));",
+      "name": "Prepare QA Running",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "6d0f1105-959f-4b62-805d-353b371daf0d",
+      "code": null,
+      "name": "Save QA Running",
+      "type": "n8n-nodes-base.airtable",
+      "disabled": null
+    },
+    {
+      "id": "f2320420-84ea-48ea-8fe7-6641b4096053",
+      "code": "const statusItems = (() => {\nconst r=$input.first().json; const p=$('Campaign Center Spintax Webhook').first().json; const payload=p.body||p; const id=payload.recordId||payload['Record ID']||payload.id; if(!id)throw new Error('Cannot report QA failure: missing recordId');const detail=r.error?.message||r.error||r.message||'Unexpected QA failure';return [{json:{id,create_spintax:false,'Processing Status':'Failed','Workflow Stage':'Internal Review','Campaign Status':'Emails Generated','Workflow Message':'Spintax QA failed. Review Workflow Error, then retry.','Workflow Error':String(detail)+' | Execution '+$execution.id+' https://n8n.dulcy.io/workflow/KqkYFOs5AZ1RM3G-F1AWu/executions/'+$execution.id}}];\n})();\nconst statusCompletedAt = new Date().toISOString();\nlet statusStartedAt = statusCompletedAt;\ntry { statusStartedAt = $('Prepare QA Running').first().json['Started At'] || statusCompletedAt; } catch {}\nreturn statusItems.map(item => ({...item,json:{...item.json,'Started At':statusStartedAt,'Completed At':statusCompletedAt,'Run ID':String($execution.id)}}));",
+      "name": "Prepare QA Failure",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "34938daf-57a0-4c44-abf5-cd0ca63db5d0",
+      "code": null,
+      "name": "Save QA Failure",
+      "type": "n8n-nodes-base.airtable",
+      "disabled": null
+    },
+    {
+      "id": "21cc86ae-248d-4c11-9265-a0b16ceb1022",
+      "code": null,
+      "name": "OpenAI Chat Model2",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "disabled": null
+    },
+    {
+      "id": "cedef5ee-b504-42e0-9d8a-4636e74fdb2a",
+      "code": null,
+      "name": "OpenAI Chat Model3",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "disabled": null
+    }
+  ],
+  "active": true,
+  "connections": {
+    "Passed Check 1?": {
+      "main": [
+        [
+          {
+            "node": "Finalize Check 1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Repair Spam Attempt 1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Passed Check 2?": {
+      "main": [
+        [
+          {
+            "node": "Finalize Check 2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Repair Spam Attempt 2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Passed Check 3?": {
+      "main": [
+        [
+          {
+            "node": "Finalize Check 3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Repair Spam Attempt 3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Passed Check 4?": {
+      "main": [
+        [
+          {
+            "node": "Finalize Check 4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Repair Spam Attempt 4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Passed Check 5?": {
+      "main": [
+        [
+          {
+            "node": "Finalize Check 5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Repair Spam Attempt 5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Passed Check 6?": {
+      "main": [
+        [
+          {
+            "node": "Finalize Check 6",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop for Manual Review",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save QA Running": {
+      "main": [
+        [
+          {
+            "node": "Generate Spintax Variants",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Check 1": {
+      "main": [
+        [
+          {
+            "node": "Loop Through Variants",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Check 2": {
+      "main": [
+        [
+          {
+            "node": "Loop Through Variants",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Check 3": {
+      "main": [
+        [
+          {
+            "node": "Loop Through Variants",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Check 4": {
+      "main": [
+        [
+          {
+            "node": "Loop Through Variants",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Check 5": {
+      "main": [
+        [
+          {
+            "node": "Loop Through Variants",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Check 6": {
+      "main": [
+        [
+          {
+            "node": "Loop Through Variants",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Sequence Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Recheck 1": {
+      "main": [
+        [
+          {
+            "node": "EmailGuard Check 2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Recheck 2": {
+      "main": [
+        [
+          {
+            "node": "EmailGuard Check 3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Recheck 3": {
+      "main": [
+        [
+          {
+            "node": "EmailGuard Check 4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Recheck 4": {
+      "main": [
+        [
+          {
+            "node": "EmailGuard Check 5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Recheck 5": {
+      "main": [
+        [
+          {
+            "node": "EmailGuard Check 6",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Repair 1": {
+      "main": [
+        [
+          {
+            "node": "Prepare Recheck 1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Repair 2": {
+      "main": [
+        [
+          {
+            "node": "Prepare Recheck 2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Repair 3": {
+      "main": [
+        [
+          {
+            "node": "Prepare Recheck 3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Repair 4": {
+      "main": [
+        [
+          {
+            "node": "Prepare Recheck 4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Repair 5": {
+      "main": [
+        [
+          {
+            "node": "Prepare Recheck 5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EmailGuard Check 1": {
+      "main": [
+        [
+          {
+            "node": "Passed Check 1?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EmailGuard Check 2": {
+      "main": [
+        [
+          {
+            "node": "Passed Check 2?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EmailGuard Check 3": {
+      "main": [
+        [
+          {
+            "node": "Passed Check 3?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EmailGuard Check 4": {
+      "main": [
+        [
+          {
+            "node": "Passed Check 4?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EmailGuard Check 5": {
+      "main": [
+        [
+          {
+            "node": "Passed Check 5?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EmailGuard Check 6": {
+      "main": [
+        [
+          {
+            "node": "Passed Check 6?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Subject Body Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Repair Spam Attempt 1",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Validate Repair 1",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Repair Spam Attempt 2",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Validate Repair 2",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Repair Spam Attempt 3",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Validate Repair 3",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Repair Spam Attempt 4",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Validate Repair 4",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Repair Spam Attempt 5",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Validate Repair 5",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Spintax Variants",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Validate Generated Sequence",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare QA Failure": {
+      "main": [
+        [
+          {
+            "node": "Save QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare QA Running": {
+      "main": [
+        [
+          {
+            "node": "Save QA Running",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Subject Body Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Repair Spam Attempt 1",
+            "type": "ai_outputParser",
+            "index": 0
+          },
+          {
+            "node": "Validate Repair 1",
+            "type": "ai_outputParser",
+            "index": 0
+          },
+          {
+            "node": "Repair Spam Attempt 2",
+            "type": "ai_outputParser",
+            "index": 0
+          },
+          {
+            "node": "Validate Repair 2",
+            "type": "ai_outputParser",
+            "index": 0
+          },
+          {
+            "node": "Repair Spam Attempt 3",
+            "type": "ai_outputParser",
+            "index": 0
+          },
+          {
+            "node": "Validate Repair 3",
+            "type": "ai_outputParser",
+            "index": 0
+          },
+          {
+            "node": "Repair Spam Attempt 4",
+            "type": "ai_outputParser",
+            "index": 0
+          },
+          {
+            "node": "Validate Repair 4",
+            "type": "ai_outputParser",
+            "index": 0
+          },
+          {
+            "node": "Repair Spam Attempt 5",
+            "type": "ai_outputParser",
+            "index": 0
+          },
+          {
+            "node": "Validate Repair 5",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Through Variants": {
+      "main": [
+        [
+          {
+            "node": "Build Airtable Sequence Update",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "EmailGuard Check 1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Repair Spam Attempt 1": {
+      "main": [
+        [
+          {
+            "node": "Validate Repair 1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Repair Spam Attempt 2": {
+      "main": [
+        [
+          {
+            "node": "Validate Repair 2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Repair Spam Attempt 3": {
+      "main": [
+        [
+          {
+            "node": "Validate Repair 3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Repair Spam Attempt 4": {
+      "main": [
+        [
+          {
+            "node": "Validate Repair 4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Repair Spam Attempt 5": {
+      "main": [
+        [
+          {
+            "node": "Validate Repair 5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Variant Checks": {
+      "main": [
+        [
+          {
+            "node": "Loop Through Variants",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sequence Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Generate Spintax Variants",
+            "type": "ai_outputParser",
+            "index": 0
+          },
+          {
+            "node": "Validate Generated Sequence",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stop for Manual Review": {
+      "main": [
+        [
+          {
+            "node": "Loop Through Variants",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Validated Sequence": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Campaign Input": {
+      "main": [
+        [
+          {
+            "node": "Prepare QA Running",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Spintax Variants": {
+      "main": [
+        [
+          {
+            "node": "Validate Generated Sequence",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Generated Sequence": {
+      "main": [
+        [
+          {
+            "node": "Prepare Variant Checks",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Airtable Sequence Update": {
+      "main": [
+        [
+          {
+            "node": "Save Validated Sequence",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Campaign Center Spintax Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Campaign Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "savedVersion": "26690428-49eb-445d-88cb-adb7079f5770",
+  "activeVersion": "26690428-49eb-445d-88cb-adb7079f5770",
+  "savedNodesHash": "1c1e562b600d937641c3410e8a360915376f54a293a00b812a90947bd240cc96",
+  "activeNodesHash": "1c1e562b600d937641c3410e8a360915376f54a293a00b812a90947bd240cc96"
+}

@@ -1,0 +1,1296 @@
+{
+  "name": "[Campaign Center] Top Up Existing EmailBison Campaign",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "campaign-top-up-leads",
+        "options": {}
+      },
+      "id": "fe6ec0ef-2ae3-4eec-a940-ed412975c064",
+      "name": "Campaign Top-up Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        944,
+        1152
+      ],
+      "webhookId": "30259656-c2eb-4221-bd89-3416fc941867"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Bounded recovery of managed execution 1172710, not a general retry mechanism.\n// Import 724's Direct result was verified before recovery. Preserve import 725.\nasync function resolveKnownGenericRecovery(body, sheetId, read, now = Date.now()) {\n  if (body.topUpLeadListId !== 'rec0dWrkBVCdPQEND') return null;\n  const fail = message => { throw new Error('Top-up recovery blocked: ' + message); };\n  const auditTime = Date.parse('2026-11-03T14:29:10Z');\n  if (!Number.isFinite(now) || now < auditTime || now - auditTime > 2*60*60*1000) fail('membership audit is stale; refresh the complete identity reconciliation.');\n  const baseUrl = String(body.baseUrl || '').replace(/\\/$/, '');\n  if (body.parentRecordId !== 'recaM6Leomumw4auE' || baseUrl !== 'https://send.dulcy.io' || sheetId !== '1BsEBERo9qe330B-ofMIoZszCRl5ci_UxkaqLz_ALMU4') fail('source or provider identity changed.');\n  const expectedTargets = [\n    'recIbAm41zVwTYyRI|601|generic|3360',\n    'recaM6Leomumw4auE|602|direct|1348',\n  ].sort();\n  const actualTargets = body.targets.map(t => [t.recordId, Number(t.campaignId), t.outputType, Number(t.expectedRows)].join('|')).sort();\n  if (JSON.stringify(actualTargets) !== JSON.stringify(expectedTargets)) fail('destination family or source counts changed.');\n  const unwrap = response => (response?.body ?? response);\n  const direct = unwrap(await read('/api/lead-lists/724'))?.data;\n  const generic = unwrap(await read('/api/lead-lists/725'))?.data;\n  const exactCount = (value, expected) => value !== null && value !== '' && Number.isSafeInteger(Number(value)) && Number(value) === expected;\n  if (!direct || Number(direct.id) !== 724 || direct.status !== 'Processed' || !exactCount(direct.leads_processed,1348) || !exactCount(direct.leads_succeeded,1348) || !exactCount(direct.leads_failed,0)) fail('Direct import 724 no longer matches its completed receipt; do not reupload Direct.');\n  if (!generic || Number(generic.id) !== 725 || generic.status !== 'Processed' || !exactCount(generic.leads_processed,3160) || !exactCount(generic.leads_succeeded,0) || !exactCount(generic.leads_failed,3160)) fail('Generic import 725 changed; reconcile that import before another upload.');\n  const prefix = String(body.topUpLeadListName) + ' - ';\n  if (direct.name !== prefix+'direct - Top Up 2026-11-03' || generic.name !== prefix+'generic - Top Up 2026-11-03') fail('provider import names do not match this exact source list.');\n  if (!Object.prototype.hasOwnProperty.call(generic.error_messages ?? {},'First name is a required field')) fail('Generic import failure changed.');\n  // Any other Generic import for this source, even Unprocessed/failed, is an\n  // uncertain or completed prior recovery. Preserve it; never blindly reupload.\n  let lastPage = 1, expectedTotal = null;\n  const seen = new Set();\n  for (let page=1;page<=lastPage;page++) {\n    const response = unwrap(await read('/api/lead-lists',{page}));\n    if (!Array.isArray(response?.data)) fail('incomplete provider import history.');\n    const meta = response.meta ?? {};\n    if (!Number.isSafeInteger(Number(meta.last_page)) || Number(meta.last_page)<1 || Number(meta.last_page)>100 || Number(meta.current_page)!==page || !Number.isSafeInteger(Number(meta.total))) fail('invalid provider import pagination.');\n    if (expectedTotal === null) { expectedTotal=Number(meta.total); lastPage=Number(meta.last_page); }\n    if (Number(meta.total)!==expectedTotal || Number(meta.last_page)!==lastPage) fail('provider import history changed during recovery preflight.');\n    for(const list of response.data){\n      if(!Number.isSafeInteger(Number(list.id)) || seen.has(Number(list.id))) fail('duplicate or missing import identity.');\n      seen.add(Number(list.id));\n      if(Number(list.id)!==725 && String(list.name??'').startsWith(prefix+'generic - Top Up ')) fail('existing Generic import '+list.id+' must be reconciled; no new upload was started.');\n    }\n  }\n  if(seen.size!==expectedTotal || !seen.has(724) || !seen.has(725)) fail('incomplete provider import history coverage.');\n  const campaign = unwrap(await read('/api/campaigns/601/leads',{page:1}));\n  if(!exactCount(campaign?.meta?.total,7590)) fail('Generic campaign membership count changed from the complete 7,590-lead audit.');\n  return {\n    recoveryId:'execution-1172710-generic-first-name',\n    failedImportId:725,\n    providerCounterShortfall:200,\n    membershipAudit:{campaignId:601,total:7590,sourceRows:3360,sourceOverlap:0,auditedAt:'2026-11-03T14:29:10Z'},\n    preservedResults:[{\n      outputType:'direct',campaignName:'direct destination',campaignId:602,leadListId:724,\n      acceptedRows:1348,added:1345,skipped:3,failed:0,\n      countBasis:'preserved-verified-result-from-managed-execution-1172710',\n      providerImport:{id:724,status:'Processed',processed:1348,succeeded:1348,failed:0},\n      attachmentReceipt:{success:true,campaignId:602,leadListId:724},beforeTotal:2075,afterTotal:3420,\n      preservedFromExecution:'1172710',\n    }],\n  };\n}\n\n\nconst body = $json.body ?? $json;\nif(!body.uploadPreparation||typeof body.uploadPreparation.uploadId!=='string'||!/^([a-f0-9]{64})$/.test(body.uploadPreparation.revisionHash??''))throw Error('Prepare and select the exact completed top-up in Campaign Center before uploading.');\nconst required = ['parentRecordId','topUpLeadListId','topUpLeadListName','projectSheetLink','apiKey','targets'];\nfor (const key of required) if (!body[key] || (key === 'targets' && !Array.isArray(body[key]))) throw new Error('Missing required top-up value: ' + key);\nconst match = String(body.projectSheetLink).match(/\\/spreadsheets\\/d\\/([a-zA-Z0-9-_]+)/);\nif (!match) throw new Error('The selected lead list does not contain a valid Google Sheet URL.');\nif (!/^https:\\/\\/[^/\\s]+\\/?$/.test(String(body.baseUrl || ''))) throw new Error('A valid EmailBison HTTPS server is required.');\n// All destination outputs form the duplicate-exclusion union, even if one has zero new rows.\nconst exclusionCampaigns=body.targets.map(t=>({campaignId:Number(t?.campaignId),recordId:String(t?.recordId??''),baseUrl:String(body.baseUrl||'').replace(/\\/$/,'')}));\nif(exclusionCampaigns.length<1||exclusionCampaigns.length>2||exclusionCampaigns.some(t=>!Number.isSafeInteger(t.campaignId)||t.campaignId<1||!/^rec[A-Za-z0-9]+$/.test(t.recordId)||t.baseUrl!=='https://send.dulcy.io')||new Set(exclusionCampaigns.map(t=>t.campaignId)).size!==exclusionCampaigns.length)throw Error('Upload blocked: invalid or duplicate destination-family targets.');\nfor(const [key,max]of [['familyRecordIds',3],['readinessRecordIds',100]])if(!Array.isArray(body[key])||!body[key].length||body[key].length>max||body[key].some(id=>!/^rec[A-Za-z0-9]+$/.test(id))||new Set(body[key]).size!==body[key].length)throw Error('Upload blocked: missing or invalid '+key);\nconst knownRecovery = await resolveKnownGenericRecovery(body, match[1], (path, qs) => this.helpers.httpRequest({timeout:30000,method:'GET',url:String(body.baseUrl).replace(/\\/$/,'')+path,headers:{Authorization:'[REDACTED]'+body.apiKey},...(qs?{qs}:{}),json:true}));\nconst targets = body.targets.filter(target => target?.campaignId && Number(target?.expectedRows || 0) > 0 && (!knownRecovery || target.outputType === 'generic'));\nif (!targets.length) throw new Error('No eligible EmailBison campaign outputs were supplied.');\nreturn targets.map((target, index) => ({json: {\n  ...target,\n  ...(knownRecovery ? {knownRecovery} : {}),\n  uploadPreparation:body.uploadPreparation,\n  parentRecordId: body.parentRecordId,\n  topUpLeadListId: body.topUpLeadListId,\n  topUpLeadListName: body.topUpLeadListName,\n  apiKey: body.apiKey,\n  baseUrl: String(body.baseUrl).replace(/\\/$/, ''),\n  sheetUrl: 'https://sheets.googleapis.com/v4/spreadsheets/' + match[1] + \"/values/'\" + (target.outputType === 'generic' ? 'Final Generic' : 'Final Direct') + \"'!A:ZZ?majorDimension=ROWS\",\n  itemIndex: index,\n  exclusionCampaigns,\n  parentFirstManifest:body.parentFirstManifest,\n  familyRecordIds:body.familyRecordIds,readinessRecordIds:body.readinessRecordIds,allFamilyTargets:body.targets,\n}}));\n\n"
+      },
+      "id": "3c84b5a3-6888-4421-9848-87e8d119a00d",
+      "name": "Normalize Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        1152
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.sheetUrl }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "dc9d44ec-d8a1-43e1-b953-cfc2fb3b5fd3",
+      "name": "Download Final Lead Sheet",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1456,
+        1152
+      ],
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Local proposal only; not published. Source/audit names stay unchanged.\nfunction cleanOutboundCompanyName(value) {\n  const raw = String(value ?? '').trim();\n  let cleaned = raw.replace(/\\s+/g, ' ');\n  const legal = '(?:P\\\\.?L\\\\.?L\\\\.?C\\\\.?|L\\\\.?L\\\\.?C\\\\.?|L\\\\.?L\\\\.?P\\\\.?|Inc\\\\.?|Incorporated|Corp\\\\.?|Corporation|Ltd\\\\.?)';\n  const suffix = new RegExp('(?:,\\\\s*|\\\\s+)(?:'+legal+'|\\\\('+legal+'\\\\))[,\\\\s]*$', 'i');\n  while (true) {\n    const next = cleaned.replace(suffix, '').trim();\n    if (next === cleaned || !/[\\p{L}\\p{N}]/u.test(next)) break;\n    cleaned = next;\n  }\n  // Exact user-provided canonical form only. No guessed acronym dictionary,\n  // token title-casing or mixed-case alteration. Other all-caps names stay intact.\n  if (cleaned === 'APPLE') cleaned = 'Apple';\n  return cleaned;\n}\n// Campaign-specific attribution prevents later imports from relabelling older campaigns.\nfunction normalizeProvider(value) {\n const v=String(value??'').trim().toLowerCase().replace(/[ _-]/g,'');\n if(v==='millionverifier')return 'MillionVerifier';\n if(v==='leadmagic'||v==='leadmagicrecovery'||v==='leadmagicfinder'||v==='leadmagicemailfinder')return 'LeadMagic';\n return 'Unknown';\n}\nfunction normalizeEmailType(value){const s=String(value??'').trim().toLowerCase();return s==='direct'?'Direct':s==='generic'?'Generic':'Unknown';}\nfunction attributionFromColumns(get){\n const provider=normalizeProvider(get('Verification Provider'));\n return {provider,emailType:normalizeEmailType(get('Email Type')),path:String(get('Verification Path')|| (provider==='MillionVerifier'?'MillionVerifier valid':provider==='LeadMagic'?'LeadMagic verified':'Unknown')),sourceVersion:String(get('Source Version')||''),originalResult:String(get('Original MillionVerifier Result')||'Unknown')};\n}\nfunction campaignAttribution(lead,campaignId){\n const vars=Array.isArray(lead.custom_variables)?lead.custom_variables:[];\n const exact=vars.filter(v=>v.name==='DULCY_VERIFICATION_'+campaignId);\n if(exact.length!==1)return {provider:'Unknown',emailType:'Unknown',path:'Unknown'};\n try{const a=JSON.parse(exact[0].value);return {...a,provider:normalizeProvider(a.provider),emailType:normalizeEmailType(a.emailType)};}catch{return {provider:'Unknown',emailType:'Unknown',path:'Unknown'};}\n}\nfunction aggregateCampaignLeads(leads,campaignId){\n const groups=new Map(),seen=new Set();let tagged=0;\n for(const lead of leads){\n  if(!lead.id||seen.has(String(lead.id)))throw new Error('Missing or duplicate campaign lead ID; snapshot not saved.');seen.add(String(lead.id));\n  let d=lead.lead_campaign_data;\n  if(Array.isArray(d))d=d.find(x=>String(x.campaign_id??x.id)===String(campaignId));\n  if(!d||typeof d!=='object')throw new Error('Missing campaign-scoped lead statistics; overall stats are not a substitute.');\n  const sent=Number(d.emails_sent),replies=Number(d.replies);\n  if(!Number.isFinite(sent)||sent<0||!Number.isFinite(replies)||replies<0)throw new Error('Invalid campaign-scoped counts.');\n  const a=campaignAttribution(lead,campaignId);if(a.provider!=='Unknown')tagged++;\n  const k=a.provider+'|'+a.emailType;\n  if(!groups.has(k))groups.set(k,{provider:a.provider,emailType:a.emailType,leads:0,contacted:0,sent:0,replies:0,positive:0,bounces:0});\n  const g=groups.get(k);g.leads++;g.sent+=sent;g.contacted+=sent>0?1:0;g.replies+=replies>0?1:0;g.positive+=d.interested===true?1:0;g.bounces+=String(d.status).toLowerCase()==='bounced'?1:0;\n }\n return {groups:[...groups.values()],total:leads.length,tagged};\n}\n\n\nconst downloaded = $input.all();\nconst configs = $('Require Ready Lead List and Passed QA').all().map(item => item.json);\nconst results = [];\n// Each download is bound to the existing authenticated reader's prepared item.\nconst requests=$('Require Ready Lead List and Passed QA').all().map(x=>x.json);\nif(requests.length!==downloaded.length)throw Error('Upload blocked: incomplete exclusion downloads.');\n\nconst expectedByKey=new Map(requests.map((r,index)=>[r.requestKey,{r,index}]));\nif(expectedByKey.size!==requests.length||requests.some(r=>!r.requestKey))throw Error('Missing or duplicate download request binding');\nconst responseByKey=new Map();\nfor(let index=0;index<downloaded.length;index++){\n let bound;try{bound=requests.find(r=>r.requestKey===downloaded[index].json.__managedRequestKey);if(!bound)throw Error('Missing explicit managed source binding');}catch{throw Error('Missing/ambiguous Sheets item lineage');}\n const expected=expectedByKey.get(bound?.requestKey),data=downloaded[index]?.json;\n if(!expected||responseByKey.has(bound.requestKey)||bound.sheetUrl!==expected.r.sheetUrl||bound.sourceSheetId!==expected.r.sourceSheetId||bound.sourceTab!==expected.r.sourceTab)throw Error('Changed/duplicate Sheets request binding');\n const request=expected.r,prefix='https://sheets.googleapis.com/v4/spreadsheets/'+request.sourceSheetId+'/values/';\n if(!String(request.sheetUrl).startsWith(prefix)||decodeURIComponent(String(request.sheetUrl).slice(prefix.length).split('!')[0]).replace(/^'|'$/g,'')!==request.sourceTab)throw Error('Sheets request ID/range mismatch');\n if(data?.error||!Array.isArray(data?.values)||!data.values.length||!Array.isArray(data.values[0])||typeof data.range!=='string'||data.range.split('!')[0].replace(/^'|'$/g,'')!==request.sourceTab)throw Error('Sheets response error/range mismatch');\n if(data.spreadsheetId!=null&&String(data.spreadsheetId)!==request.sourceSheetId)throw Error('Sheets response ID mismatch');\n responseByKey.set(bound.requestKey,{item:downloaded[index],inputIndex:index});\n}\nif(responseByKey.size!==requests.length)throw Error('Incomplete bound Sheets responses');\nconst boundDownloads=requests.map(r=>responseByKey.get(r.requestKey).item);\nconst finalInputIndexes=requests.filter(r=>r.downloadKind==='final').map(r=>responseByKey.get(r.requestKey).inputIndex);\n\nif(requests.some(r=>r.downloadKind!=='final'))throw Error('Upload expects only the prepared final source tabs.');\nconst finalDownloads=boundDownloads;\nconst preparedEmails=new Set();\nfor(const item of finalDownloads){const values=item.json.values;const columns=values[0].map(v=>String(v??'').toLowerCase().replace(/[^a-z0-9]/g,''));const ei=columns.findIndex(k=>['email','emails','emailaddress'].includes(k));if(ei<0)throw Error('Prepared source email column missing.');for(const row of values.slice(1)){if(!Array.isArray(row))throw Error('Malformed final source row.');if(row.every(v=>String(v??'').trim()===''))continue;const email=String(row[ei]??'').trim().toLowerCase();if(!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)||preparedEmails.has(email))throw Error('Prepared source has an invalid or repeated email identity.');preparedEmails.add(email);}}\n\nconst denied = new Set(['seniority','department','verified','connections','similarity','industrygroups','score','employees','country','startdate','street','state','zip','redirectdomain','mxprovider','description','keywords','updatedate','businessmodel','revenuerange']);\nconst key = value => String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');\nconst quote = value => '\"' + String(value ?? '').replace(/\"/g, '\"\"') + '\"';\nconst sleep = ms => new Promise(resolve => setTimeout(resolve, ms));\nconst totalFrom = response => Number(response?.meta?.total ?? response?.data?.meta?.total ?? response?.total ?? response?.body?.meta?.total ?? response?.body?.data?.meta?.total ?? 0) || 0;\n\nfor (let index = 0; index < configs.length; index++) {\n  const c = configs[index];\n  let stage = \"Read final sheet\";\n  try {\n    const rows = finalDownloads[index]?.json?.values;\n    if (!Array.isArray(rows) || rows.length < 2) throw new Error('The ' + c.outputType + ' sheet has no lead rows.');\n    const sourceHeaders = rows[0].map(value => String(value || '').trim());\n    const find = aliases => sourceHeaders.findIndex(header => aliases.includes(key(header)));\n    const source = {\n      first_name: find(['firstname','first','name']), last_name: find(['lastname','last']),\n      email: find(['email','emails','emailaddress']), company: find(['company','companyname','businessname']),\n      title: find(['title','jobtitle']),\n    };\n    if (source.email < 0) throw new Error('No Email/EMAILS column was found in the ' + c.outputType + ' sheet.');\n    const standardSources = new Set(Object.values(source).filter(value => value >= 0));\n    const customHeaders = sourceHeaders.filter((header, headerIndex) => header && !standardSources.has(headerIndex) && !denied.has(key(header)));\n    const attributionHeader='DULCY_VERIFICATION_'+c.campaignId;\n    for(const h of ['Verification Provider','Email Type','Verification Path',attributionHeader])if(!customHeaders.includes(h))customHeaders.push(h);\n    const outputHeaders = ['first_name','last_name','email','company','title', ...customHeaders];\n    const normalizedRows = [outputHeaders];\n    for (const row of rows.slice(1)) {\n      if(row.every(v=>String(v??'').trim()===''))continue;\n      const email = String(row[source.email] ?? '').trim();\n      if (!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email))throw Error('Prepared source contains an invalid email identity.');\n      const company = source.company >= 0 ? String(row[source.company] ?? '').trim() : '';\n      const lead = {\n        first_name: source.first_name >= 0 ? String(row[source.first_name] ?? '').trim() : (company || 'Team'),\n        last_name: source.last_name >= 0 ? String(row[source.last_name] ?? '').trim() : '',\n        email,\n        company,\n        title: source.title >= 0 ? String(row[source.title] ?? '').trim() : '',\n      };\n      lead.company = cleanOutboundCompanyName(lead.company);\n      if (String(c.outputType ?? '').trim().toLowerCase() === 'generic') {\n        if (!lead.company) throw new Error('Generic top-up requires a non-empty source company name.');\n        lead.first_name = lead.company;\n      }\n      for (const header of customHeaders) lead[header] = String(row[sourceHeaders.indexOf(header)] ?? '').trim();\n      const a=attributionFromColumns(h=>{const i=find([key(h)]);return i>=0?row[i]:'';});\n      lead['Verification Provider']=a.provider;lead['Email Type']=a.emailType;lead['Verification Path']=a.path;lead[attributionHeader]=JSON.stringify(a);\n      normalizedRows.push(outputHeaders.map(header => lead[header] ?? ''));\n    }\n    const acceptedRows = normalizedRows.length - 1;\n    if (!acceptedRows) throw new Error('No usable email rows were found in the ' + c.outputType + ' sheet.');\n    const authHeaders = {Authorization: '[REDACTED]' + c.apiKey};\n    stage = \"Read existing campaign leads\";\n    const before = await this.helpers.httpRequest({timeout:30000,method:'GET', url:c.baseUrl + '/api/campaigns/' + c.campaignId + '/leads', headers:authHeaders, qs:{per_page:1}, json:true});\n    const beforeTotal = totalFrom(before);\n    if(!before?.meta||before.meta.total==null||before.meta.total===''||!Number.isSafeInteger(Number(before.meta.total))||Number(before.meta.total)<0)throw Error('Provider campaign total was not returned.');\n    const targetEmails = [...new Set(normalizedRows.slice(1).map(row=>String(row[2]).toLowerCase()))];\n    stage = 'Ensure custom variables';\n    const existingVariables = new Set();\n    let variablePage = 1, lastVariablePage = 1;\n    do {\n      const variableResponse = await this.helpers.httpRequest({timeout:30000,method:'GET',url:c.baseUrl+'/api/custom-variables',headers:authHeaders,qs:{page:variablePage},json:true});\n      const variableList = variableResponse?.data?.custom_variables ?? variableResponse?.data ?? variableResponse?.custom_variables ?? variableResponse;\n      if (!Array.isArray(variableList)) throw new Error('Unrecognized custom-variable list response.');\n      for (const v of variableList) existingVariables.add(String(v.name ?? v).trim().toLowerCase());\n      lastVariablePage = Number(variableResponse?.meta?.last_page ?? 1);\n      if (!Number.isInteger(lastVariablePage) || lastVariablePage < 1 || lastVariablePage > 100) throw new Error('Invalid custom-variable pagination.');\n      variablePage++;\n    } while (variablePage <= lastVariablePage);\n    for (const name of customHeaders) {\n      if (existingVariables.has(name.toLowerCase())) continue;\n      stage = 'Create custom variable '+name;\n      await this.helpers.httpRequest({timeout:30000,method:'POST',url:c.baseUrl+'/api/custom-variables',headers:{...authHeaders,'Content-Type':'application/json'},body:{name},json:true});\n      existingVariables.add(name.toLowerCase());\n    }\n    const columnsToMap = {first_name:'first_name',last_name:'last_name',email:'email',company:'company',title:'title'};\n    for (const header of customHeaders) columnsToMap[header] = header;\n    const mappingEntries = Object.entries(columnsToMap).map(([destination, sourceHeader])=>({destination,sourceHeader}));\n    if (mappingEntries.length > 30) throw new Error('More than 30 mapped columns; review upload mappings.');\n    const csv = normalizedRows.map(row => row.map(quote).join(',')).join('\\r\\n');\n    const binary = {data: await this.helpers.prepareBinaryData(Buffer.from(csv), 'top-up-'+c.outputType+'.csv', 'text/csv')};\n    results.push({json:{...c,beforeTotal,targetEmails,acceptedRows,added:0,skipped:0,failed:0,mappingEntries,requestUrl:c.baseUrl+'/api/leads/bulk/csv',leadListName:c.topUpLeadListName+' - [topup:'+c.topUpLeadListId+':'+c.uploadPreparation.contentHash.slice(0,12)+'] - '+c.outputType+' - Top Up '+new Date().toISOString().slice(0,10)},binary,pairedItem:{item:finalInputIndexes[index]}});\n  } catch (error) {\n    results.push({json:{...c,outputType:c.outputType,campaignName:c.campaignName,acceptedRows:Number(c.expectedRows || 0),added:0,skipped:0,failed:Number(c.expectedRows || 0),error:stage + ': ' + String(error?.message ?? error) + ' ' + JSON.stringify(error?.response?.body ?? error?.response?.data ?? error?.error ?? {}).split(c.apiKey).join('[REDACTED]').slice(0,2000)},pairedItem:{item:finalInputIndexes[index]}});\n  }\n}\nreturn results;"
+      },
+      "id": "931218cb-3da0-47c9-8b91-d77476efb9ae",
+      "name": "Prepare Top-up CSV",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1696,
+        1152
+      ],
+      "notes": "Prepare CSV binary using the original campaign upload pattern. Network calls have explicit timeouts."
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appxqINt5XKw7a76A",
+          "mode": "list",
+          "cachedResultName": "Alex"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblAVAA6uBPaMj28P",
+          "mode": "list",
+          "cachedResultName": "Campaigns"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.parentRecordId }}",
+            "Top-up Request": false,
+            "Top-up Status": "={{ $json.status }}",
+            "Top-up Added": "={{ $json.added }}",
+            "Top-up Skipped": "={{ $json.skipped }}",
+            "Top-up Failed": "={{ $json.failed }}",
+            "Top-up Last Run": "={{ $now.toISO() }}",
+            "Top-up Message": "={{ $json.message }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Top-up Request",
+              "displayName": "Top-up Request",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Top-up Status",
+              "displayName": "Top-up Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Ready",
+                  "value": "Ready"
+                },
+                {
+                  "name": "Requested",
+                  "value": "Requested"
+                },
+                {
+                  "name": "Running",
+                  "value": "Running"
+                },
+                {
+                  "name": "Completed",
+                  "value": "Completed"
+                },
+                {
+                  "name": "Failed",
+                  "value": "Failed"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Top-up Added",
+              "displayName": "Top-up Added",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Top-up Skipped",
+              "displayName": "Top-up Skipped",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Top-up Failed",
+              "displayName": "Top-up Failed",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Top-up Last Run",
+              "displayName": "Top-up Last Run",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Top-up Message",
+              "displayName": "Top-up Message",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "bbc0f604-6f21-4325-a613-e00eee39616c",
+      "name": "Save Top-up Result",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        3696,
+        1152
+      ],
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "parameters": {
+        "amount": "={{ $json.error ? 0 : Math.min(15, 3 + Math.ceil(Number($json.acceptedRows || 0) / 5000)) }}",
+        "unit": "minutes"
+      },
+      "id": "8f0efe94-7121-4af1-a018-85bfbdb44659",
+      "name": "Wait for Top-up Import",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2704,
+        1152
+      ],
+      "webhookId": "908cf0af-7faa-4f91-80aa-7d24b57089af"
+    },
+    {
+      "parameters": {
+        "jsCode": "const result=[];\nfor(const item of $input.all()){\n const c=item.json;if(c.error||c.noNewRows===true){result.push(item);continue;}\n try{\n  const response=await this.helpers.httpRequest({timeout:30000,method:'POST',url:c.baseUrl+'/api/campaigns/'+c.campaignId+'/leads/attach-lead-list',headers:{Authorization:'[REDACTED]'+c.apiKey,'Content-Type':'application/json'},body:{lead_list_id:Number(c.leadListId)},json:true});\n  const payload=response?.body??response;\n  if(response?.error||Number(response?.statusCode??200)>=400||payload?.data?.success!==true)throw Error('Provider did not confirm list attachment; preserve import ID and inspect before retry.');\n  result.push({...item,json:{...c,attachmentReceipt:{campaignId:Number(c.campaignId),leadListId:Number(c.leadListId),success:true,message:String(payload.data.message??'')}}});\n }catch(e){result.push({...item,json:{...c,failed:c.acceptedRows,error:'Attach imported list '+c.leadListId+': '+String(e.message)+' '+JSON.stringify(e.response?.body??e.response?.data??{}).split(c.apiKey).join('[REDACTED]').slice(0,2000)}});}\n}\nreturn result;"
+      },
+      "id": "165b28c1-2814-4639-b3c1-fdae7ae8dcc6",
+      "name": "Attach Imported Top-up Lists",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2944,
+        1152
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "minutes"
+      },
+      "id": "1c2a50fc-d782-4dbb-9cab-b5a566ea6f0b",
+      "name": "Wait for Top-up Campaign Sync",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3200,
+        1152
+      ],
+      "webhookId": "7eb11a7b-37ca-4d43-acb0-b21dff7ed101"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ready-list upload confirmation, not a second duplicate/membership audit.\n// Do not override Bison opt-out, blacklist or parallel-sending suppression.\nconst results=[];\nfor(const item of $input.all()){\n const c=item.json;let r={outputType:c.outputType,campaignName:c.campaignName,campaignId:c.campaignId,leadListId:c.leadListId,acceptedRows:c.acceptedRows,added:0,skipped:0,failed:c.failed||0,error:c.error,countBasis:'net-campaign-growth-after-provider-attachment'};\n if(!c.error){try{\n  const ack=c.attachmentReceipt;\n  if(!ack||ack.success!==true||ack.campaignId!==Number(c.campaignId)||ack.leadListId!==Number(c.leadListId))throw Error('Missing exact provider attachment acknowledgment.');\n  const headers={Authorization:'[REDACTED]'+c.apiKey};\n  const response=await this.helpers.httpRequest({timeout:30000,method:'GET',url:c.baseUrl+'/api/lead-lists/'+c.leadListId,headers,json:true});\n  const list=(response?.body??response)?.data;\n  if(!list||Number(list.id)!==Number(c.leadListId)||list.status!=='Processed')throw Error('Existing import '+c.leadListId+' is not confirmed Processed; check that import, do not upload again.');\n  const processed=Number(list.leads_processed),succeeded=Number(list.leads_succeeded),failed=Number(list.leads_failed);\n  if([list.leads_processed,list.leads_succeeded,list.leads_failed].some(v=>v==null||v==='')||![processed,succeeded,failed].every(n=>Number.isSafeInteger(n)&&n>=0)||processed!==Number(c.acceptedRows)||succeeded+failed!==processed)throw Error('Provider import totals do not reconcile; preserve existing import '+c.leadListId+'.');\n  const totals=await this.helpers.httpRequest({timeout:30000,method:'GET',url:c.baseUrl+'/api/campaigns/'+c.campaignId+'/leads',headers,qs:{page:1},json:true});\n  const after=Number(totals?.meta?.total),before=Number(c.beforeTotal),growth=after-before;\n  if(totals?.meta?.total==null||totals.meta.total===''||c.beforeTotal==null||!Number.isSafeInteger(after)||after<0||!Number.isSafeInteger(before)||before<0||!Number.isSafeInteger(growth)||growth<0||growth>succeeded)throw Error('Campaign total changed outside this import bounds; retain import '+c.leadListId+' for reconciliation.');\n  r={...r,added:growth,skipped:succeeded-growth,failed,providerImport:{id:Number(list.id),status:list.status,processed,succeeded,failed},attachmentReceipt:ack,beforeTotal:before,afterTotal:after};\n  if(failed)r.error='Provider import '+c.leadListId+' reports '+failed+' failed source rows; no automatic reupload.';\n }catch(e){r.failed=c.acceptedRows;r.error='Confirm existing import: '+String(e.message)+' '+JSON.stringify(e.response?.body??e.response?.data??{}).split(c.apiKey).join('[REDACTED]').slice(0,2000);}}\n results.push(r);\n}\nconst configs=$('Normalize Request').all().map(i=>i.json);\nconst preserved = configs[0]?.knownRecovery?.preservedResults;\nif(preserved){\n  if(configs.length!==1 || configs[0].outputType!=='generic' || configs[0].knownRecovery.recoveryId!=='execution-1172710-generic-first-name' || results.length!==1 || results[0].outputType!=='generic' || Number(results[0].campaignId)!==601 || (!results[0].error && (!Number.isSafeInteger(Number(results[0].leadListId)) || Number(results[0].leadListId)<=0 || Number(results[0].leadListId)===725)) || preserved.length!==1 || preserved[0].campaignId!==602 || preserved[0].leadListId!==724) throw Error('Invalid preserved Direct recovery receipt.');\n  results.push(...preserved);\n}\nconst sum=k=>results.reduce((n,r)=>n+Number(r[k]||0),0),errors=results.filter(r=>r.error).map(r=>r.outputType+': '+r.error);\nreturn[{json:{parentRecordId:configs[0].parentRecordId,topUpLeadListId:configs[0].topUpLeadListId,added:sum('added'),skipped:sum('skipped'),failed:sum('failed'),status:errors.length?'Failed':'Completed',message:preserved?((errors.length?errors.join(' | '):('Generic import '+results.find(r=>r.outputType==='generic')?.leadListId+' processed and attachment acknowledged.'))+' Direct import 724 preserved from execution 1172710; no Direct reupload. Original Generic import 725 retained. Combined net campaign growth: '+sum('added')+'; skipped '+sum('skipped')+'; failed '+sum('failed')+'.'):(errors.length?errors.join(' | '):('Provider imports processed and attachment acknowledged. Net campaign growth: '+sum('added')+'. '+sum('skipped')+' processed rows not reflected in growth (provider suppression/existing membership not individually classified). No full membership audit performed.')),results}}];\n"
+      },
+      "id": "63fa51ed-c2c7-4935-b5ab-74315834ffb9",
+      "name": "Confirm Top-up Campaign Membership",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3456,
+        1152
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "6008ef6c-0cd4-45a7-b0a3-aba619996c70",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ !$json.error && $json.noNewRows !== true }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b87fa901-de25-4701-aeb3-e94790023324",
+      "name": "Top-up CSV Ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1952,
+        1152
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.requestUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[REDACTED: credential]"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $json.leadListName }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[0] ? 'columnsToMap[' + $json.mappingEntries[0].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[0]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[1] ? 'columnsToMap[' + $json.mappingEntries[1].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[1]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[2] ? 'columnsToMap[' + $json.mappingEntries[2].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[2]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[3] ? 'columnsToMap[' + $json.mappingEntries[3].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[3]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[4] ? 'columnsToMap[' + $json.mappingEntries[4].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[4]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[5] ? 'columnsToMap[' + $json.mappingEntries[5].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[5]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[6] ? 'columnsToMap[' + $json.mappingEntries[6].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[6]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[7] ? 'columnsToMap[' + $json.mappingEntries[7].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[7]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[8] ? 'columnsToMap[' + $json.mappingEntries[8].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[8]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[9] ? 'columnsToMap[' + $json.mappingEntries[9].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[9]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[10] ? 'columnsToMap[' + $json.mappingEntries[10].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[10]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[11] ? 'columnsToMap[' + $json.mappingEntries[11].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[11]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[12] ? 'columnsToMap[' + $json.mappingEntries[12].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[12]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[13] ? 'columnsToMap[' + $json.mappingEntries[13].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[13]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[14] ? 'columnsToMap[' + $json.mappingEntries[14].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[14]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[15] ? 'columnsToMap[' + $json.mappingEntries[15].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[15]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[16] ? 'columnsToMap[' + $json.mappingEntries[16].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[16]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[17] ? 'columnsToMap[' + $json.mappingEntries[17].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[17]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[18] ? 'columnsToMap[' + $json.mappingEntries[18].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[18]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[19] ? 'columnsToMap[' + $json.mappingEntries[19].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[19]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[20] ? 'columnsToMap[' + $json.mappingEntries[20].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[20]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[21] ? 'columnsToMap[' + $json.mappingEntries[21].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[21]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[22] ? 'columnsToMap[' + $json.mappingEntries[22].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[22]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[23] ? 'columnsToMap[' + $json.mappingEntries[23].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[23]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[24] ? 'columnsToMap[' + $json.mappingEntries[24].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[24]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[25] ? 'columnsToMap[' + $json.mappingEntries[25].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[25]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[26] ? 'columnsToMap[' + $json.mappingEntries[26].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[26]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[27] ? 'columnsToMap[' + $json.mappingEntries[27].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[27]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[28] ? 'columnsToMap[' + $json.mappingEntries[28].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[28]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "name": "={{ $json.mappingEntries[29] ? 'columnsToMap[' + $json.mappingEntries[29].destination + ']' : 'columnsToMap[email]' }}",
+              "value": "={{ $json.mappingEntries[29]?.sourceHeader ?? 'email' }}"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "csv",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          },
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2208,
+        1152
+      ],
+      "id": "76443488-5509-417b-8eda-f72b9e9c9600",
+      "name": "Upload Top-up CSV",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map((item,index)=>{\n const c=$('Prepare Top-up CSV').itemMatching(index).json;\n const response=item.json; const b=response.body??response;\n const id=Number(b?.data?.id??b?.data?.lead_list_id??b?.id??b?.lead_list_id);\n if(response.error || !id || Number(response.statusCode??200)>=400) {\n const detail=JSON.stringify(response.error??b).split(c.apiKey).join('[REDACTED]').slice(0,1800);\n return {json:{...c,failed:c.acceptedRows,error:'Upload CSV: '+detail},pairedItem:{item:index}};\n }\n return {json:{...c,leadListId:id},pairedItem:{item:index}};\n});"
+      },
+      "id": "1e8a880b-a902-498d-844b-1c44d42b6fdb",
+      "name": "Capture Top-up Import Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2448,
+        1152
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "SndrUpdateMain26A",
+          "mode": "id"
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "88daa150-c5fe-4ccd-9d61-6fe4eb0f10db",
+      "name": "Apply Selected Top-up Senders",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -1600,
+        896
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const results=$input.all().map((item,index)=>{\n const c=$('Normalize Request').itemMatching(index).json,r=item.json;\n const ok=r.status==='Completed'&&r.recordId===c.recordId&&Array.isArray(r.senderEmailIds)&&r.senderEmailIds.length>0&&r.resolvedBaseUrl&&r.resolvedApiKey;\n return {json:ok?{...c,apiKey:r.resolvedApiKey,baseUrl:r.resolvedBaseUrl,senderEmailIds:r.senderEmailIds,senderRecordIds:r.senderRecordIds}:{...c,error:'Sender selection: '+String(r.message||'Sender update did not complete. Check Sender Update State in Airtable.'),failed:0},pairedItem:{item:index}};\n});\nconst blocked=results.find(x=>x.json.error);\nif(blocked)for(const x of results)x.json.error=x.json.error||'Top-up stopped because another output failed sender verification: '+blocked.json.error;\nreturn results;"
+      },
+      "id": "84f98fef-2f32-44f6-813d-6d387d061d72",
+      "name": "Confirm Top-up Sender Selection",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1600,
+        896
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6008ef6c-0cd4-45a7-b0a3-aba619996c70",
+              "leftValue": "={{ !$json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "78346e25-3134-4598-ad5a-20d2e3bb9e15",
+      "name": "Top-up Senders Ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -160,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function resolveParentFirstPlan(input) {\n  const CF = {name:'fldSsb4QjS9UyvKhj',client:'fldl5bZ644djPsBmN',lists:'fld5weZ6ED31dBlaz',topup:'fld4lMlTPjrRmAFHp',bison:'fldxSETE3D66RyWRH',base:'fld0DL0enVj3G1fUJ',workspace:'fldQjybcwloD9dZxS',workspaceOverride:'fld1qb2IGdqKNyjJh',status:'fldZABZwE9SmnwMv3',processing:'fldCebt3IMI8ZxdQq'};\n  const LF = {client:'fldEujtSLqwdpOyGD',sheet:'fldSOTvnUxzKWXMDD',scope:'fldevysyehxsGxt2q',direct:'fldQZJCpTofahmTkl',generic:'fld0FHomkh3uyx0FD',processing:'fldf9wpMGWg0SebHV',stage:'fld8nrebRFL0O8kgj',campaign:'fldepbn71awSjmZPV'};\n  const fail = message => {throw Error('Parent-first top-up blocked: '+message);};\n  const f = r => r?.fields ?? r?.cellValuesByFieldId ?? {};\n  const text = v => String(v && typeof v==='object' ? v.name ?? '' : v ?? '').trim();\n  const ids = v => Array.isArray(v) ? v.map(x=>typeof x==='string'?x:x?.id).filter(Boolean) : [];\n  const same = (a,b) => JSON.stringify([...a].sort())===JSON.stringify([...b].sort());\n  const recordId = v => /^rec[A-Za-z0-9]+$/.test(v??'');\n  const campaigns=input.campaigns, lists=input.lists;\n  if(!Array.isArray(campaigns)||!Array.isArray(lists)||input.complete!==true||input.offset)fail('complete authoritative metadata is required');\n  if(campaigns.length>1000||lists.length>1000||new Set(campaigns.map(r=>r.id)).size!==campaigns.length||new Set(lists.map(r=>r.id)).size!==lists.length)fail('duplicate or unbounded metadata');\n  const cm=new Map(campaigns.map(r=>[r.id,r])),lm=new Map(lists.map(r=>[r.id,r]));\n  const selected=cm.get(input.selectedRecordId);if(!selected)fail('selected campaign missing');\n  const client=ids(f(selected)[CF.client]);if(client.length!==1||!recordId(client[0]))fail('exact client missing');\n  function workspace(r){\n    const raw=f(r)[CF.workspace];\n    const values=raw?.valuesByLinkedRecordId ? Object.values(raw.valuesByLinkedRecordId).flat() : Array.isArray(raw)?raw:[raw];\n    const unique=[...new Set(values.filter(v=>v!=null&&v!=='').map(String))];\n    if(unique.length!==1||!/^\\d+$/.test(unique[0])||Number(unique[0])<1)fail('exact workspace missing');\n    const override=f(r)[CF.workspaceOverride];if(override!=null&&override!==''&&String(override)!==unique[0])fail('conflicting workspace');\n    return unique[0];\n  }\n  const workspaceId=workspace(selected),matching=campaigns.filter(r=>same(ids(f(r)[CF.client]),client));\n  const suffix=/\\s+-\\s+(Generic|Direct) Emails\\s*$/i;\n  const base=n=>text(n).replace(suffix,'').trim().toLowerCase();\n  const scopes=new Map();\n  function scope(r){\n    if(scopes.has(r.id))return scopes.get(r.id);\n    const raw=f(r)[LF.scope];if(!raw){scopes.set(r.id,null);return null;}\n    let s;try{s=typeof raw==='string'?JSON.parse(raw):raw;}catch{fail('invalid scope on '+r.id);}\n    if(!s||s.version!==1||s.mode!=='this-build-only'||![r.id,'pending'].includes(s.buildRecordId)||!Array.isArray(s.sources)||s.sources.length>100)fail('invalid scope identity on '+r.id);\n    scopes.set(r.id,s);return s;\n  }\n  // Saved managed top-ups bind destinations by immutable record/provider IDs.\n  // Names remain display labels and must not invalidate a proven family.\n  const boundList=input.currentListId?lm.get(input.currentListId):null;\n  const boundScope=boundList?scope(boundList):null;\n  const savedFamily=boundScope?.parentFirstVersion===1;\n  const candidates=[];\n  if(savedFamily){\n    const root=cm.get(boundScope.originalParentRecordId),original=lm.get(boundScope.originalLeadListRecordId);\n    const ds=boundScope.destinations;\n    if(!root||!original||Number(f(root)[CF.bison])||!Array.isArray(ds)||ds.length!==2)fail('saved parent/original/destinations missing');\n    if(ds[0]?.outputType!=='generic'||ds[1]?.outputType!=='direct')fail('saved output types changed');\n    const children=ds.map(d=>cm.get(d.recordId));\n    if(children.some(r=>!r)||new Set([root.id,...children.map(r=>r.id)]).size!==3)fail('saved family record identities conflict');\n    if(![root.id,...children.map(r=>r.id)].includes(selected.id))fail('selected campaign is outside saved family');\n    if(!ids(f(root)[CF.lists]).includes(original.id)||scope(original))fail('saved original parent link changed');\n    for(const r of [root,...children])if(!same(ids(f(r)[CF.client]),client)||workspace(r)!==workspaceId)fail('saved family client/workspace changed');\n    children.forEach((r,i)=>{\n      if(!ids(f(r)[CF.lists]).includes(original.id)||Number(f(r)[CF.bison])!==Number(ds[i].campaignId))fail('saved child source/provider identity changed');\n    });\n    candidates.push({root,original,children});\n  }\n  const unsplit=!savedFamily&&Number(f(selected)[CF.bison])>0&&!suffix.test(text(f(selected)[CF.name]));\n  if(unsplit){\n    const originals=ids(f(selected)[CF.lists]).filter(id=>{const r=lm.get(id);if(!r)fail('original metadata missing');return !scope(r);});\n    if(originals.length!==1)fail('unsplit original source is ambiguous');\n    candidates.push({root:selected,original:lm.get(originals[0]),children:[selected]});\n  }\n  for(const root of unsplit||savedFamily?[]:matching){\n    if(Number(f(root)[CF.bison])||suffix.test(text(f(root)[CF.name]))||base(f(root)[CF.name])!==base(f(selected)[CF.name]))continue;\n    if(workspace(root)!==workspaceId)continue;\n    const originalIds=ids(f(root)[CF.lists]).filter(id=>{const r=lm.get(id);if(!r)fail('parent source metadata missing');return !scope(r);});\n    if(originalIds.length!==1)fail('parent original full list is missing or ambiguous');\n    const originalId=originalIds[0];\n    const children=['generic','direct'].map(type=>matching.filter(r=>r.id!==root.id&&text(f(r)[CF.name]).toLowerCase()===base(f(root)[CF.name])+' - '+type+' emails'&&workspace(r)===workspaceId&&ids(f(r)[CF.lists]).includes(originalId)));\n    if(children.some(rs=>rs.length!==1))continue;\n    if(![root.id,...children.map(rs=>rs[0].id)].includes(selected.id))continue;\n    candidates.push({root,original:lm.get(originalId),children:children.map(rs=>rs[0])});\n  }\n  if(candidates.length!==1)fail('cannot prove one canonical parent and both original-linked children');\n  const {root,original,children}=candidates[0],familyIds=[...new Set([root.id,...children.map(r=>r.id)])];\n  let unsplitType;\n  if(unsplit){const current=lm.get(input.currentListId),g=Number(f(current)[LF.generic]??0),d=Number(f(current)[LF.direct]??0);if((g>0)===(d>0))fail('unsplit upload requires exactly one output stream');unsplitType=g>0?'generic':'direct';}\n  const destinations=children.map((r,i)=>({recordId:r.id,campaignId:Number(f(r)[CF.bison]),outputType:unsplit?unsplitType:i===0?'generic':'direct'}));\n  if(destinations.some(t=>!Number.isSafeInteger(t.campaignId)||t.campaignId<1)||new Set(destinations.map(t=>t.campaignId)).size!==children.length)fail('invalid child provider identities');\n  for(const r of [root,...children]){const host=text(f(r)[CF.base]).replace(/\\/+$/,'');if(host&&host!=='https://send.dulcy.io')fail('destination server mismatch');}\n  for(const r of children){if(!['active','live','paused','complete','completed','inactive','finished','ended'].includes(text(f(r)[CF.status]).toLowerCase())&&text(f(r)[CF.processing]).toLowerCase()!=='completed')fail('child creation incomplete');}\n  if(!same(ids(f(original)[LF.client]),client))fail('parent full-list client mismatch');\n  function sheet(r){const id=text(f(r)[LF.sheet]).match(/\\/spreadsheets\\/d\\/([A-Za-z0-9_-]{20,})/)?.[1];if(!id)fail('source sheet missing on '+r.id);return id;}\n  const originalSheetId=sheet(original);\n  const current=input.currentListId?lm.get(input.currentListId):null;\n  if(input.currentListId&&!current)fail('current build missing');\n  if(current&&![root,...children].some(r=>ids(f(r)[CF.topup]).includes(current.id)))fail('current top-up no longer linked to family');\n  const belongs=s=>{\n    const bindings=[...(Array.isArray(s.campaignRecordIds)?s.campaignRecordIds:[]),s.campaignRecordId].filter(Boolean);\n    return s.originalParentRecordId===root.id||bindings.some(id=>familyIds.includes(id));\n  };\n  function validateScope(r,s){\n    const bindings=[...(Array.isArray(s.campaignRecordIds)?s.campaignRecordIds:[]),s.campaignRecordId].filter(Boolean);\n    if(!same(ids(f(r)[LF.client]),client)||!bindings.length||bindings.some(id=>!familyIds.includes(id)))fail('scope outside canonical family on '+r.id);\n    if(s.parentFirstVersion!=null){\n      if(s.parentFirstVersion!==1||s.originalParentRecordId!==root.id||s.originalLeadListRecordId!==original.id||s.clientRecordId!==client[0]||String(s.workspaceId)!==workspaceId||!same(s.campaignRecordIds??[],familyIds)||JSON.stringify(s.destinations)!==JSON.stringify(destinations))fail('parent-first scope binding changed on '+r.id);\n    }\n    if(!s.sources.some(e=>e.recordId===original.id&&e.sheetId===originalSheetId))fail('original full-list anchor absent from scope '+r.id);\n  }\n  const sources=new Map(),visiting=new Set(),visited=new Set(),history=[],unfinished=[];\n  function add(id,expected=null){\n    if(id===current?.id)fail('self/cyclic source');\n    const r=lm.get(id);if(!r||!recordId(id))fail('prior source missing');\n    if(!same(ids(f(r)[LF.client]),client))fail('prior source client mismatch');\n    const sid=sheet(r);if(current&&sid===sheet(current))fail('current output used as prior source');\n    if(expected&&(sid!==expected.sheetId||!Array.isArray(expected.tabs)||expected.tabs.some(t=>!['Expanded Companies','Final Direct','Final Generic'].includes(t))))fail('prior source provenance changed');\n    if(visiting.has(id))fail('cyclic prior history');\n    sources.set(id,{recordId:id,sheetId:sid,tabs:['Expanded Companies','Final Direct','Final Generic']});\n    if(visited.has(id))return;visiting.add(id);\n    const s=scope(r);if(s){validateScope(r,s);for(const e of s.sources)add(e.recordId,e);}else if(id!==original.id)fail('unbound historical list');\n    visiting.delete(id);visited.add(id);\n  }\n  add(original.id);\n  // Scan the complete metadata result, not just the currently selected pointer.\n  for(const r of lists){\n    const raw=f(r)[LF.scope];if(!raw)continue;\n    let s;try{s=typeof raw==='string'?JSON.parse(raw):raw;}catch{if(same(ids(f(r)[LF.client]),client))fail('unreadable same-client history');continue;}\n    if(!belongs(s))continue;\n    s=scope(r);validateScope(r,s);\n    if(r.id===current?.id)continue;\n    const count=Number(f(r)[LF.direct]??0)+Number(f(r)[LF.generic]??0);\n    if(!Number.isFinite(count)||count<0)fail('invalid history counts');\n    const stage=text(f(r)[LF.stage]).toLowerCase(),processing=text(f(r)[LF.processing]).toLowerCase();\n    if(['requested','queued','running','processing','waiting'].includes(processing))fail('another family build has active or waiting work');\n    const completedZero=processing==='completed'&&['enrichment','qa','ready','completed'].includes(stage);\n    if(count>0||['ready','completed'].includes(stage)||completedZero){if(s.buildRecordId!==r.id)fail('completed history has unbound build identity');history.push(r.id);add(r.id);}\n    else unfinished.push(r.id);\n  }\n  // Explicitly linked/retained sources cannot disappear even if counts are stale.\n  for(const r of [root,...children])for(const id of [...ids(f(r)[CF.lists]),...ids(f(r)[CF.topup])]){\n    if(id===current?.id||unfinished.includes(id))continue;add(id);\n  }\n  if(current){const s=scope(current);if(!s||s.buildRecordId!==current.id)fail('current scope missing or unbound');validateScope(current,s);for(const e of s.sources)add(e.recordId,e);}\n  if(unfinished.length>1||(current&&unfinished.length))fail('multiple unfinished family builds');\n  if(sources.size>100)fail('history exceeds bounded source manifest');\n  const ordered=[...sources.values()].sort((a,b)=>a.recordId.localeCompare(b.recordId));\n  const manifest={version:1,mode:'this-build-only',buildRecordId:current?.id??'pending',parentFirstVersion:1,campaignRecordId:root.id,campaignRecordIds:familyIds,originalParentRecordId:root.id,originalLeadListRecordId:original.id,clientRecordId:client[0],workspaceId,destinations,sources:ordered};\n  return {rootRecordId:root.id,originalListId:original.id,originalSheetId,clientRecordId:client[0],workspaceId,familyRecordIds:familyIds,destinations,sources:ordered,historyRecordIds:history.sort(),unfinishedRecordId:unfinished[0]??null,manifest};\n}\nconst original = $('Normalize Request').all().map(item => item.json);\nconst ids = [...new Set(original.map(item => String(item.topUpLeadListId || '').trim()))];\nif (!original.length || !ids.length || ids.some(id => !id)) throw new Error('Upload blocked: authoritative linked Lead List record could not be resolved.');\nconst response=$('Read Lead List Readiness').first().json;\nconst campaignResponse=$input.first().json;if(!Array.isArray(campaignResponse.records)||campaignResponse.offset)throw Error('Incomplete family metadata');\nif (!Array.isArray(response.records) || response.offset) throw new Error('Upload blocked: lead-list readiness lookup failed or was incomplete.');\nfor (const id of ids) {\n  const list = response.records.find(record => record.id === id);\n  if (!list) throw new Error('Upload blocked: linked Lead List is missing or inaccessible.');\n  const fields = list.fields || {};\n  const stage = String(fields.fld8nrebRFL0O8kgj || '').trim();\n  const qa = String(fields.fldUB4WsLi5kq6rUy || '').trim();\n  const processing = String(fields.fldf9wpMGWg0SebHV || '').trim();\n  if (stage.toLowerCase() !== 'ready' || qa.toLowerCase() !== 'passed') throw new Error('Upload blocked: every linked Lead List must be READY with QA Passed. Stage: ' + (stage || 'Not set') + '; QA: ' + (qa || 'Not passed') + '.');\n  if (['requested','queued','running','processing','waiting','failed','error'].includes(processing.toLowerCase())) throw new Error('Upload blocked: linked Lead List has an unfinished automation (' + processing + ').');\n}\n\nconst first=original[0];\nif(JSON.stringify(campaignResponse.records.map(r=>r.id).sort())!==JSON.stringify([...first.familyRecordIds].sort()))throw Error('Unexpected family read set');\nconst plan=resolveParentFirstPlan({campaigns:campaignResponse.records,lists:response.records,selectedRecordId:first.parentRecordId,currentListId:first.topUpLeadListId,complete:true});\nconst expected=[first.topUpLeadListId,...plan.sources.map(s=>s.recordId)].sort();\nif(JSON.stringify(expected)!==JSON.stringify([...first.readinessRecordIds].sort()))throw Error('Caller omitted or added family history; refresh before upload');\nif(JSON.stringify(plan.manifest)!==JSON.stringify(first.parentFirstManifest))throw Error('Parent-first manifest changed; refresh before upload');\nconst expectedTargets=plan.destinations.map(t=>t.recordId+'|'+t.campaignId+'|'+t.outputType).sort();\nif(JSON.stringify(expectedTargets)!==JSON.stringify(first.allFamilyTargets.map(t=>t.recordId+'|'+Number(t.campaignId)+'|'+t.outputType).sort()))throw Error('Destination differs from canonical family');\nconst current=response.records.find(r=>r.id===first.topUpLeadListId),currentSheet=String(current.fields.fldSOTvnUxzKWXMDD).match(/\\/spreadsheets\\/d\\/([A-Za-z0-9_-]+)/)?.[1];\nconst requestedSheet=String(first.sheetUrl).match(/\\/spreadsheets\\/(?:d\\/)?([A-Za-z0-9_-]+)/)?.[1];\nif(!currentSheet||currentSheet!==requestedSheet)throw Error('Current output sheet changed');\nconst binding={rootRecordId:plan.rootRecordId,originalListId:plan.originalListId,clientRecordId:plan.clientRecordId,workspaceId:plan.workspaceId,familyRecordIds:plan.familyRecordIds};\nconst family=plan.destinations.map(t=>({...t,baseUrl:'https://send.dulcy.io'}));\nfor(const c of original)if(c.topUpLeadListId!==first.topUpLeadListId||c.parentRecordId!==first.parentRecordId||JSON.stringify(c.parentFirstManifest)!==JSON.stringify(first.parentFirstManifest)||JSON.stringify(c.allFamilyTargets)!==JSON.stringify(first.allFamilyTargets))throw Error('Inconsistent upload items');\nconst downloads=original.map(json=>({json:{...json,downloadKind:'final',exclusionCampaigns:family,familyBinding:binding}}));\n// Prior-list and child membership exclusions belong to list building, not upload.\n// Preserve the canonical source manifest in provenance; download only this Ready/QA-passed list.\nfor(const item of downloads){const r=item.json;if(r.downloadKind==='final'){r.sourceSheetId=currentSheet;r.sourceTab=r.outputType==='generic'?'Final Generic':'Final Direct';r.sourceRecordId=first.topUpLeadListId;}r.requestKey=[r.downloadKind,r.sourceRecordId,r.sourceSheetId,r.sourceTab].join('|');}\nreturn downloads;"
+      },
+      "id": "6d85459c-5724-4686-b2bd-ec08a7525a60",
+      "name": "Require Ready Lead List and Passed QA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblVOg9BkPOMmnitt?returnFieldsByFieldId=true&pageSize=100&fields%5B%5D=fld8nrebRFL0O8kgj&fields%5B%5D=fldUB4WsLi5kq6rUy&fields%5B%5D=fldf9wpMGWg0SebHV&fields%5B%5D=fldevysyehxsGxt2q&fields%5B%5D=fldSOTvnUxzKWXMDD&fields%5B%5D=fldEujtSLqwdpOyGD&fields%5B%5D=fldQZJCpTofahmTkl&fields%5B%5D=fld0FHomkh3uyx0FD&fields%5B%5D=fldepbn71awSjmZPV&fields%5B%5D=fld4kyzDwnHq5V4Iy&fields%5B%5D=fldMSv3547BOvfdmH&fields%5B%5D=fldjn5vqHSVYiAR6z&fields%5B%5D=fldbg5PAnKyFHc3uy&filterByFormula=' + encodeURIComponent('OR(' + [...$('Normalize Request').first().json.readinessRecordIds.map(id => \"RECORD_ID()='\"+id+\"'\"), ...$('Normalize Request').first().json.familyRecordIds.map(id => \"FIND('\"+id+\"',{Top-up Build Scope JSON}&'')>0\")].join(',') + ')') }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableTokenApi",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "cdff8ea3-efb7-46fc-b90a-d5f1f349cce6",
+      "name": "Read Lead List Readiness",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        144,
+        464
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblAVAA6uBPaMj28P?returnFieldsByFieldId=true&pageSize=100&fields%5B%5D=fldSsb4QjS9UyvKhj&fields%5B%5D=fldl5bZ644djPsBmN&fields%5B%5D=fld5weZ6ED31dBlaz&fields%5B%5D=fld4lMlTPjrRmAFHp&fields%5B%5D=fldxSETE3D66RyWRH&fields%5B%5D=fld0DL0enVj3G1fUJ&fields%5B%5D=fldZABZwE9SmnwMv3&fields%5B%5D=fldCebt3IMI8ZxdQq&fields%5B%5D=fldQjybcwloD9dZxS&fields%5B%5D=fld1qb2IGdqKNyjJh&filterByFormula=' + encodeURIComponent('OR(' + $('Normalize Request').first().json.familyRecordIds.map(id => \"RECORD_ID()='\"+id+\"'\").join(',') + ')') }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableTokenApi",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "3388b4da-4b83-497c-a921-9315cf2f929e",
+      "name": "Read Top-up Campaign Family",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        448
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pure receipt preparation: no provider reads, Airtable writes, or credentials leave this node.\n// The coordinator captures the total uncontacted queue, including older unsent leads.\nconst summary=$('Confirm Top-up Campaign Membership').first().json;\nconst configs=$('Normalize Request').all().map(i=>i.json);\nconst candidates=[],errors=[],skipped=[],seen=new Set();\nconst integer=(value,name,min=0)=>{\n if(value===null||value===undefined||value===''||typeof value==='boolean')throw Error(name+' is missing');\n const n=Number(value);if(!Number.isSafeInteger(n)||n<min)throw Error(name+' is invalid');return n;\n};\nconst recordId=value=>typeof value==='string'&&/^rec[A-Za-z0-9]{14}$/.test(value);\nif(!Array.isArray(summary.results))errors.push('The original confirmation has no branch receipt array.');\nfor(const [index,r] of (Array.isArray(summary.results)?summary.results:[]).entries()){\n const label='branch '+(index+1);\n try{\n  if(!r||typeof r!=='object')throw Error('receipt is missing');\n  const campaignId=integer(r.campaignId,'campaign ID',1),leadListId=integer(r.leadListId,'import ID',1);\n  if(r.error)throw Error('original import/attachment stage reported failure for existing import '+leadListId);\n  const failed=integer(r.failed,'failed rows'),added=integer(r.added,'net growth');\n  if(failed!==0)throw Error('existing import '+leadListId+' has failed rows');\n  if(added===0){skipped.push({campaignId,leadListId,reason:'no positive net growth'});continue;}\n  if(!recordId(summary.topUpLeadListId))throw Error('source lead-list record identity is invalid');\n  const matching=configs.flatMap(c=>(c.allFamilyTargets||[c]).map(t=>({target:t,baseUrl:c.baseUrl})))\n   .filter(x=>Number(x.target?.campaignId)===campaignId);\n  if(!matching.length||matching.some(x=>x.baseUrl!=='https://send.dulcy.io'||!recordId(x.target?.recordId)))throw Error('exact campaign destination cannot be established');\n  const ids=[...new Set(matching.map(x=>x.target.recordId))];\n  if(ids.length!==1)throw Error('campaign destination is ambiguous');\n  if(matching.some(x=>x.target.outputType&&x.target.outputType!==r.outputType))throw Error('receipt output does not match its destination');\n  const ack=r.attachmentReceipt,p=r.providerImport;\n  if(ack?.success!==true||ack.campaignId!==campaignId||ack.leadListId!==leadListId)throw Error('exact attachment acknowledgment is missing');\n  if(p?.status!=='Processed'||integer(p.id,'processed import ID',1)!==leadListId)throw Error('existing import is not confirmed processed');\n  const processed=integer(p.processed,'processed rows'),succeeded=integer(p.succeeded,'succeeded rows'),providerFailed=integer(p.failed,'provider failed rows');\n  const acceptedRows=integer(r.acceptedRows,'accepted rows'),beforeTotal=integer(r.beforeTotal,'pre-attachment total'),afterTotal=integer(r.afterTotal,'post-attachment total');\n  if(providerFailed!==0||processed!==acceptedRows||succeeded+providerFailed!==processed||added>succeeded||afterTotal-beforeTotal!==added)throw Error('successful import counters do not reconcile');\n  const cycleId='bison:'+campaignId+':import:'+leadListId,key=ids[0]+'|'+cycleId;\n  if(seen.has(key))throw Error('duplicate branch receipt; preserve the first checkpoint attempt');\n  seen.add(key);\n  // Explicit whitelist prevents source credentials and unrelated personal data from propagation.\n  candidates.push({operation:'checkpoint',recordId:ids[0],cycleId,sourceLeadListId:summary.topUpLeadListId,\n   receipt:{campaignId,leadListId,outputType:String(r.outputType||''),acceptedRows,added,failed:0,\n    skipped:succeeded-added,countBasis:'net-campaign-growth-after-provider-attachment',beforeTotal,afterTotal,\n    providerImport:{id:leadListId,status:'Processed',processed,succeeded,failed:0},\n    attachmentReceipt:{success:true,campaignId,leadListId}}});\n }catch(e){errors.push(label+': '+String(e.message));}\n}\nreturn [{json:{candidates,errors,skipped}}];"
+      },
+      "name": "Prepare Atomic Replenishment Checkpoints",
+      "id": "0ef3aa7e-182b-4a58-93db-550a00023d2a",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3936,
+        1152
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8e24a58e-e6e2-5a83-ad70-5af775e14e10",
+              "leftValue": "={{ $json.candidates.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Have Valid Replenishment Checkpoints?",
+      "id": "3b1624f3-e208-4c18-858c-48164ea29bb6",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4176,
+        1152
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.first().json.candidates.map(json=>({json,pairedItem:{item:0}}));"
+      },
+      "name": "Expand Atomic Replenishment Checkpoints",
+      "id": "050b9c54-ab92-452b-b0ee-7d3b0575c762",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4416,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "JXPiiC2XLCvxCRqzEKk_0",
+          "mode": "id"
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "0d5dc6d0-6d67-480e-8622-f91537003f50",
+      "name": "Coordinate Replenishment Checkpoints",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        4656,
+        1024
+      ],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Every valid sibling is attempted before any preparation/coordination failure is raised.\nconst prepared=$('Prepare Atomic Replenishment Checkpoints').first().json;\nconst errors=[...prepared.errors],expected=new Map(prepared.candidates.map(c=>[c.recordId+'|'+c.cycleId,c]));\nconst confirmed=[],seen=new Set();\nif(expected.size){\n for(const item of $input.all()){\n  const r=item.json||{},key=String(r.recordId||'')+'|'+String(r.cycleId||'');\n  if(!expected.has(key)){errors.push('Coordinator returned an unconfirmed or mismatched branch result; reconcile the existing execution.');continue;}\n  if(seen.has(key)){errors.push(key+': duplicate coordinator result');continue;}\n  seen.add(key);\n  if(r.ok!==true||!(r.checkpoint===true||(r.checkpoint===false&&r.reason==='same import already checkpointed'))){\n   errors.push(key+': checkpoint was not confirmed; reconcile the existing coordinator execution without rerunning the top-up.');\n  }else confirmed.push({recordId:r.recordId,cycleId:r.cycleId,checkpoint:r.checkpoint});\n }\n for(const [key] of expected)if(!seen.has(key))errors.push(key+': no confirmed coordinator result');\n}\nif(errors.length)throw Error('TOP-UP STAGE FINISHED. Successful imports already completed; reconcile checkpoints only. Do not retry the whole top-up or reupload leads. Preserve and reconcile any failed or uncertain existing import separately. '+errors.join(' | '));\nreturn [{json:{...$('Confirm Top-up Campaign Membership').first().json,replenishmentCheckpoints:confirmed,replenishmentSkipped:prepared.skipped}}];"
+      },
+      "name": "Verify Atomic Replenishment Checkpoints",
+      "id": "01cdb43e-ac43-4545-af95-b26ad9c5b912",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4896,
+        1152
+      ]
+    },
+    {
+      "id": "ac945a84-e3da-46ad-81c4-dea1dbfe4c67",
+      "name": "Bind Exact Prepared Source",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        1000
+      ],
+      "parameters": {
+        "jsCode": "function resolveParentFirstPlan(input) {\n  const CF = {name:'fldSsb4QjS9UyvKhj',client:'fldl5bZ644djPsBmN',lists:'fld5weZ6ED31dBlaz',topup:'fld4lMlTPjrRmAFHp',bison:'fldxSETE3D66RyWRH',base:'fld0DL0enVj3G1fUJ',workspace:'fldQjybcwloD9dZxS',workspaceOverride:'fld1qb2IGdqKNyjJh',status:'fldZABZwE9SmnwMv3',processing:'fldCebt3IMI8ZxdQq'};\n  const LF = {client:'fldEujtSLqwdpOyGD',sheet:'fldSOTvnUxzKWXMDD',scope:'fldevysyehxsGxt2q',direct:'fldQZJCpTofahmTkl',generic:'fld0FHomkh3uyx0FD',processing:'fldf9wpMGWg0SebHV',stage:'fld8nrebRFL0O8kgj',campaign:'fldepbn71awSjmZPV'};\n  const fail = message => {throw Error('Parent-first top-up blocked: '+message);};\n  const f = r => r?.fields ?? r?.cellValuesByFieldId ?? {};\n  const text = v => String(v && typeof v==='object' ? v.name ?? '' : v ?? '').trim();\n  const ids = v => Array.isArray(v) ? v.map(x=>typeof x==='string'?x:x?.id).filter(Boolean) : [];\n  const same = (a,b) => JSON.stringify([...a].sort())===JSON.stringify([...b].sort());\n  const recordId = v => /^rec[A-Za-z0-9]+$/.test(v??'');\n  const campaigns=input.campaigns, lists=input.lists;\n  if(!Array.isArray(campaigns)||!Array.isArray(lists)||input.complete!==true||input.offset)fail('complete authoritative metadata is required');\n  if(campaigns.length>1000||lists.length>1000||new Set(campaigns.map(r=>r.id)).size!==campaigns.length||new Set(lists.map(r=>r.id)).size!==lists.length)fail('duplicate or unbounded metadata');\n  const cm=new Map(campaigns.map(r=>[r.id,r])),lm=new Map(lists.map(r=>[r.id,r]));\n  const selected=cm.get(input.selectedRecordId);if(!selected)fail('selected campaign missing');\n  const client=ids(f(selected)[CF.client]);if(client.length!==1||!recordId(client[0]))fail('exact client missing');\n  function workspace(r){\n    const raw=f(r)[CF.workspace];\n    const values=raw?.valuesByLinkedRecordId ? Object.values(raw.valuesByLinkedRecordId).flat() : Array.isArray(raw)?raw:[raw];\n    const unique=[...new Set(values.filter(v=>v!=null&&v!=='').map(String))];\n    if(unique.length!==1||!/^\\d+$/.test(unique[0])||Number(unique[0])<1)fail('exact workspace missing');\n    const override=f(r)[CF.workspaceOverride];if(override!=null&&override!==''&&String(override)!==unique[0])fail('conflicting workspace');\n    return unique[0];\n  }\n  const workspaceId=workspace(selected),matching=campaigns.filter(r=>same(ids(f(r)[CF.client]),client));\n  const suffix=/\\s+-\\s+(Generic|Direct) Emails\\s*$/i;\n  const base=n=>text(n).replace(suffix,'').trim().toLowerCase();\n  const scopes=new Map();\n  function scope(r){\n    if(scopes.has(r.id))return scopes.get(r.id);\n    const raw=f(r)[LF.scope];if(!raw){scopes.set(r.id,null);return null;}\n    let s;try{s=typeof raw==='string'?JSON.parse(raw):raw;}catch{fail('invalid scope on '+r.id);}\n    if(!s||s.version!==1||s.mode!=='this-build-only'||![r.id,'pending'].includes(s.buildRecordId)||!Array.isArray(s.sources)||s.sources.length>100)fail('invalid scope identity on '+r.id);\n    scopes.set(r.id,s);return s;\n  }\n  // Saved managed top-ups bind destinations by immutable record/provider IDs.\n  // Names remain display labels and must not invalidate a proven family.\n  const boundList=input.currentListId?lm.get(input.currentListId):null;\n  const boundScope=boundList?scope(boundList):null;\n  const savedFamily=boundScope?.parentFirstVersion===1;\n  const candidates=[];\n  if(savedFamily){\n    const root=cm.get(boundScope.originalParentRecordId),original=lm.get(boundScope.originalLeadListRecordId);\n    const ds=boundScope.destinations;\n    if(!root||!original||Number(f(root)[CF.bison])||!Array.isArray(ds)||ds.length!==2)fail('saved parent/original/destinations missing');\n    if(ds[0]?.outputType!=='generic'||ds[1]?.outputType!=='direct')fail('saved output types changed');\n    const children=ds.map(d=>cm.get(d.recordId));\n    if(children.some(r=>!r)||new Set([root.id,...children.map(r=>r.id)]).size!==3)fail('saved family record identities conflict');\n    if(![root.id,...children.map(r=>r.id)].includes(selected.id))fail('selected campaign is outside saved family');\n    if(!ids(f(root)[CF.lists]).includes(original.id)||scope(original))fail('saved original parent link changed');\n    for(const r of [root,...children])if(!same(ids(f(r)[CF.client]),client)||workspace(r)!==workspaceId)fail('saved family client/workspace changed');\n    children.forEach((r,i)=>{\n      if(!ids(f(r)[CF.lists]).includes(original.id)||Number(f(r)[CF.bison])!==Number(ds[i].campaignId))fail('saved child source/provider identity changed');\n    });\n    candidates.push({root,original,children});\n  }\n  const unsplit=!savedFamily&&Number(f(selected)[CF.bison])>0&&!suffix.test(text(f(selected)[CF.name]));\n  if(unsplit){\n    const originals=ids(f(selected)[CF.lists]).filter(id=>{const r=lm.get(id);if(!r)fail('original metadata missing');return !scope(r);});\n    if(originals.length!==1)fail('unsplit original source is ambiguous');\n    candidates.push({root:selected,original:lm.get(originals[0]),children:[selected]});\n  }\n  for(const root of unsplit||savedFamily?[]:matching){\n    if(Number(f(root)[CF.bison])||suffix.test(text(f(root)[CF.name]))||base(f(root)[CF.name])!==base(f(selected)[CF.name]))continue;\n    if(workspace(root)!==workspaceId)continue;\n    const originalIds=ids(f(root)[CF.lists]).filter(id=>{const r=lm.get(id);if(!r)fail('parent source metadata missing');return !scope(r);});\n    if(originalIds.length!==1)fail('parent original full list is missing or ambiguous');\n    const originalId=originalIds[0];\n    const children=['generic','direct'].map(type=>matching.filter(r=>r.id!==root.id&&text(f(r)[CF.name]).toLowerCase()===base(f(root)[CF.name])+' - '+type+' emails'&&workspace(r)===workspaceId&&ids(f(r)[CF.lists]).includes(originalId)));\n    if(children.some(rs=>rs.length!==1))continue;\n    if(![root.id,...children.map(rs=>rs[0].id)].includes(selected.id))continue;\n    candidates.push({root,original:lm.get(originalId),children:children.map(rs=>rs[0])});\n  }\n  if(candidates.length!==1)fail('cannot prove one canonical parent and both original-linked children');\n  const {root,original,children}=candidates[0],familyIds=[...new Set([root.id,...children.map(r=>r.id)])];\n  let unsplitType;\n  if(unsplit){const current=lm.get(input.currentListId),g=Number(f(current)[LF.generic]??0),d=Number(f(current)[LF.direct]??0);if((g>0)===(d>0))fail('unsplit upload requires exactly one output stream');unsplitType=g>0?'generic':'direct';}\n  const destinations=children.map((r,i)=>({recordId:r.id,campaignId:Number(f(r)[CF.bison]),outputType:unsplit?unsplitType:i===0?'generic':'direct'}));\n  if(destinations.some(t=>!Number.isSafeInteger(t.campaignId)||t.campaignId<1)||new Set(destinations.map(t=>t.campaignId)).size!==children.length)fail('invalid child provider identities');\n  for(const r of [root,...children]){const host=text(f(r)[CF.base]).replace(/\\/+$/,'');if(host&&host!=='https://send.dulcy.io')fail('destination server mismatch');}\n  for(const r of children){if(!['active','live','paused','complete','completed','inactive','finished','ended'].includes(text(f(r)[CF.status]).toLowerCase())&&text(f(r)[CF.processing]).toLowerCase()!=='completed')fail('child creation incomplete');}\n  if(!same(ids(f(original)[LF.client]),client))fail('parent full-list client mismatch');\n  function sheet(r){const id=text(f(r)[LF.sheet]).match(/\\/spreadsheets\\/d\\/([A-Za-z0-9_-]{20,})/)?.[1];if(!id)fail('source sheet missing on '+r.id);return id;}\n  const originalSheetId=sheet(original);\n  const current=input.currentListId?lm.get(input.currentListId):null;\n  if(input.currentListId&&!current)fail('current build missing');\n  if(current&&![root,...children].some(r=>ids(f(r)[CF.topup]).includes(current.id)))fail('current top-up no longer linked to family');\n  const belongs=s=>{\n    const bindings=[...(Array.isArray(s.campaignRecordIds)?s.campaignRecordIds:[]),s.campaignRecordId].filter(Boolean);\n    return s.originalParentRecordId===root.id||bindings.some(id=>familyIds.includes(id));\n  };\n  function validateScope(r,s){\n    const bindings=[...(Array.isArray(s.campaignRecordIds)?s.campaignRecordIds:[]),s.campaignRecordId].filter(Boolean);\n    if(!same(ids(f(r)[LF.client]),client)||!bindings.length||bindings.some(id=>!familyIds.includes(id)))fail('scope outside canonical family on '+r.id);\n    if(s.parentFirstVersion!=null){\n      if(s.parentFirstVersion!==1||s.originalParentRecordId!==root.id||s.originalLeadListRecordId!==original.id||s.clientRecordId!==client[0]||String(s.workspaceId)!==workspaceId||!same(s.campaignRecordIds??[],familyIds)||JSON.stringify(s.destinations)!==JSON.stringify(destinations))fail('parent-first scope binding changed on '+r.id);\n    }\n    if(!s.sources.some(e=>e.recordId===original.id&&e.sheetId===originalSheetId))fail('original full-list anchor absent from scope '+r.id);\n  }\n  const sources=new Map(),visiting=new Set(),visited=new Set(),history=[],unfinished=[];\n  function add(id,expected=null){\n    if(id===current?.id)fail('self/cyclic source');\n    const r=lm.get(id);if(!r||!recordId(id))fail('prior source missing');\n    if(!same(ids(f(r)[LF.client]),client))fail('prior source client mismatch');\n    const sid=sheet(r);if(current&&sid===sheet(current))fail('current output used as prior source');\n    if(expected&&(sid!==expected.sheetId||!Array.isArray(expected.tabs)||expected.tabs.some(t=>!['Expanded Companies','Final Direct','Final Generic'].includes(t))))fail('prior source provenance changed');\n    if(visiting.has(id))fail('cyclic prior history');\n    sources.set(id,{recordId:id,sheetId:sid,tabs:['Expanded Companies','Final Direct','Final Generic']});\n    if(visited.has(id))return;visiting.add(id);\n    const s=scope(r);if(s){validateScope(r,s);for(const e of s.sources)add(e.recordId,e);}else if(id!==original.id)fail('unbound historical list');\n    visiting.delete(id);visited.add(id);\n  }\n  add(original.id);\n  // Scan the complete metadata result, not just the currently selected pointer.\n  for(const r of lists){\n    const raw=f(r)[LF.scope];if(!raw)continue;\n    let s;try{s=typeof raw==='string'?JSON.parse(raw):raw;}catch{if(same(ids(f(r)[LF.client]),client))fail('unreadable same-client history');continue;}\n    if(!belongs(s))continue;\n    s=scope(r);validateScope(r,s);\n    if(r.id===current?.id)continue;\n    const count=Number(f(r)[LF.direct]??0)+Number(f(r)[LF.generic]??0);\n    if(!Number.isFinite(count)||count<0)fail('invalid history counts');\n    const stage=text(f(r)[LF.stage]).toLowerCase(),processing=text(f(r)[LF.processing]).toLowerCase();\n    if(['requested','queued','running','processing','waiting'].includes(processing))fail('another family build has active or waiting work');\n    const completedZero=processing==='completed'&&['enrichment','qa','ready','completed'].includes(stage);\n    if(count>0||['ready','completed'].includes(stage)||completedZero){if(s.buildRecordId!==r.id)fail('completed history has unbound build identity');history.push(r.id);add(r.id);}\n    else unfinished.push(r.id);\n  }\n  // Explicitly linked/retained sources cannot disappear even if counts are stale.\n  for(const r of [root,...children])for(const id of [...ids(f(r)[CF.lists]),...ids(f(r)[CF.topup])]){\n    if(id===current?.id||unfinished.includes(id))continue;add(id);\n  }\n  if(current){const s=scope(current);if(!s||s.buildRecordId!==current.id)fail('current scope missing or unbound');validateScope(current,s);for(const e of s.sources)add(e.recordId,e);}\n  if(unfinished.length>1||(current&&unfinished.length))fail('multiple unfinished family builds');\n  if(sources.size>100)fail('history exceeds bounded source manifest');\n  const ordered=[...sources.values()].sort((a,b)=>a.recordId.localeCompare(b.recordId));\n  const manifest={version:1,mode:'this-build-only',buildRecordId:current?.id??'pending',parentFirstVersion:1,campaignRecordId:root.id,campaignRecordIds:familyIds,originalParentRecordId:root.id,originalLeadListRecordId:original.id,clientRecordId:client[0],workspaceId,destinations,sources:ordered};\n  return {rootRecordId:root.id,originalListId:original.id,originalSheetId,clientRecordId:client[0],workspaceId,familyRecordIds:familyIds,destinations,sources:ordered,historyRecordIds:history.sort(),unfinishedRecordId:unfinished[0]??null,manifest};\n}\n\n\nconst ManagedTopUp=(()=>{\n\n\nconst F={scope:'fldevysyehxsGxt2q',client:'fldEujtSLqwdpOyGD',stage:'fld8nrebRFL0O8kgj',qa:'fldUB4WsLi5kq6rUy',processing:'fldf9wpMGWg0SebHV',sheet:'fldSOTvnUxzKWXMDD',direct:'fldQZJCpTofahmTkl',generic:'fld0FHomkh3uyx0FD',run:'fld4kyzDwnHq5V4Iy',completed:'fldMSv3547BOvfdmH',file:'fldjn5vqHSVYiAR6z',name:'fldbg5PAnKyFHc3uy'};\nconst fields=r=>r?.fields??r?.cellValuesByFieldId??{};\nconst text=v=>String(v&&typeof v==='object'?v.name??'':v??'').trim();\nconst ids=v=>Array.isArray(v)?v.map(x=>typeof x==='string'?x:x?.id).filter(Boolean):[];\nfunction canonical(v){if(Array.isArray(v))return '['+v.map(canonical).join(',')+']';if(v&&typeof v==='object')return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical(v[k])).join(',')+'}';return JSON.stringify(v??null);}\nfunction readScope(record){const v=fields(record)[F.scope];if(!v)return null;try{return typeof v==='string'?JSON.parse(v):v;}catch{throw Error('Unreadable saved top-up scope.');}}\nfunction candidatePlan(input){\n const current=input.lists.find(r=>r.id===input.currentListId);if(!current)throw Error('Completed top-up is not loaded.');const f=fields(current),scope=readScope(current);\n if(!scope||scope.parentFirstVersion!==1||scope.version!==1||scope.mode!=='this-build-only'||scope.buildRecordId!==current.id)throw Error('A saved managed top-up scope is required.');\n if(!scope.campaignRecordIds?.includes(input.selectedRecordId)||!Array.isArray(scope.destinations)||scope.destinations.length!==2)throw Error('This top-up belongs to another campaign family.');\n if(text(f[F.stage])!=='Ready'||text(f[F.qa])!=='Passed'||text(f[F.processing])!=='Completed')throw Error('Complete this top-up with Ready, QA Passed and Completed processing first.');\n const counts={generic:Number(f[F.generic]??0),direct:Number(f[F.direct]??0)};\n if(Object.values(counts).some(n=>!Number.isSafeInteger(n)||n<0)||counts.generic+counts.direct<1)throw Error('Final top-up counts are missing or invalid.');\n if(!/^\\d+$/.test(text(f[F.run]))||!text(f[F.completed]))throw Error('The final QA source revision is missing.');\n const sheetId=text(f[F.sheet]).match(/\\/spreadsheets\\/d\\/([A-Za-z0-9_-]{20,})/)?.[1];if(!sheetId)throw Error('Final top-up sheet is missing.');\n // Only the candidate check simulates adoption. Never weaken the production upload resolver.\n const campaigns=input.campaigns.map(r=>{const cf={...fields(r)};if(scope.campaignRecordIds.includes(r.id))cf.fld4lMlTPjrRmAFHp=[{id:current.id}];return {...r,fields:cf};});\n const plan=resolveParentFirstPlan({...input,campaigns,complete:true});\n if(plan.rootRecordId!==scope.originalParentRecordId||plan.originalListId!==scope.originalLeadListRecordId||plan.workspaceId!==String(scope.workspaceId))throw Error('Saved top-up identity changed.');\n const revision={version:1,listId:current.id,sheetId,runId:text(f[F.run]),completedAt:text(f[F.completed]),qa:'Passed',stage:'Ready',counts,scope,finalFiles:(f[F.file]??[]).map(x=>({id:x.id,size:x.size??null})).sort((a,b)=>a.id.localeCompare(b.id))};\n return {plan,revision,revisionText:canonical(revision),sheetId,counts,name:text(f[F.name])};\n}\nfunction finalRows(values,label,expected){\n if(!Array.isArray(values)||!values.length||!Array.isArray(values[0]))throw Error('Missing '+label+' final data.');\n const headers=values[0].map(x=>String(x??'').trim());const normalized=headers.map(x=>x.toLowerCase().replace(/[^a-z0-9]/g,''));const indices=normalized.flatMap((v,i)=>['email','emails','emailaddress'].includes(v)?[i]:[]);if(indices.length!==1)throw Error('A unique email column is required in '+label+'.');\n const rows=values.slice(1).filter(r=>Array.isArray(r)&&r.some(v=>String(v??'').trim())).map(r=>headers.map((_,i)=>String(r[i]??'')));\n if(rows.length!==expected)throw Error(label+' final row count differs from saved QA counts.');\n const seen=new Set();for(const row of rows){const email=row[indices[0]].trim().toLowerCase();if(!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)||seen.has(email))throw Error('Invalid or duplicate final email in '+label+'.');seen.add(email);}\n return {headers,rows,emails:[...seen]};\n}\nfunction sourceContent(generic,direct,counts){const g=finalRows(generic,'Final Generic',counts.generic),d=finalRows(direct,'Final Direct',counts.direct);if(g.emails.some(e=>d.emails.includes(e)))throw Error('Duplicate email across final streams.');return canonical({version:1,generic:{headers:g.headers,rows:g.rows},direct:{headers:d.headers,rows:d.rows}});}\nfunction inspectImports(all,current,revision){\n if(!Array.isArray(all)||all.some(x=>!Number.isSafeInteger(Number(x.id))))throw Error('Incomplete provider import history.');\n const prefix=current.name+' - ',stable='topup:'+revision.listId+':';\n const matching=all.filter(x=>String(x.name??'').startsWith(prefix)||String(x.name??'').includes(stable));\n if(matching.length)throw Error('A completed, pending or failed import already exists for this source. Reconcile it; do not upload again.');\n const created=Date.parse(current.createdAt);if(!Number.isFinite(created))throw Error('Complete import history needs the source creation timestamp.');\n const recent=[];for(const item of all){const at=Date.parse(item.created_at??item.createdAt??'');if(!Number.isFinite(at))throw Error('Complete import history contains an uncertain import timestamp.');if(at>=created)recent.push(Number(item.id));}\n return {complete:true,total:all.length,matchingImports:0,sourceListId:revision.listId,sourceName:current.name,createdAtValidated:true,recentImportIds:recent};\n}\n\nreturn {F,fields,text,ids,canonical,readScope,candidatePlan,finalRows,sourceContent,inspectImports};})();\n\nconst configs=$('Require Ready Lead List and Passed QA').all().map(x=>x.json),first=configs[0],downloaded=$input.all();\nconst family=$('Read Top-up Campaign Family').first().json.records,lists=$('Read Lead List Readiness').first().json.records;\nconst candidate=ManagedTopUp.candidatePlan({campaigns:family,lists,selectedRecordId:first.parentRecordId,currentListId:first.topUpLeadListId,complete:true});\nconst bound=downloaded.map((item,index)=>{const c=$('Require Ready Lead List and Passed QA').itemMatching(index).json;const r=item.json;if(c.sourceRecordId!==candidate.revision.listId||c.sourceSheetId!==candidate.sheetId||String(r.range??'').split('!')[0].replace(/^'|'$/g,'')!==c.sourceTab)throw Error('Final source read binding changed.');return {json:{...r,__managedRequestKey:c.requestKey},sourceTab:c.sourceTab};});\nconst values=tab=>{const type=tab==='Final Generic'?'generic':'direct';if(candidate.counts[type]===0){const h=first.uploadPreparation?.binding?.emptyStreams?.[type];if(!Array.isArray(h))throw Error('Missing prepared empty-stream headers.');return [h];}const m=bound.filter(x=>x.sourceTab===tab);if(m.length!==1)throw Error('Final source stream missing.');return m[0].json.values;};\n// Zero-count streams do not download on the upload path; preflight still bound their headers.\n\nconst p=candidate.plan,binding={listId:first.topUpLeadListId,sheetId:candidate.sheetId,rootRecordId:p.rootRecordId,originalListId:p.originalListId,clientRecordId:p.clientRecordId,workspaceId:p.workspaceId,destinations:p.destinations,counts:candidate.counts,sourceRevision:candidate.revision,emptyStreams:first.uploadPreparation.binding.emptyStreams};\nreturn [{json:{ledger:{sourceId:first.topUpLeadListId,uploadId:first.uploadPreparation.uploadId,revisionHash:first.uploadPreparation.revisionHash,contentText:ManagedTopUp.sourceContent(values('Final Generic'),values('Final Direct'),candidate.counts),binding,owner:String($execution.id)},downloads:bound.map(x=>x.json)}}];\n"
+      }
+    },
+    {
+      "id": "18ad21c8-5ec0-4968-ac8b-8ee9d11d8b63",
+      "name": "Claim Exact Prepared Upload",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        230,
+        1000
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT original_batch_api.managed_topup_upload_v1($1::text,$2::jsonb) AS result",
+        "options": {
+          "queryReplacement": "={{ ['claim',JSON.stringify($json.ledger)] }}"
+        }
+      },
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "id": "88e8473d-56ad-40a4-9c99-b87a8d7fef3f",
+      "name": "Restore Bound Final Downloads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        1000
+      ],
+      "parameters": {
+        "jsCode": "if($json.result?.ok!==true||$json.result.contentHash!==$('Normalize Request').first().json.uploadPreparation.contentHash)throw Error('The exact prepared top-up could not be claimed.');return $('Bind Exact Prepared Source').first().json.downloads.map(json=>({json}));"
+      }
+    },
+    {
+      "id": "c24e83b7-0dbb-4eb4-a187-f2f11d13d77c",
+      "name": "Admit One Provider Import Attempt",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        690,
+        1000
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT original_batch_api.managed_topup_upload_v1($1::text,$2::jsonb) AS result",
+        "options": {
+          "queryReplacement": "={{ ['begin_branch',JSON.stringify({sourceId:$json.topUpLeadListId,uploadId:$json.uploadPreparation.uploadId,owner:String($execution.id),outputType:$json.outputType,campaignId:Number($json.campaignId)})] }}"
+        }
+      },
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "id": "7316f5b1-1ea6-4d71-b74e-61f25a2c1804",
+      "name": "Restore Admitted Import",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        1000
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().map((_,i)=>{const item=$('Top-up CSV Ready?').itemMatching(i);return {json:item.json,binary:item.binary};});"
+      }
+    },
+    {
+      "id": "35b36d4b-bb4c-43eb-bd68-29da2c1c7aec",
+      "name": "Record Exact Provider Import",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1150,
+        1000
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT original_batch_api.managed_topup_upload_v1($1::text,$2::jsonb) AS result",
+        "options": {
+          "queryReplacement": "={{ ['record_import',JSON.stringify({sourceId:$json.topUpLeadListId,uploadId:$json.uploadPreparation.uploadId,owner:String($execution.id),outputType:$json.outputType,campaignId:Number($json.campaignId),importId:$json.leadListId})] }}"
+        }
+      },
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "id": "788839ed-98b7-49d9-8226-e0e5201ba4c7",
+      "name": "Restore Captured Import",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1380,
+        1000
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().map((_,i)=>({json:$('Capture Top-up Import Result').itemMatching(i).json}));"
+      }
+    },
+    {
+      "id": "008a9b08-18da-4bc6-aae7-ca236e270b94",
+      "name": "Save Source-Bound Import Receipt",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1610,
+        1000
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT original_batch_api.managed_topup_upload_v1($1::text,$2::jsonb) AS result",
+        "options": {
+          "queryReplacement": "={{ ['finish',JSON.stringify({sourceId:$json.topUpLeadListId,uploadId:$('Normalize Request').first().json.uploadPreparation.uploadId,owner:String($execution.id),receipt:$json})] }}"
+        }
+      },
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "id": "0184404f-73ed-4031-bfc6-e6f90d1e3b96",
+      "name": "Restore Confirmed Top-up Receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1840,
+        1000
+      ],
+      "parameters": {
+        "jsCode": "const saved=$json.result;if(saved?.ok!==true)throw Error('Import receipt could not be saved. Do not upload again.');return [{json:{...$('Confirm Top-up Campaign Membership').first().json,managedUploadReceipt:{version:1,state:saved.state,sourceId:saved.sourceId,uploadId:saved.uploadId,revisionHash:saved.revisionHash,contentHash:saved.contentHash,binding:saved.binding,receipt:saved.receipt}}}];"
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblVOg9BkPOMmnitt/'+$json.topUpLeadListId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableTokenApi",
+        "options": {
+          "timeout": 30000
+        },
+        "method": "PATCH",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {fields:{'Top-up Upload Receipt JSON':JSON.stringify($json.managedUploadReceipt)}} }}"
+      },
+      "id": "8f9e91d9-8661-4753-85e4-07ae63b208fe",
+      "name": "Write Source-Bound List Receipt",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        1000
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "id": "bd19ec6e-5078-4d85-8148-8fbc28f2498a",
+      "name": "Restore Saved Top-up Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2600,
+        1000
+      ],
+      "parameters": {
+        "jsCode": "return [{json:$('Restore Confirmed Top-up Receipt').first().json}];"
+      }
+    }
+  ],
+  "connections": {
+    "Campaign Top-up Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Request": {
+      "main": [
+        [
+          {
+            "node": "Apply Selected Top-up Senders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Final Lead Sheet": {
+      "main": [
+        [
+          {
+            "node": "Bind Exact Prepared Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Top-up CSV": {
+      "main": [
+        [
+          {
+            "node": "Top-up CSV Ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Top-up CSV Ready?": {
+      "main": [
+        [
+          {
+            "node": "Admit One Provider Import Attempt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for Top-up Import",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Top-up CSV": {
+      "main": [
+        [
+          {
+            "node": "Capture Top-up Import Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Capture Top-up Import Result": {
+      "main": [
+        [
+          {
+            "node": "Record Exact Provider Import",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Top-up Import": {
+      "main": [
+        [
+          {
+            "node": "Attach Imported Top-up Lists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach Imported Top-up Lists": {
+      "main": [
+        [
+          {
+            "node": "Wait for Top-up Campaign Sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Top-up Campaign Sync": {
+      "main": [
+        [
+          {
+            "node": "Confirm Top-up Campaign Membership",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm Top-up Campaign Membership": {
+      "main": [
+        [
+          {
+            "node": "Save Source-Bound Import Receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply Selected Top-up Senders": {
+      "main": [
+        [
+          {
+            "node": "Confirm Top-up Sender Selection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm Top-up Sender Selection": {
+      "main": [
+        [
+          {
+            "node": "Top-up Senders Ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Top-up Senders Ready?": {
+      "main": [
+        [
+          {
+            "node": "Read Lead List Readiness",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Confirm Top-up Campaign Membership",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Lead List Readiness": {
+      "main": [
+        [
+          {
+            "node": "Read Top-up Campaign Family",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Require Ready Lead List and Passed QA": {
+      "main": [
+        [
+          {
+            "node": "Download Final Lead Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Top-up Campaign Family": {
+      "main": [
+        [
+          {
+            "node": "Require Ready Lead List and Passed QA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Top-up Result": {
+      "main": [
+        [
+          {
+            "node": "Prepare Atomic Replenishment Checkpoints",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Atomic Replenishment Checkpoints": {
+      "main": [
+        [
+          {
+            "node": "Have Valid Replenishment Checkpoints?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Expand Atomic Replenishment Checkpoints": {
+      "main": [
+        [
+          {
+            "node": "Coordinate Replenishment Checkpoints",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Coordinate Replenishment Checkpoints": {
+      "main": [
+        [
+          {
+            "node": "Verify Atomic Replenishment Checkpoints",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Have Valid Replenishment Checkpoints?": {
+      "main": [
+        [
+          {
+            "node": "Expand Atomic Replenishment Checkpoints",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Verify Atomic Replenishment Checkpoints",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bind Exact Prepared Source": {
+      "main": [
+        [
+          {
+            "node": "Claim Exact Prepared Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim Exact Prepared Upload": {
+      "main": [
+        [
+          {
+            "node": "Restore Bound Final Downloads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Bound Final Downloads": {
+      "main": [
+        [
+          {
+            "node": "Prepare Top-up CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Admit One Provider Import Attempt": {
+      "main": [
+        [
+          {
+            "node": "Restore Admitted Import",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Admitted Import": {
+      "main": [
+        [
+          {
+            "node": "Upload Top-up CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Exact Provider Import": {
+      "main": [
+        [
+          {
+            "node": "Restore Captured Import",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Captured Import": {
+      "main": [
+        [
+          {
+            "node": "Wait for Top-up Import",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Source-Bound Import Receipt": {
+      "main": [
+        [
+          {
+            "node": "Restore Confirmed Top-up Receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Confirmed Top-up Receipt": {
+      "main": [
+        [
+          {
+            "node": "Write Source-Bound List Receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Source-Bound List Receipt": {
+      "main": [
+        [
+          {
+            "node": "Restore Saved Top-up Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Saved Top-up Summary": {
+      "main": [
+        [
+          {
+            "node": "Save Top-up Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2026-08-22T00:39:27.437+00:00",
+  "updatedAt": "2026-11-17T16:43:33.706+00:00",
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+  },
+  "staticData": null,
+  "versionId": "c5b6e9d4-4002-4d67-8766-a6b505065444",
+  "triggerCount": 1,
+  "id": "S2_1UX8GnAKPiYvWqj74s",
+  "meta": null,
+  "parentFolderId": "dN65xzQ6dbAiLisD",
+  "isArchived": false,
+  "versionCounter": 111,
+  "description": null,
+  "activeVersionId": "c5b6e9d4-4002-4d67-8766-a6b505065444"
+}

@@ -1,0 +1,505 @@
+{
+  "id": "SndrUpdateMain26A",
+  "name": "[Campaign Center] Update EmailBison Senders",
+  "nodes": [
+    {
+      "id": "b3e0dbfb-6368-403d-9bd9-0669578cc1e6",
+      "code": null,
+      "name": "Sender update request",
+      "type": "n8n-nodes-base.webhook",
+      "disabled": null
+    },
+    {
+      "id": "8059770d-1995-4125-99a9-5c174120b22f",
+      "code": "const r=$input.first().json.body||{};\nif(!/^rec[a-zA-Z0-9]{14}$/.test(r.recordId||'')||!/^[-a-f0-9]{36}$/i.test(r.requestId||''))throw new Error('Invalid sender update request.');\nif(!Array.isArray(r.senderRecordIds)||!r.senderRecordIds.length||r.senderRecordIds.length>1000||r.senderRecordIds.some(id=>!/^rec[a-zA-Z0-9]{14}$/.test(id))||new Set(r.senderRecordIds).size!==r.senderRecordIds.length)throw new Error('Select 1\u20131000 unique sender accounts.');\nreturn [{json:{state:{stage:'start',recordId:r.recordId,requestId:r.requestId,senderRecordIds:r.senderRecordIds,requestedAt:new Date().toISOString(),executionId:String($execution.id)}}}];",
+      "name": "Validate request",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "d672d0ea-70cc-4692-a31c-5fb353af17b9",
+      "code": "// Pure state machine: all network calls are performed by native n8n nodes.\nconst FIELD = {state:'fldRS75BkIlqfMKrA', senders:'fldi906rwZ9YOpU64', campaign:'fldxSETE3D66RyWRH', base:'fld0DL0enVj3G1fUJ', key:'fldlb6cfn7cGkgsB0', client:'fldl5bZ644djPsBmN', action:'fld7n4KEnvaPMDbt2'};\nconst AT = 'https://api.airtable.com/v0/appxqINt5XKw7a76A/';\nconst CAMPAIGNS = AT+'tblAVAA6uBPaMj28P/';\nconst clean = v => String(Array.isArray(v)?v[0]??'':v??'').trim();\nconst ids = a => [...new Set((a||[]).map(x=>String(x?.id??x)))].sort();\nconst equal = (a,b) => JSON.stringify(ids(a))===JSON.stringify(ids(b));\nconst fail = message => {throw new Error(message);};\nfunction resultBody(response) {\n if (!response || response.error || !(response.statusCode>=200 && response.statusCode<300)) fail('Request failed'+(response?.statusCode?' (HTTP '+response.statusCode+')':'')+'.');\n const b=typeof response.body==='string'?JSON.parse(response.body):response.body;\n if (!b || b.success===false || b.error) fail('The service did not confirm success.');\n return b;\n}\nfunction currentRecord(s,b) {\n if(b.id!==s.recordId) fail('Airtable returned a different campaign.');\n const f=b.fields||{}; let saved;try {saved=JSON.parse(f[FIELD.state]||'{}');}catch{fail('Sender update request is unreadable.');}\n if(saved.requestId!==s.requestId) fail('A newer sender request exists. This run will not overwrite it.');\n if(!equal(saved.senderRecordIds,s.senderRecordIds)||!equal(f[FIELD.senders],s.senderRecordIds)) fail('The sender selection changed during this update. Run the update again with the intended selection.');\n let actionRequest={};try{actionRequest=JSON.parse(f.fldKZKnaFMiAHrDEE||'{}');}catch{}\n const kind=actionRequest.kind, actionTime=Date.parse(actionRequest.requestedAt||'');\n if(['Launch','Pause','Delete'].includes(kind)&&kind===clean(f[FIELD.action])){\n  const status=clean(f.fldZABZwE9SmnwMv3).toLowerCase();\n  const fresh=Date.parse(f.fldnHjTrnRPfEqM4e||'')>=actionTime;\n  const result=fresh&&(kind==='Launch'?['active','running','live','scheduled','completed'].includes(status):kind==='Pause'?['paused','inactive'].includes(status):status==='deleted');\n  const terminal=Date.parse(f.fldqKPdzUqppbItvX||'')>=actionTime&&['completed','failed','error'].includes(clean(f.fldCebt3IMI8ZxdQq).toLowerCase());\n  if(!result&&!terminal)fail('Another campaign action is pending. Finish it before updating senders.');\n }\n if(s.campaignId && clean(f[FIELD.campaign])!==s.campaignId) fail('The linked EmailBison campaign changed.');\n if(s.baseUrl && clean(f[FIELD.base]).replace(/\\/$/,'')!==s.baseUrl) fail('The campaign server changed.');\n return f;\n}\nfunction request(s,stage,kind,method,url,body) {s.stage=stage;return {state:s,action:{kind,method,url,body}};}\nfunction bison(s,stage,method,path,body) {return request(s,stage,'bison',method,s.baseUrl+'/api/campaigns/'+s.campaignId+path,body);}\nfunction readRecord(s,stage) {return request(s,stage,'airtable','GET',CAMPAIGNS+s.recordId+'?returnFieldsByFieldId=true');}\nfunction save(s,stage,status,message) {\n const state={requestId:s.requestId,senderRecordIds:s.senderRecordIds,status,message,requestedAt:s.requestedAt,updatedAt:new Date().toISOString(),executionId:s.executionId,originalStatus:s.originalStatus||null,selectedCount:s.senderRecordIds.length,attachedCount:s.finalIds?.length??null,resumed:!!s.resumed,requiresAttention:!!s.holdLock};\n return request(s,stage,'airtable','PATCH',CAMPAIGNS+s.recordId,{fields:{[FIELD.state]:JSON.stringify(state)}});\n}\nfunction list(s,stage,path,page=1) {s.page=page;return request(s,stage,'bison','GET',s.baseUrl+'/api'+path+'?page='+page);}\nfunction pageRows(s,b,property) {\n if(!Array.isArray(b.data)||!b.meta||Number(b.meta.current_page)!==s.page) fail('The sender listing was incomplete.');\n const last=Number(b.meta.last_page), total=Number(b.meta.total);\n if(!Number.isInteger(last)||last<1||last>100||!Number.isInteger(total)||total<0) fail('The sender listing pagination could not be verified.');\n if(s.page===1){s[property]=[];s.listTotal=total;s.listLast=last;}\n if(s.listTotal!==total||s.listLast!==last) fail('Sender accounts changed while pages were being read.');\n s[property].push(...b.data.map(r=>({id:String(r.id),status:clean(r.status).toLowerCase()})));\n if(s.page<last)return false;\n if(s[property].length!==total||ids(s[property]).length!==total) fail('Sender counts did not reconcile across pages.');\n return true;\n}\nfunction wait(s,next){s.stage=next;return {state:s,action:{kind:'wait'}};}\nfunction finish(s){const release=s.locked&&!s.holdLock;if(release)s.stage='released';return {state:s,action:{kind:release?'release':'done'}};}\nfunction recovery(s,message){\n s.error=message;s.resumed=false;\n if(s.pauseAttempted){s.recoveryPoll=0;return bison(s,'recoverPause','PATCH','/pause');}\n if(s.authorized)return readRecord(s,'failureRead');\n return finish(s);\n}\nfunction advance(input,response) {\n const s=JSON.parse(JSON.stringify(input));\n try {\n  const b=response===undefined?null:resultBody(response);\n  switch(s.stage){\n   case 'interrupted':s.error='The sender update execution stopped unexpectedly. Review the run before retrying.';s.pauseAttempted=true;return bison(s,'recoverPause','PATCH','/pause');\n   case 'cannotRecover':s.error='The campaign connection changed after an interrupted sender update. Check EmailBison and the retained lock before retrying.';s.holdLock=true;return readRecord(s,'failureRead');\n   case 'topupStart':return readRecord(s,'topupLoad');\n   case 'topupLoad':{\n    if(b.id!==s.recordId)fail('Airtable returned a different top-up campaign.');\n    const f=b.fields||{};\n    if(clean(f[FIELD.campaign])!==s.expectedCampaignId)fail('Top-up campaign ID does not match Airtable.');\n    let previous={};try{previous=JSON.parse(f[FIELD.state]||'{}');}catch{fail('Existing sender update state is unreadable.');}\n    if(['Requested','Running'].includes(previous.status))fail('A sender update is already pending. Wait for it before topping up.');\n    const selected=f[FIELD.senders];\n    if(!Array.isArray(selected)||!selected.length||selected.length>1000||selected.some(id=>!/^rec[a-zA-Z0-9]{14}$/.test(id))||ids(selected).length!==selected.length)fail('Select 1\u20131000 unique sender accounts for the top-up campaign.');\n    s.senderRecordIds=selected;s.authorized=true;\n    return save(s,'topupRequested','Requested','Top-up is checking the selected sender accounts before importing leads.');\n   }\n   case 'topupRequested':return readRecord(s,'load');\n   case 'start':return readRecord(s,'load');\n   case 'load':{\n    let stored={};try{stored=JSON.parse(b.fields?.[FIELD.state]||'{}');}catch{}\n    s.authorized=b.id===s.recordId&&stored.requestId===s.requestId;\n    const f=currentRecord(s,b);\n    s.campaignId=clean(f[FIELD.campaign]);s.baseUrl=clean(f[FIELD.base]).replace(/\\/$/,'');s.apiKey=clean(f[FIELD.key]);\n    if(!/^\\d+$/.test(s.campaignId)||Number(s.campaignId)<1)fail('Create the EmailBison output campaign first.');\n    // Only configured public HTTPS origins may receive the client credential.\n    if(!/^https:\\/\\/[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\\.[a-z]{2,}$/i.test(s.baseUrl))fail('Set a valid HTTPS EmailBison server.');\n    if(!s.apiKey||!Array.isArray(f[FIELD.client])||f[FIELD.client].length!==1)fail('The campaign must have one client and its EmailBison API credential.');\n    s.lockKey=s.baseUrl+'/'+s.campaignId;s.stage='locked';return {state:s,action:{kind:'acquire'}};\n   }\n   case 'locked':\n    if(b.duplicate){s.duplicate=true;return finish(s);}\n    if(!b.acquired){s.error='Another sender update is running, or this request was already processed. No sender changes were made.';return readRecord(s,'failureRead');}\n    s.locked=true;return save(s,'runningSaved','Running','Checking the selected sender accounts.');\n   case 'runningSaved':\n    s.accountIndex=0;s.senderIds=[];return request(s,'account','airtable','GET',AT+'tblMSOBJ0wMgxSg4l/'+s.senderRecordIds[0]+'?returnFieldsByFieldId=true');\n   case 'account':{\n    if(b.id!==s.senderRecordIds[s.accountIndex])fail('A sender record did not match the selection.');\n    const id=clean(b.fields?.fldR19WUqSSBVQcPO);if(!/^\\d+$/.test(id)||Number(id)<1)fail('A selected account has no valid EmailBison sender ID.');\n    s.senderIds.push(id);s.accountIndex++;\n    if(s.accountIndex<s.senderRecordIds.length)return request(s,'account','airtable','GET',AT+'tblMSOBJ0wMgxSg4l/'+s.senderRecordIds[s.accountIndex]+'?returnFieldsByFieldId=true');\n    if(ids(s.senderIds).length!==s.senderIds.length)fail('Two selected Airtable accounts refer to the same EmailBison sender.');\n    return list(s,'eligible','/sender-emails');\n   }\n   case 'eligible':\n    if(!pageRows(s,b,'eligible'))return list(s,'eligible','/sender-emails',s.page+1);\n    if(s.senderIds.some(id=>!s.eligible.some(a=>a.id===id&&a.status==='connected')))fail('Every selected sender must be connected and accessible in this client\u2019s EmailBison workspace.');\n    delete s.eligible;return bison(s,'original','GET','');\n   case 'original':\n    if(String(b.data?.id)!==s.campaignId)fail('EmailBison returned a different campaign.');\n    s.originalStatus=clean(b.data.status).toLowerCase();\n    if(!['active','running','queued','paused','draft','completed'].includes(s.originalStatus))fail('This campaign status does not allow a sender update.');\n    s.wasRunning=['active','running','queued'].includes(s.originalStatus);\n    return list(s,'before','/campaigns/'+s.campaignId+'/sender-emails');\n   case 'before':\n    if(!pageRows(s,b,'before'))return list(s,'before','/campaigns/'+s.campaignId+'/sender-emails',s.page+1);\n    s.originalIds=ids(s.before);delete s.before;\n    s.add=s.senderIds.filter(id=>!s.originalIds.includes(id));s.remove=s.originalIds.filter(id=>!s.senderIds.includes(id));\n    if(!s.add.length&&!s.remove.length){s.finalIds=s.senderIds;s.noChange=true;return readRecord(s,'completeRead');}\n    return readRecord(s,'beforePause');\n   case 'beforePause':\n    currentRecord(s,b);\n    if(s.remove.length && !s.leadSafetyPassed) {\n     s.leadSafetyPage=1;s.leadSafetyCount=0;\n     return bison(s,'leadSafety','GET','/leads?filters[lead_campaign_status]=in_sequence&page=1');\n    }\n    s.pauseAttempted=true;return bison(s,'paused','PATCH','/pause');\n   case 'leadSafety':{\n    const meta=b.meta||{};\n    if(!Array.isArray(b.data)||Number(meta.current_page)!==s.leadSafetyPage||!Number.isInteger(meta.last_page)||meta.last_page<1||meta.last_page>2000||!Number.isInteger(meta.total)||meta.total<0)fail('Could not verify pending follow-ups before replacing senders. No accounts were removed.');\n    if(s.leadSafetyPage===1){s.leadSafetyTotal=meta.total;s.leadSafetyLast=meta.last_page;}\n    if(meta.total!==s.leadSafetyTotal||meta.last_page!==s.leadSafetyLast)fail('Lead status changed during the follow-up safety check. Retry the sender update.');\n    for(const lead of b.data){\n     const memberships=(lead.lead_campaign_data||[]).filter(x=>String(x.campaign_id)===s.campaignId);\n     if(memberships.length!==1||!Number.isFinite(Number(memberships[0].emails_sent)))fail('Could not verify campaign lead history before replacing senders.');\n     if(Number(memberships[0].emails_sent)>0)fail('Sender replacement stopped: this campaign has contacted leads with unfinished follow-ups. EmailBison stops those leads when their sender is removed. Preserve their senders or prepare follow-up recovery before replacing accounts.');\n    }\n    s.leadSafetyCount+=b.data.length;\n    if(s.leadSafetyPage<meta.last_page){s.leadSafetyPage++;return bison(s,'leadSafety','GET','/leads?filters[lead_campaign_status]=in_sequence&page='+s.leadSafetyPage);}\n    if(s.leadSafetyCount!==meta.total)fail('The follow-up safety check returned incomplete lead counts.');\n    s.leadSafetyPassed=true;return readRecord(s,'beforePause');\n   }\n\n   case 'paused':s.poll=0;return bison(s,'pauseCheck','GET','');\n   case 'pauseCheck':\n    if(String(b.data?.id)!==s.campaignId)fail('Campaign identity did not match after pause.');\n    if(clean(b.data.status).toLowerCase()!=='paused'){\n     if(++s.poll>=10)fail('EmailBison did not confirm the campaign was paused.');return wait(s,'pauseWait');\n    }\n    return save(s,'pausedSaved','Running','Campaign paused. Replacing sender accounts.');\n   case 'pauseWait':return bison(s,'pauseCheck','GET','');\n   case 'pausedSaved':\n    if(s.add.length)return bison(s,'added','POST','/attach-sender-emails',{sender_email_ids:s.add});\n    s.poll=0;return list(s,'attached','/campaigns/'+s.campaignId+'/sender-emails');\n   case 'added':s.poll=0;return list(s,'attached','/campaigns/'+s.campaignId+'/sender-emails');\n   case 'attached':\n    if(!pageRows(s,b,'attached'))return list(s,'attached','/campaigns/'+s.campaignId+'/sender-emails',s.page+1);\n    if(s.senderIds.some(id=>!ids(s.attached).includes(id))){if(++s.poll>=20)fail('New sender accounts did not finish attaching.');return wait(s,'attachWait');}\n    return bison(s,'beforeRemove','GET','');\n   case 'attachWait':return list(s,'attached','/campaigns/'+s.campaignId+'/sender-emails');\n   case 'beforeRemove':\n    if(String(b.data?.id)!==s.campaignId||clean(b.data.status).toLowerCase()!=='paused')fail('Campaign was no longer paused before removing senders.');\n    if(s.remove.length)return bison(s,'removed','DELETE','/remove-sender-emails',{sender_email_ids:s.remove});\n    s.poll=0;return list(s,'final','/campaigns/'+s.campaignId+'/sender-emails');\n   case 'removed':s.poll=0;return list(s,'final','/campaigns/'+s.campaignId+'/sender-emails');\n   case 'final':\n    if(!pageRows(s,b,'final'))return list(s,'final','/campaigns/'+s.campaignId+'/sender-emails',s.page+1);\n    if(!equal(ids(s.final),s.senderIds)){if(++s.poll>=30)fail('Attached senders still do not exactly match the selection.');return wait(s,'finalWait');}\n    if(s.final.some(a=>a.status!=='connected'))fail('A selected sender disconnected during the update.');\n    s.finalIds=ids(s.final);delete s.final;return readRecord(s,'verifiedRead');\n   case 'finalWait':return list(s,'final','/campaigns/'+s.campaignId+'/sender-emails');\n   case 'verifiedRead':currentRecord(s,b);return bison(s,'verifiedStatus','GET','');\n   case 'verifiedStatus':\n    if(String(b.data?.id)!==s.campaignId||clean(b.data.status).toLowerCase()!=='paused')fail('The campaign must remain paused until the sender check is complete.');\n    if(s.wasRunning)return save(s,'beforeResume','Running','Sender replacement verified. Resuming the previously running campaign.');\n    return readRecord(s,'completeRead');\n   case 'beforeResume':return bison(s,'resumed','PATCH','/resume');\n   case 'resumed':s.poll=0;return bison(s,'resumeCheck','GET','');\n   case 'resumeCheck':\n    if(String(b.data?.id)!==s.campaignId)fail('Campaign identity did not match after resume.');\n    if(!['active','running','queued'].includes(clean(b.data.status).toLowerCase())){if(++s.poll>=10)fail('EmailBison did not confirm resumption.');return wait(s,'resumeWait');}\n    s.resumed=true;return readRecord(s,'completeRead');\n   case 'resumeWait':return bison(s,'resumeCheck','GET','');\n   case 'completeRead':\n    currentRecord(s,b);return save(s,'completedSaved','Completed',s.noChange?'The selected senders already match EmailBison. No changes were needed.':s.finalIds.length+' sender accounts verified. '+(s.resumed?'Campaign resumed.':'Campaign remains paused. Use Launch when ready.'));\n   case 'completedSaved':return finish(s);\n   case 'released':if(b.resource!==s.lockKey)fail('The sender update lock release was not confirmed.');s.locked=false;return finish(s);\n   case 'recoverPause':s.recoveryPoll=0;return bison(s,'recoverCheck','GET','');\n   case 'recoverCheck':\n    s.safelyPaused=String(b.data?.id)===s.campaignId&&clean(b.data.status).toLowerCase()==='paused';\n    if(!s.safelyPaused&&++s.recoveryPoll<10)return wait(s,'recoverWait');\n    s.holdLock=!s.safelyPaused;return readRecord(s,'failureRead');\n   case 'recoverWait':return bison(s,'recoverCheck','GET','');\n   case 'failureRead':{\n    let f=b.fields||{},saved={};try{saved=JSON.parse(f[FIELD.state]||'{}');}catch{}\n    if(saved.requestId!==s.requestId)return finish(s);\n    return save(s,'failedSaved','Failed',s.error+' '+(s.safelyPaused?'Campaign is paused.':s.pauseAttempted?'Pause could not be confirmed. Check EmailBison before retrying.':'No sender changes were made.'));\n   }\n   case 'failedSaved':return finish(s);\n   default:fail('Unknown sender update stage.');\n  }\n } catch(e) {\n  if(['locked','released'].includes(s.stage))s.holdLock=true;\n  const msg=String(e.message||'Sender update failed.').slice(0,500);\n  // EmailBison applies account changes asynchronously. Restart only mutation-stage\n  // snapshots when pagination changes; never accept a partial or mixed snapshot.\n  if(['attached','final'].includes(s.stage) && ['Sender accounts changed while pages were being read.','Sender counts did not reconcile across pages.'].includes(msg)) {\n   const stage=s.stage; s.snapshotRetries=s.snapshotRetries||{};\n   s.snapshotRetries[stage]=(s.snapshotRetries[stage]||0)+1;\n   if(s.snapshotRetries[stage]<=10) {\n    delete s[stage]; delete s.listTotal; delete s.listLast;\n    return wait(s,stage==='attached'?'attachWait':'finalWait');\n   }\n  }\n\n  if(['failureRead','failedSaved'].includes(s.stage)){s.holdLock=!!s.locked;s.error=msg;return finish(s);}\n  if(['recoverPause','recoverCheck','recoverWait'].includes(s.stage)){s.holdLock=true;s.safelyPaused=false;return readRecord(s,'failureRead');}\n  return recovery(s,msg);\n }\n}\n\nconst incoming=$input.first().json;return [{json:advance(incoming.state,incoming.response)}];",
+      "name": "Plan next request",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "36b22c0f-c47e-425b-806a-3c4d3efcaeff",
+      "code": null,
+      "name": "Is airtable?",
+      "type": "n8n-nodes-base.if",
+      "disabled": null
+    },
+    {
+      "id": "fd5f52ca-72b5-4181-b22b-416455ce194f",
+      "code": null,
+      "name": "Is bison?",
+      "type": "n8n-nodes-base.if",
+      "disabled": null
+    },
+    {
+      "id": "ff8b4a14-63c1-414b-8304-eba514c27387",
+      "code": null,
+      "name": "Is wait?",
+      "type": "n8n-nodes-base.if",
+      "disabled": null
+    },
+    {
+      "id": "ff71ae54-0f7f-4fb4-a5d5-c2b2b59c29b6",
+      "code": null,
+      "name": "Is acquire?",
+      "type": "n8n-nodes-base.if",
+      "disabled": null
+    },
+    {
+      "id": "86f4ee4a-bed2-4116-b326-61e267ff9bb7",
+      "code": null,
+      "name": "Is release?",
+      "type": "n8n-nodes-base.if",
+      "disabled": null
+    },
+    {
+      "id": "023c0767-8b15-4989-ad49-c1073f406976",
+      "code": null,
+      "name": "Airtable pacing",
+      "type": "n8n-nodes-base.wait",
+      "disabled": null
+    },
+    {
+      "id": "ad8a2b4b-2ab0-4e28-b824-a8eefe2958c3",
+      "code": null,
+      "name": "Airtable request",
+      "type": "n8n-nodes-base.httpRequest",
+      "disabled": null
+    },
+    {
+      "id": "6cda674b-2d14-4af8-88fe-5db61f71b778",
+      "code": null,
+      "name": "Bison request",
+      "type": "n8n-nodes-base.httpRequest",
+      "disabled": null
+    },
+    {
+      "id": "aeb03506-2c77-4333-9361-0842c14e8047",
+      "code": null,
+      "name": "Wait for EmailBison",
+      "type": "n8n-nodes-base.wait",
+      "disabled": null
+    },
+    {
+      "id": "d3a30ea5-df36-4983-ba43-17f09d773ce4",
+      "code": null,
+      "name": "Acquire campaign lock",
+      "type": "n8n-nodes-base.postgres",
+      "disabled": null
+    },
+    {
+      "id": "22e8c36d-e514-4d31-9aeb-b3f3713d4ca2",
+      "code": null,
+      "name": "Release campaign lock",
+      "type": "n8n-nodes-base.postgres",
+      "disabled": null
+    },
+    {
+      "id": "f6ae25f6-3509-4b60-ab76-782d3461480b",
+      "code": "const response=$input.first().json;\nreturn [{json:{state:$('Plan next request').item.json.state,response}}];",
+      "name": "Collect Airtable response",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "5997a42d-23a5-48fb-9004-f4976fc059a2",
+      "code": "const response=$input.first().json;\nreturn [{json:{state:$('Plan next request').item.json.state,response}}];",
+      "name": "Collect Bison response",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "6ff4b242-110f-4758-91eb-ce9a173dcf8e",
+      "code": "const response={statusCode:200,body:{}};\nreturn [{json:{state:$('Plan next request').item.json.state,response}}];",
+      "name": "Collect wait",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "746c534c-6571-4dc7-8f04-c830507c5364",
+      "code": "const row=$input.first().json;const response=row.error?{error:true}:{statusCode:200,body:row};\nreturn [{json:{state:$('Plan next request').item.json.state,response}}];",
+      "name": "Collect release",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "78aedbdb-4f4c-4cec-838e-bbc146e42494",
+      "code": "const row=$input.first().json;const response=row.error?{error:true}:{statusCode:200,body:row};\nreturn [{json:{state:$('Plan next request').item.json.state,response}}];",
+      "name": "Collect lock",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "d1b63f8c-3e22-4025-bc88-eaae758c8edf",
+      "code": "const s=$('Plan next request').item.json.state;\nreturn [{json:{recordId:s.recordId,requestId:s.requestId,status:s.error?'Failed':'Completed',message:s.error||'Sender assignment verified',resumed:!!s.resumed,requiresAttention:!!s.holdLock,senderEmailIds:s.finalIds||[],senderRecordIds:s.senderRecordIds,...(s.internalMode==='topup'?{resolvedBaseUrl:s.baseUrl,resolvedApiKey:s.apiKey}: {})}}];",
+      "name": "Finish sender update",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "251c0292-74c0-4b12-a152-7df6667f718d",
+      "code": null,
+      "name": "Interrupted update",
+      "type": "n8n-nodes-base.errorTrigger",
+      "disabled": null
+    },
+    {
+      "id": "5352ea4a-e913-437a-91c9-d39fc4c599ef",
+      "code": null,
+      "name": "Find interrupted lock",
+      "type": "n8n-nodes-base.postgres",
+      "disabled": null
+    },
+    {
+      "id": "993689cc-b407-42fa-99d1-8756deeb15e5",
+      "code": null,
+      "name": "Read interrupted campaign",
+      "type": "n8n-nodes-base.httpRequest",
+      "disabled": null
+    },
+    {
+      "id": "fb2f754c-17fa-4532-9d06-d2470ed8a4af",
+      "code": "const lock=$('Find interrupted lock').first().json, row=$input.first().json.body||{}, f=row.fields||{};\nconst clean=v=>String(Array.isArray(v)?v[0]??'':v??'').trim();\nconst baseUrl=clean(f.fld0DL0enVj3G1fUJ).replace(/\\/$/,'');const campaignId=clean(f.fldxSETE3D66RyWRH);const apiKey=clean(f.fldlb6cfn7cGkgsB0);\nreturn [{json:{state:{...lock.context,requestId:lock.request_id,lockKey:lock.resource,executionId:lock.execution_id,baseUrl,campaignId,apiKey,authorized:true,locked:true,stage:row.id===lock.context.recordId&&apiKey&&baseUrl+'/'+campaignId===lock.resource?'interrupted':'cannotRecover'}}}];",
+      "name": "Prepare interrupted recovery",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "bc571a28-5960-4925-ad5a-be57b5d9eb27",
+      "code": null,
+      "name": "Top-up sender selection",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "disabled": null
+    },
+    {
+      "id": "2b8ec7fe-06b3-4dcf-a6a2-835a5a7e70cf",
+      "code": "const r=$input.first().json;\nif(!/^rec[a-zA-Z0-9]{14}$/.test(r.recordId||'')||!/^\\d+$/.test(String(r.campaignId||'')))throw new Error('A valid top-up campaign record and EmailBison ID are required.');\nconst executionId=String($execution.id);const requestId='00000000-0000-4000-8000-'+executionId.padStart(12,'0');\nreturn [{json:{state:{stage:'topupStart',internalMode:'topup',recordId:r.recordId,expectedCampaignId:String(r.campaignId),requestId,senderRecordIds:[],requestedAt:new Date().toISOString(),executionId}}}];",
+      "name": "Prepare top-up sender check",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    }
+  ],
+  "active": true,
+  "connections": {
+    "Is wait?": {
+      "main": [
+        [
+          {
+            "node": "Wait for EmailBison",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is acquire?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is bison?": {
+      "main": [
+        [
+          {
+            "node": "Bison request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is wait?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is acquire?": {
+      "main": [
+        [
+          {
+            "node": "Acquire campaign lock",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is release?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is release?": {
+      "main": [
+        [
+          {
+            "node": "Release campaign lock",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finish sender update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect lock": {
+      "main": [
+        [
+          {
+            "node": "Plan next request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect wait": {
+      "main": [
+        [
+          {
+            "node": "Plan next request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is airtable?": {
+      "main": [
+        [
+          {
+            "node": "Airtable pacing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is bison?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bison request": {
+      "main": [
+        [
+          {
+            "node": "Collect Bison response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable pacing": {
+      "main": [
+        [
+          {
+            "node": "Airtable request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect release": {
+      "main": [
+        [
+          {
+            "node": "Plan next request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable request": {
+      "main": [
+        [
+          {
+            "node": "Collect Airtable response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate request": {
+      "main": [
+        [
+          {
+            "node": "Plan next request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan next request": {
+      "main": [
+        [
+          {
+            "node": "Is airtable?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Interrupted update": {
+      "main": [
+        [
+          {
+            "node": "Find interrupted lock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for EmailBison": {
+      "main": [
+        [
+          {
+            "node": "Collect wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Acquire campaign lock": {
+      "main": [
+        [
+          {
+            "node": "Collect lock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find interrupted lock": {
+      "main": [
+        [
+          {
+            "node": "Read interrupted campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Release campaign lock": {
+      "main": [
+        [
+          {
+            "node": "Collect release",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sender update request": {
+      "main": [
+        [
+          {
+            "node": "Validate request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Bison response": {
+      "main": [
+        [
+          {
+            "node": "Plan next request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Top-up sender selection": {
+      "main": [
+        [
+          {
+            "node": "Prepare top-up sender check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Airtable response": {
+      "main": [
+        [
+          {
+            "node": "Plan next request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read interrupted campaign": {
+      "main": [
+        [
+          {
+            "node": "Prepare interrupted recovery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare top-up sender check": {
+      "main": [
+        [
+          {
+            "node": "Plan next request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare interrupted recovery": {
+      "main": [
+        [
+          {
+            "node": "Plan next request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "savedVersion": "1e8879c2-3c3e-4e7e-9060-691f88a4cd3d",
+  "activeVersion": "1e8879c2-3c3e-4e7e-9060-691f88a4cd3d",
+  "savedNodesHash": "f9ba2c24ce149cde65df52506b4cee6df963d53d6ae5b4a9507ce7b43aff9067",
+  "activeNodesHash": "f9ba2c24ce149cde65df52506b4cee6df963d53d6ae5b4a9507ce7b43aff9067"
+}

@@ -1,0 +1,305 @@
+{
+  "id": "Tvppie6mLHe-16Gmhfzjs",
+  "name": "[Lead List Center] 04 Enrichment Prompt Builder",
+  "versionId": "1a1a6cb7-7c64-4a0b-9214-56e44c3b175d",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-list-enrichment-prompt",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "d4f3d397-f420-4a80-8012-96c48c38f797",
+      "name": "Enrichment Prompt Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        128,
+        160
+      ],
+      "webhookId": "5528852e-3f19-475c-995e-e4a996b199c1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// REVIEW ONLY: exact derivative exclusion. Quiet stop avoids error-handler side effects.\n{const raw=$input.first().json;let b=raw.body??raw;if(typeof b==='string'){try{b=JSON.parse(b);}catch{b=null;}}const id=String(b?.recordId??b?.record_id??'').trim();if(id==='rec7yReHLebtWCnOp'){return [];}}\nconst body=$input.first().json.body??$input.first().json;const recordId=String(body.recordId??body.record_id??'').trim();const action=String(body.action??body.automationAction??'').trim();if(!/^rec[A-Za-z0-9]+$/.test(recordId))throw new Error('A valid Airtable Lead Lists recordId is required.');if(action!=='Prepare Enrichment Prompt')throw new Error('This workflow only handles Prepare Enrichment Prompt. Received: '+action);return [{json:{recordId,action}}];"
+      },
+      "id": "9d0c6a5c-0fcf-406c-a167-b0d0cdcba34a",
+      "name": "Validate Prompt Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({success:true,accepted:true,message:'The enrichment prompt is being prepared for review. No lead enrichment has started.'}) }}",
+        "options": {}
+      },
+      "id": "b665c01d-6c3b-45d6-b082-6e25ed17cf28",
+      "name": "Acknowledge Prompt Request",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        576,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblVOg9BkPOMmnitt/' + $('Validate Prompt Request').first().json.recordId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "b8438ae7-b35c-4068-97e8-33f17d2c7696",
+      "name": "Get Airtable Lead List",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        576,
+        256
+      ],
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "parameters": {
+        "jsCode": "const record=$input.first().json;const f=record.fields??{};const request=String(f['Custom Variables Requested']??'').trim();if(!request)throw new Error('Custom Variables Requested is blank. Enter the enrichment request in plain English first.');if(request.includes('# ENRICHMENT PROMPT')&&request.includes('# OUTPUT'))throw new Error('This request already appears to be prepared. Review it or replace it with a new plain-English request.');const system=\"You convert a user's short enrichment request into production-grade DiscoGen web-research instructions. Return only the finished prompt, never commentary.\\n\\nThe prompt must be specific enough for repeatable row-by-row lead enrichment. Never write vague instructions such as \\\"find the official name from the website.\\\" For every requested variable, define what is being found, which input fields are supplied, the source order, exact pages or sources to inspect, verification rules, exclusions, normalization rules, fallback behavior, and an exact output key with an exact not-found sentinel.\\n\\nUse this structure:\\n# ENRICHMENT PROMPT\\n# INPUTS\\n# VARIABLE: <Exact Column Name>\\n## SCOPE\\n## OBJECTIVE\\n## RESEARCH INSTRUCTIONS\\n## RESTRICTIONS\\n## FALLBACK\\n## OUTPUT\\n\\nThe INPUTS section must define placeholders that DiscoGen will receive, normally Company Name, Website, City, State, and other available lead fields. Each variable must include a SCOPE section containing exactly company or person. Use company for headquarters, location, category, keyword, competitors, services, technology, revenue, and other facts shared by everyone at the same company. Use person only for facts about the individual, such as personal location, biography, LinkedIn activity, job history, or person-specific personalization. Each variable's OUTPUT section must demand JSON containing only one stable camelCase key. The full response for a lead must ultimately be one JSON object containing every requested key and nothing else.\\n\\nRequired quality patterns:\\n- Case study: inspect only the supplied company website; check Our Work, Case Studies, Testimonials, Past Work, Portfolio, Project, Clients, and Reviews pages; never return the current company; return one case-study customer or \\\"None found\\\".\\n- Phone number: inspect the supplied website header, footer, Contact, Support, Contact Us, and Reach Out pages first; only then use other web sources or Google; return only the phone or \\\"Not Found\\\".\\n- City: inspect the supplied website header, footer, Contact, Contact Us, and Reach Out pages first; only then use other web sources or Google; return only the city or \\\"Not Found\\\".\\n- Lunch restaurant: write a full local-business-lunch research brief; require weekday lunch, sit-down table service, conversation-friendly atmosphere, physical presence in the supplied city, and current operation; prefer independent/local/regional establishments; avoid national chains, fast food, fast casual, coffee shops, breakfast-only places, bakeries, food courts, loud sports bars, and nightlife; verify via Google Maps, Yelp, TripAdvisor, OpenTable, or the official site; normalize to the conversational restaurant name; return {\\\"restaurantName\\\":\\\"Name\\\"} or {\\\"restaurantName\\\":\\\"None\\\"}.\\n- Contractor type: define a useful normalized taxonomy, inspect services and project pages, distinguish the primary trade from incidental services, and return only the primary contractor type or \\\"Not Found\\\".\\n\\nPreserve any constraints the user supplies. If the request is ambiguous, choose a conservative operational interpretation and make it explicit in the generated research rules. Never invent facts. Do not run the research; only write the prompt.\";const user='Prepare the DiscoGen enrichment prompt for this project. Plain-English request:\\n\\n'+request;return [{json:{recordId:record.id??$('Validate Prompt Request').first().json.recordId,request,openAiBody:{model:'gpt-5.6',temperature:0.1,messages:[{role:'system',content:system},{role:'user',content:user}]}}}];"
+      },
+      "id": "7d5bb05a-07c4-4e44-a747-77ae71866c89",
+      "name": "Build Prompt Compiler Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[REDACTED: credential]"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.openAiBody) }}",
+        "options": {
+          "timeout": 180000
+        }
+      },
+      "id": "8e4c524e-1982-494c-86e6-8e2c756d6270",
+      "name": "Compile Detailed Prompt with AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        128,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\n\nconst structuredOutputText = Array.isArray(response.output)\n  ? response.output\n      .flatMap(item =>\n        Array.isArray(item?.content) ? item.content : []\n      )\n      .find(content =>\n        content?.type === 'output_text' &&\n        typeof content?.text === 'string'\n      )?.text\n  : null;\n\nconst prompt = String(\n  (typeof response.text === 'string' ? response.text : null) ??\n  (typeof response.output_text === 'string'\n    ? response.output_text\n    : null) ??\n  structuredOutputText ??\n  (typeof response.output === 'string' ? response.output : null) ??\n  (typeof response.response === 'string' ? response.response : null) ??\n  response.choices?.[0]?.message?.content ??\n  ''\n)\n  .trim()\n  .replace(/^```(?:markdown|text)?\\s*/i, '')\n  .replace(/\\s*```$/, '');\n\nif (\n  !prompt.includes('# ENRICHMENT PROMPT') ||\n  !prompt.includes('# OUTPUT')\n) {\n  throw new Error(\n    `AI did not return a valid structured enrichment prompt: ${prompt.slice(0, 1000)}`\n  );\n}\n\nconst outputKeys = [\n  ...new Set(\n    [...prompt.matchAll(/\"([A-Za-z][A-Za-z0-9_]*)\"\\s*:/g)]\n      .map(match => match[1])\n  ),\n];\n\nif (!outputKeys.length) {\n  throw new Error(\n    'Prepared prompt does not define any JSON output keys.'\n  );\n}\n\nreturn [\n  {\n    json: {\n      ...response,\n      prompt,\n      preparedPrompt: prompt,\n      outputKeys,\n    },\n  },\n];"
+      },
+      "id": "5a13de30-4ce8-4e7c-b54e-7ce548ad54bb",
+      "name": "Validate Prepared Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepared = $input.first().json;\nconst compilerRequest = $('Build Prompt Compiler Request').first().json;\n\nconst recordId =\n  prepared.recordId ??\n  compilerRequest.recordId;\n\nconst prompt =\n  prepared.prompt ??\n  prepared.preparedPrompt ??\n  '';\n\nconst keys = Array.isArray(prepared.outputKeys)\n  ? prepared.outputKeys\n  : Array.isArray(prepared.keys)\n    ? prepared.keys\n    : [];\n\nif (!recordId) {\n  throw new Error('The Airtable Lead List record ID is missing.');\n}\n\nif (!prompt) {\n  throw new Error('The prepared enrichment prompt is missing.');\n}\n\nif (!keys.length) {\n  throw new Error('No output keys were detected in the prepared prompt.');\n}\n\nreturn [\n  {\n    json: {\n      recordId,\n      body: {\n        fields: {\n          'Custom Variables Requested': prompt,\n          'Last Workflow Message':\n            `Enrichment prompt prepared for review. Requested output keys: ${keys.join(', ')}. No enrichment has run.`,\n          'Last Workflow Error': '',\n          'Enrichment Action': null,\n        },\n      },\n    },\n  },\n];"
+      },
+      "id": "d6b2e2e6-0e41-4b98-bf90-4b1b9355bf81",
+      "name": "Prepare Airtable Prompt Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblVOg9BkPOMmnitt/' + $json.recordId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "03c95a3b-8e81-49bf-8baf-2c2ca31bf62d",
+      "name": "Save Prepared Prompt to Airtable",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1824,
+        256
+      ],
+      "credentials": "[REDACTED: reconnect credential]"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.6-luna",
+          "mode": "list",
+          "cachedResultName": "GPT-5.6-LUNA"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=={{ $json.openAiBody.messages[0].content }}"
+            },
+            {
+              "content": "=={{ $json.openAiBody.messages[1].content }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        1024,
+        256
+      ],
+      "id": "9f5931bf-3e56-479b-b5be-61c55d4cc405",
+      "name": "Message a model",
+      "credentials": "[REDACTED: reconnect credential]"
+    }
+  ],
+  "connections": {
+    "Enrichment Prompt Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Prompt Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Prompt Request": {
+      "main": [
+        [
+          {
+            "node": "Acknowledge Prompt Request",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Airtable Lead List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Airtable Lead List": {
+      "main": [
+        [
+          {
+            "node": "Build Prompt Compiler Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Prompt Compiler Request": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile Detailed Prompt with AI": {
+      "main": [
+        []
+      ]
+    },
+    "Validate Prepared Prompt": {
+      "main": [
+        [
+          {
+            "node": "Prepare Airtable Prompt Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Airtable Prompt Update": {
+      "main": [
+        [
+          {
+            "node": "Save Prepared Prompt to Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Validate Prepared Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+  },
+  "capturedFrom": "Current n8n UI Download; pinData and export metadata excluded; read-only export."
+}

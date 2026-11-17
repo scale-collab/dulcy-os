@@ -9,3 +9,5 @@ Newest at the bottom. Format: `date | decision | why | who`
 2026-11-17 | Personal skills (fitness, nutrition, travel etc.) stay out of this repo | Business repo; personal data stays separate | Claude (reversible)
 2026-11-17 | Known wrong fact removed: "300+ clients" | It was from another agency's post pasted into notes | Alex
 2026-11-17 | n8n workflow exports may be stored in `automations/n8n-workflows/` if credentials are stripped and a secrets scan is clean | Alex wants all automations in GitHub so nothing is lost; credentials must never be committed | Alex (intent), Claude (guardrail)
+2026-11-17 | Never retry a whole top-up after an import checkpoint failure; reconcile the single failed import | Retrying risks re-uploading leads; the workflow's own error text says the same | Claude, from saved code and alerts (Alex to confirm)
+2026-11-17 | Campaign Center workflows, error evidence, pricing and channel evidence imported from ChatGPT focused handoff | Alex wants the build errors fixed and company facts kept in GitHub | Alex

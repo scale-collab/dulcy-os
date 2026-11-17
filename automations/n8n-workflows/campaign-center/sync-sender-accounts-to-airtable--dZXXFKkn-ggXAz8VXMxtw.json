@@ -1,0 +1,197 @@
+{
+  "id": "dZXXFKkn-ggXAz8VXMxtw",
+  "name": "[Campaign Center] Sync EmailBison Sender Accounts to Airtable",
+  "nodes": [
+    {
+      "id": "4fa1502e-7360-49f7-93f0-acc4376f5b25",
+      "code": null,
+      "name": "Run Manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "disabled": null
+    },
+    {
+      "id": "59c419df-fb81-4c77-a46a-8c7139ea7bf5",
+      "code": null,
+      "name": "Every Hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "disabled": null
+    },
+    {
+      "id": "3a4df382-ee26-4923-aa47-c4ca4ea711a3",
+      "code": null,
+      "name": "Sync Bison Senders Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "disabled": null
+    },
+    {
+      "id": "82366713-c22b-435e-8676-27b247a99406",
+      "code": null,
+      "name": "Find Active Campaigns",
+      "type": "n8n-nodes-base.airtable",
+      "disabled": null
+    },
+    {
+      "id": "953374b1-0787-4b37-a3e4-8b78c34b2674",
+      "code": null,
+      "name": "Get Airtable Email Accounts",
+      "type": "n8n-nodes-base.airtable",
+      "disabled": null
+    },
+    {
+      "id": "68ac6967-6333-4612-8d08-4bac6acd6450",
+      "code": "const unwrap = value => {\n  if (Array.isArray(value)) value = value[0];\n  if (value && typeof value === 'object') value = value.value ?? value.name ?? value.id;\n  return value === undefined || value === null ? '' : String(value).trim();\n};\nreturn $input.all().map((item, index) => {\n  const row = item.json;\n  const recordId = unwrap(row.id ?? row.recordId);\n  const campaignId = Number(unwrap(row.ID ?? row['EmailBison Campaign ID']));\n  const campaignName = unwrap(row.Name ?? row['Campaign Name']);\n  const apiKey = unwrap(row['EmailBison API (from Client)'] ?? row['EmailBison API']);\n  if (!recordId.startsWith('rec')) throw new Error('Airtable Campaign record ID is missing.');\n  if (!Number.isFinite(campaignId) || campaignId <= 0) throw new Error('Campaign ' + campaignName + ' has no numeric EmailBison campaign ID.');\n  if (!apiKey) throw new Error('Campaign ' + campaignName + ' has no EmailBison API key.');\n  return {json: {recordId, campaignId, campaignName, apiKey, baseUrl: 'https://send.dulcy.io'}, pairedItem: {item: index}};\n});",
+      "name": "Normalize Campaigns",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "6f4ec076-4a7a-4b28-92a2-a0835ff9f27c",
+      "code": null,
+      "name": "Get Campaign Sender Emails",
+      "type": "n8n-nodes-base.httpRequest",
+      "disabled": null
+    },
+    {
+      "id": "9e5434de-891c-4682-aebc-8ad82d214703",
+      "code": null,
+      "name": "Wait for Campaigns and Accounts",
+      "type": "n8n-nodes-base.merge",
+      "disabled": null
+    },
+    {
+      "id": "84e30f02-141e-4eb6-addf-b169403011db",
+      "code": "const campaigns = $('Normalize Campaigns').all();\nconst senderResponses = $('Get Campaign Sender Emails').all();\nconst airtableAccounts = $('Get Airtable Email Accounts').all();\n\nconst numeric = value => {\n  if (Array.isArray(value)) value = value[0];\n  if (value && typeof value === 'object') value = value.value ?? value.id ?? value.name;\n  const parsed = Number(value);\n  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;\n};\nconst findSenderArray = value => {\n  if (Array.isArray(value)) return value.flatMap(findSenderArray);\n  if (!value || typeof value !== 'object') return [];\n  if (numeric(value.id ?? value.sender_email_id ?? value.senderEmailId)) return [value];\n  for (const key of ['sender_emails', 'senderEmails', 'emails', 'items', 'results', 'data']) {\n    if (value[key] !== undefined) {\n      const found = findSenderArray(value[key]);\n      if (found.length) return found;\n    }\n  }\n  return [];\n};\nconst pageCount = response => {\n  const meta = response?.json?.meta ?? response?.json?.data?.meta ?? {};\n  return Math.max(1, Number(meta.last_page ?? meta.lastPage ?? 1) || 1);\n};\nconst accountByBisonId = new Map();\nfor (const item of airtableAccounts) {\n  const row = item.json;\n  const bisonId = numeric(row['EmailBison Email ID'] ?? row['Email ID'] ?? row.fields?.['EmailBison Email ID'] ?? row.fields?.['Email ID']);\n  const recordId = String(row.id ?? row.recordId ?? '').trim();\n  if (bisonId && /^rec[a-zA-Z0-9]{14}$/.test(recordId)) accountByBisonId.set(bisonId, recordId);\n}\nif (!accountByBisonId.size) throw new Error('No Airtable Email Accounts contained a usable EmailBison Email ID or Email ID.');\n\nconst updates = [];\nconst skipped = [];\nlet responseCursor = 0;\nfor (let index = 0; index < campaigns.length; index++) {\n  const campaign = campaigns[index].json;\n  const numberOfPages = pageCount(senderResponses[responseCursor]);\n  const campaignPages = senderResponses.slice(responseCursor, responseCursor + numberOfPages);\n  responseCursor += numberOfPages;\n  if (campaignPages.length !== numberOfPages) throw new Error('EmailBison returned incomplete pagination for ' + campaign.campaignName + '.');\n  const senderObjects = findSenderArray(campaignPages.map(page => page.json));\n  const senderIds = [...new Set(senderObjects.map(sender => numeric(sender?.id ?? sender?.sender_email_id ?? sender?.senderEmailId ?? sender)).filter(Boolean))];\n  const unmatchedIds = senderIds.filter(id => !accountByBisonId.has(id));\n  if (unmatchedIds.length) {\n    skipped.push(campaign.campaignName + ' has unmatched EmailBison sender IDs: ' + unmatchedIds.join(', '));\n    continue;\n  }\n  const linkedRecordIds = senderIds.map(id => accountByBisonId.get(id));\n  updates.push({json: {\n    id: campaign.recordId,\n    'Email Accounts': linkedRecordIds,\n    syncCampaignName: campaign.campaignName,\n    syncedSenderCount: linkedRecordIds.length\n  }});\n}\nif (responseCursor !== senderResponses.length) throw new Error('EmailBison returned ' + (senderResponses.length - responseCursor) + ' unassigned pagination page(s).');\nif (skipped.length) console.log('Sender-link sync skipped: ' + skipped.join(' | '));\nif (!updates.length) throw new Error('No campaign sender links were safe to update. ' + skipped.join(' | '));\nreturn updates;",
+      "name": "Match Sender IDs to Airtable Accounts",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "eaff29bb-0dd2-4c5a-a9bc-9de0a1d5a976",
+      "code": null,
+      "name": "Update Campaign Email Account Links",
+      "type": "n8n-nodes-base.airtable",
+      "disabled": null
+    }
+  ],
+  "active": true,
+  "connections": {
+    "Every Hour": {
+      "main": [
+        [
+          {
+            "node": "Find Active Campaigns",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Airtable Email Accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Manually": {
+      "main": [
+        [
+          {
+            "node": "Find Active Campaigns",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Airtable Email Accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Campaigns": {
+      "main": [
+        [
+          {
+            "node": "Get Campaign Sender Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Active Campaigns": {
+      "main": [
+        [
+          {
+            "node": "Normalize Campaigns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Campaign Sender Emails": {
+      "main": [
+        [
+          {
+            "node": "Wait for Campaigns and Accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync Bison Senders Webhook": {
+      "main": [
+        [
+          {
+            "node": "Find Active Campaigns",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Airtable Email Accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Airtable Email Accounts": {
+      "main": [
+        [
+          {
+            "node": "Wait for Campaigns and Accounts",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wait for Campaigns and Accounts": {
+      "main": [
+        [
+          {
+            "node": "Match Sender IDs to Airtable Accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match Sender IDs to Airtable Accounts": {
+      "main": [
+        [
+          {
+            "node": "Update Campaign Email Account Links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "savedVersion": "97322069-77a8-44c3-9dd1-9d37e88c66a3",
+  "activeVersion": "97322069-77a8-44c3-9dd1-9d37e88c66a3",
+  "savedNodesHash": "2ab0cc51834b91675adb1672ff773b5ee7b5aae073bfa737a135df3117c16804",
+  "activeNodesHash": "2ab0cc51834b91675adb1672ff773b5ee7b5aae073bfa737a135df3117c16804"
+}

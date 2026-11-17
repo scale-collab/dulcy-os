@@ -1,0 +1,311 @@
+{
+  "id": "cZtV7nPH2rZhwpDWgR_ak",
+  "name": "[Campaign Center - GPT] EmailBison Actions",
+  "nodes": [
+    {
+      "id": "db304f14-3909-44f7-9c49-9d953f39bb8a",
+      "code": null,
+      "name": "EmailBison Action Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "disabled": null
+    },
+    {
+      "id": "aa8e5014-cb6c-40c4-8823-77ad62b5139c",
+      "code": "\nconst incoming = $input.first().json;\nconst r = incoming.body && typeof incoming.body === 'object' ? incoming.body : incoming;\nconst first = (...names) => { for (const name of names) { const value = r[name]; if (value !== undefined && value !== null && value !== '') return value; } };\nconst text = value => { if (Array.isArray(value)) value = value[0]; if (value && typeof value === 'object') value = value.name ?? value.value ?? value.id; return value === undefined || value === null ? '' : String(value).trim(); };\nconst recordId = text(first('recordId', 'Record ID', 'Airtable Record ID'));\nconst action = text(first('Bison Action', 'Campaign Action'));\nconst campaignId = text(first('ID', 'EmailBison Generic Campaign ID', 'EmailBison Direct Campaign ID', 'EmailBison Campaign ID', 'Bison Campaign ID'));\nconst apiKey = text(first('EmailBison API (from Client)', 'EmailBison API', 'Bison API Key'));\nconst baseUrl = text(first('EmailBison Base URL', 'Bison Base URL')) || 'https://send.dulcy.io';\nif (!recordId || !recordId.startsWith('rec')) throw new Error('A valid Airtable Campaign recordId is required.');\nif (!['Launch','Pause','Delete'].includes(action)) throw new Error('Bison Action must be Launch, Pause, or Delete.');\nif (action !== 'Delete' && !campaignId) throw new Error('This campaign has no EmailBison campaign ID yet. Create the EmailBison draft before launching or pausing it.');\nif (campaignId && !apiKey) throw new Error('EmailBison API (from Client) is missing.');\nreturn [{json: {recordId, action, campaignId, apiKey, baseUrl}}];\n",
+      "name": "Normalize Action",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "2706a018-61e9-47af-91af-f34d2ace951c",
+      "code": null,
+      "name": "Delete Action?",
+      "type": "n8n-nodes-base.if",
+      "disabled": null
+    },
+    {
+      "id": "93c0252a-156a-4fee-beb7-0209403cc721",
+      "code": null,
+      "name": "Has EmailBison ID?",
+      "type": "n8n-nodes-base.if",
+      "disabled": null
+    },
+    {
+      "id": "fbf31996-ff26-4451-925c-e1d02f8b4e53",
+      "code": null,
+      "name": "Delete EmailBison Campaign",
+      "type": "n8n-nodes-base.httpRequest",
+      "disabled": null
+    },
+    {
+      "id": "5de2f35a-57c7-453f-9b35-8d33a06c993c",
+      "code": null,
+      "name": "Delete Airtable Campaign",
+      "type": "n8n-nodes-base.airtable",
+      "disabled": null
+    },
+    {
+      "id": "f8d8ee8b-25cf-4105-aa46-71d54c569d77",
+      "code": null,
+      "name": "Pause Action?",
+      "type": "n8n-nodes-base.if",
+      "disabled": null
+    },
+    {
+      "id": "6b92a96d-a450-43ed-b6d9-b99bb772715f",
+      "code": null,
+      "name": "Pause EmailBison Campaign",
+      "type": "n8n-nodes-base.httpRequest",
+      "disabled": null
+    },
+    {
+      "id": "87564c2a-acb6-476c-a562-78ee8a6ebfc1",
+      "code": null,
+      "name": "Mark Airtable Inactive",
+      "type": "n8n-nodes-base.airtable",
+      "disabled": null
+    },
+    {
+      "id": "734719dd-cf14-4c77-a189-ac52a1672651",
+      "code": null,
+      "name": "Launch EmailBison Campaign",
+      "type": "n8n-nodes-base.httpRequest",
+      "disabled": null
+    },
+    {
+      "id": "4e90074b-8d8f-473b-b3fe-9309acff2230",
+      "code": null,
+      "name": "Mark Airtable Active",
+      "type": "n8n-nodes-base.airtable",
+      "disabled": null
+    },
+    {
+      "id": "6699d8d0-c3b3-4cd7-b537-1cdb4694756e",
+      "code": "const a = $('Normalize Action').first().json; return [{json: {ok: true, action: a.action, recordId: a.recordId, emailBisonCampaignId: a.campaignId || null, message: a.action === 'Delete' ? 'Campaign deleted from EmailBison when present and removed from Airtable.' : 'Campaign ' + a.action.toLowerCase() + ' completed in EmailBison and Airtable.'}}];",
+      "name": "Return Action Result",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "1c135f8f-8174-4352-8f7f-5eda6126de5e",
+      "code": null,
+      "name": "Read Campaign for Readiness",
+      "type": "n8n-nodes-base.httpRequest",
+      "disabled": null
+    },
+    {
+      "id": "319cb722-a5c6-4dc3-af72-75878da208a3",
+      "code": "const campaign = $input.first().json;\nconst original = $('Normalize Action').first().json;\nif (campaign.id !== original.recordId) throw new Error('Lead-list readiness could not be confirmed: campaign identity mismatch.');\nconst links = campaign.fields?.fld5weZ6ED31dBlaz;\nif (!Array.isArray(links) || !links.length) throw new Error('Upload/launch blocked: link a Ready lead list with passed QA first.');\nconst ids = [...new Set(links.map(x => typeof x === 'string' ? x : x?.id))];\nif (ids.length > 100 || ids.some(id => !/^rec[a-zA-Z0-9]{14}$/.test(id))) throw new Error('Lead-list readiness could not be confirmed: invalid linked records.');\nreturn [{json:{original, ids, filter:'OR(' + ids.map(id => \"RECORD_ID()='\" + id + \"'\").join(',') + ')'}}];",
+      "name": "Resolve Readiness Lead Lists",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    },
+    {
+      "id": "ba4d6d0b-f4a0-41c8-bd9b-723e16f29317",
+      "code": null,
+      "name": "Read Lead List Readiness",
+      "type": "n8n-nodes-base.httpRequest",
+      "disabled": null
+    },
+    {
+      "id": "e0a2c595-d4b3-497d-a00a-948ca79b7f9e",
+      "code": "const expected = $('Resolve Readiness Lead Lists').first().json;\nconst response = $input.first().json;\nif (!Array.isArray(response.records) || response.offset) throw new Error('Upload/launch blocked: lead-list readiness response was incomplete.');\nfor (const id of expected.ids) {\n  const list = response.records.find(r => r.id === id);\n  if (!list) throw new Error('Upload/launch blocked: linked lead list is missing or inaccessible.');\n  const f = list.fields || {};\n  const stage = String(f.fld8nrebRFL0O8kgj || '').trim();\n  const qa = String(f.fldUB4WsLi5kq6rUy || '').trim();\n  const processing = String(f.fldf9wpMGWg0SebHV || '').trim();\n  if (stage.toLowerCase() !== 'ready' || qa.toLowerCase() !== 'passed') {\n    throw new Error('Upload/launch blocked: finish enrichment (or explicitly skip it), then pass automated QA in Lead List Center. Stage: ' + (stage || 'Not set') + '; QA: ' + (qa || 'Not passed') + '.');\n  }\n  if (['requested','queued','running','processing','failed','error'].includes(processing.toLowerCase())) throw new Error('Upload/launch blocked: the linked lead list has an unfinished automation (' + processing + ').');\n}\nreturn [{json:expected.original}];",
+      "name": "Require Ready Lead List and Passed QA",
+      "type": "n8n-nodes-base.code",
+      "disabled": null
+    }
+  ],
+  "active": true,
+  "connections": {
+    "Pause Action?": {
+      "main": [
+        [
+          {
+            "node": "Pause EmailBison Campaign",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read Campaign for Readiness",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Action?": {
+      "main": [
+        [
+          {
+            "node": "Has EmailBison ID?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pause Action?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Action": {
+      "main": [
+        [
+          {
+            "node": "Delete Action?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has EmailBison ID?": {
+      "main": [
+        [
+          {
+            "node": "Delete EmailBison Campaign",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Delete Airtable Campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Airtable Active": {
+      "main": [
+        [
+          {
+            "node": "Return Action Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Airtable Inactive": {
+      "main": [
+        [
+          {
+            "node": "Return Action Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Airtable Campaign": {
+      "main": [
+        [
+          {
+            "node": "Return Action Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Lead List Readiness": {
+      "main": [
+        [
+          {
+            "node": "Require Ready Lead List and Passed QA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EmailBison Action Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pause EmailBison Campaign": {
+      "main": [
+        [
+          {
+            "node": "Mark Airtable Inactive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete EmailBison Campaign": {
+      "main": [
+        [
+          {
+            "node": "Delete Airtable Campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Launch EmailBison Campaign": {
+      "main": [
+        [
+          {
+            "node": "Mark Airtable Active",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Campaign for Readiness": {
+      "main": [
+        [
+          {
+            "node": "Resolve Readiness Lead Lists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Readiness Lead Lists": {
+      "main": [
+        [
+          {
+            "node": "Read Lead List Readiness",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Require Ready Lead List and Passed QA": {
+      "main": [
+        [
+          {
+            "node": "Launch EmailBison Campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "savedVersion": "5b7c42b6-9bd9-4ce0-a0b2-30c6e706cd75",
+  "activeVersion": "5b7c42b6-9bd9-4ce0-a0b2-30c6e706cd75",
+  "savedNodesHash": "857b04036825e8be4b3451a2ee009a5063e9e64ae5f1d1c9c79138bcb9f0f322",
+  "activeNodesHash": "857b04036825e8be4b3451a2ee009a5063e9e64ae5f1d1c9c79138bcb9f0f322"
+}

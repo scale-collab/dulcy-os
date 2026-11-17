@@ -1,0 +1,112 @@
+[
+  {
+    "path": "/Users/alexwoung/Documents/Codex/2026-08-25/the-lead-list-creator-isnt-working/campaign-emailbison-live-backup.json",
+    "id": "IrtDsUmx88sVAp1daCzWH",
+    "name": "[Campaign Center] Create EmailBison + HeyReach Campaigns",
+    "nodes": 51,
+    "mtime": 1787866079.5079486,
+    "updatedAt": null,
+    "file": "IrtDsUmx88sVAp1daCzWH.json",
+    "status": "LOCAL SNAPSHOT ONLY: current live version not verified"
+  },
+  {
+    "path": "/Users/alexwoung/Documents/Codex/2026-11-03/files-pasted-by-the-user-alexander/work/private-runtime-data/workflow-current-2026-11-11/enrichment-prompt-current-2026-11-11.json",
+    "id": "Tvppie6mLHe-16Gmhfzjs",
+    "name": "[Lead List Center] 04 Enrichment Prompt Builder",
+    "nodes": 10,
+    "mtime": 1794411490.4634452,
+    "updatedAt": null,
+    "file": "Tvppie6mLHe-16Gmhfzjs.json",
+    "status": "LOCAL SNAPSHOT ONLY: current live version not verified"
+  },
+  {
+    "path": "/Users/alexwoung/Documents/Codex/2026-10-30/task/identity-compatibility/company-cleanup-live-code.json",
+    "id": "SndrUpdateMain26A",
+    "name": "[Campaign Center] Update EmailBison Senders",
+    "nodes": 26,
+    "mtime": 1793636078.4196699,
+    "updatedAt": null,
+    "file": "SndrUpdateMain26A.json",
+    "status": "LOCAL SNAPSHOT ONLY: current live version not verified"
+  },
+  {
+    "path": "/Users/alexwoung/Documents/Codex/2026-10-30/task/identity-compatibility/company-cleanup-live-code.json",
+    "id": "KqkYFOs5AZ1RM3G-F1AWu",
+    "name": "[Campaign Center - GPT] Spintax and Spam QA",
+    "nodes": 52,
+    "mtime": 1793636078.4196699,
+    "updatedAt": null,
+    "file": "KqkYFOs5AZ1RM3G-F1AWu.json",
+    "status": "LOCAL SNAPSHOT ONLY: current live version not verified"
+  },
+  {
+    "path": "/Users/alexwoung/Documents/Codex/2026-09-09/help-me-x20/work/heyreach-center-nov4/main-current.json",
+    "id": "4VK2fq5Ijrzcaa0Wp3n7i",
+    "name": "[Campaign Center] EmailBison Output Builder",
+    "nodes": 65,
+    "mtime": 1793828723.2298985,
+    "updatedAt": "2026-11-03T18:28:14.384+00:00",
+    "file": "4VK2fq5Ijrzcaa0Wp3n7i.json",
+    "status": "LOCAL SNAPSHOT ONLY: current live version not verified"
+  },
+  {
+    "path": "/Users/alexwoung/Documents/Codex/2026-10-30/task/identity-compatibility/company-cleanup-live-code.json",
+    "id": "RVqeMy8nHj0IJhzrXV7fz",
+    "name": "[Campaign Center] Split Direct + Generic Controller",
+    "nodes": 7,
+    "mtime": 1793636078.4196699,
+    "updatedAt": null,
+    "file": "RVqeMy8nHj0IJhzrXV7fz.json",
+    "status": "LOCAL SNAPSHOT ONLY: current live version not verified"
+  },
+  {
+    "path": "/Users/alexwoung/Documents/Codex/2026-10-30/task/identity-compatibility/company-cleanup-live-code.json",
+    "id": "ycmdunLvpxt2SJWufXWaj",
+    "name": "[Campaign Center] Auto-Approve Client Review",
+    "nodes": 4,
+    "mtime": 1793636078.4196699,
+    "updatedAt": null,
+    "file": "ycmdunLvpxt2SJWufXWaj.json",
+    "status": "LOCAL SNAPSHOT ONLY: current live version not verified"
+  },
+  {
+    "path": "/Users/alexwoung/Documents/Codex/2026-10-30/task/identity-compatibility/company-cleanup-live-code.json",
+    "id": "cZtV7nPH2rZhwpDWgR_ak",
+    "name": "[Campaign Center - GPT] EmailBison Actions",
+    "nodes": 16,
+    "mtime": 1793636078.4196699,
+    "updatedAt": null,
+    "file": "cZtV7nPH2rZhwpDWgR_ak.json",
+    "status": "LOCAL SNAPSHOT ONLY: current live version not verified"
+  },
+  {
+    "path": "/Users/alexwoung/Documents/Codex/2026-10-30/task/identity-compatibility/company-cleanup-live-code.json",
+    "id": "dZXXFKkn-ggXAz8VXMxtw",
+    "name": "[Campaign Center] Sync EmailBison Sender Accounts to Airtable",
+    "nodes": 10,
+    "mtime": 1793636078.4196699,
+    "updatedAt": null,
+    "file": "dZXXFKkn-ggXAz8VXMxtw.json",
+    "status": "LOCAL SNAPSHOT ONLY: current live version not verified"
+  },
+  {
+    "path": "/Users/alexwoung/Documents/Codex/2026-10-30/task/identity-compatibility/company-cleanup-live-code.json",
+    "id": "sZvatSJWWlxuqoQY6tbKo",
+    "name": "[Campaign Center] Sync EmailBison Sequence Analytics Totals",
+    "nodes": 8,
+    "mtime": 1793636078.4196699,
+    "updatedAt": null,
+    "file": "sZvatSJWWlxuqoQY6tbKo.json",
+    "status": "LOCAL SNAPSHOT ONLY: current live version not verified"
+  },
+  {
+    "path": "/Users/alexwoung/Documents/Codex/2026-09-09/help-me-x20/work/topup-managed-adoption-nov17/workflow.guard-v1-published.json",
+    "id": "S2_1UX8GnAKPiYvWqj74s",
+    "name": "[Campaign Center] Top Up Existing EmailBison Campaign",
+    "nodes": 34,
+    "mtime": 1794942119.1899161,
+    "updatedAt": "2026-11-17T16:43:33.706+00:00",
+    "file": "S2_1UX8GnAKPiYvWqj74s.json",
+    "status": "LOCAL SNAPSHOT ONLY: current live version not verified"
+  }
+]
