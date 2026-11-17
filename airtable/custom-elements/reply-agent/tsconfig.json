@@ -1,0 +1,33 @@
+{
+    "compilerOptions": {
+        "noEmit": true,
+
+        "target": "ES2022",
+        "jsx": "react-jsx",
+        "useDefineForClassFields": true,
+
+        "module": "preserve",
+        "moduleResolution": "bundler",
+        "allowImportingTsExtensions": true,
+        "noUncheckedSideEffectImports": true,
+        "resolveJsonModule": true,
+        "allowArbitraryExtensions": true,
+
+        "allowJs": true,
+
+        "isolatedModules": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "exactOptionalPropertyTypes": true,
+        "noImplicitReturns": true,
+        "noUncheckedIndexedAccess": true,
+        "noImplicitOverride": true,
+        "allowUnreachableCode": false,
+
+        "skipLibCheck": true
+    }
+}
