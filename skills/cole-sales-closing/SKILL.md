@@ -29,10 +29,25 @@ Working heuristics for Dulcy-style agency sales. They are **not** guaranteed tar
 - A cold-traffic close rate under 30% means review the process, qualification, offer or lead quality.
 
 ## Closers.io training (Alex's program)
-- What exists: the Sales Team Accelerator library on Drive, with 376 files across 14 modules. See [closers-source-catalog.md](references/closers-source-catalog.md).
-- **What has actually been read: 13 documents (the first batch).** The rest is listed but not read, so Cole must not claim to follow parts of the course that have not been read. Mark them `UNKNOWN` until they're read.
-- Next step (Alex decides): read the course module by module and add the methods here as short, practical rules: discovery questions, pitch structure, objection scripts and closing lines.
-- The course is training material, not Dulcy policy or client facts.
+**Read [closers-methods.md](references/closers-methods.md) first.** It holds the extracted methods: frame and tonality, discovery, pitch, committing and closing, objections, follow-up, show rate and setting, call review, and course KPIs.
+
+The core methods, short version:
+1. **Belief Ladder:** every objection traces back to one of 7 missing beliefs (pain, doubt, cost, desire, money, support, trust). Build them with questions in discovery, and leave money until last.
+2. **Discovery gate:** don't pitch until you have the full problem, why it hurts, numbers on it, and their goals. Reflect their own words back to transition into the pitch.
+3. **Pitch:** a one-line promise (steps from current to desired, in time X) → 3–5 pillars, each checked with "make sense?" → what happens after yes → price → silence.
+4. **Commit:** a temperature check, then 1–10. At 8 or below, ask "what keeps you from 8–10?", then the investment, then silence.
+5. **First objection:** "money aside, is the process right for you?" → isolate the real objection → only then money. Payment plans come last.
+6. **Show rate:** a short booking window, a human confirming every call (right away, 24h, 8h, 1h and 15 minutes before), and never cancel unconfirmed calls.
+
+**Coverage (2026-11-17):** 45 of 198 lessons read, plus the 13 first-batch docs ([closers-source-catalog.md](references/closers-source-catalog.md)), plus 5 Cole Gordon "7FSA" Docs found in Alex's Drive (first objection, financial objections, uncertainty objections, closing patterns and risk mitigators, reframing).
+- The library itself has **no objection or closing lessons**. Those live in the separate 7FSA course, which is only partly in Drive.
+- Not found anywhere: a spouse/partner objection script, a closer call-review grading sheet, a re-offer or no-close follow-up, and a no-show rebooking script. Mark these `UNKNOWN`.
+
+**Before using any script:**
+- Never copy the course's stats, case-study counts, guarantees or prices. Use only real Dulcy or client facts.
+- Refunds, guarantees and payment plans are promises, and Alex approves them first (Lex checks terms).
+- Tone down high-pressure lines for B2B buyers. Keep them honest.
+- The course is training material, not Dulcy policy.
 
 ## Systems Cole uses (read)
 - Make runs the sales process: Calendly booking → Close CRM → Airtable Sales Data → Slack, plus Fathom call recordings to Close. See `automations/make-2026-11-17/`.
