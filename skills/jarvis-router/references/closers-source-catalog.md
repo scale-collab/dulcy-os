@@ -1,0 +1,46 @@
+# Closers.io course source coverage
+
+## Scope and precedence
+
+Inventory and first outbound batch reviewed October 11, 2026. Treat course material as external historical training, not Dulcy policy, current client facts, permission or validated performance. Resolve the current owner and contracts before applying an idea. Preserve current provider/stage controls and do not launch, spend, contact, reconfigure or change client promises from this material.
+
+The [Sales Team Accelerator library](https://drive.google.com/drive/folders/1xlVVl0ckUVUUTbX2ukrxXQ7wufnna1xu), under Skool Course, contains 376 distinct file IDs across 14 modules and 198 lesson folders: 171 PDFs, 172 DOCX, 28 XLSX, one ODS, three PPTX and one PPT. All lesson folders were enumerated; one is empty (Keys to Consistent High Performance), with no deeper folders found. The separate [Closers.io Information folder](https://drive.google.com/drive/folders/1MbZRZctHgOqiFdmDEfngb1U6BCkAEINZ) contains two native Docs, not the full course.
+
+Do not interpret inventory as reading. Across the large library, 169 same-folder PDF/DOCX title pairs and 18 repeated cross-folder titles are metadata duplicate candidates; only the first-batch comparisons below have been checked here. The prior Drive catalog overlaps 13 course IDs across seven topics: How To Pitch, Aloware Lead Flow, Double Bookings, Mock Call/Scorecard Interview, Film Engaging Video Ads, Edit Engaging Video Ads and Film Your VSL. Retain that catalog's exact scope: the last three have limited prose/media-stub coverage. The small folder's How To Pitch is already a verified duplicate.
+
+## First batch coverage
+
+Read all available extracted prose of 13 DOCX sources below, including the entire 27,169-character master manual. Compared all 13 companion PDF text extractions: two match after whitespace normalization; the remaining eleven differ only by list markers/numbering in reviewed character diffs. This establishes available-text equivalence, not visual equivalence. No source images, diagrams, video/audio, linked templates/targets, hidden content, original extraction completeness or current live setup was audited.
+
+System Overview Parts 1 and 2 have identical DOCX text. Thus 13 lesson folders represent 12 distinct extracted documents, with further extensive section repetition in the master manual; repeated content is not independent corroboration. The manual ends with triage-example headings and an Outbound SDR SOPs “Coming Soon” placeholder, not an executable complete SDR procedure. Initial Creatives is an outline, and Why End To End Outbound is promotional opinion, not evidence of predictable economics. No first-batch file overlaps the prior catalog's 13 course IDs.
+
+## Applied ownership
+
+- Atlas: source-to-outcome attribution, explicit booking paths, comparable denominators and effort-adjusted testing.
+- Scout: niche seed-source evidence, cost/fit tradeoff and one prospect identity across alternate addresses.
+- Scribe: CTA-path continuity and truthful fallbacks; existing copy, reply and promise controls take precedence.
+- Airtable: identity-safe import/reporting and separate click/reply/booking states; historical tech recipes are excluded.
+
+Each owner's existing `references/drive-sop-basis.md` contains only the narrow adaptation and material conflicts. Do not duplicate the source templates or create an alternate operating framework.
+
+## Canonical source ledger
+
+Character counts refer to the complete returned DOCX text snapshot. PDF counterparts were text-compared, not visually inspected.
+
+- [Replying To Leads To Set Up Calls](https://docs.google.com/document/d/1A_bmNN-mQd4LJEAPJ-WuZMZb0s1WpMoX/edit?usp=drivesdk&ouid=117391494420768769037&rtpof=true&sd=true) — 1,918 characters; full available prose reviewed. [PDF counterpart](https://drive.google.com/file/d/16C3hZ2xXc-NRIphf4Q1q1AqxozZ-nl-A/view?usp=drivesdk) — equivalent available text after reviewed whitespace/list-marker differences.
+- [Testing Guidelines](https://docs.google.com/document/d/11tgD1vTYrRf-lKZYaRnR4WNdSug2uucs/edit?usp=drivesdk&ouid=117391494420768769037&rtpof=true&sd=true) — 513 characters; full available prose reviewed. [PDF counterpart](https://drive.google.com/file/d/1YWic_CejWgs2Dd8aQ8abeE-FkpL1sLfA/view?usp=drivesdk) — equivalent available text after reviewed whitespace/list-marker differences.
+- [Lead Sourcing Workflow](https://docs.google.com/document/d/1nt2UZh3C3Teij-G3UZX-39ZiiBM1I3IH/edit?usp=drivesdk&ouid=117391494420768769037&rtpof=true&sd=true) — 11,399 characters; full available prose reviewed. [PDF counterpart](https://drive.google.com/file/d/1dOJf9L1EKoLkgdtk80Fe2qN6N0a9Cyua/view?usp=drivesdk) — equivalent available text after reviewed whitespace/list-marker differences.
+- [Cold Email Tech, Set Up & Replies](https://docs.google.com/document/d/1kvu8c7Ds2dIZwNRBJHyBgTtwESsecBrb/edit?usp=drivesdk&ouid=117391494420768769037&rtpof=true&sd=true) — 6,599 characters; full available prose reviewed. [PDF counterpart](https://drive.google.com/file/d/1qt5OdtrsHKhm_z3p6cSAoYEFKCXCTv8w/view?usp=drivesdk) — equivalent available text after reviewed whitespace/list-marker differences.
+- [Follow Up Email Creatives](https://docs.google.com/document/d/1l6ZsCr_JLae0rPKsM6BD_sdySmkVFt76/edit?usp=drivesdk&ouid=117391494420768769037&rtpof=true&sd=true) — 830 characters; full available prose reviewed. [PDF counterpart](https://drive.google.com/file/d/1pGTYgnZUi3IYqCGA8BmK6S8G-aMr-lAj/view?usp=drivesdk) — equivalent available text after reviewed whitespace/list-marker differences.
+- [Initial Email Creatives](https://docs.google.com/document/d/1la7OyZ4LuxzzzCzFoaQRd5xOUdeHT76g/edit?usp=drivesdk&ouid=117391494420768769037&rtpof=true&sd=true) — 220 characters; full available prose reviewed. [PDF counterpart](https://drive.google.com/file/d/1c__tQlBMAYSX5NPkde_owx6VhSX2XYPg/view?usp=drivesdk) — equivalent available text after reviewed whitespace/list-marker differences.
+- [Cold Email Examples](https://docs.google.com/document/d/12194lRqNt0UJ8uYztU08Lc9vwlMewzeJ/edit?usp=drivesdk&ouid=117391494420768769037&rtpof=true&sd=true) — 5,173 characters; full available prose reviewed. [PDF counterpart](https://drive.google.com/file/d/1HFItkZS7IjQFcm9T5H3UABmUnS2HyEbT/view?usp=drivesdk) — equivalent available text after reviewed whitespace/list-marker differences.
+- [Lead Source Overview](https://docs.google.com/document/d/1GMpqik683pDq5kLwK0gbEYnzlLEUFlO3/edit?usp=drivesdk&ouid=117391494420768769037&rtpof=true&sd=true) — 1,535 characters; full available prose reviewed. [PDF counterpart](https://drive.google.com/file/d/1_YDSY1Z6TCaRvK0vigHCeBwb3yOOmERr/view?usp=drivesdk) — equivalent available text after reviewed whitespace/list-marker differences.
+- [Overview Of The System Part 1](https://docs.google.com/document/d/1-je2RjnncHsVV-mRVcX2Fv-wR0GQk85y/edit?usp=drivesdk&ouid=117391494420768769037&rtpof=true&sd=true) — 4,105 characters; full available prose reviewed. [PDF counterpart](https://drive.google.com/file/d/1Ksn3uS5gfRpp0XzPxo64rtzbx0RySZuC/view?usp=drivesdk) — equivalent available text after reviewed whitespace/list-marker differences.
+- [KPIs For Email](https://docs.google.com/document/d/1vAxsSJ9GivYosvvNRvVfzA2wF6mDXdpE/edit?usp=drivesdk&ouid=117391494420768769037&rtpof=true&sd=true) — 315 characters; full available prose reviewed. [PDF counterpart](https://drive.google.com/file/d/1aXtf1xJ7ogsMcCposb_juj1pC9FrCDZU/view?usp=drivesdk) — equivalent available text after reviewed whitespace/list-marker differences.
+- [Overview Of The System Part 2](https://docs.google.com/document/d/1gTkl1ht--cFp8z1b3rKsDfQvekSpVlkD/edit?usp=drivesdk&ouid=117391494420768769037&rtpof=true&sd=true) — 4,105 characters; full available prose reviewed. [PDF counterpart](https://drive.google.com/file/d/1PRsekaqb22n-YuCqioop1TjYD1gzu_CD/view?usp=drivesdk) — equivalent available text after reviewed whitespace/list-marker differences.
+- [Why End to End Outbound](https://docs.google.com/document/d/1XY0tp2jXDSrH1GOxTE5tzw1Za_xWniBA/edit?usp=drivesdk&ouid=117391494420768769037&rtpof=true&sd=true) — 356 characters; full available prose reviewed. [PDF counterpart](https://drive.google.com/file/d/1vgOnDLElUgREXA8ILp1zMIYUJb7IiiCa/view?usp=drivesdk) — equivalent available text after reviewed whitespace/list-marker differences.
+- [End To End Outbound Sales Manual](https://docs.google.com/document/d/19LFRKccwjwNT64l2_6JfFuZIl2Klyrp_/edit?usp=drivesdk&ouid=117391494420768769037&rtpof=true&sd=true) — 27,169 characters; full available prose reviewed. [PDF counterpart](https://drive.google.com/file/d/166RKRiw2v9S9R3-W5FFOYRMtpY1UCvTV/view?usp=drivesdk) — equivalent available text after reviewed whitespace/list-marker differences.
+
+## Remaining scope
+
+The other 350 course file IDs were not fetched in this batch; 13 of those already have bounded coverage in the prior Drive catalog, leaving 337 without reviewed coverage established by these two ledgers. This is file accounting, not 337 distinct lessons. Start later batches by canonical-format and exact-content deduplication. Prioritize offers/fulfillment next, then sales conversion, then team operations. Advertising, spreadsheets/decks and linked media require their own appropriate review; no blanket course-completion claim is supported.
