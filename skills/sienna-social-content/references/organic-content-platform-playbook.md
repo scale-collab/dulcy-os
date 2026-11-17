@@ -1,8 +1,8 @@
-# Jarvis organic-content module Platform Playbook
+# Sienna organic-content module Platform Playbook
 
 ## Account scope
 
-For Dulcifyz long-form videos and gaming Shorts, use [the dedicated gaming playbook](dulcifyz-gaming-content.md). Preserve game/action context, real reactions, source memes, sound timing, readable camera/HUD/chat and appropriate portrait reframing. The B2B examples and script template below are not Dulcifyz requirements.
+Business accounts only (Alex founder brand, Dulcy, clients). Personal gaming content is outside this repo.
 
 ## LinkedIn formats
 

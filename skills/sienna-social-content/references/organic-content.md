@@ -1,8 +1,4 @@
-# Jarvis · Organic Content
-
-## Dulcifyz gaming branch
-
-Identify Dulcifyz gaming separately from founder, company and client B2B accounts. For Madden/College Football/RTG/franchise and Minecraft/Verity reaction comedy, read [the Dulcifyz gaming content and editing bible](dulcifyz-gaming-content.md) before applying the business-content defaults below. Use the direct user feedback and reference-coverage files linked from that bible. The project handoff supplies current file/version/upload state; preserve completed work and existing authorizations.
+# Sienna · Organic Content
 
 ## Contents
 - Core workflow
@@ -17,7 +13,7 @@ Identify Dulcifyz gaming separately from founder, company and client B2B account
 - Tool and connector behavior
 
 
-Supporting guidance owned by Jarvis. Use the main skill for routing and current execution controls.
+Supporting guidance owned by Sienna. Use the main skill for routing and current execution controls.
 
 Operate organic social media as a business system, not as isolated posts. Build trust, authority, distribution, and qualified demand while keeping the founder's voice natural and specific.
 

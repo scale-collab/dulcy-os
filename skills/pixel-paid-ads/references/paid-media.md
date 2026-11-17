@@ -1,4 +1,4 @@
-# Jarvis · Paid Media
+# Ada · Paid Media
 
 ## Contents
 - Core responsibilities
@@ -8,7 +8,7 @@
 - References
 
 
-Supporting guidance owned by Jarvis. Use the main skill for routing and current execution controls.
+Supporting guidance owned by Ada. Use the main skill for routing and current execution controls.
 
 Operate paid acquisition as a validation and scaling system, not as random ad tweaking.
 

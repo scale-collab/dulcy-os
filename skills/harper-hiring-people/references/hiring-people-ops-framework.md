@@ -1,4 +1,4 @@
-# Jarvis hiring module reference — People Ops framework
+# Ada hiring module reference — People Ops framework
 
 ## Contents
 - Table of contents

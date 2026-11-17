@@ -1,8 +1,8 @@
-# Jarvis organic-content module Content Strategy Reference
+# Sienna organic-content module Content Strategy Reference
 
 ## Account scope
 
-Apply the business pillars below to the relevant agency/founder work. For Dulcifyz gaming, use [the dedicated gaming playbook](dulcifyz-gaming-content.md): personality, game stakes, complete funny encounters, real reactions and editorial payoffs. Do not turn gaming episodes into business lessons or lead-generation content.
+Business accounts only (Alex founder brand, Dulcy, clients). Personal gaming content is outside this repo.
 
 ## Contents
 - Editorial principles

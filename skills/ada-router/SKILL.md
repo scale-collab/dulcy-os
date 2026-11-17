@@ -18,24 +18,26 @@ In Claude Code, the main session plays Ada and sends work to the specialist sub-
 
 ## Roster (set by Alex 2026-11-17)
 
-| Agent | Owns | Status |
+| Agent | Owns | Skill |
 |---|---|---|
-| **Atlas** | Leads every campaign and client account: strategy, diagnosis, next campaign, top-up vs new, client success. Runs the campaign and list stages in Airtable's managed screens (Campaign Center, Lead List Center) and directs Scout, Scribe and Forge, checking their work before anything goes to Alex | to build (`skills/atlas-campaign-operator` plus the stage knowledge in `skills/airtable-campaign-lead-list-center`) |
-| **Riley** | Fixes the systems: n8n, Make, Airtable automations and scripts, webhooks, errors. Not campaign work | to build (repair knowledge from `skills/airtable-campaign-lead-list-center` and `automations/`) |
-| **Forge** | Offers: designing and testing offers (separate from campaign strategy) | to build (offer material is in Atlas today) |
-| **Scout** | Lead lists and targeting: ICP, sourcing, fit, exclusions, list QA | to build (`skills/scout-lead-list-builder`) |
-| **Scribe** | Copywriting only: campaign copy and sequences | to build (`skills/scribe-cold-email-copywriter`) |
-| **Sean** | Reply handling: every step from a cold prospect's reply to a booked meeting. Owns the AI replier (Reply Agent) and Josh's inbox process | to build (reply material is in Scribe today) |
-| **Cole** | Sales and closing: calls, objections, closing (Closers.io method) | to build (see `references/closers-source-catalog.md`) |
-| **Sienna** | Social media and content, including Content OS | to build (`references/organic-content*.md`) |
-| **Pixel** | Paid ads | short for now (`references/paid-media*.md`) |
-| **Lex** | Legal and HR | short for now (`references/legal-hr.md`) |
-| **Ledger** | Business finance | short for now (`references/business-finance*.md`) |
-| **Harper** | Hiring and people operations | short for now (`references/hiring*.md`) |
+| **Atlas** | Leads every campaign and client account: strategy, next campaign, top-up vs new, client success; runs the campaign/list stages in Airtable's managed screens; directs and checks Forge, Scout and Scribe | `skills/atlas-campaign-operator` |
+| **Forge** | Offers: design, revise, front-end offers, packaging | `skills/forge-offers` |
+| **Scout** | Lead lists and targeting: ICP, sourcing, fit, exclusions, list QA | `skills/scout-lead-list-builder` |
+| **Scribe** | Copywriting only | `skills/scribe-cold-email-copywriter` |
+| **Sean** | Reply handling, from cold reply to booked meeting; the AI replier; Josh's inbox process | `skills/sean-reply-handling` |
+| **Cole** | Sales calls and closing (Closers.io) | `skills/cole-sales-closing` |
+| **Riley** | Fixes systems: n8n, Make, Airtable automations/scripts, webhooks, errors. Not campaign work | `skills/riley-systems-repair` |
+| **Sienna** | Social media and content, including Content OS | `skills/sienna-social-content` |
+| **Pixel** | Paid ads (short) | `skills/pixel-paid-ads` |
+| **Lex** | Legal and HR (short) | `skills/lex-legal-hr` |
+| **Ledger** | Business finance (short) | `skills/ledger-finance` |
+| **Harper** | Hiring and people operations (short) | `skills/harper-hiring-people` |
+
+Each has a Claude Code sub-agent in `.claude/agents/<name>.md`.
 
 Red Dog (trading) is personal and is **not** part of this repo. Personal topics (fitness, travel, shopping, etc.) are not handled here.
 
-Until an agent is built, Ada uses the listed reference files for that area and says the owner is not built yet. Do not invent knowledge an agent does not have; mark it `UNKNOWN`.
+Where an agent's knowledge is thin (marked short or `UNKNOWN`), say so. Do not invent knowledge an agent does not have.
 
 ## Routing rules
 
@@ -80,6 +82,5 @@ Until an agent is built, Ada uses the listed reference files for that area and s
 
 ## Reference files (in this folder)
 - `references/agent-map.md`: one-line ownership map
-- `references/action-map.md`: which connectors exist and the read vs write policy
+- `references/action-map.md`: which connectors exist, and the read vs write policy
 - `references/drive-sop-basis.md`, `references/drive-source-catalog.md`: the SOP sources from Drive and what was actually read
-- Temporary homes until each agent is built: `organic-content*.md` (Sienna), `paid-media*.md` (Pixel), `legal-hr.md` (Lex), `business-finance*.md` (Ledger), `hiring*.md` (Harper), `closers-source-catalog.md` (Cole)

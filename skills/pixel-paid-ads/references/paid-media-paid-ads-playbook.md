@@ -1,4 +1,4 @@
-# Jarvis paid-media module Paid Ads Playbook
+# Ada paid-media module Paid Ads Playbook
 
 ## Contents
 - Funnel comparison
