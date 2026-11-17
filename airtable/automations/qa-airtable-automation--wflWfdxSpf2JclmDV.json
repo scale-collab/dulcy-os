@@ -1,0 +1,76 @@
+{
+ "id": "wflWfdxSpf2JclmDV",
+ "name": "QA Airtable automation",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordMatchesConditions",
+  "inputs": {
+   "tableId": "tblVOg9BkPOMmnitt",
+   "filtersObj": {
+    "obj": {
+     "operator": "and",
+     "operands": {
+      "tuple": [
+       {
+        "obj": {
+         "operator": "isNotEmpty",
+         "operands": {
+          "tuple": [
+           "fldcBmKEYX8KUiKAM"
+          ]
+         },
+         "operatorOptions": null
+        }
+       }
+      ]
+     }
+    }
+   }
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacfOkV9riYdU4b1R",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "recordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      },
+      "action": {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldcBmKEYX8KUiKAM",
+        "name"
+       ]
+      }
+     }
+    },
+    "script": "const { recordId, action } = input.config();\n\nconst webhookUrl =\n    \"https://n8n.dulcy.io/webhook/REDACTED_PATH\";\n\nif (!recordId) {\n    throw new Error(\"Airtable did not provide a recordId.\");\n}\n\nif (action !== \"Run Automated QA\") {\n    throw new Error(`Unsupported QA Action: ${action}`);\n}\n\nconst response = await fetch(webhookUrl, {\n    method: \"POST\",\n    headers: {\n        \"Content-Type\": \"application/json\",\n    },\n    body: JSON.stringify({\n        recordId,\n        action,\n    }),\n});\n\nconst responseText = await response.text();\n\nif (!response.ok) {\n    throw new Error(\n        `n8n returned ${response.status}: ${responseText}`\n    );\n}\n\noutput.set(\"success\", true);\noutput.set(\"actionSent\", action);\noutput.set(\"n8nResponse\", responseText);"
+   },
+   "outputSchema": [
+    {
+     "name": "success",
+     "type": "boolean"
+    },
+    {
+     "name": "actionSent",
+     "type": "string"
+    },
+    {
+     "name": "n8nResponse",
+     "type": "string"
+    }
+   ]
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

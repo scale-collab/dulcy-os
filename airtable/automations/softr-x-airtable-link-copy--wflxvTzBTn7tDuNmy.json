@@ -1,0 +1,155 @@
+{
+ "id": "wflxvTzBTn7tDuNmy",
+ "name": "Softr x Airtable Link copy",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordCreated",
+  "inputs": {
+   "tableId": "tbljhM1JmUwr99tu4"
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacM2g7wr5HLPnE3o",
+   "type": "findRecords",
+   "inputs": {
+    "tableId": "tblcjRBGJEWh5KgOt",
+    "queryType": "filtersObj",
+    "filtersObj": {
+     "obj": {
+      "operator": "and",
+      "operands": {
+       "tuple": [
+        {
+         "obj": {
+          "operands": {
+           "tuple": [
+            "fld48x6Yg3v6RP30W",
+            {
+             "$ref": "trigger",
+             "path": [
+              "cellValuesByFieldId",
+              "fldVkfXhGnNgKwDYN"
+             ]
+            }
+           ]
+          },
+          "operator": "contains",
+          "operatorOptions": null
+         }
+        },
+        {
+         "obj": {
+          "operator": "=",
+          "operands": {
+           "tuple": [
+            "fldSr8KQs90Uk2d26",
+            "selHEMLU9LgVvtZx0"
+           ]
+          },
+          "operatorOptions": null
+         }
+        }
+       ]
+      }
+     }
+    },
+    "limit": 1000
+   }
+  },
+  {
+   "key": "wacNtL5UBM4eogD51",
+   "type": "findRecords",
+   "inputs": {
+    "tableId": "tbl8VWzIsWJYJfLUA",
+    "queryType": "filtersObj",
+    "filtersObj": {
+     "obj": {
+      "operator": "and",
+      "operands": {
+       "tuple": [
+        {
+         "obj": {
+          "operands": {
+           "tuple": [
+            "fldeUgIKgDSvskRub",
+            {
+             "$ref": "trigger",
+             "path": [
+              "cellValuesByFieldId",
+              "fldaC92hnYYPogUvw"
+             ]
+            }
+           ]
+          },
+          "operator": "=",
+          "operatorOptions": null
+         }
+        }
+       ]
+      }
+     }
+    },
+    "limit": 1000
+   }
+  },
+  {
+   "key": "wacOYXvXOnwixRrqs",
+   "type": "updateRecord",
+   "inputs": {
+    "tableId": "tbl8VWzIsWJYJfLUA",
+    "rowId": {
+     "template": [
+      {
+       "fn": "map",
+       "args": [
+        {
+         "$ref": "wacNtL5UBM4eogD51",
+         "path": [
+          "records"
+         ]
+        },
+        {
+         "fn": "propertyGetter",
+         "args": [
+          "id"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    "updateRecordMethod": "customFields",
+    "fields": {
+     "obj": {
+      "fldoeEJikSmNTW3Zl": {
+       "template": [
+        {
+         "fn": "map",
+         "args": [
+          {
+           "$ref": "wacM2g7wr5HLPnE3o",
+           "path": [
+            "records"
+           ]
+          },
+          {
+           "fn": "propertyGetter",
+           "args": [
+            "id"
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    }
+   }
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

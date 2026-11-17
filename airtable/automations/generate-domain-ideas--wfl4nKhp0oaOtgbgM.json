@@ -1,0 +1,65 @@
+{
+ "id": "wfl4nKhp0oaOtgbgM",
+ "name": "Generate Domain IDeas",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordMatchesConditions",
+  "inputs": {
+   "tableId": "tblU6OstDVWeuYBxL",
+   "filtersObj": {
+    "obj": {
+     "operator": "and",
+     "operands": {
+      "tuple": [
+       {
+        "obj": {
+         "operator": "=",
+         "operands": {
+          "tuple": [
+           "fldaM0gBqQqOA9ine",
+           "sel9WsIB80Wvq1UhQ"
+          ]
+         },
+         "operatorOptions": null
+        }
+       }
+      ]
+     }
+    }
+   }
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacv7vY89Zgw87DpH",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "recordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     }
+    },
+    "script": "const { recordId } = input.config();\n\nif (!recordId) {\n  throw new Error(\"Missing Airtable record ID\");\n}\n\nconst response = await fetch(\n  \"https://n8n.dulcy.io/webhook/REDACTED_PATH\",\n  {\n    method: \"POST\",\n    headers: {\n      \"Content-Type\": \"application/json\"\n    },\n    body: JSON.stringify({\n      secret: \"REDACTED_SECRET\",\n      recordId: recordId\n    })\n  }\n);\n\nconst responseText = await response.text();\n\nif (!response.ok) {\n  throw new Error(\n    `n8n webhook failed: ${response.status} ${responseText}`\n  );\n}\n\noutput.set(\"recordId\", recordId);\noutput.set(\"n8nResponse\", responseText);"
+   },
+   "outputSchema": [
+    {
+     "name": "recordId",
+     "type": "string"
+    },
+    {
+     "name": "n8nResponse",
+     "type": "string"
+    }
+   ]
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

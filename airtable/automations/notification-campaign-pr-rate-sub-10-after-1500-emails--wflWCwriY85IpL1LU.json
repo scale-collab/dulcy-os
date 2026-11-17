@@ -1,0 +1,273 @@
+{
+ "id": "wflWCwriY85IpL1LU",
+ "name": "Notification - Campaign PR Rate sub 10% after 1500 emails",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordMatchesConditions",
+  "inputs": {
+   "tableId": "tblAVAA6uBPaMj28P",
+   "filtersObj": {
+    "obj": {
+     "operator": "and",
+     "operands": {
+      "tuple": [
+       {
+        "obj": {
+         "operator": "<",
+         "operands": {
+          "tuple": [
+           "fldPx4lkp0XeXtamH",
+           10
+          ]
+         },
+         "operatorOptions": null
+        }
+       },
+       {
+        "obj": {
+         "operator": ">=",
+         "operands": {
+          "tuple": [
+           "fldDmaS8NZF3j0ZBY",
+           1500
+          ]
+         },
+         "operatorOptions": null
+        }
+       }
+      ]
+     }
+    }
+   }
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacVz5j7kzgEhcJ0I",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "campaignRecordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     }
+    },
+    "script": "let { campaignRecordId } = input.config();\n\noutput.set(\n    \"automationKey\",\n    `${campaignRecordId}|positive_reply_rate`\n);"
+   },
+   "outputSchema": [
+    {
+     "name": "automationKey",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "key": "wacnqOp6d6AMLVvQ2",
+   "type": "findRecords",
+   "inputs": {
+    "tableId": "tblRBxm2N53331mIm",
+    "queryType": "filtersObj",
+    "filtersObj": {
+     "obj": {
+      "operator": "and",
+      "operands": {
+       "tuple": [
+        {
+         "obj": {
+          "operands": {
+           "tuple": [
+            "fldhR089GMEsbDOm9",
+            {
+             "$ref": "wacVz5j7kzgEhcJ0I",
+             "path": [
+              "automationKey"
+             ]
+            }
+           ]
+          },
+          "operator": "=",
+          "operatorOptions": null
+         }
+        }
+       ]
+      }
+     }
+    },
+    "limit": 1
+   }
+  },
+  {
+   "key": "wdeGfHnRfPfqNntoO",
+   "type": "conditionalGroup",
+   "branches": [
+    {
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "fn": "length",
+         "args": [
+          {
+           "$ref": "wacnqOp6d6AMLVvQ2",
+           "path": [
+            "records"
+           ]
+          }
+         ]
+        },
+        "operator": "=",
+        "right": 0,
+        "valueType": "number",
+        "dataType": "literal"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wacPKzPe2A9KcxpuJ",
+       "type": "sendToSlack",
+       "externalAccountId": "eaclf9jwTHIrMIi0j",
+       "inputs": {
+        "slackConversationId": "C08FDE9K18E",
+        "notificationText": {
+         "template": [
+          "The campaign *",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldSsb4QjS9UyvKhj"
+           ]
+          },
+          "* has a interested rate of *",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldPx4lkp0XeXtamH"
+           ]
+          },
+          "% with ",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldDmaS8NZF3j0ZBY"
+           ]
+          },
+          " emails sent*\n\nIt's best to start taking a look at the offer.\n\n<!channel>"
+         ]
+        },
+        "username": {
+         "template": [
+          "Campaign Interested Rate"
+         ]
+        },
+        "icon": {
+         "template": [
+          ":rotating_light:"
+         ]
+        },
+        "unfurlLinks": false
+       }
+      },
+      {
+       "key": "wacsJsFa9sUdaDOS0",
+       "type": "createRecord",
+       "inputs": {
+        "tableId": "tblRBxm2N53331mIm",
+        "createRecordMethod": "customFields",
+        "fields": {
+         "obj": {
+          "fldWrFb99wzxaMcG5": {
+           "template": [
+            "Positve Reply Rate Alert - ",
+            {
+             "$ref": "trigger",
+             "path": [
+              "cellValuesByFieldId",
+              "fldSsb4QjS9UyvKhj"
+             ]
+            }
+           ]
+          },
+          "fldGpegEE7flJMNKE": {
+           "template": [
+            {
+             "fn": "map",
+             "args": [
+              {
+               "$ref": "trigger",
+               "path": [
+                "cellValuesByFieldId",
+                "fldl5bZ644djPsBmN"
+               ]
+              },
+              {
+               "fn": "propertyGetter",
+               "args": [
+                "name"
+               ]
+              }
+             ]
+            }
+           ]
+          },
+          "fldKkc0bjUB6VYgz7": {
+           "template": [
+            {
+             "$ref": "trigger",
+             "path": [
+              "cellValuesByFieldId",
+              "fldSsb4QjS9UyvKhj"
+             ]
+            }
+           ]
+          },
+          "fldajXwWvS8zusURS": {
+           "template": [
+            "rec0uiatKT3onVuwk"
+           ]
+          },
+          "fldY96iXNDEyAP55n": {
+           "template": [
+            {
+             "fn": "getWorkflowExecutionIsoDateTime",
+             "args": []
+            }
+           ]
+          },
+          "fld1hJsrkZM8Nsyk3": {
+           "obj": {
+            "id": "selzknfQBDdfQzcGe"
+           }
+          },
+          "fldwn4GL0LPUrY0Tg": {
+           "obj": {
+            "id": "selRDSOo6ufwyLiF2"
+           }
+          },
+          "fldnlUbFIsgrGd4PI": {
+           "obj": {
+            "id": "sel9cXs1QG27pyvuv"
+           }
+          }
+         }
+        }
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

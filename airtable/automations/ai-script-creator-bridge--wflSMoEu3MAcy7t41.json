@@ -1,0 +1,63 @@
+{
+ "id": "wflSMoEu3MAcy7t41",
+ "name": "AI Script Creator - Bridge",
+ "description": null,
+ "deploymentStatus": "undeployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordCreated",
+  "inputs": {
+   "tableId": "tblAVAA6uBPaMj28P"
+  }
+ },
+ "nodes": [
+  {
+   "key": "wdeKPqd7yXYjdwIBE",
+   "type": "conditionalGroup",
+   "branches": [
+    {
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldfgDONYnPAKT3cU"
+         ]
+        },
+        "operator": "=",
+        "right": true,
+        "valueType": "checkbox",
+        "dataType": "literal"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wacF2YB28q2QzMrqi",
+       "type": "customScript",
+       "inputs": {
+        "inputObj": {
+         "obj": {
+          "recordId": {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          }
+         }
+        },
+        "script": "let table = base.getTable(\"Campaigns\");\nlet record = await table.selectRecordAsync(input.config().recordId);\nlet webhook = \"https://n8n.dulcy.io/webhook/REDACTED_PATH\";\n\n// Create payload from record fields\nlet payload = Object.fromEntries(\n    table.fields.map(f => [f.name, record.getCellValue(f.name)])\n);\n\n// Add the record ID\npayload.recordId = record.id;\n\n// Send data to webhook\nawait fetch(webhook, {\n    method: \"POST\",\n    headers: { \"Content-Type\": \"application/json\" },\n    body: JSON.stringify(payload)\n});"
+       },
+       "outputSchema": []
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

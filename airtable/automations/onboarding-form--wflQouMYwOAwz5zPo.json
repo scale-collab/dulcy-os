@@ -1,0 +1,86 @@
+{
+ "id": "wflQouMYwOAwz5zPo",
+ "name": "Onboarding Form",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "formSubmitted",
+  "inputs": {
+   "tableId": "tbljhM1JmUwr99tu4",
+   "formId": "pagGEsFD84Y2Q48Pi"
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacIPdS7hGmHVZpRv",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "recordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     }
+    },
+    "script": "// Get the record ID from the automation input\nlet config = input.config();\nlet recordId = config.recordId;\n\n// Reference the hardcoded table and field names\nlet table = base.getTable(\"Onboarding\");\nlet inputFieldName = \"Website Link\";\nlet outputFieldName = \"Suggested Domains\";\n\n// Fetch the specific record\nlet record = await table.selectRecordAsync(recordId);\nif (!record) {\n    throw new Error(`No record found for ID: ${recordId}`);\n}\n\nlet website = record.getCellValueAsString(inputFieldName);\nif (!website) return;\n\n// --- Parse domain ---\nlet cleaned = website.replace(\"https://\", \"\").replace(\"http://\", \"\").replace(\"www.\", \"\");\nlet parts = cleaned.split(\".\");\nif (parts.length < 2) return;\n\nlet ltd = \".\" + parts.pop();\nlet root = parts.join('');\n\n// --- Generate domain suggestions ---\nlet prefixes = ['use', 'try', 'have', 'boost', 'get', 'send', 'go', 'start', 'grow', 'hey', 'explore', 'leverage', 'scale', 'growth', 'grow'];\nlet suffixes = ['boost', 'outbound', 'pro', 'hub', 'team', 'leverage', 'connect', 'solutions', 'scale', 'growth', 'grow'];\nlet domains = new Set();\n\nprefixes.forEach(p => domains.add(`${p}${root}.com`));\nsuffixes.forEach(s => domains.add(`${root}${s}.com`));\n\nwhile (domains.size < 50) {\n    let p = prefixes[Math.floor(Math.random() * prefixes.length)];\n    let s = suffixes[Math.floor(Math.random() * suffixes.length)];\n    domains.add(`${p}${root}${s}.com`);\n}\n\nlet finalOutput = Array.from(domains).slice(0, 50).join('\\n');\n\n// --- Update record ---\nawait table.updateRecordAsync(record.id, {\n    [outputFieldName]: finalOutput\n});"
+   },
+   "outputSchema": []
+  },
+  {
+   "key": "wacutPz4UbtQn0AC3",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "recordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      },
+      "names": {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldgvimk1wMZjiqdW"
+       ]
+      },
+      "company_name": {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldVkfXhGnNgKwDYN"
+       ]
+      }
+     }
+    },
+    "script": "// Get the inputs from automation config\nlet config = input.config();\nlet recordId = config.recordId;\nlet names = config.names || \"\";\nlet companyName = config.company_name || \"\";\n\n// Reference table and fields\nlet table = base.getTable(\"Onboarding\");\nlet emailPatternField = \"ci_user_name_email_pattern\";\nlet passwordField = \"ci_password\";\n\n// Fetch the record\nlet record = await table.selectRecordAsync(recordId);\nif (!record) throw new Error(`No record found for ID: ${recordId}`);\n\n// --- Generate Email Patterns ---\nlet emailPatterns = [];\nlet nameList = names.split(\",\").map(n => n.trim()).filter(Boolean);\n\nfor (let fullName of nameList) {\n    let [first, ...rest] = fullName.toLowerCase().split(\" \");\n    let last = rest.join(\".\");\n    if (first) {\n        emailPatterns.push(`${first}@`);\n        if (last) emailPatterns.push(`${first}.${last}@`);\n    }\n}\nlet finalEmailPatterns = emailPatterns.join(\", \");\n\n// --- Generate Password ---\nlet noSpaces = companyName.replace(/\\s+/g, \"\");\nlet camelCase = noSpaces.charAt(0).toUpperCase() + noSpaces.slice(1);\nlet password = camelCase + \"99$$\";\n\n// --- Update the record ---\nawait table.updateRecordAsync(record.id, {\n    [emailPatternField]: finalEmailPatterns,\n    [passwordField]: password\n});"
+   },
+   "outputSchema": []
+  },
+  {
+   "key": "wacPX6zLOiZhI3oII",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "recordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     }
+    },
+    "script": "let table = base.getTable(\"Onboarding\");\nlet recordId = input.config().recordId;\nlet record = await table.selectRecordAsync(recordId);\nlet webhook = \"https://n8n.dulcy.io/webhook/REDACTED_PATH\";\n\nlet payload = { recordId };\n\nfor (let field of table.fields) {\n    payload[field.name] = record.getCellValue(field.name);\n}\n\nawait fetch(webhook, {\n    method: \"POST\",\n    headers: { \"Content-Type\": \"application/json\" },\n    body: JSON.stringify(payload)\n});"
+   },
+   "outputSchema": []
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

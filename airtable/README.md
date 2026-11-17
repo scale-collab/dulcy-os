@@ -15,7 +15,7 @@ Pulled read-only on 2026-11-17 through the Airtable connector. **Schema and code
 - `schema/dulcy-base.schema.json`: full schema (field IDs, types, configs).
 - `schema/dulcy-base.interfaces.json`: interfaces and pages (9 interfaces, 50 pages).
 - `custom-elements/`: source code of the 4 custom screens (see below).
-- `automations/`: each Airtable automation with its script code (added once the download finishes).
+- `automations/`: all 51 Airtable automations with full script code (47 deployed, 4 off). Index: `automations/INDEX.md`. An EmailBison token (4 scripts) and a webhook secret (2 scripts) were hardcoded and are removed here.
 
 ## The "managed interface" = 4 custom elements
 The stage gates that `rules/RULES.md` refers to live in these screens' code:

@@ -1,0 +1,55 @@
+{
+ "id": "wfl1OiJCNtgmedoun",
+ "name": "Approve Purchase Domains Automation",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordMatchesConditions",
+  "inputs": {
+   "tableId": "tblU6OstDVWeuYBxL",
+   "filtersObj": {
+    "obj": {
+     "operator": "and",
+     "operands": {
+      "tuple": [
+       {
+        "obj": {
+         "operator": "=",
+         "operands": {
+          "tuple": [
+           "fldF4hvF1oWwC8YdE",
+           true
+          ]
+         },
+         "operatorOptions": null
+        }
+       }
+      ]
+     }
+    }
+   }
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacrYxwZ8zeReqOiC",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "recordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     }
+    },
+    "script": "// Airtable Automation input variable required: recordId\n// Trigger when Status or Approve Purchase changes.\n\nconst { recordId } = input.config();\n\nif (!recordId || !/^rec[a-zA-Z0-9]{14,}$/.test(recordId)) {\n    throw new Error(\"A valid Airtable recordId is required\");\n}\n\nconst webhookUrl = \"https://n8n.dulcy.io/webhook/REDACTED_PATH\";\n\nconst response = await fetch(webhookUrl, {\n    method: \"POST\",\n    headers: { \"Content-Type\": \"application/json\" },\n    body: JSON.stringify({\n        recordId,\n        secret: \"REDACTED_SECRET\",\n        source: \"airtable\",\n    }),\n});\n\nif (!response.ok) {\n    const detail = await response.text();\n    throw new Error(`n8n webhook failed (${response.status}): ${detail}`);\n}\n\noutput.set(\"sentRecordId\", recordId);"
+   }
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

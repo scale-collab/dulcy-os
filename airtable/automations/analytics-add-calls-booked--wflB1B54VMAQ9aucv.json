@@ -1,0 +1,178 @@
+{
+ "id": "wflB1B54VMAQ9aucv",
+ "name": "Analytics - Add Calls Booked",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordCreated",
+  "inputs": {
+   "tableId": "tblVqkbJyd6be1lJH"
+  }
+ },
+ "nodes": [
+  {
+   "key": "wdeT497p7pc8byiyh",
+   "type": "conditionalGroup",
+   "branches": [
+    {
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldQypqJhzHpYpTXg"
+         ]
+        },
+        "operator": "isNotEmpty",
+        "valueType": "text",
+        "dataType": "literal"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wac7xqKOnolXaI1pq",
+       "type": "findRecords",
+       "inputs": {
+        "tableId": "tblADFhWhTcLrl1UY",
+        "queryType": "filtersObj",
+        "filtersObj": {
+         "obj": {
+          "operator": "and",
+          "operands": {
+           "tuple": [
+            {
+             "obj": {
+              "operands": {
+               "tuple": [
+                "fldv0o5rhmd7jXDrt",
+                {
+                 "$ref": "trigger",
+                 "path": [
+                  "cellValuesByFieldId",
+                  "fldQypqJhzHpYpTXg"
+                 ]
+                }
+               ]
+              },
+              "operator": "=",
+              "operatorOptions": null
+             }
+            },
+            {
+             "obj": {
+              "operator": "=",
+              "operands": {
+               "tuple": [
+                "fldfPPfvAoXw04LVs",
+                "selLIcZ57maZiEkKM"
+               ]
+              },
+              "operatorOptions": null
+             }
+            },
+            {
+             "obj": {
+              "operator": "=",
+              "operands": {
+               "tuple": [
+                "fldyV4GjdXt6vadxb",
+                {
+                 "obj": {
+                  "mode": "yesterday",
+                  "timeZone": "Europe/Lisbon"
+                 }
+                }
+               ]
+              },
+              "operatorOptions": null
+             }
+            }
+           ]
+          }
+         }
+        },
+        "limit": 1000
+       }
+      },
+      {
+       "key": "wacluQqPQbawzOHTN",
+       "type": "updateRecord",
+       "inputs": {
+        "tableId": "tblVqkbJyd6be1lJH",
+        "rowId": {
+         "template": [
+          {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          }
+         ]
+        },
+        "updateRecordMethod": "customFields",
+        "fields": {
+         "obj": {
+          "fldpE86vGBfPF5LUn": {
+           "template": [
+            {
+             "fn": "length",
+             "args": [
+              {
+               "$ref": "wac7xqKOnolXaI1pq",
+               "path": [
+                "records"
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         }
+        }
+       }
+      },
+      {
+       "key": "wacGhfWriPBrLmWsb",
+       "type": "customScript",
+       "inputs": {
+        "inputObj": {
+         "obj": {
+          "campaign_id": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldQypqJhzHpYpTXg"
+           ]
+          },
+          "recordId": {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          },
+          "date": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "flda4C6QQN04OHkuM"
+           ]
+          }
+         }
+        },
+        "script": "// Get input variables from the automation trigger or manual run\nlet inputConfig = input.config();\nlet campaign_id = inputConfig.campaign_id;\nlet recordId = inputConfig.recordId;\nlet dateStr = inputConfig.date; // Should be a string in ISO format (e.g., \"2025-03-18\")\n\n// Parse the date string into a Date object\nlet targetDate = new Date(dateStr);\n\n// Load the table you are working with\nlet table = base.getTable(\"Email Analytics\");\n\n// Query all records in the table\nlet query = await table.selectRecordsAsync();\n\n// Initialize totals\nlet totalMeetingsBooked = 0;\nlet totalEmailsSent = 0;\n\n// Loop through all records and sum values where Campaign ID matches and Date <= targetDate\nfor (let record of query.records) {\n    let recordCampaignId = record.getCellValue(\"Campaign ID\");\n    let recordDate = record.getCellValue(\"Date\"); // <-- Replace with your actual date field name\n    \n    // Continue if both conditions are met\n    if (recordCampaignId === campaign_id && recordDate) {\n        let recordDateObj = new Date(recordDate);\n\n        if (recordDateObj <= targetDate) {\n            let meetings = record.getCellValue(\"Meetings Booked\") || 0;\n            let emails = record.getCellValue(\"Emails Sent\") || 0;\n\n            totalMeetingsBooked += meetings;\n            totalEmailsSent += emails;\n        }\n    }\n}\n\n// Update the row with the provided recordId\nawait table.updateRecordAsync(recordId, {\n    \"Total Meetings Booked\": totalMeetingsBooked,\n    \"Total Emails Sent\": totalEmailsSent\n});"
+       },
+       "outputSchema": []
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

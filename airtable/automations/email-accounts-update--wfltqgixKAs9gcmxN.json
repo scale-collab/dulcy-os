@@ -1,0 +1,62 @@
+{
+ "id": "wfltqgixKAs9gcmxN",
+ "name": "Email Accounts - Update",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordMatchesConditions",
+  "inputs": {
+   "tableId": "tblMSOBJ0wMgxSg4l",
+   "filtersObj": {
+    "obj": {
+     "operator": "and",
+     "operands": {
+      "tuple": [
+       {
+        "obj": {
+         "operator": "isAnyOf",
+         "operands": {
+          "tuple": [
+           "fldrVXRwWtveMC1Jy",
+           {
+            "tuple": [
+             "selHqq9OCvKSGs3Hx",
+             "selrumEcfbGo0Ld0H",
+             "sellIHSS4BP3QnziU",
+             "selUEOA4tuuoQduIo"
+            ]
+           }
+          ]
+         },
+         "operatorOptions": null
+        }
+       }
+      ]
+     }
+    }
+   }
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacVxpOh4ZRSZrDiF",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "recordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     }
+    },
+    "script": "let table = base.getTable(\"Email Accounts\");\nlet record = await table.selectRecordAsync(input.config().recordId);\nlet webhook = \"https://hook.us1.make.com/REDACTED_PATH\";\n\n// Create payload from record fields\nlet payload = Object.fromEntries(\n    table.fields.map(f => [f.name, record.getCellValue(f.name)])\n);\n\n// Add the record ID\npayload.recordId = record.id;\n\n// Send data to webhook\nawait fetch(webhook, {\n    method: \"POST\",\n    headers: { \"Content-Type\": \"application/json\" },\n    body: JSON.stringify(payload)\n});"
+   }
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

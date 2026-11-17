@@ -1,0 +1,182 @@
+{
+ "id": "wflJaQViGNu7KJ5SB",
+ "name": "Notification - Campaign Progress Over 60%",
+ "description": "One coordinator-authorized native Slack alert per confirmed replenished queue cycle. Queue includes older unsent leads. Uncertain delivery/completion must be reconciled before replay.",
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordMatchesConditions",
+  "inputs": {
+   "tableId": "tblAVAA6uBPaMj28P",
+   "filtersObj": {
+    "obj": {
+     "operator": "and",
+     "operands": {
+      "tuple": [
+       {
+        "obj": {
+         "operator": "=",
+         "operands": {
+          "tuple": [
+           "fldH5UcuiSXZ57hD5",
+           1
+          ]
+         },
+         "operatorOptions": null
+        }
+       }
+      ]
+     }
+    }
+   }
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacqLNJblJYEsS3GD",
+   "type": "customScript",
+   "inputs": {
+    "script": "const recPattern=/^rec[A-Za-z0-9]{14}$/;\nconst uuidPattern=/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;\nfunction exactCycle(value){\n const cycle=value===null||value===undefined||value===''?'initial':String(value);\n if(cycle!=='initial'&&!/^bison:[1-9]\\d*:import:[1-9]\\d*$/.test(cycle))throw Error('Captured trigger cycle is invalid. No Slack send was authorized.');\n return cycle;\n}\nfunction eventKey(recordId,cycleId){return recordId+'|progress_60'+(cycleId==='initial'?'':'|'+cycleId);}\nconst cfg=input.config();\nconst recordId=String(cfg.recordId||''),cycleId=exactCycle(cfg.cycleId);\noutput.set('shouldSend',false);\nfor(const name of ['recordId','cycleId','attemptId','claimExecutionId','eventKey','taskId','alertText','reason'])output.set(name,'');\nif(!recPattern.test(recordId))throw Error('Captured campaign record ID is invalid.');\nconst auth=input.secret('leadListWebhookAuth');\nif(typeof auth!=='string'||!auth)throw Error('Existing coordinator authentication secret is unavailable.');\nfunction attemptUUID(){\n if(typeof crypto!=='undefined'&&typeof crypto.randomUUID==='function')return crypto.randomUUID();\n // This is a unique operation identifier, never an authentication credential.\n return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.floor(Math.random()*16);return (c==='x'?r:(r&3)|8).toString(16);});\n}\nconst used=new Set(),maxAttempts=3;\nfor(let index=0;index<maxAttempts;index++){\n const attemptId=attemptUUID();\n if(!uuidPattern.test(attemptId)||used.has(attemptId))throw Error('A fresh delivery attempt UUID could not be established.');\n used.add(attemptId);\n let response,result;\n try{\n  response=await fetch('https://n8n.dulcy.io/webhook/REDACTED_PATH',{method:'POST',headers:{'Content-Type':'application/json','X-Dulcy-Lead-List-Auth':auth},body:JSON.stringify({operation:'claim',recordId,cycleId,attemptId})});\n  if(!response.ok)throw Error('non-success response');\n  result=await response.json();\n }catch(e){throw Error('Alert claim outcome is failed or uncertain. No Slack send was authorized. Reconcile this exact claim before any retry: '+recordId+' '+cycleId+' '+attemptId+'.');}\n if(result?.ok!==true||typeof result.shouldSend!=='boolean')throw Error('Coordinator did not explicitly authorize delivery. No Slack send was authorized. Reconcile '+recordId+' '+cycleId+' '+attemptId+'.');\n if(result.shouldSend===false&&result.busy===true){\n  // Busy consumed this owner ID. Only this explicit response permits a fresh attempt.\n  if(index+1===maxAttempts)throw Error('Campaign coordinator remained busy after '+maxAttempts+' distinct attempts. No Slack was sent. Reconcile its current owner before rerunning this automation.');\n  continue;\n }\n if(result.shouldSend===false){output.set('reason',String(result.reason||'Coordinator declined this delivery.'));return;}\n if(result.busy===true||result.recordId!==recordId||result.cycleId!==cycleId||result.attemptId!==attemptId||\n    !/^\\d+$/.test(String(result.claimExecutionId||''))||result.eventKey!==eventKey(recordId,cycleId)||\n    !recPattern.test(String(result.taskId||''))||typeof result.alertText!=='string'||!result.alertText.trim()){\n  throw Error('Coordinator grant identifiers are inconsistent. No Slack send was authorized. Reconcile '+recordId+' '+cycleId+' '+attemptId+'.');\n }\n for(const name of ['recordId','cycleId','attemptId','claimExecutionId','eventKey','taskId','alertText'])output.set(name,String(result[name]));\n // Set last: a partial/malformed grant must never open the native Slack branch.\n output.set('shouldSend',true);\n return;\n}\n",
+    "inputObj": {
+     "obj": {
+      "recordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      },
+      "cycleId": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fld26pRUJr0Qtm8A9"
+         ]
+        }
+       ]
+      }
+     }
+    }
+   },
+   "outputSchema": [
+    {
+     "name": "automationKey",
+     "type": "string"
+    }
+   ],
+   "secrets": {
+    "leadListWebhookAuth": "eac2esXfp1dMFwIWG"
+   }
+  },
+  {
+   "key": "wdeYX5dmwXMrMQ1Xh",
+   "type": "conditionalGroup",
+   "branches": [
+    {
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "$ref": "wacqLNJblJYEsS3GD",
+         "path": [
+          "shouldSend"
+         ]
+        },
+        "operator": "=",
+        "right": true,
+        "valueType": "checkbox",
+        "dataType": "literal"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wacCiTjeKfy9xvtBq",
+       "type": "sendToSlack",
+       "externalAccountId": "eaclf9jwTHIrMIi0j",
+       "inputs": {
+        "unfurlLinks": false,
+        "slackConversationId": "C08FDE9K18E",
+        "notificationText": {
+         "template": [
+          {
+           "$ref": "wacqLNJblJYEsS3GD",
+           "path": [
+            "alertText"
+           ]
+          }
+         ]
+        },
+        "username": {
+         "template": [
+          "Campaign Progress"
+         ]
+        },
+        "icon": {
+         "template": [
+          ":rotating_light:"
+         ]
+        }
+       }
+      },
+      {
+       "key": "wackhdf3CTxWfl9qL",
+       "type": "customScript",
+       "inputs": {
+        "script": "const recPattern=/^rec[A-Za-z0-9]{14}$/;\nconst uuidPattern=/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;\nfunction exactCycle(value){\n const cycle=value===null||value===undefined||value===''?'initial':String(value);\n if(cycle!=='initial'&&!/^bison:[1-9]\\d*:import:[1-9]\\d*$/.test(cycle))throw Error('Captured trigger cycle is invalid. No Slack send was authorized.');\n return cycle;\n}\nfunction eventKey(recordId,cycleId){return recordId+'|progress_60'+(cycleId==='initial'?'':'|'+cycleId);}\n// This action runs only after the original native Airtable Slack action succeeds.\n// No campaign/task writes and no Slack retry are performed in the source automation.\nconst cfg=input.config(),recordId=String(cfg.recordId||''),cycleId=exactCycle(cfg.cycleId);\nconst attemptId=String(cfg.attemptId||''),claimExecutionId=String(cfg.claimExecutionId||'');\nif(!recPattern.test(recordId)||!uuidPattern.test(attemptId)||!/^\\d+$/.test(claimExecutionId)||cfg.eventKey!==eventKey(recordId,cycleId)||!recPattern.test(String(cfg.taskId||'')))throw Error('Slack action succeeded but exact claim identifiers are missing. Reconcile the completion only. Do not resend Slack.');\nconst auth=input.secret('leadListWebhookAuth');\nif(typeof auth!=='string'||!auth)throw Error('Slack action succeeded but completion authentication is unavailable. Reconcile completion only. Do not resend Slack.');\nlet response,result;\ntry{\n response=await fetch('https://n8n.dulcy.io/webhook/REDACTED_PATH',{method:'POST',headers:{'Content-Type':'application/json','X-Dulcy-Lead-List-Auth':auth},body:JSON.stringify({operation:'complete',recordId,cycleId,attemptId,claimExecutionId})});\n if(!response.ok)throw Error('non-success response');\n result=await response.json();\n}catch(e){throw Error('Slack action succeeded; completion is failed or uncertain. Reconcile this exact completion only: '+recordId+' '+cycleId+' '+attemptId+' claim '+claimExecutionId+'. Do not resend Slack.');}\nif(result?.ok!==true||result.slackSent!==true||result.recordId!==recordId||result.cycleId!==cycleId)throw Error('Slack action succeeded; coordinator completion was not confirmed. Reconcile this exact completion only. Do not resend Slack.');\noutput.set('completionStatus',result.alreadyProcessing===true?'already_processing':result.alreadyComplete===true?'already_complete':'confirmed');\n",
+        "inputObj": {
+         "obj": {
+          "recordId": {
+           "$ref": "wacqLNJblJYEsS3GD",
+           "path": [
+            "recordId"
+           ]
+          },
+          "cycleId": {
+           "$ref": "wacqLNJblJYEsS3GD",
+           "path": [
+            "cycleId"
+           ]
+          },
+          "attemptId": {
+           "$ref": "wacqLNJblJYEsS3GD",
+           "path": [
+            "attemptId"
+           ]
+          },
+          "claimExecutionId": {
+           "$ref": "wacqLNJblJYEsS3GD",
+           "path": [
+            "claimExecutionId"
+           ]
+          },
+          "eventKey": {
+           "$ref": "wacqLNJblJYEsS3GD",
+           "path": [
+            "eventKey"
+           ]
+          },
+          "taskId": {
+           "$ref": "wacqLNJblJYEsS3GD",
+           "path": [
+            "taskId"
+           ]
+          }
+         }
+        }
+       },
+       "outputSchema": [],
+       "secrets": {
+        "leadListWebhookAuth": "eac2esXfp1dMFwIWG"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

@@ -1,0 +1,55 @@
+{
+ "id": "wflnPA4oRH8fWqVQY",
+ "name": "Refresh Client Domain Exclusions",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordMatchesConditions",
+  "inputs": {
+   "tableId": "tblcjRBGJEWh5KgOt",
+   "filtersObj": {
+    "obj": {
+     "operator": "and",
+     "operands": {
+      "tuple": [
+       {
+        "obj": {
+         "operator": "=",
+         "operands": {
+          "tuple": [
+           "fldlHJdnYJ3Y1akza",
+           true
+          ]
+         },
+         "operatorOptions": null
+        }
+       }
+      ]
+     }
+    }
+   }
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacaIa7vYx0blyiQF",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "recordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     }
+    },
+    "script": "const {recordId} = input.config();\n\nif (!recordId) {\n    throw new Error('A Workspace IDs record ID is required.');\n}\n\nconst response = await fetch(\n    'https://n8n.dulcy.io/webhook/REDACTED_PATH',\n    {\n        method: 'POST',\n        headers: {'Content-Type': 'application/json'},\n        body: JSON.stringify({recordId}),\n    },\n);\n\nconst responseText = await response.text();\nlet result;\n\ntry {\n    result = JSON.parse(responseText);\n} catch {\n    result = {message: responseText};\n}\n\nif (!response.ok || result?.success === false) {\n    throw new Error(\n        `Domain-exclusion refresh failed (${response.status}): ${responseText}`,\n    );\n}\n\noutput.set('result', result);\n"
+   }
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

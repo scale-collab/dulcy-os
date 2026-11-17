@@ -1,0 +1,146 @@
+{
+ "id": "wflKzjtW9bUwYFHDn",
+ "name": "Apply Template (LinkedIn)",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "inputReceivedFromConnection",
+  "inputs": {
+   "tableId": "tblADFhWhTcLrl1UY"
+  }
+ },
+ "nodes": [
+  {
+   "key": "wdemct43ttDPNFcbl",
+   "type": "conditionalGroup",
+   "branches": [
+    {
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "fn": "length",
+         "args": [
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fld2IjVEsAijZUjPl"
+           ]
+          }
+         ]
+        },
+        "operator": "isNotEmpty",
+        "valueType": "number",
+        "dataType": "literal"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wachdSTC5g09DApUy",
+       "type": "updateRecord",
+       "inputs": {
+        "tableId": "tblADFhWhTcLrl1UY",
+        "rowId": {
+         "template": [
+          {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          }
+         ]
+        },
+        "updateRecordMethod": "customFields",
+        "fields": {
+         "obj": {
+          "fld1NKr1MMJ1GCNNO": {
+           "template": [
+            {
+             "fn": "map",
+             "args": [
+              {
+               "$ref": "trigger",
+               "path": [
+                "cellValuesByFieldId",
+                "fld4g8MGR5EpCMH3b"
+               ]
+              },
+              {
+               "fn": "propertyGetter",
+               "args": [
+                "value"
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         }
+        }
+       }
+      }
+     ]
+    },
+    {
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "fn": "length",
+         "args": [
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fld2IjVEsAijZUjPl"
+           ]
+          }
+         ]
+        },
+        "operator": "isEmpty",
+        "valueType": "number",
+        "dataType": "literal"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wac03jcmhK54WROrj",
+       "type": "updateRecord",
+       "inputs": {
+        "tableId": "tblADFhWhTcLrl1UY",
+        "rowId": {
+         "template": [
+          {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          }
+         ]
+        },
+        "updateRecordMethod": "customFields",
+        "fields": {
+         "obj": {
+          "fld1NKr1MMJ1GCNNO": {
+           "template": [
+            ""
+           ]
+          }
+         }
+        }
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

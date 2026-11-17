@@ -1,0 +1,106 @@
+{
+ "id": "wfl39LssdljHRDDY0",
+ "name": "Send SMS (Twilo)",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "inputReceivedFromConnection",
+  "inputs": {
+   "tableId": "tblADFhWhTcLrl1UY"
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacqME769bycDLzRI",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "sentFromNumber": {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldMkQICFPIhxnpjf"
+       ]
+      },
+      "phoneNumber": {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fld8K4zasLt6aaRfB"
+       ]
+      },
+      "customReply": {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fld7omiYDXqSkRDMy"
+       ]
+      }
+     }
+    },
+    "script": "/******************************************************\n * Airtable Automation Script\n * Sends SMS reply data to n8n webhook\n * https://n8n.dulcy.io/webhook/REDACTED_PATH\n *\n * REQUIRED input variables:\n * - sentFromNumber\n * - phoneNumber\n * - customReply\n ******************************************************/\n\nconst inputData = input.config();\n\n// ---- DEBUG (keep while testing)\nconsole.log(\"RAW inputData:\", JSON.stringify(inputData, null, 2));\n\n// ---- REQUIRED VARIABLES\nconst sentFromNumber = inputData.sentFromNumber;\nconst phoneNumber = inputData.phoneNumber;\nconst customReply = inputData.customReply;\n\n// ---- HARD VALIDATION\nif (!sentFromNumber) throw new Error(\"Missing sentFromNumber.\");\nif (!phoneNumber) throw new Error(\"Missing phoneNumber.\");\nif (!customReply) throw new Error(\"Missing customReply.\");\n\n// ---- WEBHOOK\nconst webhookUrl = \"https://n8n.dulcy.io/webhook/REDACTED_PATH\";\n\nconst payload = {\n  sentFromNumber: String(sentFromNumber).trim(),\n  phoneNumber: String(phoneNumber).trim(),\n  customReply: String(customReply),\n};\n\nconsole.log(\"SENDING payload:\", JSON.stringify(payload, null, 2));\n\nconst response = await fetch(webhookUrl, {\n  method: \"POST\",\n  headers: {\n    \"Content-Type\": \"application/json\",\n    \"Accept\": \"application/json, text/plain, */*\",\n  },\n  body: JSON.stringify(payload),\n});\n\nconst text = await response.text();\n\nconsole.log(\"STATUS:\", response.status);\nconsole.log(\"RESPONSE:\", text);\n\nif (!response.ok) {\n  throw new Error(`Webhook error ${response.status}: ${text}`);\n}\n\n// ---- SUCCESS\nreturn {\n  ok: true,\n  status: response.status,\n  response: text,\n  sentBody: payload,\n};"
+   }
+  },
+  {
+   "key": "wacskjvxsF6Q8SR1j",
+   "type": "updateRecord",
+   "inputs": {
+    "tableId": "tblADFhWhTcLrl1UY",
+    "rowId": {
+     "template": [
+      {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     ]
+    },
+    "updateRecordMethod": "customFields",
+    "fields": {
+     "obj": {
+      "fldkoeDCrzxLiFP7D": {
+       "template": [
+        "SENT:\n ",
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fld7omiYDXqSkRDMy"
+         ]
+        },
+        " \n\n▃▃▃▃▃▃▃▃▃▃▃▃ \nReply: \n\n",
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldkoeDCrzxLiFP7D"
+         ]
+        }
+       ]
+      },
+      "fldKMkzXPIxoDN7BG": {
+       "obj": {
+        "id": "selnCU29VWYfblbZR"
+       }
+      },
+      "fld7omiYDXqSkRDMy": {
+       "template": [
+        ""
+       ]
+      },
+      "fldSuQyvPM3IlS5oD": {
+       "obj": {
+        "id": "selCdMaB9L7eykuvt"
+       }
+      }
+     }
+    }
+   }
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

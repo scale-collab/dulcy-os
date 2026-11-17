@@ -1,0 +1,481 @@
+{
+ "id": "wflmHtwUAATQiBhM0",
+ "name": "Notification - Campaign Bounced over 2.5%",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordMatchesConditions",
+  "inputs": {
+   "tableId": "tblAVAA6uBPaMj28P",
+   "filtersObj": {
+    "obj": {
+     "operator": "and",
+     "operands": {
+      "tuple": [
+       {
+        "obj": {
+         "operator": ">=",
+         "operands": {
+          "tuple": [
+           "fldiLOzbllDI8mn7C",
+           2.5
+          ]
+         },
+         "operatorOptions": null
+        }
+       },
+       {
+        "obj": {
+         "operator": ">=",
+         "operands": {
+          "tuple": [
+           "fldGM1f8fNNu6ODo2",
+           0.35
+          ]
+         },
+         "operatorOptions": null
+        }
+       }
+      ]
+     }
+    }
+   }
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacFvOINrKn1mJ8LH",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "campaignRecordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     }
+    },
+    "script": "let { campaignRecordId } = input.config();\n\noutput.set(\n    \"automationKey\",\n    `${campaignRecordId}|bounce_rate`\n);"
+   },
+   "outputSchema": [
+    {
+     "name": "automationKey",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "key": "wactTU8rmRWWgwOMl",
+   "type": "findRecords",
+   "inputs": {
+    "tableId": "tblRBxm2N53331mIm",
+    "queryType": "filtersObj",
+    "filtersObj": {
+     "obj": {
+      "operator": "and",
+      "operands": {
+       "tuple": [
+        {
+         "obj": {
+          "operands": {
+           "tuple": [
+            "fldhR089GMEsbDOm9",
+            {
+             "$ref": "wacFvOINrKn1mJ8LH",
+             "path": [
+              "automationKey"
+             ]
+            }
+           ]
+          },
+          "operator": "=",
+          "operatorOptions": null
+         }
+        }
+       ]
+      }
+     }
+    },
+    "limit": 1
+   }
+  },
+  {
+   "key": "wdeMcIfKI99oosUJs",
+   "type": "conditionalGroup",
+   "branches": [
+    {
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldiLOzbllDI8mn7C"
+         ]
+        },
+        "operator": ">=",
+        "right": 4,
+        "valueType": "number",
+        "dataType": "literal"
+       },
+       {
+        "left": {
+         "fn": "length",
+         "args": [
+          {
+           "$ref": "wactTU8rmRWWgwOMl",
+           "path": [
+            "records"
+           ]
+          }
+         ]
+        },
+        "operator": "=",
+        "right": 0,
+        "valueType": "number",
+        "dataType": "literal"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wac1mhOnmuJ2f1rod",
+       "type": "customScript",
+       "inputs": {
+        "inputObj": {
+         "obj": {
+          "apiKey": {
+           "fn": "map",
+           "args": [
+            {
+             "$ref": "trigger",
+             "path": [
+              "cellValuesByFieldId",
+              "fldlb6cfn7cGkgsB0"
+             ]
+            },
+            {
+             "fn": "propertyGetter",
+             "args": [
+              "value"
+             ]
+            }
+           ]
+          },
+          "campaignId": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldxSETE3D66RyWRH"
+           ]
+          }
+         }
+        },
+        "script": "let c = input.config();\nlet apiKey = c.apiKey;\nlet campaignId = c.campaignId;\n\nawait fetch(`https://send.dulcy.io/api/campaigns/${campaignId}/pause`, {\n  method: 'PATCH',\n  headers: {\n    'Authorization': `Bearer ${apiKey}`\n  }\n});"
+       },
+       "outputSchema": []
+      },
+      {
+       "key": "wacXCSdfoYLruIKfV",
+       "type": "sendToSlack",
+       "externalAccountId": "eaclf9jwTHIrMIi0j",
+       "inputs": {
+        "slackConversationId": "C08FDE9K18E",
+        "notificationText": {
+         "template": [
+          "The campaign *",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldSsb4QjS9UyvKhj"
+           ]
+          },
+          "* has been paused for having a bounce rate of 4% or above.\n\n<!channel>"
+         ]
+        },
+        "username": {
+         "template": [
+          "Campaign Bounce Rate"
+         ]
+        },
+        "icon": {
+         "template": [
+          ":rotating_light:"
+         ]
+        },
+        "unfurlLinks": false
+       }
+      },
+      {
+       "key": "wacBg0XhKTtAybX29",
+       "type": "createRecord",
+       "inputs": {
+        "tableId": "tblRBxm2N53331mIm",
+        "createRecordMethod": "customFields",
+        "fields": {
+         "obj": {
+          "fldajXwWvS8zusURS": {
+           "template": [
+            "rec0uiatKT3onVuwk"
+           ]
+          },
+          "fld1hJsrkZM8Nsyk3": {
+           "obj": {
+            "id": "selPLpCrM4wTmwxDS"
+           }
+          },
+          "fldY96iXNDEyAP55n": {
+           "template": [
+            {
+             "fn": "getWorkflowExecutionIsoDateTime",
+             "args": []
+            }
+           ]
+          },
+          "fldwn4GL0LPUrY0Tg": {
+           "obj": {
+            "id": "seleh3w2GZrKLlhSo"
+           }
+          },
+          "fldnlUbFIsgrGd4PI": {
+           "obj": {
+            "id": "sel9cXs1QG27pyvuv"
+           }
+          },
+          "fldGpegEE7flJMNKE": {
+           "template": [
+            {
+             "fn": "map",
+             "args": [
+              {
+               "$ref": "trigger",
+               "path": [
+                "cellValuesByFieldId",
+                "fldl5bZ644djPsBmN"
+               ]
+              },
+              {
+               "fn": "propertyGetter",
+               "args": [
+                "name"
+               ]
+              }
+             ]
+            }
+           ]
+          },
+          "fldKkc0bjUB6VYgz7": {
+           "template": [
+            {
+             "$ref": "trigger",
+             "path": [
+              "cellValuesByFieldId",
+              "fldSsb4QjS9UyvKhj"
+             ]
+            }
+           ]
+          },
+          "fldswSNtDML9iDp9A": {
+           "template": [
+            "Step by Step Fix-\n\nBounce Code Reference: \nhttps://lucid.app/lucidchart/e7f89e79-ad92-4bd4-83f3-5f944103ea3d/edit?page=0_0&invitationId=inv_22f004ef-1474-451a-a296-dddedc3eb77b#\n\nStep 1: Review Type of Bounces (ESP, Code, Copy)\nStep 2: Run Inbox Placement Test\nStep 3: Reverify/Disable Leads\nStep 4: Relaunch"
+           ]
+          },
+          "fldWrFb99wzxaMcG5": {
+           "template": [
+            "URGENT: Paused Campaign High Bounce  - ",
+            {
+             "$ref": "trigger",
+             "path": [
+              "cellValuesByFieldId",
+              "fldSsb4QjS9UyvKhj"
+             ]
+            }
+           ]
+          }
+         }
+        }
+       }
+      }
+     ]
+    },
+    {
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldiLOzbllDI8mn7C"
+         ]
+        },
+        "operator": ">=",
+        "right": 2.5,
+        "valueType": "number",
+        "dataType": "literal"
+       },
+       {
+        "left": {
+         "fn": "length",
+         "args": [
+          {
+           "$ref": "wactTU8rmRWWgwOMl",
+           "path": [
+            "records"
+           ]
+          }
+         ]
+        },
+        "operator": "=",
+        "right": 0,
+        "valueType": "number",
+        "dataType": "literal"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wacfPwUQE2XS5nFvP",
+       "type": "sendToSlack",
+       "externalAccountId": "eaclf9jwTHIrMIi0j",
+       "inputs": {
+        "slackConversationId": "C08FDE9K18E",
+        "notificationText": {
+         "template": [
+          "The campaign *",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldSsb4QjS9UyvKhj"
+           ]
+          },
+          "* has a bounce rate of *",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldiLOzbllDI8mn7C"
+           ]
+          },
+          "%*\n\nIt's best to start taking a look.\n\n<!channel>"
+         ]
+        },
+        "username": {
+         "template": [
+          "Campaign Bounce Rate"
+         ]
+        },
+        "icon": {
+         "template": [
+          ":rotating_light:"
+         ]
+        },
+        "unfurlLinks": false
+       }
+      },
+      {
+       "key": "wac8Ouw6EaC1q45Ki",
+       "type": "createRecord",
+       "inputs": {
+        "tableId": "tblRBxm2N53331mIm",
+        "createRecordMethod": "customFields",
+        "fields": {
+         "obj": {
+          "fldajXwWvS8zusURS": {
+           "template": [
+            "rec0uiatKT3onVuwk"
+           ]
+          },
+          "fld1hJsrkZM8Nsyk3": {
+           "obj": {
+            "id": "selPLpCrM4wTmwxDS"
+           }
+          },
+          "fldY96iXNDEyAP55n": {
+           "template": [
+            {
+             "fn": "getWorkflowExecutionIsoDateTime",
+             "args": []
+            }
+           ]
+          },
+          "fldwn4GL0LPUrY0Tg": {
+           "obj": {
+            "id": "sel5vp5mdhLHceXpa"
+           }
+          },
+          "fldnlUbFIsgrGd4PI": {
+           "obj": {
+            "id": "sel9cXs1QG27pyvuv"
+           }
+          },
+          "fldWrFb99wzxaMcG5": {
+           "template": [
+            "Increasing Bounce Rate - ",
+            {
+             "$ref": "trigger",
+             "path": [
+              "cellValuesByFieldId",
+              "fldSsb4QjS9UyvKhj"
+             ]
+            }
+           ]
+          },
+          "fldGpegEE7flJMNKE": {
+           "template": [
+            {
+             "fn": "map",
+             "args": [
+              {
+               "$ref": "trigger",
+               "path": [
+                "cellValuesByFieldId",
+                "fldl5bZ644djPsBmN"
+               ]
+              },
+              {
+               "fn": "propertyGetter",
+               "args": [
+                "name"
+               ]
+              }
+             ]
+            }
+           ]
+          },
+          "fldKkc0bjUB6VYgz7": {
+           "template": [
+            {
+             "$ref": "trigger",
+             "path": [
+              "cellValuesByFieldId",
+              "fldSsb4QjS9UyvKhj"
+             ]
+            }
+           ]
+          },
+          "fldswSNtDML9iDp9A": {
+           "template": [
+            "Step by Step Fix- \n\nBounce Code Reference:  https://lucid.app/lucidchart/e7f89e79-ad92-4bd4-83f3-5f944103ea3d/edit?page=0_0&invitationId=inv_22f004ef-1474-451a-a296-dddedc3eb77b# \n\nStep 1: Review Type of Bounces (ESP, Code, Copy) \nStep 2: Run Inbox Placement Test \nStep 3: Keep an eye on Leads \nStep 4: Relaunch/Continue Running"
+           ]
+          }
+         }
+        }
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

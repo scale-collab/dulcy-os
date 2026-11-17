@@ -1,0 +1,137 @@
+{
+ "id": "wflFilmNm2V0oviDu",
+ "name": "Inbox Manager Reports Submission",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "formSubmitted",
+  "inputs": {
+   "tableId": "tblg8bhXMK7uPiHn6",
+   "formId": "pagx9v3FWVFg2L7ro"
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacTubweJGbk0Ba8C",
+   "type": "sendToSlack",
+   "externalAccountId": "eaclf9jwTHIrMIi0j",
+   "inputs": {
+    "slackConversationId": "C08HX8UG6N6",
+    "notificationText": {
+     "template": [
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldVelt7MsDX1n35W"
+       ]
+      },
+      "\n\nINBOX MANAGER REPORT for ",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldhvYlHYKF1gLJRN",
+        "name"
+       ]
+      },
+      "\n\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "url"
+       ]
+      },
+      "\n\n----\n\nTasks Completed Today:\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldw85aRY2t0Fnb4m"
+       ]
+      },
+      "\n\nWhat mistakes were made today:\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fld0wOyNPYIeBZDA7"
+       ]
+      },
+      "\n\nWhat could be improved:\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldYcTHs995uQzKiG"
+       ]
+      },
+      "\n\nWhat are you planning to do tomorrow:\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldqIBTBJKuV3jM1Y"
+       ]
+      },
+      "\n\nAre there any urgent issues that need attending?\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldjpbbbaARinC0rn",
+        "name"
+       ]
+      },
+      "\n\n# of replies sent today\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldfYc8DshwMgjjIM"
+       ]
+      },
+      "\n\nWho did we book meetings for and how many?\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldj8gy16IVETugoy"
+       ]
+      },
+      "\n\nTime Tracker Sheet Link:\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fld3nr2pXKvlJEDWI"
+       ]
+      },
+      "\n\nMental Health Score:\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fld8iUJt8r81zWUwL",
+        "name"
+       ]
+      },
+      "\n\nNotes:\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldaNPWYuMGsbEmEa"
+       ]
+      },
+      "\n\n@channel"
+     ]
+    },
+    "unfurlLinks": true
+   }
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

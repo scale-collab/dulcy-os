@@ -1,0 +1,153 @@
+{
+ "id": "wflaan3NnaFA4GRgk",
+ "name": "Closer/SDR Report Submission",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "formSubmitted",
+  "inputs": {
+   "tableId": "tblg8bhXMK7uPiHn6",
+   "formId": "pagMASZYD6GAQwUny"
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacomddeKOVUGMJLs",
+   "type": "sendToSlack",
+   "externalAccountId": "eaclf9jwTHIrMIi0j",
+   "inputs": {
+    "slackConversationId": "C08HX8UG6N6",
+    "notificationText": {
+     "template": [
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldVelt7MsDX1n35W"
+       ]
+      },
+      "\n\nCLOSER/SDR REPORT for ",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldhvYlHYKF1gLJRN",
+        "name"
+       ]
+      },
+      "\n\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "url"
+       ]
+      },
+      "\n\n----\n\nTasks Completed Today:\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldw85aRY2t0Fnb4m"
+       ]
+      },
+      "\n\nWhat mistakes were made today:\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fld0wOyNPYIeBZDA7"
+       ]
+      },
+      "\n\nWhat could be improved:\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldYcTHs995uQzKiG"
+       ]
+      },
+      "\n\nWhat are you planning to do tomorrow:\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldqIBTBJKuV3jM1Y"
+       ]
+      },
+      "\n\nAre there any urgent issues that need attending?\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldjpbbbaARinC0rn",
+        "name"
+       ]
+      },
+      "\n\nTop Objections Heard Today:\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldZGyxWQGPJZXyj3"
+       ]
+      },
+      "\n\nNew Prospects Reached Today:\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldXDrOfKV0gDsmvZ"
+       ]
+      },
+      "\n\nLead Quality Feedback:\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldsTtIq9UIh126cu"
+       ]
+      },
+      "\n\nDulcy Sales Tracker Sheet Link:\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldSciIbivwTFfXcq"
+       ]
+      },
+      "\n\nTime Tracker Sheet Link:\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fld3nr2pXKvlJEDWI"
+       ]
+      },
+      "\n\nMental Health Score:\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fld8iUJt8r81zWUwL",
+        "name"
+       ]
+      },
+      "\n\nNotes:\n",
+      {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldaNPWYuMGsbEmEa"
+       ]
+      },
+      "\n\n@channel"
+     ]
+    },
+    "unfurlLinks": true
+   }
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

@@ -1,0 +1,304 @@
+{
+ "id": "wflocVtavhmJiwWES",
+ "name": "Autoupdate for Booked/Closed Month",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordMatchesConditions",
+  "inputs": {
+   "tableId": "tblmEyHVAXDRwPxN9",
+   "filtersObj": {
+    "obj": {
+     "operator": "or",
+     "operands": {
+      "tuple": [
+       {
+        "obj": {
+         "operator": "=",
+         "operands": {
+          "tuple": [
+           "fld9asGRTxYCYRrHn",
+           true
+          ]
+         },
+         "operatorOptions": null
+        }
+       },
+       {
+        "obj": {
+         "operator": "=",
+         "operands": {
+          "tuple": [
+           "fldsxeAkhHOUSa45z",
+           true
+          ]
+         },
+         "operatorOptions": null
+        }
+       }
+      ]
+     }
+    }
+   }
+  }
+ },
+ "nodes": [
+  {
+   "key": "wdeZoWg215qAWxfji",
+   "type": "conditionalGroup",
+   "branches": [
+    {
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fld9asGRTxYCYRrHn"
+         ]
+        },
+        "operator": "=",
+        "right": true,
+        "valueType": "checkbox",
+        "dataType": "literal"
+       },
+       {
+        "left": {
+         "fn": "map",
+         "args": [
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "flds98LGpavjN0He9"
+           ]
+          },
+          {
+           "fn": "propertyGetter",
+           "args": [
+            "id"
+           ]
+          }
+         ]
+        },
+        "operator": "isEmpty",
+        "valueType": "text",
+        "dataType": "array"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wacbp1a6LRCljz28e",
+       "type": "findRecords",
+       "inputs": {
+        "tableId": "tbl9RIrdbapavGdI0",
+        "queryType": "filtersObj",
+        "filtersObj": {
+         "obj": {
+          "operator": "and",
+          "operands": {
+           "tuple": [
+            {
+             "obj": {
+              "operands": {
+               "tuple": [
+                "fldyMn4xAsSsVcgLW",
+                {
+                 "$ref": "trigger",
+                 "path": [
+                  "cellValuesByFieldId",
+                  "fldrzJrg6lBHc5py4"
+                 ]
+                }
+               ]
+              },
+              "operator": "=",
+              "operatorOptions": null
+             }
+            }
+           ]
+          }
+         }
+        },
+        "limit": 1000
+       }
+      },
+      {
+       "key": "wacQThhzusFBUXaGm",
+       "type": "updateRecord",
+       "inputs": {
+        "tableId": "tblmEyHVAXDRwPxN9",
+        "rowId": {
+         "template": [
+          {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          }
+         ]
+        },
+        "updateRecordMethod": "customFields",
+        "fields": {
+         "obj": {
+          "flds98LGpavjN0He9": {
+           "template": [
+            {
+             "fn": "map",
+             "args": [
+              {
+               "$ref": "wacbp1a6LRCljz28e",
+               "path": [
+                "records"
+               ]
+              },
+              {
+               "fn": "propertyGetter",
+               "args": [
+                "id"
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         }
+        }
+       }
+      }
+     ]
+    },
+    {
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldsxeAkhHOUSa45z"
+         ]
+        },
+        "operator": "=",
+        "right": true,
+        "valueType": "checkbox",
+        "dataType": "literal"
+       },
+       {
+        "left": {
+         "fn": "map",
+         "args": [
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldTRtXOO6WB6chW1"
+           ]
+          },
+          {
+           "fn": "propertyGetter",
+           "args": [
+            "id"
+           ]
+          }
+         ]
+        },
+        "operator": "isEmpty",
+        "valueType": "text",
+        "dataType": "array"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wacibkUmKsSV6ULJW",
+       "type": "findRecords",
+       "inputs": {
+        "tableId": "tbl9RIrdbapavGdI0",
+        "queryType": "filtersObj",
+        "filtersObj": {
+         "obj": {
+          "operator": "and",
+          "operands": {
+           "tuple": [
+            {
+             "obj": {
+              "operands": {
+               "tuple": [
+                "fldyMn4xAsSsVcgLW",
+                {
+                 "$ref": "trigger",
+                 "path": [
+                  "cellValuesByFieldId",
+                  "fldsxnIP9NFNaqT2H"
+                 ]
+                }
+               ]
+              },
+              "operator": "=",
+              "operatorOptions": null
+             }
+            }
+           ]
+          }
+         }
+        },
+        "limit": 1000
+       }
+      },
+      {
+       "key": "wac98lkYLCoSgUMCv",
+       "type": "updateRecord",
+       "inputs": {
+        "tableId": "tblmEyHVAXDRwPxN9",
+        "rowId": {
+         "template": [
+          {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          }
+         ]
+        },
+        "updateRecordMethod": "customFields",
+        "fields": {
+         "obj": {
+          "fldTRtXOO6WB6chW1": {
+           "template": [
+            {
+             "fn": "map",
+             "args": [
+              {
+               "$ref": "wacibkUmKsSV6ULJW",
+               "path": [
+                "records"
+               ]
+              },
+              {
+               "fn": "propertyGetter",
+               "args": [
+                "id"
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         }
+        }
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

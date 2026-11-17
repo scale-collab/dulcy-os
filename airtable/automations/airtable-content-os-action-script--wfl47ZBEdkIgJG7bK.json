@@ -1,0 +1,54 @@
+{
+ "id": "wfl47ZBEdkIgJG7bK",
+ "name": "Airtable Content OS Action Script",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordMatchesConditions",
+  "inputs": {
+   "tableId": "tblcSzvicm3wivvhh",
+   "filtersObj": {
+    "obj": {
+     "operator": "and",
+     "operands": {
+      "tuple": [
+       {
+        "obj": {
+         "operator": "isNotEmpty",
+         "operands": {
+          "tuple": [
+           "fldwaCz7Bnob2jIqZ"
+          ]
+         },
+         "operatorOptions": null
+        }
+       }
+      ]
+     }
+    }
+   }
+  }
+ },
+ "nodes": [
+  {
+   "key": "wac1bDDlQr6Gjf63t",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "recordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     }
+    },
+    "script": "// Airtable automation setup\n// Table: Content Channels (Alex Woung)\n// Trigger: When record matches conditions\n// Condition: Content Automation Action is not empty\n// Input variable: recordId = Airtable record ID from the trigger\n\nconst {recordId} = input.config();\nconst OPUS_WEBHOOK_URL = 'https://n8n.dulcy.io/webhook/REDACTED_PATH';\nconst FRAME_WEBHOOK_URL = 'https://n8n.dulcy.io/webhook/REDACTED_PATH';\nconst DISTRIBUTION_WEBHOOK_URL = 'https://n8n.dulcy.io/webhook/REDACTED_PATH';\nconst table = base.getTable('Content Channels (Alex Woung)');\n\nif (!recordId || !String(recordId).startsWith('rec')) {\n    throw new Error('A valid content recordId is required.');\n}\n\nconst record = await table.selectRecordAsync(recordId);\nif (!record) throw new Error(`Content record ${recordId} was not found.`);\n\nconst action = record.getCellValueAsString('Content Automation Action').trim();\nconst allowed = new Set([\n    'Sync Frame.io',\n    'Submit to OpusClip',\n    'Refresh Opus Clips',\n    'Generate Distribution Pack',\n]);\nif (!allowed.has(action)) {\n    output.set('started', false);\n    output.set('ignored', true);\n    output.set('message', 'No supported Content OS action was selected.');\n    return;\n}\n\nconst webhookUrl = action === 'Sync Frame.io'\n    ? FRAME_WEBHOOK_URL\n    : action === 'Generate Distribution Pack'\n        ? DISTRIBUTION_WEBHOOK_URL\n        : OPUS_WEBHOOK_URL;\nconst response = await fetch(webhookUrl, {\n    method: 'POST',\n    headers: {'Content-Type': 'application/json'},\n    body: JSON.stringify({recordId, action}),\n});\n\nconst responseText = await response.text();\nif (!response.ok) {\n    throw new Error(`Content OS returned HTTP ${response.status}: ${responseText || 'No response body'}`);\n}\n\n// Clear only after n8n accepted the request, allowing a deliberate retry later.\nawait table.updateRecordAsync(recordId, {\n    'Content Automation Action': null,\n});\n\noutput.set('started', true);\noutput.set('recordId', recordId);\noutput.set('action', action);\noutput.set('n8nResponse', responseText || 'Accepted');\n"
+   }
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

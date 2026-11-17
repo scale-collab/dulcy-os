@@ -1,0 +1,65 @@
+{
+ "id": "wflgj0HK24sgd8Uuy",
+ "name": "Lead List Center Dispatcher",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordMatchesConditions",
+  "inputs": {
+   "tableId": "tblVOg9BkPOMmnitt",
+   "filtersObj": {
+    "obj": {
+     "operator": "and",
+     "operands": {
+      "tuple": [
+       {
+        "obj": {
+         "operator": "isNotEmpty",
+         "operands": {
+          "tuple": [
+           "fldhViG7kJ5rKEaa4"
+          ]
+         },
+         "operatorOptions": null
+        }
+       }
+      ]
+     }
+    }
+   }
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacJ55t3KPkLsFlF3",
+   "type": "customScript",
+   "inputs": {
+    "script": "// Trigger: When Automation Action is not empty\n// Input variables:\n// - recordId = Airtable record ID from the trigger\n// - automationAction = Automation Action from the trigger\n// This dispatcher only confirms that n8n accepted the job.\n// Completion is tracked through the Lead Lists status fields.\n\n// Inputs are captured by Airtable at trigger time. A downstream workflow may\n// clear Automation Action before this script reloads the record, so routing\n// must prefer the trigger-time snapshot.\nconst { recordId, automationAction } = input.config();\nconst webhookAuth = input.secret(\"leadListWebhookAuth\");\nif (!recordId || !String(recordId).startsWith(\"rec\")) {\n    throw new Error(\"A valid Lead Lists record ID is required.\");\n}\n\nconst table = base.getTable(\"Lead Lists\");\nconst actionField = table.getField(\"Automation Action\");\nconst processingStatusField = table.getField(\"Processing Status\");\nconst workflowRunIdField = table.getField(\"Workflow Run ID\");\nconst processingCompletedAtField = table.getField(\"Processing Completed At\");\n\nconst record = await table.selectRecordAsync(recordId, {\n    fields: [\n        actionField,\n        processingStatusField,\n        workflowRunIdField,\n        processingCompletedAtField,\n    ],\n});\n\nif (!record) {\n    throw new Error(`Lead Lists record ${recordId} no longer exists.`);\n}\n\nconst triggeredAction = String(automationAction || \"\").trim();\nconst currentAction = record.getCellValueAsString(actionField).trim();\nconst beforeRunId = record.getCellValueAsString(workflowRunIdField).trim();\nconst beforeProcessingStatus = record\n    .getCellValueAsString(processingStatusField)\n    .trim()\n    .toLowerCase();\nconst beforeCompletedAt = record\n    .getCellValueAsString(processingCompletedAtField)\n    .trim();\n\n// A delayed Airtable automation run must never replay the action that caused\n// it after the live record has moved to a different action. Conversely, when\n// the action has already been cleared (or remains the same) and the record is\n// owned by an active workflow run, this trigger is a duplicate acknowledgement\n// only: do not POST again. This preserves the original cleared-field race for a\n// fresh request (no active run) while preventing duplicate provider work.\nif (triggeredAction && currentAction && triggeredAction !== currentAction) {\n    throw new Error(\n        `SUPERSEDED_AUTOMATION_ACTION: trigger=${triggeredAction}; current=${currentAction}`\n    );\n}\n\nconst action = triggeredAction || currentAction;\n\nconst companyAndContactActions = new Set([\n    \"Generate Filters\",\n    \"Run Company Sample\",\n    \"Review Saved Company Sample\",\n    \"Apply Verified Company Evidence\",\n    \"Test Saved Company Evidence (1)\",\n    \"Refine Company Sample\",\n    \"Expand Companies\",\n    \"Build Contact Sample\",\n    \"Expand Contacts\",\n    \"Apply Contact Decisions\",\n]);\n\nconst verificationActions = new Set([\n    \"Verify and Finalize\",\n    \"Retry Failed Stage\",\n]);\n\nconst supportedAction =\n    action === \"Restart Companies\" ||\n    companyAndContactActions.has(action) ||\n    verificationActions.has(action);\n\nif (!supportedAction) {\n    throw new Error(\n        `Unsupported Automation Action: ${action || \"blank\"}. ` +\n        \"Check the Lead Lists action options and router mapping.\"\n    );\n}\n\nconst duplicateActiveDispatch =\n    Boolean(triggeredAction) &&\n    Boolean(beforeRunId) &&\n    [\"running\", \"processing\"].includes(beforeProcessingStatus) &&\n    (!currentAction || currentAction === triggeredAction);\n\nif (duplicateActiveDispatch) {\n    output.set(\"started\", true);\n    output.set(\"recordId\", recordId);\n    output.set(\"action\", action);\n    output.set(\"workflow\", \"Existing active run\");\n    output.set(\"webhookUrl\", \"\");\n    output.set(\"n8nResponse\", {\n        accepted: true,\n        asynchronous: true,\n        duplicateSuppressed: true,\n        processingStatus: beforeProcessingStatus,\n        workflowRunId: beforeRunId,\n        message: \"An active run already owns this action; no duplicate webhook was sent.\",\n    });\n    return;\n}\n\nlet webhookUrl;\nlet workflow;\n\nif (action === \"Restart Companies\") {\n    webhookUrl = \"https://n8n.dulcy.io/webhook/REDACTED_PATH\";\n    workflow = \"Company Restart\";\n} else if (companyAndContactActions.has(action)) {\n    webhookUrl = \"https://n8n.dulcy.io/webhook/REDACTED_PATH\";\n    workflow = \"Company and Contact Review\";\n} else if (verificationActions.has(action)) {\n    webhookUrl = \"https://n8n.dulcy.io/webhook/REDACTED_PATH\";\n    workflow = \"Verification Submit and Check\";\n} else {\n    throw new Error(\n        `Unsupported Automation Action: ${action || \"blank\"}. ` +\n        \"Check the Lead Lists action options and router mapping.\"\n    );\n}\n\nconst response = await fetch(webhookUrl, {\n    method: \"POST\",\n    headers: {\n        \"Content-Type\": \"application/json\",\n        ...(companyAndContactActions.has(action)\n            ? { \"X-Dulcy-Lead-List-Auth\": webhookAuth }\n            : {}),\n    },\n    body: JSON.stringify({ recordId, action }),\n});\n\nconst responseText = await response.text();\nconst isN8nRequestTimeout =\n    response.status === 408 &&\n    /REQUEST_TIMEOUT|Request Timeout/i.test(responseText);\n\nlet timeoutAccepted = false;\nlet observedProcessingStatus = \"\";\nlet observedRunId = \"\";\nlet observedCompletedAt = \"\";\n\nif (isN8nRequestTimeout) {\n    const refreshedRecord = await table.selectRecordAsync(recordId, {\n        fields: [\n            processingStatusField,\n            workflowRunIdField,\n            processingCompletedAtField,\n        ],\n    });\n\n    observedProcessingStatus = refreshedRecord\n        ?.getCellValueAsString(processingStatusField)\n        .trim()\n        .toLowerCase() || \"\";\n    observedRunId = refreshedRecord\n        ?.getCellValueAsString(workflowRunIdField)\n        .trim() || \"\";\n    observedCompletedAt = refreshedRecord\n        ?.getCellValueAsString(processingCompletedAtField)\n        .trim() || \"\";\n\n    const observedNewRun =\n        Boolean(observedRunId) && observedRunId !== beforeRunId;\n    const observedNewCompletion =\n        Boolean(observedCompletedAt) &&\n        observedCompletedAt !== beforeCompletedAt;\n    // Airtable's fetch proxy terminates requests at roughly 30 seconds and\n    // returns this exact 408 even when n8n continues successfully. Do not\n    // retry: a retry could duplicate provider work. Treat only this exact\n    // proxy timeout as an asynchronous dispatch acknowledgement. The Lead\n    // Lists processing fields remain authoritative for downstream success or\n    // failure; the observations below are diagnostic evidence, not a gate.\n    timeoutAccepted = true;\n}\n\nif (!response.ok && !timeoutAccepted) {\n    throw new Error(\n        `${workflow} rejected the request with HTTP ${response.status}: ` +\n        `${responseText || \"No response body\"}`\n    );\n}\n\nlet n8nResponse;\nif (timeoutAccepted) {\n    n8nResponse = {\n        accepted: true,\n        asynchronous: true,\n        httpStatus: response.status,\n        processingStatus: observedProcessingStatus,\n        workflowRunId: observedRunId,\n        completedAt: observedCompletedAt,\n        confirmationEvidence:\n            observedRunId !== beforeRunId\n                ? \"new_run\"\n                : observedCompletedAt !== beforeCompletedAt\n                  ? \"new_completion\"\n                  : \"pending_status_update\",\n        message:\n            \"Airtable timed out waiting for the synchronous response. The request is not retried; Lead List processing fields track the eventual result.\",\n    };\n} else {\n    try {\n        n8nResponse = responseText\n            ? JSON.parse(responseText)\n            : { accepted: true };\n    } catch {\n        n8nResponse = { accepted: true, raw: responseText };\n    }\n}\n\noutput.set(\"started\", true);\noutput.set(\"recordId\", recordId);\noutput.set(\"action\", action);\noutput.set(\"workflow\", workflow);\noutput.set(\"webhookUrl\", webhookUrl);\noutput.set(\"n8nResponse\", n8nResponse);\n",
+    "inputObj": {
+     "obj": {
+      "recordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      },
+      "automationAction": {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldhViG7kJ5rKEaa4",
+        "name"
+       ]
+      }
+     }
+    }
+   },
+   "secrets": {
+    "leadListWebhookAuth": "eac2esXfp1dMFwIWG"
+   }
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}
