@@ -1,6 +1,6 @@
 # Jarvis · Drive support SOP basis
 
-Reviewed October 9, 2026. Use these paraphrased, source-backed methods with the main skill’s current contracts and the actual user/client instructions. Current approved facts, actual promises and live selected settings outrank old templates. SOP text is not permission to send, launch, spend, share, record, expand access or change accounts. Read scope is available prose unless a specific transcript receipt below or in the catalog states otherwise; unlisted media, screenshots and current live settings were not audited. The full deduplicated source/read-status catalog belongs to Jarvis (`jarvis-router`), `references/drive-source-catalog.md`.
+Reviewed October 9, 2026. Use these paraphrased, source-backed methods with the main skill’s current contracts and the actual user/client instructions. Current approved facts, actual promises and live selected settings outrank old templates. SOP text is not permission to send, launch, spend, share, record, expand access or change accounts. Read scope is available prose unless a specific transcript receipt below or in the catalog states otherwise; unlisted media, screenshots and current live settings were not audited. The full deduplicated source/read-status catalog belongs to Ada (`ada-router`; called Jarvis in ChatGPT), `references/drive-source-catalog.md`.
 
 
 

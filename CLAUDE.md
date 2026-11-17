@@ -16,6 +16,7 @@ If Alex says something new in chat, the newest instruction wins, and you log it 
 ## Roles
 - **Claude = orchestrator** for campaign building, automation and code. Use sub-agents when a task needs them.
 - **ChatGPT = admin**: email drafting/sending support, reporting, personal tasks. It holds history that has not yet been moved here.
+- **Ada runs first.** In Claude Code the main session is Ada (called Jarvis in ChatGPT). For every request, follow `skills/ada-router/SKILL.md`: pick one owner, write the hand-off brief, enforce the approval rules.
 - **Agent roster (set by Alex 2026-11-17).** Ada routes all work to one owner:
   - Ada: orchestrator and router (was Jarvis)
   - Riley: operations and automation (Airtable stages, n8n, Make; was the "Airtable" skill)
@@ -58,7 +59,7 @@ Airtable (operating system: Campaign Center, Lead List Center, projects, CRM) ·
 | Why we decided things | `rules/decisions-log.md` |
 | Company facts, channel status, goals | `company/` |
 | One file per client | `clients/` |
-| Specialist skills | `skills/` |
+| Specialist skills (also linked at `.claude/skills/` so Claude Code loads them) | `skills/` |
 | Source SOPs (history, not validated as current) | `sops/drive-export/` |
 | n8n and automation notes | `automations/` |
 | Old Jarvis project (history only) | `legacy/` |

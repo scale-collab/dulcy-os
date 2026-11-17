@@ -29,6 +29,10 @@ Last updated: 2026-11-17 (live pull from n8n and Airtable)
 ## Parked (low priority)
 - EmailGuard in the Claude desktop app: config is in place, but the `emailguard-mcp` program is not installed on Alex's Mac. The install steps are on app.emailguard.io/integrations/emailguard-mcp (login needed). Not needed for cloud sessions; EmailGuard already works there. Parked 2026-11-17.
 
+## Agent build (one at a time, Alex approves each)
+- [x] Ada: `skills/ada-router/` (2026-11-17)
+- [ ] Riley → Atlas → Forge → Scout → Scribe → Sean → Cole → Sienna → Pixel, Lex, Ledger, Harper (short)
+
 ## Next work, in order (Alex decides)
 1. Finish the foundation as the missing items arrive.
 2. Top Up fix: reconcile-one-import action, then move CSV prep out of n8n.
