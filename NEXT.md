@@ -15,7 +15,15 @@ Last updated: 2026-11-17 (live pull from n8n and Airtable)
 ## Still missing from ChatGPT / Alex
 - Josh's inbox process (how he works replies day to day)
 - Reply Agent settings values (schema and code are saved; the settings records were not read)
-- Client business goals for 5 of 6 clients
+- Client goals and approved price ranges: see each file in `clients/` (many still UNKNOWN)
+
+## URGENT (found 2026-11-17 while building client files; Alex decides)
+- Lead Flo asked in Slack today to cancel effective today and refund $375 plus the last payment. Not answered.
+- Bounce over 4% on campaigns still marked Active: Dulcy (2), Twenty West Internal (6 of 8), MJJ (3 of 4), Marketing Cartel (all 5). The rule is to pause and investigate. Check live EmailBison first: the Airtable status may be stale.
+- Marketing Cartel Email 1 P.S. lines may contain unverified proof claims ("doubled enrollments", rehab admissions). Check whether they're live.
+- Scroll Stop GDPR erasure request (2026-11-17), plus the appointment-audit list they requested.
+- Human Marketing: an SMS "stop calling" reply; confirm suppression.
+- Lead Flo Event Rental campaign targets all of the USA; the client wants Southern California only.
 
 ## To verify / Alex decides
 - Make Booked Meeting: Calendly lead source can arrive in quotes (`"Google"`) and break the Airtable step; the scenario stopped on 2026-11-12. Fix = clean the value. Also: answers are read by position (fragile).
