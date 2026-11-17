@@ -15,3 +15,4 @@ Newest at the bottom. Format: `date | decision | why | who`
 2026-11-17 | Agent roster set: Ada, Riley, Atlas, Scout, Scribe, Cole, Forge, Sienna, Pixel, Lex, Ledger, Harper, Red Dog. Jarvis→Ada, Airtable skill→Riley | Alex's own custom agents, renamed for Claude | Alex
 2026-11-17 | Roster update: add Sean (reply handling + AI replier); Forge and Cole separate; Scribe copy only; Sienna full; Red Dog out of repo | Different jobs need separate owners; trading is personal | Alex
 2026-11-17 | Ada built: jarvis-router renamed ada-router, rewritten for the 13-agent roster; personal and brokerage sections removed; skills linked at .claude/skills | Alex asked to start with Ada; Ada may be called Jarvis in ChatGPT | Alex
+2026-11-17 | Atlas leads campaigns and runs the managed stages, using Scout, Scribe, Forge; Riley = system repair only | Alex: Riley is for fixing Make/n8n, not the actual work | Alex

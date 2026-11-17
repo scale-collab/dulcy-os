@@ -31,7 +31,7 @@ Last updated: 2026-11-17 (live pull from n8n and Airtable)
 
 ## Agent build (one at a time, Alex approves each)
 - [x] Ada: `skills/ada-router/` (2026-11-17)
-- [ ] Riley → Atlas → Forge → Scout → Scribe → Sean → Cole → Sienna → Pixel, Lex, Ledger, Harper (short)
+- [ ] Atlas → Forge → Scout → Scribe → Riley → Sean → Cole → Sienna → Pixel, Lex, Ledger, Harper (short)
 
 ## Next work, in order (Alex decides)
 1. Finish the foundation as the missing items arrive.

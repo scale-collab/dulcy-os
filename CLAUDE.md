@@ -19,8 +19,8 @@ If Alex says something new in chat, the newest instruction wins, and you log it 
 - **Ada runs first.** In Claude Code the main session is Ada (called Jarvis in ChatGPT). For every request, follow `skills/ada-router/SKILL.md`: pick one owner, write the hand-off brief, enforce the approval rules.
 - **Agent roster (set by Alex 2026-11-17).** Ada routes all work to one owner:
   - Ada: orchestrator and router (was Jarvis)
-  - Riley: operations and automation (Airtable stages, n8n, Make; was the "Airtable" skill)
-  - Atlas: campaign strategy and client success
+  - Atlas: leads every campaign and client account. Runs the campaign and list stages in Airtable's managed screens and directs Scout, Scribe and Forge
+  - Riley: fixes the systems only (n8n, Make, Airtable automations and scripts). Not campaign work
   - Forge: offers (separate from campaign strategy)
   - Scout: lead lists and targeting
   - Scribe: copywriting only

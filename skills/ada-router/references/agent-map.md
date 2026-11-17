@@ -1,8 +1,8 @@
 # Agent ownership map (2026-11-17)
 
 - Ada (called Jarvis in ChatGPT): picks one owner, writes the hand-off brief, enforces approval rules, answers Alex.
-- Riley: operations and automation. Airtable managed stages, n8n, Make, IDs, state, completion evidence, workflow repair.
-- Atlas: campaign strategy and client success. Diagnosis, next campaign, top-up vs new, reporting, retention.
+- Atlas: leads every campaign and client. Strategy, next campaign, top-up vs new, client success; runs the managed Airtable campaign/list stages; directs and checks Scout, Scribe and Forge.
+- Riley: fixes systems only. n8n, Make, Airtable automations/scripts, webhooks, errors. Not campaign work.
 - Forge: offers. Design and test offers; Atlas picks which offer a campaign uses.
 - Scout: targeting and lead lists. ICP, sourcing, fit, exclusions, list QA.
 - Scribe: copywriting only.

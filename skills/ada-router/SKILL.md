@@ -20,8 +20,8 @@ In Claude Code, the main session plays Ada and sends work to the specialist sub-
 
 | Agent | Owns | Status |
 |---|---|---|
-| **Riley** | Operations and automation: Airtable managed stages (Campaign Center, Lead List Center), n8n, Make, IDs, state, completion evidence, fixing workflows | to build (was the "Airtable" skill: `skills/airtable-campaign-lead-list-center`) |
-| **Atlas** | Campaign strategy and client success: diagnosis, account plans, top-up vs new campaign, reporting, retention | to build (`skills/atlas-campaign-operator`) |
+| **Atlas** | Leads every campaign and client account: strategy, diagnosis, next campaign, top-up vs new, client success. Runs the campaign and list stages in Airtable's managed screens (Campaign Center, Lead List Center) and directs Scout, Scribe and Forge, checking their work before anything goes to Alex | to build (`skills/atlas-campaign-operator` plus the stage knowledge in `skills/airtable-campaign-lead-list-center`) |
+| **Riley** | Fixes the systems: n8n, Make, Airtable automations and scripts, webhooks, errors. Not campaign work | to build (repair knowledge from `skills/airtable-campaign-lead-list-center` and `automations/`) |
 | **Forge** | Offers: designing and testing offers (separate from campaign strategy) | to build (offer material is in Atlas today) |
 | **Scout** | Lead lists and targeting: ICP, sourcing, fit, exclusions, list QA | to build (`skills/scout-lead-list-builder`) |
 | **Scribe** | Copywriting only: campaign copy and sequences | to build (`skills/scribe-cold-email-copywriter`) |
@@ -41,8 +41,8 @@ Until an agent is built, Ada uses the listed reference files for that area and s
 
 | Request looks like | Owner |
 |---|---|
-| "Is X working?", a broken workflow, a stage stuck, an n8n/Make/Airtable error | Riley |
-| A campaign underperforming, the next campaign for a client, the 60% alert, client health | Atlas first; then Scout / Scribe / Riley as needed |
+| Anything about a campaign or client: build, launch prep, underperforming, next campaign, 60% alert, client health, running a stage | Atlas (directs Scout, Scribe, Forge) |
+| A broken workflow or automation, an n8n/Make/Airtable automation error, "is X working?" | Riley |
 | A new or changed offer, pricing packages, guarantees | Forge (Atlas decides which offer a campaign uses) |
 | ICP, lead source, sample of 100, list fit, exclusions | Scout |
 | Writing or rewriting campaign emails, subject lines, sequences | Scribe |
@@ -55,7 +55,8 @@ Until an agent is built, Ada uses the listed reference files for that area and s
 | Hiring, onboarding staff, roles, VA management | Harper |
 
 **Standard chains**
-- New or underperforming campaign: Atlas diagnoses → Forge (if the offer changes) → Scout (list brief) → Scribe (copy) → Riley (runs the managed Airtable stages) → **stops for Alex's approval before launch**.
+- New or underperforming campaign: **Atlas leads.** Atlas diagnoses → Forge (if the offer changes) → Scout (list) → Scribe (copy) → Atlas checks it all and runs the managed Airtable stages → **stops for Alex's approval before launch**.
+- If a stage or automation breaks during that, Atlas hands only the broken part to Riley, then carries on.
 - 60% campaign alert: Atlas reviews replies, bounces and variants, and decides top-up vs new vertical vs new offer vs copy change → hand-offs as above.
 - Prospect reply: Sean decides and drafts → Josh or Alex approves → send. Atlas supplies missing client facts. Never auto-send.
 - Broken automation: Riley diagnoses with live evidence → proposes a fix → Alex approves → Riley applies it.
