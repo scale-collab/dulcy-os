@@ -1,0 +1,579 @@
+# Drive documentation inventory
+
+Exported 2026-11-17 from the connected scale@dulcy.io Google Drive account. 141 source documents. Each file is text content retrieved from its source, not a claim that historical guidance remains current. Some similarly named sources are distinct files and were preserved rather than silently merged.
+
+## Scope and limitations
+
+- Search: first 100 SOP results, recursive Dulcy SOPs folder tree, key company/agent/prompt titles, and Cold Email Source of Truth.
+- Source folder: https://drive.google.com/drive/folders/16DCNScfgP1o77F3epJiTZ0J5RWBuhE57
+- Google Docs text export does not preserve embedded screenshots, video, formatting, or linked document contents automatically. Some short files are mostly links and require opening their original source.
+- This is not a complete account backup. Live Airtable records, current n8n workflow definitions, Slack/Gmail/Fathom history, lead data, signed contracts, employee records, passwords and API credentials are not part of this documentation export.
+- Training/reference documents and older duplicate SOPs are included as historical references. Prefer newer verified operating skills and the user's latest instructions when they conflict.
+- A basic credential-pattern scan was clean, but this is not a guarantee that every possible secret format can be detected.
+
+## Source files
+
+- **X - # 2-Hour Cold Email Campaign SOP** → `001-X---2-Hour-Cold-Email-Campaign-SOP.md`
+  - Source: https://docs.google.com/document/d/1pnNUb_SX_aid2fI9gNPX-U_DrnLXdUkcS7BIpYqAhsM/edit?usp=drivesdk
+  - Modified: 2026-11-07T19:38:33.206Z
+  - Text characters: 351460
+- **Market Research SOP** → `002-Market-Research-SOP.md`
+  - Source: https://docs.google.com/document/d/1AjWlLpCIHh9gtu12lSsaRU8WUVFF6mMd7__tE__L0yU/edit?usp=drivesdk
+  - Modified: 2026-10-23T16:27:47.713Z
+  - Text characters: 19582
+- **DULCY REPLY AGENT & INBOX MANAGER — OPERATING SOP** → `003-DULCY-REPLY-AGENT-INBOX-MANAGER-OPERATING-SOP.md`
+  - Source: https://docs.google.com/document/d/1RCCbXeUQJRXP8h0nsHnnqbGZNwwfIBKNTEAu67R7A-Q/edit?usp=drivesdk
+  - Modified: 2026-10-07T16:24:19.286Z
+  - Text characters: 7348
+- **INBOX MANAGEMENT SOP** → `004-INBOX-MANAGEMENT-SOP.md`
+  - Source: https://docs.google.com/document/d/1mHkrxWFYlqWLrLMYILqJaC-WfENRsdw6yGVjh0TrzNU/edit?usp=drivesdk
+  - Modified: 2025-03-17T11:46:32.629Z
+  - Text characters: 13960
+- ****Dulcy's SOPs**** → `005-Dulcys-SOPs.md`
+  - Source: https://docs.google.com/document/d/1xC8mOBsLtpmiKPg3XufPtI3QYVDtzP1gIDg-wOMm5T4/edit?usp=drivesdk
+  - Modified: 2026-03-03T17:13:06.477Z
+  - Text characters: 3572
+- **Training Your Team with SOPs, Looms, and Feedback Loops** → `006-Training-Your-Team-with-SOPs-Looms-and-Feedback-Loops.md`
+  - Source: https://docs.google.com/document/d/1lXWee_vV8TsJ6YNB03VpvYod2z1JIfFVSV8wazETSPw/edit?usp=drivesdk
+  - Modified: 2025-12-26T23:24:57.148Z
+  - Text characters: 5071
+- *****INTERAL SOPs***** → `007-INTERAL-SOPs.md`
+  - Source: https://docs.google.com/document/d/1pfWmkOH5qOGrWGdqIsX2VJopAFr3MpdjteDGk-hVbI8/edit?usp=drivesdk
+  - Modified: 2025-03-17T11:50:18.297Z
+  - Text characters: 2726
+- **Executive Assistant (VA) SOP** → `008-Executive-Assistant-VA-SOP.md`
+  - Source: https://docs.google.com/document/d/1K0ubwSPthzYS8vzgsqlId-FTrje-wNpJSFGrSBQrgx0/edit?usp=drivesdk
+  - Modified: 2025-01-27T18:24:19.531Z
+  - Text characters: 2972
+- **Secretary (VA) SOP** → `009-Secretary-VA-SOP.md`
+  - Source: https://docs.google.com/document/d/16mpSXtGrXv3fmM2B9nCpVqY7h0IvAw0uzZcDJI-83zw/edit?usp=drivesdk
+  - Modified: 2025-01-21T15:11:00.963Z
+  - Text characters: 3198
+- **Creating Advanced Lead Lists SOP** → `010-Creating-Advanced-Lead-Lists-SOP.md`
+  - Source: https://docs.google.com/document/d/1E-hbGP03qd3a5gtkZJJSHUzl3D4GBvFlFMwAFdriAqY/edit?usp=drivesdk
+  - Modified: 2025-03-07T21:14:14.990Z
+  - Text characters: 13794
+- **Creating a Cold Email Campaign SOP** → `011-Creating-a-Cold-Email-Campaign-SOP.md`
+  - Source: https://docs.google.com/document/d/1lKOJMohruRtSjRg76fWDG7139ICqP8qiT_c9fL9KU4Q/edit?usp=drivesdk
+  - Modified: 2025-03-07T21:13:21.694Z
+  - Text characters: 14812
+- **Navigating Airtable + Email Bison SOP** → `012-Navigating-Airtable-Email-Bison-SOP.md`
+  - Source: https://docs.google.com/document/d/13BUhYja1JRa1M0TGBkDmVQ8OoGR4ZpSv5D4hDzVpB-g/edit?usp=drivesdk
+  - Modified: 2025-03-07T21:13:06.435Z
+  - Text characters: 18018
+- **Using Clay.com SOP** → `013-Using-Claycom-SOP.md`
+  - Source: https://docs.google.com/document/d/1ds0vdJYjtEHic1W6tsOzKdgdi3FpQysvwy8466uF8cE/edit?usp=drivesdk
+  - Modified: 2025-03-07T21:14:28.828Z
+  - Text characters: 14441
+- **Client Reporting & Check In Meetings SOP** → `014-Client-Reporting-Check-In-Meetings-SOP.md`
+  - Source: https://docs.google.com/document/d/1WnrblL4qsiJ9RfKiX_jRUHa7nM4naXOnoQvXkvuycdc/edit?usp=drivesdk
+  - Modified: 2025-03-07T21:13:54.765Z
+  - Text characters: 6865
+- **Campaign Analysis & Optimization SOP** → `015-Campaign-Analysis-Optimization-SOP.md`
+  - Source: https://docs.google.com/document/d/1d52I_uWQomZ9qujYWOPWt9xcQbn0c68BrMVThwrZtVY/edit?usp=drivesdk
+  - Modified: 2025-03-07T21:13:33.155Z
+  - Text characters: 12455
+- **Client Summary After Meeting SOP** → `016-Client-Summary-After-Meeting-SOP.md`
+  - Source: https://docs.google.com/document/d/1H6qjut0L_TsbSgYrvPphV9ny0hP_SQgVh_kpaUPBm8M/edit?usp=drivesdk
+  - Modified: 2025-03-17T11:49:55.199Z
+  - Text characters: 422
+- **SOP: Keeping documents organized** → `017-SOP-Keeping-documents-organized.md`
+  - Source: https://docs.google.com/document/d/12ZwQES0K2BFrbvWkDzb2_kXQYofeiUukENlPYRCF4QI/edit?usp=drivesdk
+  - Modified: 2025-06-30T23:57:25.678Z
+  - Text characters: 5985
+- **SOP- High-Accuracy B2B List Building Using LinkedIn About Us Data** → `018-SOP--High-Accuracy-B2B-List-Building-Using-LinkedIn-About-Us-Data.md`
+  - Source: https://docs.google.com/document/d/1MgpIlTqh1btr9HEAzC6TxhbVN6AQGcirV2lQwHtCJuI/edit?usp=drivesdk
+  - Modified: 2026-01-12T18:21:48.064Z
+  - Text characters: 1552
+- **Miscellaneous Task SOP** → `019-Miscellaneous-Task-SOP.md`
+  - Source: https://docs.google.com/document/d/16hNk5dYI1wfrkcXLmK52SniEn7tVT5-fYzpnUwj7NKE/edit?usp=drivesdk
+  - Modified: 2025-11-05T12:36:32.765Z
+  - Text characters: 3083
+- ** SOP: Drafting and Answering Emails on Behalf of the Executive** → `020-SOP-Drafting-and-Answering-Emails-on-Behalf-of-the-Executive.md`
+  - Source: https://docs.google.com/document/d/1PgGts0kLM8JzxSaRjRrY-duQsD1L8Pc4ojGJ0SdJs7w/edit?usp=drivesdk
+  - Modified: 2025-06-30T04:17:14.267Z
+  - Text characters: 5616
+- **SOP: Rescheduling Meetings via Calendly for the Executive** → `021-SOP-Rescheduling-Meetings-via-Calendly-for-the-Executive.md`
+  - Source: https://docs.google.com/document/d/1nzhXsi7lHzhKpbMFvw3OlGu-NOCO3la8AU0xYfevUeU/edit?usp=drivesdk
+  - Modified: 2025-07-30T20:11:30.636Z
+  - Text characters: 3883
+- **SOP: How to leverage research tools** → `022-SOP-How-to-leverage-research-tools.md`
+  - Source: https://docs.google.com/document/d/1apiBrjc4LYMo1fUI8R92Y8yuZf55coTsPp_7TS-SWN8/edit?usp=drivesdk
+  - Modified: 2025-07-01T00:06:44.910Z
+  - Text characters: 6307
+- **SOP: Email Labelling** → `023-SOP-Email-Labelling.md`
+  - Source: https://docs.google.com/document/d/1eupf3Go_A23cbMsWOWWSnGZ7TeWbOAv3n3MviUbgyZw/edit?usp=drivesdk
+  - Modified: 2025-06-28T01:04:02.457Z
+  - Text characters: 6943
+- **SOP:Setting tasks for the executive** → `024-SOPSetting-tasks-for-the-executive.md`
+  - Source: https://docs.google.com/document/d/1_a-KnAldAIfTHherx0aQxXEswYXibwfq1lCdkcU-LhI/edit?usp=drivesdk
+  - Modified: 2025-06-30T23:49:29.613Z
+  - Text characters: 5671
+- **SOP:Prioritization Using the Eisenhower Matrix** → `025-SOPPrioritization-Using-the-Eisenhower-Matrix.md`
+  - Source: https://docs.google.com/document/d/1gC4k3mPdtjgmlTns6UgsShnu7ovM3sVz30k2YD1AWKU/edit?usp=drivesdk
+  - Modified: 2025-06-30T23:52:22.793Z
+  - Text characters: 5024
+- **SOP: Creating Calendar Invites for the Executive** → `026-SOP-Creating-Calendar-Invites-for-the-Executive.md`
+  - Source: https://docs.google.com/document/d/1GYdbBI9c36_z_EBSSarHxdDWCVKP23oKmnL5zNUs_ck/edit?usp=drivesdk
+  - Modified: 2025-06-30T04:30:23.328Z
+  - Text characters: 7819
+- ** SOP:Maintaining To-Dos and Project Tracking** → `027-SOPMaintaining-To-Dos-and-Project-Tracking.md`
+  - Source: https://docs.google.com/document/d/1z3lHLLiq6wIofdzkWdw2MjOQriJ0UnoRtUhJjayG-hA/edit?usp=drivesdk
+  - Modified: 2025-06-30T23:55:04.173Z
+  - Text characters: 5699
+- **SOP: Bookkeeping with Xero** → `028-SOP-Bookkeeping-with-Xero.md`
+  - Source: https://docs.google.com/document/d/1blOcCZGEiaCqVOb6XhfBdGrIn48GjGfwgwTsI3SdIIY/edit?usp=drivesdk
+  - Modified: 2025-07-01T00:08:42.095Z
+  - Text characters: 7714
+- **SOP: Email Labelling** → `029-SOP-Email-Labelling.md`
+  - Source: https://docs.google.com/document/d/1MoF7SKb80cKV_1eznHypRO3oOjr4QN7XZgeWXvOmTSk/edit?usp=drivesdk
+  - Modified: 2025-06-28T01:02:39.076Z
+  - Text characters: 15919
+- **SOP: Booking Flights for the Executive** → `030-SOP-Booking-Flights-for-the-Executive.md`
+  - Source: https://docs.google.com/document/d/1ea5II3SqopQUoPX24x5wMtt52AkkIMex83ocpwDP0uA/edit?usp=drivesdk
+  - Modified: 2025-06-30T04:42:46.104Z
+  - Text characters: 7122
+- **SOP: Booking Hotels for the Executive** → `031-SOP-Booking-Hotels-for-the-Executive.md`
+  - Source: https://docs.google.com/document/d/1DPxTLzGV762JHJhunucwTQV3oV_CfGDc2vUqlvBpGSw/edit?usp=drivesdk
+  - Modified: 2025-06-30T04:45:12.404Z
+  - Text characters: 8153
+- **SOP: Calendar Management on Motion for the Executive** → `032-SOP-Calendar-Management-on-Motion-for-the-Executive.md`
+  - Source: https://docs.google.com/document/d/1nVbokyS0wWChoxOIrRgktUvu2PuOSKGOBK1Ktd_CK1Y/edit?usp=drivesdk
+  - Modified: 2025-06-30T04:24:19.823Z
+  - Text characters: 9354
+- **Market Research SOP** → `033-Market-Research-SOP.md`
+  - Source: https://docs.google.com/document/d/1WYQAhUdWUMA2E18GWRmHpUPBkL2c3F2E6xwO3sOV_bo/edit?usp=drivesdk
+  - Modified: 2025-11-05T13:18:15.495Z
+  - Text characters: 8897
+- **Daily Reporting SOP** → `034-Daily-Reporting-SOP.md`
+  - Source: https://docs.google.com/document/d/1Eb1NCzj3EwsCxAEzeJJscNiDYDq90cVV2w7_0foJLzA/edit?usp=drivesdk
+  - Modified: 2025-11-05T12:38:40.856Z
+  - Text characters: 836
+- **Daily Reporting SOP** → `035-Daily-Reporting-SOP.md`
+  - Source: https://docs.google.com/document/d/1kOo3HzSWIfz5pfaLp9GPWBg1vnWPg3L2wg7mu6etzq8/edit?usp=drivesdk
+  - Modified: 2025-11-05T07:25:03.979Z
+  - Text characters: 836
+- **(SalesLiege) Daily Reporting SOP** → `036-SalesLiege-Daily-Reporting-SOP.md`
+  - Source: https://docs.google.com/document/d/1Hs1d_tXvOdqStG3NQ3xNSKznrqDZoAZPreScY-7xKFA/edit?usp=drivesdk
+  - Modified: 2025-11-05T06:22:57.894Z
+  - Text characters: 890
+- **Meeting Reminder Call SOP** → `037-Meeting-Reminder-Call-SOP.md`
+  - Source: https://docs.google.com/document/d/1jmFV-8G0zHCrxGd1M4Dzvw3f4t40Aqj7VjAzLysLXNw/edit?usp=drivesdk
+  - Modified: 2025-11-05T13:06:31.622Z
+  - Text characters: 3252
+- **Client Onboarding SOP** → `038-Client-Onboarding-SOP.md`
+  - Source: https://docs.google.com/document/d/1RCwTc0qphwcV0BK13Ba0HXuefUk4YZ38Tonx0d6DX6E/edit?usp=drivesdk
+  - Modified: 2025-11-05T12:37:37.140Z
+  - Text characters: 5542
+- **Client Reporting & Check In SOP** → `039-Client-Reporting-Check-In-SOP.md`
+  - Source: https://docs.google.com/document/d/1Jdhx2MXHpRqpe9BkDszPFWAjjbgq7tb2Hy6PpxvdDYY/edit?usp=drivesdk
+  - Modified: 2025-11-05T13:17:31.769Z
+  - Text characters: 6865
+- **Client Summary Before Meeting SOP** → `040-Client-Summary-Before-Meeting-SOP.md`
+  - Source: https://docs.google.com/document/d/1unsapuwlrNJXvKlsjiA9ET_f9VIjtt1rHEJd_ujhGBs/edit?usp=drivesdk
+  - Modified: 2025-11-05T13:00:00.370Z
+  - Text characters: 7665
+- **Sales Commission Tracking & Payouts SOP** → `041-Sales-Commission-Tracking-Payouts-SOP.md`
+  - Source: https://docs.google.com/document/d/1tNuFKvy64GvxL9NCR0BVV0KAtaCyr9THfHA5y0h6GCM/edit?usp=drivesdk
+  - Modified: 2025-11-05T12:41:05.342Z
+  - Text characters: 2758
+- **Tracking Sales SOP** → `042-Tracking-Sales-SOP.md`
+  - Source: https://docs.google.com/document/d/117T0EqK6vcDY6uw9c5qT3sGyt6mAhWY2vVcuXe9UjJc/edit?usp=drivesdk
+  - Modified: 2025-11-05T12:47:10.231Z
+  - Text characters: 421
+- **New Lead List Order SOP** → `043-New-Lead-List-Order-SOP.md`
+  - Source: https://docs.google.com/document/d/10F-SMfwnDknVeMEZB7y3SptzXRK5cvAzn3xynXt9fEw/edit?usp=drivesdk
+  - Modified: 2025-11-05T13:14:16.297Z
+  - Text characters: 2638
+- **Call Recordings SOP** → `044-Call-Recordings-SOP.md`
+  - Source: https://docs.google.com/document/d/1o5KpkERHyh1fB6sx0QdJPor4gy5fqqLOhlmZhZklpaQ/edit?usp=drivesdk
+  - Modified: 2025-11-05T12:46:07.969Z
+  - Text characters: 1769
+- **Call Recordings SOP** → `045-Call-Recordings-SOP.md`
+  - Source: https://docs.google.com/document/d/1pVIVg4jx032_vKcfTrTf_OdJqWW-2yOPpbuIM12wxrM/edit?usp=drivesdk
+  - Modified: 2025-11-05T07:11:54.555Z
+  - Text characters: 1785
+- **(SalesLiege) Call Recordings SOP** → `046-SalesLiege-Call-Recordings-SOP.md`
+  - Source: https://docs.google.com/document/d/1D5NRkcuHPWgigAbqP1srs1qRT749O3FLLzeZPWzve1o/edit?usp=drivesdk
+  - Modified: 2025-11-05T06:20:55.721Z
+  - Text characters: 1826
+- **(SalesLiege) Sales Commission Tracking & Payouts SOP** → `047-SalesLiege-Sales-Commission-Tracking-Payouts-SOP.md`
+  - Source: https://docs.google.com/document/d/13AzzpZYG7adhsAWwygkmiWn-EwRJJ4nyS_bgvx5ijDM/edit?usp=drivesdk
+  - Modified: 2025-11-05T06:21:52.235Z
+  - Text characters: 2885
+- **(SalesLiege) New Appointment SOP** → `048-SalesLiege-New-Appointment-SOP.md`
+  - Source: https://docs.google.com/document/d/1Tq1MYnYKWfCqfQeE_guDfrq5rN4PIELN905xaZyJWd0/edit?usp=drivesdk
+  - Modified: 2025-11-05T06:11:49.846Z
+  - Text characters: 1470
+- **(SalesLiege) Taking Payments SOP** → `049-SalesLiege-Taking-Payments-SOP.md`
+  - Source: https://docs.google.com/document/d/1G5TouP1864dc5srBgb1ZwE0EJXS_CEbDvOvWKIh5e6M/edit?usp=drivesdk
+  - Modified: 2025-11-05T06:16:15.034Z
+  - Text characters: 1602
+- **(SalesLiege) Tracking Sales SOP** → `050-SalesLiege-Tracking-Sales-SOP.md`
+  - Source: https://docs.google.com/document/d/1eoEyO2PAykneklS8BeZIUtlYqF3Em3PUw8XOIoekqq0/edit?usp=drivesdk
+  - Modified: 2025-11-05T06:19:50.489Z
+  - Text characters: 449
+- **Campaign Analysis & Optimization SOP** → `051-Campaign-Analysis-Optimization-SOP.md`
+  - Source: https://docs.google.com/document/d/1mgcNdyk0-8rxVINfueJQolr5sNlnfGY1kLZNq6oNoG0/edit?usp=drivesdk
+  - Modified: 2025-11-05T13:19:01.332Z
+  - Text characters: 12455
+- **(SalesLiege) Before The Call SOP** → `052-SalesLiege-Before-The-Call-SOP.md`
+  - Source: https://docs.google.com/document/d/1_msEnkeF116qcNikPOuHKx-zpyQq17MO8Yc9_JTsJ44/edit?usp=drivesdk
+  - Modified: 2025-11-05T06:14:02.730Z
+  - Text characters: 3937
+- **(SalesLiege) Post Sale / Next Steps SOP** → `053-SalesLiege-Post-Sale-Next-Steps-SOP.md`
+  - Source: https://docs.google.com/document/d/1a73O39wev71Z-AKNV1lN7uuIh0vDqrdwoqq81O2p-kE/edit?usp=drivesdk
+  - Modified: 2025-11-05T06:17:44.098Z
+  - Text characters: 4093
+- **Creating a Cold Email Campaign SOP** → `054-Creating-a-Cold-Email-Campaign-SOP.md`
+  - Source: https://docs.google.com/document/d/167DPQTKNzjieF8p3FlpSC94gxFu9LnOt5Ncq6RPslRI/edit?usp=drivesdk
+  - Modified: 2025-11-05T13:20:15.828Z
+  - Text characters: 14812
+- **Using Clay.com SOP** → `055-Using-Claycom-SOP.md`
+  - Source: https://docs.google.com/document/d/1T_3OK-2qRFfYfel-5_OkaeNVEfTrFlNdRyE0kPsfJOo/edit?usp=drivesdk
+  - Modified: 2025-11-05T13:16:39.082Z
+  - Text characters: 14441
+- **Aloware Lead Flow SOP** → `056-Aloware-Lead-Flow-SOP.md`
+  - Source: https://docs.google.com/document/d/1uDPQIl48Cvc_xjfjPbzPJ11emIKXwFOOwQf-Su19kuc/edit?usp=drivesdk
+  - Modified: 2025-12-15T05:34:05.352Z
+  - Text characters: 2681
+- **Taking Sales Calls SOP** → `057-Taking-Sales-Calls-SOP.md`
+  - Source: https://docs.google.com/document/d/1a5emkhXP6XNzNBc7smGWrPLz412OM5_xvC2eWL0RhZU/edit?usp=drivesdk
+  - Modified: 2025-11-05T12:49:00.301Z
+  - Text characters: 543
+- **Running Inbox Placement Tests SOP** → `058-Running-Inbox-Placement-Tests-SOP.md`
+  - Source: https://docs.google.com/document/d/1QjJDArtfrukgI4Odm82jDmoGRhMVQKr-uVkPCrP3Uxc/edit?usp=drivesdk
+  - Modified: 2025-11-05T12:55:41.310Z
+  - Text characters: 718
+- **How to Use Scrapers SOP** → `059-How-to-Use-Scrapers-SOP.md`
+  - Source: https://docs.google.com/document/d/1pY0QXF0QVEH3T-wZ2r0sP-k6mOtWo5lvn8ncnQrjhiQ/edit?usp=drivesdk
+  - Modified: 2025-11-05T13:13:35.375Z
+  - Text characters: 689
+- **Client Summary After Meeting SOP** → `060-Client-Summary-After-Meeting-SOP.md`
+  - Source: https://docs.google.com/document/d/1q0UVaeKI-1sMLICPlewWsFTMf1moRo-GBZggTCyd3Q0/edit?usp=drivesdk
+  - Modified: 2025-11-05T12:57:47.342Z
+  - Text characters: 454
+- **Meeting Reminder Call SOP** → `061-Meeting-Reminder-Call-SOP.md`
+  - Source: https://docs.google.com/document/d/1mAO34mGgnL1MUtvEZdkoSdMpjY-4DSkQ7zgyX-CIdp0/edit?usp=drivesdk
+  - Modified: 2025-11-05T09:19:10.782Z
+  - Text characters: 2923
+- **Taking Sales Calls SOP** → `062-Taking-Sales-Calls-SOP.md`
+  - Source: https://docs.google.com/document/d/1U3VAtP9tgMMG6E2SSbQSmm1pAb_Qa7NZXfctyWt09t4/edit?usp=drivesdk
+  - Modified: 2025-11-05T08:17:44.954Z
+  - Text characters: 543
+- **(SalesLiege) No Close Follow-up SOP** → `063-SalesLiege-No-Close-Follow-up-SOP.md`
+  - Source: https://docs.google.com/document/d/1nVZY5Jx8Z1WoXx4Wv7tdPIdC4ggT3M0Mq6I5BiqTsC0/edit?usp=drivesdk
+  - Modified: 2025-11-05T06:15:31.576Z
+  - Text characters: 1321
+- **(SalesLiege) Taking Sales Calls SOP** → `064-SalesLiege-Taking-Sales-Calls-SOP.md`
+  - Source: https://docs.google.com/document/d/1JPYQmFDm_T17v3VJq3IA62W--wcquMnV7B8FQH9OdwY/edit?usp=drivesdk
+  - Modified: 2025-11-04T22:43:22.611Z
+  - Text characters: 521
+- **SOP: Sending Personalized Client Gifts** → `065-SOP-Sending-Personalized-Client-Gifts.md`
+  - Source: https://docs.google.com/document/d/1qhCRv9NrJPQmqAMSnUz24ZSEziz9iNeLKQT2osmmNZg/edit?usp=drivesdk
+  - Modified: 2025-07-01T00:17:27.083Z
+  - Text characters: 1740
+- **SOP: Prepare for Itinerary** → `066-SOP-Prepare-for-Itinerary.md`
+  - Source: https://docs.google.com/document/d/1z1Dw7Qf35QjokEfwxmPjpOKdOTsa3W3BZmT-VuMUtL8/edit?usp=drivesdk
+  - Modified: 2025-07-01T00:15:45.288Z
+  - Text characters: 1475
+- **SOP: Annual  Report** → `067-SOP-Annual-Report.md`
+  - Source: https://docs.google.com/document/d/1EgYggJTXs_d8YqmSEpZm15gLUmCRZcKM1iPCtIhtlUc/edit?usp=drivesdk
+  - Modified: 2025-07-01T00:04:45.754Z
+  - Text characters: 1928
+- **SOP: Filing Liquidation to Xero** → `068-SOP-Filing-Liquidation-to-Xero.md`
+  - Source: https://docs.google.com/document/d/1GrHpGoUXOULsQ9mrz8q9R_8i0_AZMro9H70lw8QqGxU/edit?usp=drivesdk
+  - Modified: 2025-07-01T00:13:02.015Z
+  - Text characters: 2408
+- **SOP:Monthly Report** → `069-SOPMonthly-Report.md`
+  - Source: https://docs.google.com/document/d/1KM9DO7IofH54zhtLkqTgFiJRe2L3ddjpMa6fMb4ysCU/edit?usp=drivesdk
+  - Modified: 2025-07-01T00:02:23.382Z
+  - Text characters: 1470
+- **SOP: Quarterly Report** → `070-SOP-Quarterly-Report.md`
+  - Source: https://docs.google.com/document/d/16CLw7EyWg6apeI4U_QQU6ZS_7qXz40rMuwwyOzGyj_Q/edit?usp=drivesdk
+  - Modified: 2025-07-01T00:03:27.948Z
+  - Text characters: 1440
+- **SOP: Organizing Receipts** → `071-SOP-Organizing-Receipts.md`
+  - Source: https://docs.google.com/document/d/1k1-cJsYnONyhoQAe6M0G__9xHUt6S95iarcct28msnc/edit?usp=drivesdk
+  - Modified: 2025-07-01T00:11:23.152Z
+  - Text characters: 1999
+- **SOP: Organizing Invoices** → `072-SOP-Organizing-Invoices.md`
+  - Source: https://docs.google.com/document/d/1wxYTsYAOY89bjN7YnP7RiqEB-FhkYMldfte7v39fiAQ/edit?usp=drivesdk
+  - Modified: 2025-07-01T00:10:21.645Z
+  - Text characters: 2311
+- **SOP: Doing Reservations on Behalf of the Executive** → `073-SOP-Doing-Reservations-on-Behalf-of-the-Executive.md`
+  - Source: https://docs.google.com/document/d/15ie3mG8s3U6OexoX9X_BnpqKFlxiAP5v5WIpJ8mZ0Vc/edit?usp=drivesdk
+  - Modified: 2025-07-01T00:14:52.809Z
+  - Text characters: 1334
+- **SOP:Weekly Report** → `074-SOPWeekly-Report.md`
+  - Source: https://docs.google.com/document/d/1dEhs-dpjgaoxBjoKVSsgLhYRjK3TAduHzNI_vvGAGkc/edit?usp=drivesdk
+  - Modified: 2025-07-01T00:00:34.728Z
+  - Text characters: 2050
+- **Writing Daily Tweets SOP** → `075-Writing-Daily-Tweets-SOP.md`
+  - Source: https://docs.google.com/document/d/1SzDr65yPxmQj8zj6nUBSoyNTMUrobXyUYH3oj__uxJk/edit?usp=drivesdk
+  - Modified: 2025-11-05T08:53:47.892Z
+  - Text characters: 4805
+- **Writing Daily Tweets SOP** → `076-Writing-Daily-Tweets-SOP.md`
+  - Source: https://docs.google.com/document/d/1uke5rTWW1laSCixYQB-F5hUXMhgJz5opFC7vasFSaq0/edit?usp=drivesdk
+  - Modified: 2025-11-05T13:04:04.577Z
+  - Text characters: 5369
+- **Navigating Airtable + Email Bison SOP** → `077-Navigating-Airtable-Email-Bison-SOP.md`
+  - Source: https://docs.google.com/document/d/1tJGweLhP5m4rRwbXYk_K3i2SF_Zxd5dQY83TTVTjBaM/edit?usp=drivesdk
+  - Modified: 2025-11-05T13:21:12.958Z
+  - Text characters: 18018
+- **MI Monthly Email & Posts SOP** → `078-MI-Monthly-Email-Posts-SOP.md`
+  - Source: https://docs.google.com/document/d/1S32-EXpPRoyv9MqbZypckg9RalnS_gmQyUvPJfeu7xs/edit?usp=drivesdk
+  - Modified: 2025-11-05T13:11:27.007Z
+  - Text characters: 8501
+- **Cold Calling SOP** → `079-Cold-Calling-SOP.md`
+  - Source: https://docs.google.com/document/d/1-cEpKkPYwBjIPdm19igbo8Gjfx4fHlWthckOReEXPWQ/edit?usp=drivesdk
+  - Modified: 2025-11-05T13:05:06.372Z
+  - Text characters: 11110
+- **CRM/CALENDAR MANAGEMENT SOP** → `080-CRMCALENDAR-MANAGEMENT-SOP.md`
+  - Source: https://docs.google.com/document/d/1aQOOkWxMcoM_DBetafLBkP2NJFiQ0q3e84Z_LJJ1MMw/edit?usp=drivesdk
+  - Modified: 2025-11-05T13:07:54.971Z
+  - Text characters: 15581
+- **INBOX MANAGEMENT SOP** → `081-INBOX-MANAGEMENT-SOP.md`
+  - Source: https://docs.google.com/document/d/13pvXKcWgDtaVBvw2sO_84xcAorZYjN3JIoGAzgX-PpA/edit?usp=drivesdk
+  - Modified: 2025-11-05T13:10:14.543Z
+  - Text characters: 13960
+- **Nik Setting-SOPs** → `082-Nik-Setting-SOPs.md`
+  - Source: https://docs.google.com/document/d/1Zj_isPO7IlWx1a8B-o_GZp-siGMgzhWbzMvLHVmsCO4/edit?usp=drivesdk
+  - Modified: 2026-01-14T10:03:52.963Z
+  - Text characters: 23665
+- **Post Sale / Next Steps SOP** → `083-Post-Sale-Next-Steps-SOP.md`
+  - Source: https://docs.google.com/document/d/12kF36CW6lU5ErRBz64D-UM92EjPpTdEkPDFpQ487dug/edit?usp=drivesdk
+  - Modified: 2025-11-05T12:48:04.900Z
+  - Text characters: 3888
+- **Cold Email Objections SOP** → `084-Cold-Email-Objections-SOP.md`
+  - Source: https://docs.google.com/document/d/1kmq8QxCIkH267BXj773z-gGa-Y9rfibLb-YYepyfrvY/edit?usp=drivesdk
+  - Modified: 2025-11-05T13:08:50.506Z
+  - Text characters: 10913
+- **Purchasing Domains/Email Accounts SOP** → `085-Purchasing-DomainsEmail-Accounts-SOP.md`
+  - Source: https://docs.google.com/document/d/1wafXzjTbTECXjzud2nTR1fhkyNiG91AX7C_SbdSZJMo/edit?usp=drivesdk
+  - Modified: 2025-11-05T13:12:22.314Z
+  - Text characters: 4345
+- **Google Calendar Setup SOP** → `086-Google-Calendar-Setup-SOP.md`
+  - Source: https://docs.google.com/document/d/1bmVQ-6rpMyOkobLJGAhqfUQEesDrZ6x4YS7c3cfIBjg/edit?usp=drivesdk
+  - Modified: 2025-11-05T12:50:11.134Z
+  - Text characters: 704
+- **CRM/CALENDAR MANAGEMENT SOP** → `087-CRMCALENDAR-MANAGEMENT-SOP.md`
+  - Source: https://docs.google.com/document/d/1P54IYSPRvRdZXoeOWQgal9FaY0wy98cPzZBE0oa7bx8/edit?usp=drivesdk
+  - Modified: 2025-11-05T09:37:25.837Z
+  - Text characters: 14261
+- **COLD EMAIL SOURCE OF TRUTH** → `088-COLD-EMAIL-SOURCE-OF-TRUTH.md`
+  - Source: https://docs.google.com/document/d/1U5hD2SUXVTYb__QK2FdBGyVvDkKukJ_881Cd-l8ITzA/edit
+  - Modified: not recorded
+  - Text characters: 175750
+- **Case Study Campaign Approach** → `089-Case-Study-Campaign-Approach.md`
+  - Source: https://docs.google.com/document/d/1v3vmwL6t98MkjOHPAv7uMn00XmIKMdXqN5lqZVqdWvg/edit?usp=drivesdk
+  - Modified: 2026-01-05T01:51:50.889Z
+  - Text characters: 1537
+- **Risk Reduction Campaign Approach** → `090-Risk-Reduction-Campaign-Approach.md`
+  - Source: https://docs.google.com/document/d/1y-YjdI8dhSijQ2Fa4hf9zlDpTnv_6PLnahq6-L3JmDU/edit?usp=drivesdk
+  - Modified: 2026-01-05T01:51:46.023Z
+  - Text characters: 1140
+- **Education-Based Campaign Approach** → `091-Education-Based-Campaign-Approach.md`
+  - Source: https://docs.google.com/document/d/15eqYK7p6Sq5O8vKrinLEsVppmMuB8YNkngKxFUJhMS0/edit?usp=drivesdk
+  - Modified: 2026-01-05T01:51:42.761Z
+  - Text characters: 2487
+- **Loom Video Campaign Approach** → `092-Loom-Video-Campaign-Approach.md`
+  - Source: https://docs.google.com/document/d/1UP7YSRBLuqpf1wqdpLRY-dze1VBVc5dNqthk9lpWRIU/edit?usp=drivesdk
+  - Modified: 2026-01-05T01:51:39.312Z
+  - Text characters: 1702
+- **Lead Magnet Campaign Approach** → `093-Lead-Magnet-Campaign-Approach.md`
+  - Source: https://docs.google.com/document/d/1YBgjszPGSbOJeF8bnmQ8pXjtfevBQULujqDkg9IeLHY/edit?usp=drivesdk
+  - Modified: 2026-01-05T01:51:35.346Z
+  - Text characters: 1442
+- **Direct Offer Campaign Approach** → `094-Direct-Offer-Campaign-Approach.md`
+  - Source: https://docs.google.com/document/d/1ql9oHzhYz-Xv5vg3OXqS6x3hC4-J0VESr8Ecn-UIZR4/edit?usp=drivesdk
+  - Modified: 2026-01-05T01:51:31.280Z
+  - Text characters: 940
+- **How to Navigate RevReply** → `095-How-to-Navigate-RevReply.md`
+  - Source: https://docs.google.com/document/d/16nVGjqdipynDzJpexJ4ONoxZkaNd-unNrFwurflXBhA/edit?usp=drivesdk
+  - Modified: 2026-01-04T21:25:00.328Z
+  - Text characters: 6907
+- **How to Navigate Email Guard** → `096-How-to-Navigate-Email-Guard.md`
+  - Source: https://docs.google.com/document/d/1i9OZF1ga02UD0mdS_9t9kuml-MHKGZ_2C1lXcMhpeQg/edit?usp=drivesdk
+  - Modified: 2026-01-04T21:06:42.259Z
+  - Text characters: 8512
+- **How to Navigate Heyreach** → `097-How-to-Navigate-Heyreach.md`
+  - Source: https://docs.google.com/document/d/1aK4LTr1dysqk-dzfzjTEdPJ0U-WzuYij2OSnesTfxr8/edit?usp=drivesdk
+  - Modified: 2026-01-04T20:52:11.561Z
+  - Text characters: 5307
+- **Example Dulcy Sales Script** → `098-Example-Dulcy-Sales-Script.md`
+  - Source: https://docs.google.com/document/d/1P0QBPbKFZoxkg25Fu6K4a05m0w03Ov7T4Wp6ALFtUMI/edit?usp=drivesdk
+  - Modified: 2026-11-12T20:38:39.822Z
+  - Text characters: 61982
+- **Example CLIENT Sales Script** → `099-Example-CLIENT-Sales-Script.md`
+  - Source: https://docs.google.com/document/d/1NKvuZvWXresZowM9B_gmq8FpOzz4PH5Sj5ICoeFsF-E/edit?usp=drivesdk
+  - Modified: 2026-02-20T18:11:59.318Z
+  - Text characters: 24712
+- **How to Triple Verify Leads** → `100-How-to-Triple-Verify-Leads.md`
+  - Source: https://docs.google.com/document/d/1sETxooYQGJ0wUWzpcpkbf3x8MlD9bJPt7nQG4N4fz3U/edit?usp=drivesdk
+  - Modified: 2025-12-12T16:44:40.967Z
+  - Text characters: 7170
+- **How to Create a Basic Lead List** → `101-How-to-Create-a-Basic-Lead-List.md`
+  - Source: https://docs.google.com/document/d/1A7MXx6IwsHKYg-DYtWwOy7x9kv4uVaSogdTZzGhdy0U/edit?usp=drivesdk
+  - Modified: 2025-12-12T00:18:55.353Z
+  - Text characters: 31602
+- **How to Create an Advanced Lead List** → `102-How-to-Create-an-Advanced-Lead-List.md`
+  - Source: https://docs.google.com/document/d/17q1qqRRMMpfOIgLGWow9Sev2vlNT8LuyWoKbhmUUHcs/edit?usp=drivesdk
+  - Modified: 2025-12-12T00:18:30.401Z
+  - Text characters: 22436
+- **Apollo vs. Clay vs. A-Leads vs. Other Databases** → `103-Apollo-vs-Clay-vs-A-Leads-vs-Other-Databases.md`
+  - Source: https://docs.google.com/document/d/1D0E4vZ5kwiPlX_Bj0vuEkSx9DUVc5g9UNBPbnUeeZ6g/edit?usp=drivesdk
+  - Modified: 2025-12-11T23:29:49.662Z
+  - Text characters: 41896
+- **How to Identify the Lowest Hanging Fruit (4 Criteria Method)** → `104-How-to-Identify-the-Lowest-Hanging-Fruit-4-Criteria-Method.md`
+  - Source: https://docs.google.com/document/d/1bNuHiJxendUUgzSdNj7lR9tsDyWGBNp1SBHQE02dYIo/edit?usp=drivesdk
+  - Modified: 2025-12-11T22:39:59.850Z
+  - Text characters: 14179
+- **How to Complete Client Market Research** → `105-How-to-Complete-Client-Market-Research.md`
+  - Source: https://docs.google.com/document/d/1zLiel67Bqoz76tQad672dW_XVg2Zip9T-klBLBa8_3w/edit?usp=drivesdk
+  - Modified: 2025-12-11T22:14:47.724Z
+  - Text characters: 9764
+- **How to Form a Campaign Thesis** → `106-How-to-Form-a-Campaign-Thesis.md`
+  - Source: https://docs.google.com/document/d/1M0P43Vsd6IlQRJEbVa4TrjOsAye4O2xSaPuTT6IMCYc/edit?usp=drivesdk
+  - Modified: 2025-12-11T22:09:13.405Z
+  - Text characters: 6796
+- **How to Set Up Client Transparency with Client Portal** → `107-How-to-Set-Up-Client-Transparency-with-Client-Portal.md`
+  - Source: https://docs.google.com/document/d/1FldKCzKg21m1AgGw2WOaYEbnvWKiiE_X_rpA_v61AMI/edit?usp=drivesdk
+  - Modified: 2025-12-01T23:58:09.011Z
+  - Text characters: 23532
+- **How to Set Up an Inbox Manager for a Client** → `108-How-to-Set-Up-an-Inbox-Manager-for-a-Client.md`
+  - Source: https://docs.google.com/document/d/18W05eyWLtCpzmlKKoJRfdNzcQREXaRw1_Eg0NUrkf0Q/edit?usp=drivesdk
+  - Modified: 2025-12-01T23:37:10.038Z
+  - Text characters: 11152
+- **How to Confirm Client Setup for Success** → `109-How-to-Confirm-Client-Setup-for-Success.md`
+  - Source: https://docs.google.com/document/d/1KdCaLm_8yg4Nu2zSyKqpUczNVf4WtfEjYFMCPUw0Olc/edit?usp=drivesdk
+  - Modified: 2025-12-01T22:43:40.853Z
+  - Text characters: 7061
+- **How to Manage Client Expectations Pre-Launch** → `110-How-to-Manage-Client-Expectations-Pre-Launch.md`
+  - Source: https://docs.google.com/document/d/1OuX6_UfloHCxEUrJ_5xwK_aFbH3k3qRJWLTCMABbKMs/edit?usp=drivesdk
+  - Modified: 2025-12-01T22:37:39.240Z
+  - Text characters: 6978
+- **How to Review a Client’s Cold Sales Process** → `111-How-to-Review-a-Clients-Cold-Sales-Process.md`
+  - Source: https://docs.google.com/document/d/16sy3n0cYtK-p4gLGU0AGk9YemFgjrz2sXeGeX2eUTvc/edit?usp=drivesdk
+  - Modified: 2025-12-01T22:09:56.863Z
+  - Text characters: 28845
+- **How to Audit a Client’s Funnel** → `112-How-to-Audit-a-Clients-Funnel.md`
+  - Source: https://docs.google.com/document/d/1WY0WRNAZdjWCcqr_Nu6rviA6Vzm3FVTyLq4Fffd8N_E/edit?usp=drivesdk
+  - Modified: 2025-12-01T22:04:22.997Z
+  - Text characters: 13301
+- **Client Onboarding Form Analyzation** → `113-Client-Onboarding-Form-Analyzation.md`
+  - Source: https://docs.google.com/document/d/1JczJtNt0JrZddKFaLTFIxfYOgEXG_hyQkpgSLQc6WDo/edit?usp=drivesdk
+  - Modified: 2025-12-01T06:02:12.731Z
+  - Text characters: 122914
+- **How to Conduct a Client Onboarding Call** → `114-How-to-Conduct-a-Client-Onboarding-Call.md`
+  - Source: https://docs.google.com/document/d/1FWcx66TdTODLCNev9YYmv20mmaz_Xdpi-L9XxITUHKk/edit?usp=drivesdk
+  - Modified: 2025-12-01T05:32:46.204Z
+  - Text characters: 9221
+- **Client Onboarding** → `115-Client-Onboarding.md`
+  - Source: https://docs.google.com/document/d/1JqqG4n973XTqRxtf5O5uqLV08R6-kZr55I4YICaZaGA/edit?usp=drivesdk
+  - Modified: 2025-12-01T05:15:43.455Z
+  - Text characters: 7840
+- **4.2 How To Pitch** → `116-42-How-To-Pitch.md`
+  - Source: https://docs.google.com/document/d/1_pNsG5BYPLSRt4JQaIHno03rngdefIoi9dm1w5m8_V8/edit?usp=drivesdk
+  - Modified: 2026-03-26T16:58:39.936Z
+  - Text characters: 12008
+- **4.1 Pitch Codex Intro** → `117-41-Pitch-Codex-Intro.md`
+  - Source: https://docs.google.com/document/d/1KXg11s5AO5zbppC6SGhHAmyXQ4_pa9xMWllntgR5PZE/edit?usp=drivesdk
+  - Modified: 2025-12-05T17:43:36.896Z
+  - Text characters: 6349
+- **Dulcy_Campaign_Copy_Morning_Review_2026-10-08** → `118-DulcyCampaignCopyMorningReview2026-10-08.md`
+  - Source: https://docs.google.com/document/d/1Bxb8dPNPeGFuJG1gS2gag7W6c1J9TKA1J1yvecYPu5E/edit?usp=drivesdk
+  - Modified: 2026-10-08T16:42:10.612Z
+  - Text characters: 62829
+- **Dulcy Campaigns** → `119-Dulcy-Campaigns.md`
+  - Source: https://docs.google.com/document/d/1_FragG2TPFOJpo0mJ7VW9YbK8x1QwvcDdiDn963-9wk/edit?usp=drivesdk
+  - Modified: 2026-08-21T20:26:00.676Z
+  - Text characters: 10568
+- **Jarvis** → `120-Jarvis.md`
+  - Source: https://docs.google.com/document/d/1CAZmkHfvTKP0LYWSvUzBbGgQyB8VD1eqgyLBdZ-lnAU/edit?usp=drivesdk
+  - Modified: 2026-08-17T03:42:54.239Z
+  - Text characters: 6330
+- **Dulcy <> RevReply Realignment** → `121-Dulcy-RevReply-Realignment.md`
+  - Source: https://docs.google.com/document/d/17KXrK-2fX099PQKj1Ra-Bw-hoi5_WnIlfZ8F3IL3768/edit?usp=drivesdk
+  - Modified: 2026-06-17T20:51:59.202Z
+  - Text characters: 31993
+- **Old n8n email bison reply prompt** → `122-Old-n8n-email-bison-reply-prompt.md`
+  - Source: https://docs.google.com/document/d/17hb7KfpZ-w99r02D6_HpNt7Ay35X4_-C64MGrl6_GfI/edit?usp=drivesdk
+  - Modified: 2026-06-02T23:39:34.227Z
+  - Text characters: 2365
+- **Dulcy Reactivation Script Example** → `123-Dulcy-Reactivation-Script-Example.md`
+  - Source: https://docs.google.com/document/d/1NYXKOIgMxeZI6vSTPIg_RoB3qv-s5KPzAEFJ6QFuRPA/edit?usp=drivesdk
+  - Modified: 2026-05-05T17:21:37.198Z
+  - Text characters: 443
+- **Inbox Manager Prompt** → `124-Inbox-Manager-Prompt.md`
+  - Source: https://docs.google.com/document/d/12HYgHYaV1SsiCt_we0B7CERICdaLElbqFDIaRKSoCho/edit?usp=drivesdk
+  - Modified: 2026-05-02T18:53:12.478Z
+  - Text characters: 33501
+- **Scroll Stop Prompt** → `125-Scroll-Stop-Prompt.md`
+  - Source: https://docs.google.com/document/d/1vD-6qB_9_cSgJ2Tv2UyEy4py15wJLr8p2KDjvV87b0s/edit?usp=drivesdk
+  - Modified: 2026-05-02T17:31:34.309Z
+  - Text characters: 23038
+- **CLIENT BUSINESS CONTEXT GENERATOR (FOR COLD EMAIL INBOX AI)** → `126-CLIENT-BUSINESS-CONTEXT-GENERATOR-FOR-COLD-EMAIL-INBOX-AI.md`
+  - Source: https://docs.google.com/document/d/1E3e5o6XbAqSwcDa6k4JOv0CITCq58mog1iOwzfuPJCs/edit?usp=drivesdk
+  - Modified: 2026-04-14T19:03:58.099Z
+  - Text characters: 26090
+- **1seo ai prompt** → `127-1seo-ai-prompt.md`
+  - Source: https://docs.google.com/document/d/1mWJ0n9XukIlFIPA40HCqeKXtiSfefvwd6qoMsToNIZY/edit?usp=drivesdk
+  - Modified: 2026-02-04T18:17:52.663Z
+  - Text characters: 20488
+- **Shop Innovator Revreply prompt** → `128-Shop-Innovator-Revreply-prompt.md`
+  - Source: https://docs.google.com/document/d/16SUntj8y-jlYTsd4WtzhlxGzgdWOc1ybROFulxn2wtA/edit?usp=drivesdk
+  - Modified: 2026-02-04T16:28:57.670Z
+  - Text characters: 25093
+- **Backup Andre Spintax Prompt** → `129-Backup-Andre-Spintax-Prompt.md`
+  - Source: https://docs.google.com/document/d/1Dzm8jilXy5OIJAhJEDPdsQReC3FlY3fX3HeQfj8AFT8/edit?usp=drivesdk
+  - Modified: 2026-01-28T18:05:05.304Z
+  - Text characters: 1140
+- **[Dulcy] Cold Email Best Practices** → `130-Dulcy-Cold-Email-Best-Practices.md`
+  - Source: https://docs.google.com/document/d/1pZnShmzra6OQzPNhIX80Akw1Y5Y-pCrvC5CXkyXea8s/edit?usp=drivesdk
+  - Modified: 2026-01-05T05:41:36.053Z
+  - Text characters: 3108
+- **Dulcy Whitepaper/Education Approach** → `131-Dulcy-WhitepaperEducation-Approach.md`
+  - Source: https://docs.google.com/document/d/1iXJ4NEkuzuM6QdGFsWIzLsmRBph8ebjHkRQCvKYnZsk/edit?usp=drivesdk
+  - Modified: 2026-01-05T00:50:32.366Z
+  - Text characters: 5505
+- **Kevin Synthflow AI Prompt** → `132-Kevin-Synthflow-AI-Prompt.md`
+  - Source: https://docs.google.com/document/d/19HHwOLAuFGRekhzb6HTgMgdPBsp15vGg_f71BC0aUU0/edit?usp=drivesdk
+  - Modified: 2025-12-31T17:58:32.434Z
+  - Text characters: 39938
+- **Dulcy.io Landing Page Funnel Explained** → `133-Dulcyio-Landing-Page-Funnel-Explained.md`
+  - Source: https://docs.google.com/document/d/1D-V4giMCB_8EMuR10-dtXQO2jwlJ4LudqQAO_HJ7leo/edit?usp=drivesdk
+  - Modified: 2025-12-20T21:48:29.386Z
+  - Text characters: 7043
+- **Prompt to write cold email copy** → `134-Prompt-to-write-cold-email-copy.md`
+  - Source: https://docs.google.com/document/d/1RuMXzWbRbKa3B1ePNqZe9IM3NrlSAdZwypwS9OY-HTk/edit?usp=drivesdk
+  - Modified: 2025-12-18T17:51:58.312Z
+  - Text characters: 6832
+- **AI Caller PR Prompt** → `135-AI-Caller-PR-Prompt.md`
+  - Source: https://docs.google.com/document/d/1fv3czmL-MQN5791oHkXoXAqrnz6SfIn3iMouJJLQqnE/edit?usp=drivesdk
+  - Modified: 2025-12-07T06:20:02.873Z
+  - Text characters: 23752
+- **Adverio x Dulcy: Alignment on Service, Strategy & Performance** → `136-Adverio-x-Dulcy-Alignment-on-Service-Strategy-Performance.md`
+  - Source: https://docs.google.com/document/d/1MZGSopUBNuJKLMY7yQXOF5u5BfBwq6xZ3Dz99SIqFhA/edit?usp=drivesdk
+  - Modified: 2025-07-08T18:47:05.370Z
+  - Text characters: 4424
+- **Dulcy Sales Playbook 2025** → `137-Dulcy-Sales-Playbook-2025.md`
+  - Source: https://docs.google.com/document/d/1tz-FfFWHb99xpSuBeOG09i2wGerpV4fi1yXMSVykRkQ/edit?usp=drivesdk
+  - Modified: 2025-05-19T05:39:54.238Z
+  - Text characters: 87918
+- **Dulcy Summary** → `138-Dulcy-Summary.md`
+  - Source: https://docs.google.com/document/d/1zAlxzGS4m_FRh4SxmTPIBgYfDnAhGcaCJBJl8mFplVA/edit?usp=drivesdk
+  - Modified: 2025-03-18T01:46:13.888Z
+  - Text characters: 7688
+- **Dulcy Next Steps** → `139-Dulcy-Next-Steps.md`
+  - Source: https://docs.google.com/document/d/1oNz7bctTrmITE5TARw9nQb4U7H0Ocw_OB5I9fY1XEWo/edit?usp=drivesdk
+  - Modified: 2025-03-11T01:33:17.124Z
+  - Text characters: 5718
+- *****DULCY INTERNAL***** → `140-DULCY-INTERNAL.md`
+  - Source: https://docs.google.com/document/d/1j6yEtZDGPMDaUyrn4g-HdMk9NTXTzfzFXBRfdUA4J4U/edit?usp=drivesdk
+  - Modified: 2025-03-01T16:54:23.692Z
+  - Text characters: 1085
+- **Dulcy Ops & Systems Strategy** → `141-Dulcy-Ops-Systems-Strategy.md`
+  - Source: https://docs.google.com/document/d/1Maj4dUQ6c9BcqB_GgI4PgwFXOySbw8jmIggbKSBF9qU/edit?usp=drivesdk
+  - Modified: 2025-02-16T12:45:03.507Z
+  - Text characters: 15515

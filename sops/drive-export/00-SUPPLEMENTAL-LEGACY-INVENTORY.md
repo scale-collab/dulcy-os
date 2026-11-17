@@ -1,0 +1,109 @@
+# Supplemental legacy Drive SOP inventory
+
+20 nonempty document exports from info@dulcymedia.com; one source returned empty text: Linkedin Outreach SOP (11RTawBCLG4R-2KG72DNpPzz_0XxGZhs3Se2riv9QOU4). Combined Drive documentation now contains 161 nonempty exported source files, plus inventories. Keep these older SOPs as references; latest operator instructions take priority.
+
+- SOP REDO
+  - File: 142-SOP-REDO.md
+  - Source: https://docs.google.com/document/d/1Ca3sxFo96wZel0DsPnwhlhX-yvM1dcsH79LSUD_gLms/edit?usp=drivesdk
+  - Modified: 2026-01-04T21:25:11.228Z
+  - Text chars: 15330
+- Executive Assistant SOPs
+  - File: 143-Executive-Assistant-SOPs.md
+  - Source: https://docs.google.com/document/d/1AP2ghfUCadWmQYTfCcrwXGo3s4a9uBn55kqM_ct8LlE/edit?usp=drivesdk
+  - Modified: 2025-06-27T15:08:09.492Z
+  - Text chars: 453
+- Running Inbox Placement Tests SOP
+  - File: 144-Running-Inbox-Placement-Tests-SOP.md
+  - Source: https://docs.google.com/document/d/1V4Lx9g_7B0_TS_jOIcwVbV3EqwnNVZRco2cFATj9bdI/edit?usp=drivesdk
+  - Modified: 2025-03-17T11:50:47.972Z
+  - Text chars: 686
+- MI Monthly Email & Posts SOP
+  - File: 145-MI-Monthly-Email-Posts-SOP.md
+  - Source: https://docs.google.com/document/d/1CpBUot4Eh1EAjiZfZHLhxfEzQbjJ__YScpZR3kZ2F0Y/edit?usp=drivesdk
+  - Modified: 2025-03-17T11:44:27.971Z
+  - Text chars: 8501
+- Client Onboarding SOP
+  - File: 146-Client-Onboarding-SOP.md
+  - Source: https://docs.google.com/document/d/1994QKxYp2zh3h1g43NkWM1KC-gdTiiet3ITUip0CjrY/edit?usp=drivesdk
+  - Modified: 2025-03-10T21:04:37.740Z
+  - Text chars: 5542
+- Cold Email Objections SOP
+  - File: 147-Cold-Email-Objections-SOP.md
+  - Source: https://docs.google.com/document/d/1Dk-7a3jkuu57nDyHFgmPKpOSqRlGJWI1kyU-6AqMuj0/edit?usp=drivesdk
+  - Modified: 2025-03-08T17:22:39.157Z
+  - Text chars: 10913
+- Creating LinkedIn & RB2B Campaigns SOP
+  - File: 148-Creating-LinkedIn-RB2B-Campaigns-SOP.md
+  - Source: https://docs.google.com/document/d/1e3FWXhjH487xfcqtRdruIptdsgEitWyh5MWCmWfdBM8/edit?usp=drivesdk
+  - Modified: 2025-03-03T15:09:43.839Z
+  - Text chars: 6976
+- Meeting Reminder Call SOP*
+  - File: 149-Meeting-Reminder-Call-SOP.md
+  - Source: https://docs.google.com/document/d/1hG6LzoozguQ6xbibUaTMbty5hs3l7kUZRTI5-9HTTaU/edit?usp=drivesdk
+  - Modified: 2025-03-03T14:02:53.325Z
+  - Text chars: 3252
+- Managing LinkedIn DM Campaigns SOP
+  - File: 150-Managing-LinkedIn-DM-Campaigns-SOP.md
+  - Source: https://docs.google.com/document/d/1RkCEDZ223lKA1dJjrwfcfwEv-osUKqEv-IM-zwQq74E/edit?usp=drivesdk
+  - Modified: 2025-03-03T14:02:21.653Z
+  - Text chars: 6189
+- Client Summary Before Meeting SOP
+  - File: 151-Client-Summary-Before-Meeting-SOP.md
+  - Source: https://docs.google.com/document/d/1YX5vesM2V1bLRRexrsfVPqBpJTgVobmU_66rZ2JDZEI/edit?usp=drivesdk
+  - Modified: 2025-03-03T14:02:08.026Z
+  - Text chars: 7653
+- Creating Basic Lead Lists and Verifying Leads SOP
+  - File: 152-Creating-Basic-Lead-Lists-and-Verifying-Leads-SOP.md
+  - Source: https://docs.google.com/document/d/1Wo22pu59u3qrr2BPTRnZdbb0l6j6iItD_fad_rJS8y4/edit?usp=drivesdk
+  - Modified: 2025-03-02T02:52:09.451Z
+  - Text chars: 9867
+- New Lead List Order SOP
+  - File: 153-New-Lead-List-Order-SOP.md
+  - Source: https://docs.google.com/document/d/1rASowo38BErwHPSiju-vxDKmUslfVfwy0yZacD5xb10/edit?usp=drivesdk
+  - Modified: 2025-02-12T01:07:58.569Z
+  - Text chars: 2638
+- COLD CALL SOP
+  - File: 154-COLD-CALL-SOP.md
+  - Source: https://docs.google.com/document/d/1CXOx_X76hcjkMvg7N4lzQbCyX0dYyygTqPYajS1tdVc/edit?usp=drivesdk
+  - Modified: 2025-01-25T20:11:59.207Z
+  - Text chars: 11110
+- Linkedin Outreach SOP
+  - File: NOT EXPORTED: empty source text
+  - Source: https://docs.google.com/document/d/11RTawBCLG4R-2KG72DNpPzz_0XxGZhs3Se2riv9QOU4/edit?usp=drivesdk
+  - Modified: 2024-11-27T02:59:18.891Z
+  - Text chars: 0
+- Email Campaign Reporting SOP
+  - File: 156-Email-Campaign-Reporting-SOP.md
+  - Source: https://docs.google.com/document/d/19QmUQcwcXGVqWxGxOjsZbsPbAixOKfXrztiaSlAverk/edit?usp=drivesdk
+  - Modified: 2024-11-11T17:25:38.602Z
+  - Text chars: 4208
+- Real Estate SOP
+  - File: 157-Real-Estate-SOP.md
+  - Source: https://docs.google.com/document/d/1VE7Ez35fnBkaY_y8D1fJntlcGbuEMUvTy6aslf1t0Wg/edit?usp=drivesdk
+  - Modified: 2024-11-04T00:37:31.390Z
+  - Text chars: 8005
+- HOW TO USE SCRAPERS SOP
+  - File: 158-HOW-TO-USE-SCRAPERS-SOP.md
+  - Source: https://docs.google.com/document/d/1YW02RrM_fJbBbDKWZKP6kLiQ45PXilg9gX0eEu13ICE/edit?usp=drivesdk
+  - Modified: 2024-11-03T22:59:33.388Z
+  - Text chars: 689
+- Writing Daily Tweets SOP
+  - File: 159-Writing-Daily-Tweets-SOP.md
+  - Source: https://docs.google.com/document/d/1EZPii2S-mip5UZEVXhuWTH3Q3cpWBMiGzkMwhNdxWVY/edit?usp=drivesdk
+  - Modified: 2024-11-02T18:46:43.278Z
+  - Text chars: 5369
+- CRM/CALENDAR MANAGEMENT SOP
+  - File: 160-CRMCALENDAR-MANAGEMENT-SOP.md
+  - Source: https://docs.google.com/document/d/1ywSZl_UgwkacCqqSUh7cnIPp34aL_sE6Jz44i_7fAxU/edit?usp=drivesdk
+  - Modified: 2024-11-02T00:47:28.168Z
+  - Text chars: 15581
+- Miscellaneous Task SOP
+  - File: 161-Miscellaneous-Task-SOP.md
+  - Source: https://docs.google.com/document/d/1hpWUdbIxVEXacC8TdGR8f4Nrk2TYhoRmmTJBJCdGgxg/edit?usp=drivesdk
+  - Modified: 2024-10-31T16:07:18.166Z
+  - Text chars: 3083
+- Google Workspace Email Account Setup + Smartlead Connection SOP
+  - File: 162-Google-Workspace-Email-Account-Setup-Smartlead-Connection-SOP.md
+  - Source: https://docs.google.com/document/d/1htCioIC9dzpzvQJsOuxwgpWwpL-EzP7zwvkkEcziOtc/edit?usp=drivesdk
+  - Modified: 2024-07-13T17:18:11.506Z
+  - Text chars: 11213
