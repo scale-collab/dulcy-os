@@ -20,16 +20,17 @@ If Alex says something new in chat, the newest instruction wins, and you log it 
   - Ada: orchestrator and router (was Jarvis)
   - Riley: operations and automation (Airtable stages, n8n, Make; was the "Airtable" skill)
   - Atlas: campaign strategy and client success
+  - Forge: offers (separate from campaign strategy)
   - Scout: lead lists and targeting
-  - Scribe: copy and replies
+  - Scribe: copywriting only
+  - Sean: reply handling, from cold reply to booked meeting; owns the AI replier (Reply Agent) and Josh's inbox process
   - Cole: sales and closing (Closers.io method)
-  - Forge: offers
-  - Sienna: social media and content
-  - Pixel: paid ads
-  - Lex: legal and HR
-  - Ledger: business finance
-  - Harper: hiring and people operations
-  - Red Dog: trading search (personal; see decisions log)
+  - Sienna: social media and content (a full agent; includes Content OS)
+  - Pixel: paid ads (short for now)
+  - Lex: legal and HR (short for now)
+  - Ledger: business finance (short for now)
+  - Harper: hiring and people operations (short for now)
+  - Red Dog (trading) is personal and stays OUT of this repo.
   - Skill files live in `skills/`. Agents not built yet are marked UNKNOWN until built.
 
 ## Stack
