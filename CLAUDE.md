@@ -38,6 +38,7 @@ Airtable (operating system: Campaign Center, Lead List Center, projects, CRM) ·
 ## Where things live
 | Need | Path |
 |---|---|
+| Where we left off, next steps | `NEXT.md` |
 | Standing rules and corrections | `rules/RULES.md` |
 | Why we decided things | `rules/decisions-log.md` |
 | Company facts, channel status, goals | `company/` |
