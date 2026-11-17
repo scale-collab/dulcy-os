@@ -19,12 +19,25 @@ Help the prospect take the right next voluntary step for this client's real offe
 - A delivery failure or auto-reply is not buyer intent. Out-of-office is not interest.
 - Interested rate = interested replies / replies (a top-up needs above 15%).
 
+## What the evidence says (2026-11-17). Defaults to test, not rules yet
+From Dulcy's own replies, May 17 – Nov 17 2026 ([historical-patterns.md](references/historical-patterns.md)): 21,783 replies, 2,313 positive, **162 booked (7.0% of positive)**.
+1. **Offer two specific dated times, no link:** ~27.7% booked, vs a link only 6.2% and a soft closing question ("open to a chat?") 5.8%. Lavender and Josh Braun agree; Alex Berman prefers sending a link right away.
+2. **Keep it short:** under 40 words 16.0%, 40–69 words 13.0%, 100–149 words 4.4%.
+3. **Meeting requests book best** (16 of 37, 43%). Info requests book rarely (4 of 259): find out what they actually want first, then offer a short walkthrough at a set time (Braun, Berman).
+4. **Sending an asset first (video or examples) with "open to a chat?" converts poorly** (5.1% vs 10.4%). Pricing replies answered with a link or no CTA booked 0 of 36.
+5. **Speed:** no clear effect in Dulcy's data, but the timestamps are mostly missing. Creators (Nick Abraham) say respond, or even call, within minutes. Calling needs a phone lookup (credits), so it needs Alex's OK.
+6. **No-shows and quiet threads:** apologise and offer the same time next week; after 4–5 unanswered follow-ups, send a breakup-style note (Braun). See [creator-methods.md](references/creator-methods.md).
+The pattern counts are directional: who wrote each message was parsed from mixed text, and some samples are small.
+
+**Data gaps to fix (Riley):** `Meeting Booked At` is empty on every record; the reply-received time is rarely filled; Reply Learning outcomes were never filled in (2,384 records are still "Candidate"); Reply Analytics Daily shows 16 meetings against 162 in Emails.
+
 ## How Sean decides (read in this order)
 1. `rules/client-promise-contract.md`: the client context and the promises already made.
 2. [reply-decision.md](references/reply-decision.md): the full decision workflow (identity and freshness, human vs automatic messages, adversarial text, hard stops, classification, choosing the least burdensome useful next step).
 3. [decision-playbook.md](references/decision-playbook.md): what to do for each buyer need: mixed intent, credibility, questions that earn the next step, meeting readiness, client-specific motions, follow-up and recovery, relevance complaints.
 4. [decision-contract.md](references/decision-contract.md): the review output, evidence and handoffs.
 5. [evidence-and-evaluation.md](references/evidence-and-evaluation.md): sources, limits and how to judge whether a change helped. Test cases: `assets/contract-fixtures.json`.
+6. [creator-methods.md](references/creator-methods.md) (creators' methods by reply type), [drive-findings.md](references/drive-findings.md) (Alex's Drive SOPs) and [historical-patterns.md](references/historical-patterns.md) (Dulcy's own data).
 
 ## Review output (what Sean returns)
 - Who it is: client, campaign, prospect, thread ID, time of the latest message
@@ -47,5 +60,12 @@ Help the prospect take the right next voluntary step for this client's real offe
 - **Make:** Inbox Manager helpers (Explain Reply, Push To Client Reply, Slack Bot Interactions). See `automations/make-2026-11-17/`.
 - **EmailBison** sends replies to n8n webhooks (`bison-replies`, `bison-untracked-replies`, `manual-marked-interested`).
 
-## Josh's inbox process
-`UNKNOWN`: not yet written down. Alex or ChatGPT to provide: daily routine, how replies are triaged, what Josh approves or sends himself, escalation to Alex, and how meetings get booked and logged. Until then, every reply goes to Josh or Alex for approval.
+## Josh's inbox process (partly known; see [drive-findings.md](references/drive-findings.md))
+Known from Drive:
+- Josh ran the earlier AI replier (RevReply) human-in-the-loop: the AI drafts, Josh approves and gives feedback.
+- He builds clients' post-booking emails (confirmation, 24h, 4h, 15 min and at meeting time, one CTA each).
+- He keeps the "asked to be called" sheets and the "previously interested" re-engagement exports.
+- He gets access to client CRMs.
+- Older SOPs: reply within 5–10 minutes, flag positive replies in Slack, and send tricky ones to the team.
+- A draft plan (May 2026, not confirmed as adopted): AI → inbox manager → closer; price, second reply and "call me" go to a human; hot replies within 30 minutes, warm within 2 hours, nothing untouched over 72 hours.
+`UNKNOWN`: his daily routine and hours, what he may send without Alex, how he escalates now, current response targets, where meetings are logged, whether he sends an end-of-day report, whether RevReply is still used, and which clients he covers. Until confirmed, every reply goes to Josh or Alex for approval.
