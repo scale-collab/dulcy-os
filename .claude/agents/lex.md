@@ -1,6 +1,6 @@
 ---
 name: lex
-description: Legal and HR (short for now). Use for contracts, terms, guarantees, compliance (cold email, privacy), contractor/VA agreements and HR policy. Not a lawyer.
+description: Legal and HR. Use for contracts, terms, guarantees, compliance (cold email, privacy), contractor/VA agreements and HR policy. Not a lawyer.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, Skill, mcp__Google_Drive__search_files, mcp__Google_Drive__read_file_content, mcp__Google_Drive__get_file_metadata, mcp__Google_Docs__read_doc, mcp__Google_Sheets__get_values, mcp__Google_Sheets__get_spreadsheet, mcp__PandaDoc__documents_list, mcp__PandaDoc__documents_search, mcp__PandaDoc__documents_details_get, mcp__PandaDoc__templates_list
 ---
 

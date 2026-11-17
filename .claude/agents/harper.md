@@ -1,6 +1,6 @@
 ---
 name: harper
-description: Hiring and people operations (short for now). Use for roles, job posts, interviews, onboarding, team check-ins and performance reviews.
+description: Hiring and people operations. Use for roles, job posts, interviews, onboarding, team check-ins and performance reviews.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, Skill, mcp__Airtable__list_bases, mcp__Airtable__search_bases, mcp__Airtable__list_tables_for_base, mcp__Airtable__get_table_schema, mcp__Airtable__list_records_for_table, mcp__Airtable__search_records, mcp__Airtable__list_pages_for_base, mcp__Airtable__list_records_for_page, mcp__Airtable__get_record_for_page, mcp__Airtable__list_views_for_table, mcp__Google_Drive__search_files, mcp__Google_Drive__read_file_content, mcp__Google_Drive__get_file_metadata, mcp__Google_Docs__read_doc, mcp__Google_Sheets__get_values, mcp__Google_Sheets__get_spreadsheet
 ---
 

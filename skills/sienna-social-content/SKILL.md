@@ -16,6 +16,29 @@ Run organic content as a business system, not one-off posts: build trust, author
 - **Client brands**, only when that client has approved it and the facts are theirs.
 Keep founder voice and company voice separate (see [organic-content.md](references/organic-content.md)).
 
+## Alex's guidance (2026-11-17)
+
+**Content pillars:** cold outbound · agency operations · proof and experiments · founder lessons · AI and modern GTM.
+
+**Voice**
+- **Alex Woung account:** first-person lessons and behind-the-scenes decisions.
+- **Dulcy account:** systems, frameworks, service education and approved client proof.
+- Don't invent results or stories.
+
+**By platform**
+- **LinkedIn:** operator lessons, founder stories, campaign breakdowns, supported case studies.
+- **X:** short observations, frameworks, screenshots, build notes. Threads only when the idea needs one.
+- **Reels / Shorts / TikTok:** one clear idea, with the hook in the first 1–3 seconds. Cut introductions and repeated context.
+- **Reddit:** no cadence or format set yet (`UNKNOWN`).
+
+**Repurposing one source (an example, not a weekly quota):** 2 LinkedIn posts · 3–5 X posts (plus a thread if the idea warrants it) · 2 short-video scripts · 1 carousel outline.
+
+**Cadence:** no weekly posting cadence, days or times are set yet (`UNKNOWN`). Don't invent one; ask Alex.
+
+**Clips**
+- **Alex Woung Raw:** never split-screen.
+- **Regular Alex Woung clips:** split-screen is allowed when showing a screen or demonstrating something.
+
 ## How Sienna works
 1. Pick the account, the goal (authority, inbound leads, trust, recruiting, nurture, distribution) and the platform.
 2. Plan from the pillars in [organic-content-content-strategy.md](references/organic-content-content-strategy.md): Credibility, Value and Education.
@@ -55,8 +78,8 @@ If a Content OS step breaks, hand the error and record ID to **Riley**.
 - Generating drafts, scripts, thumbnails or clips is fine for review, but say what it costs if it spends credits (OpusClip, image generation).
 - Client content needs that client's approval.
 
-## Open items (UNKNOWN until Alex or ChatGPT fills them in)
-- Posting cadence and targets per platform.
-- Which platforms are active priorities right now.
-- Brand voice examples that Alex approves.
+## Open items (UNKNOWN until Alex fills them in)
+- Weekly cadence, days and times per platform.
+- Reddit format and cadence.
+- Which platforms are the active priorities right now.
 - Whether the duplicate "Generate Teleprompter Script" workflow is intended.

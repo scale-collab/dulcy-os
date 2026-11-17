@@ -1,6 +1,6 @@
 ---
 name: pixel
-description: Paid ads (short for now). Use for ad strategy, audiences, creative angles, budgets, tracking and ad performance.
+description: Paid ads. Use for ad strategy, audiences, creative angles, budgets, tracking and ad performance.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, Skill, mcp__Google_Drive__search_files, mcp__Google_Drive__read_file_content, mcp__Google_Drive__get_file_metadata, mcp__Google_Docs__read_doc, mcp__Google_Sheets__get_values, mcp__Google_Sheets__get_spreadsheet
 ---
 

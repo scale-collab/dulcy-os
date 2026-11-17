@@ -27,10 +27,10 @@ If Alex says something new in chat, the newest instruction wins, and you log it 
   - Sean: reply handling, from cold reply to booked meeting; owns the AI replier (Reply Agent) and Josh's inbox process
   - Cole: sales and closing (Closers.io method)
   - Sienna: social media and content (a full agent; includes Content OS)
-  - Pixel: paid ads (short for now)
-  - Lex: legal and HR (short for now)
-  - Ledger: business finance (short for now)
-  - Harper: hiring and people operations (short for now)
+  - Pixel: paid ads
+  - Lex: legal and HR
+  - Ledger: business finance
+  - Harper: hiring and people operations
   - Red Dog (trading) is personal and stays OUT of this repo.
   - Skill files live in `skills/`; sub-agents in `.claude/agents/` (read-only: they look and draft, and Ada makes approved changes). Where knowledge is thin it is marked UNKNOWN.
 

@@ -28,10 +28,10 @@ In Claude Code, the main session plays Ada and sends work to the specialist sub-
 | **Cole** | Sales calls and closing (Closers.io) | `skills/cole-sales-closing` |
 | **Riley** | Fixes systems: n8n, Make, Airtable automations/scripts, webhooks, errors. Not campaign work | `skills/riley-systems-repair` |
 | **Sienna** | Social media and content, including Content OS | `skills/sienna-social-content` |
-| **Pixel** | Paid ads (short) | `skills/pixel-paid-ads` |
-| **Lex** | Legal and HR (short) | `skills/lex-legal-hr` |
-| **Ledger** | Business finance (short) | `skills/ledger-finance` |
-| **Harper** | Hiring and people operations (short) | `skills/harper-hiring-people` |
+| **Pixel** | Paid ads | `skills/pixel-paid-ads` |
+| **Lex** | Legal and HR | `skills/lex-legal-hr` |
+| **Ledger** | Business finance | `skills/ledger-finance` |
+| **Harper** | Hiring and people operations | `skills/harper-hiring-people` |
 
 Each has a Claude Code sub-agent in `.claude/agents/<name>.md`.
 

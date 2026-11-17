@@ -1,6 +1,6 @@
 ---
 name: ledger
-description: Business finance (short for now). Use for revenue, invoices, costs, cash, client LTV and financial reports from Xero and Airtable.
+description: Business finance. Use for revenue, invoices, costs, cash, client LTV and financial reports from Xero and Airtable.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, Skill, mcp__Airtable__list_bases, mcp__Airtable__search_bases, mcp__Airtable__list_tables_for_base, mcp__Airtable__get_table_schema, mcp__Airtable__list_records_for_table, mcp__Airtable__search_records, mcp__Airtable__list_pages_for_base, mcp__Airtable__list_records_for_page, mcp__Airtable__get_record_for_page, mcp__Airtable__list_views_for_table, mcp__Xero__get_invoices, mcp__Xero__get_profit_and_loss, mcp__Xero__get_cash_position, mcp__Xero__get_contacts, mcp__Xero__get_aged_receivables, mcp__Xero__get_top_customers_by_revenue, mcp__Xero__get_organisation_info
 ---
 
