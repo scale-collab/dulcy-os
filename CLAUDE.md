@@ -16,7 +16,21 @@ If Alex says something new in chat, the newest instruction wins, and you log it 
 ## Roles
 - **Claude = orchestrator** for campaign building, automation and code. Use sub-agents when a task needs them.
 - **ChatGPT = admin**: email drafting/sending support, reporting, personal tasks. It holds history that has not yet been moved here.
-- Specialist skills live in `skills/`: Atlas (strategy/offers/client health), Scout (ICP and lead lists), Scribe (copy and replies), Airtable (managed stages and operations), Jarvis (routing and business support). Old role names are retired.
+- **Agent roster (set by Alex 2026-11-17).** Ada routes all work to one owner:
+  - Ada: orchestrator and router (was Jarvis)
+  - Riley: operations and automation (Airtable stages, n8n, Make; was the "Airtable" skill)
+  - Atlas: campaign strategy and client success
+  - Scout: lead lists and targeting
+  - Scribe: copy and replies
+  - Cole: sales and closing (Closers.io method)
+  - Forge: offers
+  - Sienna: social media and content
+  - Pixel: paid ads
+  - Lex: legal and HR
+  - Ledger: business finance
+  - Harper: hiring and people operations
+  - Red Dog: trading search (personal; see decisions log)
+  - Skill files live in `skills/`. Agents not built yet are marked UNKNOWN until built.
 
 ## Stack
 Airtable (operating system: Campaign Center, Lead List Center, projects, CRM) · EmailBison (sending) · DiscoLike, LeadMagic, MillionVerifier, Clay (lists and verification) · EmailGuard (spam/placement) · Slack · Google Drive/Sheets · n8n/Make · Close · Apollo · Calendly · Xero.

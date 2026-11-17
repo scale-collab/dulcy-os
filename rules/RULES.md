@@ -33,6 +33,8 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-17] Respect unsubscribes and stop requests. Never override suppression. (Reply Agent SOP)
 
 ## How to work with Alex
+- [2026-11-17] Agent roster is: Ada (router), Riley (ops/automation), Atlas, Scout, Scribe, Cole (sales), Forge (offers), Sienna (social/content), Pixel (paid ads), Lex (legal/HR), Ledger (finance), Harper (hiring/people), Red Dog (trading). Jarvis is renamed Ada; the "Airtable" skill becomes Riley. (Alex)
+- [2026-11-17] Build agents one at a time; Alex approves each before the next. (Alex)
 - [2026-11-17] Keep answers simple: direct result first, exact numbers, short done/left lists. (Alex)
 - [2026-11-17] Work in small committed steps. A previous Codex run spent heavily for 14 days without finishing; do not repeat that. (Alex)
 - [2026-11-17] ChatGPT handles admin, reporting, personal tasks and email support. Claude handles campaign building, automation and code. (Alex)
