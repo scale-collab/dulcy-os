@@ -1,0 +1,338 @@
+{
+ "id": 4505742,
+ "name": "[1.2 PRECALL] Remap Reminders Disqual",
+ "teamId": 629049,
+ "hookId": 2579932,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 162901,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": true,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "gateway",
+  "close-crm",
+  "builtin",
+  "close-crm"
+ ],
+ "lastEdit": "2026-01-15T17:51:38.826Z",
+ "scheduling": {
+  "type": "immediately",
+  "maximum_runs_per_minute": null
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2026-01-15T17:51:05.833Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": true,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 1,
+    "mapper": {},
+    "module": "gateway:CustomWebHook",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "hook": {
+        "data": {
+         "editable": "true"
+        },
+        "label": "disqual remap"
+       }
+      }
+     },
+     "designer": {
+      "x": 15,
+      "y": 2
+     },
+     "parameters": [
+      {
+       "name": "hook",
+       "type": "hook:gateway-webhook",
+       "label": "Webhook",
+       "required": true
+      },
+      {
+       "name": "maxResults",
+       "type": "number",
+       "label": "Maximum number of results"
+      }
+     ]
+    },
+    "parameters": {
+     "hook": 2579932,
+     "maxResults": 1
+    }
+   },
+   {
+    "id": 3,
+    "mapper": {
+     "qs": [
+      {
+       "key": "lead_id",
+       "value": "{{1.leadId}}"
+      }
+     ],
+     "url": "api/v1/activity/",
+     "method": "GET",
+     "headers": [
+      {
+       "key": "Accept",
+       "value": "application/json"
+      }
+     ]
+    },
+    "module": "close-crm:UniversallMakeAnAPICall",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "url",
+       "type": "text",
+       "label": "URL",
+       "required": true
+      },
+      {
+       "name": "method",
+       "type": "select",
+       "label": "Method",
+       "required": true,
+       "validate": {
+        "enum": [
+         "GET",
+         "POST",
+         "PUT",
+         "PATCH",
+         "DELETE"
+        ]
+       }
+      },
+      {
+       "name": "headers",
+       "spec": [
+        {
+         "name": "key",
+         "type": "text",
+         "label": "Key"
+        },
+        {
+         "name": "value",
+         "type": "text",
+         "label": "Value"
+        }
+       ],
+       "type": "array",
+       "label": "Headers"
+      },
+      {
+       "name": "qs",
+       "spec": [
+        {
+         "name": "key",
+         "type": "text",
+         "label": "Key"
+        },
+        {
+         "name": "value",
+         "type": "text",
+         "label": "Value"
+        }
+       ],
+       "type": "array",
+       "label": "Query String"
+      },
+      {
+       "name": "body",
+       "type": "any",
+       "label": "Body"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "qs": {
+        "mode": "chose",
+        "items": [
+         null
+        ]
+       },
+       "method": {
+        "mode": "chose",
+        "label": "GET"
+       },
+       "headers": {
+        "mode": "chose",
+        "items": [
+         null
+        ]
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "close-crm"
+        },
+        "label": "My Close CRM connection (alexander@dulcymedia.com)"
+       }
+      }
+     },
+     "designer": {
+      "x": 300,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:close-crm",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 2737753
+    }
+   },
+   {
+    "id": 4,
+    "mapper": {
+     "array": "{{3.body.data}}"
+    },
+    "module": "builtin:BasicFeeder",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "mode": "edit",
+       "name": "array",
+       "spec": [],
+       "type": "array",
+       "label": "Array"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "array": {
+        "mode": "edit"
+       }
+      }
+     },
+     "designer": {
+      "x": 600,
+      "y": 0
+     }
+    },
+    "parameters": {}
+   },
+   {
+    "id": 5,
+    "filter": {
+     "name": "Only Reminders",
+     "conditions": [
+      [
+       {
+        "a": "{{4.status}}",
+        "b": "scheduled",
+        "o": "text:equal"
+       },
+       {
+        "a": "{{4._type}}",
+        "b": "Email",
+        "o": "text:equal"
+       }
+      ]
+     ]
+    },
+    "mapper": {
+     "id": "{{4.id}}"
+    },
+    "module": "close-crm:ActionRemoveEmail",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "mode": "edit",
+       "name": "id",
+       "type": "select",
+       "label": "Email Activity ID",
+       "required": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "id": {
+        "mode": "edit"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "close-crm"
+        },
+        "label": "My Close CRM connection (alexander@dulcymedia.com)"
+       }
+      }
+     },
+     "designer": {
+      "x": 900,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:close-crm",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 2737753
+    }
+   }
+  ],
+  "name": "[1.2 PRECALL] Remap Reminders Disqual",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": []
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately",
+   "maximum_runs_per_minute": null
+  }
+ }
+}

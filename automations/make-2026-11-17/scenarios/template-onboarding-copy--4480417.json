@@ -1,0 +1,1182 @@
+{
+ "id": 4480417,
+ "name": "[TEMPLATE] Onboarding (copy)",
+ "teamId": 629049,
+ "hookId": 2564150,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 162901,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": false,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "gateway",
+  "close-crm",
+  "slack",
+  "close-crm",
+  "close-crm",
+  "util",
+  "slack",
+  "slack",
+  "http"
+ ],
+ "lastEdit": "2025-12-29T23:55:58.220Z",
+ "scheduling": {
+  "type": "immediately",
+  "maximum_runs_per_minute": null
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2025-12-29T23:54:15.113Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": true,
+ "isActive": false,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 1,
+    "mapper": {},
+    "module": "gateway:CustomWebHook",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "hook": {
+        "data": {
+         "editable": "true"
+        },
+        "label": "Onboarding"
+       }
+      }
+     },
+     "designer": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "hook",
+       "type": "hook:gateway-webhook",
+       "label": "Webhook",
+       "required": true
+      },
+      {
+       "name": "maxResults",
+       "type": "number",
+       "label": "Maximum number of results"
+      }
+     ]
+    },
+    "parameters": {
+     "hook": 2564150,
+     "maxResults": 1
+    }
+   },
+   {
+    "id": 3,
+    "mapper": {
+     "id": "{{1.leadId}}"
+    },
+    "module": "close-crm:getALead",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "mode": "edit",
+       "name": "id",
+       "type": "select",
+       "label": "Lead ID",
+       "required": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "id": {
+        "mode": "edit"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "close-crm"
+        },
+        "label": "My Close CRM connection (alexander@dulcymedia.com)"
+       }
+      }
+     },
+     "designer": {
+      "x": 300,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:close-crm",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 2737753
+    }
+   },
+   {
+    "id": 2,
+    "mapper": {
+     "text": "Contract has been signed!\n\n{{3.`custom.cf_pdFQlR5IaMeYvZamaxZ20JEoUlkY6Oc5YV7aNo8F7Qe`}}",
+     "parse": false,
+     "mrkdwn": true,
+     "channel": "C075UR0HRRR",
+     "channelType": "private",
+     "channelWType": "list"
+    },
+    "module": "slack:CreateMessage",
+    "version": 4,
+    "metadata": {
+     "expect": [
+      {
+       "name": "channelWType",
+       "type": "select",
+       "label": "Enter a channel ID or name",
+       "required": true,
+       "validate": {
+        "enum": [
+         "manualy",
+         "list"
+        ]
+       }
+      },
+      {
+       "name": "text",
+       "type": "text",
+       "label": "Text"
+      },
+      {
+       "name": "blocks",
+       "type": "text",
+       "label": "Blocks"
+      },
+      {
+       "name": "thread_ts",
+       "type": "text",
+       "label": "Thread message ID (time stamp)"
+      },
+      {
+       "name": "reply_broadcast",
+       "type": "boolean",
+       "label": "Reply broadcast"
+      },
+      {
+       "name": "link_names",
+       "type": "boolean",
+       "label": "Link names"
+      },
+      {
+       "name": "parse",
+       "type": "boolean",
+       "label": "Parse message text"
+      },
+      {
+       "name": "mrkdwn",
+       "type": "boolean",
+       "label": "Use markdown"
+      },
+      {
+       "name": "unfurl_links",
+       "type": "boolean",
+       "label": "Unfurl primarily text-based content"
+      },
+      {
+       "name": "unfurl_media",
+       "type": "boolean",
+       "label": "Unfurl media content"
+      },
+      {
+       "name": "icon_emoji",
+       "type": "text",
+       "label": "Icon emoji"
+      },
+      {
+       "name": "icon_url",
+       "type": "url",
+       "label": "Icon url"
+      },
+      {
+       "name": "username",
+       "type": "text",
+       "label": "User name"
+      },
+      {
+       "name": "channelType",
+       "type": "select",
+       "label": "Channel type",
+       "required": true,
+       "validate": {
+        "enum": [
+         "public",
+         "private",
+         "im",
+         "mpim"
+        ]
+       }
+      },
+      {
+       "name": "channel",
+       "type": "select",
+       "label": "Private channel",
+       "required": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "parse": {
+        "mode": "chose"
+       },
+       "mrkdwn": {
+        "mode": "chose"
+       },
+       "channel": {
+        "mode": "chose",
+        "label": "contract-events"
+       },
+       "link_names": {
+        "mode": "chose"
+       },
+       "channelType": {
+        "label": "Private channel"
+       },
+       "channelWType": {
+        "label": "Select from the list"
+       },
+       "unfurl_links": {
+        "mode": "chose"
+       },
+       "unfurl_media": {
+        "mode": "chose"
+       },
+       "reply_broadcast": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "slack3"
+        },
+        "label": "My Slack (bot) connectionfix (make)"
+       }
+      }
+     },
+     "designer": {
+      "x": 600,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:slack2,slack3",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3736690
+    }
+   },
+   {
+    "id": 4,
+    "mapper": {
+     "id": "{{3.opportunities[].id}}",
+     "custom": {},
+     "status_id": "stat_cFdp6htupPIEqsCi5iZgvaeHJnXYRwGG2AQcXWjIfNV"
+    },
+    "module": "close-crm:ActionUpdateOpportunity",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "mode": "edit",
+       "name": "id",
+       "type": "select",
+       "label": "Opportunity ID",
+       "required": true
+      },
+      {
+       "mode": "edit",
+       "name": "status_id",
+       "type": "select",
+       "label": "Status ID"
+      },
+      {
+       "name": "confidence",
+       "type": "uinteger",
+       "label": "Confidence",
+       "validate": {
+        "max": 100,
+        "min": 0
+       }
+      },
+      {
+       "name": "value",
+       "type": "number",
+       "label": "Value"
+      },
+      {
+       "name": "value_period",
+       "type": "select",
+       "label": "Value Period",
+       "validate": {
+        "enum": [
+         "one_time",
+         "monthly",
+         "annual"
+        ]
+       }
+      },
+      {
+       "name": "note",
+       "type": "text",
+       "label": "Note"
+      },
+      {
+       "name": "date_won",
+       "type": "date",
+       "label": "Date Won"
+      },
+      {
+       "name": "custom",
+       "spec": [
+        {
+         "name": "cf_Gsgkvnm2wl7GBDk5Vly2J2lcgOeVru47eyZtunLqrUR",
+         "type": "select",
+         "label": "Product (Example)",
+         "multiple": true
+        },
+        {
+         "name": "cf_sH9bICoOdDXKYClp8t5cxlchbVA0hW61eC2Vi2hTSY8",
+         "time": false,
+         "type": "date",
+         "label": "Renewal Date (Example)"
+        },
+        {
+         "name": "cf_Sktk4MsFVeVffnXB3JLCPxjnbnur3Uqkb3y3HROk0eA",
+         "type": "text",
+         "label": "Contract Link (Example)"
+        },
+        {
+         "name": "cf_hgkn1mBBOgFeu85ooukCzeudZkf1M9nRf4LsSulQHCs",
+         "type": "text",
+         "label": "Tracking ID (Example)"
+        }
+       ],
+       "type": "collection",
+       "label": "Custom Fields"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "id": {
+        "mode": "edit"
+       },
+       "custom": {
+        "nested": {
+         "cf_Gsgkvnm2wl7GBDk5Vly2J2lcgOeVru47eyZtunLqrUR": {
+          "mode": "chose"
+         }
+        }
+       },
+       "status_id": {
+        "mode": "chose",
+        "label": "Won"
+       },
+       "value_period": {
+        "mode": "chose",
+        "label": "Empty"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "close-crm"
+        },
+        "label": "My Close CRM connection (alexander@dulcymedia.com)"
+       }
+      }
+     },
+     "designer": {
+      "x": 900,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:close-crm",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 2737753
+    }
+   },
+   {
+    "id": 6,
+    "mapper": {
+     "to": [
+      "{{3.contacts[].emails[].email}}"
+     ],
+     "sender": "scale@dulcy.io",
+     "status": "outbox",
+     "lead_id": "{{3.id}}",
+     "template": "Yes",
+     "contact_id": "{{3.contacts[].id}}",
+     "template_id": "tmpl_dxPbAzOjV9nTKAvDfp47PTRRQhIjs6Ysou8xVS82yWl"
+    },
+    "module": "close-crm:ActionCreateEmail",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "lead_id",
+       "type": "select",
+       "label": "Lead ID",
+       "required": true
+      },
+      {
+       "name": "status",
+       "type": "select",
+       "label": "Status",
+       "required": true,
+       "validate": {
+        "enum": [
+         "inbox",
+         "draft",
+         "scheduled",
+         "outbox",
+         "sent"
+        ]
+       }
+      },
+      {
+       "name": "contact_id",
+       "type": "select",
+       "label": "Contact ID"
+      },
+      {
+       "name": "user_id",
+       "type": "select",
+       "label": "User ID"
+      },
+      {
+       "name": "direction",
+       "type": "select",
+       "label": "Direction",
+       "validate": {
+        "enum": [
+         "incoming",
+         "outgoing"
+        ]
+       }
+      },
+      {
+       "name": "date_created",
+       "type": "date",
+       "label": "Date Created"
+      },
+      {
+       "name": "created_by",
+       "type": "select",
+       "label": "Created by"
+      },
+      {
+       "name": "created_by_name",
+       "type": "text",
+       "label": "Created by Name"
+      },
+      {
+       "name": "subject",
+       "type": "text",
+       "label": "Subject"
+      },
+      {
+       "name": "sender",
+       "type": "email",
+       "label": "Sender's Email"
+      },
+      {
+       "name": "to",
+       "spec": {
+        "name": "value",
+        "type": "email",
+        "label": "Email",
+        "required": true
+       },
+       "type": "array",
+       "label": "To"
+      },
+      {
+       "name": "cc",
+       "spec": {
+        "name": "value",
+        "type": "email",
+        "label": "Email",
+        "required": true
+       },
+       "type": "array",
+       "label": "CC"
+      },
+      {
+       "name": "bcc",
+       "spec": {
+        "name": "value",
+        "type": "email",
+        "label": "Email",
+        "required": true
+       },
+       "type": "array",
+       "label": "BCC"
+      },
+      {
+       "name": "template",
+       "type": "select",
+       "label": "Use Email Template",
+       "validate": {
+        "enum": [
+         "Yes",
+         "No"
+        ]
+       }
+      },
+      {
+       "name": "attachments",
+       "spec": {
+        "name": "value",
+        "spec": [
+         {
+          "name": "url",
+          "type": "url",
+          "label": "URL",
+          "required": true
+         },
+         {
+          "name": "filename",
+          "type": "filename",
+          "label": "Filename",
+          "required": true
+         },
+         {
+          "name": "size",
+          "type": "number",
+          "label": "Size",
+          "required": true
+         },
+         {
+          "name": "content_type",
+          "type": "text",
+          "label": "Content Type"
+         }
+        ],
+        "type": "collection"
+       },
+       "type": "array",
+       "label": "Attachments"
+      },
+      {
+       "name": "followup_date",
+       "type": "date",
+       "label": "Follow-Up Date"
+      },
+      {
+       "name": "template_id",
+       "type": "select",
+       "label": "Template ID"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "cc": {
+        "mode": "chose"
+       },
+       "to": {
+        "mode": "chose",
+        "items": [
+         null
+        ]
+       },
+       "bcc": {
+        "mode": "chose"
+       },
+       "status": {
+        "mode": "chose",
+        "label": "Outbox"
+       },
+       "lead_id": {
+        "mode": "edit"
+       },
+       "user_id": {
+        "mode": "chose"
+       },
+       "template": {
+        "mode": "chose",
+        "label": "Yes"
+       },
+       "direction": {
+        "mode": "chose",
+        "label": "Empty"
+       },
+       "contact_id": {
+        "mode": "edit"
+       },
+       "created_by": {
+        "mode": "chose"
+       },
+       "attachments": {
+        "mode": "chose"
+       },
+       "template_id": {
+        "mode": "chose",
+        "label": "Payment Collected -> Onboarding"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "close-crm"
+        },
+        "label": "My Close CRM connection (alexander@dulcymedia.com)"
+       }
+      }
+     },
+     "designer": {
+      "x": 1200,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:close-crm",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 2737753
+    }
+   },
+   {
+    "id": 15,
+    "mapper": {
+     "scope": "roundtrip",
+     "variables": [
+      {
+       "name": "company name",
+       "value": "{{lower(first(split(1.company; space)))}}"
+      }
+     ]
+    },
+    "module": "util:SetVariables",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "variables",
+       "spec": [
+        {
+         "name": "name",
+         "type": "text",
+         "label": "Variable name",
+         "required": true
+        },
+        {
+         "name": "value",
+         "type": "any",
+         "label": "Variable value"
+        }
+       ],
+       "type": "array",
+       "label": "Variables"
+      },
+      {
+       "name": "scope",
+       "type": "select",
+       "label": "Variable lifetime",
+       "required": true,
+       "validate": {
+        "enum": [
+         "roundtrip",
+         "execution"
+        ]
+       }
+      }
+     ],
+     "restore": {
+      "expect": {
+       "scope": {
+        "label": "One cycle"
+       },
+       "variables": {
+        "items": [
+         null
+        ]
+       }
+      }
+     },
+     "designer": {
+      "x": 1500,
+      "y": 0
+     }
+    },
+    "parameters": {}
+   },
+   {
+    "id": 8,
+    "mapper": {
+     "name": "{{15.`company name`}}-ur company goes here",
+     "is_private": true
+    },
+    "module": "slack:CreateChannel",
+    "version": 4,
+    "metadata": {
+     "expect": [
+      {
+       "name": "name",
+       "type": "text",
+       "label": "Name",
+       "required": true
+      },
+      {
+       "name": "is_private",
+       "type": "boolean",
+       "label": "Is private",
+       "required": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "is_private": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "slack2"
+        },
+        "label": "My Slack (user) connection (alexander)"
+       }
+      }
+     },
+     "designer": {
+      "x": 1800,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:slack2",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3738271
+    }
+   },
+   {
+    "id": 13,
+    "mapper": {
+     "type": "private",
+     "users": [
+      "U07MP1R6PAN",
+      "U0926SQ0MBL",
+      "U08T5HSD5HP",
+      "U09GZ7LP814",
+      "U08EEUDLT8V",
+      "U0830GGANA1",
+      "U09HYBK7M0A",
+      "U08J6H4P1CL",
+      "U096C7A9E1W"
+     ],
+     "channel": "{{8.id}}"
+    },
+    "module": "slack:InviteUsers",
+    "version": 4,
+    "metadata": {
+     "expect": [
+      {
+       "name": "type",
+       "type": "select",
+       "label": "Channel type",
+       "required": true,
+       "validate": {
+        "enum": [
+         "public",
+         "private"
+        ]
+       }
+      },
+      {
+       "name": "users",
+       "type": "select",
+       "label": "Users",
+       "multiple": true,
+       "required": true
+      },
+      {
+       "name": "channel",
+       "type": "select",
+       "label": "Private channel",
+       "required": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "type": {
+        "label": "Private channel"
+       },
+       "users": {
+        "mode": "chose",
+        "label": [
+         "demo_app",
+         "deniel",
+         "dulcy_assistant",
+         "jared",
+         "juan.carvajal",
+         "make",
+         "nikolaj",
+         "notion",
+         "sean"
+        ]
+       },
+       "channel": {
+        "mode": "edit"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "slack2"
+        },
+        "label": "My Slack (user) connection (alexander)"
+       }
+      }
+     },
+     "designer": {
+      "x": 2100,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:slack2",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3738271
+    }
+   },
+   {
+    "id": 12,
+    "mapper": {
+     "ca": "",
+     "qs": [],
+     "url": "https://slack.com/api/conversations.inviteShared",
+     "data": "{\n     \"channel\": \"{{8.id}}\",\n     \"emails\": [\"{{3.contacts[].emails[].email}}\"]\n}",
+     "gzip": true,
+     "method": "post",
+     "headers": [
+      {
+       "name": "Authorization",
+       "value": "REDACTED"
+      }
+     ],
+     "timeout": "",
+     "useMtls": false,
+     "authPass": "",
+     "authUser": "",
+     "bodyType": "raw",
+     "contentType": "application/json",
+     "serializeUrl": false,
+     "shareCookies": false,
+     "parseResponse": true,
+     "followRedirect": true,
+     "useQuerystring": false,
+     "followAllRedirects": false,
+     "rejectUnauthorized": true
+    },
+    "module": "http:ActionSendData",
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "url",
+       "type": "url",
+       "label": "URL",
+       "required": true
+      },
+      {
+       "name": "serializeUrl",
+       "type": "boolean",
+       "label": "Serialize URL",
+       "required": true
+      },
+      {
+       "name": "method",
+       "type": "select",
+       "label": "Method",
+       "required": true,
+       "validate": {
+        "enum": [
+         "get",
+         "head",
+         "post",
+         "put",
+         "patch",
+         "delete",
+         "options"
+        ]
+       }
+      },
+      {
+       "name": "headers",
+       "spec": [
+        {
+         "name": "name",
+         "type": "text",
+         "label": "Name",
+         "required": true
+        },
+        {
+         "name": "value",
+         "type": "text",
+         "label": "Value"
+        }
+       ],
+       "type": "array",
+       "label": "Headers"
+      },
+      {
+       "name": "qs",
+       "spec": [
+        {
+         "name": "name",
+         "type": "text",
+         "label": "Name",
+         "required": true
+        },
+        {
+         "name": "value",
+         "type": "text",
+         "label": "Value"
+        }
+       ],
+       "type": "array",
+       "label": "Query String"
+      },
+      {
+       "name": "bodyType",
+       "type": "select",
+       "label": "Body type",
+       "validate": {
+        "enum": [
+         "raw",
+         "x_www_form_urlencoded",
+         "multipart_form_data"
+        ]
+       }
+      },
+      {
+       "name": "parseResponse",
+       "type": "boolean",
+       "label": "Parse response",
+       "required": true
+      },
+      {
+       "name": "authUser",
+       "type": "text",
+       "label": "User name"
+      },
+      {
+       "name": "authPass",
+       "type": "password",
+       "label": "Password"
+      },
+      {
+       "name": "timeout",
+       "type": "uinteger",
+       "label": "Timeout",
+       "validate": {
+        "max": 300,
+        "min": 1
+       }
+      },
+      {
+       "name": "shareCookies",
+       "type": "boolean",
+       "label": "Share cookies with other HTTP modules",
+       "required": true
+      },
+      {
+       "name": "ca",
+       "type": "cert",
+       "label": "Self-signed certificate"
+      },
+      {
+       "name": "rejectUnauthorized",
+       "type": "boolean",
+       "label": "Reject connections that are using unverified (self-signed) certificates",
+       "required": true
+      },
+      {
+       "name": "followRedirect",
+       "type": "boolean",
+       "label": "Follow redirect",
+       "required": true
+      },
+      {
+       "name": "useQuerystring",
+       "type": "boolean",
+       "label": "Disable serialization of multiple same query string keys as arrays",
+       "required": true
+      },
+      {
+       "name": "gzip",
+       "type": "boolean",
+       "label": "Request compressed content",
+       "required": true
+      },
+      {
+       "name": "useMtls",
+       "type": "boolean",
+       "label": "Use Mutual TLS",
+       "required": true
+      },
+      {
+       "name": "contentType",
+       "type": "select",
+       "label": "Content type",
+       "validate": {
+        "enum": [
+         "text/plain",
+         "application/json",
+         "application/xml",
+         "text/xml",
+         "text/html",
+         "custom"
+        ]
+       }
+      },
+      {
+       "name": "data",
+       "type": "buffer",
+       "label": "Request content"
+      },
+      {
+       "name": "followAllRedirects",
+       "type": "boolean",
+       "label": "Follow all redirect",
+       "required": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "qs": {
+        "mode": "chose"
+       },
+       "method": {
+        "mode": "chose",
+        "label": "POST"
+       },
+       "headers": {
+        "mode": "chose",
+        "items": [
+         null
+        ]
+       },
+       "bodyType": {
+        "label": "Raw"
+       },
+       "contentType": {
+        "label": "JSON (application/json)"
+       }
+      }
+     },
+     "advanced": true,
+     "designer": {
+      "x": 2400,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "handleErrors",
+       "type": "boolean",
+       "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+       "required": true
+      },
+      {
+       "name": "useNewZLibDeCompress",
+       "type": "hidden"
+      }
+     ]
+    },
+    "parameters": {
+     "handleErrors": false,
+     "useNewZLibDeCompress": true
+    }
+   }
+  ],
+  "name": "[TEMPLATE] Onboarding (copy)",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": []
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately",
+   "maximum_runs_per_minute": null
+  }
+ }
+}

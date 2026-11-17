@@ -1,0 +1,477 @@
+{
+ "id": 4858056,
+ "name": "[Airtable] Sales Center Oppurunity Status Update",
+ "teamId": 629049,
+ "hookId": 2789064,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": null,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": true,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "close-crm",
+  "close-crm",
+  "airtable",
+  "builtin"
+ ],
+ "lastEdit": "2026-09-23T19:51:38.835Z",
+ "scheduling": {
+  "type": "immediately",
+  "maximum_runs_per_minute": 100
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2026-08-05T02:27:43.742Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": true,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 2,
+    "mapper": {},
+    "module": "close-crm:TriggerNewOpportunityStatus",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "__IMTHOOK__": {
+        "data": {
+         "editable": "false"
+        },
+        "label": "sales center opportunity watch"
+       }
+      }
+     },
+     "designer": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTHOOK__",
+       "type": "hook:close-crm6",
+       "label": "Webhook",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTHOOK__": 2789064
+    }
+   },
+   {
+    "id": 7,
+    "mapper": {
+     "id": "{{2.event.lead_id}}"
+    },
+    "module": "close-crm:getALead",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "mode": "edit",
+       "name": "id",
+       "type": "select",
+       "label": "Lead ID",
+       "required": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "id": {
+        "mode": "edit"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "close-crm"
+        },
+        "label": "My Close CRM connection (alexander@dulcymedia.com)"
+       }
+      }
+     },
+     "designer": {
+      "x": 300,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:close-crm",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 2737753
+    }
+   },
+   {
+    "id": 3,
+    "mapper": {
+     "id": "{{7.custom.AirtableID}}",
+     "base": "appxqINt5XKw7a76A",
+     "table": "tblmEyHVAXDRwPxN9",
+     "record": {
+      "fldaUIYb694AOnaaM": "{{2.event.data.status_label}}"
+     },
+     "typecast": false,
+     "useColumnId": false
+    },
+    "module": "airtable:ActionUpdateRecords",
+    "onerror": [
+     {
+      "id": 8,
+      "mapper": {},
+      "module": "builtin:Ignore",
+      "version": 1,
+      "metadata": {
+       "restore": {},
+       "designer": {
+        "x": 900,
+        "y": 0
+       },
+       "setupValidation": {
+        "result": {
+         "valid": true,
+         "fields": []
+        },
+        "version": 1,
+        "configuration": "68c643370640a510"
+       }
+      },
+      "parameters": {}
+     }
+    ],
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "base",
+       "type": "select",
+       "label": "Base",
+       "required": true
+      },
+      {
+       "name": "typecast",
+       "type": "boolean",
+       "label": "Smart links",
+       "required": true
+      },
+      {
+       "name": "useColumnId",
+       "type": "boolean",
+       "label": "Use Column ID",
+       "required": true
+      },
+      {
+       "name": "table",
+       "type": "select",
+       "label": "Table",
+       "required": true
+      },
+      {
+       "name": "id",
+       "type": "text",
+       "label": "Record ID",
+       "required": true
+      },
+      {
+       "name": "record",
+       "spec": [
+        {
+         "name": "fldUkwyW5NBQnic3s",
+         "type": "text",
+         "label": "Opportunity Name"
+        },
+        {
+         "name": "fldAfEIsLhUkEjFvx",
+         "type": "text",
+         "label": "Account/Company Name"
+        },
+        {
+         "name": "fldX3uxuihKYTh2iV",
+         "type": "text",
+         "label": "Contact Name"
+        },
+        {
+         "name": "fld4mAVHq3bWR2ZQx",
+         "type": "text",
+         "label": "Contact Email"
+        },
+        {
+         "mode": "edit",
+         "name": "fldsz376BaSqtZzOW",
+         "type": "select",
+         "label": "Lead Source"
+        },
+        {
+         "name": "fldR2fbyM26Z0nM4m",
+         "spec": {
+          "name": "value",
+          "label": "Record ID"
+         },
+         "type": "array",
+         "label": "Sales Rep (Lead Owner)"
+        },
+        {
+         "mode": "edit",
+         "name": "fldaUIYb694AOnaaM",
+         "type": "select",
+         "label": "Sales Pipeline Stage"
+        },
+        {
+         "name": "fld4ba7negAPQA8pk",
+         "time": false,
+         "type": "date",
+         "label": "Call Booked Date"
+        },
+        {
+         "name": "fld34mhdkOSbryqOh",
+         "time": false,
+         "type": "date",
+         "label": "Call Held Date"
+        },
+        {
+         "name": "fldcs4pSn2zyptDBj",
+         "time": false,
+         "type": "date",
+         "label": "Offer Made Date"
+        },
+        {
+         "name": "fldlGOBpFXOkiPpIn",
+         "time": false,
+         "type": "date",
+         "label": "Deal Closed Date"
+        },
+        {
+         "mode": "edit",
+         "name": "fld5BcpXy9bcwV35Y",
+         "type": "select",
+         "label": "Close Type"
+        },
+        {
+         "mode": "edit",
+         "name": "fldV40C4Fx3P7tYJV",
+         "type": "select",
+         "label": "Outcome"
+        },
+        {
+         "name": "fldEp5BBj3adebZ0o",
+         "type": "number",
+         "label": "Offer Amount (Revenue Closed)"
+        },
+        {
+         "name": "fld0lJJLN9jldjimv",
+         "type": "number",
+         "label": "Total Cash Collected"
+        },
+        {
+         "name": "fld8lShlrfclKslUo",
+         "type": "text",
+         "label": "Notes"
+        },
+        {
+         "name": "fldKp9ytQFcUZJ3Oz",
+         "type": "text",
+         "label": "Loss Reason (Detail)"
+        },
+        {
+         "name": "fldt0vKIvruOQZtCs",
+         "type": "number",
+         "label": "Days in Current Stage"
+        },
+        {
+         "name": "fldN8UWwnhZ7xnOGh",
+         "type": "number",
+         "label": "Days to Close"
+        },
+        {
+         "name": "fldFNO8AMhM4T08uj",
+         "time": false,
+         "type": "date",
+         "label": "Next Activity Date"
+        },
+        {
+         "name": "fld2g4s2NePf3juoS",
+         "spec": {
+          "name": "value",
+          "label": "Record ID"
+         },
+         "type": "array",
+         "label": "Campaign"
+        },
+        {
+         "name": "fldcO105C4UhKtM7v",
+         "spec": {
+          "name": "value",
+          "label": "Record ID"
+         },
+         "type": "array",
+         "label": "Emails"
+        },
+        {
+         "name": "fld9asGRTxYCYRrHn",
+         "type": "boolean",
+         "label": "Call Booked?"
+        },
+        {
+         "name": "fldgHPFpUj4g3o1Ma",
+         "type": "boolean",
+         "label": "Call Held?"
+        },
+        {
+         "name": "fldWNRewGth8CqxnK",
+         "type": "boolean",
+         "label": "Offer Made?"
+        },
+        {
+         "name": "fldsxeAkhHOUSa45z",
+         "type": "boolean",
+         "label": "Deal Closed?"
+        },
+        {
+         "name": "fldjhFeq0Xgvgh1Uy",
+         "type": "boolean",
+         "label": "Follow-Up Needed?"
+        },
+        {
+         "name": "fldTh5bYDyRW1il0j",
+         "type": "number",
+         "label": "Opportunity Value (Forecast)"
+        }
+       ],
+       "type": "collection",
+       "label": "Record"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "base": {
+        "label": "Alex"
+       },
+       "table": {
+        "label": "Sales Data"
+       },
+       "record": {
+        "nested": {
+         "fld2g4s2NePf3juoS": {
+          "mode": "chose"
+         },
+         "fld5BcpXy9bcwV35Y": {
+          "mode": "edit"
+         },
+         "fld9asGRTxYCYRrHn": {
+          "mode": "chose"
+         },
+         "fldR2fbyM26Z0nM4m": {
+          "mode": "chose"
+         },
+         "fldV40C4Fx3P7tYJV": {
+          "mode": "edit"
+         },
+         "fldWNRewGth8CqxnK": {
+          "mode": "chose"
+         },
+         "fldaUIYb694AOnaaM": {
+          "mode": "edit"
+         },
+         "fldcO105C4UhKtM7v": {
+          "mode": "chose"
+         },
+         "fldgHPFpUj4g3o1Ma": {
+          "mode": "chose"
+         },
+         "fldjhFeq0Xgvgh1Uy": {
+          "mode": "chose"
+         },
+         "fldsxeAkhHOUSa45z": {
+          "mode": "chose"
+         },
+         "fldsz376BaSqtZzOW": {
+          "mode": "chose",
+          "label": "Empty"
+         }
+        }
+       },
+       "typecast": {
+        "mode": "chose"
+       },
+       "useColumnId": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "airtable3"
+        },
+        "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+       }
+      }
+     },
+     "designer": {
+      "x": 600,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:airtable3,airtable2",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3589602
+    }
+   }
+  ],
+  "name": "[Airtable] Sales Center Oppurunity Status Update",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": []
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately",
+   "maximum_runs_per_minute": 100
+  }
+ }
+}

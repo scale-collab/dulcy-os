@@ -1,0 +1,1899 @@
+{
+ "id": 4376982,
+ "name": "Fathom Recording to Close (Sales Rep)",
+ "teamId": 629049,
+ "hookId": 2806291,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 162901,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": true,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "fathom",
+  "google-calendar",
+  "util",
+  "builtin",
+  "builtin",
+  "util",
+  "http",
+  "close-crm",
+  "close-crm",
+  "airtable",
+  "regexp",
+  "util",
+  "http",
+  "close-crm",
+  "close-crm",
+  "airtable"
+ ],
+ "lastEdit": "2026-08-26T14:28:29.511Z",
+ "scheduling": {
+  "type": "immediately",
+  "maximum_runs_per_minute": 100
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Scaling Studio"
+ },
+ "updatedByUser": {
+  "name": "Dylan"
+ },
+ "nextExec": null,
+ "created": "2025-10-30T09:42:46.391Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": true,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 1,
+    "mapper": {},
+    "module": "fathom:getwebhook",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "__IMTHOOK__": {
+        "data": {
+         "editable": "false"
+        },
+        "label": "Dylan Covello"
+       }
+      }
+     },
+     "designer": {
+      "x": 0,
+      "y": 150
+     },
+     "parameters": [
+      {
+       "name": "__IMTHOOK__",
+       "type": "hook:fathom",
+       "label": "Webhook",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTHOOK__": 2806291
+    }
+   },
+   {
+    "id": 8,
+    "mapper": {
+     "q": "{{1.meeting_title}}",
+     "limit": "1",
+     "timeMax": "{{1.scheduled_end_time}}",
+     "timeMin": "{{1.scheduled_start_time}}",
+     "calendar": "scale@dulcy.io",
+     "singleEvents": false
+    },
+    "module": "google-calendar:searchEvents",
+    "version": 5,
+    "metadata": {
+     "expect": [
+      {
+       "name": "calendar",
+       "type": "select",
+       "label": "Calendar ID",
+       "required": true
+      },
+      {
+       "name": "timeMin",
+       "time": true,
+       "type": "date",
+       "label": "Start Date"
+      },
+      {
+       "name": "timeMax",
+       "time": true,
+       "type": "date",
+       "label": "End Date"
+      },
+      {
+       "name": "updatedMin",
+       "time": true,
+       "type": "date",
+       "label": "Updated from"
+      },
+      {
+       "name": "singleEvents",
+       "type": "boolean",
+       "label": "Single Events",
+       "required": true
+      },
+      {
+       "name": "q",
+       "type": "text",
+       "label": "Query"
+      },
+      {
+       "name": "eventTypes",
+       "type": "select",
+       "label": "Event Types",
+       "multiple": true,
+       "validate": {
+        "enum": [
+         "default",
+         "fromGmail",
+         "focusTime",
+         "outOfOffice",
+         "workingLocation"
+        ]
+       }
+      },
+      {
+       "name": "orderBy",
+       "type": "select",
+       "label": "Order By",
+       "validate": {
+        "enum": [
+         "startTime",
+         "updated"
+        ]
+       }
+      },
+      {
+       "name": "limit",
+       "type": "uinteger",
+       "label": "Limit"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "orderBy": {
+        "mode": "chose",
+        "label": "Empty"
+       },
+       "calendar": {
+        "mode": "chose",
+        "label": "scale@dulcy.io (Primary Calendar)"
+       },
+       "eventTypes": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "google"
+        },
+        "label": "Dylan's Google connection"
+       }
+      }
+     },
+     "designer": {
+      "x": 300,
+      "y": 150
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:google",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 4852482
+    }
+   },
+   {
+    "id": 21,
+    "mapper": {
+     "name": "valid",
+     "scope": "roundtrip",
+     "value": "{{length(8.attendees[]) > 1}}"
+    },
+    "module": "util:SetVariable2",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "name",
+       "type": "text",
+       "label": "Variable name",
+       "required": true
+      },
+      {
+       "name": "scope",
+       "type": "select",
+       "label": "Variable lifetime",
+       "required": true,
+       "validate": {
+        "enum": [
+         "roundtrip",
+         "execution"
+        ]
+       }
+      },
+      {
+       "name": "value",
+       "type": "any",
+       "label": "Variable value"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "scope": {
+        "label": "One cycle"
+       }
+      }
+     },
+     "designer": {
+      "x": 600,
+      "y": 150
+     }
+    },
+    "parameters": {}
+   },
+   {
+    "id": 10,
+    "filter": {
+     "name": "",
+     "conditions": [
+      [
+       {
+        "a": "{{8.`__IMTLENGTH__`}}",
+        "b": "0",
+        "o": "number:notequal"
+       },
+       {
+        "a": "{{8.description}}",
+        "b": "outbound outreach consultation",
+        "o": "text:contain:ci"
+       }
+      ],
+      [
+       {
+        "a": "{{8.`__IMTLENGTH__`}}",
+        "b": "0",
+        "o": "number:notequal"
+       },
+       {
+        "a": "{{8.description}}",
+        "b": "outbound audit",
+        "o": "text:contain:ci"
+       }
+      ],
+      [
+       {
+        "a": "{{8.description}}",
+        "b": "0",
+        "o": "number:notequal"
+       },
+       {
+        "a": "{{8.description}}",
+        "b": "follow up",
+        "o": "text:contain:ci"
+       }
+      ]
+     ]
+    },
+    "mapper": null,
+    "module": "builtin:BasicRouter",
+    "routes": [
+     {
+      "flow": [
+       {
+        "id": 9,
+        "filter": {
+         "name": "",
+         "conditions": [
+          [
+           {
+            "a": "{{21.valid}}",
+            "b": "true",
+            "o": "text:equal"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "array": "{{8.attendees}}"
+        },
+        "module": "builtin:BasicFeeder",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "mode": "edit",
+           "name": "array",
+           "spec": [],
+           "type": "array",
+           "label": "Array"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "array": {
+            "mode": "edit"
+           }
+          }
+         },
+         "designer": {
+          "x": 1200,
+          "y": 0
+         }
+        },
+        "parameters": {}
+       },
+       {
+        "id": 7,
+        "mapper": {
+         "duration": "30"
+        },
+        "module": "util:FunctionSleep",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "name": "duration",
+           "type": "uinteger",
+           "label": "Delay",
+           "required": true,
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          }
+         ],
+         "restore": {},
+         "designer": {
+          "x": 1500,
+          "y": 0,
+          "name": "Sleep for 30"
+         }
+        },
+        "parameters": {}
+       },
+       {
+        "id": 5,
+        "filter": {
+         "name": "Filter out internal email",
+         "conditions": [
+          [
+           {
+            "a": "{{9.email}}",
+            "b": "dulcy.io",
+            "o": "text:notcontain"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://hook.us1.make.com/REDACTED_PATH",
+         "gzip": true,
+         "method": "post",
+         "headers": [],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "x_www_form_urlencoded",
+         "formFields": [
+          {
+           "key": "email",
+           "value": "{{9.email}}"
+          },
+          {
+           "key": "url",
+           "value": "{{1.share_url}}"
+          }
+         ],
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": false,
+         "followRedirect": true,
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "formFields",
+           "spec": [
+            {
+             "name": "key",
+             "type": "text",
+             "label": "Key",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Fields"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "POST"
+           },
+           "headers": {
+            "mode": "chose"
+           },
+           "bodyType": {
+            "label": "Application/x-www-form-urlencoded"
+           },
+           "formFields": {
+            "mode": "chose",
+            "items": [
+             null,
+             null
+            ]
+           }
+          }
+         },
+         "designer": {
+          "x": 1800,
+          "y": 0,
+          "name": "Post to [2.0 POSTCALL] Call Done "
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": true,
+         "useNewZLibDeCompress": true
+        }
+       },
+       {
+        "id": 20,
+        "mapper": {
+         "email": "{{9.email}}",
+         "limit": "1"
+        },
+        "module": "close-crm:searchLeadsviaAdvancedFilters",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "name": "id",
+           "type": "text",
+           "label": "Lead ID"
+          },
+          {
+           "name": "name",
+           "type": "text",
+           "label": "Lead Name"
+          },
+          {
+           "name": "email",
+           "type": "email",
+           "label": "Contact's Email"
+          },
+          {
+           "name": "phone",
+           "type": "text",
+           "label": "Contact's Phone Number"
+          },
+          {
+           "name": "url",
+           "type": "url",
+           "label": "Contact's URL"
+          },
+          {
+           "name": "query",
+           "type": "any",
+           "label": "Filtering Query"
+          },
+          {
+           "name": "limit",
+           "type": "uinteger",
+           "label": "Limit"
+          }
+         ],
+         "restore": {
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "close-crm"
+            },
+            "label": "My Close CRM connection (alexander@dulcymedia.com)"
+           }
+          }
+         },
+         "designer": {
+          "x": 2100,
+          "y": 0
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:close-crm",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 2737753
+        }
+       },
+       {
+        "id": 17,
+        "filter": {
+         "name": "",
+         "conditions": [
+          [
+           {
+            "a": "{{20.`__IMTLENGTH__`}}",
+            "b": "1",
+            "o": "text:equal"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "note": "Meeting Summary - {{1.scheduled_start_time}}:\n\n{{1.default_summary.markdown_formatted}}",
+         "lead_id": "{{20.id}}"
+        },
+        "module": "close-crm:ActionCreateNote",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "name": "lead_id",
+           "type": "select",
+           "label": "Lead ID",
+           "required": true
+          },
+          {
+           "name": "note",
+           "type": "text",
+           "label": "Note",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "lead_id": {
+            "mode": "edit"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "close-crm"
+            },
+            "label": "My Close CRM connection (alexander@dulcymedia.com)"
+           }
+          }
+         },
+         "designer": {
+          "x": 2400,
+          "y": 0
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:close-crm",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 2737753
+        }
+       },
+       {
+        "id": 23,
+        "mapper": {
+         "id": "{{20.custom.AirtableID}}",
+         "base": "appxqINt5XKw7a76A",
+         "table": "tblmEyHVAXDRwPxN9",
+         "record": {
+          "fld34mhdkOSbryqOh": "{{formatDate(now; \"YYYY-MM-DD\")}}",
+          "fldgHPFpUj4g3o1Ma": true
+         },
+         "typecast": false,
+         "useColumnId": false
+        },
+        "module": "airtable:ActionUpdateRecords",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "base",
+           "type": "select",
+           "label": "Base",
+           "required": true
+          },
+          {
+           "name": "typecast",
+           "type": "boolean",
+           "label": "Smart links",
+           "required": true
+          },
+          {
+           "name": "useColumnId",
+           "type": "boolean",
+           "label": "Use Column ID",
+           "required": true
+          },
+          {
+           "name": "table",
+           "type": "select",
+           "label": "Table",
+           "required": true
+          },
+          {
+           "name": "id",
+           "type": "text",
+           "label": "Record ID",
+           "required": true
+          },
+          {
+           "name": "record",
+           "spec": [
+            {
+             "name": "fldUkwyW5NBQnic3s",
+             "type": "text",
+             "label": "Opportunity Name"
+            },
+            {
+             "name": "fldAfEIsLhUkEjFvx",
+             "type": "text",
+             "label": "Account/Company Name"
+            },
+            {
+             "name": "fldX3uxuihKYTh2iV",
+             "type": "text",
+             "label": "Contact Name"
+            },
+            {
+             "name": "fld4mAVHq3bWR2ZQx",
+             "type": "text",
+             "label": "Contact Email"
+            },
+            {
+             "mode": "edit",
+             "name": "fldsz376BaSqtZzOW",
+             "type": "select",
+             "label": "Lead Source"
+            },
+            {
+             "name": "fldR2fbyM26Z0nM4m",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Sales Rep (Lead Owner)"
+            },
+            {
+             "mode": "edit",
+             "name": "fldaUIYb694AOnaaM",
+             "type": "select",
+             "label": "Sales Pipeline Stage"
+            },
+            {
+             "name": "fld4ba7negAPQA8pk",
+             "time": false,
+             "type": "date",
+             "label": "Call Booked Date"
+            },
+            {
+             "name": "fld34mhdkOSbryqOh",
+             "time": false,
+             "type": "date",
+             "label": "Call Held Date"
+            },
+            {
+             "name": "fldlGOBpFXOkiPpIn",
+             "time": false,
+             "type": "date",
+             "label": "Deal Closed Date"
+            },
+            {
+             "name": "fldEp5BBj3adebZ0o",
+             "type": "number",
+             "label": "Offer Amount (Revenue Closed)"
+            },
+            {
+             "name": "fld0lJJLN9jldjimv",
+             "type": "number",
+             "label": "Total Cash Collected"
+            },
+            {
+             "name": "fld8lShlrfclKslUo",
+             "type": "text",
+             "label": "Notes"
+            },
+            {
+             "mode": "edit",
+             "name": "fldKp9ytQFcUZJ3Oz",
+             "type": "select",
+             "label": "Loss Reason"
+            },
+            {
+             "name": "fld2g4s2NePf3juoS",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Campaign"
+            },
+            {
+             "name": "fldcO105C4UhKtM7v",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Emails"
+            },
+            {
+             "name": "fld9asGRTxYCYRrHn",
+             "type": "boolean",
+             "label": "Call Booked?"
+            },
+            {
+             "name": "fldgHPFpUj4g3o1Ma",
+             "type": "boolean",
+             "label": "Call Held?"
+            },
+            {
+             "name": "fldWNRewGth8CqxnK",
+             "type": "boolean",
+             "label": "Offer Made?"
+            },
+            {
+             "name": "fldsxeAkhHOUSa45z",
+             "type": "boolean",
+             "label": "Deal Closed?"
+            },
+            {
+             "name": "fldTh5bYDyRW1il0j",
+             "type": "number",
+             "label": "Opportunity Value (Forecast)"
+            },
+            {
+             "name": "flds98LGpavjN0He9",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Booked Month"
+            },
+            {
+             "name": "fldTRtXOO6WB6chW1",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Closed Month"
+            }
+           ],
+           "type": "collection",
+           "label": "Record"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "base": {
+            "label": "Alex"
+           },
+           "table": {
+            "label": "Sales Data"
+           },
+           "record": {
+            "nested": {
+             "fld2g4s2NePf3juoS": {
+              "mode": "chose"
+             },
+             "fld9asGRTxYCYRrHn": {
+              "mode": "chose"
+             },
+             "fldKp9ytQFcUZJ3Oz": {
+              "mode": "edit"
+             },
+             "fldR2fbyM26Z0nM4m": {
+              "mode": "chose"
+             },
+             "fldTRtXOO6WB6chW1": {
+              "mode": "chose"
+             },
+             "fldWNRewGth8CqxnK": {
+              "mode": "chose"
+             },
+             "fldaUIYb694AOnaaM": {
+              "mode": "edit"
+             },
+             "fldcO105C4UhKtM7v": {
+              "mode": "chose"
+             },
+             "fldgHPFpUj4g3o1Ma": {
+              "mode": "chose"
+             },
+             "flds98LGpavjN0He9": {
+              "mode": "chose"
+             },
+             "fldsxeAkhHOUSa45z": {
+              "mode": "chose"
+             },
+             "fldsz376BaSqtZzOW": {
+              "mode": "edit"
+             }
+            }
+           },
+           "typecast": {
+            "mode": "chose"
+           },
+           "useColumnId": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "airtable3"
+            },
+            "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+           }
+          }
+         },
+         "designer": {
+          "x": 2706,
+          "y": 0
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:airtable3,airtable2",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3589602
+        }
+       }
+      ]
+     },
+     {
+      "flow": [
+       {
+        "id": 11,
+        "filter": {
+         "name": "",
+         "conditions": [
+          [
+           {
+            "a": "{{21.valid}}",
+            "b": "false",
+            "o": "text:equal"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "text": "{{8.description}}",
+         "pattern": "[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}"
+        },
+        "module": "regexp:AdvancedParser",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "name": "pattern",
+           "type": "text",
+           "label": "Pattern",
+           "required": true
+          },
+          {
+           "name": "text",
+           "type": "text",
+           "label": "Text",
+           "required": true
+          }
+         ],
+         "restore": {},
+         "designer": {
+          "x": 1200,
+          "y": 300
+         },
+         "parameters": [
+          {
+           "name": "global",
+           "type": "boolean",
+           "label": "Global match",
+           "required": true
+          },
+          {
+           "name": "sensitive",
+           "type": "boolean",
+           "label": "Case sensitive",
+           "required": true
+          },
+          {
+           "name": "multiline",
+           "type": "boolean",
+           "label": "Multiline",
+           "required": true
+          },
+          {
+           "name": "singleline",
+           "type": "boolean",
+           "label": "Singleline",
+           "required": true
+          },
+          {
+           "name": "continueWhenNoRes",
+           "type": "boolean",
+           "label": "Continue the execution of the route even if the module finds no matches",
+           "required": true
+          },
+          {
+           "name": "advancedParser",
+           "type": "hidden"
+          },
+          {
+           "name": "ignoreInfiniteLoopsWhenGlobal",
+           "type": "boolean",
+           "label": "Ignore errors when there is an infinite search loop",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "global": true,
+         "multiline": false,
+         "sensitive": false,
+         "singleline": false,
+         "advancedParser": true,
+         "continueWhenNoRes": false,
+         "ignoreInfiniteLoopsWhenGlobal": false
+        }
+       },
+       {
+        "id": 12,
+        "mapper": {
+         "duration": "30"
+        },
+        "module": "util:FunctionSleep",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "name": "duration",
+           "type": "uinteger",
+           "label": "Delay",
+           "required": true,
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          }
+         ],
+         "restore": {},
+         "designer": {
+          "x": 1500,
+          "y": 300,
+          "name": "Sleep for 30"
+         }
+        },
+        "parameters": {}
+       },
+       {
+        "id": 13,
+        "filter": {
+         "name": "Filter out internal email",
+         "conditions": [
+          [
+           {
+            "a": "{{11.`__IMTMATCH__`}}",
+            "b": "dulcy.io",
+            "o": "text:notcontain"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://hook.us1.make.com/REDACTED_PATH",
+         "gzip": true,
+         "method": "post",
+         "headers": [],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "x_www_form_urlencoded",
+         "formFields": [
+          {
+           "key": "email",
+           "value": "{{11.`__IMTMATCH__`}}"
+          },
+          {
+           "key": "url",
+           "value": "{{1.share_url}}"
+          }
+         ],
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": false,
+         "followRedirect": true,
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "formFields",
+           "spec": [
+            {
+             "name": "key",
+             "type": "text",
+             "label": "Key",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Fields"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "POST"
+           },
+           "headers": {
+            "mode": "chose"
+           },
+           "bodyType": {
+            "label": "Application/x-www-form-urlencoded"
+           },
+           "formFields": {
+            "mode": "chose",
+            "items": [
+             null,
+             null
+            ]
+           }
+          }
+         },
+         "designer": {
+          "x": 1800,
+          "y": 300,
+          "name": "Post to [2.0 POSTCALL] Call Done "
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": true,
+         "useNewZLibDeCompress": true
+        }
+       },
+       {
+        "id": 18,
+        "mapper": {
+         "email": "{{11.`__IMTMATCH__`}}",
+         "limit": "1"
+        },
+        "module": "close-crm:searchLeadsviaAdvancedFilters",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "name": "id",
+           "type": "text",
+           "label": "Lead ID"
+          },
+          {
+           "name": "name",
+           "type": "text",
+           "label": "Lead Name"
+          },
+          {
+           "name": "email",
+           "type": "email",
+           "label": "Contact's Email"
+          },
+          {
+           "name": "phone",
+           "type": "text",
+           "label": "Contact's Phone Number"
+          },
+          {
+           "name": "url",
+           "type": "url",
+           "label": "Contact's URL"
+          },
+          {
+           "name": "query",
+           "type": "any",
+           "label": "Filtering Query"
+          },
+          {
+           "name": "limit",
+           "type": "uinteger",
+           "label": "Limit"
+          }
+         ],
+         "restore": {
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "close-crm"
+            },
+            "label": "My Close CRM connection (alexander@dulcymedia.com)"
+           }
+          }
+         },
+         "designer": {
+          "x": 2100,
+          "y": 300
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:close-crm",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 2737753
+        }
+       },
+       {
+        "id": 19,
+        "mapper": {
+         "note": "Meeting Summary - {{1.scheduled_start_time}}:\n\n{{1.default_summary.markdown_formatted}}",
+         "lead_id": "{{18.id}}"
+        },
+        "module": "close-crm:ActionCreateNote",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "name": "lead_id",
+           "type": "select",
+           "label": "Lead ID",
+           "required": true
+          },
+          {
+           "name": "note",
+           "type": "text",
+           "label": "Note",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "lead_id": {
+            "mode": "edit"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "close-crm"
+            },
+            "label": "My Close CRM connection (alexander@dulcymedia.com)"
+           }
+          }
+         },
+         "designer": {
+          "x": 2400,
+          "y": 300
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:close-crm",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 2737753
+        }
+       },
+       {
+        "id": 24,
+        "mapper": {
+         "id": "{{18.custom.AirtableID}}",
+         "base": "appxqINt5XKw7a76A",
+         "table": "tblmEyHVAXDRwPxN9",
+         "record": {
+          "fld34mhdkOSbryqOh": "{{formatDate(now; \"YYYY-MM-DD\")}}",
+          "fldgHPFpUj4g3o1Ma": true
+         },
+         "typecast": false,
+         "useColumnId": false
+        },
+        "module": "airtable:ActionUpdateRecords",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "base",
+           "type": "select",
+           "label": "Base",
+           "required": true
+          },
+          {
+           "name": "typecast",
+           "type": "boolean",
+           "label": "Smart links",
+           "required": true
+          },
+          {
+           "name": "useColumnId",
+           "type": "boolean",
+           "label": "Use Column ID",
+           "required": true
+          },
+          {
+           "name": "table",
+           "type": "select",
+           "label": "Table",
+           "required": true
+          },
+          {
+           "name": "id",
+           "type": "text",
+           "label": "Record ID",
+           "required": true
+          },
+          {
+           "name": "record",
+           "spec": [
+            {
+             "name": "fldUkwyW5NBQnic3s",
+             "type": "text",
+             "label": "Opportunity Name"
+            },
+            {
+             "name": "fldAfEIsLhUkEjFvx",
+             "type": "text",
+             "label": "Account/Company Name"
+            },
+            {
+             "name": "fldX3uxuihKYTh2iV",
+             "type": "text",
+             "label": "Contact Name"
+            },
+            {
+             "name": "fld4mAVHq3bWR2ZQx",
+             "type": "text",
+             "label": "Contact Email"
+            },
+            {
+             "mode": "edit",
+             "name": "fldsz376BaSqtZzOW",
+             "type": "select",
+             "label": "Lead Source"
+            },
+            {
+             "name": "fldR2fbyM26Z0nM4m",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Sales Rep (Lead Owner)"
+            },
+            {
+             "mode": "edit",
+             "name": "fldaUIYb694AOnaaM",
+             "type": "select",
+             "label": "Sales Pipeline Stage"
+            },
+            {
+             "name": "fld4ba7negAPQA8pk",
+             "time": false,
+             "type": "date",
+             "label": "Call Booked Date"
+            },
+            {
+             "name": "fld34mhdkOSbryqOh",
+             "time": false,
+             "type": "date",
+             "label": "Call Held Date"
+            },
+            {
+             "name": "fldlGOBpFXOkiPpIn",
+             "time": false,
+             "type": "date",
+             "label": "Deal Closed Date"
+            },
+            {
+             "name": "fldEp5BBj3adebZ0o",
+             "type": "number",
+             "label": "Offer Amount (Revenue Closed)"
+            },
+            {
+             "name": "fld0lJJLN9jldjimv",
+             "type": "number",
+             "label": "Total Cash Collected"
+            },
+            {
+             "name": "fld8lShlrfclKslUo",
+             "type": "text",
+             "label": "Notes"
+            },
+            {
+             "mode": "edit",
+             "name": "fldKp9ytQFcUZJ3Oz",
+             "type": "select",
+             "label": "Loss Reason"
+            },
+            {
+             "name": "fld2g4s2NePf3juoS",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Campaign"
+            },
+            {
+             "name": "fldcO105C4UhKtM7v",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Emails"
+            },
+            {
+             "name": "fld9asGRTxYCYRrHn",
+             "type": "boolean",
+             "label": "Call Booked?"
+            },
+            {
+             "name": "fldgHPFpUj4g3o1Ma",
+             "type": "boolean",
+             "label": "Call Held?"
+            },
+            {
+             "name": "fldWNRewGth8CqxnK",
+             "type": "boolean",
+             "label": "Offer Made?"
+            },
+            {
+             "name": "fldsxeAkhHOUSa45z",
+             "type": "boolean",
+             "label": "Deal Closed?"
+            },
+            {
+             "name": "fldTh5bYDyRW1il0j",
+             "type": "number",
+             "label": "Opportunity Value (Forecast)"
+            },
+            {
+             "name": "flds98LGpavjN0He9",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Booked Month"
+            },
+            {
+             "name": "fldTRtXOO6WB6chW1",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Closed Month"
+            }
+           ],
+           "type": "collection",
+           "label": "Record"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "base": {
+            "label": "Alex"
+           },
+           "table": {
+            "label": "Sales Data"
+           },
+           "record": {
+            "nested": {
+             "fld2g4s2NePf3juoS": {
+              "mode": "chose"
+             },
+             "fld9asGRTxYCYRrHn": {
+              "mode": "chose"
+             },
+             "fldKp9ytQFcUZJ3Oz": {
+              "mode": "edit"
+             },
+             "fldR2fbyM26Z0nM4m": {
+              "mode": "chose"
+             },
+             "fldTRtXOO6WB6chW1": {
+              "mode": "chose"
+             },
+             "fldWNRewGth8CqxnK": {
+              "mode": "chose"
+             },
+             "fldaUIYb694AOnaaM": {
+              "mode": "edit"
+             },
+             "fldcO105C4UhKtM7v": {
+              "mode": "chose"
+             },
+             "fldgHPFpUj4g3o1Ma": {
+              "mode": "chose"
+             },
+             "flds98LGpavjN0He9": {
+              "mode": "chose"
+             },
+             "fldsxeAkhHOUSa45z": {
+              "mode": "chose"
+             },
+             "fldsz376BaSqtZzOW": {
+              "mode": "edit"
+             }
+            }
+           },
+           "typecast": {
+            "mode": "chose"
+           },
+           "useColumnId": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "airtable3"
+            },
+            "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+           }
+          }
+         },
+         "designer": {
+          "x": 2705,
+          "y": 301
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:airtable3,airtable2",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3589602
+        }
+       }
+      ]
+     }
+    ],
+    "version": 1,
+    "metadata": {
+     "designer": {
+      "x": 900,
+      "y": 150
+     }
+    }
+   }
+  ],
+  "name": "Fathom Recording to Close (Sales Rep)",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": []
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately",
+   "maximum_runs_per_minute": 100
+  }
+ }
+}

@@ -1,0 +1,1068 @@
+{
+ "id": 3971473,
+ "name": "[INBOX MANAGER] Push To Client Reply",
+ "teamId": 629049,
+ "hookId": 2252941,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 199728,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": true,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "gateway",
+  "airtable",
+  "http",
+  "http",
+  "airtable"
+ ],
+ "lastEdit": "2025-09-16T18:13:31.253Z",
+ "scheduling": {
+  "type": "immediately"
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2025-05-16T12:19:09.640Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": true,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 1,
+    "mapper": {},
+    "module": "gateway:CustomWebHook",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "hook": {
+        "data": {
+         "editable": "true"
+        },
+        "label": "Inbox manager - push to client reply"
+       }
+      }
+     },
+     "designer": {
+      "x": -108,
+      "y": -8
+     },
+     "parameters": [
+      {
+       "name": "hook",
+       "type": "hook:gateway-webhook",
+       "label": "Webhook",
+       "required": true
+      },
+      {
+       "name": "maxResults",
+       "type": "number",
+       "label": "Maximum number of results"
+      }
+     ]
+    },
+    "parameters": {
+     "hook": 2252941,
+     "maxResults": 1
+    }
+   },
+   {
+    "id": 3,
+    "mapper": {
+     "base": "appxqINt5XKw7a76A",
+     "table": "tblcjRBGJEWh5KgOt",
+     "formula": "{ID} = '{{1.`Workspace ID (Bison)`}}'",
+     "maxRecords": "10",
+     "useColumnId": false
+    },
+    "module": "airtable:ActionSearchRecords",
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "base",
+       "type": "select",
+       "label": "Base",
+       "required": true
+      },
+      {
+       "name": "useColumnId",
+       "type": "boolean",
+       "label": "Use Column ID",
+       "required": true
+      },
+      {
+       "name": "table",
+       "type": "select",
+       "label": "Table",
+       "required": true
+      },
+      {
+       "name": "formula",
+       "type": "text",
+       "label": "Formula"
+      },
+      {
+       "name": "maxRecords",
+       "type": "integer",
+       "label": "Limit"
+      },
+      {
+       "name": "sort",
+       "spec": [
+        {
+         "name": "field",
+         "type": "select",
+         "label": "Field",
+         "dynamic": true,
+         "options": []
+        },
+        {
+         "name": "direction",
+         "type": "select",
+         "label": "Direction",
+         "options": [
+          {
+           "label": "Descending",
+           "value": "desc"
+          },
+          {
+           "label": "Ascending",
+           "value": "asc"
+          }
+         ]
+        }
+       ],
+       "type": "array",
+       "label": "Sort"
+      },
+      {
+       "name": "view",
+       "type": "select",
+       "label": "View"
+      },
+      {
+       "name": "fields",
+       "type": "select",
+       "label": "Output Fields",
+       "multiple": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "base": {
+        "mode": "chose",
+        "label": "Alex"
+       },
+       "sort": {
+        "mode": "chose"
+       },
+       "view": {
+        "mode": "chose",
+        "label": "Empty"
+       },
+       "table": {
+        "mode": "chose",
+        "label": "Workspace IDs"
+       },
+       "fields": {
+        "mode": "chose"
+       },
+       "useColumnId": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "airtable3"
+        },
+        "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+       }
+      }
+     },
+     "designer": {
+      "x": 198,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:airtable3,airtable2",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3589602
+    }
+   },
+   {
+    "id": 8,
+    "filter": {
+     "name": "If Slack Channel Exists",
+     "conditions": [
+      [
+       {
+        "a": "{{3.`Slack Channel`}}",
+        "o": "exist"
+       }
+      ]
+     ]
+    },
+    "mapper": {
+     "ca": "",
+     "qs": [],
+     "url": "https://slack.com/api/chat.postMessage",
+     "data": "{\n    \"channel\": \"{{3.`Slack Channel`}}\",\n\t\"blocks\": [\n\t\t{\n\t\t\t\"type\": \"header\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\"text\": \"Request for a reply\",\n\t\t\t\t\"emoji\": true\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"{{1.`Latest Reply`}}\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"input\",\n\t\t\t\"element\": {\n\t\t\t\t\"type\": \"plain_text_input\",\n\t\t\t\t\"multiline\": true,\n\t\t\t\t\"action_id\": \"plain_text_input-action\"\n\t\t\t},\n\t\t\t\"label\": {\n\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\"text\": \"Write your reply here\",\n\t\t\t\t\"emoji\": true\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"actions\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"button\",\n\t\t\t\t\t\"text\": {\n\t\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\t\"text\": \"Send Reply\",\n\t\t\t\t\t\t\"emoji\": true\n\t\t\t\t\t},\n\t\t\t\t\t\"value\": \"client_reply_lead_email_{{1.recordId}}\",\n\t\t\t\t\t\"action_id\": \"send_reply\"\n\t\t\t\t}\n\t\t\t]\n\t\t}\n\t]\n}",
+     "gzip": true,
+     "method": "post",
+     "headers": [
+      {
+       "name": "Authorization",
+       "value": "REDACTED"
+      },
+      {
+       "name": "Content-Type",
+       "value": "application/json; charset=utf-8"
+      }
+     ],
+     "timeout": "",
+     "useMtls": false,
+     "authPass": "",
+     "authUser": "",
+     "bodyType": "raw",
+     "contentType": "application/json",
+     "serializeUrl": false,
+     "shareCookies": false,
+     "parseResponse": true,
+     "followRedirect": true,
+     "useQuerystring": false,
+     "followAllRedirects": false,
+     "rejectUnauthorized": true
+    },
+    "module": "http:ActionSendData",
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "url",
+       "type": "url",
+       "label": "URL",
+       "required": true
+      },
+      {
+       "name": "serializeUrl",
+       "type": "boolean",
+       "label": "Serialize URL",
+       "required": true
+      },
+      {
+       "name": "method",
+       "type": "select",
+       "label": "Method",
+       "required": true,
+       "validate": {
+        "enum": [
+         "get",
+         "head",
+         "post",
+         "put",
+         "patch",
+         "delete",
+         "options"
+        ]
+       }
+      },
+      {
+       "name": "headers",
+       "spec": [
+        {
+         "name": "name",
+         "type": "text",
+         "label": "Name",
+         "required": true
+        },
+        {
+         "name": "value",
+         "type": "text",
+         "label": "Value"
+        }
+       ],
+       "type": "array",
+       "label": "Headers"
+      },
+      {
+       "name": "qs",
+       "spec": [
+        {
+         "name": "name",
+         "type": "text",
+         "label": "Name",
+         "required": true
+        },
+        {
+         "name": "value",
+         "type": "text",
+         "label": "Value"
+        }
+       ],
+       "type": "array",
+       "label": "Query String"
+      },
+      {
+       "name": "bodyType",
+       "type": "select",
+       "label": "Body type",
+       "validate": {
+        "enum": [
+         "raw",
+         "x_www_form_urlencoded",
+         "multipart_form_data"
+        ]
+       }
+      },
+      {
+       "name": "parseResponse",
+       "type": "boolean",
+       "label": "Parse response",
+       "required": true
+      },
+      {
+       "name": "authUser",
+       "type": "text",
+       "label": "User name"
+      },
+      {
+       "name": "authPass",
+       "type": "password",
+       "label": "Password"
+      },
+      {
+       "name": "timeout",
+       "type": "uinteger",
+       "label": "Timeout",
+       "validate": {
+        "max": 300,
+        "min": 1
+       }
+      },
+      {
+       "name": "shareCookies",
+       "type": "boolean",
+       "label": "Share cookies with other HTTP modules",
+       "required": true
+      },
+      {
+       "name": "ca",
+       "type": "cert",
+       "label": "Self-signed certificate"
+      },
+      {
+       "name": "rejectUnauthorized",
+       "type": "boolean",
+       "label": "Reject connections that are using unverified (self-signed) certificates",
+       "required": true
+      },
+      {
+       "name": "followRedirect",
+       "type": "boolean",
+       "label": "Follow redirect",
+       "required": true
+      },
+      {
+       "name": "useQuerystring",
+       "type": "boolean",
+       "label": "Disable serialization of multiple same query string keys as arrays",
+       "required": true
+      },
+      {
+       "name": "gzip",
+       "type": "boolean",
+       "label": "Request compressed content",
+       "required": true
+      },
+      {
+       "name": "useMtls",
+       "type": "boolean",
+       "label": "Use Mutual TLS",
+       "required": true
+      },
+      {
+       "name": "contentType",
+       "type": "select",
+       "label": "Content type",
+       "validate": {
+        "enum": [
+         "text/plain",
+         "application/json",
+         "application/xml",
+         "text/xml",
+         "text/html",
+         "custom"
+        ]
+       }
+      },
+      {
+       "name": "data",
+       "type": "buffer",
+       "label": "Request content"
+      },
+      {
+       "name": "followAllRedirects",
+       "type": "boolean",
+       "label": "Follow all redirect",
+       "required": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "qs": {
+        "mode": "chose"
+       },
+       "method": {
+        "mode": "chose",
+        "label": "POST"
+       },
+       "headers": {
+        "mode": "chose",
+        "items": [
+         null,
+         null
+        ]
+       },
+       "bodyType": {
+        "label": "Raw"
+       },
+       "contentType": {
+        "label": "JSON (application/json)"
+       }
+      }
+     },
+     "designer": {
+      "x": 590,
+      "y": -1,
+      "name": "Send request for reply"
+     },
+     "parameters": [
+      {
+       "name": "handleErrors",
+       "type": "boolean",
+       "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+       "required": true
+      },
+      {
+       "name": "useNewZLibDeCompress",
+       "type": "hidden"
+      }
+     ]
+    },
+    "parameters": {
+     "handleErrors": true,
+     "useNewZLibDeCompress": true
+    }
+   },
+   {
+    "id": 10,
+    "mapper": {
+     "ca": "",
+     "qs": [],
+     "url": "https://slack.com/api/chat.postMessage",
+     "data": "{\n    \"channel\": \"{{3.`Slack Channel`}}\",\n    \"thread_ts\": \"{{8.data.ts}}\",\n\t\"blocks\": [\n\t\t{\n\t\t\t\"type\": \"header\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\"text\": \"Conversation History\",\n\t\t\t\t\"emoji\": true\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"{{1.`Conversation History`}}\"\n\t\t\t}\n\t\t}\n\t]\n}",
+     "gzip": true,
+     "method": "post",
+     "headers": [
+      {
+       "name": "Authorization",
+       "value": "REDACTED"
+      }
+     ],
+     "timeout": "",
+     "useMtls": false,
+     "authPass": "",
+     "authUser": "",
+     "bodyType": "raw",
+     "contentType": "application/json",
+     "serializeUrl": false,
+     "shareCookies": false,
+     "parseResponse": false,
+     "followRedirect": true,
+     "useQuerystring": false,
+     "followAllRedirects": false,
+     "rejectUnauthorized": true
+    },
+    "module": "http:ActionSendData",
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "url",
+       "type": "url",
+       "label": "URL",
+       "required": true
+      },
+      {
+       "name": "serializeUrl",
+       "type": "boolean",
+       "label": "Serialize URL",
+       "required": true
+      },
+      {
+       "name": "method",
+       "type": "select",
+       "label": "Method",
+       "required": true,
+       "validate": {
+        "enum": [
+         "get",
+         "head",
+         "post",
+         "put",
+         "patch",
+         "delete",
+         "options"
+        ]
+       }
+      },
+      {
+       "name": "headers",
+       "spec": [
+        {
+         "name": "name",
+         "type": "text",
+         "label": "Name",
+         "required": true
+        },
+        {
+         "name": "value",
+         "type": "text",
+         "label": "Value"
+        }
+       ],
+       "type": "array",
+       "label": "Headers"
+      },
+      {
+       "name": "qs",
+       "spec": [
+        {
+         "name": "name",
+         "type": "text",
+         "label": "Name",
+         "required": true
+        },
+        {
+         "name": "value",
+         "type": "text",
+         "label": "Value"
+        }
+       ],
+       "type": "array",
+       "label": "Query String"
+      },
+      {
+       "name": "bodyType",
+       "type": "select",
+       "label": "Body type",
+       "validate": {
+        "enum": [
+         "raw",
+         "x_www_form_urlencoded",
+         "multipart_form_data"
+        ]
+       }
+      },
+      {
+       "name": "parseResponse",
+       "type": "boolean",
+       "label": "Parse response",
+       "required": true
+      },
+      {
+       "name": "authUser",
+       "type": "text",
+       "label": "User name"
+      },
+      {
+       "name": "authPass",
+       "type": "password",
+       "label": "Password"
+      },
+      {
+       "name": "timeout",
+       "type": "uinteger",
+       "label": "Timeout",
+       "validate": {
+        "max": 300,
+        "min": 1
+       }
+      },
+      {
+       "name": "shareCookies",
+       "type": "boolean",
+       "label": "Share cookies with other HTTP modules",
+       "required": true
+      },
+      {
+       "name": "ca",
+       "type": "cert",
+       "label": "Self-signed certificate"
+      },
+      {
+       "name": "rejectUnauthorized",
+       "type": "boolean",
+       "label": "Reject connections that are using unverified (self-signed) certificates",
+       "required": true
+      },
+      {
+       "name": "followRedirect",
+       "type": "boolean",
+       "label": "Follow redirect",
+       "required": true
+      },
+      {
+       "name": "useQuerystring",
+       "type": "boolean",
+       "label": "Disable serialization of multiple same query string keys as arrays",
+       "required": true
+      },
+      {
+       "name": "gzip",
+       "type": "boolean",
+       "label": "Request compressed content",
+       "required": true
+      },
+      {
+       "name": "useMtls",
+       "type": "boolean",
+       "label": "Use Mutual TLS",
+       "required": true
+      },
+      {
+       "name": "contentType",
+       "type": "select",
+       "label": "Content type",
+       "validate": {
+        "enum": [
+         "text/plain",
+         "application/json",
+         "application/xml",
+         "text/xml",
+         "text/html",
+         "custom"
+        ]
+       }
+      },
+      {
+       "name": "data",
+       "type": "buffer",
+       "label": "Request content"
+      },
+      {
+       "name": "followAllRedirects",
+       "type": "boolean",
+       "label": "Follow all redirect",
+       "required": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "qs": {
+        "mode": "chose"
+       },
+       "method": {
+        "mode": "chose",
+        "label": "POST"
+       },
+       "headers": {
+        "mode": "chose",
+        "items": [
+         null
+        ]
+       },
+       "bodyType": {
+        "label": "Raw"
+       },
+       "contentType": {
+        "label": "JSON (application/json)"
+       }
+      }
+     },
+     "designer": {
+      "x": 890,
+      "y": -4,
+      "name": "Send conversation history"
+     },
+     "parameters": [
+      {
+       "name": "handleErrors",
+       "type": "boolean",
+       "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+       "required": true
+      },
+      {
+       "name": "useNewZLibDeCompress",
+       "type": "hidden"
+      }
+     ]
+    },
+    "parameters": {
+     "handleErrors": true,
+     "useNewZLibDeCompress": true
+    }
+   },
+   {
+    "id": 7,
+    "mapper": {
+     "id": "{{1.recordId}}",
+     "base": "appxqINt5XKw7a76A",
+     "table": "tblADFhWhTcLrl1UY",
+     "record": {
+      "fldzd2bHc5XMGidFk": "Sent to Client"
+     },
+     "typecast": false,
+     "useColumnId": false
+    },
+    "module": "airtable:ActionUpdateRecords",
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "base",
+       "type": "select",
+       "label": "Base",
+       "required": true
+      },
+      {
+       "name": "typecast",
+       "type": "boolean",
+       "label": "Smart links",
+       "required": true
+      },
+      {
+       "name": "useColumnId",
+       "type": "boolean",
+       "label": "Use Column ID",
+       "required": true
+      },
+      {
+       "name": "table",
+       "type": "select",
+       "label": "Table",
+       "required": true
+      },
+      {
+       "name": "id",
+       "type": "text",
+       "label": "Record ID",
+       "required": true
+      },
+      {
+       "name": "record",
+       "spec": [
+        {
+         "name": "fldVkWkLFCGP9O1Aw",
+         "type": "text",
+         "label": "Leads Email"
+        },
+        {
+         "name": "fldQAcnN9PrbL7R81",
+         "type": "text",
+         "label": "Leads Name"
+        },
+        {
+         "name": "fldNdJB5rvVpf8V9M",
+         "type": "text",
+         "label": "Subject Line"
+        },
+        {
+         "name": "fldjG76LvUTv60Pzj",
+         "type": "text",
+         "label": "Latest Reply"
+        },
+        {
+         "mode": "edit",
+         "name": "fldr2uNiscZfeCNiT",
+         "type": "select",
+         "label": "Lead Status"
+        },
+        {
+         "mode": "edit",
+         "name": "fldE9bxKtmeRsvG9f",
+         "type": "select",
+         "label": "Last Email Sent"
+        },
+        {
+         "mode": "edit",
+         "name": "fldzd2bHc5XMGidFk",
+         "type": "select",
+         "label": "Push To Client Reply"
+        },
+        {
+         "name": "fldxUxP1jBXt3u7dl",
+         "type": "text",
+         "label": "Inbox Email"
+        },
+        {
+         "name": "fldEv7oM5BJPKJpiR",
+         "type": "text",
+         "label": "Campaign Name"
+        },
+        {
+         "name": "fldCfgm35ZqyVe9xm",
+         "type": "text",
+         "label": "Custom Reply"
+        },
+        {
+         "name": "fldYocEhrAzRUw9sA",
+         "type": "text",
+         "label": "Conversation History"
+        },
+        {
+         "name": "fldT2Nvl3qPmSMsgb",
+         "type": "text",
+         "label": "reply_uuid"
+        },
+        {
+         "mode": "edit",
+         "name": "fldfPPfvAoXw04LVs",
+         "type": "select",
+         "label": "Opportunity Status"
+        },
+        {
+         "name": "fldTFmYUnIXPxgJQS",
+         "time": false,
+         "type": "date",
+         "label": "Date of Call Booked"
+        },
+        {
+         "name": "fldv0o5rhmd7jXDrt",
+         "type": "text",
+         "label": "campaign_id"
+        },
+        {
+         "name": "fldv66oGZQQ9Qscmb",
+         "type": "number",
+         "label": "lead_id"
+        },
+        {
+         "name": "flds1ZqBq2ZW6dVBr",
+         "type": "text",
+         "label": "email_stats_id"
+        },
+        {
+         "name": "fldvARFWnr4H2wC8V",
+         "type": "text",
+         "label": "reply_message_id"
+        },
+        {
+         "name": "fld2IjVEsAijZUjPl",
+         "spec": {
+          "name": "value",
+          "label": "Record ID"
+         },
+         "type": "array",
+         "label": "Templates"
+        },
+        {
+         "name": "fldGkiO630UgVCnv5",
+         "type": "text",
+         "label": "CC (Optional)"
+        },
+        {
+         "name": "fld8K4zasLt6aaRfB",
+         "type": "text",
+         "label": "Phone Number"
+        },
+        {
+         "name": "fldlC9uaoYyYwFvDz",
+         "type": "text",
+         "label": "Linkedin URL"
+        },
+        {
+         "name": "fldRYOE8NaSKxs9tB",
+         "type": "text",
+         "label": "Company Name"
+        },
+        {
+         "name": "fldBNI5MPeDfMELjd",
+         "type": "text",
+         "label": "ESP"
+        },
+        {
+         "name": "fldCjo0mB0snziNZQ",
+         "type": "text",
+         "label": "Workspace ID (Bison)"
+        },
+        {
+         "name": "fld3OXhmjYmwkUAAK",
+         "type": "text",
+         "label": "Reply Explanation"
+        },
+        {
+         "name": "fld3YSJ9JV7976gYP",
+         "spec": {
+          "name": "value",
+          "label": "Record ID"
+         },
+         "type": "array",
+         "label": "Call Feedback"
+        },
+        {
+         "name": "fld7BsWnDpprOkB5h",
+         "type": "text",
+         "label": "duplicate_for_tests"
+        },
+        {
+         "name": "fldu8kQYBvVoqxq9T",
+         "time": false,
+         "type": "date",
+         "label": "OOO - Back In The Office - Date"
+        },
+        {
+         "name": "fldRCbUTcTgEFwnSm",
+         "type": "boolean",
+         "label": "OOO - Subsequence Email Sent"
+        },
+        {
+         "name": "fldMK8ZVPYiZVPKWh",
+         "type": "text",
+         "label": "OOO - First Name"
+        },
+        {
+         "name": "fldUFM7ev0B3nvsgB",
+         "type": "boolean",
+         "label": "skip_request_call_feedback"
+        },
+        {
+         "name": "fldtPAlC0MDPHTWcl",
+         "spec": {
+          "name": "value",
+          "label": "Record ID"
+         },
+         "type": "array",
+         "label": "Clients Table"
+        }
+       ],
+       "type": "collection",
+       "label": "Record"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "base": {
+        "label": "Alex"
+       },
+       "table": {
+        "label": "Emails"
+       },
+       "record": {
+        "nested": {
+         "fld2IjVEsAijZUjPl": {
+          "mode": "chose"
+         },
+         "fld3YSJ9JV7976gYP": {
+          "mode": "chose"
+         },
+         "fldE9bxKtmeRsvG9f": {
+          "mode": "edit"
+         },
+         "fldRCbUTcTgEFwnSm": {
+          "mode": "chose"
+         },
+         "fldUFM7ev0B3nvsgB": {
+          "mode": "chose"
+         },
+         "fldfPPfvAoXw04LVs": {
+          "mode": "edit"
+         },
+         "fldr2uNiscZfeCNiT": {
+          "mode": "edit"
+         },
+         "fldtPAlC0MDPHTWcl": {
+          "mode": "chose"
+         },
+         "fldzd2bHc5XMGidFk": {
+          "mode": "chose",
+          "label": "Sent to Client"
+         }
+        }
+       },
+       "typecast": {
+        "mode": "chose"
+       },
+       "useColumnId": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "airtable3"
+        },
+        "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+       }
+      }
+     },
+     "designer": {
+      "x": 1181,
+      "y": 2
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:airtable3,airtable2",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3589602
+    }
+   }
+  ],
+  "name": "[INBOX MANAGER] Push To Client Reply",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": []
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately"
+  }
+ }
+}

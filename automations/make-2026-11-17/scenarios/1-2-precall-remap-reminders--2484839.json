@@ -1,0 +1,763 @@
+{
+ "id": 2484839,
+ "name": "[1.2 PRECALL] Remap Reminders",
+ "teamId": 629049,
+ "hookId": 1420535,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 162901,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": true,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "gateway",
+  "builtin",
+  "close-crm",
+  "builtin",
+  "builtin",
+  "close-crm",
+  "close-crm",
+  "http"
+ ],
+ "lastEdit": "2026-04-05T19:32:52.524Z",
+ "scheduling": {
+  "type": "immediately"
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2024-05-27T15:35:57.781Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": true,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 1,
+    "mapper": {},
+    "module": "gateway:CustomWebHook",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "hook": {
+        "data": {
+         "editable": "true"
+        },
+        "label": "Remap Reminders"
+       }
+      }
+     },
+     "designer": {
+      "x": 0,
+      "y": 375
+     },
+     "parameters": [
+      {
+       "name": "hook",
+       "type": "hook:gateway-webhook",
+       "label": "Webhook",
+       "required": true
+      },
+      {
+       "name": "maxResults",
+       "type": "number",
+       "label": "Maximum number of results"
+      }
+     ]
+    },
+    "parameters": {
+     "hook": 1420535,
+     "maxResults": 1
+    }
+   },
+   {
+    "id": 2,
+    "filter": {
+     "name": "",
+     "conditions": [
+      [
+       {
+        "a": "{{1.leadId}}",
+        "o": "exist"
+       }
+      ]
+     ]
+    },
+    "mapper": null,
+    "module": "builtin:BasicRouter",
+    "routes": [
+     {
+      "flow": [
+       {
+        "id": 3,
+        "mapper": {
+         "qs": [
+          {
+           "key": "lead_id",
+           "value": "{{1.leadId}}"
+          }
+         ],
+         "url": "api/v1/activity/",
+         "method": "GET",
+         "headers": [
+          {
+           "key": "Accept",
+           "value": "application/json"
+          }
+         ]
+        },
+        "module": "close-crm:UniversallMakeAnAPICall",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "text",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "GET",
+             "POST",
+             "PUT",
+             "PATCH",
+             "DELETE"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "key",
+             "type": "text",
+             "label": "Key"
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "key",
+             "type": "text",
+             "label": "Key"
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "body",
+           "type": "any",
+           "label": "Body"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose",
+            "items": [
+             null
+            ]
+           },
+           "method": {
+            "mode": "chose",
+            "label": "GET"
+           },
+           "headers": {
+            "mode": "chose",
+            "items": [
+             null
+            ]
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "close-crm"
+            },
+            "label": "My Close CRM connection (alexander@dulcymedia.com)"
+           }
+          }
+         },
+         "designer": {
+          "x": 600,
+          "y": 150
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:close-crm",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 2737753
+        }
+       },
+       {
+        "id": 4,
+        "mapper": {
+         "array": "{{3.body.data}}"
+        },
+        "module": "builtin:BasicFeeder",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "mode": "edit",
+           "name": "array",
+           "spec": [],
+           "type": "array",
+           "label": "Array"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "array": {
+            "mode": "edit"
+           }
+          }
+         },
+         "designer": {
+          "x": 900,
+          "y": 150
+         }
+        },
+        "parameters": {}
+       },
+       {
+        "id": 8,
+        "mapper": null,
+        "module": "builtin:BasicRouter",
+        "routes": [
+         {
+          "flow": [
+           {
+            "id": 9,
+            "filter": {
+             "name": "Only SMS Reminders",
+             "conditions": [
+              [
+               {
+                "a": "{{4.status}}",
+                "b": "scheduled",
+                "o": "text:equal"
+               },
+               {
+                "a": "{{4.`_type`}}",
+                "b": "sms",
+                "o": "text:equal:ci"
+               }
+              ]
+             ]
+            },
+            "mapper": {
+             "smsID": "{{4.id}}"
+            },
+            "module": "close-crm:deleteAnSmsActivity",
+            "version": 1,
+            "metadata": {
+             "expect": [
+              {
+               "mode": "edit",
+               "name": "smsID",
+               "type": "select",
+               "label": "SMS Activity ID",
+               "required": true
+              }
+             ],
+             "restore": {
+              "expect": {
+               "smsID": {
+                "mode": "edit"
+               }
+              },
+              "parameters": {
+               "__IMTCONN__": {
+                "data": {
+                 "scoped": "true",
+                 "connection": "close-crm"
+                },
+                "label": "My Close CRM connection (alexander@dulcymedia.com)"
+               }
+              }
+             },
+             "designer": {
+              "x": 1500,
+              "y": 0
+             },
+             "parameters": [
+              {
+               "name": "__IMTCONN__",
+               "type": "account:close-crm",
+               "label": "Connection",
+               "required": true
+              }
+             ]
+            },
+            "parameters": {
+             "__IMTCONN__": 2737753
+            }
+           }
+          ]
+         },
+         {
+          "flow": [
+           {
+            "id": 5,
+            "filter": {
+             "name": "Only Email Reminders",
+             "conditions": [
+              [
+               {
+                "a": "{{4.status}}",
+                "b": "scheduled",
+                "o": "text:equal"
+               },
+               {
+                "a": "{{4._type}}",
+                "b": "Email",
+                "o": "text:equal"
+               }
+              ]
+             ]
+            },
+            "mapper": {
+             "id": "{{4.id}}"
+            },
+            "module": "close-crm:ActionRemoveEmail",
+            "version": 1,
+            "metadata": {
+             "expect": [
+              {
+               "mode": "edit",
+               "name": "id",
+               "type": "select",
+               "label": "Email Activity ID",
+               "required": true
+              }
+             ],
+             "restore": {
+              "expect": {
+               "id": {
+                "mode": "edit"
+               }
+              },
+              "parameters": {
+               "__IMTCONN__": {
+                "data": {
+                 "scoped": "true",
+                 "connection": "close-crm"
+                },
+                "label": "My Close CRM connection (alexander@dulcymedia.com)"
+               }
+              }
+             },
+             "designer": {
+              "x": 1500,
+              "y": 300
+             },
+             "parameters": [
+              {
+               "name": "__IMTCONN__",
+               "type": "account:close-crm",
+               "label": "Connection",
+               "required": true
+              }
+             ]
+            },
+            "parameters": {
+             "__IMTCONN__": 2737753
+            }
+           }
+          ]
+         }
+        ],
+        "version": 1,
+        "metadata": {
+         "designer": {
+          "x": 1200,
+          "y": 150
+         }
+        }
+       }
+      ]
+     },
+     {
+      "flow": [
+       {
+        "id": 6,
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://hook.us1.make.com/REDACTED_PATH",
+         "gzip": true,
+         "method": "post",
+         "headers": [],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "multipart_form_data",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": false,
+         "followRedirect": true,
+         "formDataFields": [
+          {
+           "key": "leadId",
+           "value": "{{1.leadId}}",
+           "fieldType": "text"
+          },
+          {
+           "key": "isReschedule",
+           "value": "true",
+           "fieldType": "text"
+          }
+         ],
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "formDataFields",
+           "spec": [
+            {
+             "name": "fieldType",
+             "type": "select",
+             "label": "Field type",
+             "options": [
+              {
+               "label": "Text",
+               "value": "text",
+               "nested": [
+                {
+                 "name": "key",
+                 "type": "text",
+                 "label": "Key",
+                 "required": true
+                },
+                {
+                 "name": "value",
+                 "type": "text",
+                 "label": "Value"
+                }
+               ]
+              },
+              {
+               "label": "File",
+               "value": "file",
+               "nested": [
+                {
+                 "name": "key",
+                 "type": "text",
+                 "label": "Key",
+                 "required": true
+                },
+                {
+                 "name": "data",
+                 "type": "buffer",
+                 "label": "Data",
+                 "semantic": "file:data"
+                },
+                {
+                 "help": "File name, including the suffix, e.g. invoice, xml",
+                 "name": "fileName",
+                 "type": "filename",
+                 "label": "File name",
+                 "semantic": "file:name"
+                }
+               ]
+              }
+             ],
+             "required": true
+            }
+           ],
+           "type": "array",
+           "label": "Fields"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "POST"
+           },
+           "headers": {
+            "mode": "chose"
+           },
+           "bodyType": {
+            "label": "Multipart/form-data"
+           },
+           "formDataFields": {
+            "mode": "chose",
+            "items": [
+             {
+              "fieldType": {
+               "mode": "chose",
+               "label": "Text"
+              }
+             },
+             {
+              "fieldType": {
+               "mode": "chose",
+               "label": "Text"
+              }
+             }
+            ]
+           }
+          }
+         },
+         "designer": {
+          "x": 600,
+          "y": 600
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": false,
+         "useNewZLibDeCompress": true
+        }
+       }
+      ]
+     }
+    ],
+    "version": 1,
+    "metadata": {
+     "designer": {
+      "x": 300,
+      "y": 375
+     }
+    }
+   }
+  ],
+  "name": "[1.2 PRECALL] Remap Reminders",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": []
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately"
+  }
+ }
+}

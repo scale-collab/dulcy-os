@@ -1,0 +1,715 @@
+{
+ "id": 3805815,
+ "name": "Track new email accounts added to Bison (deprecated)",
+ "teamId": 629049,
+ "hookId": 2156705,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 199728,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": false,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "gateway",
+  "airtable",
+  "builtin",
+  "airtable",
+  "http"
+ ],
+ "lastEdit": "2026-07-23T18:40:18.509Z",
+ "scheduling": {
+  "type": "immediately",
+  "maximum_runs_per_minute": 100
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2025-03-25T21:12:57.531Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": false,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 1,
+    "mapper": {},
+    "module": "gateway:CustomWebHook",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "hook": {
+        "data": {
+         "editable": "true"
+        },
+        "label": "New email account added to Bison"
+       }
+      }
+     },
+     "designer": {
+      "x": 60,
+      "y": -10
+     },
+     "parameters": [
+      {
+       "name": "hook",
+       "type": "hook:gateway-webhook",
+       "label": "Webhook",
+       "required": true
+      },
+      {
+       "name": "maxResults",
+       "type": "number",
+       "label": "Maximum number of results"
+      }
+     ]
+    },
+    "parameters": {
+     "hook": 2156705,
+     "maxResults": 1
+    }
+   },
+   {
+    "id": 3,
+    "mapper": {
+     "base": "appxqINt5XKw7a76A",
+     "table": "tblcjRBGJEWh5KgOt",
+     "formula": "{ID} = '{{1.event.workspace_id}}'",
+     "maxRecords": "1",
+     "useColumnId": false
+    },
+    "module": "airtable:ActionSearchRecords",
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "base",
+       "type": "select",
+       "label": "Base",
+       "required": true
+      },
+      {
+       "name": "useColumnId",
+       "type": "boolean",
+       "label": "Use Column ID",
+       "required": true
+      },
+      {
+       "name": "table",
+       "type": "select",
+       "label": "Table",
+       "required": true
+      },
+      {
+       "name": "formula",
+       "type": "text",
+       "label": "Formula"
+      },
+      {
+       "name": "maxRecords",
+       "type": "integer",
+       "label": "Limit"
+      },
+      {
+       "name": "sort",
+       "spec": [
+        {
+         "name": "field",
+         "type": "select",
+         "label": "Field",
+         "dynamic": true,
+         "options": []
+        },
+        {
+         "name": "direction",
+         "type": "select",
+         "label": "Direction",
+         "options": [
+          {
+           "label": "Descending",
+           "value": "desc"
+          },
+          {
+           "label": "Ascending",
+           "value": "asc"
+          }
+         ]
+        }
+       ],
+       "type": "array",
+       "label": "Sort"
+      },
+      {
+       "name": "view",
+       "type": "select",
+       "label": "View"
+      },
+      {
+       "name": "fields",
+       "type": "select",
+       "label": "Output Fields",
+       "multiple": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "base": {
+        "mode": "chose",
+        "label": "Alex"
+       },
+       "sort": {
+        "mode": "chose"
+       },
+       "view": {
+        "mode": "chose",
+        "label": "Empty"
+       },
+       "table": {
+        "mode": "chose",
+        "label": "Workspace IDs"
+       },
+       "fields": {
+        "mode": "chose"
+       },
+       "useColumnId": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "airtable3"
+        },
+        "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+       }
+      }
+     },
+     "designer": {
+      "x": 355,
+      "y": -6
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:airtable3,airtable2",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3589602
+    }
+   },
+   {
+    "id": 6,
+    "mapper": null,
+    "module": "builtin:BasicRouter",
+    "routes": [
+     {
+      "flow": [
+       {
+        "id": 4,
+        "filter": {
+         "name": "Active Client",
+         "conditions": [
+          [
+           {
+            "a": "{{3.Status}}",
+            "b": "Active",
+            "o": "text:equal"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "base": "appxqINt5XKw7a76A",
+         "table": "tblMSOBJ0wMgxSg4l",
+         "record": {
+          "fldR19WUqSSBVQcPO": "{{1.data.sender_email.id}}",
+          "fldRYSB93NNdBc4Js": "{{1.data.sender_email.email}}",
+          "fldURrj0qP1DnAKyD": "{{formatDate(now; \"DD-MM-YYYY\")}}",
+          "fldWB4pvEgQ8aYlT2": "{{1.event.workspace_id}}",
+          "flduDcGap2GSsqUia": [
+           "{{3.id}}"
+          ]
+         },
+         "typecast": false,
+         "useColumnId": false
+        },
+        "module": "airtable:ActionCreateRecord",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "base",
+           "type": "select",
+           "label": "Base",
+           "required": true
+          },
+          {
+           "name": "typecast",
+           "type": "boolean",
+           "label": "Smart links",
+           "required": true
+          },
+          {
+           "name": "useColumnId",
+           "type": "boolean",
+           "label": "Use Column ID",
+           "required": true
+          },
+          {
+           "name": "table",
+           "type": "select",
+           "label": "Table",
+           "required": true
+          },
+          {
+           "name": "record",
+           "spec": [
+            {
+             "name": "fldRYSB93NNdBc4Js",
+             "type": "text",
+             "label": "Email Account"
+            },
+            {
+             "name": "fldR19WUqSSBVQcPO",
+             "type": "number",
+             "label": "Email ID"
+            },
+            {
+             "name": "fldWB4pvEgQ8aYlT2",
+             "type": "number",
+             "label": "Workspace ID"
+            },
+            {
+             "name": "fldURrj0qP1DnAKyD",
+             "time": false,
+             "type": "date",
+             "label": "Warmup Start Date"
+            },
+            {
+             "name": "fldm2q2OfWBOWJpvq",
+             "type": "number",
+             "label": "Number of Disconnects"
+            },
+            {
+             "name": "flduDcGap2GSsqUia",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Client"
+            }
+           ],
+           "type": "collection",
+           "label": "Record"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "base": {
+            "label": "Alex"
+           },
+           "table": {
+            "label": "Email Accounts",
+            "nested": [
+             {
+              "name": "record",
+              "spec": [
+               {
+                "name": "fldRYSB93NNdBc4Js",
+                "type": "text",
+                "label": "Email Account"
+               },
+               {
+                "name": "fldR19WUqSSBVQcPO",
+                "type": "number",
+                "label": "Email ID"
+               },
+               {
+                "name": "fldWB4pvEgQ8aYlT2",
+                "type": "number",
+                "label": "Workspace ID"
+               },
+               {
+                "name": "fldURrj0qP1DnAKyD",
+                "time": false,
+                "type": "date",
+                "label": "Warmup Start Date"
+               },
+               {
+                "name": "fldm2q2OfWBOWJpvq",
+                "type": "number",
+                "label": "Number of Disconnects"
+               },
+               {
+                "name": "flduDcGap2GSsqUia",
+                "spec": {
+                 "label": "Record ID"
+                },
+                "type": "array",
+                "label": "Client"
+               }
+              ],
+              "type": "collection",
+              "label": "Record"
+             }
+            ]
+           },
+           "record": {
+            "nested": {
+             "flduDcGap2GSsqUia": {
+              "mode": "chose",
+              "items": [
+               null
+              ]
+             }
+            }
+           },
+           "typecast": {
+            "mode": "chose"
+           },
+           "useColumnId": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "airtable3"
+            },
+            "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+           }
+          }
+         },
+         "designer": {
+          "x": 963,
+          "y": -162
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:airtable3,airtable2",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3589602
+        }
+       }
+      ]
+     },
+     {
+      "flow": [
+       {
+        "id": 5,
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://send.dulcy.io/api/sender-emails/{{1.data.sender_email.id}}",
+         "data": "{\n  \"daily_limit\": 5\n}",
+         "gzip": true,
+         "method": "post",
+         "headers": [
+          {
+           "name": "Authorization",
+           "value": "Bearer {{3.`EmailBison API`}}"
+          },
+          {
+           "name": "Content-Type",
+           "value": "application/json"
+          }
+         ],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "raw",
+         "contentType": "application/json",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": true,
+         "followRedirect": true,
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "contentType",
+           "type": "select",
+           "label": "Content type",
+           "validate": {
+            "enum": [
+             "text/plain",
+             "application/json",
+             "application/xml",
+             "text/xml",
+             "text/html",
+             "custom"
+            ]
+           }
+          },
+          {
+           "name": "data",
+           "type": "buffer",
+           "label": "Request content"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "POST"
+           },
+           "headers": {
+            "mode": "chose",
+            "items": [
+             null,
+             null
+            ]
+           },
+           "bodyType": {
+            "label": "Raw"
+           },
+           "contentType": {
+            "label": "JSON (application/json)"
+           }
+          }
+         },
+         "designer": {
+          "x": 982,
+          "y": 136
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": false,
+         "useNewZLibDeCompress": true
+        }
+       }
+      ]
+     }
+    ],
+    "version": 1,
+    "metadata": {
+     "designer": {
+      "x": 663,
+      "y": -12
+     }
+    }
+   }
+  ],
+  "name": "Track new email accounts added to Bison (deprecated)",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": []
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately",
+   "maximum_runs_per_minute": 100
+  }
+ }
+}

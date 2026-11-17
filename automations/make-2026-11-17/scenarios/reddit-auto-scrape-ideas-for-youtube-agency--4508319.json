@@ -1,0 +1,1707 @@
+{
+ "id": 4508319,
+ "name": "Reddit Auto Scrape Ideas for YouTube (agency)",
+ "teamId": 629049,
+ "hookId": null,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 199728,
+ "slots": null,
+ "isinvalid": true,
+ "islinked": false,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "rss",
+  "util",
+  "openai-gpt-3",
+  "google-sheets"
+ ],
+ "lastEdit": "2026-01-16T22:09:17.082Z",
+ "scheduling": {
+  "days": [
+   6
+  ],
+  "time": "08:30",
+  "type": "weekly"
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2026-01-16T22:08:33.142Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": false,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 12,
+    "mapper": {
+     "url": "https://www.reddit.com/r/agency/best/.rss?t=week",
+     "gzip": true,
+     "password": "",
+     "username": "",
+     "maxResults": "50",
+     "filterDateTo": "",
+     "filterDateFrom": ""
+    },
+    "module": "rss:ActionReadArticles",
+    "version": 4,
+    "metadata": {
+     "expect": [
+      {
+       "name": "url",
+       "type": "url",
+       "label": "URL",
+       "required": true
+      },
+      {
+       "name": "username",
+       "type": "text",
+       "label": "User name"
+      },
+      {
+       "name": "password",
+       "type": "text",
+       "label": "Password"
+      },
+      {
+       "name": "filterDateFrom",
+       "type": "date",
+       "label": "Date from"
+      },
+      {
+       "name": "filterDateTo",
+       "type": "date",
+       "label": "Date to "
+      },
+      {
+       "name": "maxResults",
+       "type": "number",
+       "label": "Maximum number of returned items",
+       "required": true
+      },
+      {
+       "name": "gzip",
+       "type": "boolean",
+       "label": "Request compressed content",
+       "required": true
+      }
+     ],
+     "restore": {},
+     "designer": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "include",
+       "type": "select",
+       "label": "Process RSS fields",
+       "multiple": true,
+       "validate": {
+        "enum": [
+         "google-merchant-center",
+         "itunes"
+        ]
+       }
+      }
+     ]
+    },
+    "parameters": {
+     "include": []
+    }
+   },
+   {
+    "id": 17,
+    "mapper": {
+     "name": "Description",
+     "scope": "roundtrip",
+     "value": "{{stripHTML(12.description)}}"
+    },
+    "module": "util:SetVariable2",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "name",
+       "type": "text",
+       "label": "Variable name",
+       "required": true
+      },
+      {
+       "name": "scope",
+       "type": "select",
+       "label": "Variable lifetime",
+       "required": true,
+       "validate": {
+        "enum": [
+         "roundtrip",
+         "execution"
+        ]
+       }
+      },
+      {
+       "name": "value",
+       "type": "any",
+       "label": "Variable value"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "scope": {
+        "label": "One cycle"
+       }
+      }
+     },
+     "designer": {
+      "x": 300,
+      "y": 0
+     }
+    },
+    "parameters": {}
+   },
+   {
+    "id": 18,
+    "mapper": {
+     "input": "You are an assistant helping Alexander decide whether Reddit posts should be turned into YouTube video topics.\n\nYou will be given an input JSON containing Reddit post titles and descriptions.\n\nInput here: \n\nTitle: {{12.title}}\n\nDescription: {{17.Description}}\n\nFor each Reddit post, your job is to determine whether the post represents:\n\t•\tA question\n\t•\tA request for help\n\t•\tA situation they're facing\n\t•\tOr an inquiry seeking explanation, strategy, or clarification\n\nAND whether it is relevant to business growth, such as:\n\t•\tLeadership mindset\n\t•\tPricing\n\t•\tGrowth\n\t•\tLead gen, prospecting, deliverability, copy, targeting, sequences, tooling, systems, automation, scaling outbound\n\nOnly posts that are both question/help-seeking and growth relevant should be considered good YouTube topics.\n\nWhat qualifies as a valid YouTube topic\n\nOnly consider posts that meet both conditions:\n\nA) It’s a question/help-seeking inquiry\n\t•\tExplicit questions\n\t•\tContains question words such as: how, what, why, when, where, should, can, does, is\n\t•\tEnds with a question mark\n\t•\tImplicit help-seeking\n\t•\tThe user is stuck, confused, or asking for advice\n\t•\tThe user is going through a situation in their business\n\t•\tExamples:\n\t•\t“Struggling with…”\n\t•\t“Not sure how to…”\n\t•\t“Is this normal…”\n\t•\t“Am I doing this wrong…”\n\t•\tTopic-based questions\n\t•\tNot phrased as a question, but clearly implies one\n\t•\tNot phrased as a question, but explains a situation they're in (business)\n\t•\tExample:\n\t•\t“i feel drained how can i scale better”\n\t•\t“when should i raise prices”\n\t•\t“how to stay moviated while unprofitable”\n\nB)\n\nIt is phrased in relation to an online business, agency, or growth. Anything that doesn't Into this critera for example such as software development, commerical packaging, premium childcare etc.\n\nReject if it’s not relevant to business growth (even if it’s a question).\n\nWhat does NOT qualify\n\nReject posts that are:\n\t•\tNot related to outbound/cold email/business growth\n\t•\tPure opinions/rants with no clear question\n\t•\tNews links with no discussion\n\t•\tBrag posts or results screenshots with no question\n\t•\tMemes/jokes\n\t•\tVery niche personal situations that can’t generalize to an audience and a general idea cant be taken from it\n\n⸻\n\nYour task\n\nFor each Reddit post, do the following:\n\t1.\tDetermine if the post is a question or help-seeking inquiry or situation \n\t2.\tDetermine if it relates to business growth (physcial or mental)\n\t3.\tDecide whether it can be turned into a standalone YouTube educational video\n\t4.\tOutput only one of the following responses:\n\t•\t\"yes\" → if it is a strong candidate for a YouTube video\n\t•\t\"no\" → if it is not\n\nOnly say “yes” if:\n\t•\tThe post reflects a real question/problem\n\t•\tThe topic can be generalized and taught to a wider audience\n\t•\tIt fits business growth content\n\t•\tIt could reasonably support a 5–15 minute YouTube explanation\n\nDo not explain your reasoning.\nDo not add extra text.\nOnly output \"yes\" or \"no\" per post.\n",
+     "model": "gpt-5.2",
+     "store": true,
+     "format": {},
+     "reasoning": {},
+     "background": false,
+     "truncation": "auto",
+     "inputContentType": "text",
+     "createConversation": true,
+     "parallel_tool_calls": true
+    },
+    "module": "openai-gpt-3:createModelResponse",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "model",
+       "type": "select",
+       "label": "Model",
+       "required": true
+      },
+      {
+       "name": "inputContentType",
+       "type": "select",
+       "label": "Prompt Type",
+       "required": true,
+       "validate": {
+        "enum": [
+         "text",
+         "image",
+         "file",
+         "prompt",
+         "items"
+        ]
+       }
+      },
+      {
+       "name": "max_output_tokens",
+       "type": "integer",
+       "label": "Max Output Tokens"
+      },
+      {
+       "name": "tools",
+       "spec": {
+        "name": "value",
+        "spec": [
+         {
+          "name": "type",
+          "type": "select",
+          "label": "Type",
+          "options": [
+           {
+            "label": "File search",
+            "value": "file_search",
+            "nested": [
+             {
+              "help": "The IDs of the vector stores to search.",
+              "name": "vector_store_ids",
+              "type": "select",
+              "label": "Vector Store IDs",
+              "options": "rpc://openai-gpt-3/1/getVectorStores",
+              "multiple": true,
+              "required": true,
+              "validate": {
+               "maxItems": 2
+              }
+             },
+             {
+              "help": "A filter to apply based on file attributes.",
+              "name": "filters",
+              "spec": [
+               {
+                "name": "type",
+                "type": "select",
+                "label": "Type",
+                "options": [
+                 {
+                  "label": "Equals",
+                  "value": "eq",
+                  "nested": [
+                   {
+                    "help": "The key to compare against the value.",
+                    "name": "key",
+                    "type": "text",
+                    "label": "Key",
+                    "required": true
+                   },
+                   {
+                    "help": "The value to compare against the attribute key",
+                    "name": "value",
+                    "type": "any",
+                    "label": "Value",
+                    "required": true
+                   }
+                  ]
+                 },
+                 {
+                  "label": "Not equal",
+                  "value": "ne",
+                  "nested": [
+                   {
+                    "help": "The key to compare against the value.",
+                    "name": "key",
+                    "type": "text",
+                    "label": "Key",
+                    "required": true
+                   },
+                   {
+                    "help": "The value to compare against the attribute key",
+                    "name": "value",
+                    "type": "any",
+                    "label": "Value",
+                    "required": true
+                   }
+                  ]
+                 },
+                 {
+                  "label": "Greater than",
+                  "value": "gt",
+                  "nested": [
+                   {
+                    "help": "The key to compare against the value.",
+                    "name": "key",
+                    "type": "text",
+                    "label": "Key",
+                    "required": true
+                   },
+                   {
+                    "help": "The value to compare against the attribute key",
+                    "name": "value",
+                    "type": "any",
+                    "label": "Value",
+                    "required": true
+                   }
+                  ]
+                 },
+                 {
+                  "label": "Greater than or equal",
+                  "value": "gte",
+                  "nested": [
+                   {
+                    "help": "The key to compare against the value.",
+                    "name": "key",
+                    "type": "text",
+                    "label": "Key",
+                    "required": true
+                   },
+                   {
+                    "help": "The value to compare against the attribute key",
+                    "name": "value",
+                    "type": "any",
+                    "label": "Value",
+                    "required": true
+                   }
+                  ]
+                 },
+                 {
+                  "label": "Less than",
+                  "value": "lt",
+                  "nested": [
+                   {
+                    "help": "The key to compare against the value.",
+                    "name": "key",
+                    "type": "text",
+                    "label": "Key",
+                    "required": true
+                   },
+                   {
+                    "help": "The value to compare against the attribute key",
+                    "name": "value",
+                    "type": "any",
+                    "label": "Value",
+                    "required": true
+                   }
+                  ]
+                 },
+                 {
+                  "label": "Less than or equal",
+                  "value": "lte",
+                  "nested": [
+                   {
+                    "help": "The key to compare against the value.",
+                    "name": "key",
+                    "type": "text",
+                    "label": "Key",
+                    "required": true
+                   },
+                   {
+                    "help": "The value to compare against the attribute key",
+                    "name": "value",
+                    "type": "any",
+                    "label": "Value",
+                    "required": true
+                   }
+                  ]
+                 },
+                 {
+                  "label": "Compound filter [and]",
+                  "value": "and",
+                  "nested": [
+                   {
+                    "name": "filters",
+                    "spec": {
+                     "spec": [
+                      {
+                       "name": "type",
+                       "type": "select",
+                       "label": "Type",
+                       "options": [
+                        {
+                         "label": "Equals",
+                         "value": "eq"
+                        },
+                        {
+                         "label": "Not equal",
+                         "value": "ne"
+                        },
+                        {
+                         "label": "Greater than",
+                         "value": "gt"
+                        },
+                        {
+                         "label": "Greater than or equal",
+                         "value": "gte"
+                        },
+                        {
+                         "label": "Less than",
+                         "value": "lt"
+                        },
+                        {
+                         "label": "Less than or equal",
+                         "value": "lte"
+                        }
+                       ],
+                       "required": true
+                      },
+                      {
+                       "help": "The key to compare against the value.",
+                       "name": "key",
+                       "type": "text",
+                       "label": "Key",
+                       "required": true
+                      },
+                      {
+                       "help": "The value to compare against the attribute key",
+                       "name": "value",
+                       "type": "any",
+                       "label": "Value",
+                       "required": true
+                      }
+                     ],
+                     "type": "collection",
+                     "label": "Filter"
+                    },
+                    "type": "array",
+                    "label": "Filters",
+                    "labels": {
+                     "add": "Add filter"
+                    },
+                    "required": true
+                   }
+                  ]
+                 },
+                 {
+                  "label": "Compound filter [or]",
+                  "value": "or",
+                  "nested": [
+                   {
+                    "name": "filters",
+                    "spec": {
+                     "spec": [
+                      {
+                       "name": "type",
+                       "type": "select",
+                       "label": "Type",
+                       "options": [
+                        {
+                         "label": "Equals",
+                         "value": "eq"
+                        },
+                        {
+                         "label": "Not equal",
+                         "value": "ne"
+                        },
+                        {
+                         "label": "Greater than",
+                         "value": "gt"
+                        },
+                        {
+                         "label": "Greater than or equal",
+                         "value": "gte"
+                        },
+                        {
+                         "label": "Less than",
+                         "value": "lt"
+                        },
+                        {
+                         "label": "Less than or equal",
+                         "value": "lte"
+                        }
+                       ],
+                       "required": true
+                      },
+                      {
+                       "help": "The key to compare against the value.",
+                       "name": "key",
+                       "type": "text",
+                       "label": "Key",
+                       "required": true
+                      },
+                      {
+                       "help": "The value to compare against the attribute key",
+                       "name": "value",
+                       "type": "any",
+                       "label": "Value",
+                       "required": true
+                      }
+                     ],
+                     "type": "collection",
+                     "label": "Filter"
+                    },
+                    "type": "array",
+                    "label": "Filters",
+                    "labels": {
+                     "add": "Add filter"
+                    },
+                    "required": true
+                   }
+                  ]
+                 }
+                ]
+               }
+              ],
+              "type": "collection",
+              "label": "Filters"
+             },
+             {
+              "name": "max_num_results",
+              "type": "integer",
+              "label": "Max Results Number",
+              "validate": {
+               "max": 50,
+               "min": 1
+              }
+             },
+             {
+              "help": "Ranking options for search.",
+              "name": "ranking_options",
+              "spec": [
+               {
+                "help": "The ranker to use for the file search.",
+                "name": "ranker",
+                "type": "select",
+                "label": "Ranker",
+                "options": [
+                 {
+                  "label": "auto",
+                  "value": "auto"
+                 },
+                 {
+                  "label": "default-2024-08-21",
+                  "value": "default-2024-08-21"
+                 },
+                 {
+                  "label": "default-2024-11-15",
+                  "value": "default-2024-11-15"
+                 }
+                ]
+               },
+               {
+                "help": "The score threshold for the file search. Numbers closer to `1` will attempt to return only the most relevant results, but may return fewer results.",
+                "name": "score_threshold",
+                "type": "number",
+                "label": "Score Threshold",
+                "validate": {
+                 "max": 1,
+                 "min": 0
+                }
+               }
+              ],
+              "type": "collection",
+              "label": "Ranking Options"
+             }
+            ]
+           },
+           {
+            "label": "Function",
+            "value": "function",
+            "nested": [
+             {
+              "help": "The name of the function to call.",
+              "name": "name",
+              "type": "text",
+              "label": "Name",
+              "required": true
+             },
+             {
+              "help": "A JSON schema object describing the parameters of the function.",
+              "name": "parameters",
+              "type": "json",
+              "label": "Parameters",
+              "required": true
+             },
+             {
+              "help": "Whether to enforce strict parameter validation.",
+              "name": "strict",
+              "type": "boolean",
+              "label": "Strict",
+              "default": true,
+              "required": true
+             },
+             {
+              "help": "A description of the function.",
+              "name": "description",
+              "type": "text",
+              "label": "Description"
+             }
+            ]
+           },
+           {
+            "label": "Computer use preview",
+            "value": "computer_use_preview",
+            "nested": [
+             {
+              "help": "The height of the computer display.",
+              "name": "display_height",
+              "type": "number",
+              "label": "Display Height",
+              "required": true
+             },
+             {
+              "help": "The width of the computer display.",
+              "name": "display_width",
+              "type": "number",
+              "label": "Display Width",
+              "required": true
+             },
+             {
+              "help": "The type of computer environment to control.",
+              "name": "environment",
+              "type": "select",
+              "label": "Environment",
+              "options": [
+               {
+                "label": "Windows",
+                "value": "windows"
+               },
+               {
+                "label": "Mac",
+                "value": "mac"
+               },
+               {
+                "label": "Linux",
+                "value": "linux"
+               },
+               {
+                "label": "Browser",
+                "value": "browser"
+               }
+              ],
+              "required": true
+             }
+            ]
+           },
+           {
+            "label": "Web search preview",
+            "value": "web_search_preview",
+            "nested": [
+             {
+              "help": "High level guidance for the amount of context window space to use for the search. Medium is the default value.",
+              "name": "search_context_size",
+              "type": "select",
+              "label": "Search Context Size",
+              "options": [
+               {
+                "label": "Low",
+                "value": "low"
+               },
+               {
+                "label": "Medium",
+                "value": "medium"
+               },
+               {
+                "label": "High",
+                "value": "high"
+               }
+              ]
+             },
+             {
+              "help": "Approximate location parameters for the search.",
+              "name": "user_location",
+              "spec": [
+               {
+                "help": "The type of location approximation.",
+                "name": "type",
+                "type": "select",
+                "label": "Type",
+                "options": [
+                 {
+                  "label": "Approximate",
+                  "value": "approximate"
+                 }
+                ]
+               },
+               {
+                "help": "The city of the user, e.g. `San Francisco`.",
+                "name": "city",
+                "type": "text",
+                "label": "City"
+               },
+               {
+                "help": "The two-letter ISO country code of the user, e.g. `US`.",
+                "name": "country",
+                "type": "select",
+                "label": "Country",
+                "options": "rpc://openai-gpt-3/1/getCountryCodes"
+               },
+               {
+                "help": "The region of the user, e.g. `California`.",
+                "name": "region",
+                "type": "text",
+                "label": "Region"
+               },
+               {
+                "help": "The timezone of the user, e.g. `America/Los_Angeles`.",
+                "name": "timezone",
+                "type": "timezone",
+                "label": "Timezone"
+               }
+              ],
+              "type": "collection",
+              "label": "User Location"
+             }
+            ]
+           },
+           {
+            "label": "Web search preview (2025_03_11)",
+            "value": "web_search_preview_2025_03_11",
+            "nested": [
+             {
+              "help": "High level guidance for the amount of context window space to use for the search. Medium is the default value.",
+              "name": "search_context_size",
+              "type": "select",
+              "label": "Search Context Size",
+              "options": [
+               {
+                "label": "Low",
+                "value": "low"
+               },
+               {
+                "label": "Medium",
+                "value": "medium"
+               },
+               {
+                "label": "High",
+                "value": "high"
+               }
+              ]
+             },
+             {
+              "help": "Approximate location parameters for the search.",
+              "name": "user_location",
+              "spec": [
+               {
+                "help": "The type of location approximation.",
+                "name": "type",
+                "type": "select",
+                "label": "Type",
+                "options": [
+                 {
+                  "label": "Approximate",
+                  "value": "approximate"
+                 }
+                ]
+               },
+               {
+                "help": "The city of the user, e.g. `San Francisco`.",
+                "name": "city",
+                "type": "text",
+                "label": "City"
+               },
+               {
+                "help": "The two-letter ISO country code of the user, e.g. `US`.",
+                "name": "country",
+                "type": "select",
+                "label": "Country",
+                "options": "rpc://openai-gpt-3/1/getCountryCodes"
+               },
+               {
+                "help": "The region of the user, e.g. `California`.",
+                "name": "region",
+                "type": "text",
+                "label": "Region"
+               },
+               {
+                "help": "The timezone of the user, e.g. `America/Los_Angeles`.",
+                "name": "timezone",
+                "type": "timezone",
+                "label": "Timezone"
+               }
+              ],
+              "type": "collection",
+              "label": "User Location"
+             }
+            ]
+           },
+           {
+            "label": "MCP",
+            "value": "mcp",
+            "nested": [
+             {
+              "text": "MCP requests will automatically be approved.",
+              "type": "banner",
+              "theme": "info"
+             },
+             {
+              "name": "require_approval",
+              "type": "hidden",
+              "label": "Require Approval",
+              "default": "never"
+             },
+             {
+              "help": "A label for this MCP server, used to identify it in tool calls.",
+              "name": "server_label",
+              "type": "text",
+              "label": "Server Label",
+              "required": true
+             },
+             {
+              "help": "The URL for the MCP server.",
+              "name": "server_url",
+              "type": "url",
+              "label": "Server URL",
+              "required": true
+             },
+             {
+              "help": "List of allowed tool names.",
+              "name": "allowed_tools",
+              "spec": {
+               "type": "text",
+               "label": "Tool"
+              },
+              "type": "array",
+              "label": "Allowed Tools",
+              "labels": {
+               "add": "Add allowed tool"
+              }
+             },
+             {
+              "help": "Optional HTTP headers to send to the MCP server. Use for authentication or other purposes.",
+              "name": "headers",
+              "spec": {
+               "spec": [
+                {
+                 "name": "key",
+                 "type": "text",
+                 "label": "Key"
+                },
+                {
+                 "name": "value",
+                 "type": "text",
+                 "label": "Value"
+                }
+               ],
+               "type": "collection",
+               "label": "Header"
+              },
+              "type": "array",
+              "label": "Headers",
+              "labels": {
+               "add": "Add header"
+              }
+             }
+            ]
+           },
+           {
+            "label": "Code interpreter",
+            "value": "code_interpreter",
+            "nested": [
+             {
+              "help": "**Container**\nA container is a fully sandboxed virtual machine where the model runs Python code.\n\n**Expiration Time**\nContainers expire if unused for 20 minutes. The expiration timer is reset after any operation on the container.",
+              "name": "container_type",
+              "type": "select",
+              "label": "Container type",
+              "options": [
+               {
+                "label": "Use existing container",
+                "value": "existing_container",
+                "nested": [
+                 {
+                  "name": "container",
+                  "type": "select",
+                  "label": "Container",
+                  "options": {
+                   "store": "rpc://openai-gpt-3/1/getContainers"
+                  },
+                  "mappable": {
+                   "help": "Map the container ID. For example: `cntr_6878d51b5ffc8191b7c32c11c747cf4e`."
+                  },
+                  "required": true
+                 }
+                ]
+               },
+               {
+                "label": "Create new container",
+                "value": "new_container",
+                "nested": [
+                 {
+                  "name": "container",
+                  "spec": [
+                   {
+                    "help": "An optional list of uploaded files to make available to your code.",
+                    "name": "file_ids",
+                    "spec": {
+                     "type": "select",
+                     "label": "File ID",
+                     "options": "rpc://openai-gpt-3/1/getFiles"
+                    },
+                    "type": "array",
+                    "label": "File IDs",
+                    "labels": {
+                     "add": "Add file ID"
+                    }
+                   }
+                  ],
+                  "type": "collection",
+                  "label": "Container"
+                 }
+                ]
+               }
+              ],
+              "required": true
+             }
+            ]
+           },
+           {
+            "label": "Image generation",
+            "value": "image_generation",
+            "nested": [
+             {
+              "help": "Background type for the generated image.",
+              "name": "background",
+              "type": "select",
+              "label": "Background",
+              "options": [
+               {
+                "label": "Auto",
+                "value": "auto"
+               },
+               {
+                "label": "Transparent",
+                "value": "transparent"
+               },
+               {
+                "label": "Opaque",
+                "value": "opaque"
+               }
+              ]
+             },
+             {
+              "help": "Controls how much effort the model will exert to match the style and features of input images, especially facial features.",
+              "name": "input_fidelity",
+              "type": "select",
+              "label": "Input Fidelity",
+              "options": [
+               {
+                "label": "Low",
+                "value": "low"
+               },
+               {
+                "label": "High",
+                "value": "high"
+               }
+              ]
+             },
+             {
+              "help": "Optional mask for inpainting.",
+              "name": "input_image_mask",
+              "spec": [
+               {
+                "name": "mask_input_type",
+                "type": "select",
+                "label": "Mask Input Type",
+                "options": [
+                 {
+                  "label": "File ID",
+                  "value": "id",
+                  "nested": [
+                   {
+                    "help": "The ID of the file to be sent to the model.",
+                    "name": "file_id",
+                    "type": "select",
+                    "label": "File ID",
+                    "options": "rpc://openai-gpt-3/1/getFiles",
+                    "required": true
+                   }
+                  ]
+                 },
+                 {
+                  "label": "Image URL",
+                  "value": "url",
+                  "nested": [
+                   {
+                    "help": "The URL of the image to be sent to the model.",
+                    "name": "image_url",
+                    "type": "url",
+                    "label": "Image URL",
+                    "required": true
+                   }
+                  ]
+                 }
+                ]
+               }
+              ],
+              "type": "collection",
+              "label": "Input Image Mask"
+             },
+             {
+              "help": "Moderation level for the generated image.",
+              "name": "moderation",
+              "type": "select",
+              "label": "Moderation",
+              "options": [
+               {
+                "label": "Auto",
+                "value": "auto"
+               },
+               {
+                "label": "Low",
+                "value": "low"
+               }
+              ]
+             },
+             {
+              "help": "The output format of the generated image.",
+              "name": "output_format",
+              "type": "select",
+              "label": "Output Format",
+              "options": [
+               {
+                "label": "PNG",
+                "value": "png"
+               },
+               {
+                "label": "WEBP",
+                "value": "webp",
+                "nested": [
+                 {
+                  "help": "Compression level for the output image.",
+                  "name": "output_compression",
+                  "type": "number",
+                  "label": "Output Compression",
+                  "validate": {
+                   "max": 100,
+                   "min": 0
+                  }
+                 }
+                ]
+               },
+               {
+                "label": "JPEG",
+                "value": "jpeg",
+                "nested": [
+                 {
+                  "help": "Compression level for the output image.",
+                  "name": "output_compression",
+                  "type": "number",
+                  "label": "Output Compression",
+                  "validate": {
+                   "max": 100,
+                   "min": 0
+                  }
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "help": "The quality of the generated image.",
+              "name": "quality",
+              "type": "select",
+              "label": "Quality",
+              "options": [
+               {
+                "label": "Auto",
+                "value": "auto"
+               },
+               {
+                "label": "Low",
+                "value": "low"
+               },
+               {
+                "label": "Medium",
+                "value": "medium"
+               },
+               {
+                "label": "High",
+                "value": "high"
+               }
+              ]
+             },
+             {
+              "help": "The size of the generated image.",
+              "name": "size",
+              "type": "select",
+              "label": "Size",
+              "options": [
+               {
+                "label": "1024x1024",
+                "value": "1024x1024"
+               },
+               {
+                "label": "1024x1536",
+                "value": "1024x1536"
+               },
+               {
+                "label": "1536x1024",
+                "value": "1536x1024"
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "label": "Custom",
+            "value": "custom",
+            "nested": [
+             {
+              "help": "The name of the custom tool, used to identify it in tool calls, for example: `abc`, `abc_defg`.",
+              "name": "name",
+              "type": "text",
+              "label": "Name",
+              "required": true
+             },
+             {
+              "help": "Description of the custom tool, used to provide more context.",
+              "name": "description",
+              "type": "text",
+              "label": "Description"
+             },
+             {
+              "name": "format",
+              "spec": [
+               {
+                "name": "type",
+                "type": "select",
+                "label": "Type",
+                "options": [
+                 {
+                  "label": "Text",
+                  "value": "text"
+                 },
+                 {
+                  "label": "Grammar",
+                  "value": "grammar",
+                  "nested": [
+                   {
+                    "help": "The syntax of the grammar definition.",
+                    "name": "syntax",
+                    "type": "select",
+                    "label": "Syntax",
+                    "options": [
+                     {
+                      "label": "Lark",
+                      "value": "lark"
+                     },
+                     {
+                      "label": "Regex",
+                      "value": "regex"
+                     }
+                    ],
+                    "required": true
+                   },
+                   {
+                    "help": "The grammar definition.",
+                    "name": "definition",
+                    "type": "text",
+                    "label": "Definition",
+                    "required": true
+                   }
+                  ]
+                 }
+                ]
+               }
+              ],
+              "type": "collection",
+              "label": "Format"
+             }
+            ]
+           }
+          ],
+          "required": true
+         }
+        ],
+        "type": "collection",
+        "label": "Tool"
+       },
+       "type": "array",
+       "label": "Tools"
+      },
+      {
+       "name": "tool_choice",
+       "type": "select",
+       "label": "Tool Choice",
+       "validate": {
+        "enum": [
+         "none",
+         "auto",
+         "required",
+         "file_search",
+         "web_search_preview",
+         "computer_use_preview",
+         "code_interpreter",
+         "function",
+         "custom",
+         "allowed_tools"
+        ]
+       }
+      },
+      {
+       "name": "parallel_tool_calls",
+       "type": "boolean",
+       "label": "Parallel Tool Calls"
+      },
+      {
+       "name": "background",
+       "type": "boolean",
+       "label": "Run in Background"
+      },
+      {
+       "name": "conversationId",
+       "type": "text",
+       "label": "Conversation ID"
+      },
+      {
+       "name": "createConversation",
+       "type": "boolean",
+       "label": "Create a new conversation",
+       "required": true
+      },
+      {
+       "name": "temperature",
+       "type": "number",
+       "label": "Temperature",
+       "validate": {
+        "max": 2,
+        "min": 0
+       }
+      },
+      {
+       "name": "top_p",
+       "type": "number",
+       "label": "Top P"
+      },
+      {
+       "name": "store",
+       "type": "boolean",
+       "label": "Store"
+      },
+      {
+       "name": "previous_response_id",
+       "type": "text",
+       "label": "Previous Response ID"
+      },
+      {
+       "name": "instructions",
+       "type": "text",
+       "label": "Instructions"
+      },
+      {
+       "name": "reasoning",
+       "spec": [
+        {
+         "name": "effort",
+         "type": "select",
+         "label": "Effort",
+         "validate": {
+          "enum": [
+           "none",
+           "minimal",
+           "low",
+           "medium",
+           "high",
+           "xhigh"
+          ]
+         }
+        },
+        {
+         "name": "summary",
+         "type": "select",
+         "label": "Summary",
+         "validate": {
+          "enum": [
+           "auto",
+           "concise",
+           "detailed"
+          ]
+         }
+        }
+       ],
+       "type": "collection",
+       "label": "Reasoning"
+      },
+      {
+       "name": "format",
+       "spec": [
+        {
+         "name": "type",
+         "type": "select",
+         "label": "Type",
+         "validate": {
+          "enum": [
+           "text",
+           "json_schema",
+           "json_object"
+          ]
+         }
+        }
+       ],
+       "type": "collection",
+       "label": "Output Format"
+      },
+      {
+       "name": "truncation",
+       "type": "select",
+       "label": "Truncation",
+       "validate": {
+        "enum": [
+         "auto",
+         "disabled"
+        ]
+       }
+      },
+      {
+       "name": "include",
+       "type": "select",
+       "label": "Include",
+       "multiple": true,
+       "validate": {
+        "enum": [
+         "file_search_call.results",
+         "code_interpreter_call.outputs",
+         "message.input_image.image_url",
+         "computer_call_output.output.image_url"
+        ]
+       }
+      },
+      {
+       "name": "metadata",
+       "spec": {
+        "name": "value",
+        "spec": [
+         {
+          "name": "key",
+          "type": "text",
+          "label": "Key"
+         },
+         {
+          "name": "value",
+          "type": "text",
+          "label": "Value"
+         }
+        ],
+        "type": "collection",
+        "label": "Metadata"
+       },
+       "type": "array",
+       "label": "Metadata"
+      },
+      {
+       "name": "input",
+       "type": "text",
+       "label": "Prompt"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "model": {
+        "mode": "chose",
+        "label": "gpt-5.2 (system)The best model for coding and agentic tasks across industries"
+       },
+       "store": {
+        "mode": "chose"
+       },
+       "tools": {
+        "mode": "chose"
+       },
+       "format": {
+        "nested": {
+         "type": {
+          "mode": "chose",
+          "label": "Empty"
+         }
+        }
+       },
+       "include": {
+        "mode": "chose"
+       },
+       "metadata": {
+        "mode": "chose"
+       },
+       "reasoning": {
+        "nested": {
+         "effort": {
+          "mode": "chose",
+          "label": "Empty"
+         },
+         "summary": {
+          "mode": "chose",
+          "label": "Empty"
+         }
+        }
+       },
+       "background": {
+        "mode": "chose"
+       },
+       "truncation": {
+        "mode": "chose",
+        "label": "Auto"
+       },
+       "tool_choice": {
+        "mode": "chose",
+        "label": "Empty"
+       },
+       "inputContentType": {
+        "mode": "chose",
+        "label": "Text prompt"
+       },
+       "createConversation": {
+        "mode": "chose"
+       },
+       "parallel_tool_calls": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "openai-gpt-3"
+        },
+        "label": "My OpenAI connection"
+       }
+      }
+     },
+     "designer": {
+      "x": 600,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:openai-gpt-3",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3576859
+    }
+   },
+   {
+    "id": 8,
+    "filter": {
+     "name": "",
+     "conditions": [
+      [
+       {
+        "a": "{{18.result}}",
+        "b": "yes",
+        "o": "text:equal"
+       }
+      ]
+     ]
+    },
+    "mapper": {
+     "from": "drive",
+     "mode": "select",
+     "values": {
+      "1": "{{now}}",
+      "2": "{{12.title}}",
+      "3": "{{17.Description}}",
+      "4": "{{12.url}}"
+     },
+     "sheetId": "r/agency",
+     "spreadsheetId": "/1BTkj3QUjm-fH0pAB82D_UdNDN6PgDyDRl-Ph6K0JHLU",
+     "includesHeaders": true,
+     "insertDataOption": "INSERT_ROWS",
+     "valueInputOption": "USER_ENTERED",
+     "insertUnformatted": false
+    },
+    "module": "google-sheets:addRow",
+    "version": 2,
+    "metadata": {
+     "expect": [
+      {
+       "name": "mode",
+       "type": "select",
+       "label": "Search Method",
+       "required": true,
+       "validate": {
+        "enum": [
+         "select",
+         "fromAll",
+         "map"
+        ]
+       }
+      },
+      {
+       "name": "insertUnformatted",
+       "type": "boolean",
+       "label": "Unformatted",
+       "required": true
+      },
+      {
+       "name": "valueInputOption",
+       "type": "select",
+       "label": "Value input option",
+       "validate": {
+        "enum": [
+         "USER_ENTERED",
+         "RAW"
+        ]
+       }
+      },
+      {
+       "name": "insertDataOption",
+       "type": "select",
+       "label": "Insert data option",
+       "validate": {
+        "enum": [
+         "INSERT_ROWS",
+         "OVERWRITE"
+        ]
+       }
+      },
+      {
+       "name": "from",
+       "type": "select",
+       "label": "Drive",
+       "required": true,
+       "validate": {
+        "enum": [
+         "drive",
+         "share",
+         "team"
+        ]
+       }
+      },
+      {
+       "name": "spreadsheetId",
+       "type": "file",
+       "label": "Spreadsheet ID",
+       "required": true
+      },
+      {
+       "name": "sheetId",
+       "type": "select",
+       "label": "Sheet Name",
+       "required": true
+      },
+      {
+       "name": "includesHeaders",
+       "type": "select",
+       "label": "Table contains headers",
+       "required": true,
+       "validate": {
+        "enum": [
+         true,
+         false
+        ]
+       }
+      },
+      {
+       "name": "values",
+       "spec": [
+        {
+         "name": "0",
+         "type": "text",
+         "label": "Valid? (A)"
+        },
+        {
+         "name": "1",
+         "type": "text",
+         "label": "Date (B)"
+        },
+        {
+         "name": "2",
+         "type": "text",
+         "label": "Ideas (C)"
+        },
+        {
+         "name": "3",
+         "type": "text",
+         "label": "Explaination (D)"
+        },
+        {
+         "name": "4",
+         "type": "text",
+         "label": "Link (E)"
+        }
+       ],
+       "type": "collection",
+       "label": "Values"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "from": {
+        "label": "My Drive"
+       },
+       "mode": {
+        "label": "Search by path"
+       },
+       "sheetId": {
+        "label": "r/agency"
+       },
+       "spreadsheetId": {
+        "path": [
+         "Content Ideas (Reddit)"
+        ]
+       },
+       "includesHeaders": {
+        "label": "Yes",
+        "nested": [
+         {
+          "name": "values",
+          "spec": [
+           {
+            "name": "0",
+            "type": "text",
+            "label": "Valid? (A)"
+           },
+           {
+            "name": "1",
+            "type": "text",
+            "label": "Date (B)"
+           },
+           {
+            "name": "2",
+            "type": "text",
+            "label": "Ideas (C)"
+           },
+           {
+            "name": "3",
+            "type": "text",
+            "label": "Explaination (D)"
+           },
+           {
+            "name": "4",
+            "type": "text",
+            "label": "Link (E)"
+           }
+          ],
+          "type": "collection",
+          "label": "Values"
+         }
+        ]
+       },
+       "insertDataOption": {
+        "mode": "chose",
+        "label": "Insert rows"
+       },
+       "valueInputOption": {
+        "mode": "chose",
+        "label": "User entered"
+       },
+       "insertUnformatted": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "google"
+        },
+        "label": "My Google connection (scale@dulcy.io)"
+       }
+      }
+     },
+     "designer": {
+      "x": 898,
+      "y": 4
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:google",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3589648
+    }
+   }
+  ],
+  "name": "Reddit Auto Scrape Ideas for YouTube (agency)",
+  "metadata": {
+   "instant": false,
+   "version": 1,
+   "designer": {
+    "orphans": []
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "days": [
+    6
+   ],
+   "time": "08:30",
+   "type": "weekly"
+  }
+ }
+}

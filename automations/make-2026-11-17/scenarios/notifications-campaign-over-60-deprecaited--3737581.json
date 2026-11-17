@@ -1,0 +1,986 @@
+{
+ "id": 3737581,
+ "name": "Notifications - Campaign over 60% (deprecaited)",
+ "teamId": 629049,
+ "hookId": 2118078,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 246732,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": false,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "gateway",
+  "airtable",
+  "util",
+  "builtin",
+  "airtable",
+  "airtable"
+ ],
+ "lastEdit": "2026-07-23T05:07:16.630Z",
+ "scheduling": {
+  "type": "immediately",
+  "maximum_runs_per_minute": 100
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2025-03-06T02:05:12.185Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": false,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 1,
+    "mapper": {},
+    "module": "gateway:CustomWebHook",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "hook": {
+        "data": {
+         "editable": "true"
+        },
+        "label": "Campaign over 60%"
+       }
+      }
+     },
+     "designer": {
+      "x": -193,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "hook",
+       "type": "hook:gateway-webhook",
+       "label": "Webhook",
+       "required": true
+      },
+      {
+       "name": "maxResults",
+       "type": "number",
+       "label": "Maximum number of results"
+      }
+     ]
+    },
+    "parameters": {
+     "hook": 2118078,
+     "maxResults": 1
+    }
+   },
+   {
+    "id": 14,
+    "module": "airtable:ActionSearchRecords",
+    "version": 3,
+    "metadata": {
+     "designer": {
+      "x": 62,
+      "y": -172,
+      "messages": [
+       {
+        "message": "The module is not set up.",
+        "category": "setupreq",
+        "severity": "error"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "id": 8,
+    "filter": {
+     "name": "",
+     "conditions": [
+      [
+       {
+        "a": "{{1.Progress}}",
+        "b": "0.59",
+        "o": "number:greater"
+       },
+       {
+        "a": "{{1.Progress}}",
+        "b": "0.99",
+        "o": "number:lessorequal"
+       }
+      ]
+     ]
+    },
+    "mapper": {
+     "name": "days left for campaign end",
+     "scope": "roundtrip",
+     "value": "{{round((1.`Total Leads` - 1.`Total Leads Contacted`) / 1500)}}"
+    },
+    "module": "util:SetVariable2",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "name",
+       "type": "text",
+       "label": "Variable name",
+       "required": true
+      },
+      {
+       "name": "scope",
+       "type": "select",
+       "label": "Variable lifetime",
+       "required": true,
+       "validate": {
+        "enum": [
+         "roundtrip",
+         "execution"
+        ]
+       }
+      },
+      {
+       "name": "value",
+       "type": "any",
+       "label": "Variable value"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "scope": {
+        "label": "One cycle"
+       }
+      }
+     },
+     "designer": {
+      "x": 300,
+      "y": 0,
+      "name": "days left for campaign end - 1500 daily"
+     }
+    },
+    "parameters": {}
+   },
+   {
+    "id": 10,
+    "mapper": null,
+    "module": "builtin:BasicRouter",
+    "routes": [
+     {
+      "flow": [
+       {
+        "id": 9,
+        "filter": {
+         "name": "Client linked",
+         "conditions": [
+          [
+           {
+            "a": "{{1.Client[].id}}",
+            "o": "exist"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "base": "appxqINt5XKw7a76A",
+         "table": "tblS7lGvZrQV5K1NI",
+         "record": {
+          "fld1LzwM564UflB1b": "📝In Progress",
+          "fldDeK8fKWOOt7vuz": [
+           "{{1.Client[].id}}"
+          ],
+          "fldZNGwIp2Fa5UzWJ": [
+           "Cold Email Campaign",
+           "LinkedIn Campaign"
+          ],
+          "fldeBsPyS2A0nxwzm": [
+           "recTWseSmBgjvYfnU"
+          ],
+          "fldkQ10si1OK1QToV": [
+           "rec0uiatKT3onVuwk"
+          ],
+          "fldlTZUpSfxPhyicq": "{{addDays(now; 8.`days left for campaign end`)}}"
+         },
+         "typecast": false,
+         "useColumnId": false
+        },
+        "module": "airtable:ActionCreateRecord",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "base",
+           "type": "select",
+           "label": "Base",
+           "required": true
+          },
+          {
+           "name": "typecast",
+           "type": "boolean",
+           "label": "Smart links",
+           "required": true
+          },
+          {
+           "name": "useColumnId",
+           "type": "boolean",
+           "label": "Use Column ID",
+           "required": true
+          },
+          {
+           "name": "table",
+           "type": "select",
+           "label": "Table",
+           "required": true
+          },
+          {
+           "name": "record",
+           "spec": [
+            {
+             "name": "fldrKj1xB2uB5AqD9",
+             "type": "text",
+             "label": "Notes"
+            },
+            {
+             "mode": "edit",
+             "name": "fld1LzwM564UflB1b",
+             "type": "select",
+             "label": "Stage"
+            },
+            {
+             "name": "fldZNGwIp2Fa5UzWJ",
+             "spec": {
+              "mode": "edit",
+              "name": "value",
+              "type": "select",
+              "label": "Value",
+              "dynamic": true,
+              "options": [
+               {
+                "label": "Cold Email Campaign",
+                "value": "Cold Email Campaign"
+               },
+               {
+                "label": "LinkedIn Campaign",
+                "value": "LinkedIn Campaign"
+               },
+               {
+                "label": "Lead List",
+                "value": "Lead List"
+               },
+               {
+                "label": "Task",
+                "value": "Task"
+               },
+               {
+                "label": "Growth Plan",
+                "value": "Growth Plan"
+               },
+               {
+                "label": "Land & Expand",
+                "value": "Land & Expand"
+               },
+               {
+                "label": "Onboarding",
+                "value": "Onboarding"
+               },
+               {
+                "label": "RB2B",
+                "value": "RB2B"
+               }
+              ],
+              "validate": false
+             },
+             "type": "array",
+             "label": "Tags"
+            },
+            {
+             "name": "fldDeK8fKWOOt7vuz",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Client"
+            },
+            {
+             "name": "fldkQ10si1OK1QToV",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Person"
+            },
+            {
+             "name": "fldeBsPyS2A0nxwzm",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Templates"
+            },
+            {
+             "name": "fldlTZUpSfxPhyicq",
+             "time": false,
+             "type": "date",
+             "label": "Due Date"
+            },
+            {
+             "name": "fldo1i5g7g7LYbzYv",
+             "type": "text",
+             "label": "Custom Name Override"
+            }
+           ],
+           "type": "collection",
+           "label": "Record"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "base": {
+            "label": "Alex"
+           },
+           "table": {
+            "label": "PM",
+            "nested": [
+             {
+              "name": "record",
+              "spec": [
+               {
+                "name": "fldrKj1xB2uB5AqD9",
+                "type": "text",
+                "label": "Notes"
+               },
+               {
+                "mode": "edit",
+                "name": "fld1LzwM564UflB1b",
+                "type": "select",
+                "label": "Stage",
+                "dynamic": true,
+                "options": [
+                 {
+                  "label": "💡Ideas",
+                  "value": "💡Ideas"
+                 },
+                 {
+                  "label": "📝In Progress",
+                  "value": "📝In Progress"
+                 },
+                 {
+                  "label": "🚀Launched",
+                  "value": "🚀Launched"
+                 },
+                 {
+                  "label": "🎓Review",
+                  "value": "🎓Review"
+                 },
+                 {
+                  "label": "✋Paused",
+                  "value": "✋Paused"
+                 },
+                 {
+                  "label": "🔁Continous",
+                  "value": "🔁Continous"
+                 },
+                 {
+                  "label": "✅Completed",
+                  "value": "✅Completed"
+                 }
+                ],
+                "validate": false
+               },
+               {
+                "name": "fldZNGwIp2Fa5UzWJ",
+                "spec": {
+                 "mode": "edit",
+                 "type": "select",
+                 "label": "Value",
+                 "dynamic": true,
+                 "options": [
+                  {
+                   "label": "Cold Email Campaign",
+                   "value": "Cold Email Campaign"
+                  },
+                  {
+                   "label": "LinkedIn Campaign",
+                   "value": "LinkedIn Campaign"
+                  },
+                  {
+                   "label": "Lead List",
+                   "value": "Lead List"
+                  },
+                  {
+                   "label": "Task",
+                   "value": "Task"
+                  },
+                  {
+                   "label": "Growth Plan",
+                   "value": "Growth Plan"
+                  },
+                  {
+                   "label": "Land & Expand",
+                   "value": "Land & Expand"
+                  },
+                  {
+                   "label": "Onboarding",
+                   "value": "Onboarding"
+                  },
+                  {
+                   "label": "RB2B",
+                   "value": "RB2B"
+                  }
+                 ],
+                 "validate": false
+                },
+                "type": "array",
+                "label": "Tags"
+               },
+               {
+                "name": "fldDeK8fKWOOt7vuz",
+                "spec": {
+                 "label": "Record ID"
+                },
+                "type": "array",
+                "label": "Client"
+               },
+               {
+                "name": "fldkQ10si1OK1QToV",
+                "spec": {
+                 "label": "Record ID"
+                },
+                "type": "array",
+                "label": "Person"
+               },
+               {
+                "name": "fldeBsPyS2A0nxwzm",
+                "spec": {
+                 "label": "Record ID"
+                },
+                "type": "array",
+                "label": "Templates"
+               },
+               {
+                "name": "fldlTZUpSfxPhyicq",
+                "time": false,
+                "type": "date",
+                "label": "Due Date"
+               },
+               {
+                "name": "fldo1i5g7g7LYbzYv",
+                "type": "text",
+                "label": "Custom Name Override"
+               }
+              ],
+              "type": "collection",
+              "label": "Record"
+             }
+            ]
+           },
+           "record": {
+            "nested": {
+             "fld1LzwM564UflB1b": {
+              "mode": "chose",
+              "label": "📝In Progress"
+             },
+             "fldDeK8fKWOOt7vuz": {
+              "mode": "chose",
+              "items": [
+               null
+              ]
+             },
+             "fldZNGwIp2Fa5UzWJ": {
+              "mode": "chose",
+              "items": [
+               {
+                "value": {
+                 "mode": "chose",
+                 "label": "Cold Email Campaign"
+                }
+               },
+               {
+                "value": {
+                 "mode": "chose",
+                 "label": "LinkedIn Campaign"
+                }
+               }
+              ]
+             },
+             "fldeBsPyS2A0nxwzm": {
+              "mode": "chose",
+              "items": [
+               null
+              ]
+             },
+             "fldkQ10si1OK1QToV": {
+              "mode": "chose",
+              "items": [
+               null
+              ]
+             }
+            }
+           },
+           "typecast": {
+            "mode": "chose"
+           },
+           "useColumnId": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "airtable3"
+            },
+            "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+           }
+          }
+         },
+         "designer": {
+          "x": 900,
+          "y": -150
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:airtable3,airtable2",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3589602
+        }
+       }
+      ]
+     },
+     {
+      "flow": [
+       {
+        "id": 11,
+        "filter": {
+         "name": "No client linked",
+         "conditions": [
+          [
+           {
+            "a": "{{1.Client[].id}}",
+            "o": "notexist"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "base": "appxqINt5XKw7a76A",
+         "table": "tblS7lGvZrQV5K1NI",
+         "record": {
+          "fld1LzwM564UflB1b": "📝In Progress",
+          "fldZNGwIp2Fa5UzWJ": [
+           "Cold Email Campaign",
+           "LinkedIn Campaign"
+          ],
+          "fldeBsPyS2A0nxwzm": [
+           "recTWseSmBgjvYfnU"
+          ],
+          "fldkQ10si1OK1QToV": [
+           "recBQvLtKQxo4nk4O"
+          ],
+          "fldlTZUpSfxPhyicq": "{{addDays(now; 8.`days left for campaign end`)}}"
+         },
+         "typecast": false,
+         "useColumnId": false
+        },
+        "module": "airtable:ActionCreateRecord",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "base",
+           "type": "select",
+           "label": "Base",
+           "required": true
+          },
+          {
+           "name": "typecast",
+           "type": "boolean",
+           "label": "Smart links",
+           "required": true
+          },
+          {
+           "name": "useColumnId",
+           "type": "boolean",
+           "label": "Use Column ID",
+           "required": true
+          },
+          {
+           "name": "table",
+           "type": "select",
+           "label": "Table",
+           "required": true
+          },
+          {
+           "name": "record",
+           "spec": [
+            {
+             "name": "fldrKj1xB2uB5AqD9",
+             "type": "text",
+             "label": "Notes"
+            },
+            {
+             "mode": "edit",
+             "name": "fld1LzwM564UflB1b",
+             "type": "select",
+             "label": "Stage"
+            },
+            {
+             "name": "fldZNGwIp2Fa5UzWJ",
+             "spec": {
+              "mode": "edit",
+              "name": "value",
+              "type": "select",
+              "label": "Value",
+              "dynamic": true,
+              "options": [
+               {
+                "label": "Cold Email Campaign",
+                "value": "Cold Email Campaign"
+               },
+               {
+                "label": "LinkedIn Campaign",
+                "value": "LinkedIn Campaign"
+               },
+               {
+                "label": "Lead List",
+                "value": "Lead List"
+               },
+               {
+                "label": "Task",
+                "value": "Task"
+               },
+               {
+                "label": "Growth Plan",
+                "value": "Growth Plan"
+               },
+               {
+                "label": "Land & Expand",
+                "value": "Land & Expand"
+               },
+               {
+                "label": "Onboarding",
+                "value": "Onboarding"
+               },
+               {
+                "label": "RB2B",
+                "value": "RB2B"
+               }
+              ],
+              "validate": false
+             },
+             "type": "array",
+             "label": "Tags"
+            },
+            {
+             "name": "fldDeK8fKWOOt7vuz",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Client"
+            },
+            {
+             "name": "fldkQ10si1OK1QToV",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Person"
+            },
+            {
+             "name": "fldeBsPyS2A0nxwzm",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Templates"
+            },
+            {
+             "name": "fldlTZUpSfxPhyicq",
+             "time": false,
+             "type": "date",
+             "label": "Due Date"
+            },
+            {
+             "name": "fldo1i5g7g7LYbzYv",
+             "type": "text",
+             "label": "Custom Name Override"
+            }
+           ],
+           "type": "collection",
+           "label": "Record"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "base": {
+            "label": "Alex"
+           },
+           "table": {
+            "label": "PM",
+            "nested": [
+             {
+              "name": "record",
+              "spec": [
+               {
+                "name": "fldrKj1xB2uB5AqD9",
+                "type": "text",
+                "label": "Notes"
+               },
+               {
+                "mode": "edit",
+                "name": "fld1LzwM564UflB1b",
+                "type": "select",
+                "label": "Stage",
+                "dynamic": true,
+                "options": [
+                 {
+                  "label": "💡Ideas",
+                  "value": "💡Ideas"
+                 },
+                 {
+                  "label": "📝In Progress",
+                  "value": "📝In Progress"
+                 },
+                 {
+                  "label": "🚀Launched",
+                  "value": "🚀Launched"
+                 },
+                 {
+                  "label": "🎓Review",
+                  "value": "🎓Review"
+                 },
+                 {
+                  "label": "✋Paused",
+                  "value": "✋Paused"
+                 },
+                 {
+                  "label": "🔁Continous",
+                  "value": "🔁Continous"
+                 },
+                 {
+                  "label": "✅Completed",
+                  "value": "✅Completed"
+                 }
+                ],
+                "validate": false
+               },
+               {
+                "name": "fldZNGwIp2Fa5UzWJ",
+                "spec": {
+                 "mode": "edit",
+                 "type": "select",
+                 "label": "Value",
+                 "dynamic": true,
+                 "options": [
+                  {
+                   "label": "Cold Email Campaign",
+                   "value": "Cold Email Campaign"
+                  },
+                  {
+                   "label": "LinkedIn Campaign",
+                   "value": "LinkedIn Campaign"
+                  },
+                  {
+                   "label": "Lead List",
+                   "value": "Lead List"
+                  },
+                  {
+                   "label": "Task",
+                   "value": "Task"
+                  },
+                  {
+                   "label": "Growth Plan",
+                   "value": "Growth Plan"
+                  },
+                  {
+                   "label": "Land & Expand",
+                   "value": "Land & Expand"
+                  },
+                  {
+                   "label": "Onboarding",
+                   "value": "Onboarding"
+                  },
+                  {
+                   "label": "RB2B",
+                   "value": "RB2B"
+                  }
+                 ],
+                 "validate": false
+                },
+                "type": "array",
+                "label": "Tags"
+               },
+               {
+                "name": "fldDeK8fKWOOt7vuz",
+                "spec": {
+                 "label": "Record ID"
+                },
+                "type": "array",
+                "label": "Client"
+               },
+               {
+                "name": "fldkQ10si1OK1QToV",
+                "spec": {
+                 "label": "Record ID"
+                },
+                "type": "array",
+                "label": "Person"
+               },
+               {
+                "name": "fldeBsPyS2A0nxwzm",
+                "spec": {
+                 "label": "Record ID"
+                },
+                "type": "array",
+                "label": "Templates"
+               },
+               {
+                "name": "fldlTZUpSfxPhyicq",
+                "time": false,
+                "type": "date",
+                "label": "Due Date"
+               },
+               {
+                "name": "fldo1i5g7g7LYbzYv",
+                "type": "text",
+                "label": "Custom Name Override"
+               }
+              ],
+              "type": "collection",
+              "label": "Record"
+             }
+            ]
+           },
+           "record": {
+            "nested": {
+             "fld1LzwM564UflB1b": {
+              "mode": "chose",
+              "label": "📝In Progress"
+             },
+             "fldDeK8fKWOOt7vuz": {
+              "mode": "chose"
+             },
+             "fldZNGwIp2Fa5UzWJ": {
+              "mode": "chose",
+              "items": [
+               {
+                "value": {
+                 "mode": "chose",
+                 "label": "Cold Email Campaign"
+                }
+               },
+               {
+                "value": {
+                 "mode": "chose",
+                 "label": "LinkedIn Campaign"
+                }
+               }
+              ]
+             },
+             "fldeBsPyS2A0nxwzm": {
+              "mode": "chose",
+              "items": [
+               null
+              ]
+             },
+             "fldkQ10si1OK1QToV": {
+              "mode": "chose",
+              "items": [
+               null
+              ]
+             }
+            }
+           },
+           "typecast": {
+            "mode": "chose"
+           },
+           "useColumnId": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "airtable3"
+            },
+            "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+           }
+          }
+         },
+         "designer": {
+          "x": 919,
+          "y": 168
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:airtable3,airtable2",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3589602
+        }
+       }
+      ]
+     }
+    ],
+    "version": 1,
+    "metadata": {
+     "designer": {
+      "x": 600,
+      "y": 0
+     }
+    }
+   }
+  ],
+  "name": "Notifications - Campaign over 60% (deprecaited)",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": []
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately",
+   "maximum_runs_per_minute": 100
+  }
+ }
+}

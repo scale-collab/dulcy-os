@@ -1,0 +1,366 @@
+{
+ "id": 3248896,
+ "name": "[CLOSE] Engaged/Unqualified Pause",
+ "teamId": 629049,
+ "hookId": 1846827,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 208970,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": false,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "close-crm",
+  "close-crm",
+  "close-crm"
+ ],
+ "lastEdit": "2024-10-21T17:11:14.956Z",
+ "scheduling": {
+  "type": "immediately"
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2024-10-21T16:13:36.983Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": false,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 1,
+    "mapper": {},
+    "module": "close-crm:TriggerNewLeadStatus",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "__IMTHOOK__": {
+        "data": {
+         "editable": "false"
+        },
+        "label": "My Lead Status Changed webhook.."
+       }
+      }
+     },
+     "designer": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTHOOK__",
+       "type": "hook:close-crm17",
+       "label": "Webhook",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTHOOK__": 1846827
+    }
+   },
+   {
+    "id": 12,
+    "filter": {
+     "name": "Status",
+     "conditions": [
+      [
+       {
+        "a": "{{1.event.object_type}}",
+        "b": "Not Interested/Looking/Respond",
+        "o": "text:equal"
+       }
+      ],
+      [
+       {
+        "a": "{{1.event.object_type}}",
+        "b": "Engaged",
+        "o": "text:equal"
+       }
+      ],
+      [
+       {
+        "a": "{{1.event.object_type}}",
+        "b": "Unqualified",
+        "o": "text:equal"
+       }
+      ]
+     ]
+    },
+    "mapper": {
+     "qs": [
+      {
+       "key": "contact_id",
+       "value": "{{1.event.data.contact_ids[]}}"
+      }
+     ],
+     "url": "api/v1/sequence_subscription/",
+     "method": "GET",
+     "headers": [
+      {
+       "key": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "module": "close-crm:UniversallMakeAnAPICall",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "url",
+       "type": "text",
+       "label": "URL",
+       "required": true
+      },
+      {
+       "name": "method",
+       "type": "select",
+       "label": "Method",
+       "required": true,
+       "validate": {
+        "enum": [
+         "GET",
+         "POST",
+         "PUT",
+         "PATCH",
+         "DELETE"
+        ]
+       }
+      },
+      {
+       "name": "headers",
+       "spec": [
+        {
+         "name": "key",
+         "type": "text",
+         "label": "Key"
+        },
+        {
+         "name": "value",
+         "type": "text",
+         "label": "Value"
+        }
+       ],
+       "type": "array",
+       "label": "Headers"
+      },
+      {
+       "name": "qs",
+       "spec": [
+        {
+         "name": "key",
+         "type": "text",
+         "label": "Key"
+        },
+        {
+         "name": "value",
+         "type": "text",
+         "label": "Value"
+        }
+       ],
+       "type": "array",
+       "label": "Query String"
+      },
+      {
+       "name": "body",
+       "type": "any",
+       "label": "Body"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "qs": {
+        "mode": "chose",
+        "items": [
+         null
+        ]
+       },
+       "method": {
+        "mode": "chose",
+        "label": "GET"
+       },
+       "headers": {
+        "mode": "chose",
+        "items": [
+         null
+        ]
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "close-crm"
+        },
+        "label": "Georgey Tishin Delux (alexander@dulcymedia.com)"
+       }
+      }
+     },
+     "designer": {
+      "x": 295,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:close-crm",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3600464
+    }
+   },
+   {
+    "id": 8,
+    "mapper": {
+     "id": "{{12.body.data[].sequence_id}}",
+     "status": "paused"
+    },
+    "module": "close-crm:ActionUpdateEmailSequenceSub",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "mode": "edit",
+       "name": "id",
+       "type": "select",
+       "label": "Email Sequence ID",
+       "required": true
+      },
+      {
+       "name": "name",
+       "type": "text",
+       "label": "Name"
+      },
+      {
+       "name": "status",
+       "type": "select",
+       "label": "Status",
+       "validate": {
+        "enum": [
+         "active",
+         "paused"
+        ]
+       }
+      },
+      {
+       "name": "steps",
+       "spec": {
+        "name": "value",
+        "spec": [
+         {
+          "name": "id",
+          "type": "text",
+          "label": "Step ID",
+          "required": true
+         }
+        ],
+        "type": "collection"
+       },
+       "type": "array",
+       "label": "Steps"
+      },
+      {
+       "mode": "edit",
+       "name": "schedule_id",
+       "type": "select",
+       "label": "Schedule ID"
+      },
+      {
+       "name": "timezone",
+       "type": "select",
+       "label": "Timezone"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "id": {
+        "mode": "edit"
+       },
+       "steps": {
+        "mode": "chose"
+       },
+       "status": {
+        "mode": "chose",
+        "label": "Paused"
+       },
+       "timezone": {
+        "mode": "chose",
+        "label": "Empty"
+       },
+       "schedule_id": {
+        "mode": "edit"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "close-crm"
+        },
+        "label": "Georgey Tishin Delux (alexander@dulcymedia.com)"
+       }
+      }
+     },
+     "designer": {
+      "x": 592,
+      "y": -2
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:close-crm",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3600464
+    }
+   }
+  ],
+  "name": "[CLOSE] Engaged/Unqualified Pause",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": []
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately"
+  }
+ }
+}

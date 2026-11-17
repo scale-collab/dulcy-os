@@ -1,0 +1,2264 @@
+{
+ "id": 4231501,
+ "name": "Email Account Updates",
+ "teamId": 629049,
+ "hookId": 2409137,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 246732,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": true,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "gateway",
+  "builtin",
+  "http",
+  "airtable",
+  "http",
+  "airtable",
+  "builtin",
+  "http",
+  "airtable",
+  "http",
+  "airtable"
+ ],
+ "lastEdit": "2025-08-22T16:29:15.534Z",
+ "scheduling": {
+  "type": "immediately",
+  "maximum_runs_per_minute": null
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2025-08-21T19:32:52.555Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": true,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 1,
+    "mapper": {},
+    "module": "gateway:CustomWebHook",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "hook": {
+        "data": {
+         "editable": "true"
+        },
+        "label": "Email Account Updates"
+       }
+      }
+     },
+     "designer": {
+      "x": -145,
+      "y": 426
+     },
+     "parameters": [
+      {
+       "name": "hook",
+       "type": "hook:gateway-webhook",
+       "label": "Webhook",
+       "required": true
+      },
+      {
+       "name": "maxResults",
+       "type": "number",
+       "label": "Maximum number of results"
+      }
+     ]
+    },
+    "parameters": {
+     "hook": 2409137,
+     "maxResults": 1
+    }
+   },
+   {
+    "id": 2,
+    "mapper": null,
+    "module": "builtin:BasicRouter",
+    "routes": [
+     {
+      "flow": [
+       {
+        "id": 3,
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://send.dulcy.io/api/sender-emails/{{1.`Email ID`}}",
+         "data": "{\n  \"daily_limit\": {{1.email_daily_limit}}\n}",
+         "gzip": true,
+         "method": "patch",
+         "headers": [
+          {
+           "name": "Authorization",
+           "value": "Bearer {{1.`EmailBison API (from Client)`[]}}"
+          },
+          {
+           "name": "Content-Type",
+           "value": "application/json"
+          }
+         ],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "raw",
+         "contentType": "application/json",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": true,
+         "followRedirect": true,
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "contentType",
+           "type": "select",
+           "label": "Content type",
+           "validate": {
+            "enum": [
+             "text/plain",
+             "application/json",
+             "application/xml",
+             "text/xml",
+             "text/html",
+             "custom"
+            ]
+           }
+          },
+          {
+           "name": "data",
+           "type": "buffer",
+           "label": "Request content"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "PATCH"
+           },
+           "headers": {
+            "mode": "chose",
+            "items": [
+             null,
+             null
+            ]
+           },
+           "bodyType": {
+            "label": "Raw"
+           },
+           "contentType": {
+            "label": "JSON (application/json)"
+           }
+          }
+         },
+         "designer": {
+          "x": 577,
+          "y": 41,
+          "name": "Update Daily Limit"
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": false,
+         "useNewZLibDeCompress": true
+        }
+       },
+       {
+        "id": 9,
+        "mapper": {
+         "id": "{{1.recordId}}",
+         "base": "appxqINt5XKw7a76A",
+         "table": "tblMSOBJ0wMgxSg4l",
+         "record": {
+          "fldrVXRwWtveMC1Jy": "N/A"
+         },
+         "typecast": false,
+         "useColumnId": false
+        },
+        "module": "airtable:ActionUpdateRecords",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "base",
+           "type": "select",
+           "label": "Base",
+           "required": true
+          },
+          {
+           "name": "typecast",
+           "type": "boolean",
+           "label": "Smart links",
+           "required": true
+          },
+          {
+           "name": "useColumnId",
+           "type": "boolean",
+           "label": "Use Column ID",
+           "required": true
+          },
+          {
+           "name": "table",
+           "type": "select",
+           "label": "Table",
+           "required": true
+          },
+          {
+           "name": "id",
+           "type": "text",
+           "label": "Record ID",
+           "required": true
+          },
+          {
+           "name": "record",
+           "spec": [
+            {
+             "name": "fldRYSB93NNdBc4Js",
+             "type": "text",
+             "label": "Email Account"
+            },
+            {
+             "name": "fldR19WUqSSBVQcPO",
+             "type": "number",
+             "label": "Email ID"
+            },
+            {
+             "name": "fldWB4pvEgQ8aYlT2",
+             "type": "number",
+             "label": "Workspace ID"
+            },
+            {
+             "name": "fldURrj0qP1DnAKyD",
+             "time": false,
+             "type": "date",
+             "label": "Warmup Start Date"
+            },
+            {
+             "name": "fldm2q2OfWBOWJpvq",
+             "type": "number",
+             "label": "Number of Disconnects"
+            },
+            {
+             "name": "flduDcGap2GSsqUia",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Client"
+            },
+            {
+             "name": "fldJzkpAXYvAXwstG",
+             "time": true,
+             "type": "date",
+             "label": "Last Warmup Check"
+            },
+            {
+             "name": "fldFI8B4tk1H5AN7b",
+             "type": "boolean",
+             "label": "warmup_enabled"
+            },
+            {
+             "name": "fldipNbxDT5NutIVl",
+             "type": "number",
+             "label": "warmup_daily_limit"
+            },
+            {
+             "name": "fldbhjuMGnrX0fI0j",
+             "type": "number",
+             "label": "warmup_emails_sent"
+            },
+            {
+             "name": "fldXvR8XePYtAx4Bo",
+             "type": "number",
+             "label": "warmup_replies_received"
+            },
+            {
+             "name": "fldt51ApUYwF4mMXq",
+             "type": "number",
+             "label": "warmup_emails_saved_from_spam"
+            },
+            {
+             "name": "fldzAnqlrgiM6iIg5",
+             "type": "number",
+             "label": "warmup_score"
+            },
+            {
+             "name": "fldtMbdZuuebndFtQ",
+             "type": "number",
+             "label": "warmup_bounces_received_count"
+            },
+            {
+             "name": "fldN0OuVQvjWKgZSk",
+             "type": "number",
+             "label": "warmup_bounces_caused_count"
+            },
+            {
+             "name": "fldA1KUejYDma4Pjn",
+             "type": "number",
+             "label": "warmup_disabled_for_bouncing_count"
+            },
+            {
+             "name": "flddauyX2jz0OagRs",
+             "type": "number",
+             "label": "emails_sent_count"
+            },
+            {
+             "name": "fldwH5nm92s2WJ2Jk",
+             "type": "number",
+             "label": "total_replied_count"
+            },
+            {
+             "name": "fldImtATaSoDueLPG",
+             "type": "number",
+             "label": "unsubscribed_count"
+            },
+            {
+             "name": "fld38XYE9GeBmSdei",
+             "type": "number",
+             "label": "bounced_count"
+            },
+            {
+             "name": "fldj8YU1b3CpzMVhM",
+             "type": "number",
+             "label": "unique_replied_count"
+            },
+            {
+             "name": "fldPXgdtNEnLejTRH",
+             "type": "number",
+             "label": "total_leads_contacted_count"
+            },
+            {
+             "name": "fldrM37XumnbxNg6o",
+             "type": "number",
+             "label": "interested_leads_count"
+            },
+            {
+             "name": "fldvyAN2hm6gmfG86",
+             "type": "text",
+             "label": "email_status"
+            },
+            {
+             "name": "fldEHciTupaM82ONm",
+             "type": "text",
+             "label": "email_type"
+            },
+            {
+             "name": "fldBP1gljUUM44JMk",
+             "type": "number",
+             "label": "email_daily_limit"
+            },
+            {
+             "name": "fldivgpoNGwU8MW7p",
+             "time": true,
+             "type": "date",
+             "label": "Last Time Disconnected"
+            },
+            {
+             "mode": "edit",
+             "name": "fldrVXRwWtveMC1Jy",
+             "type": "select",
+             "label": "Actions"
+            }
+           ],
+           "type": "collection",
+           "label": "Record"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "base": {
+            "label": "Alex"
+           },
+           "table": {
+            "label": "Email Accounts"
+           },
+           "record": {
+            "nested": {
+             "fldFI8B4tk1H5AN7b": {
+              "mode": "chose"
+             },
+             "fldrVXRwWtveMC1Jy": {
+              "mode": "chose",
+              "label": "N/A"
+             },
+             "flduDcGap2GSsqUia": {
+              "mode": "chose"
+             }
+            }
+           },
+           "typecast": {
+            "mode": "chose"
+           },
+           "useColumnId": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "airtable3"
+            },
+            "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+           }
+          }
+         },
+         "designer": {
+          "x": 887,
+          "y": 41
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:airtable3,airtable2",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3589602
+        }
+       }
+      ]
+     },
+     {
+      "flow": [
+       {
+        "id": 4,
+        "filter": {
+         "name": "Update Warmup Limit",
+         "conditions": [
+          [
+           {
+            "a": "{{1.Actions.name}}",
+            "b": "Update Warmup Limit",
+            "o": "text:equal"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://send.dulcy.io/api/warmup/sender-emails/update-daily-warmup-limits",
+         "data": "{\n  \"sender_email_ids\": [\n    {{1.`Email ID`}}\n  ],\n  \"daily_limit\": {{1.warmup_daily_limit}},\n  \"daily_reply_limit\": {{1.warmup_daily_limit}}\n}",
+         "gzip": true,
+         "method": "patch",
+         "headers": [
+          {
+           "name": "Authorization",
+           "value": "Bearer {{1.`EmailBison API (from Client)`[]}}"
+          },
+          {
+           "name": "Content-Type",
+           "value": "application/json"
+          }
+         ],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "raw",
+         "contentType": "application/json",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": true,
+         "followRedirect": true,
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "contentType",
+           "type": "select",
+           "label": "Content type",
+           "validate": {
+            "enum": [
+             "text/plain",
+             "application/json",
+             "application/xml",
+             "text/xml",
+             "text/html",
+             "custom"
+            ]
+           }
+          },
+          {
+           "name": "data",
+           "type": "buffer",
+           "label": "Request content"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "PATCH"
+           },
+           "headers": {
+            "mode": "chose",
+            "items": [
+             null,
+             null
+            ]
+           },
+           "bodyType": {
+            "label": "Raw"
+           },
+           "contentType": {
+            "label": "JSON (application/json)"
+           }
+          }
+         },
+         "designer": {
+          "x": 596,
+          "y": 418,
+          "name": "Update Warmup Limit"
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": false,
+         "useNewZLibDeCompress": true
+        }
+       },
+       {
+        "id": 10,
+        "mapper": {
+         "id": "{{1.recordId}}",
+         "base": "appxqINt5XKw7a76A",
+         "table": "tblMSOBJ0wMgxSg4l",
+         "record": {
+          "fldrVXRwWtveMC1Jy": "N/A"
+         },
+         "typecast": false,
+         "useColumnId": false
+        },
+        "module": "airtable:ActionUpdateRecords",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "base",
+           "type": "select",
+           "label": "Base",
+           "required": true
+          },
+          {
+           "name": "typecast",
+           "type": "boolean",
+           "label": "Smart links",
+           "required": true
+          },
+          {
+           "name": "useColumnId",
+           "type": "boolean",
+           "label": "Use Column ID",
+           "required": true
+          },
+          {
+           "name": "table",
+           "type": "select",
+           "label": "Table",
+           "required": true
+          },
+          {
+           "name": "id",
+           "type": "text",
+           "label": "Record ID",
+           "required": true
+          },
+          {
+           "name": "record",
+           "spec": [
+            {
+             "name": "fldRYSB93NNdBc4Js",
+             "type": "text",
+             "label": "Email Account"
+            },
+            {
+             "name": "fldR19WUqSSBVQcPO",
+             "type": "number",
+             "label": "Email ID"
+            },
+            {
+             "name": "fldWB4pvEgQ8aYlT2",
+             "type": "number",
+             "label": "Workspace ID"
+            },
+            {
+             "name": "fldURrj0qP1DnAKyD",
+             "time": false,
+             "type": "date",
+             "label": "Warmup Start Date"
+            },
+            {
+             "name": "fldm2q2OfWBOWJpvq",
+             "type": "number",
+             "label": "Number of Disconnects"
+            },
+            {
+             "name": "flduDcGap2GSsqUia",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Client"
+            },
+            {
+             "name": "fldJzkpAXYvAXwstG",
+             "time": true,
+             "type": "date",
+             "label": "Last Warmup Check"
+            },
+            {
+             "name": "fldFI8B4tk1H5AN7b",
+             "type": "boolean",
+             "label": "warmup_enabled"
+            },
+            {
+             "name": "fldipNbxDT5NutIVl",
+             "type": "number",
+             "label": "warmup_daily_limit"
+            },
+            {
+             "name": "fldbhjuMGnrX0fI0j",
+             "type": "number",
+             "label": "warmup_emails_sent"
+            },
+            {
+             "name": "fldXvR8XePYtAx4Bo",
+             "type": "number",
+             "label": "warmup_replies_received"
+            },
+            {
+             "name": "fldt51ApUYwF4mMXq",
+             "type": "number",
+             "label": "warmup_emails_saved_from_spam"
+            },
+            {
+             "name": "fldzAnqlrgiM6iIg5",
+             "type": "number",
+             "label": "warmup_score"
+            },
+            {
+             "name": "fldtMbdZuuebndFtQ",
+             "type": "number",
+             "label": "warmup_bounces_received_count"
+            },
+            {
+             "name": "fldN0OuVQvjWKgZSk",
+             "type": "number",
+             "label": "warmup_bounces_caused_count"
+            },
+            {
+             "name": "fldA1KUejYDma4Pjn",
+             "type": "number",
+             "label": "warmup_disabled_for_bouncing_count"
+            },
+            {
+             "name": "flddauyX2jz0OagRs",
+             "type": "number",
+             "label": "emails_sent_count"
+            },
+            {
+             "name": "fldwH5nm92s2WJ2Jk",
+             "type": "number",
+             "label": "total_replied_count"
+            },
+            {
+             "name": "fldImtATaSoDueLPG",
+             "type": "number",
+             "label": "unsubscribed_count"
+            },
+            {
+             "name": "fld38XYE9GeBmSdei",
+             "type": "number",
+             "label": "bounced_count"
+            },
+            {
+             "name": "fldj8YU1b3CpzMVhM",
+             "type": "number",
+             "label": "unique_replied_count"
+            },
+            {
+             "name": "fldPXgdtNEnLejTRH",
+             "type": "number",
+             "label": "total_leads_contacted_count"
+            },
+            {
+             "name": "fldrM37XumnbxNg6o",
+             "type": "number",
+             "label": "interested_leads_count"
+            },
+            {
+             "name": "fldvyAN2hm6gmfG86",
+             "type": "text",
+             "label": "email_status"
+            },
+            {
+             "name": "fldEHciTupaM82ONm",
+             "type": "text",
+             "label": "email_type"
+            },
+            {
+             "name": "fldBP1gljUUM44JMk",
+             "type": "number",
+             "label": "email_daily_limit"
+            },
+            {
+             "name": "fldivgpoNGwU8MW7p",
+             "time": true,
+             "type": "date",
+             "label": "Last Time Disconnected"
+            },
+            {
+             "mode": "edit",
+             "name": "fldrVXRwWtveMC1Jy",
+             "type": "select",
+             "label": "Actions"
+            }
+           ],
+           "type": "collection",
+           "label": "Record"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "base": {
+            "label": "Alex"
+           },
+           "table": {
+            "label": "Email Accounts"
+           },
+           "record": {
+            "nested": {
+             "fldFI8B4tk1H5AN7b": {
+              "mode": "chose"
+             },
+             "fldrVXRwWtveMC1Jy": {
+              "mode": "chose",
+              "label": "N/A"
+             },
+             "flduDcGap2GSsqUia": {
+              "mode": "chose"
+             }
+            }
+           },
+           "typecast": {
+            "mode": "chose"
+           },
+           "useColumnId": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "airtable3"
+            },
+            "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+           }
+          }
+         },
+         "designer": {
+          "x": 906,
+          "y": 417
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:airtable3,airtable2",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3589602
+        }
+       }
+      ]
+     },
+     {
+      "flow": [
+       {
+        "id": 6,
+        "filter": {
+         "name": "Turn Warmup",
+         "conditions": [
+          [
+           {
+            "a": "{{1.Actions.name}}",
+            "b": "Turn Warmup",
+            "o": "text:contain"
+           }
+          ]
+         ]
+        },
+        "mapper": null,
+        "module": "builtin:BasicRouter",
+        "routes": [
+         {
+          "flow": [
+           {
+            "id": 7,
+            "filter": {
+             "name": "Turn Warmup On",
+             "conditions": [
+              [
+               {
+                "a": "{{1.Actions.name}}",
+                "b": "Turn Warmup On",
+                "o": "text:equal"
+               }
+              ]
+             ]
+            },
+            "mapper": {
+             "ca": "",
+             "qs": [],
+             "url": "https://send.dulcy.io/api/warmup/sender-emails/enable",
+             "data": "{\n  \"sender_email_ids\": [\n    {{1.`Email ID`}}\n  ]\n}",
+             "gzip": true,
+             "method": "patch",
+             "headers": [
+              {
+               "name": "Authorization",
+               "value": "Bearer {{1.`EmailBison API (from Client)`[]}}"
+              },
+              {
+               "name": "Content-Type",
+               "value": "application/json"
+              }
+             ],
+             "timeout": "",
+             "useMtls": false,
+             "authPass": "",
+             "authUser": "",
+             "bodyType": "raw",
+             "contentType": "application/json",
+             "serializeUrl": false,
+             "shareCookies": false,
+             "parseResponse": true,
+             "followRedirect": true,
+             "useQuerystring": false,
+             "followAllRedirects": false,
+             "rejectUnauthorized": true
+            },
+            "module": "http:ActionSendData",
+            "version": 3,
+            "metadata": {
+             "expect": [
+              {
+               "name": "url",
+               "type": "url",
+               "label": "URL",
+               "required": true
+              },
+              {
+               "name": "serializeUrl",
+               "type": "boolean",
+               "label": "Serialize URL",
+               "required": true
+              },
+              {
+               "name": "method",
+               "type": "select",
+               "label": "Method",
+               "required": true,
+               "validate": {
+                "enum": [
+                 "get",
+                 "head",
+                 "post",
+                 "put",
+                 "patch",
+                 "delete",
+                 "options"
+                ]
+               }
+              },
+              {
+               "name": "headers",
+               "spec": [
+                {
+                 "name": "name",
+                 "type": "text",
+                 "label": "Name",
+                 "required": true
+                },
+                {
+                 "name": "value",
+                 "type": "text",
+                 "label": "Value"
+                }
+               ],
+               "type": "array",
+               "label": "Headers"
+              },
+              {
+               "name": "qs",
+               "spec": [
+                {
+                 "name": "name",
+                 "type": "text",
+                 "label": "Name",
+                 "required": true
+                },
+                {
+                 "name": "value",
+                 "type": "text",
+                 "label": "Value"
+                }
+               ],
+               "type": "array",
+               "label": "Query String"
+              },
+              {
+               "name": "bodyType",
+               "type": "select",
+               "label": "Body type",
+               "validate": {
+                "enum": [
+                 "raw",
+                 "x_www_form_urlencoded",
+                 "multipart_form_data"
+                ]
+               }
+              },
+              {
+               "name": "parseResponse",
+               "type": "boolean",
+               "label": "Parse response",
+               "required": true
+              },
+              {
+               "name": "authUser",
+               "type": "text",
+               "label": "User name"
+              },
+              {
+               "name": "authPass",
+               "type": "password",
+               "label": "Password"
+              },
+              {
+               "name": "timeout",
+               "type": "uinteger",
+               "label": "Timeout",
+               "validate": {
+                "max": 300,
+                "min": 1
+               }
+              },
+              {
+               "name": "shareCookies",
+               "type": "boolean",
+               "label": "Share cookies with other HTTP modules",
+               "required": true
+              },
+              {
+               "name": "ca",
+               "type": "cert",
+               "label": "Self-signed certificate"
+              },
+              {
+               "name": "rejectUnauthorized",
+               "type": "boolean",
+               "label": "Reject connections that are using unverified (self-signed) certificates",
+               "required": true
+              },
+              {
+               "name": "followRedirect",
+               "type": "boolean",
+               "label": "Follow redirect",
+               "required": true
+              },
+              {
+               "name": "useQuerystring",
+               "type": "boolean",
+               "label": "Disable serialization of multiple same query string keys as arrays",
+               "required": true
+              },
+              {
+               "name": "gzip",
+               "type": "boolean",
+               "label": "Request compressed content",
+               "required": true
+              },
+              {
+               "name": "useMtls",
+               "type": "boolean",
+               "label": "Use Mutual TLS",
+               "required": true
+              },
+              {
+               "name": "contentType",
+               "type": "select",
+               "label": "Content type",
+               "validate": {
+                "enum": [
+                 "text/plain",
+                 "application/json",
+                 "application/xml",
+                 "text/xml",
+                 "text/html",
+                 "custom"
+                ]
+               }
+              },
+              {
+               "name": "data",
+               "type": "buffer",
+               "label": "Request content"
+              },
+              {
+               "name": "followAllRedirects",
+               "type": "boolean",
+               "label": "Follow all redirect",
+               "required": true
+              }
+             ],
+             "restore": {
+              "expect": {
+               "qs": {
+                "mode": "chose"
+               },
+               "method": {
+                "mode": "chose",
+                "label": "PATCH"
+               },
+               "headers": {
+                "mode": "chose",
+                "items": [
+                 null,
+                 null
+                ]
+               },
+               "bodyType": {
+                "label": "Raw"
+               },
+               "contentType": {
+                "label": "JSON (application/json)"
+               }
+              }
+             },
+             "designer": {
+              "x": 958,
+              "y": 696,
+              "name": "Turn Warmup On"
+             },
+             "parameters": [
+              {
+               "name": "handleErrors",
+               "type": "boolean",
+               "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+               "required": true
+              },
+              {
+               "name": "useNewZLibDeCompress",
+               "type": "hidden"
+              }
+             ]
+            },
+            "parameters": {
+             "handleErrors": false,
+             "useNewZLibDeCompress": true
+            }
+           },
+           {
+            "id": 11,
+            "mapper": {
+             "id": "{{1.recordId}}",
+             "base": "appxqINt5XKw7a76A",
+             "table": "tblMSOBJ0wMgxSg4l",
+             "record": {
+              "fldFI8B4tk1H5AN7b": true,
+              "fldrVXRwWtveMC1Jy": "N/A"
+             },
+             "typecast": false,
+             "useColumnId": false
+            },
+            "module": "airtable:ActionUpdateRecords",
+            "version": 3,
+            "metadata": {
+             "expect": [
+              {
+               "name": "base",
+               "type": "select",
+               "label": "Base",
+               "required": true
+              },
+              {
+               "name": "typecast",
+               "type": "boolean",
+               "label": "Smart links",
+               "required": true
+              },
+              {
+               "name": "useColumnId",
+               "type": "boolean",
+               "label": "Use Column ID",
+               "required": true
+              },
+              {
+               "name": "table",
+               "type": "select",
+               "label": "Table",
+               "required": true
+              },
+              {
+               "name": "id",
+               "type": "text",
+               "label": "Record ID",
+               "required": true
+              },
+              {
+               "name": "record",
+               "spec": [
+                {
+                 "name": "fldRYSB93NNdBc4Js",
+                 "type": "text",
+                 "label": "Email Account"
+                },
+                {
+                 "name": "fldR19WUqSSBVQcPO",
+                 "type": "number",
+                 "label": "Email ID"
+                },
+                {
+                 "name": "fldWB4pvEgQ8aYlT2",
+                 "type": "number",
+                 "label": "Workspace ID"
+                },
+                {
+                 "name": "fldURrj0qP1DnAKyD",
+                 "time": false,
+                 "type": "date",
+                 "label": "Warmup Start Date"
+                },
+                {
+                 "name": "fldm2q2OfWBOWJpvq",
+                 "type": "number",
+                 "label": "Number of Disconnects"
+                },
+                {
+                 "name": "flduDcGap2GSsqUia",
+                 "spec": {
+                  "name": "value",
+                  "label": "Record ID"
+                 },
+                 "type": "array",
+                 "label": "Client"
+                },
+                {
+                 "name": "fldJzkpAXYvAXwstG",
+                 "time": true,
+                 "type": "date",
+                 "label": "Last Warmup Check"
+                },
+                {
+                 "name": "fldFI8B4tk1H5AN7b",
+                 "type": "boolean",
+                 "label": "warmup_enabled"
+                },
+                {
+                 "name": "fldipNbxDT5NutIVl",
+                 "type": "number",
+                 "label": "warmup_daily_limit"
+                },
+                {
+                 "name": "fldbhjuMGnrX0fI0j",
+                 "type": "number",
+                 "label": "warmup_emails_sent"
+                },
+                {
+                 "name": "fldXvR8XePYtAx4Bo",
+                 "type": "number",
+                 "label": "warmup_replies_received"
+                },
+                {
+                 "name": "fldt51ApUYwF4mMXq",
+                 "type": "number",
+                 "label": "warmup_emails_saved_from_spam"
+                },
+                {
+                 "name": "fldzAnqlrgiM6iIg5",
+                 "type": "number",
+                 "label": "warmup_score"
+                },
+                {
+                 "name": "fldtMbdZuuebndFtQ",
+                 "type": "number",
+                 "label": "warmup_bounces_received_count"
+                },
+                {
+                 "name": "fldN0OuVQvjWKgZSk",
+                 "type": "number",
+                 "label": "warmup_bounces_caused_count"
+                },
+                {
+                 "name": "fldA1KUejYDma4Pjn",
+                 "type": "number",
+                 "label": "warmup_disabled_for_bouncing_count"
+                },
+                {
+                 "name": "flddauyX2jz0OagRs",
+                 "type": "number",
+                 "label": "emails_sent_count"
+                },
+                {
+                 "name": "fldwH5nm92s2WJ2Jk",
+                 "type": "number",
+                 "label": "total_replied_count"
+                },
+                {
+                 "name": "fldImtATaSoDueLPG",
+                 "type": "number",
+                 "label": "unsubscribed_count"
+                },
+                {
+                 "name": "fld38XYE9GeBmSdei",
+                 "type": "number",
+                 "label": "bounced_count"
+                },
+                {
+                 "name": "fldj8YU1b3CpzMVhM",
+                 "type": "number",
+                 "label": "unique_replied_count"
+                },
+                {
+                 "name": "fldPXgdtNEnLejTRH",
+                 "type": "number",
+                 "label": "total_leads_contacted_count"
+                },
+                {
+                 "name": "fldrM37XumnbxNg6o",
+                 "type": "number",
+                 "label": "interested_leads_count"
+                },
+                {
+                 "name": "fldvyAN2hm6gmfG86",
+                 "type": "text",
+                 "label": "email_status"
+                },
+                {
+                 "name": "fldEHciTupaM82ONm",
+                 "type": "text",
+                 "label": "email_type"
+                },
+                {
+                 "name": "fldBP1gljUUM44JMk",
+                 "type": "number",
+                 "label": "email_daily_limit"
+                },
+                {
+                 "name": "fldivgpoNGwU8MW7p",
+                 "time": true,
+                 "type": "date",
+                 "label": "Last Time Disconnected"
+                },
+                {
+                 "mode": "edit",
+                 "name": "fldrVXRwWtveMC1Jy",
+                 "type": "select",
+                 "label": "Actions"
+                }
+               ],
+               "type": "collection",
+               "label": "Record"
+              }
+             ],
+             "restore": {
+              "expect": {
+               "base": {
+                "label": "Alex"
+               },
+               "table": {
+                "label": "Email Accounts"
+               },
+               "record": {
+                "nested": {
+                 "fldFI8B4tk1H5AN7b": {
+                  "mode": "chose"
+                 },
+                 "fldrVXRwWtveMC1Jy": {
+                  "mode": "chose",
+                  "label": "N/A"
+                 },
+                 "flduDcGap2GSsqUia": {
+                  "mode": "chose"
+                 }
+                }
+               },
+               "typecast": {
+                "mode": "chose"
+               },
+               "useColumnId": {
+                "mode": "chose"
+               }
+              },
+              "parameters": {
+               "__IMTCONN__": {
+                "data": {
+                 "scoped": "true",
+                 "connection": "airtable3"
+                },
+                "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+               }
+              }
+             },
+             "designer": {
+              "x": 1261,
+              "y": 691
+             },
+             "parameters": [
+              {
+               "name": "__IMTCONN__",
+               "type": "account:airtable3,airtable2",
+               "label": "Connection",
+               "required": true
+              }
+             ]
+            },
+            "parameters": {
+             "__IMTCONN__": 3589602
+            }
+           }
+          ]
+         },
+         {
+          "flow": [
+           {
+            "id": 8,
+            "filter": {
+             "name": "Turn Warmup Off",
+             "conditions": [
+              [
+               {
+                "a": "{{1.Actions.name}}",
+                "b": "Turn Warmup Off",
+                "o": "text:equal"
+               }
+              ]
+             ]
+            },
+            "mapper": {
+             "ca": "",
+             "qs": [],
+             "url": "https://send.dulcy.io/api/warmup/sender-emails/disable",
+             "data": "{\n  \"sender_email_ids\": [\n    {{1.`Email ID`}}\n  ]\n}",
+             "gzip": true,
+             "method": "patch",
+             "headers": [
+              {
+               "name": "Authorization",
+               "value": "Bearer {{1.`EmailBison API (from Client)`[]}}"
+              },
+              {
+               "name": "Content-Type",
+               "value": "application/json"
+              }
+             ],
+             "timeout": "",
+             "useMtls": false,
+             "authPass": "",
+             "authUser": "",
+             "bodyType": "raw",
+             "contentType": "application/json",
+             "serializeUrl": false,
+             "shareCookies": false,
+             "parseResponse": true,
+             "followRedirect": true,
+             "useQuerystring": false,
+             "followAllRedirects": false,
+             "rejectUnauthorized": true
+            },
+            "module": "http:ActionSendData",
+            "version": 3,
+            "metadata": {
+             "expect": [
+              {
+               "name": "url",
+               "type": "url",
+               "label": "URL",
+               "required": true
+              },
+              {
+               "name": "serializeUrl",
+               "type": "boolean",
+               "label": "Serialize URL",
+               "required": true
+              },
+              {
+               "name": "method",
+               "type": "select",
+               "label": "Method",
+               "required": true,
+               "validate": {
+                "enum": [
+                 "get",
+                 "head",
+                 "post",
+                 "put",
+                 "patch",
+                 "delete",
+                 "options"
+                ]
+               }
+              },
+              {
+               "name": "headers",
+               "spec": [
+                {
+                 "name": "name",
+                 "type": "text",
+                 "label": "Name",
+                 "required": true
+                },
+                {
+                 "name": "value",
+                 "type": "text",
+                 "label": "Value"
+                }
+               ],
+               "type": "array",
+               "label": "Headers"
+              },
+              {
+               "name": "qs",
+               "spec": [
+                {
+                 "name": "name",
+                 "type": "text",
+                 "label": "Name",
+                 "required": true
+                },
+                {
+                 "name": "value",
+                 "type": "text",
+                 "label": "Value"
+                }
+               ],
+               "type": "array",
+               "label": "Query String"
+              },
+              {
+               "name": "bodyType",
+               "type": "select",
+               "label": "Body type",
+               "validate": {
+                "enum": [
+                 "raw",
+                 "x_www_form_urlencoded",
+                 "multipart_form_data"
+                ]
+               }
+              },
+              {
+               "name": "parseResponse",
+               "type": "boolean",
+               "label": "Parse response",
+               "required": true
+              },
+              {
+               "name": "authUser",
+               "type": "text",
+               "label": "User name"
+              },
+              {
+               "name": "authPass",
+               "type": "password",
+               "label": "Password"
+              },
+              {
+               "name": "timeout",
+               "type": "uinteger",
+               "label": "Timeout",
+               "validate": {
+                "max": 300,
+                "min": 1
+               }
+              },
+              {
+               "name": "shareCookies",
+               "type": "boolean",
+               "label": "Share cookies with other HTTP modules",
+               "required": true
+              },
+              {
+               "name": "ca",
+               "type": "cert",
+               "label": "Self-signed certificate"
+              },
+              {
+               "name": "rejectUnauthorized",
+               "type": "boolean",
+               "label": "Reject connections that are using unverified (self-signed) certificates",
+               "required": true
+              },
+              {
+               "name": "followRedirect",
+               "type": "boolean",
+               "label": "Follow redirect",
+               "required": true
+              },
+              {
+               "name": "useQuerystring",
+               "type": "boolean",
+               "label": "Disable serialization of multiple same query string keys as arrays",
+               "required": true
+              },
+              {
+               "name": "gzip",
+               "type": "boolean",
+               "label": "Request compressed content",
+               "required": true
+              },
+              {
+               "name": "useMtls",
+               "type": "boolean",
+               "label": "Use Mutual TLS",
+               "required": true
+              },
+              {
+               "name": "contentType",
+               "type": "select",
+               "label": "Content type",
+               "validate": {
+                "enum": [
+                 "text/plain",
+                 "application/json",
+                 "application/xml",
+                 "text/xml",
+                 "text/html",
+                 "custom"
+                ]
+               }
+              },
+              {
+               "name": "data",
+               "type": "buffer",
+               "label": "Request content"
+              },
+              {
+               "name": "followAllRedirects",
+               "type": "boolean",
+               "label": "Follow all redirect",
+               "required": true
+              }
+             ],
+             "restore": {
+              "expect": {
+               "qs": {
+                "mode": "chose"
+               },
+               "method": {
+                "mode": "chose",
+                "label": "PATCH"
+               },
+               "headers": {
+                "mode": "chose",
+                "items": [
+                 null,
+                 null
+                ]
+               },
+               "bodyType": {
+                "label": "Raw"
+               },
+               "contentType": {
+                "label": "JSON (application/json)"
+               }
+              }
+             },
+             "designer": {
+              "x": 954,
+              "y": 1013,
+              "name": "Turn Warmup Off"
+             },
+             "parameters": [
+              {
+               "name": "handleErrors",
+               "type": "boolean",
+               "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+               "required": true
+              },
+              {
+               "name": "useNewZLibDeCompress",
+               "type": "hidden"
+              }
+             ]
+            },
+            "parameters": {
+             "handleErrors": false,
+             "useNewZLibDeCompress": true
+            }
+           },
+           {
+            "id": 12,
+            "mapper": {
+             "id": "{{1.recordId}}",
+             "base": "appxqINt5XKw7a76A",
+             "table": "tblMSOBJ0wMgxSg4l",
+             "record": {
+              "fldFI8B4tk1H5AN7b": false,
+              "fldrVXRwWtveMC1Jy": "N/A"
+             },
+             "typecast": false,
+             "useColumnId": false
+            },
+            "module": "airtable:ActionUpdateRecords",
+            "version": 3,
+            "metadata": {
+             "expect": [
+              {
+               "name": "base",
+               "type": "select",
+               "label": "Base",
+               "required": true
+              },
+              {
+               "name": "typecast",
+               "type": "boolean",
+               "label": "Smart links",
+               "required": true
+              },
+              {
+               "name": "useColumnId",
+               "type": "boolean",
+               "label": "Use Column ID",
+               "required": true
+              },
+              {
+               "name": "table",
+               "type": "select",
+               "label": "Table",
+               "required": true
+              },
+              {
+               "name": "id",
+               "type": "text",
+               "label": "Record ID",
+               "required": true
+              },
+              {
+               "name": "record",
+               "spec": [
+                {
+                 "name": "fldRYSB93NNdBc4Js",
+                 "type": "text",
+                 "label": "Email Account"
+                },
+                {
+                 "name": "fldR19WUqSSBVQcPO",
+                 "type": "number",
+                 "label": "Email ID"
+                },
+                {
+                 "name": "fldWB4pvEgQ8aYlT2",
+                 "type": "number",
+                 "label": "Workspace ID"
+                },
+                {
+                 "name": "fldURrj0qP1DnAKyD",
+                 "time": false,
+                 "type": "date",
+                 "label": "Warmup Start Date"
+                },
+                {
+                 "name": "fldm2q2OfWBOWJpvq",
+                 "type": "number",
+                 "label": "Number of Disconnects"
+                },
+                {
+                 "name": "flduDcGap2GSsqUia",
+                 "spec": {
+                  "name": "value",
+                  "label": "Record ID"
+                 },
+                 "type": "array",
+                 "label": "Client"
+                },
+                {
+                 "name": "fldJzkpAXYvAXwstG",
+                 "time": true,
+                 "type": "date",
+                 "label": "Last Warmup Check"
+                },
+                {
+                 "name": "fldFI8B4tk1H5AN7b",
+                 "type": "boolean",
+                 "label": "warmup_enabled"
+                },
+                {
+                 "name": "fldipNbxDT5NutIVl",
+                 "type": "number",
+                 "label": "warmup_daily_limit"
+                },
+                {
+                 "name": "fldbhjuMGnrX0fI0j",
+                 "type": "number",
+                 "label": "warmup_emails_sent"
+                },
+                {
+                 "name": "fldXvR8XePYtAx4Bo",
+                 "type": "number",
+                 "label": "warmup_replies_received"
+                },
+                {
+                 "name": "fldt51ApUYwF4mMXq",
+                 "type": "number",
+                 "label": "warmup_emails_saved_from_spam"
+                },
+                {
+                 "name": "fldzAnqlrgiM6iIg5",
+                 "type": "number",
+                 "label": "warmup_score"
+                },
+                {
+                 "name": "fldtMbdZuuebndFtQ",
+                 "type": "number",
+                 "label": "warmup_bounces_received_count"
+                },
+                {
+                 "name": "fldN0OuVQvjWKgZSk",
+                 "type": "number",
+                 "label": "warmup_bounces_caused_count"
+                },
+                {
+                 "name": "fldA1KUejYDma4Pjn",
+                 "type": "number",
+                 "label": "warmup_disabled_for_bouncing_count"
+                },
+                {
+                 "name": "flddauyX2jz0OagRs",
+                 "type": "number",
+                 "label": "emails_sent_count"
+                },
+                {
+                 "name": "fldwH5nm92s2WJ2Jk",
+                 "type": "number",
+                 "label": "total_replied_count"
+                },
+                {
+                 "name": "fldImtATaSoDueLPG",
+                 "type": "number",
+                 "label": "unsubscribed_count"
+                },
+                {
+                 "name": "fld38XYE9GeBmSdei",
+                 "type": "number",
+                 "label": "bounced_count"
+                },
+                {
+                 "name": "fldj8YU1b3CpzMVhM",
+                 "type": "number",
+                 "label": "unique_replied_count"
+                },
+                {
+                 "name": "fldPXgdtNEnLejTRH",
+                 "type": "number",
+                 "label": "total_leads_contacted_count"
+                },
+                {
+                 "name": "fldrM37XumnbxNg6o",
+                 "type": "number",
+                 "label": "interested_leads_count"
+                },
+                {
+                 "name": "fldvyAN2hm6gmfG86",
+                 "type": "text",
+                 "label": "email_status"
+                },
+                {
+                 "name": "fldEHciTupaM82ONm",
+                 "type": "text",
+                 "label": "email_type"
+                },
+                {
+                 "name": "fldBP1gljUUM44JMk",
+                 "type": "number",
+                 "label": "email_daily_limit"
+                },
+                {
+                 "name": "fldivgpoNGwU8MW7p",
+                 "time": true,
+                 "type": "date",
+                 "label": "Last Time Disconnected"
+                },
+                {
+                 "mode": "edit",
+                 "name": "fldrVXRwWtveMC1Jy",
+                 "type": "select",
+                 "label": "Actions"
+                }
+               ],
+               "type": "collection",
+               "label": "Record"
+              }
+             ],
+             "restore": {
+              "expect": {
+               "base": {
+                "label": "Alex"
+               },
+               "table": {
+                "label": "Email Accounts"
+               },
+               "record": {
+                "nested": {
+                 "fldFI8B4tk1H5AN7b": {
+                  "mode": "chose"
+                 },
+                 "fldrVXRwWtveMC1Jy": {
+                  "mode": "chose",
+                  "label": "N/A"
+                 },
+                 "flduDcGap2GSsqUia": {
+                  "mode": "chose"
+                 }
+                }
+               },
+               "typecast": {
+                "mode": "chose"
+               },
+               "useColumnId": {
+                "mode": "chose"
+               }
+              },
+              "parameters": {
+               "__IMTCONN__": {
+                "data": {
+                 "scoped": "true",
+                 "connection": "airtable3"
+                },
+                "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+               }
+              }
+             },
+             "designer": {
+              "x": 1275,
+              "y": 1018
+             },
+             "parameters": [
+              {
+               "name": "__IMTCONN__",
+               "type": "account:airtable3,airtable2",
+               "label": "Connection",
+               "required": true
+              }
+             ]
+            },
+            "parameters": {
+             "__IMTCONN__": 3589602
+            }
+           }
+          ]
+         }
+        ],
+        "version": 1,
+        "metadata": {
+         "designer": {
+          "x": 595,
+          "y": 820
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "version": 1,
+    "metadata": {
+     "designer": {
+      "x": 204,
+      "y": 425
+     }
+    }
+   }
+  ],
+  "name": "Email Account Updates",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": []
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately",
+   "maximum_runs_per_minute": null
+  }
+ }
+}

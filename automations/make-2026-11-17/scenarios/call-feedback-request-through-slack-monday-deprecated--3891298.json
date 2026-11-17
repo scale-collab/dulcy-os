@@ -1,0 +1,1308 @@
+{
+ "id": 3891298,
+ "name": "[Call Feedback] Request through Slack (Monday) (deprecated)",
+ "teamId": 629049,
+ "hookId": null,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 199728,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": false,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "airtable",
+  "builtin",
+  "airtable",
+  "airtable",
+  "airtable",
+  "airtable"
+ ],
+ "lastEdit": "2026-07-23T19:22:46.567Z",
+ "scheduling": {
+  "days": [
+   1
+  ],
+  "time": "09:30",
+  "type": "weekly"
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2025-04-21T15:25:33.834Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": false,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 1,
+    "mapper": {
+     "base": "appxqINt5XKw7a76A",
+     "table": "tblADFhWhTcLrl1UY",
+     "formula": "AND(NOT({Date of Call Booked} = ''), {skip_request_call_feedback} = 0)",
+     "maxRecords": "10000",
+     "useColumnId": false
+    },
+    "module": "airtable:ActionSearchRecords",
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "base",
+       "type": "select",
+       "label": "Base",
+       "required": true
+      },
+      {
+       "name": "useColumnId",
+       "type": "boolean",
+       "label": "Use Column ID",
+       "required": true
+      },
+      {
+       "name": "table",
+       "type": "select",
+       "label": "Table",
+       "required": true
+      },
+      {
+       "name": "formula",
+       "type": "text",
+       "label": "Formula"
+      },
+      {
+       "name": "maxRecords",
+       "type": "integer",
+       "label": "Limit"
+      },
+      {
+       "name": "sort",
+       "spec": [
+        {
+         "name": "field",
+         "type": "select",
+         "label": "Field",
+         "dynamic": true,
+         "options": []
+        },
+        {
+         "name": "direction",
+         "type": "select",
+         "label": "Direction",
+         "options": [
+          {
+           "label": "Descending",
+           "value": "desc"
+          },
+          {
+           "label": "Ascending",
+           "value": "asc"
+          }
+         ]
+        }
+       ],
+       "type": "array",
+       "label": "Sort"
+      },
+      {
+       "name": "view",
+       "type": "select",
+       "label": "View"
+      },
+      {
+       "name": "fields",
+       "type": "select",
+       "label": "Output Fields",
+       "multiple": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "base": {
+        "mode": "chose",
+        "label": "Alex"
+       },
+       "sort": {
+        "mode": "chose"
+       },
+       "view": {
+        "mode": "chose"
+       },
+       "table": {
+        "mode": "chose",
+        "label": "Emails"
+       },
+       "fields": {
+        "mode": "chose"
+       },
+       "useColumnId": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "airtable3"
+        },
+        "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+       }
+      }
+     },
+     "designer": {
+      "x": 0,
+      "y": 150
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:airtable3,airtable2",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3589602
+    }
+   },
+   {
+    "id": 7,
+    "mapper": null,
+    "module": "builtin:BasicRouter",
+    "routes": [
+     {
+      "flow": [
+       {
+        "id": 3,
+        "filter": {
+         "name": "Calls on Friday",
+         "conditions": [
+          [
+           {
+            "a": "{{1.`Date of Call Booked`}}",
+            "b": "{{addDays(formatDate(now; \"YYYY-MM-DD\"); -3)}}",
+            "o": "text:equal"
+           },
+           {
+            "a": "{{1.`Call Feedback`}}",
+            "o": "notexist"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "base": "appxqINt5XKw7a76A",
+         "table": "tblcjRBGJEWh5KgOt",
+         "formula": "AND({ID} = '{{1.`Workspace ID (Bison)`}}', {Status} = 'Active')",
+         "maxRecords": "1",
+         "useColumnId": false
+        },
+        "module": "airtable:ActionSearchRecords",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "base",
+           "type": "select",
+           "label": "Base",
+           "required": true
+          },
+          {
+           "name": "useColumnId",
+           "type": "boolean",
+           "label": "Use Column ID",
+           "required": true
+          },
+          {
+           "name": "table",
+           "type": "select",
+           "label": "Table",
+           "required": true
+          },
+          {
+           "name": "formula",
+           "type": "text",
+           "label": "Formula"
+          },
+          {
+           "name": "maxRecords",
+           "type": "integer",
+           "label": "Limit"
+          },
+          {
+           "name": "sort",
+           "spec": [
+            {
+             "name": "field",
+             "type": "select",
+             "label": "Field",
+             "dynamic": true,
+             "options": []
+            },
+            {
+             "name": "direction",
+             "type": "select",
+             "label": "Direction",
+             "options": [
+              {
+               "label": "Descending",
+               "value": "desc"
+              },
+              {
+               "label": "Ascending",
+               "value": "asc"
+              }
+             ]
+            }
+           ],
+           "type": "array",
+           "label": "Sort"
+          },
+          {
+           "name": "view",
+           "type": "select",
+           "label": "View"
+          },
+          {
+           "name": "fields",
+           "type": "select",
+           "label": "Output Fields",
+           "multiple": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "base": {
+            "mode": "chose",
+            "label": "Alex"
+           },
+           "sort": {
+            "mode": "chose"
+           },
+           "view": {
+            "mode": "chose"
+           },
+           "table": {
+            "mode": "chose",
+            "label": "Workspace IDs"
+           },
+           "fields": {
+            "mode": "chose"
+           },
+           "useColumnId": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "airtable3"
+            },
+            "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+           }
+          }
+         },
+         "designer": {
+          "x": 600,
+          "y": 0
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:airtable3,airtable2",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3589602
+        }
+       },
+       {
+        "id": 10,
+        "filter": {
+         "name": "Slack channel exists",
+         "conditions": [
+          [
+           {
+            "a": "{{3.`Slack Channel`}}",
+            "o": "exist"
+           },
+           {
+            "a": "{{3.Name}}",
+            "b": "Dulcy",
+            "o": "text:notequal"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "base": "appxqINt5XKw7a76A",
+         "table": "tblwJK1VB7affamrz",
+         "record": {
+          "fld42VOgZrdKqcVM8": [
+           "{{3.id}}"
+          ],
+          "fldByGNugWy5XO0Br": "Call Feedback",
+          "fldiwUMk8RoJFV4wJ": "Feedback Form Reminder",
+          "fldqpuxQEANRIdb4C": "Just a quick reminder to complete your client feedback form when you have a moment. Your input helps us improve campaign performance and make better decisions for your account. We appreciate it."
+         },
+         "typecast": false,
+         "useColumnId": false
+        },
+        "module": "airtable:ActionCreateRecord",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "base",
+           "type": "select",
+           "label": "Base",
+           "required": true
+          },
+          {
+           "name": "typecast",
+           "type": "boolean",
+           "label": "Smart links",
+           "required": true
+          },
+          {
+           "name": "useColumnId",
+           "type": "boolean",
+           "label": "Use Column ID",
+           "required": true
+          },
+          {
+           "name": "table",
+           "type": "select",
+           "label": "Table",
+           "required": true
+          },
+          {
+           "name": "record",
+           "spec": [
+            {
+             "name": "fldiwUMk8RoJFV4wJ",
+             "type": "text",
+             "label": "Title"
+            },
+            {
+             "name": "fldqpuxQEANRIdb4C",
+             "type": "text",
+             "label": "Message"
+            },
+            {
+             "name": "fld42VOgZrdKqcVM8",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Client"
+            },
+            {
+             "mode": "edit",
+             "name": "fldByGNugWy5XO0Br",
+             "type": "select",
+             "label": "Type"
+            },
+            {
+             "name": "flduntfLy4DDoIlDL",
+             "type": "boolean",
+             "label": "Dismissed"
+            }
+           ],
+           "type": "collection",
+           "label": "Record"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "base": {
+            "label": "Alex"
+           },
+           "table": {
+            "label": "Client Notifcations",
+            "nested": [
+             {
+              "name": "record",
+              "spec": [
+               {
+                "name": "fldiwUMk8RoJFV4wJ",
+                "type": "text",
+                "label": "Title"
+               },
+               {
+                "name": "fldqpuxQEANRIdb4C",
+                "type": "text",
+                "label": "Message",
+                "multiline": true
+               },
+               {
+                "name": "fld42VOgZrdKqcVM8",
+                "spec": {
+                 "label": "Record ID"
+                },
+                "type": "array",
+                "label": "Client"
+               },
+               {
+                "mode": "edit",
+                "name": "fldByGNugWy5XO0Br",
+                "type": "select",
+                "label": "Type",
+                "dynamic": true,
+                "options": [
+                 {
+                  "label": "Task",
+                  "value": "Task"
+                 },
+                 {
+                  "label": "Lead",
+                  "value": "Lead"
+                 },
+                 {
+                  "label": "Campaign",
+                  "value": "Campaign"
+                 },
+                 {
+                  "label": "Document",
+                  "value": "Document"
+                 },
+                 {
+                  "label": "Call Feedback",
+                  "value": "Call Feedback"
+                 },
+                 {
+                  "label": "System",
+                  "value": "System"
+                 }
+                ],
+                "validate": false
+               },
+               {
+                "name": "flduntfLy4DDoIlDL",
+                "type": "boolean",
+                "label": "Dismissed"
+               }
+              ],
+              "type": "collection",
+              "label": "Record"
+             }
+            ]
+           },
+           "record": {
+            "nested": {
+             "fld42VOgZrdKqcVM8": {
+              "mode": "chose",
+              "items": [
+               null
+              ]
+             },
+             "fldByGNugWy5XO0Br": {
+              "mode": "chose",
+              "label": "Call Feedback"
+             },
+             "flduntfLy4DDoIlDL": {
+              "mode": "chose"
+             }
+            }
+           },
+           "typecast": {
+            "mode": "chose"
+           },
+           "useColumnId": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "airtable3"
+            },
+            "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+           }
+          }
+         },
+         "designer": {
+          "x": 900,
+          "y": 0
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:airtable3,airtable2",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3589602
+        }
+       }
+      ]
+     },
+     {
+      "flow": [
+       {
+        "id": 8,
+        "filter": {
+         "name": "Calls later without form submission",
+         "conditions": [
+          [
+           {
+            "a": "{{1.`Date of Call Booked`}}",
+            "b": "{{addDays(formatDate(now; \"YYYY-MM-DD\"); -3)}}",
+            "o": "date:greater"
+           },
+           {
+            "a": "{{1.`Date of Call Booked`}}",
+            "b": "2025-04-18",
+            "o": "date:less"
+           },
+           {
+            "a": "{{1.`Call Feedback`}}",
+            "o": "notexist"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "base": "appxqINt5XKw7a76A",
+         "table": "tblcjRBGJEWh5KgOt",
+         "formula": "AND({ID} = '{{1.`Workspace ID (Bison)`}}', {Status} = 'Active')",
+         "maxRecords": "1",
+         "useColumnId": false
+        },
+        "module": "airtable:ActionSearchRecords",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "base",
+           "type": "select",
+           "label": "Base",
+           "required": true
+          },
+          {
+           "name": "useColumnId",
+           "type": "boolean",
+           "label": "Use Column ID",
+           "required": true
+          },
+          {
+           "name": "table",
+           "type": "select",
+           "label": "Table",
+           "required": true
+          },
+          {
+           "name": "formula",
+           "type": "text",
+           "label": "Formula"
+          },
+          {
+           "name": "maxRecords",
+           "type": "integer",
+           "label": "Limit"
+          },
+          {
+           "name": "sort",
+           "spec": [
+            {
+             "name": "field",
+             "type": "select",
+             "label": "Field",
+             "dynamic": true,
+             "options": []
+            },
+            {
+             "name": "direction",
+             "type": "select",
+             "label": "Direction",
+             "options": [
+              {
+               "label": "Descending",
+               "value": "desc"
+              },
+              {
+               "label": "Ascending",
+               "value": "asc"
+              }
+             ]
+            }
+           ],
+           "type": "array",
+           "label": "Sort"
+          },
+          {
+           "name": "view",
+           "type": "select",
+           "label": "View"
+          },
+          {
+           "name": "fields",
+           "type": "select",
+           "label": "Output Fields",
+           "multiple": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "base": {
+            "mode": "chose",
+            "label": "Alex"
+           },
+           "sort": {
+            "mode": "chose"
+           },
+           "view": {
+            "mode": "chose"
+           },
+           "table": {
+            "mode": "chose",
+            "label": "Workspace IDs"
+           },
+           "fields": {
+            "mode": "chose"
+           },
+           "useColumnId": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "airtable3"
+            },
+            "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+           }
+          }
+         },
+         "designer": {
+          "x": 600,
+          "y": 300
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:airtable3,airtable2",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3589602
+        }
+       },
+       {
+        "id": 11,
+        "filter": {
+         "name": "Slack channel exists",
+         "conditions": [
+          [
+           {
+            "a": "{{8.`Slack Channel`}}",
+            "o": "exist"
+           },
+           {
+            "a": "{{8.Name}}",
+            "b": "Dulcy",
+            "o": "text:notequal"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "base": "appxqINt5XKw7a76A",
+         "table": "tblwJK1VB7affamrz",
+         "record": {
+          "fld42VOgZrdKqcVM8": [
+           "{{8.id}}"
+          ],
+          "fldByGNugWy5XO0Br": "Call Feedback",
+          "fldiwUMk8RoJFV4wJ": "Feedback Form Reminder",
+          "fldqpuxQEANRIdb4C": "Just a quick reminder to complete your client feedback form when you have a moment. Your input helps us improve campaign performance and make better decisions for your account. We appreciate it."
+         },
+         "typecast": false,
+         "useColumnId": false
+        },
+        "module": "airtable:ActionCreateRecord",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "base",
+           "type": "select",
+           "label": "Base",
+           "required": true
+          },
+          {
+           "name": "typecast",
+           "type": "boolean",
+           "label": "Smart links",
+           "required": true
+          },
+          {
+           "name": "useColumnId",
+           "type": "boolean",
+           "label": "Use Column ID",
+           "required": true
+          },
+          {
+           "name": "table",
+           "type": "select",
+           "label": "Table",
+           "required": true
+          },
+          {
+           "name": "record",
+           "spec": [
+            {
+             "name": "fldiwUMk8RoJFV4wJ",
+             "type": "text",
+             "label": "Title"
+            },
+            {
+             "name": "fldqpuxQEANRIdb4C",
+             "type": "text",
+             "label": "Message"
+            },
+            {
+             "name": "fld42VOgZrdKqcVM8",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Client"
+            },
+            {
+             "mode": "edit",
+             "name": "fldByGNugWy5XO0Br",
+             "type": "select",
+             "label": "Type"
+            },
+            {
+             "name": "flduntfLy4DDoIlDL",
+             "type": "boolean",
+             "label": "Dismissed"
+            }
+           ],
+           "type": "collection",
+           "label": "Record"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "base": {
+            "label": "Alex"
+           },
+           "table": {
+            "label": "Client Notifcations",
+            "nested": [
+             {
+              "name": "record",
+              "spec": [
+               {
+                "name": "fldiwUMk8RoJFV4wJ",
+                "type": "text",
+                "label": "Title"
+               },
+               {
+                "name": "fldqpuxQEANRIdb4C",
+                "type": "text",
+                "label": "Message",
+                "multiline": true
+               },
+               {
+                "name": "fld42VOgZrdKqcVM8",
+                "spec": {
+                 "label": "Record ID"
+                },
+                "type": "array",
+                "label": "Client"
+               },
+               {
+                "mode": "edit",
+                "name": "fldByGNugWy5XO0Br",
+                "type": "select",
+                "label": "Type",
+                "dynamic": true,
+                "options": [
+                 {
+                  "label": "Task",
+                  "value": "Task"
+                 },
+                 {
+                  "label": "Lead",
+                  "value": "Lead"
+                 },
+                 {
+                  "label": "Campaign",
+                  "value": "Campaign"
+                 },
+                 {
+                  "label": "Document",
+                  "value": "Document"
+                 },
+                 {
+                  "label": "Call Feedback",
+                  "value": "Call Feedback"
+                 },
+                 {
+                  "label": "System",
+                  "value": "System"
+                 }
+                ],
+                "validate": false
+               },
+               {
+                "name": "flduntfLy4DDoIlDL",
+                "type": "boolean",
+                "label": "Dismissed"
+               }
+              ],
+              "type": "collection",
+              "label": "Record"
+             }
+            ]
+           },
+           "record": {
+            "nested": {
+             "fld42VOgZrdKqcVM8": {
+              "mode": "chose",
+              "items": [
+               null
+              ]
+             },
+             "fldByGNugWy5XO0Br": {
+              "mode": "chose",
+              "label": "Call Feedback"
+             },
+             "flduntfLy4DDoIlDL": {
+              "mode": "chose"
+             }
+            }
+           },
+           "typecast": {
+            "mode": "chose"
+           },
+           "useColumnId": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "airtable3"
+            },
+            "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+           }
+          }
+         },
+         "designer": {
+          "x": 900,
+          "y": 300
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:airtable3,airtable2",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3589602
+        }
+       }
+      ]
+     }
+    ],
+    "version": 1,
+    "metadata": {
+     "designer": {
+      "x": 300,
+      "y": 150
+     }
+    }
+   }
+  ],
+  "name": "[Call Feedback] Request through Slack (Monday) (deprecated)",
+  "metadata": {
+   "instant": false,
+   "version": 1,
+   "designer": {
+    "orphans": [
+     [
+      {
+       "id": 13,
+       "mapper": {
+        "text": "Please give a 30s feedback on the call with {{1.`Leads Name`}} on {{1.`Date of Call Booked`}}.\n\nHere is the <https://airtable.com/appxqINt5XKw7a76A/pagiiG3us1WpZGW14/form?prefill_lead={{1.id}}&hide_lead=true|link to the form>\n\n<!channel>",
+        "parse": false,
+        "mrkdwn": true,
+        "channel": "{{8.`Slack Channel`}}",
+        "channelWType": "manualy"
+       },
+       "module": "slack:CreateMessage",
+       "version": 4,
+       "metadata": {
+        "expect": [
+         {
+          "name": "channelWType",
+          "type": "select",
+          "label": "Enter a channel ID or name",
+          "required": true,
+          "validate": {
+           "enum": [
+            "manualy",
+            "list"
+           ]
+          }
+         },
+         {
+          "name": "text",
+          "type": "text",
+          "label": "Text"
+         },
+         {
+          "name": "blocks",
+          "type": "text",
+          "label": "Blocks"
+         },
+         {
+          "name": "thread_ts",
+          "type": "text",
+          "label": "Thread message ID (time stamp)"
+         },
+         {
+          "name": "reply_broadcast",
+          "type": "boolean",
+          "label": "Reply broadcast"
+         },
+         {
+          "name": "link_names",
+          "type": "boolean",
+          "label": "Link names"
+         },
+         {
+          "name": "parse",
+          "type": "boolean",
+          "label": "Parse message text"
+         },
+         {
+          "name": "mrkdwn",
+          "type": "boolean",
+          "label": "Use markdown"
+         },
+         {
+          "name": "unfurl_links",
+          "type": "boolean",
+          "label": "Unfurl primarily text-based content"
+         },
+         {
+          "name": "unfurl_media",
+          "type": "boolean",
+          "label": "Unfurl media content"
+         },
+         {
+          "name": "icon_emoji",
+          "type": "text",
+          "label": "Icon emoji"
+         },
+         {
+          "name": "icon_url",
+          "type": "url",
+          "label": "Icon url"
+         },
+         {
+          "name": "username",
+          "type": "text",
+          "label": "User name"
+         },
+         {
+          "name": "channel",
+          "type": "text",
+          "label": "Channel ID or name",
+          "required": true
+         }
+        ],
+        "restore": {
+         "expect": {
+          "parse": {
+           "mode": "chose"
+          },
+          "mrkdwn": {
+           "mode": "chose"
+          },
+          "link_names": {
+           "mode": "chose"
+          },
+          "channelWType": {
+           "label": "Enter manually"
+          },
+          "unfurl_links": {
+           "mode": "chose"
+          },
+          "unfurl_media": {
+           "mode": "chose"
+          },
+          "reply_broadcast": {
+           "mode": "chose"
+          }
+         },
+         "parameters": {
+          "__IMTCONN__": {
+           "data": {
+            "scoped": "true",
+            "connection": "slack3"
+           },
+           "label": "My Slack (bot) connectionfix (make)"
+          }
+         }
+        },
+        "designer": {
+         "x": 0,
+         "y": 600,
+         "messages": [
+          {
+           "message": "This module is not connected to the flow. This module and everything after it will be skipped during execution. <autoconnect>Link it to your scenario to include them.</autoconnect>",
+           "category": "link",
+           "severity": "warning"
+          },
+          {
+           "message": "Referenced module 'Airtable - Search Records' [1] is not accessible.",
+           "category": "reference",
+           "severity": "warning"
+          },
+          {
+           "message": "Referenced module 'Airtable - Search Records' [8] is not accessible.",
+           "category": "reference",
+           "severity": "warning"
+          }
+         ]
+        },
+        "parameters": [
+         {
+          "name": "__IMTCONN__",
+          "type": "account:slack2,slack3",
+          "label": "Connection",
+          "required": true
+         }
+        ]
+       },
+       "parameters": {
+        "__IMTCONN__": 3736690
+       }
+      }
+     ],
+     [
+      {
+       "id": 14,
+       "mapper": {
+        "text": "Please give a 30s feedback on the call with {{1.`Leads Name`}} on {{1.`Date of Call Booked`}}.\n\nHere is the <https://airtable.com/appxqINt5XKw7a76A/pagiiG3us1WpZGW14/form?prefill_lead={{1.id}}&hide_lead=true|link to the form>\n\n<!channel>",
+        "parse": false,
+        "mrkdwn": true,
+        "channel": "{{3.`Slack Channel`}}",
+        "channelWType": "manualy"
+       },
+       "module": "slack:CreateMessage",
+       "version": 4,
+       "metadata": {
+        "expect": [
+         {
+          "name": "channelWType",
+          "type": "select",
+          "label": "Enter a channel ID or name",
+          "required": true,
+          "validate": {
+           "enum": [
+            "manualy",
+            "list"
+           ]
+          }
+         },
+         {
+          "name": "text",
+          "type": "text",
+          "label": "Text"
+         },
+         {
+          "name": "blocks",
+          "type": "text",
+          "label": "Blocks"
+         },
+         {
+          "name": "thread_ts",
+          "type": "text",
+          "label": "Thread message ID (time stamp)"
+         },
+         {
+          "name": "reply_broadcast",
+          "type": "boolean",
+          "label": "Reply broadcast"
+         },
+         {
+          "name": "link_names",
+          "type": "boolean",
+          "label": "Link names"
+         },
+         {
+          "name": "parse",
+          "type": "boolean",
+          "label": "Parse message text"
+         },
+         {
+          "name": "mrkdwn",
+          "type": "boolean",
+          "label": "Use markdown"
+         },
+         {
+          "name": "unfurl_links",
+          "type": "boolean",
+          "label": "Unfurl primarily text-based content"
+         },
+         {
+          "name": "unfurl_media",
+          "type": "boolean",
+          "label": "Unfurl media content"
+         },
+         {
+          "name": "icon_emoji",
+          "type": "text",
+          "label": "Icon emoji"
+         },
+         {
+          "name": "icon_url",
+          "type": "url",
+          "label": "Icon url"
+         },
+         {
+          "name": "username",
+          "type": "text",
+          "label": "User name"
+         },
+         {
+          "name": "channel",
+          "type": "text",
+          "label": "Channel ID or name",
+          "required": true
+         }
+        ],
+        "restore": {
+         "expect": {
+          "parse": {
+           "mode": "chose"
+          },
+          "mrkdwn": {
+           "mode": "chose"
+          },
+          "link_names": {
+           "mode": "chose"
+          },
+          "channelWType": {
+           "label": "Enter manually"
+          },
+          "unfurl_links": {
+           "mode": "chose"
+          },
+          "unfurl_media": {
+           "mode": "chose"
+          },
+          "reply_broadcast": {
+           "mode": "chose"
+          }
+         },
+         "parameters": {
+          "__IMTCONN__": {
+           "data": {
+            "scoped": "true",
+            "connection": "slack3"
+           },
+           "label": "My Slack (bot) connectionfix (make)"
+          }
+         }
+        },
+        "designer": {
+         "x": 0,
+         "y": 900,
+         "messages": [
+          {
+           "message": "This module is not connected to the flow. This module and everything after it will be skipped during execution. <autoconnect>Link it to your scenario to include them.</autoconnect>",
+           "category": "link",
+           "severity": "warning"
+          },
+          {
+           "message": "Referenced module 'Airtable - Search Records' [1] is not accessible.",
+           "category": "reference",
+           "severity": "warning"
+          },
+          {
+           "message": "Referenced module 'Airtable - Search Records' [3] is not accessible.",
+           "category": "reference",
+           "severity": "warning"
+          }
+         ]
+        },
+        "parameters": [
+         {
+          "name": "__IMTCONN__",
+          "type": "account:slack2,slack3",
+          "label": "Connection",
+          "required": true
+         }
+        ]
+       },
+       "parameters": {
+        "__IMTCONN__": 3736690
+       }
+      }
+     ]
+    ]
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "days": [
+    1
+   ],
+   "time": "09:30",
+   "type": "weekly"
+  }
+ }
+}

@@ -1,0 +1,2956 @@
+{
+ "id": 3884238,
+ "name": "[Call Feedback] Form Submission -> Notion Client Revenue Dashboard",
+ "teamId": 629049,
+ "hookId": 2202193,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 199728,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": true,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "gateway",
+  "util",
+  "airtable",
+  "airtable",
+  "slack",
+  "airtable"
+ ],
+ "lastEdit": "2026-05-20T01:29:16.368Z",
+ "scheduling": {
+  "type": "immediately"
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2025-04-18T11:39:21.153Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": true,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 1,
+    "mapper": {},
+    "module": "gateway:CustomWebHook",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "hook": {
+        "data": {
+         "editable": "true"
+        },
+        "label": "Call feedback"
+       }
+      }
+     },
+     "designer": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "hook",
+       "type": "hook:gateway-webhook",
+       "label": "Webhook",
+       "required": true
+      },
+      {
+       "name": "maxResults",
+       "type": "number",
+       "label": "Maximum number of results"
+      }
+     ]
+    },
+    "parameters": {
+     "hook": 2202193,
+     "maxResults": 1
+    }
+   },
+   {
+    "id": 9,
+    "mapper": {
+     "name": "recordId",
+     "scope": "roundtrip",
+     "value": "{{first(split(1.lead; \"hide_lead=\"))}}"
+    },
+    "module": "util:SetVariable2",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "name",
+       "type": "text",
+       "label": "Variable name",
+       "required": true
+      },
+      {
+       "name": "scope",
+       "type": "select",
+       "label": "Variable lifetime",
+       "required": true,
+       "validate": {
+        "enum": [
+         "roundtrip",
+         "execution"
+        ]
+       }
+      },
+      {
+       "name": "value",
+       "type": "any",
+       "label": "Variable value"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "scope": {
+        "label": "One cycle"
+       }
+      }
+     },
+     "designer": {
+      "x": 300,
+      "y": 0
+     }
+    },
+    "parameters": {}
+   },
+   {
+    "id": 4,
+    "mapper": {
+     "id": "{{9.recordId}}",
+     "base": "appxqINt5XKw7a76A",
+     "table": "tblADFhWhTcLrl1UY",
+     "useColumnId": false
+    },
+    "module": "airtable:ActionGetRecord",
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "base",
+       "type": "select",
+       "label": "Base",
+       "required": true
+      },
+      {
+       "name": "useColumnId",
+       "type": "boolean",
+       "label": "Use Column ID",
+       "required": true
+      },
+      {
+       "name": "table",
+       "type": "select",
+       "label": "Table",
+       "required": true
+      },
+      {
+       "name": "id",
+       "type": "text",
+       "label": "Record ID",
+       "required": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "base": {
+        "mode": "chose",
+        "label": "Alex"
+       },
+       "table": {
+        "mode": "chose",
+        "label": "Emails"
+       },
+       "useColumnId": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "airtable3"
+        },
+        "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+       }
+      }
+     },
+     "designer": {
+      "x": 600,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:airtable3,airtable2",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3589602
+    }
+   },
+   {
+    "id": 5,
+    "mapper": {
+     "base": "appxqINt5XKw7a76A",
+     "table": "tblcjRBGJEWh5KgOt",
+     "formula": "{ID} = '{{4.`Workspace ID (Bison)`}}'",
+     "maxRecords": "1",
+     "useColumnId": false
+    },
+    "module": "airtable:ActionSearchRecords",
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "base",
+       "type": "select",
+       "label": "Base",
+       "required": true
+      },
+      {
+       "name": "useColumnId",
+       "type": "boolean",
+       "label": "Use Column ID",
+       "required": true
+      },
+      {
+       "name": "table",
+       "type": "select",
+       "label": "Table",
+       "required": true
+      },
+      {
+       "name": "formula",
+       "type": "text",
+       "label": "Formula"
+      },
+      {
+       "name": "maxRecords",
+       "type": "integer",
+       "label": "Limit"
+      },
+      {
+       "name": "sort",
+       "spec": [
+        {
+         "name": "field",
+         "type": "select",
+         "label": "Field",
+         "dynamic": true,
+         "options": []
+        },
+        {
+         "name": "direction",
+         "type": "select",
+         "label": "Direction",
+         "options": [
+          {
+           "label": "Descending",
+           "value": "desc"
+          },
+          {
+           "label": "Ascending",
+           "value": "asc"
+          }
+         ]
+        }
+       ],
+       "type": "array",
+       "label": "Sort"
+      },
+      {
+       "name": "view",
+       "type": "select",
+       "label": "View"
+      },
+      {
+       "name": "fields",
+       "type": "select",
+       "label": "Output Fields",
+       "multiple": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "base": {
+        "mode": "chose",
+        "label": "Alex"
+       },
+       "sort": {
+        "mode": "chose"
+       },
+       "view": {
+        "mode": "chose",
+        "label": "Empty"
+       },
+       "table": {
+        "mode": "chose",
+        "label": "Workspace IDs"
+       },
+       "fields": {
+        "mode": "chose"
+       },
+       "useColumnId": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "airtable3"
+        },
+        "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+       }
+      }
+     },
+     "designer": {
+      "x": 900,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:airtable3,airtable2",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3589602
+    }
+   },
+   {
+    "id": 10,
+    "mapper": {
+     "text": "⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️\nMeeting Date/Time: {{4.`Date of Call Booked`}}\nClient: {{5.Name}}\nCampaign: {{4.`Campaign Name`}}\nLead email: {{4.`Leads Email`}}\n⬇️⬇️⬇️⬇️\nCall Status: {{1.`Call Status`.name}}\nHow was the call: {{1.`How was the call?`}}\nNotes: {{1.Notes}}\n⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️",
+     "parse": false,
+     "mrkdwn": true,
+     "channel": "C08S9J4MU84",
+     "username": "Feedback Form Submission",
+     "icon_emoji": ":information_source:",
+     "channelWType": "manualy",
+     "unfurl_links": false,
+     "unfurl_media": false
+    },
+    "module": "slack:CreateMessage",
+    "version": 4,
+    "metadata": {
+     "expect": [
+      {
+       "name": "channelWType",
+       "type": "select",
+       "label": "Enter a channel ID or name",
+       "required": true,
+       "validate": {
+        "enum": [
+         "manualy",
+         "list"
+        ]
+       }
+      },
+      {
+       "name": "text",
+       "type": "text",
+       "label": "Text"
+      },
+      {
+       "name": "blocks",
+       "type": "text",
+       "label": "Blocks"
+      },
+      {
+       "name": "thread_ts",
+       "type": "text",
+       "label": "Thread message ID (time stamp)"
+      },
+      {
+       "name": "reply_broadcast",
+       "type": "boolean",
+       "label": "Reply broadcast"
+      },
+      {
+       "name": "link_names",
+       "type": "boolean",
+       "label": "Link names"
+      },
+      {
+       "name": "parse",
+       "type": "boolean",
+       "label": "Parse message text"
+      },
+      {
+       "name": "mrkdwn",
+       "type": "boolean",
+       "label": "Use markdown"
+      },
+      {
+       "name": "unfurl_links",
+       "type": "boolean",
+       "label": "Unfurl primarily text-based content"
+      },
+      {
+       "name": "unfurl_media",
+       "type": "boolean",
+       "label": "Unfurl media content"
+      },
+      {
+       "name": "icon_emoji",
+       "type": "text",
+       "label": "Icon emoji"
+      },
+      {
+       "name": "icon_url",
+       "type": "url",
+       "label": "Icon url"
+      },
+      {
+       "name": "username",
+       "type": "text",
+       "label": "User name"
+      },
+      {
+       "name": "channel",
+       "type": "text",
+       "label": "Channel ID or name",
+       "required": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "parse": {
+        "mode": "chose"
+       },
+       "mrkdwn": {
+        "mode": "chose"
+       },
+       "link_names": {
+        "mode": "chose"
+       },
+       "channelWType": {
+        "label": "Enter manually"
+       },
+       "unfurl_links": {
+        "mode": "chose"
+       },
+       "unfurl_media": {
+        "mode": "chose"
+       },
+       "reply_broadcast": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "slack3"
+        },
+        "label": "My Slack (bot) connectionfix (make)"
+       }
+      }
+     },
+     "advanced": true,
+     "designer": {
+      "x": 1200,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:slack2,slack3",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3736690
+    }
+   },
+   {
+    "id": 15,
+    "mapper": {
+     "id": "{{4.id}}",
+     "base": "appxqINt5XKw7a76A",
+     "table": "tblADFhWhTcLrl1UY",
+     "record": {
+      "fldSuQyvPM3IlS5oD": "Completed Meeting"
+     },
+     "typecast": false,
+     "useColumnId": false
+    },
+    "module": "airtable:ActionUpdateRecords",
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "base",
+       "type": "select",
+       "label": "Base",
+       "required": true
+      },
+      {
+       "name": "typecast",
+       "type": "boolean",
+       "label": "Smart links",
+       "required": true
+      },
+      {
+       "name": "useColumnId",
+       "type": "boolean",
+       "label": "Use Column ID",
+       "required": true
+      },
+      {
+       "name": "table",
+       "type": "select",
+       "label": "Table",
+       "required": true
+      },
+      {
+       "name": "id",
+       "type": "text",
+       "label": "Record ID",
+       "required": true
+      },
+      {
+       "name": "record",
+       "spec": [
+        {
+         "name": "fldVkWkLFCGP9O1Aw",
+         "type": "text",
+         "label": "Leads Email"
+        },
+        {
+         "name": "fldQAcnN9PrbL7R81",
+         "type": "text",
+         "label": "Leads Name"
+        },
+        {
+         "mode": "edit",
+         "name": "fldSuQyvPM3IlS5oD",
+         "type": "select",
+         "label": "Pipeline Stage"
+        },
+        {
+         "name": "fldNdJB5rvVpf8V9M",
+         "type": "text",
+         "label": "Subject Line"
+        },
+        {
+         "name": "fldjG76LvUTv60Pzj",
+         "type": "text",
+         "label": "Latest Reply"
+        },
+        {
+         "mode": "edit",
+         "name": "fldr2uNiscZfeCNiT",
+         "type": "select",
+         "label": "Lead Status"
+        },
+        {
+         "mode": "edit",
+         "name": "fldE9bxKtmeRsvG9f",
+         "type": "select",
+         "label": "Last Email Sent"
+        },
+        {
+         "mode": "edit",
+         "name": "fldzd2bHc5XMGidFk",
+         "type": "select",
+         "label": "Push To Client Reply"
+        },
+        {
+         "name": "fldxUxP1jBXt3u7dl",
+         "type": "text",
+         "label": "Inbox Email"
+        },
+        {
+         "name": "fldEv7oM5BJPKJpiR",
+         "type": "text",
+         "label": "Campaign Name"
+        },
+        {
+         "name": "fldCfgm35ZqyVe9xm",
+         "type": "text",
+         "label": "Custom Reply"
+        },
+        {
+         "name": "fldYocEhrAzRUw9sA",
+         "type": "text",
+         "label": "Conversation History"
+        },
+        {
+         "name": "fldT2Nvl3qPmSMsgb",
+         "type": "text",
+         "label": "reply_uuid"
+        },
+        {
+         "name": "fldNro9b4pwGpSMCC",
+         "type": "text",
+         "label": "Conversation History (LinkedIn)"
+        },
+        {
+         "name": "fldD5fmGNibdKHSpt",
+         "type": "text",
+         "label": "Latest Reply (LinkedIn)"
+        },
+        {
+         "mode": "edit",
+         "name": "fldkDA7b1UxLAlA81",
+         "type": "select",
+         "label": "Lead Status (LinkedIn)"
+        },
+        {
+         "mode": "edit",
+         "name": "fld7jpK3tgsbX0fTw",
+         "type": "select",
+         "label": "Last Message Sent (LinkedIn)"
+        },
+        {
+         "name": "fld1NKr1MMJ1GCNNO",
+         "type": "text",
+         "label": "Custom Reply (LinkedIn)"
+        },
+        {
+         "name": "fldn8061QIRjA57DF",
+         "type": "number",
+         "label": "sender_id"
+        },
+        {
+         "name": "fldHMkE8BHLK79MOv",
+         "type": "text",
+         "label": "convo_id"
+        },
+        {
+         "name": "fldKmUjCCmBAsrJcO",
+         "type": "number",
+         "label": "campaign_idlinkedin"
+        },
+        {
+         "name": "fldkBI4eHyZCZiOWt",
+         "type": "text",
+         "label": "workspace_id"
+        },
+        {
+         "name": "fld9whaU6BOcX7Wb7",
+         "type": "number",
+         "label": "list_id"
+        },
+        {
+         "name": "fld2Iz1wBhvVqCE2z",
+         "type": "text",
+         "label": "lead_idlinkedin"
+        },
+        {
+         "mode": "edit",
+         "name": "fldfPPfvAoXw04LVs",
+         "type": "select",
+         "label": "Opportunity Status"
+        },
+        {
+         "name": "fldTFmYUnIXPxgJQS",
+         "time": false,
+         "type": "date",
+         "label": "Date of Call Booked"
+        },
+        {
+         "name": "fldv0o5rhmd7jXDrt",
+         "type": "text",
+         "label": "campaign_id"
+        },
+        {
+         "name": "fldv66oGZQQ9Qscmb",
+         "type": "number",
+         "label": "lead_id"
+        },
+        {
+         "name": "flds1ZqBq2ZW6dVBr",
+         "type": "text",
+         "label": "email_stats_id"
+        },
+        {
+         "name": "fldvARFWnr4H2wC8V",
+         "type": "text",
+         "label": "reply_message_id"
+        },
+        {
+         "name": "fld2IjVEsAijZUjPl",
+         "spec": {
+          "name": "value",
+          "label": "Record ID"
+         },
+         "type": "array",
+         "label": "Templates"
+        },
+        {
+         "name": "fldGkiO630UgVCnv5",
+         "type": "text",
+         "label": "CC (Optional)"
+        },
+        {
+         "name": "fldlC9uaoYyYwFvDz",
+         "type": "text",
+         "label": "Linkedin URL"
+        },
+        {
+         "name": "fld8K4zasLt6aaRfB",
+         "type": "text",
+         "label": "Phone Number"
+        },
+        {
+         "name": "fldgYXGaNqOXv1fGq",
+         "type": "text",
+         "label": "AI Model ID (PRE)"
+        },
+        {
+         "name": "fldaX71fUb5SMxZRg",
+         "type": "text",
+         "label": "AI Model ID (APTR)"
+        },
+        {
+         "name": "fldMkQICFPIhxnpjf",
+         "type": "text",
+         "label": "Sent From Number"
+        },
+        {
+         "name": "fld1B1CKOYoScfm5B",
+         "type": "text",
+         "label": "AI Called?"
+        },
+        {
+         "name": "fldtTiMUSxDkIIKL1",
+         "type": "text",
+         "label": "Call ID"
+        },
+        {
+         "name": "fldqSTyR7HK1TYCzf",
+         "type": "text",
+         "label": "Call Recording"
+        },
+        {
+         "name": "fldwbdXG4b1UGOxUC",
+         "type": "text",
+         "label": "Call Transcript"
+        },
+        {
+         "name": "fldbme5e9wDtnVwrx",
+         "type": "boolean",
+         "label": "DNC"
+        },
+        {
+         "name": "fldFzjStaAbNlUpVF",
+         "type": "number",
+         "label": "Times Called (Identifier)"
+        },
+        {
+         "name": "fldDCjl2mVNXBiT0n",
+         "type": "number",
+         "label": "Follow Up Counter"
+        },
+        {
+         "name": "fldZ5IqKrmEK5VftZ",
+         "type": "text",
+         "label": "SMS Latest Reply"
+        },
+        {
+         "name": "fldkoeDCrzxLiFP7D",
+         "type": "text",
+         "label": "SMS Conversation History"
+        },
+        {
+         "name": "fld7omiYDXqSkRDMy",
+         "type": "text",
+         "label": "SMS Custom Reply"
+        },
+        {
+         "mode": "edit",
+         "name": "fldKMkzXPIxoDN7BG",
+         "type": "select",
+         "label": "Last SMS Sent"
+        },
+        {
+         "mode": "edit",
+         "name": "fldIEelM8lYXbOQc2",
+         "type": "select",
+         "label": "Call Status"
+        },
+        {
+         "name": "fldGT7ve1zwbro3ox",
+         "type": "text",
+         "label": "convo_history_plain"
+        },
+        {
+         "name": "fldRYOE8NaSKxs9tB",
+         "type": "text",
+         "label": "Company Name"
+        },
+        {
+         "name": "fldBNI5MPeDfMELjd",
+         "type": "text",
+         "label": "ESP"
+        },
+        {
+         "name": "fldCjo0mB0snziNZQ",
+         "type": "text",
+         "label": "Workspace ID (Bison)"
+        },
+        {
+         "name": "fld3OXhmjYmwkUAAK",
+         "type": "text",
+         "label": "Reply Explanation"
+        },
+        {
+         "name": "fld3YSJ9JV7976gYP",
+         "spec": {
+          "name": "value",
+          "label": "Record ID"
+         },
+         "type": "array",
+         "label": "Call Feedback"
+        },
+        {
+         "name": "fld95CBFiC5brYmMM",
+         "type": "number",
+         "label": "Deal Value (USD)"
+        },
+        {
+         "name": "fldyD6xwXgb1uK0rr",
+         "time": false,
+         "type": "date",
+         "label": "Deal Closed Date"
+        },
+        {
+         "mode": "edit",
+         "name": "fldqClP8814zDp1Nw",
+         "type": "select",
+         "label": "Deal Type"
+        },
+        {
+         "name": "fldyTDPYo300Gi98l",
+         "type": "text",
+         "label": "Why They Said Yes"
+        },
+        {
+         "name": "fldu8kQYBvVoqxq9T",
+         "time": false,
+         "type": "date",
+         "label": "OOO - Back In The Office - Date"
+        },
+        {
+         "name": "fldRCbUTcTgEFwnSm",
+         "type": "boolean",
+         "label": "OOO - Subsequence Email Sent"
+        },
+        {
+         "name": "fldMK8ZVPYiZVPKWh",
+         "type": "text",
+         "label": "OOO - First Name"
+        },
+        {
+         "name": "fld7BsWnDpprOkB5h",
+         "type": "text",
+         "label": "duplicate_for_tests"
+        },
+        {
+         "name": "fldUFM7ev0B3nvsgB",
+         "type": "boolean",
+         "label": "skip_request_call_feedback"
+        },
+        {
+         "name": "fldtPAlC0MDPHTWcl",
+         "spec": {
+          "name": "value",
+          "label": "Record ID"
+         },
+         "type": "array",
+         "label": "Clients Table"
+        },
+        {
+         "name": "fldp9PPhWuxYKHeNN",
+         "type": "text",
+         "label": "Email sent to alternative email"
+        },
+        {
+         "name": "fldCDGcTRfsZc6zA8",
+         "type": "text",
+         "label": "Alternative Contact Name"
+        },
+        {
+         "name": "fld7lWph2AkRQqtPa",
+         "type": "boolean",
+         "label": "Send alt email"
+        },
+        {
+         "name": "fldXyhJdaLygDLiJG",
+         "type": "text",
+         "label": "Subject for alt email"
+        },
+        {
+         "mode": "edit",
+         "name": "fldD175mMHmxoGw37",
+         "type": "select",
+         "label": "Last Sent From"
+        }
+       ],
+       "type": "collection",
+       "label": "Record"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "base": {
+        "label": "Alex"
+       },
+       "table": {
+        "label": "Emails"
+       },
+       "record": {
+        "nested": {
+         "fld2IjVEsAijZUjPl": {
+          "mode": "chose"
+         },
+         "fld3YSJ9JV7976gYP": {
+          "mode": "chose"
+         },
+         "fld7jpK3tgsbX0fTw": {
+          "mode": "edit"
+         },
+         "fld7lWph2AkRQqtPa": {
+          "mode": "chose"
+         },
+         "fldD175mMHmxoGw37": {
+          "mode": "edit"
+         },
+         "fldE9bxKtmeRsvG9f": {
+          "mode": "edit"
+         },
+         "fldIEelM8lYXbOQc2": {
+          "mode": "edit"
+         },
+         "fldKMkzXPIxoDN7BG": {
+          "mode": "edit"
+         },
+         "fldRCbUTcTgEFwnSm": {
+          "mode": "chose"
+         },
+         "fldSuQyvPM3IlS5oD": {
+          "mode": "chose",
+          "label": "Completed Meeting"
+         },
+         "fldUFM7ev0B3nvsgB": {
+          "mode": "chose"
+         },
+         "fldbme5e9wDtnVwrx": {
+          "mode": "chose"
+         },
+         "fldfPPfvAoXw04LVs": {
+          "mode": "edit"
+         },
+         "fldkDA7b1UxLAlA81": {
+          "mode": "edit"
+         },
+         "fldqClP8814zDp1Nw": {
+          "mode": "edit"
+         },
+         "fldr2uNiscZfeCNiT": {
+          "mode": "edit"
+         },
+         "fldtPAlC0MDPHTWcl": {
+          "mode": "chose"
+         },
+         "fldzd2bHc5XMGidFk": {
+          "mode": "edit"
+         }
+        }
+       },
+       "typecast": {
+        "mode": "chose"
+       },
+       "useColumnId": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "airtable3"
+        },
+        "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+       }
+      }
+     },
+     "designer": {
+      "x": 1500,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:airtable3,airtable2",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3589602
+    }
+   }
+  ],
+  "name": "[Call Feedback] Form Submission -> Notion Client Revenue Dashboard",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": [
+     [
+      {
+       "id": 3,
+       "filter": {
+        "name": "Qualified",
+        "conditions": [
+         [
+          {
+           "a": "{{1.`Call Status`.name}}",
+           "b": "Qualified",
+           "o": "text:equal:ci"
+          }
+         ]
+        ]
+       },
+       "mapper": {
+        "fields": {
+         "KFBg": "{{1.Notes}}",
+         "title": "[{{5.Name}}] {{4.`Leads Name`}}",
+         "%3EJzg": "Completed",
+         "1V%7C7": {
+          "start": "{{4.`Date of Call Booked`}}",
+          "includeTime": false
+         },
+         "n%5DaB": "{{4.`Leads Email`}}",
+         "e3d04baa-9f42-4d77-9d93-330a6f720d7d": "https://{{last(split(4.`Leads Email`; \"@\"))}}"
+        },
+        "select": "list",
+        "database": "1b617e50-2156-8152-a4cc-f27723536c7e"
+       },
+       "module": "notion:createAPage",
+       "onerror": [
+        {
+         "id": 13,
+         "mapper": {
+          "model": "gpt-5-mini",
+          "top_p": "1",
+          "select": "chat",
+          "messages": [
+           {
+            "role": "user",
+            "content": "Please summarize this into less than 1500 characters. NO EXTRA TEXT BEFORE OR AFTER. JUST THE PURE SUMMARY OF THE RAW TEXT.\n\nHere's the raw text:\n{{1.Notes}}"
+           }
+          ],
+          "max_tokens": "2048",
+          "temperature": "1",
+          "n_completions": "1",
+          "response_format": "text"
+         },
+         "module": "openai-gpt-3:CreateCompletion",
+         "version": 1,
+         "metadata": {
+          "expect": [
+           {
+            "name": "select",
+            "type": "select",
+            "label": "Select Method",
+            "required": true,
+            "validate": {
+             "enum": [
+              "chat",
+              "prompt"
+             ]
+            }
+           },
+           {
+            "name": "temperature",
+            "type": "number",
+            "label": "Temperature",
+            "validate": {
+             "max": 2,
+             "min": 0
+            }
+           },
+           {
+            "name": "top_p",
+            "type": "number",
+            "label": "Top P",
+            "validate": {
+             "max": 1,
+             "min": 0
+            }
+           },
+           {
+            "name": "n_completions",
+            "type": "number",
+            "label": "Number"
+           },
+           {
+            "name": "frequency_penalty",
+            "type": "number",
+            "label": "Frequency Penalty",
+            "validate": {
+             "max": 2,
+             "min": -2
+            }
+           },
+           {
+            "name": "presence_penalty",
+            "type": "number",
+            "label": "Presence Penalty",
+            "validate": {
+             "max": 2,
+             "min": -2
+            }
+           },
+           {
+            "name": "logit_bias",
+            "spec": {
+             "name": "value",
+             "spec": [
+              {
+               "name": "token",
+               "type": "text",
+               "label": "Token ID",
+               "required": true
+              },
+              {
+               "name": "probability",
+               "type": "number",
+               "label": "Probability",
+               "required": true,
+               "validate": {
+                "max": 100,
+                "min": -100
+               }
+              }
+             ],
+             "type": "collection",
+             "label": "Token Probability"
+            },
+            "type": "array",
+            "label": "Token Probability"
+           },
+           {
+            "name": "seed",
+            "type": "integer",
+            "label": "Seed"
+           },
+           {
+            "name": "tool_choice",
+            "type": "select",
+            "label": "Tool Choice",
+            "validate": {
+             "enum": [
+              "none",
+              "auto",
+              "required"
+             ]
+            }
+           },
+           {
+            "name": "stop",
+            "spec": {
+             "name": "value",
+             "type": "text",
+             "label": "Stop Sequence"
+            },
+            "type": "array",
+            "label": "Stop Sequences",
+            "validate": {
+             "maxItems": 4
+            }
+           },
+           {
+            "name": "additionalParameters",
+            "spec": {
+             "name": "value",
+             "spec": [
+              {
+               "name": "key",
+               "type": "text",
+               "label": "Parameter Name",
+               "required": true
+              },
+              {
+               "name": "type",
+               "type": "select",
+               "label": "Input Type",
+               "options": [
+                {
+                 "label": "Text",
+                 "value": "text",
+                 "nested": [
+                  {
+                   "name": "value",
+                   "type": "text",
+                   "label": "Parameter Value"
+                  }
+                 ],
+                 "default": true
+                },
+                {
+                 "label": "Number",
+                 "value": "number",
+                 "nested": [
+                  {
+                   "name": "value",
+                   "type": "number",
+                   "label": "Parameter Value"
+                  }
+                 ]
+                },
+                {
+                 "label": "Boolean",
+                 "value": "boolean",
+                 "nested": [
+                  {
+                   "name": "value",
+                   "type": "boolean",
+                   "label": "Parameter Value"
+                  }
+                 ]
+                },
+                {
+                 "label": "Date",
+                 "value": "date",
+                 "nested": [
+                  {
+                   "name": "value",
+                   "type": "date",
+                   "label": "Parameter Value"
+                  }
+                 ]
+                },
+                {
+                 "label": "Any",
+                 "value": "any",
+                 "nested": [
+                  {
+                   "name": "value",
+                   "type": "any",
+                   "label": "Parameter Value"
+                  }
+                 ]
+                }
+               ]
+              }
+             ],
+             "type": "collection",
+             "label": "Input Parameter"
+            },
+            "type": "array",
+            "label": "Other Input Parameters"
+           },
+           {
+            "name": "model",
+            "type": "select",
+            "label": "Model",
+            "required": true
+           },
+           {
+            "name": "max_tokens",
+            "type": "uinteger",
+            "label": "Max Output Tokens"
+           },
+           {
+            "name": "messages",
+            "spec": {
+             "name": "value",
+             "spec": [
+              {
+               "name": "role",
+               "type": "select",
+               "label": "Role",
+               "options": {
+                "store": [
+                 {
+                  "label": "User",
+                  "value": "user",
+                  "nested": [
+                   {
+                    "help": "Text content of the message on behalf of the selected __Role__.",
+                    "name": "content",
+                    "type": "text",
+                    "label": "Text Content"
+                   }
+                  ],
+                  "default": true
+                 },
+                 {
+                  "label": "Assistant",
+                  "value": "assistant",
+                  "nested": [
+                   {
+                    "help": "Text content of the message on behalf of the selected __Role__.",
+                    "name": "content",
+                    "type": "text",
+                    "label": "Text Content"
+                   },
+                   {
+                    "mode": "edit",
+                    "name": "tool_calls",
+                    "spec": {
+                     "spec": [
+                      {
+                       "name": "type",
+                       "type": "hidden",
+                       "default": "function"
+                      },
+                      {
+                       "help": "Map this directly from the output of a previous **Create a Completion** module. Look for `Choices[]: Message.Tool Calls[]: ID`.",
+                       "name": "id",
+                       "type": "text",
+                       "label": "Tool call ID"
+                      },
+                      {
+                       "name": "function",
+                       "spec": [
+                        {
+                         "help": "The name of the function previously called.",
+                         "name": "name",
+                         "type": "text",
+                         "label": "Name",
+                         "required": true
+                        },
+                        {
+                         "help": "The arguments previously output by the AI.",
+                         "name": "arguments",
+                         "type": "text",
+                         "label": "Arguments",
+                         "required": true
+                        }
+                       ],
+                       "type": "collection",
+                       "label": "Function"
+                      }
+                     ],
+                     "type": "collection",
+                     "label": "Tool Call"
+                    },
+                    "type": "array",
+                    "label": "Tool Calls",
+                    "labels": {
+                     "add": "Add tool call"
+                    },
+                    "mappable": {
+                     "help": "You can map the entire `Choices[]: Message.Tool Calls` array from a previous Create a Completion module here."
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "label": "Developer / System",
+                  "value": "system",
+                  "nested": [
+                   {
+                    "help": "Text content of the message on behalf of the selected __Role__.",
+                    "name": "content",
+                    "type": "text",
+                    "label": "Text Content"
+                   }
+                  ]
+                 },
+                 {
+                  "label": "Tool",
+                  "value": "tool",
+                  "nested": [
+                   {
+                    "help": "The return of the function. This role should only be used when you have processed a previous function call and want to send the output of the function execution back to the AI.",
+                    "name": "content",
+                    "type": "text",
+                    "label": "Text Content",
+                    "required": true
+                   },
+                   {
+                    "help": "Map this directly from the output of a previous **Create a Completion** module. Look for `Choices[]: Message.Tool Calls[]: ID`.",
+                    "name": "tool_call_id",
+                    "type": "text",
+                    "label": "Tool Call ID.",
+                    "required": true
+                   }
+                  ]
+                 }
+                ]
+               },
+               "required": true
+              }
+             ],
+             "type": "collection",
+             "label": "Message"
+            },
+            "type": "array",
+            "label": "Messages",
+            "required": true
+           },
+           {
+            "name": "response_format",
+            "type": "select",
+            "label": "Response Format",
+            "validate": {
+             "enum": [
+              "text",
+              "json_object"
+             ]
+            }
+           },
+           {
+            "name": "reasoning_effort",
+            "type": "select",
+            "label": "Reasoning Effort",
+            "validate": {
+             "enum": [
+              "minimal",
+              "low",
+              "medium",
+              "high"
+             ]
+            }
+           }
+          ],
+          "restore": {
+           "expect": {
+            "stop": {
+             "mode": "chose"
+            },
+            "model": {
+             "mode": "chose",
+             "label": "gpt-5-mini (system)"
+            },
+            "select": {
+             "label": "Create a Chat Completion (GPT and o1 models)"
+            },
+            "messages": {
+             "mode": "chose",
+             "items": [
+              {
+               "role": {
+                "mode": "chose",
+                "label": "User"
+               }
+              }
+             ]
+            },
+            "logit_bias": {
+             "mode": "chose"
+            },
+            "tool_choice": {
+             "mode": "chose",
+             "label": "Empty"
+            },
+            "response_format": {
+             "mode": "chose",
+             "label": "Text"
+            },
+            "reasoning_effort": {
+             "mode": "chose",
+             "label": "Empty"
+            },
+            "additionalParameters": {
+             "mode": "chose"
+            }
+           },
+           "parameters": {
+            "__IMTCONN__": {
+             "data": {
+              "scoped": "true",
+              "connection": "openai-gpt-3"
+             },
+             "label": "My OpenAI connection"
+            }
+           }
+          },
+          "designer": {
+           "x": 300,
+           "y": 300,
+           "messages": [
+            {
+             "message": "'OpenAI (ChatGPT, Sora, Whisper) - Generate a completion' [module ID 13] references inaccessible module 'Webhooks - Custom webhook' [module ID 1].",
+             "category": "reference",
+             "severity": "error"
+            }
+           ]
+          },
+          "parameters": [
+           {
+            "name": "__IMTCONN__",
+            "type": "account:openai-gpt-3",
+            "label": "Connection",
+            "required": true
+           }
+          ]
+         },
+         "parameters": {
+          "__IMTCONN__": 3576859
+         }
+        },
+        {
+         "id": 14,
+         "mapper": {
+          "fields": {
+           "KFBg": "{{13.result}}",
+           "title": "[{{5.Name}}] {{4.`Leads Name`}}",
+           "%3EJzg": "Completed",
+           "1V%7C7": {
+            "start": "{{4.`Date of Call Booked`}}",
+            "includeTime": false
+           },
+           "n%5DaB": "{{4.`Leads Email`}}",
+           "e3d04baa-9f42-4d77-9d93-330a6f720d7d": "https://{{last(split(4.`Leads Email`; \"@\"))}}"
+          },
+          "select": "list",
+          "database": "1b617e50-2156-8152-a4cc-f27723536c7e"
+         },
+         "module": "notion:createAPage",
+         "version": 1,
+         "metadata": {
+          "expect": [
+           {
+            "name": "select",
+            "type": "select",
+            "label": "Enter a Database ID",
+            "required": true,
+            "validate": {
+             "enum": [
+              "map",
+              "list"
+             ]
+            }
+           },
+           {
+            "name": "database",
+            "type": "text",
+            "label": "Database ID",
+            "required": true
+           },
+           {
+            "name": "fields",
+            "spec": [
+             {
+              "name": "title",
+              "type": "text",
+              "label": "Name",
+              "metadata": {
+               "type": "title"
+              },
+              "required": true
+             },
+             {
+              "name": "%24%5Dx7",
+              "type": "number",
+              "label": "Contract Value",
+              "metadata": {
+               "type": "number"
+              }
+             },
+             {
+              "name": "1V%7C7",
+              "spec": [
+               {
+                "name": "start",
+                "type": "date",
+                "label": "Start Time"
+               },
+               {
+                "name": "end",
+                "type": "date",
+                "label": "End Time"
+               },
+               {
+                "name": "includeTime",
+                "type": "select",
+                "label": "Include Time",
+                "validate": {
+                 "enum": [
+                  true,
+                  false
+                 ]
+                }
+               }
+              ],
+              "type": "collection",
+              "label": "Meeting Date/Time"
+             },
+             {
+              "name": "%3EJzg",
+              "type": "select",
+              "label": "Status",
+              "metadata": {
+               "type": "select"
+              }
+             },
+             {
+              "name": "B_ML",
+              "type": "number",
+              "label": "Contract Length",
+              "metadata": {
+               "type": "number"
+              }
+             },
+             {
+              "name": "KFBg",
+              "type": "text",
+              "label": "Notes",
+              "metadata": {
+               "type": "rich_text"
+              }
+             },
+             {
+              "name": "lv%5BI",
+              "type": "select",
+              "label": "Client Name",
+              "metadata": {
+               "type": "relation"
+              },
+              "multiple": true
+             },
+             {
+              "name": "n%5DaB",
+              "type": "email",
+              "label": "Email",
+              "metadata": {
+               "type": "email"
+              }
+             },
+             {
+              "name": "e3d04baa-9f42-4d77-9d93-330a6f720d7d",
+              "type": "url",
+              "label": "Company URL",
+              "metadata": {
+               "type": "url"
+              }
+             }
+            ],
+            "type": "collection",
+            "label": "Fields"
+           }
+          ],
+          "restore": {
+           "expect": {
+            "fields": {
+             "nested": {
+              "%3EJzg": {
+               "mode": "chose",
+               "label": "Completed"
+              },
+              "1V%7C7": {
+               "nested": {
+                "includeTime": {
+                 "mode": "chose",
+                 "label": "No"
+                }
+               }
+              },
+              "lv%5BI": {
+               "mode": "chose"
+              }
+             }
+            },
+            "select": {
+             "label": "Select from the list"
+            },
+            "database": {
+             "nested": [
+              {
+               "name": "fields",
+               "spec": [
+                {
+                 "name": "title",
+                 "type": "text",
+                 "label": "Name",
+                 "metadata": {
+                  "type": "title"
+                 },
+                 "required": true
+                },
+                {
+                 "name": "%24%5Dx7",
+                 "type": "number",
+                 "label": "Contract Value",
+                 "metadata": {
+                  "type": "number"
+                 }
+                },
+                {
+                 "name": "1V%7C7",
+                 "spec": [
+                  {
+                   "name": "start",
+                   "type": "date",
+                   "label": "Start Time"
+                  },
+                  {
+                   "help": "Optional. Use only when entering a date range.",
+                   "name": "end",
+                   "type": "date",
+                   "label": "End Time"
+                  },
+                  {
+                   "name": "includeTime",
+                   "type": "select",
+                   "label": "Include Time",
+                   "options": [
+                    {
+                     "label": "Yes",
+                     "value": true
+                    },
+                    {
+                     "label": "No",
+                     "value": false,
+                     "default": true
+                    }
+                   ]
+                  }
+                 ],
+                 "type": "collection",
+                 "label": "Meeting Date/Time"
+                },
+                {
+                 "name": "%3EJzg",
+                 "type": "select",
+                 "label": "Status",
+                 "options": [
+                  {
+                   "label": "Booked",
+                   "value": "Booked"
+                  },
+                  {
+                   "label": "Completed",
+                   "value": "Completed"
+                  },
+                  {
+                   "label": "Closed",
+                   "value": "Closed"
+                  },
+                  {
+                   "label": "No Show",
+                   "value": "No Show"
+                  },
+                  {
+                   "label": "Follow-Up Needed",
+                   "value": "Follow-Up Needed"
+                  },
+                  {
+                   "label": "Unqualified",
+                   "value": "Unqualified"
+                  }
+                 ],
+                 "metadata": {
+                  "type": "select"
+                 },
+                 "validate": false
+                },
+                {
+                 "name": "B_ML",
+                 "type": "number",
+                 "label": "Contract Length",
+                 "metadata": {
+                  "type": "number"
+                 }
+                },
+                {
+                 "name": "KFBg",
+                 "type": "text",
+                 "label": "Notes",
+                 "metadata": {
+                  "type": "rich_text"
+                 }
+                },
+                {
+                 "name": "lv%5BI",
+                 "type": "select",
+                 "label": "Client Name",
+                 "options": "rpc://notion/1/listDatabaseItems?database=1b617e50-2156-81e1-815d-f9e0e7dc6583",
+                 "metadata": {
+                  "type": "relation"
+                 },
+                 "multiple": true
+                },
+                {
+                 "name": "n%5DaB",
+                 "type": "email",
+                 "label": "Email",
+                 "metadata": {
+                  "type": "email"
+                 }
+                },
+                {
+                 "name": "e3d04baa-9f42-4d77-9d93-330a6f720d7d",
+                 "type": "url",
+                 "label": "Company URL",
+                 "metadata": {
+                  "type": "url"
+                 }
+                }
+               ],
+               "type": "collection",
+               "label": "Fields"
+              }
+             ]
+            }
+           },
+           "parameters": {
+            "__IMTCONN__": {
+             "data": {
+              "scoped": "true",
+              "connection": "notion2"
+             },
+             "label": "My Notion Public connection (Dulcy)"
+            }
+           }
+          },
+          "designer": {
+           "x": 600,
+           "y": 300,
+           "messages": [
+            {
+             "message": "'Notion - Create a Database Item (Legacy)' [module ID 14] references inaccessible module 'Airtable - Get a Record' [module ID 4].",
+             "category": "reference",
+             "severity": "error"
+            },
+            {
+             "message": "'Notion - Create a Database Item (Legacy)' [module ID 14] references inaccessible module 'Airtable - Search Records' [module ID 5].",
+             "category": "reference",
+             "severity": "error"
+            }
+           ]
+          },
+          "parameters": [
+           {
+            "name": "__IMTCONN__",
+            "type": "account:notion2,notion3",
+            "label": "Connection",
+            "required": true
+           }
+          ]
+         },
+         "parameters": {
+          "__IMTCONN__": 4059332
+         }
+        }
+       ],
+       "version": 1,
+       "metadata": {
+        "expect": [
+         {
+          "name": "select",
+          "type": "select",
+          "label": "Enter a Database ID",
+          "required": true,
+          "validate": {
+           "enum": [
+            "map",
+            "list"
+           ]
+          }
+         },
+         {
+          "name": "database",
+          "type": "text",
+          "label": "Database ID",
+          "required": true
+         },
+         {
+          "name": "fields",
+          "spec": [
+           {
+            "name": "title",
+            "type": "text",
+            "label": "Name",
+            "metadata": {
+             "type": "title"
+            },
+            "required": true
+           },
+           {
+            "name": "%24%5Dx7",
+            "type": "number",
+            "label": "Contract Value",
+            "metadata": {
+             "type": "number"
+            }
+           },
+           {
+            "name": "1V%7C7",
+            "spec": [
+             {
+              "name": "start",
+              "type": "date",
+              "label": "Start Time"
+             },
+             {
+              "name": "end",
+              "type": "date",
+              "label": "End Time"
+             },
+             {
+              "name": "includeTime",
+              "type": "select",
+              "label": "Include Time",
+              "validate": {
+               "enum": [
+                true,
+                false
+               ]
+              }
+             }
+            ],
+            "type": "collection",
+            "label": "Meeting Date/Time"
+           },
+           {
+            "name": "%3EJzg",
+            "type": "select",
+            "label": "Status",
+            "metadata": {
+             "type": "select"
+            }
+           },
+           {
+            "name": "B_ML",
+            "type": "number",
+            "label": "Contract Length",
+            "metadata": {
+             "type": "number"
+            }
+           },
+           {
+            "name": "KFBg",
+            "type": "text",
+            "label": "Notes",
+            "metadata": {
+             "type": "rich_text"
+            }
+           },
+           {
+            "name": "lv%5BI",
+            "type": "select",
+            "label": "Client Name",
+            "metadata": {
+             "type": "relation"
+            },
+            "multiple": true
+           },
+           {
+            "name": "n%5DaB",
+            "type": "email",
+            "label": "Email",
+            "metadata": {
+             "type": "email"
+            }
+           },
+           {
+            "name": "e3d04baa-9f42-4d77-9d93-330a6f720d7d",
+            "type": "url",
+            "label": "Company URL",
+            "metadata": {
+             "type": "url"
+            }
+           }
+          ],
+          "type": "collection",
+          "label": "Fields"
+         }
+        ],
+        "restore": {
+         "expect": {
+          "fields": {
+           "nested": {
+            "%3EJzg": {
+             "mode": "chose",
+             "label": "Completed"
+            },
+            "1V%7C7": {
+             "nested": {
+              "includeTime": {
+               "mode": "chose",
+               "label": "No"
+              }
+             }
+            },
+            "lv%5BI": {
+             "mode": "chose"
+            }
+           }
+          },
+          "select": {
+           "label": "Select from the list"
+          },
+          "database": {
+           "nested": [
+            {
+             "name": "fields",
+             "spec": [
+              {
+               "name": "title",
+               "type": "text",
+               "label": "Name",
+               "metadata": {
+                "type": "title"
+               },
+               "required": true
+              },
+              {
+               "name": "%24%5Dx7",
+               "type": "number",
+               "label": "Contract Value",
+               "metadata": {
+                "type": "number"
+               }
+              },
+              {
+               "name": "1V%7C7",
+               "spec": [
+                {
+                 "name": "start",
+                 "type": "date",
+                 "label": "Start Time"
+                },
+                {
+                 "help": "Optional. Use only when entering a date range.",
+                 "name": "end",
+                 "type": "date",
+                 "label": "End Time"
+                },
+                {
+                 "name": "includeTime",
+                 "type": "select",
+                 "label": "Include Time",
+                 "options": [
+                  {
+                   "label": "Yes",
+                   "value": true
+                  },
+                  {
+                   "label": "No",
+                   "value": false,
+                   "default": true
+                  }
+                 ]
+                }
+               ],
+               "type": "collection",
+               "label": "Meeting Date/Time"
+              },
+              {
+               "name": "%3EJzg",
+               "type": "select",
+               "label": "Status",
+               "options": [
+                {
+                 "label": "Booked",
+                 "value": "Booked"
+                },
+                {
+                 "label": "Completed",
+                 "value": "Completed"
+                },
+                {
+                 "label": "Closed",
+                 "value": "Closed"
+                },
+                {
+                 "label": "No Show",
+                 "value": "No Show"
+                },
+                {
+                 "label": "Follow-Up Needed",
+                 "value": "Follow-Up Needed"
+                },
+                {
+                 "label": "Unqualified",
+                 "value": "Unqualified"
+                }
+               ],
+               "metadata": {
+                "type": "select"
+               },
+               "validate": false
+              },
+              {
+               "name": "B_ML",
+               "type": "number",
+               "label": "Contract Length",
+               "metadata": {
+                "type": "number"
+               }
+              },
+              {
+               "name": "KFBg",
+               "type": "text",
+               "label": "Notes",
+               "metadata": {
+                "type": "rich_text"
+               }
+              },
+              {
+               "name": "lv%5BI",
+               "type": "select",
+               "label": "Client Name",
+               "options": "rpc://notion/1/listDatabaseItems?database=1b617e50-2156-81e1-815d-f9e0e7dc6583",
+               "metadata": {
+                "type": "relation"
+               },
+               "multiple": true
+              },
+              {
+               "name": "n%5DaB",
+               "type": "email",
+               "label": "Email",
+               "metadata": {
+                "type": "email"
+               }
+              },
+              {
+               "name": "e3d04baa-9f42-4d77-9d93-330a6f720d7d",
+               "type": "url",
+               "label": "Company URL",
+               "metadata": {
+                "type": "url"
+               }
+              }
+             ],
+             "type": "collection",
+             "label": "Fields"
+            }
+           ]
+          }
+         },
+         "parameters": {
+          "__IMTCONN__": {
+           "data": {
+            "scoped": "true",
+            "connection": "notion2"
+           },
+           "label": "My Notion Public connection (Dulcy)"
+          }
+         }
+        },
+        "designer": {
+         "x": 0,
+         "y": 300,
+         "messages": [
+          {
+           "message": "This module is not connected to the flow. This module and everything after it will be skipped during execution. <autoconnect>Link it to your scenario to include them.</autoconnect>",
+           "category": "link",
+           "severity": "warning"
+          },
+          {
+           "message": "Referenced module 'Airtable - Get a Record' [4] is not accessible.",
+           "category": "reference",
+           "severity": "warning"
+          },
+          {
+           "message": "Referenced module 'Airtable - Search Records' [5] is not accessible.",
+           "category": "reference",
+           "severity": "warning"
+          },
+          {
+           "message": "Referenced module 'Webhooks - Custom webhook' [1] is not accessible.",
+           "category": "reference",
+           "severity": "warning"
+          }
+         ]
+        },
+        "parameters": [
+         {
+          "name": "__IMTCONN__",
+          "type": "account:notion2,notion3",
+          "label": "Connection",
+          "required": true
+         }
+        ]
+       },
+       "parameters": {
+        "__IMTCONN__": 4059332
+       }
+      }
+     ],
+     [
+      {
+       "id": 7,
+       "filter": {
+        "name": "Unqualified",
+        "conditions": [
+         [
+          {
+           "a": "{{1.`Call Status`.name}}",
+           "b": "Unqualified",
+           "o": "text:equal:ci"
+          }
+         ]
+        ]
+       },
+       "mapper": {
+        "fields": {
+         "KFBg": "{{1.Notes}}",
+         "title": "[{{5.Name}}] {{4.`Leads Name`}}",
+         "%3EJzg": "Unqualified",
+         "1V%7C7": {
+          "start": "{{4.`Date of Call Booked`}}",
+          "includeTime": false
+         },
+         "n%5DaB": "{{4.`Leads Email`}}",
+         "e3d04baa-9f42-4d77-9d93-330a6f720d7d": "https://{{last(split(4.`Leads Email`; \"@\"))}}"
+        },
+        "select": "list",
+        "database": "1b617e50-2156-8152-a4cc-f27723536c7e"
+       },
+       "module": "notion:createAPage",
+       "version": 1,
+       "metadata": {
+        "expect": [
+         {
+          "name": "select",
+          "type": "select",
+          "label": "Enter a Database ID",
+          "required": true,
+          "validate": {
+           "enum": [
+            "map",
+            "list"
+           ]
+          }
+         },
+         {
+          "name": "database",
+          "type": "text",
+          "label": "Database ID",
+          "required": true
+         },
+         {
+          "name": "fields",
+          "spec": [
+           {
+            "name": "title",
+            "type": "text",
+            "label": "Name",
+            "metadata": {
+             "type": "title"
+            },
+            "required": true
+           },
+           {
+            "name": "%24%5Dx7",
+            "type": "number",
+            "label": "Contract Value",
+            "metadata": {
+             "type": "number"
+            }
+           },
+           {
+            "name": "1V%7C7",
+            "spec": [
+             {
+              "name": "start",
+              "type": "date",
+              "label": "Start Time"
+             },
+             {
+              "name": "end",
+              "type": "date",
+              "label": "End Time"
+             },
+             {
+              "name": "includeTime",
+              "type": "select",
+              "label": "Include Time",
+              "validate": {
+               "enum": [
+                true,
+                false
+               ]
+              }
+             }
+            ],
+            "type": "collection",
+            "label": "Meeting Date/Time"
+           },
+           {
+            "name": "%3EJzg",
+            "type": "select",
+            "label": "Status",
+            "metadata": {
+             "type": "select"
+            }
+           },
+           {
+            "name": "B_ML",
+            "type": "number",
+            "label": "Contract Length",
+            "metadata": {
+             "type": "number"
+            }
+           },
+           {
+            "name": "KFBg",
+            "type": "text",
+            "label": "Notes",
+            "metadata": {
+             "type": "rich_text"
+            }
+           },
+           {
+            "name": "lv%5BI",
+            "type": "select",
+            "label": "Client Name",
+            "metadata": {
+             "type": "relation"
+            },
+            "multiple": true
+           },
+           {
+            "name": "n%5DaB",
+            "type": "email",
+            "label": "Email",
+            "metadata": {
+             "type": "email"
+            }
+           },
+           {
+            "name": "e3d04baa-9f42-4d77-9d93-330a6f720d7d",
+            "type": "url",
+            "label": "Company URL",
+            "metadata": {
+             "type": "url"
+            }
+           }
+          ],
+          "type": "collection",
+          "label": "Fields"
+         }
+        ],
+        "restore": {
+         "expect": {
+          "fields": {
+           "nested": {
+            "%3EJzg": {
+             "mode": "chose",
+             "label": "Unqualified"
+            },
+            "1V%7C7": {
+             "nested": {
+              "includeTime": {
+               "mode": "chose",
+               "label": "No"
+              }
+             }
+            },
+            "lv%5BI": {
+             "mode": "chose"
+            }
+           }
+          },
+          "select": {
+           "label": "Select from the list"
+          },
+          "database": {
+           "nested": [
+            {
+             "name": "fields",
+             "spec": [
+              {
+               "name": "title",
+               "type": "text",
+               "label": "Name",
+               "metadata": {
+                "type": "title"
+               },
+               "required": true
+              },
+              {
+               "name": "%24%5Dx7",
+               "type": "number",
+               "label": "Contract Value",
+               "metadata": {
+                "type": "number"
+               }
+              },
+              {
+               "name": "1V%7C7",
+               "spec": [
+                {
+                 "name": "start",
+                 "type": "date",
+                 "label": "Start Time"
+                },
+                {
+                 "help": "Optional. Use only when entering a date range.",
+                 "name": "end",
+                 "type": "date",
+                 "label": "End Time"
+                },
+                {
+                 "name": "includeTime",
+                 "type": "select",
+                 "label": "Include Time",
+                 "options": [
+                  {
+                   "label": "Yes",
+                   "value": true
+                  },
+                  {
+                   "label": "No",
+                   "value": false,
+                   "default": true
+                  }
+                 ]
+                }
+               ],
+               "type": "collection",
+               "label": "Meeting Date/Time"
+              },
+              {
+               "name": "%3EJzg",
+               "type": "select",
+               "label": "Status",
+               "options": [
+                {
+                 "label": "Booked",
+                 "value": "Booked"
+                },
+                {
+                 "label": "Completed",
+                 "value": "Completed"
+                },
+                {
+                 "label": "Closed",
+                 "value": "Closed"
+                },
+                {
+                 "label": "No Show",
+                 "value": "No Show"
+                },
+                {
+                 "label": "Follow-Up Needed",
+                 "value": "Follow-Up Needed"
+                },
+                {
+                 "label": "Unqualified",
+                 "value": "Unqualified"
+                }
+               ],
+               "metadata": {
+                "type": "select"
+               },
+               "validate": false
+              },
+              {
+               "name": "B_ML",
+               "type": "number",
+               "label": "Contract Length",
+               "metadata": {
+                "type": "number"
+               }
+              },
+              {
+               "name": "KFBg",
+               "type": "text",
+               "label": "Notes",
+               "metadata": {
+                "type": "rich_text"
+               }
+              },
+              {
+               "name": "lv%5BI",
+               "type": "select",
+               "label": "Client Name",
+               "options": "rpc://notion/1/listDatabaseItems?database=1b617e50-2156-81e1-815d-f9e0e7dc6583",
+               "metadata": {
+                "type": "relation"
+               },
+               "multiple": true
+              },
+              {
+               "name": "n%5DaB",
+               "type": "email",
+               "label": "Email",
+               "metadata": {
+                "type": "email"
+               }
+              },
+              {
+               "name": "e3d04baa-9f42-4d77-9d93-330a6f720d7d",
+               "type": "url",
+               "label": "Company URL",
+               "metadata": {
+                "type": "url"
+               }
+              }
+             ],
+             "type": "collection",
+             "label": "Fields"
+            }
+           ]
+          }
+         },
+         "parameters": {
+          "__IMTCONN__": {
+           "data": {
+            "scoped": "true",
+            "connection": "notion2"
+           },
+           "label": "My Notion Public connection (Dulcy)"
+          }
+         }
+        },
+        "designer": {
+         "x": 0,
+         "y": 600,
+         "messages": [
+          {
+           "message": "This module is not connected to the flow. This module and everything after it will be skipped during execution. <autoconnect>Link it to your scenario to include them.</autoconnect>",
+           "category": "link",
+           "severity": "warning"
+          },
+          {
+           "message": "Referenced module 'Airtable - Get a Record' [4] is not accessible.",
+           "category": "reference",
+           "severity": "warning"
+          },
+          {
+           "message": "Referenced module 'Airtable - Search Records' [5] is not accessible.",
+           "category": "reference",
+           "severity": "warning"
+          },
+          {
+           "message": "Referenced module 'Webhooks - Custom webhook' [1] is not accessible.",
+           "category": "reference",
+           "severity": "warning"
+          }
+         ]
+        },
+        "parameters": [
+         {
+          "name": "__IMTCONN__",
+          "type": "account:notion2,notion3",
+          "label": "Connection",
+          "required": true
+         }
+        ]
+       },
+       "parameters": {
+        "__IMTCONN__": 4059332
+       }
+      }
+     ],
+     [
+      {
+       "id": 8,
+       "filter": {
+        "name": "No Show",
+        "conditions": [
+         [
+          {
+           "a": "{{1.`Call Status`.name}}",
+           "b": "No Show",
+           "o": "text:equal:ci"
+          }
+         ]
+        ]
+       },
+       "mapper": {
+        "fields": {
+         "KFBg": "{{1.Notes}}",
+         "title": "[{{5.Name}}] {{4.`Leads Name`}}",
+         "%3EJzg": "No Show",
+         "1V%7C7": {
+          "start": "{{4.`Date of Call Booked`}}",
+          "includeTime": false
+         },
+         "n%5DaB": "{{4.`Leads Email`}}",
+         "e3d04baa-9f42-4d77-9d93-330a6f720d7d": "https://{{last(split(4.`Leads Email`; \"@\"))}}"
+        },
+        "select": "list",
+        "database": "1b617e50-2156-8152-a4cc-f27723536c7e"
+       },
+       "module": "notion:createAPage",
+       "version": 1,
+       "metadata": {
+        "expect": [
+         {
+          "name": "select",
+          "type": "select",
+          "label": "Enter a Database ID",
+          "required": true,
+          "validate": {
+           "enum": [
+            "map",
+            "list"
+           ]
+          }
+         },
+         {
+          "name": "database",
+          "type": "text",
+          "label": "Database ID",
+          "required": true
+         },
+         {
+          "name": "fields",
+          "spec": [
+           {
+            "name": "title",
+            "type": "text",
+            "label": "Name",
+            "metadata": {
+             "type": "title"
+            },
+            "required": true
+           },
+           {
+            "name": "%24%5Dx7",
+            "type": "number",
+            "label": "Contract Value",
+            "metadata": {
+             "type": "number"
+            }
+           },
+           {
+            "name": "1V%7C7",
+            "spec": [
+             {
+              "name": "start",
+              "type": "date",
+              "label": "Start Time"
+             },
+             {
+              "name": "end",
+              "type": "date",
+              "label": "End Time"
+             },
+             {
+              "name": "includeTime",
+              "type": "select",
+              "label": "Include Time",
+              "validate": {
+               "enum": [
+                true,
+                false
+               ]
+              }
+             }
+            ],
+            "type": "collection",
+            "label": "Meeting Date/Time"
+           },
+           {
+            "name": "%3EJzg",
+            "type": "select",
+            "label": "Status",
+            "metadata": {
+             "type": "select"
+            }
+           },
+           {
+            "name": "B_ML",
+            "type": "number",
+            "label": "Contract Length",
+            "metadata": {
+             "type": "number"
+            }
+           },
+           {
+            "name": "KFBg",
+            "type": "text",
+            "label": "Notes",
+            "metadata": {
+             "type": "rich_text"
+            }
+           },
+           {
+            "name": "lv%5BI",
+            "type": "select",
+            "label": "Client Name",
+            "metadata": {
+             "type": "relation"
+            },
+            "multiple": true
+           },
+           {
+            "name": "n%5DaB",
+            "type": "email",
+            "label": "Email",
+            "metadata": {
+             "type": "email"
+            }
+           },
+           {
+            "name": "e3d04baa-9f42-4d77-9d93-330a6f720d7d",
+            "type": "url",
+            "label": "Company URL",
+            "metadata": {
+             "type": "url"
+            }
+           }
+          ],
+          "type": "collection",
+          "label": "Fields"
+         }
+        ],
+        "restore": {
+         "expect": {
+          "fields": {
+           "nested": {
+            "%3EJzg": {
+             "mode": "chose",
+             "label": "No Show"
+            },
+            "1V%7C7": {
+             "nested": {
+              "includeTime": {
+               "mode": "chose",
+               "label": "No"
+              }
+             }
+            },
+            "lv%5BI": {
+             "mode": "chose"
+            }
+           }
+          },
+          "select": {
+           "label": "Select from the list"
+          },
+          "database": {
+           "nested": [
+            {
+             "name": "fields",
+             "spec": [
+              {
+               "name": "title",
+               "type": "text",
+               "label": "Name",
+               "metadata": {
+                "type": "title"
+               },
+               "required": true
+              },
+              {
+               "name": "%24%5Dx7",
+               "type": "number",
+               "label": "Contract Value",
+               "metadata": {
+                "type": "number"
+               }
+              },
+              {
+               "name": "1V%7C7",
+               "spec": [
+                {
+                 "name": "start",
+                 "type": "date",
+                 "label": "Start Time"
+                },
+                {
+                 "help": "Optional. Use only when entering a date range.",
+                 "name": "end",
+                 "type": "date",
+                 "label": "End Time"
+                },
+                {
+                 "name": "includeTime",
+                 "type": "select",
+                 "label": "Include Time",
+                 "options": [
+                  {
+                   "label": "Yes",
+                   "value": true
+                  },
+                  {
+                   "label": "No",
+                   "value": false,
+                   "default": true
+                  }
+                 ]
+                }
+               ],
+               "type": "collection",
+               "label": "Meeting Date/Time"
+              },
+              {
+               "name": "%3EJzg",
+               "type": "select",
+               "label": "Status",
+               "options": [
+                {
+                 "label": "Booked",
+                 "value": "Booked"
+                },
+                {
+                 "label": "Completed",
+                 "value": "Completed"
+                },
+                {
+                 "label": "Closed",
+                 "value": "Closed"
+                },
+                {
+                 "label": "No Show",
+                 "value": "No Show"
+                },
+                {
+                 "label": "Follow-Up Needed",
+                 "value": "Follow-Up Needed"
+                },
+                {
+                 "label": "Unqualified",
+                 "value": "Unqualified"
+                }
+               ],
+               "metadata": {
+                "type": "select"
+               },
+               "validate": false
+              },
+              {
+               "name": "B_ML",
+               "type": "number",
+               "label": "Contract Length",
+               "metadata": {
+                "type": "number"
+               }
+              },
+              {
+               "name": "KFBg",
+               "type": "text",
+               "label": "Notes",
+               "metadata": {
+                "type": "rich_text"
+               }
+              },
+              {
+               "name": "lv%5BI",
+               "type": "select",
+               "label": "Client Name",
+               "options": "rpc://notion/1/listDatabaseItems?database=1b617e50-2156-81e1-815d-f9e0e7dc6583",
+               "metadata": {
+                "type": "relation"
+               },
+               "multiple": true
+              },
+              {
+               "name": "n%5DaB",
+               "type": "email",
+               "label": "Email",
+               "metadata": {
+                "type": "email"
+               }
+              },
+              {
+               "name": "e3d04baa-9f42-4d77-9d93-330a6f720d7d",
+               "type": "url",
+               "label": "Company URL",
+               "metadata": {
+                "type": "url"
+               }
+              }
+             ],
+             "type": "collection",
+             "label": "Fields"
+            }
+           ]
+          }
+         },
+         "parameters": {
+          "__IMTCONN__": {
+           "data": {
+            "scoped": "true",
+            "connection": "notion2"
+           },
+           "label": "My Notion Public connection (Dulcy)"
+          }
+         }
+        },
+        "designer": {
+         "x": 0,
+         "y": 900,
+         "messages": [
+          {
+           "message": "This module is not connected to the flow. This module and everything after it will be skipped during execution. <autoconnect>Link it to your scenario to include them.</autoconnect>",
+           "category": "link",
+           "severity": "warning"
+          },
+          {
+           "message": "Referenced module 'Airtable - Get a Record' [4] is not accessible.",
+           "category": "reference",
+           "severity": "warning"
+          },
+          {
+           "message": "Referenced module 'Airtable - Search Records' [5] is not accessible.",
+           "category": "reference",
+           "severity": "warning"
+          },
+          {
+           "message": "Referenced module 'Webhooks - Custom webhook' [1] is not accessible.",
+           "category": "reference",
+           "severity": "warning"
+          }
+         ]
+        },
+        "parameters": [
+         {
+          "name": "__IMTCONN__",
+          "type": "account:notion2,notion3",
+          "label": "Connection",
+          "required": true
+         }
+        ]
+       },
+       "parameters": {
+        "__IMTCONN__": 4059332
+       }
+      }
+     ]
+    ]
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately"
+  }
+ }
+}

@@ -1,0 +1,1185 @@
+{
+ "id": 4480395,
+ "name": "[TEMPLATE] New Lead (copy)",
+ "teamId": 629049,
+ "hookId": 2564132,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 162901,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": false,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "gateway",
+  "builtin",
+  "close-crm",
+  "close-crm",
+  "close-crm",
+  "http"
+ ],
+ "lastEdit": "2025-12-29T23:47:08.391Z",
+ "scheduling": {
+  "type": "immediately"
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2025-12-29T23:36:16.628Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": true,
+ "isActive": false,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 1,
+    "mapper": {},
+    "module": "gateway:CustomWebHook",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "hook": {
+        "data": {
+         "editable": "true"
+        },
+        "label": "New Lead"
+       }
+      }
+     },
+     "designer": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "hook",
+       "type": "hook:gateway-webhook",
+       "label": "Webhook",
+       "required": true
+      },
+      {
+       "name": "maxResults",
+       "type": "number",
+       "label": "Maximum number of results"
+      }
+     ]
+    },
+    "parameters": {
+     "hook": 2564132,
+     "maxResults": 1
+    }
+   },
+   {
+    "id": 2,
+    "mapper": null,
+    "module": "builtin:BasicRouter",
+    "routes": [
+     {
+      "flow": [
+       {
+        "id": 3,
+        "filter": {
+         "name": "Qualified",
+         "conditions": [
+          [
+           {
+            "a": "{{1.qualifiedbooking}}",
+            "b": " Yes",
+            "o": "text:equal"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "id": "{{1.leadId}}",
+         "custom": {},
+         "status_id": "stat_f4XAHrHyTSXL06vVfd44h7dYVhrsKDAZQg26iehc3vS"
+        },
+        "module": "close-crm:ActionUpdateLead",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "mode": "edit",
+           "name": "id",
+           "type": "select",
+           "label": "Lead ID",
+           "required": true
+          },
+          {
+           "name": "name",
+           "type": "text",
+           "label": "Name"
+          },
+          {
+           "name": "description",
+           "type": "text",
+           "label": "Description"
+          },
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL"
+          },
+          {
+           "mode": "edit",
+           "name": "status_id",
+           "type": "select",
+           "label": "Status ID"
+          },
+          {
+           "name": "contacts",
+           "spec": {
+            "name": "value",
+            "spec": [
+             {
+              "name": "name",
+              "type": "text",
+              "label": "Name"
+             },
+             {
+              "name": "title",
+              "type": "text",
+              "label": "Title"
+             },
+             {
+              "name": "emails",
+              "spec": {
+               "spec": [
+                {
+                 "name": "type",
+                 "type": "select",
+                 "label": "Type",
+                 "options": [
+                  {
+                   "label": "Office",
+                   "value": "office"
+                  },
+                  {
+                   "label": "Home",
+                   "value": "home"
+                  },
+                  {
+                   "label": "Direct",
+                   "value": "direct"
+                  },
+                  {
+                   "label": "Other",
+                   "value": "other"
+                  }
+                 ]
+                },
+                {
+                 "name": "email",
+                 "type": "email",
+                 "label": "Email"
+                }
+               ],
+               "type": "collection"
+              },
+              "type": "array",
+              "label": "Emails"
+             },
+             {
+              "name": "phones",
+              "spec": {
+               "spec": [
+                {
+                 "name": "type",
+                 "type": "select",
+                 "label": "Type",
+                 "options": [
+                  {
+                   "label": "Office",
+                   "value": "office"
+                  },
+                  {
+                   "label": "Mobile",
+                   "value": "mobile"
+                  },
+                  {
+                   "label": "Home",
+                   "value": "home"
+                  },
+                  {
+                   "label": "Direct",
+                   "value": "direct"
+                  },
+                  {
+                   "label": "Fax",
+                   "value": "fax"
+                  },
+                  {
+                   "label": "Other",
+                   "value": "other"
+                  }
+                 ]
+                },
+                {
+                 "name": "phone",
+                 "type": "text",
+                 "label": "Phone Number"
+                }
+               ],
+               "type": "collection",
+               "label": "Phone"
+              },
+              "type": "array",
+              "label": "Phones"
+             }
+            ],
+            "type": "collection"
+           },
+           "type": "array",
+           "label": "Contacts"
+          },
+          {
+           "name": "addresses",
+           "spec": {
+            "name": "value",
+            "spec": [
+             {
+              "name": "label",
+              "type": "text",
+              "label": "Label"
+             },
+             {
+              "name": "address_1",
+              "type": "text",
+              "label": "Address 1"
+             },
+             {
+              "name": "address_2",
+              "type": "text",
+              "label": "Address 2"
+             },
+             {
+              "name": "city",
+              "type": "text",
+              "label": "City"
+             },
+             {
+              "name": "state",
+              "type": "text",
+              "label": "State"
+             },
+             {
+              "name": "zipcode",
+              "type": "text",
+              "label": "ZIP code"
+             },
+             {
+              "name": "country",
+              "type": "text",
+              "label": "Country"
+             }
+            ],
+            "type": "collection"
+           },
+           "type": "array",
+           "label": "Addresses"
+          },
+          {
+           "name": "custom",
+           "spec": [
+            {
+             "name": "cf_PMb16eFLfrXK6svUgFwSGRK0wsMcmVIUJz8xEHpv15h",
+             "type": "text",
+             "label": "Lead Source"
+            },
+            {
+             "name": "cf_OoD9hAYZ8KHbT37YG1W6msrBSVtrpKbJaJXYtyWD1CQ",
+             "type": "text",
+             "label": "Proposal"
+            },
+            {
+             "name": "cf_biSHEhDl4yS7zj3WDbajXejueA9ffhzCUAFzNiydlij",
+             "type": "text",
+             "label": "MMR"
+            },
+            {
+             "name": "cf_DsnbXIB92w5EqoI2ZXtFrekDoMGxKK7pUetze2LDrCZ",
+             "type": "text",
+             "label": "LTV"
+            },
+            {
+             "name": "cf_hisRvCzyfAkf2PSH9rVrKAdA0x7X2nVsucJFJAjVlVn",
+             "type": "text",
+             "label": "Meeting Time/Date"
+            },
+            {
+             "name": "cf_ef4lUZ8EpQO7RV0OehjfJghji3MKfWnk5DboWnP0gZ5",
+             "type": "text",
+             "label": "Meeting Link"
+            },
+            {
+             "name": "cf_gjfpaANPAMf7vDNMrjBq4iumZsuvaADkMI3uJNgy5Gg",
+             "type": "text",
+             "label": "Reschedule Link"
+            },
+            {
+             "name": "cf_pdFQlR5IaMeYvZamaxZ20JEoUlkY6Oc5YV7aNo8F7Qe",
+             "type": "text",
+             "label": "Contract Link"
+            },
+            {
+             "name": "cf_yVxeD7ciDJLU54curIWvYbgaay48hRkx0oHZ6yf904a",
+             "type": "text",
+             "label": "Zoom Recording"
+            },
+            {
+             "name": "cf_wU4ZyL6uAgFfHU0ADsXs1fjrsrcpI8WgOHugoLGehMN",
+             "type": "text",
+             "label": "Notes"
+            }
+           ],
+           "type": "collection",
+           "label": "Custom Fields"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "id": {
+            "mode": "edit"
+           },
+           "contacts": {
+            "mode": "chose"
+           },
+           "addresses": {
+            "mode": "chose"
+           },
+           "status_id": {
+            "mode": "chose",
+            "label": "Qualified"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "close-crm"
+            },
+            "label": "My Close CRM connection (alexander@dulcymedia.com)"
+           }
+          }
+         },
+         "designer": {
+          "x": 600,
+          "y": -300
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:close-crm",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 2737753
+        }
+       }
+      ]
+     },
+     {
+      "flow": [
+       {
+        "id": 4,
+        "filter": {
+         "name": "Unqualified",
+         "conditions": [
+          [
+           {
+            "a": "{{1.qualifiedbooking}}",
+            "b": "(Don't book we can't help you)",
+            "o": "text:contain:ci"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "id": "{{1.leadId}}",
+         "custom": {},
+         "status_id": "stat_xyfi8DnTR3nkSMBK4MWsz29piCl5eqw8lfz4yE5fgfJ"
+        },
+        "module": "close-crm:ActionUpdateLead",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "mode": "edit",
+           "name": "id",
+           "type": "select",
+           "label": "Lead ID",
+           "required": true
+          },
+          {
+           "name": "name",
+           "type": "text",
+           "label": "Name"
+          },
+          {
+           "name": "description",
+           "type": "text",
+           "label": "Description"
+          },
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL"
+          },
+          {
+           "mode": "edit",
+           "name": "status_id",
+           "type": "select",
+           "label": "Status ID"
+          },
+          {
+           "name": "contacts",
+           "spec": {
+            "name": "value",
+            "spec": [
+             {
+              "name": "name",
+              "type": "text",
+              "label": "Name"
+             },
+             {
+              "name": "title",
+              "type": "text",
+              "label": "Title"
+             },
+             {
+              "name": "emails",
+              "spec": {
+               "spec": [
+                {
+                 "name": "type",
+                 "type": "select",
+                 "label": "Type",
+                 "options": [
+                  {
+                   "label": "Office",
+                   "value": "office"
+                  },
+                  {
+                   "label": "Home",
+                   "value": "home"
+                  },
+                  {
+                   "label": "Direct",
+                   "value": "direct"
+                  },
+                  {
+                   "label": "Other",
+                   "value": "other"
+                  }
+                 ]
+                },
+                {
+                 "name": "email",
+                 "type": "email",
+                 "label": "Email"
+                }
+               ],
+               "type": "collection"
+              },
+              "type": "array",
+              "label": "Emails"
+             },
+             {
+              "name": "phones",
+              "spec": {
+               "spec": [
+                {
+                 "name": "type",
+                 "type": "select",
+                 "label": "Type",
+                 "options": [
+                  {
+                   "label": "Office",
+                   "value": "office"
+                  },
+                  {
+                   "label": "Mobile",
+                   "value": "mobile"
+                  },
+                  {
+                   "label": "Home",
+                   "value": "home"
+                  },
+                  {
+                   "label": "Direct",
+                   "value": "direct"
+                  },
+                  {
+                   "label": "Fax",
+                   "value": "fax"
+                  },
+                  {
+                   "label": "Other",
+                   "value": "other"
+                  }
+                 ]
+                },
+                {
+                 "name": "phone",
+                 "type": "text",
+                 "label": "Phone Number"
+                }
+               ],
+               "type": "collection",
+               "label": "Phone"
+              },
+              "type": "array",
+              "label": "Phones"
+             }
+            ],
+            "type": "collection"
+           },
+           "type": "array",
+           "label": "Contacts"
+          },
+          {
+           "name": "addresses",
+           "spec": {
+            "name": "value",
+            "spec": [
+             {
+              "name": "label",
+              "type": "text",
+              "label": "Label"
+             },
+             {
+              "name": "address_1",
+              "type": "text",
+              "label": "Address 1"
+             },
+             {
+              "name": "address_2",
+              "type": "text",
+              "label": "Address 2"
+             },
+             {
+              "name": "city",
+              "type": "text",
+              "label": "City"
+             },
+             {
+              "name": "state",
+              "type": "text",
+              "label": "State"
+             },
+             {
+              "name": "zipcode",
+              "type": "text",
+              "label": "ZIP code"
+             },
+             {
+              "name": "country",
+              "type": "text",
+              "label": "Country"
+             }
+            ],
+            "type": "collection"
+           },
+           "type": "array",
+           "label": "Addresses"
+          },
+          {
+           "name": "custom",
+           "spec": [
+            {
+             "name": "cf_PMb16eFLfrXK6svUgFwSGRK0wsMcmVIUJz8xEHpv15h",
+             "type": "text",
+             "label": "Lead Source"
+            },
+            {
+             "name": "cf_OoD9hAYZ8KHbT37YG1W6msrBSVtrpKbJaJXYtyWD1CQ",
+             "type": "text",
+             "label": "Proposal"
+            },
+            {
+             "name": "cf_biSHEhDl4yS7zj3WDbajXejueA9ffhzCUAFzNiydlij",
+             "type": "text",
+             "label": "MMR"
+            },
+            {
+             "name": "cf_DsnbXIB92w5EqoI2ZXtFrekDoMGxKK7pUetze2LDrCZ",
+             "type": "text",
+             "label": "LTV"
+            },
+            {
+             "name": "cf_hisRvCzyfAkf2PSH9rVrKAdA0x7X2nVsucJFJAjVlVn",
+             "type": "text",
+             "label": "Meeting Time/Date"
+            },
+            {
+             "name": "cf_ef4lUZ8EpQO7RV0OehjfJghji3MKfWnk5DboWnP0gZ5",
+             "type": "text",
+             "label": "Meeting Link"
+            },
+            {
+             "name": "cf_gjfpaANPAMf7vDNMrjBq4iumZsuvaADkMI3uJNgy5Gg",
+             "type": "text",
+             "label": "Reschedule Link"
+            },
+            {
+             "name": "cf_pdFQlR5IaMeYvZamaxZ20JEoUlkY6Oc5YV7aNo8F7Qe",
+             "type": "text",
+             "label": "Contract Link"
+            },
+            {
+             "name": "cf_yVxeD7ciDJLU54curIWvYbgaay48hRkx0oHZ6yf904a",
+             "type": "text",
+             "label": "Zoom Recording"
+            },
+            {
+             "name": "cf_wU4ZyL6uAgFfHU0ADsXs1fjrsrcpI8WgOHugoLGehMN",
+             "type": "text",
+             "label": "Notes"
+            }
+           ],
+           "type": "collection",
+           "label": "Custom Fields"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "id": {
+            "mode": "edit"
+           },
+           "contacts": {
+            "mode": "chose"
+           },
+           "addresses": {
+            "mode": "chose"
+           },
+           "status_id": {
+            "mode": "chose",
+            "label": "Unqualified"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "close-crm"
+            },
+            "label": "My Close CRM connection (alexander@dulcymedia.com)"
+           }
+          }
+         },
+         "designer": {
+          "x": 600,
+          "y": 0
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:close-crm",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 2737753
+        }
+       }
+      ]
+     },
+     {
+      "flow": [
+       {
+        "id": 5,
+        "mapper": {
+         "value": "510000",
+         "custom": {},
+         "lead_id": "{{1.leadId}}",
+         "status_id": "stat_31BVFTwEDT3AKn4dRaRLZAenTbC0vdqsedJ2AFj5Z4f",
+         "confidence": "50",
+         "value_period": "monthly"
+        },
+        "module": "close-crm:ActionCreateOpportunity",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "name": "lead_id",
+           "type": "select",
+           "label": "Lead ID",
+           "required": true
+          },
+          {
+           "name": "status_id",
+           "type": "select",
+           "label": "Status ID"
+          },
+          {
+           "name": "confidence",
+           "type": "uinteger",
+           "label": "Confidence",
+           "validate": {
+            "max": 100,
+            "min": 0
+           }
+          },
+          {
+           "name": "value",
+           "type": "number",
+           "label": "Value"
+          },
+          {
+           "name": "value_period",
+           "type": "select",
+           "label": "Value Period",
+           "validate": {
+            "enum": [
+             "one_time",
+             "monthly",
+             "annual"
+            ]
+           }
+          },
+          {
+           "name": "note",
+           "type": "text",
+           "label": "Note"
+          },
+          {
+           "name": "date_won",
+           "type": "date",
+           "label": "Date Won"
+          },
+          {
+           "name": "custom",
+           "spec": [
+            {
+             "name": "cf_Gsgkvnm2wl7GBDk5Vly2J2lcgOeVru47eyZtunLqrUR",
+             "type": "select",
+             "label": "Product (Example)",
+             "multiple": true
+            },
+            {
+             "name": "cf_sH9bICoOdDXKYClp8t5cxlchbVA0hW61eC2Vi2hTSY8",
+             "time": false,
+             "type": "date",
+             "label": "Renewal Date (Example)"
+            },
+            {
+             "name": "cf_Sktk4MsFVeVffnXB3JLCPxjnbnur3Uqkb3y3HROk0eA",
+             "type": "text",
+             "label": "Contract Link (Example)"
+            },
+            {
+             "name": "cf_hgkn1mBBOgFeu85ooukCzeudZkf1M9nRf4LsSulQHCs",
+             "type": "text",
+             "label": "Tracking ID (Example)"
+            }
+           ],
+           "type": "collection",
+           "label": "Custom Fields"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "custom": {
+            "nested": {
+             "cf_Gsgkvnm2wl7GBDk5Vly2J2lcgOeVru47eyZtunLqrUR": {
+              "mode": "chose"
+             }
+            }
+           },
+           "lead_id": {
+            "mode": "edit"
+           },
+           "status_id": {
+            "mode": "chose",
+            "label": "Audit Call Scheduled"
+           },
+           "value_period": {
+            "mode": "chose",
+            "label": "Monthly"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "close-crm"
+            },
+            "label": "My Close CRM connection (alexander@dulcymedia.com)"
+           }
+          }
+         },
+         "designer": {
+          "x": 600,
+          "y": 300
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:close-crm",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 2737753
+        }
+       },
+       {
+        "id": 6,
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://schedule reminders WEBHOOK HERE",
+         "gzip": true,
+         "method": "post",
+         "headers": [],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "multipart_form_data",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": false,
+         "followRedirect": true,
+         "formDataFields": [
+          {
+           "key": "leadId",
+           "value": "{{1.leadId}}",
+           "fieldType": "text"
+          },
+          {
+           "key": "isReschedule",
+           "value": "false",
+           "fieldType": "text"
+          }
+         ],
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "formDataFields",
+           "spec": [
+            {
+             "name": "fieldType",
+             "type": "select",
+             "label": "Field type",
+             "options": [
+              {
+               "label": "Text",
+               "value": "text",
+               "nested": [
+                {
+                 "name": "key",
+                 "type": "text",
+                 "label": "Key",
+                 "required": true
+                },
+                {
+                 "name": "value",
+                 "type": "text",
+                 "label": "Value"
+                }
+               ]
+              },
+              {
+               "label": "File",
+               "value": "file",
+               "nested": [
+                {
+                 "name": "key",
+                 "type": "text",
+                 "label": "Key",
+                 "required": true
+                },
+                {
+                 "name": "data",
+                 "type": "buffer",
+                 "label": "Data",
+                 "semantic": "file:data"
+                },
+                {
+                 "help": "File name, including the suffix, e.g. invoice, xml",
+                 "name": "fileName",
+                 "type": "filename",
+                 "label": "File name",
+                 "semantic": "file:name"
+                }
+               ]
+              }
+             ],
+             "required": true
+            }
+           ],
+           "type": "array",
+           "label": "Fields"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "POST"
+           },
+           "headers": {
+            "mode": "chose"
+           },
+           "bodyType": {
+            "label": "Multipart/form-data"
+           },
+           "formDataFields": {
+            "mode": "chose",
+            "items": [
+             {
+              "fieldType": {
+               "mode": "chose",
+               "label": "Text"
+              }
+             },
+             {
+              "fieldType": {
+               "mode": "chose",
+               "label": "Text"
+              }
+             }
+            ]
+           }
+          }
+         },
+         "designer": {
+          "x": 900,
+          "y": 300
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": false,
+         "useNewZLibDeCompress": true
+        }
+       }
+      ]
+     }
+    ],
+    "version": 1,
+    "metadata": {
+     "designer": {
+      "x": 300,
+      "y": 0
+     }
+    }
+   }
+  ],
+  "name": "[TEMPLATE] New Lead (copy)",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": []
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately"
+  }
+ }
+}

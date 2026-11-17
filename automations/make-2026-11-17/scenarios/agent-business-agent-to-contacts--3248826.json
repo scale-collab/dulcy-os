@@ -1,0 +1,294 @@
+{
+ "id": 3248826,
+ "name": "[AGENT] Business/Agent to Contacts",
+ "teamId": 629049,
+ "hookId": 1846777,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 208970,
+ "slots": null,
+ "isinvalid": true,
+ "islinked": false,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "close-crm",
+  "close-crm",
+  "hubspotcrm"
+ ],
+ "lastEdit": "2024-10-21T16:01:06.833Z",
+ "scheduling": {
+  "type": "immediately"
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2024-10-21T15:57:16.842Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": false,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 3,
+    "mapper": {},
+    "module": "close-crm:TriggerNewLeadStatus",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "__IMTHOOK__": {
+        "data": {
+         "editable": "false"
+        },
+        "label": "My Lead Status Changed webhook"
+       }
+      }
+     },
+     "designer": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTHOOK__",
+       "type": "hook:close-crm17",
+       "label": "Webhook",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTHOOK__": 1846777
+    }
+   },
+   {
+    "id": 4,
+    "mapper": {
+     "id": "{{3.event.data.contact_ids[]}}"
+    },
+    "module": "close-crm:getAContact",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "mode": "edit",
+       "name": "id",
+       "type": "select",
+       "label": "Contact ID",
+       "required": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "id": {
+        "mode": "edit"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "close-crm"
+        },
+        "label": "millennium interstate realty (alexander@dulcymedia.com)"
+       }
+      }
+     },
+     "designer": {
+      "x": 300,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:close-crm",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3568922
+    }
+   },
+   {
+    "id": 2,
+    "mapper": {
+     "_method": "compact",
+     "properties": [
+      {
+       "key": "firstname",
+       "value": "{{4.name}}"
+      },
+      {
+       "key": "mobilephone",
+       "value": "{{4.phones[].phone_formatted}}"
+      },
+      {
+       "key": "email",
+       "value": "{{4.emails[].email}}"
+      },
+      {
+       "key": "company",
+       "value": "{{3.event.data}}{{3.event.data.url}}"
+      }
+     ],
+     "swapPrimaryEmail": false,
+     "parseCustomFields": true
+    },
+    "module": "hubspotcrm:upsertAContact",
+    "version": 2,
+    "metadata": {
+     "expect": [
+      {
+       "name": "_method",
+       "type": "select",
+       "label": "View Method",
+       "required": true,
+       "validate": {
+        "enum": [
+         "compact",
+         "all"
+        ]
+       }
+      },
+      {
+       "name": "swapPrimaryEmail",
+       "type": "boolean",
+       "label": "Swap Primary Email",
+       "required": true
+      },
+      {
+       "name": "parseCustomFields",
+       "type": "boolean",
+       "label": "Parse Custom Fields",
+       "required": true
+      },
+      {
+       "name": "properties",
+       "spec": [
+        {
+         "name": "key",
+         "type": "select",
+         "label": "Key",
+         "dynamic": true,
+         "options": []
+        },
+        {
+         "name": "value",
+         "type": "any",
+         "label": "Value"
+        }
+       ],
+       "type": "array",
+       "label": "Properties"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "_method": {
+        "mode": "chose",
+        "label": "Compact"
+       },
+       "properties": {
+        "mode": "chose",
+        "items": [
+         {
+          "key": {
+           "mode": "chose",
+           "label": "First Name"
+          }
+         },
+         {
+          "key": {
+           "mode": "chose",
+           "label": "Mobile Phone Number"
+          }
+         },
+         {
+          "key": {
+           "mode": "chose",
+           "label": "Email"
+          }
+         },
+         {
+          "key": {
+           "mode": "chose",
+           "label": "Company Name"
+          }
+         }
+        ]
+       },
+       "swapPrimaryEmail": {
+        "mode": "chose"
+       },
+       "parseCustomFields": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "hubspotcrm"
+        },
+        "label": "My HubSpot CRM connection (info@dulcymedia.com)"
+       }
+      }
+     },
+     "designer": {
+      "x": 603,
+      "y": -4
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:hubspotcrm",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3564990
+    }
+   }
+  ],
+  "name": "[AGENT] Business/Agent to Contacts",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": []
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately"
+  }
+ }
+}

@@ -1,0 +1,2293 @@
+{
+ "id": 4875605,
+ "name": "[2.5 POST CALL] New Client Agreements",
+ "teamId": 629049,
+ "hookId": 2244046,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 162901,
+ "slots": null,
+ "isinvalid": true,
+ "islinked": false,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "gateway",
+  "close-crm",
+  "builtin",
+  "pandadoc",
+  "airtable",
+  "slack",
+  "util",
+  "close-crm",
+  "pandadoc",
+  "airtable",
+  "slack",
+  "util",
+  "close-crm"
+ ],
+ "lastEdit": "2026-08-17T05:57:13.266Z",
+ "scheduling": {
+  "type": "immediately",
+  "maximum_runs_per_minute": 100
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2026-08-17T04:52:55.958Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": false,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 1,
+    "mapper": {},
+    "module": "gateway:CustomWebHook",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "hook": {
+        "data": {
+         "editable": "true"
+        },
+        "label": "New Client Intake"
+       }
+      }
+     },
+     "designer": {
+      "x": 0,
+      "y": 450
+     },
+     "parameters": [
+      {
+       "name": "hook",
+       "type": "hook:gateway-webhook",
+       "label": "Webhook",
+       "required": true
+      },
+      {
+       "name": "maxResults",
+       "type": "number",
+       "label": "Maximum number of results"
+      }
+     ]
+    },
+    "parameters": {
+     "hook": 2244046,
+     "maxResults": 1
+    }
+   },
+   {
+    "id": 31,
+    "mapper": {
+     "email": "{{1.Email}}",
+     "limit": "1"
+    },
+    "module": "close-crm:searchLeadsviaAdvancedFilters",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "id",
+       "type": "text",
+       "label": "Lead ID"
+      },
+      {
+       "name": "name",
+       "type": "text",
+       "label": "Lead Name"
+      },
+      {
+       "name": "email",
+       "type": "email",
+       "label": "Contact's Email"
+      },
+      {
+       "name": "phone",
+       "type": "text",
+       "label": "Contact's Phone Number"
+      },
+      {
+       "name": "url",
+       "type": "url",
+       "label": "Contact's URL"
+      },
+      {
+       "name": "query",
+       "type": "any",
+       "label": "Filtering Query"
+      },
+      {
+       "name": "limit",
+       "type": "uinteger",
+       "label": "Limit"
+      }
+     ],
+     "restore": {
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "close-crm"
+        },
+        "label": "My Close CRM connection (alexander@dulcymedia.com)"
+       }
+      }
+     },
+     "designer": {
+      "x": 300,
+      "y": 450
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:close-crm",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 2737753
+    }
+   },
+   {
+    "id": 24,
+    "filter": null,
+    "mapper": null,
+    "module": "builtin:BasicRouter",
+    "routes": [
+     {
+      "flow": [
+       {
+        "id": 19,
+        "filter": {
+         "name": "Six-month agreement",
+         "conditions": [
+          [
+           {
+            "a": "{{1.`Include 6 month agreement`}}",
+            "b": "true",
+            "o": "text:equal"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "name": "{{ifempty(1.`Company Name`; 31.name)}} <> Dulcy | Growth Partnership",
+         "send": true,
+         "fields": {},
+         "tokens": {
+          "Amount": "${{formatNumber(1.`Monthly Investment`; 0; \".\"; \",\")}}",
+          "Post Term": "After month 6, agreement becomes",
+          "Ref Number": "{{31.id}}",
+          "Break Clause": "after 6 months with",
+          "Client.Email": "{{1.Email}}",
+          "Client.Address": "{{1.`Company Address`}}",
+          "Client.Company": "{{ifempty(1.`Company Name`; 31.name)}}",
+          "Client.LastName": "{{ifempty(1.`Last Name`; last(split(first(map(31.contacts; \"name\")); space)))}}",
+          "Client.FirstName": "{{ifempty(1.`First Name`; first(split(first(map(31.contacts; \"name\")); space)))}}",
+          "Opportunity Name": "{{ifempty(1.`Opportunity Name`; first(map(31.contacts; \"name\")))}}",
+          "Minimun Commitment": "6 months",
+          "Additional Services": "{{1.service_agreement_text}}"
+         },
+         "message": "Hi {{1.`First Name`}},\n\nPlease review and sign your Dulcy service agreement using the link below.\n\nIf you have any questions, reply to this email before signing.\n\nThank you,\nAlexander\nDulcy",
+         "subject": "Your Dulcy Service Agreement",
+         "template": "6gstKcCwDwxchZab7D4Xrg",
+         "folder_uuid": null
+        },
+        "module": "pandadoc:createADocuments",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "name": "name",
+           "type": "text",
+           "label": "Document Name",
+           "required": true
+          },
+          {
+           "name": "template",
+           "type": "select",
+           "label": "Template ID",
+           "required": true
+          },
+          {
+           "name": "send",
+           "type": "boolean",
+           "label": "Send a document",
+           "required": true
+          },
+          {
+           "name": "folder_uuid",
+           "type": "folder",
+           "label": "Folder"
+          },
+          {
+           "name": "tags",
+           "spec": {
+            "name": "value",
+            "type": "text",
+            "label": "Tag"
+           },
+           "type": "array",
+           "label": "Tags"
+          },
+          {
+           "name": "images",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Image Block Name",
+             "required": true
+            },
+            {
+             "name": "urls",
+             "type": "url",
+             "label": "Image URL",
+             "required": true
+            }
+           ],
+           "type": "array",
+           "label": "Images"
+          },
+          {
+           "name": "metadata",
+           "spec": [
+            {
+             "name": "key",
+             "type": "text",
+             "label": "Key",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value",
+             "required": true
+            }
+           ],
+           "type": "array",
+           "label": "Document Metadata"
+          },
+          {
+           "name": "content_placeholders",
+           "spec": [
+            {
+             "name": "block_id",
+             "type": "select",
+             "label": "Block ID",
+             "dynamic": true,
+             "options": [],
+             "required": true
+            },
+            {
+             "name": "content_library_items",
+             "spec": [
+              {
+               "name": "id",
+               "type": "select",
+               "label": "Content Library Item ID",
+               "dynamic": true,
+               "options": {
+                "store": []
+               },
+               "required": true
+              }
+             ],
+             "type": "array",
+             "label": "Content Library Items",
+             "required": true
+            }
+           ],
+           "type": "array",
+           "label": "Content Placeholders"
+          },
+          {
+           "name": "tokens",
+           "spec": [
+            {
+             "name": "Client.Email",
+             "type": "email",
+             "label": "Role: Client Email",
+             "metadata": {
+              "role": "Client"
+             }
+            },
+            {
+             "name": "Additional Services",
+             "type": "text",
+             "label": "Token: Additional  Services "
+            },
+            {
+             "name": "Amount",
+             "type": "text",
+             "label": "Token: Amount "
+            },
+            {
+             "name": "Break Clause",
+             "type": "text",
+             "label": "Token: Break  Clause "
+            },
+            {
+             "name": "Client.Address",
+             "type": "text",
+             "label": "Role: Client  Address ",
+             "metadata": {
+              "role": "Client"
+             }
+            },
+            {
+             "name": "Client.Company",
+             "type": "text",
+             "label": "Role: Client  Company ",
+             "metadata": {
+              "role": "Client"
+             }
+            },
+            {
+             "name": "Client.FirstName",
+             "type": "text",
+             "label": "Role: Client  First Name ",
+             "metadata": {
+              "role": "Client"
+             }
+            },
+            {
+             "name": "Client.LastName",
+             "type": "text",
+             "label": "Role: Client  Last Name ",
+             "metadata": {
+              "role": "Client"
+             }
+            },
+            {
+             "name": "Minimun Commitment",
+             "type": "text",
+             "label": "Token: Minimun  Commitment "
+            },
+            {
+             "name": "Opportunity Name",
+             "type": "text",
+             "label": "Token: Opportunity  Name "
+            },
+            {
+             "name": "Post Term",
+             "type": "text",
+             "label": "Token: Post  Term "
+            },
+            {
+             "name": "Ref Number",
+             "type": "text",
+             "label": "Token: Ref  Number "
+            },
+            {
+             "name": "Rev Share %",
+             "type": "text",
+             "label": "Token: Rev  Share  %"
+            }
+           ],
+           "type": "collection",
+           "label": "Tokens"
+          },
+          {
+           "name": "fields",
+           "spec": [],
+           "type": "collection",
+           "label": "Fields"
+          },
+          {
+           "name": "recipients",
+           "spec": [
+            {
+             "name": "email",
+             "type": "email",
+             "label": "Email",
+             "required": true
+            },
+            {
+             "name": "first_name",
+             "type": "text",
+             "label": "First name"
+            },
+            {
+             "name": "last_name",
+             "type": "text",
+             "label": "Last name"
+            }
+           ],
+           "type": "array",
+           "label": "CC Recipients"
+          },
+          {
+           "name": "subject",
+           "type": "text",
+           "label": "Subject",
+           "required": true
+          },
+          {
+           "name": "message",
+           "type": "text",
+           "label": "Message",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "tags": {
+            "mode": "chose"
+           },
+           "images": {
+            "mode": "chose"
+           },
+           "metadata": {
+            "mode": "chose"
+           },
+           "template": {
+            "mode": "chose",
+            "label": "COMPANY <> Dulcy | Growth Partnership (automated)"
+           },
+           "recipients": {
+            "mode": "chose"
+           },
+           "folder_uuid": {
+            "mode": "chose"
+           },
+           "content_placeholders": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "pandadoc"
+            },
+            "label": "My PandaDoc connection (alexander@dulcymedia.com)"
+           }
+          }
+         },
+         "designer": {
+          "x": 1275,
+          "y": 603
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:pandadoc",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 2764974
+        }
+       },
+       {
+        "id": 32,
+        "mapper": {
+         "id": "{{1.airtable_record_id}}",
+         "base": "appxqINt5XKw7a76A",
+         "table": "tbljivFOoUW2nZ6FN",
+         "record": {
+          "fld64exk1SAfjawMn": "{{ifempty(1.`Last Name`; last(split(first(map(31.contacts; \"name\")); space)))}}",
+          "fld69wdeGKUeDOljm": "{{now}}",
+          "fldBVVeNpAFPw2hfn": "{{31.id}}",
+          "fldDjxoB8VtSfJQp6": "{{ifempty(1.`Opportunity Name`; first(map(31.contacts; \"name\")))}}",
+          "fldETmxefy4BYULgd": "{{ifempty(1.`First Name`; first(split(first(map(31.contacts; \"name\")); space)))}}",
+          "fldHmUnJUS3B33BWU": "{{now}}",
+          "fldWpAJ9Dp2UHHME2": true,
+          "fldh5QZesevqSW9DF": "{{19.id}}",
+          "fldhofs7P34MsqlL7": false,
+          "fldlS3CZ5Wek8O9eB": false,
+          "flds46bYAn9Un6oy0": "{{ifempty(1.`Company Name`; 31.name)}}",
+          "fldtFNXCY3InLWpoV": "{{now}}",
+          "fldx8DL2DOAXaZbop": "Sent",
+          "fldxBfd7px8CtKvdL": "https://app.pandadoc.com/a/#/documents/{{19.id}}"
+         },
+         "typecast": true,
+         "useColumnId": true
+        },
+        "module": "airtable:ActionUpdateRecords",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "base",
+           "type": "select",
+           "label": "Base",
+           "required": true
+          },
+          {
+           "name": "typecast",
+           "type": "boolean",
+           "label": "Smart links",
+           "required": true
+          },
+          {
+           "name": "useColumnId",
+           "type": "boolean",
+           "label": "Use Column ID",
+           "required": true
+          },
+          {
+           "name": "table",
+           "type": "select",
+           "label": "Table",
+           "required": true
+          },
+          {
+           "name": "id",
+           "type": "text",
+           "label": "Record ID",
+           "required": true
+          },
+          {
+           "name": "record",
+           "spec": [
+            {
+             "name": "flds46bYAn9Un6oy0",
+             "type": "text",
+             "label": "Company Name"
+            },
+            {
+             "name": "fldETmxefy4BYULgd",
+             "type": "text",
+             "label": "First Name"
+            },
+            {
+             "name": "fld64exk1SAfjawMn",
+             "type": "text",
+             "label": "Last Name"
+            },
+            {
+             "name": "fldibCYLzac81Ycei",
+             "type": "text",
+             "label": "Email"
+            },
+            {
+             "name": "fldCE46pKsd7DkuCd",
+             "type": "text",
+             "label": "Company Address"
+            },
+            {
+             "name": "fldDjxoB8VtSfJQp6",
+             "type": "text",
+             "label": "Opportunity Name"
+            },
+            {
+             "name": "fldBVVeNpAFPw2hfn",
+             "type": "text",
+             "label": "Reference Number"
+            },
+            {
+             "name": "fldYgXtn2ihLIjYo3",
+             "type": "number",
+             "label": "Monthly Investment"
+            },
+            {
+             "name": "fldVZhF8DdHiMT9lE",
+             "type": "number",
+             "label": "Today's Investment"
+            },
+            {
+             "name": "fldaVbllQu9HoUKZ5",
+             "type": "number",
+             "label": "Revenue Share Percentage"
+            },
+            {
+             "name": "fldXUPMKmpdUZ9xul",
+             "type": "boolean",
+             "label": "Create The Short Agreement Version"
+            },
+            {
+             "name": "fldCQYFk8Sc8zGynk",
+             "type": "boolean",
+             "label": "LinkedIn"
+            },
+            {
+             "name": "fldrgTgj9yzp8myHl",
+             "type": "boolean",
+             "label": "AI / Cold Caller"
+            },
+            {
+             "name": "fldaw5zcp72KwLHTH",
+             "type": "boolean",
+             "label": "ai_meeting_reminders"
+            },
+            {
+             "name": "fld25iAVnVxjmhqWg",
+             "type": "boolean",
+             "label": "ai_noshow_followup"
+            },
+            {
+             "name": "fldaquna8OxvlqaHT",
+             "type": "boolean",
+             "label": "ai_warm_followup"
+            },
+            {
+             "name": "fldZ8doWmnmEx1LGN",
+             "type": "boolean",
+             "label": "capture_us_visitors"
+            },
+            {
+             "name": "flds5zGh7xPOVOD9K",
+             "type": "boolean",
+             "label": "Include 6 month agreement"
+            },
+            {
+             "name": "fldvY2tMRsUSjbJgD",
+             "type": "number",
+             "label": "Target Revenue"
+            },
+            {
+             "name": "fldpyxcmeXyrMZzxQ",
+             "type": "number",
+             "label": "Target Qualified Bookings"
+            },
+            {
+             "name": "fld3NjH92ISf0qZmK",
+             "type": "text",
+             "label": "Target Closed Deals - word"
+            },
+            {
+             "name": "fldI6LCCnI4ltLT2x",
+             "type": "number",
+             "label": "Target Closed Deals - number"
+            },
+            {
+             "name": "fldSZjQ3Mv9j2pJLc",
+             "type": "number",
+             "label": "Target Deal Price Point"
+            },
+            {
+             "name": "fldWpAJ9Dp2UHHME2",
+             "type": "boolean",
+             "label": "Already ran"
+            },
+            {
+             "mode": "edit",
+             "name": "fldx8DL2DOAXaZbop",
+             "type": "select",
+             "label": "Agreement Status"
+            },
+            {
+             "name": "fldhofs7P34MsqlL7",
+             "type": "boolean",
+             "label": "Create Agreement"
+            },
+            {
+             "name": "fldlS3CZ5Wek8O9eB",
+             "type": "boolean",
+             "label": "Send Agreement"
+            },
+            {
+             "name": "fldh5QZesevqSW9DF",
+             "type": "text",
+             "label": "PandaDoc Document ID"
+            },
+            {
+             "name": "fldxBfd7px8CtKvdL",
+             "type": "text",
+             "label": "PandaDoc Document URL"
+            },
+            {
+             "name": "fldHmUnJUS3B33BWU",
+             "time": true,
+             "type": "date",
+             "label": "PandaDoc Created At"
+            },
+            {
+             "name": "fld69wdeGKUeDOljm",
+             "time": true,
+             "type": "date",
+             "label": "PandaDoc Sent At"
+            },
+            {
+             "name": "fldmnoonaCkGC3jAC",
+             "time": true,
+             "type": "date",
+             "label": "PandaDoc Viewed At"
+            },
+            {
+             "name": "fldwMor6QvuM0V9Mt",
+             "time": true,
+             "type": "date",
+             "label": "PandaDoc Completed At"
+            },
+            {
+             "name": "fldV48SDypqQC7paP",
+             "type": "text",
+             "label": "Agreement Error"
+            },
+            {
+             "name": "fldtFNXCY3InLWpoV",
+             "time": true,
+             "type": "date",
+             "label": "Last PandaDoc Sync"
+            },
+            {
+             "name": "fldfGlMm7D62acTVI",
+             "type": "boolean",
+             "label": "Direct Mail"
+            },
+            {
+             "name": "fldc7CU8HSLDIkB6B",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Search Close Lead"
+            }
+           ],
+           "type": "collection",
+           "label": "Record"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "base": {
+            "label": "Dulcy"
+           },
+           "table": {
+            "label": "New Client Intake"
+           },
+           "record": {
+            "nested": {
+             "fld25iAVnVxjmhqWg": {
+              "mode": "chose"
+             },
+             "fldCQYFk8Sc8zGynk": {
+              "mode": "chose"
+             },
+             "fldWpAJ9Dp2UHHME2": {
+              "mode": "chose"
+             },
+             "fldXUPMKmpdUZ9xul": {
+              "mode": "chose"
+             },
+             "fldZ8doWmnmEx1LGN": {
+              "mode": "chose"
+             },
+             "fldaquna8OxvlqaHT": {
+              "mode": "chose"
+             },
+             "fldaw5zcp72KwLHTH": {
+              "mode": "chose"
+             },
+             "fldc7CU8HSLDIkB6B": {
+              "mode": "chose"
+             },
+             "fldfGlMm7D62acTVI": {
+              "mode": "chose"
+             },
+             "fldhofs7P34MsqlL7": {
+              "mode": "chose"
+             },
+             "fldlS3CZ5Wek8O9eB": {
+              "mode": "chose"
+             },
+             "fldrgTgj9yzp8myHl": {
+              "mode": "chose"
+             },
+             "flds5zGh7xPOVOD9K": {
+              "mode": "chose"
+             },
+             "fldx8DL2DOAXaZbop": {
+              "mode": "edit"
+             }
+            }
+           },
+           "typecast": {
+            "mode": "chose"
+           },
+           "useColumnId": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "airtable3"
+            },
+            "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+           }
+          }
+         },
+         "designer": {
+          "x": 1125,
+          "y": 150
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:airtable3,airtable2",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3589602
+        }
+       },
+       {
+        "id": 20,
+        "mapper": {
+         "text": "✅ PandaDoc agreement created and sent\n\nDocument: {{19.name}}\nCompany: {{ifempty(1.`Company Name`; 31.name)}}\nContact: {{ifempty(1.`First Name`; first(split(first(map(31.contacts; \"name\")); space)))}} {{ifempty(1.`Last Name`; last(split(first(map(31.contacts; \"name\")); space)))}}\nEmail: {{1.Email}}\nClose Lead ID: {{31.id}}\n\nLink: https://app.pandadoc.com/a/#/documents/{{19.id}}",
+         "parse": false,
+         "mrkdwn": true,
+         "channel": "C075UR0HRRR",
+         "channelType": "private",
+         "channelWType": "list"
+        },
+        "module": "slack:CreateMessage",
+        "version": 4,
+        "metadata": {
+         "expect": [
+          {
+           "name": "channelWType",
+           "type": "select",
+           "label": "Enter a channel ID or name",
+           "required": true,
+           "validate": {
+            "enum": [
+             "manualy",
+             "list"
+            ]
+           }
+          },
+          {
+           "name": "text",
+           "type": "text",
+           "label": "Text"
+          },
+          {
+           "name": "blocks",
+           "type": "text",
+           "label": "Blocks"
+          },
+          {
+           "name": "thread_ts",
+           "type": "text",
+           "label": "Thread message ID (time stamp)"
+          },
+          {
+           "name": "reply_broadcast",
+           "type": "boolean",
+           "label": "Reply broadcast"
+          },
+          {
+           "name": "link_names",
+           "type": "boolean",
+           "label": "Link names"
+          },
+          {
+           "name": "parse",
+           "type": "boolean",
+           "label": "Parse message text"
+          },
+          {
+           "name": "mrkdwn",
+           "type": "boolean",
+           "label": "Use markdown"
+          },
+          {
+           "name": "unfurl_links",
+           "type": "boolean",
+           "label": "Unfurl primarily text-based content"
+          },
+          {
+           "name": "unfurl_media",
+           "type": "boolean",
+           "label": "Unfurl media content"
+          },
+          {
+           "name": "icon_emoji",
+           "type": "text",
+           "label": "Icon emoji"
+          },
+          {
+           "name": "icon_url",
+           "type": "url",
+           "label": "Icon url"
+          },
+          {
+           "name": "username",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "channelType",
+           "type": "select",
+           "label": "Channel type",
+           "required": true,
+           "validate": {
+            "enum": [
+             "public",
+             "private",
+             "im",
+             "mpim"
+            ]
+           }
+          },
+          {
+           "name": "channel",
+           "type": "select",
+           "label": "Private channel",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "parse": {
+            "mode": "chose"
+           },
+           "mrkdwn": {
+            "mode": "chose"
+           },
+           "channel": {
+            "mode": "chose",
+            "label": "contract-events"
+           },
+           "link_names": {
+            "mode": "chose"
+           },
+           "channelType": {
+            "label": "Private channel"
+           },
+           "channelWType": {
+            "label": "Select from the list"
+           },
+           "unfurl_links": {
+            "mode": "chose"
+           },
+           "unfurl_media": {
+            "mode": "chose"
+           },
+           "reply_broadcast": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "slack3"
+            },
+            "label": "My Slack (bot) connectionfix (make)"
+           }
+          }
+         },
+         "designer": {
+          "x": 1575,
+          "y": 603
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:slack2,slack3",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3736690
+        }
+       },
+       {
+        "id": 22,
+        "filter": {
+         "name": "Close lead has an opportunity",
+         "conditions": [
+          [
+           {
+            "a": "{{31.id}}",
+            "o": "exist"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "name": "opp",
+         "scope": "roundtrip",
+         "value": "{{first(31.opportunities)}}"
+        },
+        "module": "util:SetVariable2",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "name": "name",
+           "type": "text",
+           "label": "Variable name",
+           "required": true
+          },
+          {
+           "name": "scope",
+           "type": "select",
+           "label": "Variable lifetime",
+           "required": true,
+           "validate": {
+            "enum": [
+             "roundtrip",
+             "execution"
+            ]
+           }
+          },
+          {
+           "name": "value",
+           "type": "any",
+           "label": "Variable value"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "scope": {
+            "label": "One cycle"
+           }
+          }
+         },
+         "designer": {
+          "x": 2175,
+          "y": 603
+         }
+        },
+        "parameters": {}
+       },
+       {
+        "id": 23,
+        "mapper": {
+         "id": "{{22.opp.id}}",
+         "value": "{{1.`Monthly Investment` * 100}}",
+         "custom": {}
+        },
+        "module": "close-crm:ActionUpdateOpportunity",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "mode": "edit",
+           "name": "id",
+           "type": "select",
+           "label": "Opportunity ID",
+           "required": true
+          },
+          {
+           "mode": "edit",
+           "name": "status_id",
+           "type": "select",
+           "label": "Status ID"
+          },
+          {
+           "name": "confidence",
+           "type": "uinteger",
+           "label": "Confidence",
+           "validate": {
+            "max": 100,
+            "min": 0
+           }
+          },
+          {
+           "name": "value",
+           "type": "number",
+           "label": "Value"
+          },
+          {
+           "name": "value_period",
+           "type": "select",
+           "label": "Value Period",
+           "validate": {
+            "enum": [
+             "one_time",
+             "monthly",
+             "annual"
+            ]
+           }
+          },
+          {
+           "name": "note",
+           "type": "text",
+           "label": "Note"
+          },
+          {
+           "name": "date_won",
+           "type": "date",
+           "label": "Date Won"
+          },
+          {
+           "name": "custom",
+           "spec": [
+            {
+             "name": "cf_Gsgkvnm2wl7GBDk5Vly2J2lcgOeVru47eyZtunLqrUR",
+             "type": "select",
+             "label": "Product (Example)",
+             "multiple": true
+            },
+            {
+             "name": "cf_sH9bICoOdDXKYClp8t5cxlchbVA0hW61eC2Vi2hTSY8",
+             "time": false,
+             "type": "date",
+             "label": "Renewal Date (Example)"
+            },
+            {
+             "name": "cf_Sktk4MsFVeVffnXB3JLCPxjnbnur3Uqkb3y3HROk0eA",
+             "type": "text",
+             "label": "Contract Link (Example)"
+            },
+            {
+             "name": "cf_hgkn1mBBOgFeu85ooukCzeudZkf1M9nRf4LsSulQHCs",
+             "type": "text",
+             "label": "Tracking ID (Example)"
+            }
+           ],
+           "type": "collection",
+           "label": "Custom Fields"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "id": {
+            "mode": "edit"
+           },
+           "custom": {
+            "nested": {
+             "cf_Gsgkvnm2wl7GBDk5Vly2J2lcgOeVru47eyZtunLqrUR": {
+              "mode": "chose"
+             }
+            }
+           },
+           "status_id": {
+            "mode": "edit"
+           },
+           "value_period": {
+            "mode": "chose",
+            "label": "Empty"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "close-crm"
+            },
+            "label": "My Close CRM connection (alexander@dulcymedia.com)"
+           }
+          }
+         },
+         "designer": {
+          "x": 2475,
+          "y": 603
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:close-crm",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 2737753
+        }
+       }
+      ]
+     },
+     {
+      "flow": [
+       {
+        "id": 25,
+        "filter": {
+         "name": "Month-to-month agreement",
+         "conditions": [
+          [
+           {
+            "a": "{{1.`Include 6 month agreement`}}",
+            "b": "true",
+            "o": "text:notequal"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "name": "{{ifempty(1.`Company Name`; 31.name)}} <> Dulcy | Growth Partnership",
+         "send": true,
+         "fields": {},
+         "tokens": {
+          "Amount": "${{formatNumber(1.`Monthly Investment`; 0; \".\"; \",\")}}",
+          "Post Term": "The agreement is",
+          "Ref Number": "{{31.id}}",
+          "Break Clause": "with",
+          "Client.Email": "{{1.Email}}",
+          "Client.Address": "{{1.`Company Address`}}",
+          "Client.Company": "{{ifempty(1.`Company Name`; 31.name)}}",
+          "Client.LastName": "{{ifempty(1.`Last Name`; last(split(first(map(31.contacts; \"name\")); space)))}}",
+          "Client.FirstName": "{{ifempty(1.`First Name`; first(split(first(map(31.contacts; \"name\")); space)))}}",
+          "Opportunity Name": "{{ifempty(1.`Opportunity Name`; first(map(31.contacts; \"name\")))}}",
+          "Minimun Commitment": "1 month",
+          "Additional Services": "{{1.service_agreement_text}}"
+         },
+         "message": "Hi {{1.`First Name`}},\n\nPlease review and sign your Dulcy service agreement using the link below.\n\nIf you have any questions, reply to this email before signing.\n\nThank you,\nAlexander\nDulcy",
+         "subject": "Your Dulcy Service Agreement",
+         "template": "6gstKcCwDwxchZab7D4Xrg",
+         "folder_uuid": null
+        },
+        "module": "pandadoc:createADocuments",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "name": "name",
+           "type": "text",
+           "label": "Document Name",
+           "required": true
+          },
+          {
+           "name": "template",
+           "type": "select",
+           "label": "Template ID",
+           "required": true
+          },
+          {
+           "name": "send",
+           "type": "boolean",
+           "label": "Send a document",
+           "required": true
+          },
+          {
+           "name": "folder_uuid",
+           "type": "folder",
+           "label": "Folder"
+          },
+          {
+           "name": "tags",
+           "spec": {
+            "name": "value",
+            "type": "text",
+            "label": "Tag"
+           },
+           "type": "array",
+           "label": "Tags"
+          },
+          {
+           "name": "images",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Image Block Name",
+             "required": true
+            },
+            {
+             "name": "urls",
+             "type": "url",
+             "label": "Image URL",
+             "required": true
+            }
+           ],
+           "type": "array",
+           "label": "Images"
+          },
+          {
+           "name": "metadata",
+           "spec": [
+            {
+             "name": "key",
+             "type": "text",
+             "label": "Key",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value",
+             "required": true
+            }
+           ],
+           "type": "array",
+           "label": "Document Metadata"
+          },
+          {
+           "name": "content_placeholders",
+           "spec": [
+            {
+             "name": "block_id",
+             "type": "select",
+             "label": "Block ID",
+             "dynamic": true,
+             "options": [],
+             "required": true
+            },
+            {
+             "name": "content_library_items",
+             "spec": [
+              {
+               "name": "id",
+               "type": "select",
+               "label": "Content Library Item ID",
+               "dynamic": true,
+               "options": {
+                "store": []
+               },
+               "required": true
+              }
+             ],
+             "type": "array",
+             "label": "Content Library Items",
+             "required": true
+            }
+           ],
+           "type": "array",
+           "label": "Content Placeholders"
+          },
+          {
+           "name": "tokens",
+           "spec": [
+            {
+             "name": "Client.Email",
+             "type": "email",
+             "label": "Role: Client Email",
+             "metadata": {
+              "role": "Client"
+             }
+            },
+            {
+             "name": "Additional Services",
+             "type": "text",
+             "label": "Token: Additional  Services "
+            },
+            {
+             "name": "Amount",
+             "type": "text",
+             "label": "Token: Amount "
+            },
+            {
+             "name": "Break Clause",
+             "type": "text",
+             "label": "Token: Break  Clause "
+            },
+            {
+             "name": "Client.Address",
+             "type": "text",
+             "label": "Role: Client  Address ",
+             "metadata": {
+              "role": "Client"
+             }
+            },
+            {
+             "name": "Client.Company",
+             "type": "text",
+             "label": "Role: Client  Company ",
+             "metadata": {
+              "role": "Client"
+             }
+            },
+            {
+             "name": "Client.FirstName",
+             "type": "text",
+             "label": "Role: Client  First Name ",
+             "metadata": {
+              "role": "Client"
+             }
+            },
+            {
+             "name": "Client.LastName",
+             "type": "text",
+             "label": "Role: Client  Last Name ",
+             "metadata": {
+              "role": "Client"
+             }
+            },
+            {
+             "name": "Minimun Commitment",
+             "type": "text",
+             "label": "Token: Minimun  Commitment "
+            },
+            {
+             "name": "Opportunity Name",
+             "type": "text",
+             "label": "Token: Opportunity  Name "
+            },
+            {
+             "name": "Post Term",
+             "type": "text",
+             "label": "Token: Post  Term "
+            },
+            {
+             "name": "Ref Number",
+             "type": "text",
+             "label": "Token: Ref  Number "
+            },
+            {
+             "name": "Rev Share %",
+             "type": "text",
+             "label": "Token: Rev  Share  %"
+            }
+           ],
+           "type": "collection",
+           "label": "Tokens"
+          },
+          {
+           "name": "fields",
+           "spec": [],
+           "type": "collection",
+           "label": "Fields"
+          },
+          {
+           "name": "recipients",
+           "spec": [
+            {
+             "name": "email",
+             "type": "email",
+             "label": "Email",
+             "required": true
+            },
+            {
+             "name": "first_name",
+             "type": "text",
+             "label": "First name"
+            },
+            {
+             "name": "last_name",
+             "type": "text",
+             "label": "Last name"
+            }
+           ],
+           "type": "array",
+           "label": "CC Recipients"
+          },
+          {
+           "name": "subject",
+           "type": "text",
+           "label": "Subject",
+           "required": true
+          },
+          {
+           "name": "message",
+           "type": "text",
+           "label": "Message",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "tags": {
+            "mode": "chose"
+           },
+           "images": {
+            "mode": "chose"
+           },
+           "metadata": {
+            "mode": "chose"
+           },
+           "template": {
+            "mode": "chose",
+            "label": "COMPANY <> Dulcy | Growth Partnership (automated)"
+           },
+           "recipients": {
+            "mode": "chose"
+           },
+           "folder_uuid": {
+            "mode": "chose"
+           },
+           "content_placeholders": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "pandadoc"
+            },
+            "label": "My PandaDoc connection (alexander@dulcymedia.com)"
+           }
+          }
+         },
+         "designer": {
+          "x": 1275,
+          "y": 903
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:pandadoc",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 2764974
+        }
+       },
+       {
+        "id": 33,
+        "mapper": {
+         "id": "{{1.airtable_record_id}}",
+         "base": "appxqINt5XKw7a76A",
+         "table": "tbljivFOoUW2nZ6FN",
+         "record": {
+          "fld64exk1SAfjawMn": "{{ifempty(1.`Last Name`; last(split(first(map(31.contacts; \"name\")); space)))}}",
+          "fld69wdeGKUeDOljm": "{{now}}",
+          "fldBVVeNpAFPw2hfn": "{{31.id}}",
+          "fldDjxoB8VtSfJQp6": "{{ifempty(1.`Opportunity Name`; first(map(31.contacts; \"name\")))}}",
+          "fldETmxefy4BYULgd": "{{ifempty(1.`First Name`; first(split(first(map(31.contacts; \"name\")); space)))}}",
+          "fldHmUnJUS3B33BWU": "{{now}}",
+          "fldWpAJ9Dp2UHHME2": true,
+          "fldh5QZesevqSW9DF": "{{25.id}}",
+          "fldhofs7P34MsqlL7": false,
+          "fldlS3CZ5Wek8O9eB": false,
+          "flds46bYAn9Un6oy0": "{{ifempty(1.`Company Name`; 31.name)}}",
+          "fldtFNXCY3InLWpoV": "{{now}}",
+          "fldx8DL2DOAXaZbop": "Sent",
+          "fldxBfd7px8CtKvdL": "https://app.pandadoc.com/a/#/documents/{{25.id}}"
+         },
+         "typecast": true,
+         "useColumnId": true
+        },
+        "module": "airtable:ActionUpdateRecords",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "base",
+           "type": "select",
+           "label": "Base",
+           "required": true
+          },
+          {
+           "name": "typecast",
+           "type": "boolean",
+           "label": "Smart links",
+           "required": true
+          },
+          {
+           "name": "useColumnId",
+           "type": "boolean",
+           "label": "Use Column ID",
+           "required": true
+          },
+          {
+           "name": "table",
+           "type": "select",
+           "label": "Table",
+           "required": true
+          },
+          {
+           "name": "id",
+           "type": "text",
+           "label": "Record ID",
+           "required": true
+          },
+          {
+           "name": "record",
+           "spec": [
+            {
+             "name": "flds46bYAn9Un6oy0",
+             "type": "text",
+             "label": "Company Name"
+            },
+            {
+             "name": "fldETmxefy4BYULgd",
+             "type": "text",
+             "label": "First Name"
+            },
+            {
+             "name": "fld64exk1SAfjawMn",
+             "type": "text",
+             "label": "Last Name"
+            },
+            {
+             "name": "fldibCYLzac81Ycei",
+             "type": "text",
+             "label": "Email"
+            },
+            {
+             "name": "fldCE46pKsd7DkuCd",
+             "type": "text",
+             "label": "Company Address"
+            },
+            {
+             "name": "fldDjxoB8VtSfJQp6",
+             "type": "text",
+             "label": "Opportunity Name"
+            },
+            {
+             "name": "fldBVVeNpAFPw2hfn",
+             "type": "text",
+             "label": "Reference Number"
+            },
+            {
+             "name": "fldYgXtn2ihLIjYo3",
+             "type": "number",
+             "label": "Monthly Investment"
+            },
+            {
+             "name": "fldVZhF8DdHiMT9lE",
+             "type": "number",
+             "label": "Today's Investment"
+            },
+            {
+             "name": "fldaVbllQu9HoUKZ5",
+             "type": "number",
+             "label": "Revenue Share Percentage"
+            },
+            {
+             "name": "fldXUPMKmpdUZ9xul",
+             "type": "boolean",
+             "label": "Create The Short Agreement Version"
+            },
+            {
+             "name": "fldCQYFk8Sc8zGynk",
+             "type": "boolean",
+             "label": "LinkedIn"
+            },
+            {
+             "name": "fldrgTgj9yzp8myHl",
+             "type": "boolean",
+             "label": "AI / Cold Caller"
+            },
+            {
+             "name": "fldaw5zcp72KwLHTH",
+             "type": "boolean",
+             "label": "ai_meeting_reminders"
+            },
+            {
+             "name": "fld25iAVnVxjmhqWg",
+             "type": "boolean",
+             "label": "ai_noshow_followup"
+            },
+            {
+             "name": "fldaquna8OxvlqaHT",
+             "type": "boolean",
+             "label": "ai_warm_followup"
+            },
+            {
+             "name": "fldZ8doWmnmEx1LGN",
+             "type": "boolean",
+             "label": "capture_us_visitors"
+            },
+            {
+             "name": "flds5zGh7xPOVOD9K",
+             "type": "boolean",
+             "label": "Include 6 month agreement"
+            },
+            {
+             "name": "fldvY2tMRsUSjbJgD",
+             "type": "number",
+             "label": "Target Revenue"
+            },
+            {
+             "name": "fldpyxcmeXyrMZzxQ",
+             "type": "number",
+             "label": "Target Qualified Bookings"
+            },
+            {
+             "name": "fld3NjH92ISf0qZmK",
+             "type": "text",
+             "label": "Target Closed Deals - word"
+            },
+            {
+             "name": "fldI6LCCnI4ltLT2x",
+             "type": "number",
+             "label": "Target Closed Deals - number"
+            },
+            {
+             "name": "fldSZjQ3Mv9j2pJLc",
+             "type": "number",
+             "label": "Target Deal Price Point"
+            },
+            {
+             "name": "fldWpAJ9Dp2UHHME2",
+             "type": "boolean",
+             "label": "Already ran"
+            },
+            {
+             "mode": "edit",
+             "name": "fldx8DL2DOAXaZbop",
+             "type": "select",
+             "label": "Agreement Status"
+            },
+            {
+             "name": "fldhofs7P34MsqlL7",
+             "type": "boolean",
+             "label": "Create Agreement"
+            },
+            {
+             "name": "fldlS3CZ5Wek8O9eB",
+             "type": "boolean",
+             "label": "Send Agreement"
+            },
+            {
+             "name": "fldh5QZesevqSW9DF",
+             "type": "text",
+             "label": "PandaDoc Document ID"
+            },
+            {
+             "name": "fldxBfd7px8CtKvdL",
+             "type": "text",
+             "label": "PandaDoc Document URL"
+            },
+            {
+             "name": "fldHmUnJUS3B33BWU",
+             "time": true,
+             "type": "date",
+             "label": "PandaDoc Created At"
+            },
+            {
+             "name": "fld69wdeGKUeDOljm",
+             "time": true,
+             "type": "date",
+             "label": "PandaDoc Sent At"
+            },
+            {
+             "name": "fldmnoonaCkGC3jAC",
+             "time": true,
+             "type": "date",
+             "label": "PandaDoc Viewed At"
+            },
+            {
+             "name": "fldwMor6QvuM0V9Mt",
+             "time": true,
+             "type": "date",
+             "label": "PandaDoc Completed At"
+            },
+            {
+             "name": "fldV48SDypqQC7paP",
+             "type": "text",
+             "label": "Agreement Error"
+            },
+            {
+             "name": "fldtFNXCY3InLWpoV",
+             "time": true,
+             "type": "date",
+             "label": "Last PandaDoc Sync"
+            },
+            {
+             "name": "fldfGlMm7D62acTVI",
+             "type": "boolean",
+             "label": "Direct Mail"
+            },
+            {
+             "name": "fldc7CU8HSLDIkB6B",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Search Close Lead"
+            }
+           ],
+           "type": "collection",
+           "label": "Record"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "base": {
+            "label": "Dulcy"
+           },
+           "table": {
+            "label": "New Client Intake"
+           },
+           "record": {
+            "nested": {
+             "fld25iAVnVxjmhqWg": {
+              "mode": "chose"
+             },
+             "fldCQYFk8Sc8zGynk": {
+              "mode": "chose"
+             },
+             "fldWpAJ9Dp2UHHME2": {
+              "mode": "chose"
+             },
+             "fldXUPMKmpdUZ9xul": {
+              "mode": "chose"
+             },
+             "fldZ8doWmnmEx1LGN": {
+              "mode": "chose"
+             },
+             "fldaquna8OxvlqaHT": {
+              "mode": "chose"
+             },
+             "fldaw5zcp72KwLHTH": {
+              "mode": "chose"
+             },
+             "fldc7CU8HSLDIkB6B": {
+              "mode": "chose"
+             },
+             "fldfGlMm7D62acTVI": {
+              "mode": "chose"
+             },
+             "fldhofs7P34MsqlL7": {
+              "mode": "chose"
+             },
+             "fldlS3CZ5Wek8O9eB": {
+              "mode": "chose"
+             },
+             "fldrgTgj9yzp8myHl": {
+              "mode": "chose"
+             },
+             "flds5zGh7xPOVOD9K": {
+              "mode": "chose"
+             },
+             "fldx8DL2DOAXaZbop": {
+              "mode": "edit"
+             }
+            }
+           },
+           "typecast": {
+            "mode": "chose"
+           },
+           "useColumnId": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "airtable3"
+            },
+            "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+           }
+          }
+         },
+         "designer": {
+          "x": 1125,
+          "y": 750
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:airtable3,airtable2",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3589602
+        }
+       },
+       {
+        "id": 26,
+        "mapper": {
+         "text": "✅ PandaDoc agreement created and sent\n\nDocument: {{25.name}}\nCompany: {{ifempty(1.`Company Name`; 31.name)}}\nContact: {{ifempty(1.`First Name`; first(split(first(map(31.contacts; \"name\")); space)))}} {{ifempty(1.`Last Name`; last(split(first(map(31.contacts; \"name\")); space)))}}\nEmail: {{1.Email}}\nClose Lead ID: {{31.id}}\n\nLink: https://app.pandadoc.com/a/#/documents/{{25.id}}",
+         "parse": false,
+         "mrkdwn": true,
+         "channel": "C075UR0HRRR",
+         "channelType": "private",
+         "channelWType": "list"
+        },
+        "module": "slack:CreateMessage",
+        "version": 4,
+        "metadata": {
+         "expect": [
+          {
+           "name": "channelWType",
+           "type": "select",
+           "label": "Enter a channel ID or name",
+           "required": true,
+           "validate": {
+            "enum": [
+             "manualy",
+             "list"
+            ]
+           }
+          },
+          {
+           "name": "text",
+           "type": "text",
+           "label": "Text"
+          },
+          {
+           "name": "blocks",
+           "type": "text",
+           "label": "Blocks"
+          },
+          {
+           "name": "thread_ts",
+           "type": "text",
+           "label": "Thread message ID (time stamp)"
+          },
+          {
+           "name": "reply_broadcast",
+           "type": "boolean",
+           "label": "Reply broadcast"
+          },
+          {
+           "name": "link_names",
+           "type": "boolean",
+           "label": "Link names"
+          },
+          {
+           "name": "parse",
+           "type": "boolean",
+           "label": "Parse message text"
+          },
+          {
+           "name": "mrkdwn",
+           "type": "boolean",
+           "label": "Use markdown"
+          },
+          {
+           "name": "unfurl_links",
+           "type": "boolean",
+           "label": "Unfurl primarily text-based content"
+          },
+          {
+           "name": "unfurl_media",
+           "type": "boolean",
+           "label": "Unfurl media content"
+          },
+          {
+           "name": "icon_emoji",
+           "type": "text",
+           "label": "Icon emoji"
+          },
+          {
+           "name": "icon_url",
+           "type": "url",
+           "label": "Icon url"
+          },
+          {
+           "name": "username",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "channelType",
+           "type": "select",
+           "label": "Channel type",
+           "required": true,
+           "validate": {
+            "enum": [
+             "public",
+             "private",
+             "im",
+             "mpim"
+            ]
+           }
+          },
+          {
+           "name": "channel",
+           "type": "select",
+           "label": "Private channel",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "parse": {
+            "mode": "chose"
+           },
+           "mrkdwn": {
+            "mode": "chose"
+           },
+           "channel": {
+            "mode": "chose",
+            "label": "contract-events"
+           },
+           "link_names": {
+            "mode": "chose"
+           },
+           "channelType": {
+            "label": "Private channel"
+           },
+           "channelWType": {
+            "label": "Select from the list"
+           },
+           "unfurl_links": {
+            "mode": "chose"
+           },
+           "unfurl_media": {
+            "mode": "chose"
+           },
+           "reply_broadcast": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "slack3"
+            },
+            "label": "My Slack (bot) connectionfix (make)"
+           }
+          }
+         },
+         "designer": {
+          "x": 1575,
+          "y": 903
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:slack2,slack3",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3736690
+        }
+       },
+       {
+        "id": 28,
+        "filter": {
+         "name": "Close lead has an opportunity",
+         "conditions": [
+          [
+           {
+            "a": "{{31.id}}",
+            "o": "exist"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "name": "opp",
+         "scope": "roundtrip",
+         "value": "{{first(31.opportunities)}}"
+        },
+        "module": "util:SetVariable2",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "name": "name",
+           "type": "text",
+           "label": "Variable name",
+           "required": true
+          },
+          {
+           "name": "scope",
+           "type": "select",
+           "label": "Variable lifetime",
+           "required": true,
+           "validate": {
+            "enum": [
+             "roundtrip",
+             "execution"
+            ]
+           }
+          },
+          {
+           "name": "value",
+           "type": "any",
+           "label": "Variable value"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "scope": {
+            "label": "One cycle"
+           }
+          }
+         },
+         "designer": {
+          "x": 2175,
+          "y": 903
+         }
+        },
+        "parameters": {}
+       },
+       {
+        "id": 29,
+        "mapper": {
+         "id": "{{28.opp.id}}",
+         "value": "{{1.`Monthly Investment` * 100}}",
+         "custom": {}
+        },
+        "module": "close-crm:ActionUpdateOpportunity",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "mode": "edit",
+           "name": "id",
+           "type": "select",
+           "label": "Opportunity ID",
+           "required": true
+          },
+          {
+           "mode": "edit",
+           "name": "status_id",
+           "type": "select",
+           "label": "Status ID"
+          },
+          {
+           "name": "confidence",
+           "type": "uinteger",
+           "label": "Confidence",
+           "validate": {
+            "max": 100,
+            "min": 0
+           }
+          },
+          {
+           "name": "value",
+           "type": "number",
+           "label": "Value"
+          },
+          {
+           "name": "value_period",
+           "type": "select",
+           "label": "Value Period",
+           "validate": {
+            "enum": [
+             "one_time",
+             "monthly",
+             "annual"
+            ]
+           }
+          },
+          {
+           "name": "note",
+           "type": "text",
+           "label": "Note"
+          },
+          {
+           "name": "date_won",
+           "type": "date",
+           "label": "Date Won"
+          },
+          {
+           "name": "custom",
+           "spec": [
+            {
+             "name": "cf_Gsgkvnm2wl7GBDk5Vly2J2lcgOeVru47eyZtunLqrUR",
+             "type": "select",
+             "label": "Product (Example)",
+             "multiple": true
+            },
+            {
+             "name": "cf_sH9bICoOdDXKYClp8t5cxlchbVA0hW61eC2Vi2hTSY8",
+             "time": false,
+             "type": "date",
+             "label": "Renewal Date (Example)"
+            },
+            {
+             "name": "cf_Sktk4MsFVeVffnXB3JLCPxjnbnur3Uqkb3y3HROk0eA",
+             "type": "text",
+             "label": "Contract Link (Example)"
+            },
+            {
+             "name": "cf_hgkn1mBBOgFeu85ooukCzeudZkf1M9nRf4LsSulQHCs",
+             "type": "text",
+             "label": "Tracking ID (Example)"
+            }
+           ],
+           "type": "collection",
+           "label": "Custom Fields"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "id": {
+            "mode": "edit"
+           },
+           "custom": {
+            "nested": {
+             "cf_Gsgkvnm2wl7GBDk5Vly2J2lcgOeVru47eyZtunLqrUR": {
+              "mode": "chose"
+             }
+            }
+           },
+           "status_id": {
+            "mode": "edit"
+           },
+           "value_period": {
+            "mode": "chose",
+            "label": "Empty"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "close-crm"
+            },
+            "label": "My Close CRM connection (alexander@dulcymedia.com)"
+           }
+          }
+         },
+         "designer": {
+          "x": 2475,
+          "y": 903
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:close-crm",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 2737753
+        }
+       }
+      ]
+     }
+    ],
+    "version": 1,
+    "metadata": {
+     "designer": {
+      "x": 600,
+      "y": 450
+     }
+    }
+   }
+  ],
+  "name": "[2.5 POST CALL] New Client Agreements",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": []
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately",
+   "maximum_runs_per_minute": 100
+  }
+ }
+}

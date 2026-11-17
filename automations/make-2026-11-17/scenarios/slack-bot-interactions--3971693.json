@@ -1,0 +1,827 @@
+{
+ "id": 3971693,
+ "name": "[Slack Bot] Interactions",
+ "teamId": 629049,
+ "hookId": 2253084,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 199728,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": true,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "gateway",
+  "json",
+  "builtin",
+  "builtin",
+  "util",
+  "util",
+  "airtable",
+  "http"
+ ],
+ "lastEdit": "2025-09-26T15:54:48.912Z",
+ "scheduling": {
+  "type": "immediately"
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2025-05-16T13:49:54.058Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": true,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 1,
+    "mapper": {},
+    "module": "gateway:CustomWebHook",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "hook": {
+        "data": {
+         "editable": "true"
+        },
+        "label": "Slack Interactions"
+       }
+      }
+     },
+     "designer": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "hook",
+       "type": "hook:gateway-webhook",
+       "label": "Webhook",
+       "required": true
+      },
+      {
+       "name": "maxResults",
+       "type": "number",
+       "label": "Maximum number of results"
+      }
+     ]
+    },
+    "parameters": {
+     "hook": 2253084,
+     "maxResults": 1
+    }
+   },
+   {
+    "id": 2,
+    "mapper": {
+     "json": "{{1.payload}}"
+    },
+    "module": "json:ParseJSON",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "json",
+       "type": "text",
+       "label": "JSON string",
+       "required": true
+      }
+     ],
+     "restore": {
+      "parameters": {
+       "type": {
+        "label": "Choose a data structure"
+       }
+      }
+     },
+     "designer": {
+      "x": 300,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "type",
+       "type": "udt",
+       "label": "Data structure"
+      }
+     ]
+    },
+    "parameters": {
+     "type": ""
+    }
+   },
+   {
+    "id": 3,
+    "mapper": null,
+    "module": "builtin:BasicRouter",
+    "routes": [
+     {
+      "flow": [
+       {
+        "id": 5,
+        "filter": {
+         "name": "Client Reply to Email",
+         "conditions": [
+          [
+           {
+            "a": "{{2.actions[].value}}",
+            "b": "client_reply_lead_email",
+            "o": "text:startwith"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "array": "{{toArray(2.state.values)}}"
+        },
+        "module": "builtin:BasicFeeder",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "mode": "edit",
+           "name": "array",
+           "spec": [],
+           "type": "array",
+           "label": "Array"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "array": {
+            "mode": "edit"
+           }
+          }
+         },
+         "designer": {
+          "x": 933,
+          "y": -161
+         }
+        },
+        "parameters": {}
+       },
+       {
+        "id": 6,
+        "filter": {
+         "name": "",
+         "conditions": [
+          [
+           {
+            "a": "{{5.`__IMTINDEX__`}}",
+            "b": "1",
+            "o": "text:equal"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "name": "1",
+         "scope": "roundtrip",
+         "value": "{{5.value}}"
+        },
+        "module": "util:SetVariable2",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "name": "name",
+           "type": "text",
+           "label": "Variable name",
+           "required": true
+          },
+          {
+           "name": "scope",
+           "type": "select",
+           "label": "Variable lifetime",
+           "required": true,
+           "validate": {
+            "enum": [
+             "roundtrip",
+             "execution"
+            ]
+           }
+          },
+          {
+           "name": "value",
+           "type": "any",
+           "label": "Variable value"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "scope": {
+            "label": "One cycle"
+           }
+          }
+         },
+         "designer": {
+          "x": 1233,
+          "y": -161
+         }
+        },
+        "parameters": {}
+       },
+       {
+        "id": 7,
+        "mapper": {
+         "name": "text",
+         "scope": "roundtrip",
+         "value": "{{6.`1`.`plain_text_input-action`.value}}"
+        },
+        "module": "util:SetVariable2",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "name": "name",
+           "type": "text",
+           "label": "Variable name",
+           "required": true
+          },
+          {
+           "name": "scope",
+           "type": "select",
+           "label": "Variable lifetime",
+           "required": true,
+           "validate": {
+            "enum": [
+             "roundtrip",
+             "execution"
+            ]
+           }
+          },
+          {
+           "name": "value",
+           "type": "any",
+           "label": "Variable value"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "scope": {
+            "label": "One cycle"
+           }
+          }
+         },
+         "designer": {
+          "x": 1533,
+          "y": -161
+         }
+        },
+        "parameters": {}
+       },
+       {
+        "id": 8,
+        "mapper": {
+         "id": "{{last(split(2.actions[].value; \"_\"))}}",
+         "base": "appxqINt5XKw7a76A",
+         "table": "tblADFhWhTcLrl1UY",
+         "record": {
+          "fldCfgm35ZqyVe9xm": "{{7.text}}",
+          "fldzd2bHc5XMGidFk": "Client Responded"
+         },
+         "typecast": false,
+         "useColumnId": false
+        },
+        "module": "airtable:ActionUpdateRecords",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "base",
+           "type": "select",
+           "label": "Base",
+           "required": true
+          },
+          {
+           "name": "typecast",
+           "type": "boolean",
+           "label": "Smart links",
+           "required": true
+          },
+          {
+           "name": "useColumnId",
+           "type": "boolean",
+           "label": "Use Column ID",
+           "required": true
+          },
+          {
+           "name": "table",
+           "type": "select",
+           "label": "Table",
+           "required": true
+          },
+          {
+           "name": "id",
+           "type": "text",
+           "label": "Record ID",
+           "required": true
+          },
+          {
+           "name": "record",
+           "spec": [
+            {
+             "name": "fldVkWkLFCGP9O1Aw",
+             "type": "text",
+             "label": "Leads Email"
+            },
+            {
+             "name": "fldQAcnN9PrbL7R81",
+             "type": "text",
+             "label": "Leads Name"
+            },
+            {
+             "name": "fldNdJB5rvVpf8V9M",
+             "type": "text",
+             "label": "Subject Line"
+            },
+            {
+             "name": "fldjG76LvUTv60Pzj",
+             "type": "text",
+             "label": "Latest Reply"
+            },
+            {
+             "mode": "edit",
+             "name": "fldr2uNiscZfeCNiT",
+             "type": "select",
+             "label": "Lead Status"
+            },
+            {
+             "mode": "edit",
+             "name": "fldE9bxKtmeRsvG9f",
+             "type": "select",
+             "label": "Last Email Sent"
+            },
+            {
+             "mode": "edit",
+             "name": "fldzd2bHc5XMGidFk",
+             "type": "select",
+             "label": "Push To Client Reply"
+            },
+            {
+             "name": "fldxUxP1jBXt3u7dl",
+             "type": "text",
+             "label": "Inbox Email"
+            },
+            {
+             "name": "fldEv7oM5BJPKJpiR",
+             "type": "text",
+             "label": "Campaign Name"
+            },
+            {
+             "name": "fldCfgm35ZqyVe9xm",
+             "type": "text",
+             "label": "Custom Reply"
+            },
+            {
+             "name": "fldYocEhrAzRUw9sA",
+             "type": "text",
+             "label": "Conversation History"
+            },
+            {
+             "name": "fldT2Nvl3qPmSMsgb",
+             "type": "text",
+             "label": "reply_uuid"
+            },
+            {
+             "mode": "edit",
+             "name": "fldfPPfvAoXw04LVs",
+             "type": "select",
+             "label": "Opportunity Status"
+            },
+            {
+             "name": "fldTFmYUnIXPxgJQS",
+             "time": false,
+             "type": "date",
+             "label": "Date of Call Booked"
+            },
+            {
+             "name": "fldv0o5rhmd7jXDrt",
+             "type": "text",
+             "label": "campaign_id"
+            },
+            {
+             "name": "fldv66oGZQQ9Qscmb",
+             "type": "number",
+             "label": "lead_id"
+            },
+            {
+             "name": "flds1ZqBq2ZW6dVBr",
+             "type": "text",
+             "label": "email_stats_id"
+            },
+            {
+             "name": "fldvARFWnr4H2wC8V",
+             "type": "text",
+             "label": "reply_message_id"
+            },
+            {
+             "name": "fld2IjVEsAijZUjPl",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Templates"
+            },
+            {
+             "name": "fldGkiO630UgVCnv5",
+             "type": "text",
+             "label": "CC (Optional)"
+            },
+            {
+             "name": "fld8K4zasLt6aaRfB",
+             "type": "text",
+             "label": "Phone Number"
+            },
+            {
+             "name": "fldlC9uaoYyYwFvDz",
+             "type": "text",
+             "label": "Linkedin URL"
+            },
+            {
+             "name": "fldRYOE8NaSKxs9tB",
+             "type": "text",
+             "label": "Company Name"
+            },
+            {
+             "name": "fldBNI5MPeDfMELjd",
+             "type": "text",
+             "label": "ESP"
+            },
+            {
+             "name": "fldCjo0mB0snziNZQ",
+             "type": "text",
+             "label": "Workspace ID (Bison)"
+            },
+            {
+             "name": "fld3YSJ9JV7976gYP",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Call Feedback"
+            }
+           ],
+           "type": "collection",
+           "label": "Record"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "base": {
+            "label": "Alex"
+           },
+           "table": {
+            "label": "Emails"
+           },
+           "record": {
+            "nested": {
+             "fld2IjVEsAijZUjPl": {
+              "mode": "chose"
+             },
+             "fld3YSJ9JV7976gYP": {
+              "mode": "chose"
+             },
+             "fldE9bxKtmeRsvG9f": {
+              "mode": "edit"
+             },
+             "fldfPPfvAoXw04LVs": {
+              "mode": "edit"
+             },
+             "fldr2uNiscZfeCNiT": {
+              "mode": "edit"
+             },
+             "fldzd2bHc5XMGidFk": {
+              "mode": "chose",
+              "label": "Client Responded"
+             }
+            }
+           },
+           "typecast": {
+            "mode": "chose"
+           },
+           "useColumnId": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "airtable3"
+            },
+            "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+           }
+          }
+         },
+         "designer": {
+          "x": 1833,
+          "y": -161
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:airtable3,airtable2",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3589602
+        }
+       },
+       {
+        "id": 9,
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://n8n.dulcy.io/webhook/REDACTED_PATH",
+         "data": "{{1.payload}}",
+         "gzip": true,
+         "method": "post",
+         "headers": [],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "raw",
+         "contentType": "application/json",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": false,
+         "followRedirect": true,
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "contentType",
+           "type": "select",
+           "label": "Content type",
+           "validate": {
+            "enum": [
+             "text/plain",
+             "application/json",
+             "application/xml",
+             "text/xml",
+             "text/html",
+             "custom"
+            ]
+           }
+          },
+          {
+           "name": "data",
+           "type": "buffer",
+           "label": "Request content"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "POST"
+           },
+           "headers": {
+            "mode": "chose"
+           },
+           "bodyType": {
+            "label": "Raw"
+           },
+           "contentType": {
+            "label": "JSON (application/json)"
+           }
+          }
+         },
+         "designer": {
+          "x": 2133,
+          "y": -161,
+          "name": "Send to n8n - client replied flow"
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": true,
+         "useNewZLibDeCompress": true
+        }
+       }
+      ]
+     }
+    ],
+    "version": 1,
+    "metadata": {
+     "designer": {
+      "x": 600,
+      "y": 0
+     }
+    }
+   }
+  ],
+  "name": "[Slack Bot] Interactions",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": []
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately"
+  }
+ }
+}
