@@ -22,3 +22,4 @@ Newest at the bottom. Format: `date | decision | why | who`
 2026-11-17 | Reply rules: 2 specific times (no link); price = explain it depends + approved range + 2 times; keep following up until answer or stop; Josh sends normal replies, Alex tricky; RevReply not used | Alex answered conflicts between Drive SOPs, creators and Dulcy data | Alex
 2026-11-17 | Client files built for all 6 clients + Dulcy from Airtable, Slack, Drive, Fathom; historical inactive profiles saved in clients/historical | Alex: client folder from Slack and onboarding helps the agents | Alex
 2026-11-17 | Bounce/campaign health = Atlas, not Riley | Alex corrected Claude for routing a bounce check to Riley | Alex
+2026-11-17 | What-worked summary across 346 campaigns saved; Atlas and Forge read it before picking ICP/offer | Alex asked for lessons from past clients instead of per-client files | Alex

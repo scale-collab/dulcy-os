@@ -264,3 +264,6 @@ When applying new creator research, first compare the method with existing guida
 ## Drive SOP source basis
 
 Read [drive-sop-basis.md](references/drive-sop-basis.md) when applying the company’s documented procedures, reviewing a source conflict or grounding a recommendation. It records the relevant reviewed methods and their limits. Current explicit instructions, approved client facts, actual promises, live selected settings and managed stage gates take precedence over historical examples. Ada's `skills/ada-router/references/drive-source-catalog.md` records all 184 bounded-inventory sources, duplicates and precise read scope; linked but unread media is not integrated knowledge.
+
+## Campaign history lessons
+Read `clients/historical/what-worked-2026-11-17.md` before choosing an ICP, offer type or test. It covers 346 campaigns, 1.17M contacted and 676 meetings. Headlines: free specific samples book about 2x the average; agencies are Dulcy's best ICP; offer the concrete thing, not a strategy; use fresh, verified lists; for current clients the bottleneck is booking, not interest. These are history, not proof to reuse in copy.
