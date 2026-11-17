@@ -1,0 +1,166 @@
+{
+ "id": "dOxebLJQqNNyHY0iKpyvt",
+ "name": "[Inbox Placement Tests] Run Test From Airtable",
+ "active": true,
+ "isArchived": false,
+ "versionId": "d681ebbc-7b5f-4a00-8fd5-bed526aa4e5f",
+ "triggerCount": 1,
+ "createdAt": "2026-08-22T21:26:45.861Z",
+ "updatedAt": "2026-11-17T16:41:30.266Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Run Test Button": {
+   "main": [
+    [
+     {
+      "node": "Workspace ID Present?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Workspace ID Present?": {
+   "main": [
+    [
+     {
+      "node": "Start Existing Placement Test",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Missing Workspace ID",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Start Existing Placement Test": {
+   "main": [
+    [
+     {
+      "node": "Confirm Test Started",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "path": "REDACTED_PATH",
+    "responseMode": "responseNode",
+    "options": {}
+   },
+   "id": "585fc4c4-8019-429b-80eb-b186ce308670",
+   "name": "Run Test Button",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    -496,
+    80
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "f1fd2386-19a1-4fc4-abf9-c4883dbf486f",
+       "leftValue": "={{ $json.query.workspace_id || $json.query.all }}",
+       "rightValue": "",
+       "operator": {
+        "type": "string",
+        "operation": "notEmpty",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "7fee5caf-f0e5-46a2-953c-57f90d365d92",
+   "name": "Workspace ID Present?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    -256,
+    80
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://n8n.dulcy.io/webhook/REDACTED_PATH",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify($json.query.all === 'true' ? {} : { workspace_id: $json.query.workspace_id }) }}",
+    "options": {}
+   },
+   "id": "178bd6a6-ff06-4854-acb7-4966b22da143",
+   "name": "Start Existing Placement Test",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    0,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "respondWith": "text",
+    "responseBody": "=Inbox placement test started for workspace {{ $('Run Test Button').item.json.query.workspace_id }}. You can close this page and return to Airtable.",
+    "options": {
+     "responseCode": 202
+    }
+   },
+   "id": "cd2bb211-328c-4029-85a2-2afb05519cb2",
+   "name": "Confirm Test Started",
+   "type": "n8n-nodes-base.respondToWebhook",
+   "typeVersion": 1.4,
+   "position": [
+    272,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "respondWith": "text",
+    "responseBody": "Workspace ID is missing. Open this button from an Inbox Placement Test record that has a Workspace ID.",
+    "options": {
+     "responseCode": 400
+    }
+   },
+   "id": "578cc033-cf63-4b9d-a973-aa403e625f7f",
+   "name": "Missing Workspace ID",
+   "type": "n8n-nodes-base.respondToWebhook",
+   "typeVersion": 1.4,
+   "position": [
+    0,
+    192
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

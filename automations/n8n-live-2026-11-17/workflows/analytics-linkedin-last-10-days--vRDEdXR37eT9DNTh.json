@@ -1,0 +1,681 @@
+{
+ "id": "vRDEdXR37eT9DNTh",
+ "name": "[Analytics - LinkedIn] Last 10 days",
+ "active": true,
+ "isArchived": false,
+ "versionId": "90cda0aa-64cb-4224-a29a-43c6762002a6",
+ "triggerCount": 1,
+ "createdAt": "2025-08-05T00:12:46.110Z",
+ "updatedAt": "2026-11-17T16:38:45.055Z",
+ "settings": {
+  "executionOrder": "v1",
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Schedule Trigger": {
+   "main": [
+    [
+     {
+      "node": "Get active clients",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records1": {
+   "main": [
+    [
+     {
+      "node": "If there's a campaign",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Set Timelines": {
+   "main": [
+    [
+     {
+      "node": "Wait",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Loop Over Items": {
+   "main": [
+    [],
+    [
+     {
+      "node": "Search records1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get active clients": {
+   "main": [
+    [
+     {
+      "node": "Loop Over Items",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "If there's a campaign": {
+   "main": [
+    [
+     {
+      "node": "Set Timelines",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Loop Over Items",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Stats last X days1": {
+   "main": [
+    [
+     {
+      "node": "Summarize",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Summarize": {
+   "main": [
+    [
+     {
+      "node": "Create a record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create a record": {
+   "main": [
+    [
+     {
+      "node": "Loop Over Items",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wait": {
+   "main": [
+    [
+     {
+      "node": "Stats last X days1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "weeks",
+       "triggerAtDay": [
+        2,
+        3,
+        4,
+        5,
+        6
+       ],
+       "triggerAtHour": 3
+      }
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    -1200,
+    1776
+   ],
+   "id": "d999a862-9e67-4cd8-94bb-d9e2c8505a24",
+   "name": "Schedule Trigger"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tbl7s4Q7ccNy5aSSW",
+     "mode": "list",
+     "cachedResultName": "LinkedIn Campaigns",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tbl7s4Q7ccNy5aSSW"
+    },
+    "filterByFormula": "={Workspace ID} = '{{ $json.ID }}'",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -560,
+    1904
+   ],
+   "id": "85a5b14e-dd27-4520-8f42-fea54462b28a",
+   "name": "Search records1",
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "4fc615fc-3a1e-48e1-a84a-c7bccb9d4f7c",
+       "name": "set_timeline_days",
+       "value": "10",
+       "type": "string"
+      }
+     ]
+    },
+    "includeOtherFields": true,
+    "options": {}
+   },
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    -160,
+    1872
+   ],
+   "id": "62c41ad6-8082-47e6-8d82-415b9ab74b26",
+   "name": "Set Timelines"
+  },
+  {
+   "parameters": {
+    "content": "Change the variable based on time period",
+    "height": 288,
+    "width": 150
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    -192,
+    1744
+   ],
+   "typeVersion": 1,
+   "id": "774dac92-dcff-4da4-8182-d97de9916058",
+   "name": "Sticky Note3"
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "=https://api.heyreach.io/api/public/stats/GetOverallStats",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "X-API-KEY",
+       "value": "REDACTED"
+      },
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      },
+      {
+       "name": "Accept",
+       "value": "text/plain"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={\n  \"accountIds\": [],\n  \"campaignIds\": [{{ $json['Campaign ID'] }}],\n  \"startDate\": \"{{ $now.minus($json.set_timeline_days, 'days').format('yyyy-MM-dd') }}\",\n  \"endDate\": \"{{ $now.minus(1, 'days').format('yyyy-MM-dd') }}\"\n}",
+    "options": {
+     "batching": {
+      "batch": {
+       "batchSize": 5,
+       "batchInterval": 3000
+      }
+     }
+    }
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    32,
+    1872
+   ],
+   "id": "d2e04a72-7200-48c6-a985-c064318c106d",
+   "name": "Stats last X days1",
+   "retryOnFail": true,
+   "waitBetweenTries": 4000
+  },
+  {
+   "parameters": {
+    "fieldsToSummarize": {
+     "values": [
+      {
+       "aggregation": "sum",
+       "field": "overallStats.messagesSent"
+      },
+      {
+       "aggregation": "sum",
+       "field": "overallStats.totalMessageReplies"
+      },
+      {
+       "aggregation": "sum",
+       "field": "overallStats.inmailMessagesSent"
+      },
+      {
+       "aggregation": "sum",
+       "field": "overallStats.totalInmailStarted"
+      },
+      {
+       "aggregation": "sum",
+       "field": "overallStats.totalInmailReplies"
+      },
+      {
+       "aggregation": "sum",
+       "field": "overallStats.connectionsSent"
+      },
+      {
+       "aggregation": "sum",
+       "field": "overallStats.connectionsAccepted"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.summarize",
+   "typeVersion": 1.1,
+   "position": [
+    240,
+    1872
+   ],
+   "id": "dbde930f-20ae-456b-91fe-88ddfdf14327",
+   "name": "Summarize"
+  },
+  {
+   "parameters": {
+    "options": {}
+   },
+   "type": "n8n-nodes-base.splitInBatches",
+   "typeVersion": 3,
+   "position": [
+    -768,
+    1776
+   ],
+   "id": "63dce71b-2e94-4b11-88a2-29771ef8e037",
+   "name": "Loop Over Items"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt"
+    },
+    "filterByFormula": "{Status} = 'Active'",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -992,
+    1776
+   ],
+   "id": "3914aba9-e476-4fe0-90c4-085e9b8e11d2",
+   "name": "Get active clients"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "eac9f1df-22e6-4173-a0b1-41cbbfd854a7",
+       "leftValue": "={{ $json.id }}",
+       "rightValue": "",
+       "operator": {
+        "type": "string",
+        "operation": "exists",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    -384,
+    1920
+   ],
+   "id": "0182a337-20f5-4596-98a1-a807f8fa34d2",
+   "name": "If there's a campaign"
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblTEPeaVSGcct8FY",
+     "mode": "list",
+     "cachedResultName": "LinkedIn Analytics Overview",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblTEPeaVSGcct8FY"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Connections Sent": "={{ $json.sum_overallStats_connectionsSent }}",
+      "Connections Accepted": "={{ $json.sum_overallStats_connectionsAccepted }}",
+      "Messages Started": "={{ $json.sum_overallStats_messagesSent }}",
+      "Replies": "={{ $json.sum_overallStats_totalMessageReplies }}",
+      "InMails Sent": "={{ $json.sum_overallStats_inmailMessagesSent }}",
+      "InMails Replies": "={{ $json.sum_overallStats_totalInmailReplies }}",
+      "Date Period": "Last 10 days",
+      "Client ID": "={{ $('Set Timelines').first().json['Workspace ID'][0].toString() }}",
+      "Client": "={{ [$('Set Timelines').first().json['Client (from Email Campaigns)'][0]] }}"
+     },
+     "matchingColumns": [
+      "Identifier"
+     ],
+     "schema": [
+      {
+       "id": "Identifier",
+       "displayName": "Identifier",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Date Period",
+       "displayName": "Date Period",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Last 10 days",
+         "value": "Last 10 days"
+        },
+        {
+         "name": "Last 30 days",
+         "value": "Last 30 days"
+        },
+        {
+         "name": "Last 60 days",
+         "value": "Last 60 days"
+        },
+        {
+         "name": "Last 120 days",
+         "value": "Last 120 days"
+        },
+        {
+         "name": "All time",
+         "value": "All time"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client ID",
+       "displayName": "Client ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Connections Sent",
+       "displayName": "Connections Sent",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Connections Accepted",
+       "displayName": "Connections Accepted",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Acceptance Rate",
+       "displayName": "Acceptance Rate",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Messages Started",
+       "displayName": "Messages Started",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Replies",
+       "displayName": "Replies",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Reply Rate",
+       "displayName": "Reply Rate",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "InMails Sent",
+       "displayName": "InMails Sent",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "InMails Replies",
+       "displayName": "InMails Replies",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "InMails Reply Rate",
+       "displayName": "InMails Reply Rate",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Meetings Booked",
+       "displayName": "Meetings Booked",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Meetings Booked %",
+       "displayName": "Meetings Booked %",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Connections to Meeting Ratio",
+       "displayName": "Connections to Meeting Ratio",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    432,
+    1872
+   ],
+   "id": "82b15af4-0813-4c62-b444-96fe96b496ea",
+   "name": "Create a record"
+  },
+  {
+   "parameters": {
+    "content": "Change the variable based on time period",
+    "height": 288,
+    "width": 150
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    400,
+    1744
+   ],
+   "typeVersion": 1,
+   "id": "c66f46a6-d26e-4c48-94bd-4e306f9e5667",
+   "name": "Sticky Note"
+  },
+  {
+   "parameters": {
+    "amount": 15
+   },
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    -64,
+    1568
+   ],
+   "id": "6744847c-7a24-4d96-a608-86617388ed35",
+   "name": "Wait",
+   "webhookId": "ba1e94ae-9a56-4ea1-ac8a-9d3a90caab4c"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

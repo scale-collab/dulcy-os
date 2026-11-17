@@ -1,0 +1,2317 @@
+{
+ "id": "qzm77ouMlGTXKfZx",
+ "name": "Zbuyer Caller",
+ "active": true,
+ "isArchived": false,
+ "versionId": "7b4a05c2-b470-4f02-bc5a-183817de4785",
+ "triggerCount": 1,
+ "createdAt": "2025-12-28T20:09:34.040Z",
+ "updatedAt": "2026-11-17T16:38:38.424Z",
+ "settings": {
+  "executionOrder": "v1",
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Webhook": {
+   "main": [
+    [
+     {
+      "node": "Create a record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wait": {
+   "main": [
+    [
+     {
+      "node": "Code in JavaScript",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "If1": {
+   "main": [
+    [
+     {
+      "node": "Code in JavaScript",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Wait",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Add Call Identifier": {
+   "main": [
+    [
+     {
+      "node": "Switch",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "HTTP Request": {
+   "main": [
+    [
+     {
+      "node": "Add Call Identifier",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Switch": {
+   "main": [
+    [
+     {
+      "node": "Add Follow Up Tag",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Add Follow Up Tag1",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Add Follow Up Tag2",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Add Follow Up Tag3",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Add Follow Up Tag4",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Add Follow Up Tag1": {
+   "main": [
+    [
+     {
+      "node": "Wait2",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Add Follow Up Tag2": {
+   "main": [
+    [
+     {
+      "node": "Wait3",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Add Follow Up Tag3": {
+   "main": [
+    [
+     {
+      "node": "Wait4",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Business Hours 9-5": {
+   "main": [
+    [
+     {
+      "node": "If1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Code in JavaScript": {
+   "main": [
+    [
+     {
+      "node": "Airtable",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Add Follow Up Tag": {
+   "main": [
+    [
+     {
+      "node": "Wait1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wait1": {
+   "main": [
+    [
+     {
+      "node": "Business Hours 9-5",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wait2": {
+   "main": [
+    [
+     {
+      "node": "Business Hours 9-5",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wait3": {
+   "main": [
+    [
+     {
+      "node": "Business Hours 9-5",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wait4": {
+   "main": [
+    [
+     {
+      "node": "Business Hours 9-5",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Filter": {
+   "main": [
+    [
+     {
+      "node": "Filter1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Airtable": {
+   "main": [
+    [
+     {
+      "node": "Filter",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create a record": {
+   "main": [
+    [
+     {
+      "node": "Business Hours 9-5",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Filter1": {
+   "main": [
+    [
+     {
+      "node": "HTTP Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    -2416,
+    240
+   ],
+   "id": "6c9c227e-b7cd-4be6-89ea-597a7dacbcac",
+   "name": "Webhook"
+  },
+  {
+   "parameters": {
+    "jsCode": "// n8n Code node (JavaScript)\n// Business hours: 09:00–18:30 Eastern (America/New_York), Monday–Friday\n// Random jitter: 0–20 minutes\n// Output: runAt as UTC ISO string (Z) that corresponds to Eastern schedule\n\nconst MAX_JITTER_MINUTES = 20;\n\n// ---- Timezone helpers (EST/EDT safe via America/New_York) ----\nfunction getNYParts(date = new Date()) {\n  const parts = new Intl.DateTimeFormat('en-US', {\n    timeZone: 'America/New_York',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit',\n    hour: '2-digit',\n    minute: '2-digit',\n    second: '2-digit',\n    weekday: 'short',\n    hour12: false,\n  }).formatToParts(date);\n\n  return Object.fromEntries(parts.map(p => [p.type, p.value]));\n}\n\n// Convert NY local time → UTC Date (DST safe)\nfunction nyLocalToUTCDate(year, month, day, hour, minute, second) {\n  const guess = new Date(Date.UTC(year, month - 1, day, hour, minute, second));\n\n  const nyAtGuess = getNYParts(guess);\n  const nyAsIfUTC = Date.UTC(\n    Number(nyAtGuess.year),\n    Number(nyAtGuess.month) - 1,\n    Number(nyAtGuess.day),\n    Number(nyAtGuess.hour),\n    Number(nyAtGuess.minute),\n    Number(nyAtGuess.second)\n  );\n\n  const offsetMs = guess.getTime() - nyAsIfUTC;\n  return new Date(guess.getTime() + offsetMs);\n}\n\nfunction getNYNowParts() {\n  const p = getNYParts(new Date());\n  return {\n    year: Number(p.year),\n    month: Number(p.month),\n    day: Number(p.day),\n    hour: Number(p.hour),\n    minute: Number(p.minute),\n    second: Number(p.second),\n    weekday: p.weekday,\n  };\n}\n\nfunction isNYWeekday(weekdayShort) {\n  return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(weekdayShort);\n}\n\n// Add random minutes\nfunction addRandomMinutes(date, maxMinutes = MAX_JITTER_MINUTES) {\n  const d = new Date(date.getTime());\n  const jitter = Math.floor(Math.random() * (maxMinutes + 1));\n  d.setMinutes(d.getMinutes() + jitter);\n  return d;\n}\n\n// Clamp to 18:29 NY max\nfunction clampToNYEndOfDayUTC(dateUtc) {\n  const p = getNYParts(dateUtc);\n  const hour = Number(p.hour);\n  const minute = Number(p.minute);\n\n  if (hour > 18 || (hour === 18 && minute >= 30)) {\n    return nyLocalToUTCDate(\n      Number(p.year),\n      Number(p.month),\n      Number(p.day),\n      18,\n      29,\n      0\n    );\n  }\n  return dateUtc;\n}\n\nfunction nyAtTimeUTC(year, month, day, hour, minute, second = 0) {\n  return nyLocalToUTCDate(year, month, day, hour, minute, second);\n}\n\nfunction addDaysNY(year, month, day, daysToAdd) {\n  const anchor = nyAtTimeUTC(year, month, day, 12, 0, 0);\n  anchor.setUTCDate(anchor.getUTCDate() + daysToAdd);\n  const p = getNYParts(anchor);\n  return {\n    year: Number(p.year),\n    month: Number(p.month),\n    day: Number(p.day),\n    weekday: p.weekday\n  };\n}\n\nfunction nextBusinessMorningUTC(nowNY) {\n  let y = nowNY.year, m = nowNY.month, d = nowNY.day, wd = nowNY.weekday;\n\n  if (!isNYWeekday(wd) || nowNY.hour >= 18 && nowNY.minute >= 30) {\n    const next = addDaysNY(y, m, d, 1);\n    y = next.year; m = next.month; d = next.day; wd = next.weekday;\n  }\n\n  while (!isNYWeekday(wd)) {\n    const next = addDaysNY(y, m, d, 1);\n    y = next.year; m = next.month; d = next.day; wd = next.weekday;\n  }\n\n  return nyAtTimeUTC(y, m, d, 9, 0, 0);\n}\n\n// ---- Main ----\nconst out = [];\n\nfor (const item of items) {\n  const nowNY = getNYNowParts();\n  const hourNY = nowNY.hour;\n  const minuteNY = nowNY.minute;\n  const isWeekday = isNYWeekday(nowNY.weekday);\n\n  let shouldRunNow;\n  let runAtDateUtc;\n\n  if (\n    isWeekday &&\n    (\n      hourNY > 9 && hourNY < 18 ||\n      (hourNY === 9) ||\n      (hourNY === 18 && minuteNY < 30)\n    )\n  ) {\n    // Inside business window\n    shouldRunNow = true;\n    runAtDateUtc = addRandomMinutes(new Date());\n    runAtDateUtc = clampToNYEndOfDayUTC(runAtDateUtc);\n  } else {\n    shouldRunNow = false;\n\n    if (isWeekday && (hourNY < 9)) {\n      runAtDateUtc = nyAtTimeUTC(nowNY.year, nowNY.month, nowNY.day, 9, 0, 0);\n    } else {\n      runAtDateUtc = nextBusinessMorningUTC(nowNY);\n    }\n\n    runAtDateUtc = addRandomMinutes(runAtDateUtc);\n    runAtDateUtc = clampToNYEndOfDayUTC(runAtDateUtc);\n  }\n\n  out.push({\n    json: {\n      ...item.json,\n      shouldRunNow,\n      runAt: runAtDateUtc.toISOString(),\n    },\n  });\n}\n\nreturn out;"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -1968,
+    240
+   ],
+   "id": "d2398dfa-b746-4406-bc7a-0f9c1388f72e",
+   "name": "Business Hours 9-5"
+  },
+  {
+   "parameters": {
+    "resume": "specificTime",
+    "dateTime": "={{ $json.runAt }}"
+   },
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    -1520,
+    -80
+   ],
+   "id": "d651b31b-39e0-45f6-a2e3-c597a9237033",
+   "name": "Wait",
+   "webhookId": "511d1fb7-8f66-42dc-8b52-7373064c10b0"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "798003b6-e0d9-4021-814f-94faf2758414",
+       "leftValue": "={{ $json.shouldRunNow }}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    -1744,
+    -432
+   ],
+   "id": "799f53dc-6b0e-4e1b-a1da-47e0fef05d5d",
+   "name": "If1"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblHDo4RQrYvIkDyj",
+     "mode": "list",
+     "cachedResultName": "AI Employee Calls",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblHDo4RQrYvIkDyj"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "id": "={{ $('Airtable').item.json.id }}",
+      "AI Called?": "ai called",
+      "Times Called (Identifier)": "={{ $('Airtable').item.json['Times Called (Identifier)'] + 1 }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": false
+      },
+      {
+       "id": "Leads Number",
+       "displayName": "Leads Number",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Leads Name",
+       "displayName": "Leads Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Leads Email",
+       "displayName": "Leads Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Latest Convo History",
+       "displayName": "Latest Convo History",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Model ID (PRE)",
+       "displayName": "AI Model ID (PRE)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Model ID (APTR)",
+       "displayName": "AI Model ID (APTR)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Workspace ID",
+       "displayName": "Workspace ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Called?",
+       "displayName": "AI Called?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Call ID",
+       "displayName": "Call ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Recording",
+       "displayName": "Call Recording",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Transcript",
+       "displayName": "Call Transcript",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "DNC",
+       "displayName": "DNC",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Times Called (Identifier)",
+       "displayName": "Times Called (Identifier)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Follow Up Counter",
+       "displayName": "Follow Up Counter",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "SMS Latest Reply",
+       "displayName": "SMS Latest Reply",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "SMS Conversation History",
+       "displayName": "SMS Conversation History",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Status",
+       "displayName": "Call Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Answered Call [INTERESTED (Booked Appointment)]",
+         "value": "Answered Call [INTERESTED (Booked Appointment)]"
+        },
+        {
+         "name": "Answered Call [INTERESTED (Didn't Booked Appointment)]",
+         "value": "Answered Call [INTERESTED (Didn't Booked Appointment)]"
+        },
+        {
+         "name": "Answered Call [BUSY (Call-Back Requested)]",
+         "value": "Answered Call [BUSY (Call-Back Requested)]"
+        },
+        {
+         "name": "Answered Call [BUSY (No Call-Back Requested)]",
+         "value": "Answered Call [BUSY (No Call-Back Requested)]"
+        },
+        {
+         "name": "Answered Call [NOT INTERESTED]",
+         "value": "Answered Call [NOT INTERESTED]"
+        },
+        {
+         "name": "Answered Call [TURNED DNC]",
+         "value": "Answered Call [TURNED DNC]"
+        },
+        {
+         "name": "Answered Call [NONE]",
+         "value": "Answered Call [NONE]"
+        },
+        {
+         "name": "Call Failed",
+         "value": "Call Failed"
+        },
+        {
+         "name": "Reached Voicemail",
+         "value": "Reached Voicemail"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    48,
+    -432
+   ],
+   "id": "b881c66a-d9de-415a-a83f-973971ecc372",
+   "name": "Add Call Identifier"
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.synthflow.ai/v2/calls",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "REDACTED"
+      },
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={\n  \"model_id\": \"{{ $('Code in JavaScript').item.json.routeId }}\",\n  \"phone\": \"{{ $('Create a record').item.json.fields['Leads Number'] }}\",\n  \"name\": \"{{ $('Create a record').item.json.fields['Leads Name'] }}\",\n  \"lead_email\": \"{{ $('Create a record').item.json.fields['Leads Email'] }}\",\n  \"custom_variables\": [\n    {\n      \"key\": \"first_name\",\n      \"value\": \"{{ $('Create a record').first().json.fields['Leads Name'].trim().split(' ')[0] }}\"\n    },\n    {\n      \"key\": \"location\",\n      \"value\": \"{{ $('Create a record').item.json.fields['Latest Convo History'] }}\"\n    }\n  ]\n}",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.3,
+   "position": [
+    -176,
+    -432
+   ],
+   "id": "6af8ceef-5361-4574-b41a-1ab44b388ca6",
+   "name": "HTTP Request"
+  },
+  {
+   "parameters": {
+    "rules": {
+     "values": [
+      {
+       "conditions": {
+        "options": {
+         "caseSensitive": true,
+         "leftValue": "",
+         "typeValidation": "strict",
+         "version": 2
+        },
+        "conditions": [
+         {
+          "leftValue": "={{ $('Add Call Identifier').item.json.fields['Times Called (Identifier)'] }}",
+          "rightValue": 1,
+          "operator": {
+           "type": "number",
+           "operation": "equals"
+          },
+          "id": "eba214b5-7056-4a76-82dc-2d410195652e"
+         }
+        ],
+        "combinator": "and"
+       },
+       "renameOutput": true,
+       "outputKey": "FU = 1 - Keep Calling"
+      },
+      {
+       "conditions": {
+        "options": {
+         "caseSensitive": true,
+         "leftValue": "",
+         "typeValidation": "strict",
+         "version": 2
+        },
+        "conditions": [
+         {
+          "id": "79f77eb0-e36e-4035-acd5-e8a593d57ca1",
+          "leftValue": "={{ $('Add Call Identifier').item.json.fields['Times Called (Identifier)'] }}",
+          "rightValue": 2,
+          "operator": {
+           "type": "number",
+           "operation": "equals"
+          }
+         }
+        ],
+        "combinator": "and"
+       },
+       "renameOutput": true,
+       "outputKey": "FU = 2 - Keep Calling"
+      },
+      {
+       "conditions": {
+        "options": {
+         "caseSensitive": true,
+         "leftValue": "",
+         "typeValidation": "strict",
+         "version": 2
+        },
+        "conditions": [
+         {
+          "id": "61b52586-b007-4cab-9ad2-8005dcd3a8c6",
+          "leftValue": "={{ $('Add Call Identifier').item.json.fields['Times Called (Identifier)'] }}",
+          "rightValue": 3,
+          "operator": {
+           "type": "number",
+           "operation": "equals"
+          }
+         }
+        ],
+        "combinator": "and"
+       },
+       "renameOutput": true,
+       "outputKey": "FU = 3 - Keep Calling"
+      },
+      {
+       "conditions": {
+        "options": {
+         "caseSensitive": true,
+         "leftValue": "",
+         "typeValidation": "strict",
+         "version": 2
+        },
+        "conditions": [
+         {
+          "id": "ff5de85e-b670-47bf-8de0-d908990957b3",
+          "leftValue": "={{ $('Add Call Identifier').item.json.fields['Times Called (Identifier)'] }}",
+          "rightValue": 4,
+          "operator": {
+           "type": "number",
+           "operation": "equals"
+          }
+         }
+        ],
+        "combinator": "and"
+       },
+       "renameOutput": true,
+       "outputKey": "FU = 4 - Keep Calling"
+      },
+      {
+       "conditions": {
+        "options": {
+         "caseSensitive": true,
+         "leftValue": "",
+         "typeValidation": "strict",
+         "version": 2
+        },
+        "conditions": [
+         {
+          "id": "aa6522ba-406f-48d3-9d90-3f3ebfe715c5",
+          "leftValue": "={{ $('Add Call Identifier').item.json.fields['Times Called (Identifier)'] }}",
+          "rightValue": 4,
+          "operator": {
+           "type": "number",
+           "operation": "gt"
+          }
+         }
+        ],
+        "combinator": "and"
+       },
+       "renameOutput": true,
+       "outputKey": "FU > 4 - Keep Calling"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.switch",
+   "typeVersion": 3.3,
+   "position": [
+    272,
+    -480
+   ],
+   "id": "6ff0b582-b1d4-4cd9-a980-da368bc34218",
+   "name": "Switch"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblHDo4RQrYvIkDyj",
+     "mode": "list",
+     "cachedResultName": "AI Employee Calls",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblHDo4RQrYvIkDyj"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "id": "={{ $json.id }}",
+      "Follow Up Counter": "={{ $('Airtable').item.json['Follow Up Counter'] + 1 }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": false
+      },
+      {
+       "id": "Leads Number",
+       "displayName": "Leads Number",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Leads Name",
+       "displayName": "Leads Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Leads Email",
+       "displayName": "Leads Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Latest Convo History",
+       "displayName": "Latest Convo History",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Model ID (PRE)",
+       "displayName": "AI Model ID (PRE)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Workspace ID",
+       "displayName": "Workspace ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Called?",
+       "displayName": "AI Called?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call ID",
+       "displayName": "Call ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Recording",
+       "displayName": "Call Recording",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Transcript",
+       "displayName": "Call Transcript",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "DNC",
+       "displayName": "DNC",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Times Called (Identifier)",
+       "displayName": "Times Called (Identifier)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Follow Up Counter",
+       "displayName": "Follow Up Counter",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    496,
+    -624
+   ],
+   "id": "6bc01308-5673-4ba5-93a4-ac70b7dbec31",
+   "name": "Add Follow Up Tag1"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblHDo4RQrYvIkDyj",
+     "mode": "list",
+     "cachedResultName": "AI Employee Calls",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblHDo4RQrYvIkDyj"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "id": "={{ $json.id }}",
+      "Follow Up Counter": "={{ $('Airtable').item.json['Follow Up Counter'] + 1 }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": false
+      },
+      {
+       "id": "Leads Number",
+       "displayName": "Leads Number",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Leads Name",
+       "displayName": "Leads Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Leads Email",
+       "displayName": "Leads Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Latest Convo History",
+       "displayName": "Latest Convo History",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Model ID (PRE)",
+       "displayName": "AI Model ID (PRE)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Workspace ID",
+       "displayName": "Workspace ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Called?",
+       "displayName": "AI Called?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call ID",
+       "displayName": "Call ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Recording",
+       "displayName": "Call Recording",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Transcript",
+       "displayName": "Call Transcript",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "DNC",
+       "displayName": "DNC",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Times Called (Identifier)",
+       "displayName": "Times Called (Identifier)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Follow Up Counter",
+       "displayName": "Follow Up Counter",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    496,
+    -432
+   ],
+   "id": "39589961-9cef-447f-a2e2-bf4d0eaacc64",
+   "name": "Add Follow Up Tag2"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblHDo4RQrYvIkDyj",
+     "mode": "list",
+     "cachedResultName": "AI Employee Calls",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblHDo4RQrYvIkDyj"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "id": "={{ $json.id }}",
+      "Follow Up Counter": "={{ $('Airtable').item.json['Follow Up Counter'] + 1 }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": false
+      },
+      {
+       "id": "Leads Number",
+       "displayName": "Leads Number",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Leads Name",
+       "displayName": "Leads Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Leads Email",
+       "displayName": "Leads Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Latest Convo History",
+       "displayName": "Latest Convo History",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Model ID (PRE)",
+       "displayName": "AI Model ID (PRE)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Workspace ID",
+       "displayName": "Workspace ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Called?",
+       "displayName": "AI Called?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call ID",
+       "displayName": "Call ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Recording",
+       "displayName": "Call Recording",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Transcript",
+       "displayName": "Call Transcript",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "DNC",
+       "displayName": "DNC",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Times Called (Identifier)",
+       "displayName": "Times Called (Identifier)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Follow Up Counter",
+       "displayName": "Follow Up Counter",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    496,
+    -240
+   ],
+   "id": "a441a483-09d1-45d6-b0c0-b25a55288f61",
+   "name": "Add Follow Up Tag3"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblHDo4RQrYvIkDyj",
+     "mode": "list",
+     "cachedResultName": "AI Employee Calls",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblHDo4RQrYvIkDyj"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "id": "={{ $json.id }}",
+      "DNC": true,
+      "Follow Up Counter": "={{ $('Airtable').item.json['Follow Up Counter'] + 1 }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": false
+      },
+      {
+       "id": "Leads Number",
+       "displayName": "Leads Number",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Leads Name",
+       "displayName": "Leads Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Leads Email",
+       "displayName": "Leads Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Latest Convo History",
+       "displayName": "Latest Convo History",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Model ID (PRE)",
+       "displayName": "AI Model ID (PRE)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Workspace ID",
+       "displayName": "Workspace ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Called?",
+       "displayName": "AI Called?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call ID",
+       "displayName": "Call ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Recording",
+       "displayName": "Call Recording",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Transcript",
+       "displayName": "Call Transcript",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "DNC",
+       "displayName": "DNC",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Times Called (Identifier)",
+       "displayName": "Times Called (Identifier)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Follow Up Counter",
+       "displayName": "Follow Up Counter",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    496,
+    -48
+   ],
+   "id": "11c225f5-769d-4712-b4e2-8d804d348e64",
+   "name": "Add Follow Up Tag4"
+  },
+  {
+   "parameters": {
+    "amount": 24,
+    "unit": "hours"
+   },
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    720,
+    -368
+   ],
+   "id": "637ad6fd-4506-4399-bf30-bc156c01e464",
+   "name": "Wait1",
+   "webhookId": "e8040987-85bc-43d5-8bb7-c41d0d1e5851"
+  },
+  {
+   "parameters": {
+    "amount": 19,
+    "unit": "hours"
+   },
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    720,
+    -176
+   ],
+   "id": "8ba2190a-244d-4eaa-9f78-1ea581a7ecff",
+   "name": "Wait2",
+   "webhookId": "e8040987-85bc-43d5-8bb7-c41d0d1e5851"
+  },
+  {
+   "parameters": {
+    "amount": 44,
+    "unit": "hours"
+   },
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    720,
+    32
+   ],
+   "id": "5af915d4-6c6e-4835-9ff6-f0817fc2590b",
+   "name": "Wait3",
+   "webhookId": "e8040987-85bc-43d5-8bb7-c41d0d1e5851"
+  },
+  {
+   "parameters": {
+    "unit": "days"
+   },
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    720,
+    224
+   ],
+   "id": "d4eba200-7ae1-40cc-93ad-88e58f5168e9",
+   "name": "Wait4",
+   "webhookId": "e8040987-85bc-43d5-8bb7-c41d0d1e5851"
+  },
+  {
+   "parameters": {
+    "jsCode": "const text = $('Create a record').first().json.fields['Latest Convo History'] || '';\n\nconst routeId = /\\d/.test(text)\n  ? '360b4199-50b5-4d4c-9950-23ca26999b2c'   // full address (has a number)\n  : '7c69f0ff-746e-46fe-bbee-929bf3c9a588';  // city only\n\nreturn [\n  {\n    json: {\n      routeId,\n      latestConvoHistory: text,\n    },\n  },\n];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -1072,
+    -432
+   ],
+   "id": "6232ace7-fdc9-4707-b2b6-dddf5bcda4a4",
+   "name": "Code in JavaScript"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblHDo4RQrYvIkDyj",
+     "mode": "list",
+     "cachedResultName": "AI Employee Calls",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblHDo4RQrYvIkDyj"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "id": "={{ $json.id }}",
+      "Follow Up Counter": "={{ $('Airtable').item.json['Follow Up Counter'] + 1 }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": false
+      },
+      {
+       "id": "Leads Number",
+       "displayName": "Leads Number",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Leads Name",
+       "displayName": "Leads Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Leads Email",
+       "displayName": "Leads Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Latest Convo History",
+       "displayName": "Latest Convo History",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Model ID (PRE)",
+       "displayName": "AI Model ID (PRE)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Model ID (APTR)",
+       "displayName": "AI Model ID (APTR)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Workspace ID",
+       "displayName": "Workspace ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Called?",
+       "displayName": "AI Called?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call ID",
+       "displayName": "Call ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Recording",
+       "displayName": "Call Recording",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Transcript",
+       "displayName": "Call Transcript",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "DNC",
+       "displayName": "DNC",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Times Called (Identifier)",
+       "displayName": "Times Called (Identifier)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Follow Up Counter",
+       "displayName": "Follow Up Counter",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "SMS Latest Reply",
+       "displayName": "SMS Latest Reply",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "SMS Conversation History",
+       "displayName": "SMS Conversation History",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Status",
+       "displayName": "Call Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Answered Call [INTERESTED (Booked Appointment)]",
+         "value": "Answered Call [INTERESTED (Booked Appointment)]"
+        },
+        {
+         "name": "Answered Call [INTERESTED (Didn't Booked Appointment)]",
+         "value": "Answered Call [INTERESTED (Didn't Booked Appointment)]"
+        },
+        {
+         "name": "Answered Call [BUSY (Call-Back Requested)]",
+         "value": "Answered Call [BUSY (Call-Back Requested)]"
+        },
+        {
+         "name": "Answered Call [BUSY (No Call-Back Requested)]",
+         "value": "Answered Call [BUSY (No Call-Back Requested)]"
+        },
+        {
+         "name": "Answered Call [NOT INTERESTED]",
+         "value": "Answered Call [NOT INTERESTED]"
+        },
+        {
+         "name": "Answered Call [TURNED DNC]",
+         "value": "Answered Call [TURNED DNC]"
+        },
+        {
+         "name": "Answered Call [NONE]",
+         "value": "Answered Call [NONE]"
+        },
+        {
+         "name": "Call Failed",
+         "value": "Call Failed"
+        },
+        {
+         "name": "Reached Voicemail",
+         "value": "Reached Voicemail"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    496,
+    -816
+   ],
+   "id": "919e9f8f-85de-4aa8-99bc-7e57204bbd15",
+   "name": "Add Follow Up Tag"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "c1e45dd7-cb34-4808-a1a5-8423e31b4cf4",
+       "leftValue": "={{ $json['Call Status'] }}",
+       "rightValue": "Answered",
+       "operator": {
+        "type": "string",
+        "operation": "notContains"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.filter",
+   "typeVersion": 2.3,
+   "position": [
+    -624,
+    -432
+   ],
+   "id": "2e2520d3-d30b-4004-b961-62cf30c521e8",
+   "name": "Filter"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblHDo4RQrYvIkDyj",
+     "mode": "list",
+     "cachedResultName": "AI Employee Calls",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblHDo4RQrYvIkDyj"
+    },
+    "filterByFormula": "=RECORD_ID() = '{{ $('Create a record').item.json.id }}'",
+    "options": {
+     "fields": [
+      "Call Status",
+      "Leads Email",
+      "Follow Up Counter",
+      "Times Called (Identifier)"
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -848,
+    -432
+   ],
+   "id": "139e0b28-7fbc-43bc-87d5-b628467c538c",
+   "name": "Airtable",
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblHDo4RQrYvIkDyj",
+     "mode": "list",
+     "cachedResultName": "AI Employee Calls",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblHDo4RQrYvIkDyj"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Leads Number": "={{ $json.body.phone }}",
+      "Leads Name": "={{ $json.body.name }}",
+      "Leads Email": "={{ $json.body.email }}",
+      "Latest Convo History": "={{ $json.body.address || $json.body.city }}",
+      "Workspace ID": "melisa",
+      "Times Called (Identifier)": 0,
+      "Follow Up Counter": 0
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Leads Number",
+       "displayName": "Leads Number",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Leads Name",
+       "displayName": "Leads Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Leads Email",
+       "displayName": "Leads Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Latest Convo History",
+       "displayName": "Latest Convo History",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "AI Model ID (PRE)",
+       "displayName": "AI Model ID (PRE)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Model ID (APTR)",
+       "displayName": "AI Model ID (APTR)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Workspace ID",
+       "displayName": "Workspace ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "AI Called?",
+       "displayName": "AI Called?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call ID",
+       "displayName": "Call ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Recording",
+       "displayName": "Call Recording",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Transcript",
+       "displayName": "Call Transcript",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "DNC",
+       "displayName": "DNC",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Times Called (Identifier)",
+       "displayName": "Times Called (Identifier)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Follow Up Counter",
+       "displayName": "Follow Up Counter",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "SMS Latest Reply",
+       "displayName": "SMS Latest Reply",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "SMS Conversation History",
+       "displayName": "SMS Conversation History",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Status",
+       "displayName": "Call Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Answered Call [INTERESTED (Booked Appointment)]",
+         "value": "Answered Call [INTERESTED (Booked Appointment)]"
+        },
+        {
+         "name": "Answered Call [INTERESTED (Didn't Booked Appointment)]",
+         "value": "Answered Call [INTERESTED (Didn't Booked Appointment)]"
+        },
+        {
+         "name": "Answered Call [BUSY (Call-Back Requested)]",
+         "value": "Answered Call [BUSY (Call-Back Requested)]"
+        },
+        {
+         "name": "Answered Call [BUSY (No Call-Back Requested)]",
+         "value": "Answered Call [BUSY (No Call-Back Requested)]"
+        },
+        {
+         "name": "Answered Call [NOT INTERESTED]",
+         "value": "Answered Call [NOT INTERESTED]"
+        },
+        {
+         "name": "Answered Call [TURNED DNC]",
+         "value": "Answered Call [TURNED DNC]"
+        },
+        {
+         "name": "Answered Call [NONE]",
+         "value": "Answered Call [NONE]"
+        },
+        {
+         "name": "Call Failed",
+         "value": "Call Failed"
+        },
+        {
+         "name": "Reached Voicemail",
+         "value": "Reached Voicemail"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -2192,
+    240
+   ],
+   "id": "05245478-6b49-416f-8070-489c3f3feab9",
+   "name": "Create a record"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "c1e45dd7-cb34-4808-a1a5-8423e31b4cf4",
+       "leftValue": "={{ $json['DNC'] }}",
+       "rightValue": "answered",
+       "operator": {
+        "type": "boolean",
+        "operation": "false",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.filter",
+   "typeVersion": 2.3,
+   "position": [
+    -400,
+    -432
+   ],
+   "id": "8f71e479-b72c-43aa-9e57-569c284b20ae",
+   "name": "Filter1"
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

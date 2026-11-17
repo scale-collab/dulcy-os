@@ -1,0 +1,81 @@
+{
+ "id": "oLZaK94YPj11ICf1",
+ "name": "Crunchbase Scraper",
+ "active": true,
+ "isArchived": false,
+ "versionId": "ab7ac01e-3eee-4434-b246-4d1a3241b15e",
+ "triggerCount": 1,
+ "createdAt": "2025-12-03T15:06:32.888Z",
+ "updatedAt": "2026-11-17T16:40:13.733Z",
+ "settings": {
+  "executionOrder": "v1",
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Receive Crunchbase Webhool": {
+   "main": [
+    [
+     {
+      "node": "Send Crunchbase Scraper",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    0,
+    -32
+   ],
+   "id": "5ab8fce1-288a-40b7-b5e5-4e1728ae57f5",
+   "name": "Receive Crunchbase Webhool"
+  },
+  {
+   "parameters": {
+    "authentication": "oAuth2",
+    "resource": "message",
+    "guildId": {
+     "__rl": true,
+     "value": "={{ $json.body.guildID[0] }}",
+     "mode": "id"
+    },
+    "channelId": {
+     "__rl": true,
+     "value": "1463931273172095048",
+     "mode": "list",
+     "cachedResultName": "crunchbase-scrape-requests",
+     "cachedResultUrl": "https://discord.com/channels/1349530994738466816/1463931273172095048"
+    },
+    "content": "=User: {{ $json.body['User Name'][0] }} requested for the crunchbase scraper at: {{ $json.body['Record Created at'] }}. ",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.discord",
+   "typeVersion": 2,
+   "position": [
+    208,
+    -32
+   ],
+   "id": "0e6bd2cb-b2be-4b12-96af-5f183c643337",
+   "name": "Send Crunchbase Scraper",
+   "webhookId": "2f2ed6dd-1b01-4451-940f-d6e04de8bb6e"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

@@ -1,0 +1,232 @@
+{
+ "id": "5hUtDNZ2AkPQEy0wZRPEi",
+ "name": "Instantly Inbox Placement Test Delete Campaigns and Upload Results",
+ "active": true,
+ "isArchived": false,
+ "versionId": "9481542a-5f56-449f-b789-2cafea6a754c",
+ "triggerCount": 1,
+ "createdAt": "2026-04-11T16:42:13.668Z",
+ "updatedAt": "2026-11-17T16:40:34.377Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Webhook": {
+   "main": [
+    [
+     {
+      "node": "Wait",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "HTTP Request": {
+   "main": [
+    [
+     {
+      "node": "Append or update row in sheet",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Append or update row in sheet": {
+   "main": [
+    [
+     {
+      "node": "HTTP Request1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wait": {
+   "main": [
+    [
+     {
+      "node": "HTTP Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    0,
+    0
+   ],
+   "id": "f41c9d7d-5c41-4dba-be04-e2f7a6afc00d",
+   "name": "Webhook"
+  },
+  {
+   "parameters": {
+    "url": "=https://app.emailguard.io/api/v1/inbox-placement-tests/{{ $('Webhook').item.json.headers.uuid }}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "REDACTED"
+      },
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.3,
+   "position": [
+    416,
+    0
+   ],
+   "id": "7ec2d7dc-da37-4c25-84fb-cf819fb0640d",
+   "name": "HTTP Request"
+  },
+  {
+   "parameters": {
+    "operation": "appendOrUpdate",
+    "documentId": {
+     "__rl": true,
+     "value": "1HQAvTcabwThgtb2go3rLfiUAkKsSH6wy0Mbk2iGo350",
+     "mode": "list",
+     "cachedResultName": "Twenty West Media Instantly Audit Files",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HQAvTcabwThgtb2go3rLfiUAkKsSH6wy0Mbk2iGo350/edit?usp=drivesdk"
+    },
+    "sheetName": {
+     "__rl": true,
+     "value": 1848916055,
+     "mode": "list",
+     "cachedResultName": "Inbox Placement Test Scores",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HQAvTcabwThgtb2go3rLfiUAkKsSH6wy0Mbk2iGo350/edit#gid=1848916055"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Email": "={{ $('Webhook').item.json.headers.email }}",
+      "Status": "={{ $json.data.status }}",
+      "Score": "={{ $json.data.overall_score }}",
+      "Date": "={{ $json.data.completed_at }}"
+     },
+     "matchingColumns": [
+      "Email"
+     ],
+     "schema": [
+      {
+       "id": "Email",
+       "displayName": "Email",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "removed": false
+      },
+      {
+       "id": "Status",
+       "displayName": "Status",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Score",
+       "displayName": "Score",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Date",
+       "displayName": "Date",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.7,
+   "position": [
+    624,
+    0
+   ],
+   "id": "b4735643-6220-4a63-b504-304e4a4df02f",
+   "name": "Append or update row in sheet"
+  },
+  {
+   "parameters": {
+    "method": "DELETE",
+    "url": "=https://api.instantly.ai/api/v2/campaigns/{{ $('Webhook').item.json.headers.campaignid }}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "REDACTED"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.3,
+   "position": [
+    832,
+    0
+   ],
+   "id": "286f3aea-98ce-45b6-8a71-5bb3afd3594d",
+   "name": "HTTP Request1"
+  },
+  {
+   "parameters": {
+    "amount": 45,
+    "unit": "minutes"
+   },
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    208,
+    0
+   ],
+   "id": "9c83815a-2220-41f3-9d97-915104127fc6",
+   "name": "Wait",
+   "webhookId": "430a90ea-134e-422f-ba99-84865f74a2c7"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

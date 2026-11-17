@@ -1,0 +1,1169 @@
+{
+ "id": "DulcyReplyPilotSenderV4",
+ "name": "[Dulcy Reply Agent] Dulcy approved sender v4",
+ "active": true,
+ "isArchived": false,
+ "versionId": "b5e7214b-d2d4-4f5b-b7b5-b40a13cf45f9",
+ "triggerCount": 1,
+ "createdAt": "2026-08-24T03:22:17.328Z",
+ "updatedAt": "2026-11-17T16:42:45.230Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Every Minute": {
+   "main": [
+    [
+     {
+      "node": "Get Approved Replies",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Approved Replies": {
+   "main": [
+    [
+     {
+      "node": "One Reply Per Item",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "One Reply Per Item": {
+   "main": [
+    [
+     {
+      "node": "Prepare Send",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Send": {
+   "main": [
+    [
+     {
+      "node": "Get Send Courtesy History",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Prepare Learning Candidate",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Lock Reply": {
+   "main": [
+    [
+     {
+      "node": "Verify Sending State",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Send Workspace": {
+   "main": [
+    [
+     {
+      "node": "Refresh Conversation Thread",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Refresh Conversation Thread": {
+   "main": [
+    [
+     {
+      "node": "Read Authoritative Sender",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Check for Newer Reply": {
+   "main": [
+    [
+     {
+      "node": "Thread Still Current?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Thread Still Current?": {
+   "main": [
+    [
+     {
+      "node": "Build EmailBison Send",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Return Stale Reply to Review",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build EmailBison Send": {
+   "main": [
+    [
+     {
+      "node": "Recheck Offered Calendar Times",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Send Threaded Reply": {
+   "main": [
+    [
+     {
+      "node": "Parse Send Result",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Parse Send Result": {
+   "main": [
+    [
+     {
+      "node": "Save Submission Ledger",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Save Send Result": {
+   "main": [
+    [
+     {
+      "node": "Prepare Send Event",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Send Event": {
+   "main": [
+    [
+     {
+      "node": "Log Send Event",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Current Send Settings": {
+   "main": [
+    [
+     {
+      "node": "Enforce Current Send Settings",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Enforce Current Send Settings": {
+   "main": [
+    [
+     {
+      "node": "Get Send Workspace",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Send Courtesy History": {
+   "main": [
+    [
+     {
+      "node": "Get Current Send Settings",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Learning Candidate": {
+   "main": [
+    [
+     {
+      "node": "Save Learning Candidate",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Claim Reply Once": {
+   "main": [
+    [
+     {
+      "node": "Require Acquired Claim",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Require Acquired Claim": {
+   "main": [
+    [
+     {
+      "node": "Recheck Approved Record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Verify Sending State": {
+   "main": [
+    [
+     {
+      "node": "Send Threaded Reply",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Save Submission Ledger": {
+   "main": [
+    [
+     {
+      "node": "Restore Submission Result",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Restore Submission Result": {
+   "main": [
+    [
+     {
+      "node": "Read Inbox After Submission",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Recheck Approved Record": {
+   "main": [
+    [
+     {
+      "node": "Verify Approval Unchanged",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Verify Approval Unchanged": {
+   "main": [
+    [
+     {
+      "node": "Lock Reply",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read Inbox After Submission": {
+   "main": [
+    [
+     {
+      "node": "Protect Newer Inbox Work",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Protect Newer Inbox Work": {
+   "main": [
+    [
+     {
+      "node": "Save Send Result",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Recheck Offered Calendar Times": {
+   "main": [
+    [
+     {
+      "node": "Require Available Offered Times",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Require Available Offered Times": {
+   "main": [
+    [
+     {
+      "node": "Claim Reply Once",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read Authoritative Sender": {
+   "main": [
+    [
+     {
+      "node": "Verify Authoritative Sender",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Verify Authoritative Sender": {
+   "main": [
+    [
+     {
+      "node": "Check for Newer Reply",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "content": "# Dulcy Reply Agent V1 - Approval Sender\n\nOnly sends records where **Dulcy Reply Agent Human Action** is Approve Draft or Send Edited Reply.\n\nIt locks the record, checks the EmailBison thread for a newer inbound reply, sends, then writes an audit event.\n\nKeep inactive until the intake workflow passes synthetic tests.",
+    "height": 300,
+    "width": 520
+   },
+   "id": "675d1f3c-1e58-4766-8289-8ad1b00aa865",
+   "name": "READ BEFORE ACTIVATING",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    2128,
+    720
+   ]
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "minutes",
+       "minutesInterval": 1
+      }
+     ]
+    }
+   },
+   "id": "6a933a1f-eadd-4473-8a16-b3970f769859",
+   "name": "Every Minute",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    2176,
+    1152
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "filterByFormula",
+       "value": "AND({Dulcy Reply Agent Workspace Record ID}='recJx0WwHsdsvcVIN',AND({Reply Ownership}!='Handoff',NOT({DNC}),NOT({Client Handling}),OR({Dulcy Reply Agent State}='Approved',{Dulcy Reply Agent State}='Needs Approval'),OR({Dulcy Reply Agent Human Action}='Approve Draft',{Dulcy Reply Agent Human Action}='Send Edited Reply'),OR({Dulcy Reply Agent Due At}=BLANK(),IS_BEFORE({Dulcy Reply Agent Due At},NOW()))))"
+      },
+      {
+       "name": "maxRecords",
+       "value": "1"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "c60cb57e-dfe7-4b20-a50d-6a9f99f10069",
+   "name": "Get Approved Replies",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2368,
+    1152
+   ]
+  },
+  {
+   "parameters": {
+    "fieldToSplitOut": "records",
+    "options": {}
+   },
+   "id": "2656f912-bea7-45cb-b314-5644452e7f92",
+   "name": "One Reply Per Item",
+   "type": "n8n-nodes-base.splitOut",
+   "typeVersion": 1,
+   "position": [
+    2576,
+    1152
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "function unresolvedReplyPlaceholder(value){return /\\{\\{[^{}]+\\}\\}|\\{(?:[A-Za-z_][\\w .-]{0,79}|[^{}\\n]*\\|[^{}\\n]*)\\}|\\[(?:insert|link|name|price|asset|time|tbd|approved|first[_ ]?name|last[_ ]?name|company|sender)[^\\]]*\\]|%(?:FIRST_NAME|LAST_NAME|COMPANY|EMAIL)%/i.test(String(value||''));}\nfunction latestOnly(value){return String(value||'').split(/<blockquote\\b|<div[^>]+(?:gmail_quote|yahoo_quoted)/i)[0].replace(/<br\\s*\\/?>|<\\/p>/gi,'\\n').replace(/<[^>]*>/g,' ').split(/\\n\\s*(?:On [\\s\\S]{0,500}?wrote:|From:|_{5,}|-{5,}|>)/i)[0].replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').trim();}\n\nconst record = $json;\nconst f = record.fields || {};\nif(f.DNC===true||f['Client Handling']===true)throw new Error('Thread is suppressed or client-owned.');\nif(!['Approved','Needs Approval'].includes(String(f['Dulcy Reply Agent State']||'')))throw new Error('Reply is not ready for sending.');\nconst due=f['Dulcy Reply Agent Due At'];if(due&&(!Number.isFinite(Date.parse(due))||Date.parse(due)>Date.now()))throw new Error('Follow-up is not due.');\nif(String(f['Dulcy Reply Agent Workspace Record ID']||'')!=='recJx0WwHsdsvcVIN')throw Error('Outside Dulcy sender pilot');\nif(f['Opportunity Status']==='WON'||['Booked Meeting','Completed Meeting','Closed Deal'].includes(f['Pipeline Stage']))throw Error('Booked leads need meeting support, not sales follow-ups');\nif(!f['Dulcy Reply Agent Event ID'])throw Error('Missing original event identity');\nconst action = String(f['Dulcy Reply Agent Human Action'] || '');\nif (String(f['Reply Ownership'] || '') === 'Handoff') throw new Error('Client owns this thread; Handoff conversations cannot be sent by Dulcy.');\nif (!['Approve Draft','Send Edited Reply'].includes(action)) throw new Error('Record is not approved for sending.');\nif (['Sent','Suppressed','Thread Complete'].includes(String(f['Dulcy Reply Agent State'] || ''))) throw new Error('Record is not sendable: ' + f['Dulcy Reply Agent State']);\nconst body = action === 'Send Edited Reply' ? String(f['Custom Reply'] || '').trim() : String(f['Dulcy Reply Agent Draft'] || '').trim();\nif (!body) throw new Error('Approved reply body is blank.');if(unresolvedReplyPlaceholder(body))throw Error('Unresolved placeholder or spintax in approved reply; review before sending.');\nif (/\\b(unsubscribe|remove me|take me off|stop emailing|do not contact)\\b/i.test(latestOnly(f['Latest Reply']))) throw new Error('Hard suppression detected in the latest reply.');\nif(/^(stop|unsubscribe)[.!\\s]*$/i.test(latestOnly(f['Latest Reply'])))throw new Error('Explicit stop request.');\nconst jobKey='reply:'+f['Dulcy Reply Agent Event ID']+':'+String(f['Follow Up Counter']||0);\nconst conversationKey='emailbison:'+String(f['Workspace ID (Bison)']||f['Dulcy Reply Agent Workspace Record ID']||'')+':'+String(f.campaign_id||'')+':'+String(f['Leads Email']||'').trim().toLowerCase();\nreturn [{json:{jobKey,conversationKey,recordId:record.id,fields:f,replyUuid:String(f.reply_uuid||''),replyId:String(f.reply_message_id || f.reply_uuid || ''),workspaceRecordId:String(f['Dulcy Reply Agent Workspace Record ID'] || ''),senderEmailId:String(f['Dulcy Reply Agent Sender Email ID'] || ''),leadEmail:String(f['Leads Email'] || ''),leadName:String(f['Leads Name'] || ''),body,attempt:Number(f['Dulcy Reply Agent Attempt Count'] || 0)+1}}];"
+   },
+   "id": "5ab222bf-04bb-49dd-b847-1552dc222b4e",
+   "name": "Prepare Send",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2768,
+    1152
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY/' + $json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({fields:{'Dulcy Reply Agent State':'Sending','Dulcy Reply Agent Attempt Count':$json.attempt,'Dulcy Reply Agent Updated At':new Date().toISOString()},typecast:true}) }}",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "7da351ad-a1bb-46b0-a6ee-4460bf568f50",
+   "name": "Lock Reply",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2976,
+    1152
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/Workspace%20IDs/' + $('Prepare Send').first().json.workspaceRecordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "95212841-2b17-406c-962c-a0bc01f3b693",
+   "name": "Get Send Workspace",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    3168,
+    1152
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://send.dulcy.io/api/replies/' + $('Prepare Send').first().json.replyId + '/conversation-thread' }}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "={{ 'Bearer ' + $json.fields['EmailBison API'] }}"
+      },
+      {
+       "name": "Accept",
+       "value": "application/json"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "6757a545-16a2-40b1-b006-890bdebe0694",
+   "name": "Refresh Conversation Thread",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    3376,
+    1152
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "function emailAddress(value){const s=String(value||'').trim().toLowerCase();return /^[^\\s<>@]+@[^\\s<>@]+\\.[^\\s<>@]+$/.test(s)?s:'';}\nfunction verifyReplyIdentity({thread,replyId,expectedEmail,senderEmailId,replyUuid}){\n const root=thread?.data??thread;if(!root||thread.error||root.success===false)return {valid:false,reason:'Conversation unavailable'};\n if(thread.meta?.next_page_url||root.next_page_url||thread.links?.next)return {valid:false,reason:'Conversation pagination incomplete'};\n const rows=[];const walk=x=>{if(!x||typeof x!=='object')return;if(Array.isArray(x)){x.forEach(walk);return;}if(x.id||x.uuid)rows.push(x);for(const k of ['current_reply','older_messages','newer_messages','previous_messages','messages','thread','replies'])walk(x[k]);};walk(root);\n const matches=rows.filter(r=>String(r.id??r.uuid)===String(replyId));if(matches.length>1&&new Set(matches.map(r=>JSON.stringify([r.uuid,r.from_email_address,r.sender_email_id,r.folder]))).size>1)return {valid:false,reason:'Conflicting provider identities for reply'};const row=matches[0];if(!row)return {valid:false,reason:'Reply missing from current thread'};\n if(!replyUuid||String(row.uuid||'')!==String(replyUuid))return {valid:false,reason:'Provider reply UUID mismatch'};\n if(['sent','outbox'].includes(String(row.folder||row.direction||'').toLowerCase())||row.is_sent===true)return {valid:false,reason:'Expected inbound reply'};\n const author=emailAddress(row.from_email_address||row.from_email||row.from?.email_address||row.from?.email);if(!author)return {valid:false,reason:'Reply author missing or invalid'};\n if(author!==emailAddress(expectedEmail))return {valid:false,reason:'Reply author differs from approved recipient'};\n const actualSender=row.sender_email_id??row.sender_email?.id;\n if(!senderEmailId||actualSender==null||String(actualSender)!==String(senderEmailId))return {valid:false,reason:'Original sender mismatch'};\n return {valid:true,author,replyId:String(replyId)};\n}\n\nconst source = $('Verify Authoritative Sender').first().json.intake;\nconst root = $json?.data ?? $json;\nconst rows=[];\nconst visit=value=>{if(!value||typeof value!=='object')return;if(Array.isArray(value)){value.forEach(visit);return;}if(value.text_body||value.html_body||value.email_body)rows.push(value);for(const key of ['previous_messages','older_messages','newer_messages','messages','thread','replies','data','current_reply'])visit(value[key]);};\nvisit(root);\nconst inbound=rows.filter(row=>!['sent','outbox'].includes(String(row.folder||row.direction||'').toLowerCase())&&row.is_sent!==true).sort((a,b)=>String(a.date_received||a.created_at||'').localeCompare(String(b.date_received||b.created_at||'')));\nconst latest=inbound.at(-1);\nconst latestId=String(latest?.id ?? latest?.uuid ?? '');\nconst draftTime=Date.parse(source.fields['Dulcy Reply Agent Updated At']||'');\nconst hasNewOutbound=rows.some(r=>(['sent','outbox'].includes(String(r.folder||r.direction||'').toLowerCase())||r.is_sent===true)&&Date.parse(r.sent_at||r.date_received||r.created_at||'')>=draftTime);\nconst incomplete=Boolean($json.meta?.next_page_url||root.next_page_url||$json.links?.next)||!Number.isFinite(draftTime);\nconst identity=verifyReplyIdentity({thread:$json,replyId:source.replyId,expectedEmail:source.leadEmail,senderEmailId:source.senderEmailId,replyUuid:source.replyUuid});\nconst stale=!identity.valid||hasNewOutbound||incomplete||!latestId || latestId!==source.replyId || Boolean($json.error) || root?.success===false;\nreturn [{json:{...source,stale,identity,latestId,threadCount:rows.length}}];"
+   },
+   "id": "b19228f6-f992-45da-ac0c-12f987a8e73f",
+   "name": "Check for Newer Reply",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3568,
+    1152
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "a5331477-774d-46da-a88f-823a90f0a7b3",
+       "leftValue": "={{ $json.stale }}",
+       "rightValue": false,
+       "operator": {
+        "type": "boolean",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "83f7235a-c37b-48c7-b7cb-da52191e5d26",
+   "name": "Thread Still Current?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    3776,
+    1152
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "function copyReplyType(value) {\n  const key=String(value?.name||value||'').trim().toLowerCase().replace(/[_-]+/g,' ').replace(/\\s+/g,' ');\n  const aliases={'positive reply':'interested','positive':'interested','meeting requested':'meeting request','meeting booked':'meeting request','ooo':'out of office','information request':'info request','referral':'referred','follow up later':'check back later'};\n  return aliases[key]||key;\n}\nfunction includeWorkspaceCopy(config,kind,type) {\n  const scope=config[kind+'Scope']||'all';\n  if(scope==='all')return true;\n  if(scope!=='selected')throw Error('Invalid '+kind.toUpperCase()+' reply-type setting');\n  const types=config[kind+'Types'];\n  if(!Array.isArray(types)||!types.length||types.some(t=>typeof t!=='string'||!t.trim()))throw Error('Choose at least one '+kind.toUpperCase()+' reply type');\n  return types.map(copyReplyType).includes(copyReplyType(type));\n}\n\nfunction parseRecipients(value) {\n  if (value == null || value === '') return [];\n  if (!Array.isArray(value) && typeof value !== 'string') throw Error('Recipient list must contain email addresses');\n  const entries=(Array.isArray(value)?value:[value]).flatMap(v=>{\n    if(typeof v!=='string')throw Error('Recipient must be an email address');\n    return v.split(/[,;\\n]+/);\n  }).map(v=>v.trim()).filter(Boolean);\n  if(entries.some(v=>! /^[^\\s@<>]+@[^\\s@<>]+\\.[^\\s@<>]+$/.test(v)))throw Error('Invalid CC/BCC email address');\n  return [...new Set(entries.map(v=>v.toLowerCase()))];\n}\nfunction resolveCopyRecipients(settings, source) {\n  if(settings['Workspace Record ID']!==source.workspaceRecordId)throw Error('CC/BCC workspace mismatch');\n  let config=settings['CC BCC Settings JSON']||{};\n  if(typeof config==='string'){try{config=JSON.parse(config)}catch{throw Error('Invalid CC/BCC settings')}}\n  if(!config||typeof config!=='object'||Array.isArray(config))throw Error('Invalid CC/BCC settings');\n  const cc=config.ccEnabled===true?parseRecipients(config.cc):[];\n  const bcc=config.bccEnabled===true?parseRecipients(config.bcc):[];\n  if(config.ccEnabled===true&&!cc.length)throw Error('Auto CC is enabled without a recipient');\n  if(config.bccEnabled===true&&!bcc.length)throw Error('Auto BCC is enabled without a recipient');\n  const type=source.fields?.['Dulcy Reply Agent Intent']||source.fields?.['Lead Status']||'';\n  const selectedCC=config.ccEnabled===true&&includeWorkspaceCopy(config,'cc',type)?cc:[];\n  const selectedBCC=config.bccEnabled===true&&includeWorkspaceCopy(config,'bcc',type)?bcc:[];\n  const manual=parseRecipients(source.fields?.['CC (Optional)']);\n  const aliases=[source.leadEmail,source.verifiedSender?.email,...(Array.isArray(source.verifiedSender?.aliases)?source.verifiedSender.aliases:[])].filter(Boolean).map(v=>String(v).trim().toLowerCase());\n  const forbidden=new Set(aliases);\n  const requestedCC=[...selectedCC,...manual];\n  const requestedBCC=[...selectedBCC];\n  const contaminated=[...requestedCC,...requestedBCC].filter(v=>forbidden.has(v));\n  if(contaminated.length)throw Error('CC/BCC contains the prospect, sending mailbox, or a known sender alias');\n  const allCC=[...new Set(requestedCC)];\n  const allBCC=[...new Set(requestedBCC)].filter(v=>!allCC.includes(v));\n  return {cc_emails:allCC.map(email_address=>({email_address})),bcc_emails:allBCC.map(email_address=>({email_address}))};\n}\n\nfunction unresolvedReplyPlaceholder(value){return /\\{\\{[^{}]+\\}\\}|\\{(?:[A-Za-z_][\\w .-]{0,79}|[^{}\\n]*\\|[^{}\\n]*)\\}|\\[(?:insert|link|name|price|asset|time|tbd|approved|first[_ ]?name|last[_ ]?name|company|sender)[^\\]]*\\]|%(?:FIRST_NAME|LAST_NAME|COMPANY|EMAIL)%/i.test(String(value||''));}\n\nconst source=$json;if(unresolvedReplyPlaceholder(source.body))throw Error('Unresolved reply placeholder');if(!source.verifiedSender||source.verifiedSender.id!==String(source.senderEmailId)||source.verifiedSender.workspaceRecordId!==source.workspaceRecordId||source.verifiedSender.email===String(source.leadEmail).trim().toLowerCase())throw Error('Authoritative sender verification required');if(source.identity?.valid!==true||source.identity.author!==String(source.leadEmail).toLowerCase())throw Error('Verified current reply author required');\nconst payload={message:'<p>'+source.body.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\\n/g,'<br>')+'</p>',content_type:'html',sender_email_id:Number(source.senderEmailId),to_emails:[{name:source.leadName,email_address:source.leadEmail}],reply_all:false,inject_previous_email_body:true};\nif(!source.replyId||!source.senderEmailId||!source.leadEmail)throw new Error('Missing EmailBison reply, sender, or lead identity.');\nconst current=$('Get Current Send Settings').first().json;\nif(!Array.isArray(current.records)||current.records.length!==1)throw Error('Unique workspace recipient settings required');\nObject.assign(payload,resolveCopyRecipients(current.records[0].fields,source));\nreturn [{json:{...source,sendPayload:payload}}];"
+   },
+   "id": "c313dfce-5370-4dbe-808a-f4bc077bc0a9",
+   "name": "Build EmailBison Send",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3968,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ 'https://send.dulcy.io/api/replies/' + $json.replyId + '/reply' }}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "={{ 'Bearer ' + $('Get Send Workspace').first().json.fields['EmailBison API'] }}"
+      },
+      {
+       "name": "Accept",
+       "value": "application/json"
+      },
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json.sendPayload) }}",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     },
+     "timeout": 90000
+    }
+   },
+   "id": "1ba16b6a-be53-4d85-8374-c57b50ecb264",
+   "name": "Send Threaded Reply",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    4176,
+    1040
+   ],
+   "retryOnFail": false,
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "jsCode": "const sendWindow=function sendWindow(settings,at){\n const date=new Date(at);if(!Number.isFinite(date.getTime()))return {allowed:false,reason:'Invalid clock'};\n const zone=settings.Timezone||'America/New_York';let p;try{p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',weekday:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(date).map(x=>[x.type,x.value]));}catch{return {allowed:false,reason:'Invalid timezone'};}\n if(settings['Exclude Weekends']&&['Sat','Sun'].includes(p.weekday))return {allowed:false,reason:'Weekend'};\n const y=+p.year,m=+p.month,d=+p.day,key=`${y}-${p.month}-${p.day}`;\n if(settings['Exclude US Holidays']){\n  const holidays=new Set();const add=(yy,mm,dd)=>{const dt=new Date(Date.UTC(yy,mm-1,dd));if(dt.getUTCDay()===6)dt.setUTCDate(dt.getUTCDate()-1);if(dt.getUTCDay()===0)dt.setUTCDate(dt.getUTCDate()+1);holidays.add(dt.toISOString().slice(0,10));};\n  const nth=(mm,dow,n)=>{const dt=new Date(Date.UTC(y,mm-1,1));dt.setUTCDate(1+(dow-dt.getUTCDay()+7)%7+7*(n-1));holidays.add(dt.toISOString().slice(0,10));};\n  for(const yy of [y,y+1])add(yy,1,1);for(const [mm,dd] of [[6,19],[7,4],[11,11],[12,25]])add(y,mm,dd);\n  nth(1,1,3);nth(2,1,3);nth(9,1,1);nth(10,1,2);nth(11,4,4);\n  const memorial=new Date(Date.UTC(y,5,0));memorial.setUTCDate(memorial.getUTCDate()-(memorial.getUTCDay()+6)%7);holidays.add(memorial.toISOString().slice(0,10));\n  if(holidays.has(key))return {allowed:false,reason:'Observed US federal holiday'};\n }\n const time=v=>{if(!/^\\d{2}:\\d{2}$/.test(String(v)))return NaN;const [h,m]=v.split(':').map(Number);return h<24&&m<60?h*60+m:NaN};const start=time(settings['Office Start']),end=time(settings['Office End']),now=(+p.hour)*60+(+p.minute);\n if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start)return {allowed:false,reason:'Missing or unsupported office hours'};\n return {allowed:now>=start&&now<end,reason:now>=start&&now<end?'Within office hours':'Outside office hours'};\n};\nfunction confirmedSendProjection({record,settings,provider,now=Date.now()}){\n const f=record?.fields||{},stop=reason=>({apply:false,reason,fields:{}}),id=String(provider?.id||provider?.uuid||'');\n if(!record?.id||!id||!['sent','delivered'].includes(String(provider.folder||provider.status||'').toLowerCase()))return stop('Provider has not confirmed sending');\n if(!settings['Workspace Record ID']||settings['Workspace Record ID']!==f['Dulcy Reply Agent Workspace Record ID'])return stop('Client identity mismatch');\n let prior;try{prior=JSON.parse(f['Dulcy Reply Agent Policy Decision']||'{}');}catch{return stop('Invalid policy record');}\n if(prior.lastConfirmedProviderMessageId===id)return {apply:false,alreadyApplied:true,reason:'Already projected',fields:{}};\n const at=Date.parse(provider.sent_at||provider.date_sent||(['sent','delivered'].includes(String(provider.folder||provider.status||'').toLowerCase())&&String(provider.type||'').toLowerCase()==='outgoing email'?provider.date_received:'')||'');if(!Number.isFinite(at)||at>now+60000)return stop('Missing or invalid provider send timestamp');\n const count=Number(f['Follow Up Counter']||0);if(!Number.isInteger(count)||count<0)return stop('Invalid follow-up count');\n const isFollowup=Number.isInteger(prior.followupStep);if(isFollowup&&prior.followupStep!==count+1)return stop('Follow-up count changed');\n const nextCount=count+(isFollowup?1:0),policy={...prior,lastConfirmedProviderMessageId:id,followupAnchorMessageId:id,followupStep:null,autoSend:false};\n const fields={'Dulcy Reply Agent State':'Sent','Dulcy Reply Agent Human Action':'None','Dulcy Reply Agent Draft':'','Dulcy Reply Agent Sent At':new Date(at).toISOString(),'Dulcy Reply Agent Due At':null,'Follow Up Counter':nextCount,'Dulcy Reply Agent Policy Decision':JSON.stringify(policy),'Dulcy Reply Agent Last Error':''};\n const noFollow=f.DNC||f['Client Handling']||f['Reply Ownership']==='Handoff'||['WON','LOST'].includes(f['Opportunity Status'])||['Booked Meeting','Completed Meeting','Closed Deal'].includes(f['Pipeline Stage'])||settings.Enabled!==true||settings['Reply Handoff Mode']==='All Replies'||settings['Reply Handoff Mode']==='After First Agent Reply'||['Not Interested','Do Not Contact','Automatic Reply','Referred','Wrong Person'].includes(f['Dulcy Reply Agent Intent']);\n if(noFollow)return {apply:true,fields,scheduled:false};\n let plan;try{plan=JSON.parse(settings['Follow-up Plan JSON']||'{}');}catch{fields['Dulcy Reply Agent Last Error']='Sent, but follow-up plan is invalid.';return {apply:true,fields,scheduled:false};}\n if(plan.enabled!==true||!Array.isArray(plan.steps)||nextCount>=plan.steps.length)return {apply:true,fields,scheduled:false};\n const step=plan.steps[nextCount],delay=Number(step.delay),unit=String(step.unit||'');if(!Number.isFinite(delay)||delay<=0||delay>90||!['days','hours'].includes(unit)){fields['Dulcy Reply Agent Last Error']='Sent, but the next follow-up delay is invalid.';return {apply:true,fields,scheduled:false};}\n if(!settings.Timezone||!settings['Office Start']||!settings['Office End']){fields['Dulcy Reply Agent Last Error']='Sent; configure client timezone and office hours before scheduling follow-ups.';return {apply:true,fields,scheduled:false};}\n const earliest=at+delay*(unit==='days'?86400000:3600000);let due=Math.max(earliest,now);due=Math.ceil(due/60000)*60000;\n const windowSettings={...settings,'Exclude Weekends':plan.skipWeekends===true,'Exclude US Holidays':plan.skipHolidays===true};\n let checks=0;while(!sendWindow(windowSettings,due).allowed&&checks++<60*24*14)due+=60000;\n if(!sendWindow(windowSettings,due).allowed){fields['Dulcy Reply Agent Last Error']='Sent; no valid follow-up sending window found.';return {apply:true,fields,scheduled:false};}\n fields['Dulcy Reply Agent State']='Scheduled';fields['Dulcy Reply Agent Due At']=new Date(due).toISOString();fields['Dulcy Reply Agent Follow-up Type']='No Response';return {apply:true,fields,scheduled:true,step:nextCount+1};\n}\n\nconst source=$('Build EmailBison Send').first().json;const response=$json||{};const r=response.data?.reply||response.data||{};const status=String(r.folder||r.status||'').toLowerCase();const accepted=Boolean(r.id||r.uuid)&&!response.error&&response.success!==false&&r.success!==false;const sent=accepted&&['sent','delivered'].includes(status);const state=sent?'Sent':accepted?'Sending':'Needs Approval';const ledgerState=sent?'sent':accepted?'submitted':'unknown';const now=new Date().toISOString();const reason=sent?'':accepted?'EmailBison accepted the reply; awaiting confirmation of sent status.':'Submission failed or uncertain. Do not retry until reconciled.';const fields={'Dulcy Reply Agent State':state,'Dulcy Reply Agent Human Action':'None','Dulcy Reply Agent Updated At':now,'Dulcy Reply Agent Last Error':reason,'Dulcy Reply Agent Attempt Count':source.attempt};if(sent){const settings=$('Get Current Send Settings').first().json.records[0].fields;const projection=confirmedSendProjection({record:{id:source.recordId,fields:source.fields},settings,provider:r,now:Date.now()});if(projection.apply){Object.assign(fields,projection.fields);fields['Last Email Sent']='Custom Reply';}else{fields['Dulcy Reply Agent Last Error']='Provider reports sent; follow-up reconciliation required: '+projection.reason;}}return [{json:{...source,response,sent,accepted,state:fields[\"Dulcy Reply Agent State\"],ledgerState,providerMessageId:String(r.id||r.uuid||''),reason,updateBody:{fields,typecast:false}}}];"
+   },
+   "id": "00fe951f-5d24-4515-b6ea-0c8b32c18ed2",
+   "name": "Parse Send Result",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    4368,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY/' + $json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json.updateBody) }}",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "29992e10-bb92-451e-a6c4-4606c908a332",
+   "name": "Save Send Result",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    4576,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "\nconst source=$('Parse Send Result').first().json;\nreturn [{json:{eventBody:{records:[{fields:{'Event Key':'send:'+source.recordId+':'+source.attempt,'Email Record ID':source.recordId,'Workspace Record ID':source.workspaceRecordId,'Reply ID':source.replyId,'Event Type':source.sent?'Sent':source.accepted?'State Changed':'Failed','Intent':source.fields['Dulcy Reply Agent Intent']||'Other','State':source.state,'Actor':'Human','Occurred At':new Date().toISOString(),'Summary':source.sent?'Reply sent through EmailBison':source.reason,'Payload JSON':JSON.stringify(source.response).slice(0,90000),'Error':source.accepted?'':JSON.stringify(source.response).slice(0,9000)}}],typecast:false}}}];"
+   },
+   "id": "408ac567-2ab0-4ac7-a33b-5f11104792fe",
+   "name": "Prepare Send Event",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    4768,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tblHznksXyc3DZAUu",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json.eventBody) }}",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "5d9b7ba7-155f-4585-8149-b44fb572d073",
+   "name": "Log Send Event",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    4976,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY/' + $json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({fields:{'Dulcy Reply Agent State':'Needs Approval','Dulcy Reply Agent Human Action':'None','Dulcy Reply Agent Last Error':'A newer inbound reply arrived before this draft was sent. Review the newest thread.','Dulcy Reply Agent Updated At':new Date().toISOString()},typecast:true}) }}",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "73f44408-0efc-42b3-9ec6-6fe3861e9cc4",
+   "name": "Return Stale Reply to Review",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    3968,
+    1328
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tbl5nmzPUcNEBSWxH",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "filterByFormula",
+       "value": "={{ \"{Workspace Record ID}='\" + $('Prepare Send').first().json.workspaceRecordId + \"'\" }}"
+      },
+      {
+       "name": "maxRecords",
+       "value": "1"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "12482829-d4df-4127-bedc-5505c0b48544",
+   "name": "Get Current Send Settings",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1696,
+    512
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "function replySettingsSnapshot(settings){\n const keys=['Workspace Record ID','Enabled','Default Mode','OOO Mode','Response Tone','Response Length','Agent First Name','Agent Last Name','Company Context Override','Calendar Link','Additional Instructions','Objective Settings JSON','Response Settings JSON','Knowledge Base JSON','Routing Settings JSON','Calendar Settings JSON','Follow-up Plan JSON','Minimum Auto Confidence','Reply Handoff Mode','Not Interested Nudge'];\n const stable=v=>Array.isArray(v)?v.map(stable):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,stable(v[k])])):v;\n const out={};for(const k of keys){let v=settings?.[k]??null;if(k.endsWith(' JSON')&&typeof v==='string'&&v.trim()){try{v=JSON.parse(v)}catch{throw Error('Invalid reply configuration: '+k)}}out[k]=stable(v)}\n return JSON.stringify(out);\n}\n\nconst source=$('Prepare Send').first().json;\nif(!Array.isArray($json.records))throw new Error('Current workspace settings could not be loaded.');\nconst settings=$json.records[0]?.fields||{};\nif(settings.Enabled!==true)return [];\nconst window=(function sendWindow(settings,at){\n const date=new Date(at);if(!Number.isFinite(date.getTime()))return {allowed:false,reason:'Invalid clock'};\n const zone=settings.Timezone||'America/New_York';let p;try{p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',weekday:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(date).map(x=>[x.type,x.value]));}catch{return {allowed:false,reason:'Invalid timezone'};}\n if(settings['Exclude Weekends']&&['Sat','Sun'].includes(p.weekday))return {allowed:false,reason:'Weekend'};\n const y=+p.year,m=+p.month,d=+p.day,key=`${y}-${p.month}-${p.day}`;\n if(settings['Exclude US Holidays']){\n  const holidays=new Set();const add=(yy,mm,dd)=>{const dt=new Date(Date.UTC(yy,mm-1,dd));if(dt.getUTCDay()===6)dt.setUTCDate(dt.getUTCDate()-1);if(dt.getUTCDay()===0)dt.setUTCDate(dt.getUTCDate()+1);holidays.add(dt.toISOString().slice(0,10));};\n  const nth=(mm,dow,n)=>{const dt=new Date(Date.UTC(y,mm-1,1));dt.setUTCDate(1+(dow-dt.getUTCDay()+7)%7+7*(n-1));holidays.add(dt.toISOString().slice(0,10));};\n  for(const yy of [y,y+1])add(yy,1,1);for(const [mm,dd] of [[6,19],[7,4],[11,11],[12,25]])add(y,mm,dd);\n  nth(1,1,3);nth(2,1,3);nth(9,1,1);nth(10,1,2);nth(11,4,4);\n  const memorial=new Date(Date.UTC(y,5,0));memorial.setUTCDate(memorial.getUTCDate()-(memorial.getUTCDay()+6)%7);holidays.add(memorial.toISOString().slice(0,10));\n  if(holidays.has(key))return {allowed:false,reason:'Observed US federal holiday'};\n }\n const time=v=>{if(!/^\\d{2}:\\d{2}$/.test(String(v)))return NaN;const [h,m]=v.split(':').map(Number);return h<24&&m<60?h*60+m:NaN};const start=time(settings['Office Start']),end=time(settings['Office End']),now=(+p.hour)*60+(+p.minute);\n if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start)return {allowed:false,reason:'Missing or unsupported office hours'};\n return {allowed:now>=start&&now<end,reason:now>=start&&now<end?'Within office hours':'Outside office hours'};\n})(settings,Date.now());if(!window.allowed)return [];\nif(settings['Reply Handoff Mode']==='All Replies')return [];\nlet p={};try{p=JSON.parse(source.fields['Dulcy Reply Agent Policy Decision']||'{}');}catch{throw new Error('Invalid saved reply policy.');}\nif(!p.settingsSnapshot||p.settingsSnapshot!==replySettingsSnapshot(settings))throw Error('Reply settings have changed or the draft predates settings validation; regenerate and review before sending.');if(p.courtesyReply===true||source.fields['Dulcy Reply Agent Intent']==='Not Interested'){\n let responseSettings={};try{responseSettings=JSON.parse(settings['Response Settings JSON']||'{}');}catch{throw new Error('Invalid response settings.');}\n if(settings['Not Interested Nudge']!==true||responseSettings.notInterestedEnabled===false)return [];\n const history=$('Get Send Courtesy History').first().json;\n if(!Array.isArray(history.records)||history.error)throw new Error('Courtesy send history unavailable.');\n if(history.records.length||source.fields['Courtesy Reply Sent At'])return [];\n}\n// The pilot remains approval-only until automatic reply counts and calendar checks are verified.\nif(p.autoSend===true && source.fields['Dulcy Reply Agent Human Action']!=='Send Edited Reply')throw new Error('Automatic sending requires a verified pilot; review and send as an edited reply.');\nreturn [{json:source}];"
+   },
+   "id": "3fd72919-c1b7-4a96-9d29-6c7df2965510",
+   "name": "Enforce Current Send Settings",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1904,
+    512
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "filterByFormula",
+       "value": "={{ \"AND({Dulcy Reply Agent Workspace Record ID}='\" + $('Prepare Send').first().json.workspaceRecordId + \"',LOWER({Leads Email})='\" + $('Prepare Send').first().json.leadEmail.toLowerCase().replace(/'/g,\"\\'\") + \"',{Courtesy Reply Sent At}!=BLANK())\" }}"
+      },
+      {
+       "name": "maxRecords",
+       "value": "1"
+      },
+      {
+       "name": "fields[]",
+       "value": "Courtesy Reply Sent At"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "8198de1a-ce91-4ff3-8ec0-13ab49dd9458",
+   "name": "Get Send Courtesy History",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2912,
+    1296
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const source=$('Prepare Send').first().json;const f=source.fields||{};const action=f['Dulcy Reply Agent Human Action'];if(!['Approve Draft','Send Edited Reply'].includes(action))return [];const body=String((action==='Send Edited Reply'?f['Custom Reply']:f['Dulcy Reply Agent Draft'])||'').trim();const prospect=String(f['Latest Reply']||'').trim();if(!body||!prospect)return [];if(!source.workspaceRecordId||!source.recordId||!source.replyId)throw new Error('Approved example needs a client, email record and original reply ID.');if(f.DNC===true||f['Dulcy Reply Agent Intent']==='Do Not Contact')return [];const intent=String(f['Dulcy Reply Agent Intent']||'');const situation=intent==='Not Interested'?'Not Interested':['Out of Office','Referred','Check Back Later'].includes(intent)?'Out of Office':'Interested';return [{json:{body:{performUpsert:{fieldsToMergeOn:['Source']},records:[{fields:{'Example':'Approved inbox reply: '+(source.leadName||source.leadEmail||source.recordId),'Workspace Record ID':source.workspaceRecordId,'Email Record ID':source.recordId,'Situation':situation,'Prospect Message':prospect,'AI Draft':String(f['Dulcy Reply Agent Draft']||''),'Approved Reply':body,'Feedback':String(f['Reply Feedback']||'').trim(),'Review Status':'Approved','Source':'Inbox approval: '+source.workspaceRecordId+':'+source.recordId+':'+source.replyId,'Updated At':new Date().toISOString()}}],typecast:true}}}];"
+   },
+   "id": "bb2fc0c4-5525-48eb-8a8c-b7e12f48aefe",
+   "name": "Prepare Learning Candidate",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3056,
+    1440
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tblSnh6YlMTOFSE8l",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ $json.body }}",
+    "options": {}
+   },
+   "id": "6fe2316b-2a3a-4215-a729-94413cfe8e02",
+   "name": "Save Learning Candidate",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    3296,
+    1440
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "WITH inserted AS (INSERT INTO dulcy_reply_agent.send_jobs(job_key,conversation_key,workspace_record_id,airtable_record_id,execution_id,draft_fingerprint,state,approved_snapshot) VALUES ($1,$2,$3,$4,$5,md5($6),'claimed',$7::jsonb) ON CONFLICT DO NOTHING RETURNING job_key) SELECT EXISTS(SELECT 1 FROM inserted) AS acquired;",
+    "options": {
+     "queryReplacement": "={{ [$json.jobKey,$json.conversationKey,$json.workspaceRecordId,$json.recordId,String($execution.id),$json.body,JSON.stringify({id:$json.recordId,fields:$json.fields})] }}"
+    }
+   },
+   "id": "285a1683-3535-41f5-9a1b-12754062632e",
+   "name": "Claim Reply Once",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    3504,
+    1024
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "if($json.acquired!==true)return [];return [{json:$('Build EmailBison Send').first().json}];"
+   },
+   "id": "6e1ab841-1cf5-481e-bed0-a2eae6b3b5e5",
+   "name": "Require Acquired Claim",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3696,
+    1024
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "if($json.error||$json.fields?.['Dulcy Reply Agent State']!=='Sending')throw Error('Sending state write failed; claim retained for review');return [{json:$('Build EmailBison Send').first().json}];"
+   },
+   "id": "00be701c-48de-4610-bf64-ca95ecea5c15",
+   "name": "Verify Sending State",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    4000,
+    1024
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "UPDATE dulcy_reply_agent.send_jobs SET state=$3,provider_message_id=NULLIF($4,''),reason=$5,updated_at=now() WHERE job_key=$1 AND execution_id=$2 RETURNING job_key;",
+    "options": {
+     "queryReplacement": "={{ [$json.jobKey,String($execution.id),$json.ledgerState,$json.providerMessageId,$json.reason] }}"
+    }
+   },
+   "id": "cb145110-67a8-4efd-b2af-c3675094a3eb",
+   "name": "Save Submission Ledger",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    4400,
+    1024
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "if(!$json.job_key)throw Error('Ledger confirmation missing; no retry');return [{json:$('Parse Send Result').first().json}];"
+   },
+   "id": "5bd67f41-9160-4cd4-826b-d80bd80f96b7",
+   "name": "Restore Submission Result",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    4608,
+    1024
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY/' + $json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "b82e8be0-02da-4839-8f6a-76a002d793fb",
+   "name": "Recheck Approved Record",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2976,
+    1152
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const source=$('Build EmailBison Send').first().json;const f=$json.fields;if($json.error||!f||$json.id!==source.recordId)throw Error('Cannot confirm current approval; claim retained');\nconst keys=['Dulcy Reply Agent Human Action','Dulcy Reply Agent State','Dulcy Reply Agent Event ID','Dulcy Reply Agent Updated At','Dulcy Reply Agent Draft','Custom Reply','DNC','Client Handling','Reply Ownership','Opportunity Status','Pipeline Stage','reply_message_id','reply_uuid','Leads Email','Dulcy Reply Agent Sender Email ID','Dulcy Reply Agent Workspace Record ID','Follow Up Counter'];\nif(keys.some(k=>JSON.stringify(f[k]??null)!==JSON.stringify(source.fields[k]??null)))throw Error('Approval or conversation changed; retained claim needs review');return [{json:source}];"
+   },
+   "id": "b52c1ee5-697f-45a9-9e7f-646d59347114",
+   "name": "Verify Approval Unchanged",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3856,
+    1024
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY/' + $('Parse Send Result').first().json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "54937561-e36f-42d1-aa06-fc0783216475",
+   "name": "Read Inbox After Submission",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2976,
+    1152
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const result=$('Parse Send Result').first().json;const current=$json;const expected=$('Lock Reply').first().json;\nif(current.error||!current.fields||current.id!==result.recordId||!expected.fields)throw Error('Submission recorded in ledger; inbox must be reconciled before updating');\nconst keys=['Dulcy Reply Agent State','Dulcy Reply Agent Human Action','Dulcy Reply Agent Event ID','Dulcy Reply Agent Updated At','Dulcy Reply Agent Draft','Custom Reply','Dulcy Reply Agent Policy Decision','Dulcy Reply Agent Due At','DNC','Client Handling','Reply Ownership','Opportunity Status','Pipeline Stage','reply_message_id','reply_uuid','Leads Email','Dulcy Reply Agent Sender Email ID','Dulcy Reply Agent Workspace Record ID','Follow Up Counter'];\nif(keys.some(k=>JSON.stringify(current.fields[k]??null)!==JSON.stringify(expected.fields[k]??null)))throw Error('Submission recorded in ledger; newer inbox work preserved for reconciliation');\nreturn [{json:result}];"
+   },
+   "id": "e29a00f9-5ef1-46c5-b599-091089d89511",
+   "name": "Protect Newer Inbox Work",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    4800,
+    1024
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "http://dulcy-calendar:8789/calendar/admin/availability",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({workspace: $('Build EmailBison Send').first().json.workspaceRecordId, start: $now.plus({minutes: 10}).toUTC().toISO(), end: $now.plus({days: 6}).toUTC().toISO()}) }}",
+    "options": {
+     "timeout": 20000,
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "6a1eaee3-57fa-4bf1-808f-33c8f4af1acc",
+   "name": "Recheck Offered Calendar Times",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2304,
+    512
+   ],
+   "retryOnFail": true,
+   "maxTries": 2,
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "jsCode": "const source=$('Build EmailBison Send').first().json;\nconst p=JSON.parse(source.fields['Dulcy Reply Agent Policy Decision']||'{}');\n// Recheck the whole verified offer set, even if an editor paraphrased its label.\nconst evidence=p.calendarEvidence;\nconst offered=Array.isArray(evidence?.slots)?evidence.slots:[];\nif(offered.length){\n if(evidence.available!==true)throw Error('Calendar evidence is not verified; regenerate the draft');\n const fresh=Date.parse($json.fetchedAt||'');\n if(!Array.isArray($json.collection)||$json.error||!Number.isFinite(fresh)||Date.now()-fresh>120000||fresh>Date.now()+10000)throw Error('Cannot verify offered times; do not send');\n if($json.workspaceId!==source.workspaceRecordId||$json.connection?.workspaceId!==source.workspaceRecordId||$json.connection?.status!=='Connected'||!$json.eventType||$json.connection.eventType!==$json.eventType)throw Error('Calendar identity mismatch; regenerate the draft');\n for(const slot of offered){\n  const at=Date.parse(slot.startTime);\n  if(slot.eventType!==$json.eventType||slot.workspaceId!==source.workspaceRecordId||!Number.isFinite(at)||at<=Date.now()||!$json.collection.some(s=>Date.parse(s.start_time)===at&&s.status==='available'&&Number(s.invitees_remaining)>0))throw Error('Offered meeting time is no longer available; regenerate or edit the draft');\n }\n}\nreturn [{json:source}];"
+   },
+   "name": "Require Available Offered Times",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1696,
+    512
+   ],
+   "id": "69f6787a-2ada-4970-9f8c-df9f887146d7"
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://send.dulcy.io/api/sender-emails/' + encodeURIComponent($('Prepare Send').first().json.senderEmailId) }}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "={{ 'Bearer ' + $json.fields['EmailBison API'] }}"
+      },
+      {
+       "name": "Accept",
+       "value": "application/json"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     },
+     "timeout": 30000
+    }
+   },
+   "id": "11740d68-ea37-4dd4-9e54-9406831a2570",
+   "name": "Read Authoritative Sender",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2800,
+    1424
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "function verifiedMailbox(source,workspace,response){\n const s=response?.data;\n if(!workspace?.id||workspace.id!==source.workspaceRecordId)throw Error('Sender lookup workspace mismatch');\n if(source.workspaceIdBison&&String(workspace.fields?.ID)!==String(source.workspaceIdBison))throw Error('Sender lookup provider workspace mismatch');\n if(response?.error||!s||String(s.id)!==String(source.senderEmailId))throw Error('Authoritative sender account unavailable or mismatched');\n const normalize=v=>String(v||'').trim().toLowerCase();const email=normalize(s.email),prospect=normalize(source.leadEmail);\n if(!/^[^\\s<>@]+@[^\\s<>@]+\\.[^\\s<>@]+$/.test(email)||!/^[^\\s<>@]+@[^\\s<>@]+\\.[^\\s<>@]+$/.test(prospect)||email===prospect)throw Error('External prospect and authoritative sending inbox must be distinct verified emails');\n const aliasValues=[s.email,s.from_email_address,s.reply_to_email,s.reply_to,s.aliases,s.email_aliases,s.connected_email?.aliases];const flatten=v=>Array.isArray(v)?v.flatMap(flatten):(v&&typeof v==='object'?[v.email,v.address,v.email_address].flatMap(flatten):[normalize(v)]);const aliases=[...new Set(aliasValues.flatMap(flatten).filter(v=>/^[^\\s<>@]+@[^\\s<>@]+\\.[^\\s<>@]+$/.test(v)))];return {...source,fromAccount:email,verifiedSender:{id:String(s.id),email,aliases,workspaceRecordId:workspace.id,source:'EmailBison sender account lookup'}};\n}\nconst intake=verifiedMailbox($('Prepare Send').first().json,$('Get Send Workspace').first().json,$json);const thread=$('Refresh Conversation Thread').first().json;return [{json:{...thread,intake}}];"
+   },
+   "id": "116c7f03-cd9c-40e8-85da-7bb6c59db876",
+   "name": "Verify Authoritative Sender",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3056,
+    1424
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

@@ -1,0 +1,1325 @@
+{
+ "id": "VAuISfPiuZmNwygj",
+ "name": "[Analytics - Email] Last 120 days",
+ "active": true,
+ "isArchived": false,
+ "versionId": "b538a71a-cd62-49bb-a4d3-c88d992a8df3",
+ "triggerCount": 1,
+ "createdAt": "2025-07-25T17:01:07.992Z",
+ "updatedAt": "2026-11-17T16:39:10.787Z",
+ "settings": {
+  "executionOrder": "v1",
+  "timezone": "America/New_York",
+  "callerPolicy": "workflowsFromSameOwner",
+  "timeSavedMode": "fixed",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Schedule Trigger": {
+   "main": [
+    [
+     {
+      "node": "Get active clients",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get active clients": {
+   "main": [
+    [
+     {
+      "node": "Loop Over Items",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Loop Over Items": {
+   "main": [
+    [],
+    [
+     {
+      "node": "Set Timelines",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Check for campaign in Analytics Overview": {
+   "main": [
+    [
+     {
+      "node": "If we have a record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "If we have a record": {
+   "main": [
+    [
+     {
+      "node": "Search records",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Search records1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Edit Fields": {
+   "main": [
+    [
+     {
+      "node": "Stats - Last X days",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Edit Fields1": {
+   "main": [
+    [
+     {
+      "node": "Stats - Last X days1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Update record - Analytics Overview": {
+   "main": [
+    [
+     {
+      "node": "Loop Over Items",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create a record - Analytics Overview": {
+   "main": [
+    [
+     {
+      "node": "Loop Over Items",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records": {
+   "main": [
+    [
+     {
+      "node": "Summarize current meetings",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records1": {
+   "main": [
+    [
+     {
+      "node": "Summarize current meetings1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Set Timelines": {
+   "main": [
+    [
+     {
+      "node": "Check for campaign in Analytics Overview",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Stats - Last X days": {
+   "main": [
+    [
+     {
+      "node": "Update record - Analytics Overview",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Stats - Last X days1": {
+   "main": [
+    [
+     {
+      "node": "Create a record - Analytics Overview",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Summarize current meetings": {
+   "main": [
+    [
+     {
+      "node": "Search records2",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Summarize current meetings1": {
+   "main": [
+    [
+     {
+      "node": "Search records3",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records2": {
+   "main": [
+    [
+     {
+      "node": "Summarize all meetings",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Summarize all meetings": {
+   "main": [
+    [
+     {
+      "node": "Edit Fields",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records3": {
+   "main": [
+    [
+     {
+      "node": "Summarize all meetings1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Summarize all meetings1": {
+   "main": [
+    [
+     {
+      "node": "Edit Fields1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "weeks",
+       "triggerAtDay": [
+        2,
+        3,
+        4,
+        5,
+        6
+       ],
+       "triggerAtHour": 2
+      }
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    -272,
+    2432
+   ],
+   "id": "f8e23996-273a-444c-b09c-7ba97a2e4d43",
+   "name": "Schedule Trigger"
+  },
+  {
+   "parameters": {
+    "content": "Change the dates based on time period",
+    "height": 496,
+    "width": 160
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    2288,
+    2304
+   ],
+   "typeVersion": 1,
+   "id": "3c259cc8-205e-48d9-9edc-ff14f6cc6abe",
+   "name": "Sticky Note5"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt"
+    },
+    "filterByFormula": "{Status} = 'Active'",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -64,
+    2432
+   ],
+   "id": "278b6648-5e36-4ea9-b38a-7bd7ad9fa0b2",
+   "name": "Get active clients"
+  },
+  {
+   "parameters": {
+    "options": {}
+   },
+   "type": "n8n-nodes-base.splitInBatches",
+   "typeVersion": 3,
+   "position": [
+    160,
+    2432
+   ],
+   "id": "4a777d24-525e-4833-aa6d-a758ddc85b74",
+   "name": "Loop Over Items"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblZkEi6qylqfOj9Z",
+     "mode": "list",
+     "cachedResultName": "Email Analytics Overview",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblZkEi6qylqfOj9Z"
+    },
+    "filterByFormula": "={Identifier} = 'Last {{ $json.set_timeline_days }} days - {{ $json.ID }}'",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    592,
+    2528
+   ],
+   "id": "7835d3ab-472b-4ece-8d53-e0396f861c8f",
+   "name": "Check for campaign in Analytics Overview",
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "c04a93b4-5abf-4716-b0f2-4ea1e33c65f7",
+       "leftValue": "={{ $json.id }}",
+       "rightValue": "",
+       "operator": {
+        "type": "string",
+        "operation": "exists",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    800,
+    2528
+   ],
+   "id": "68460c47-4f4e-420b-b4ed-3a243165ba7c",
+   "name": "If we have a record"
+  },
+  {
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "962d709d-fad6-42ce-a41f-8cf4cc01bacb",
+       "name": "RecordId",
+       "value": "={{ $('Loop Over Items').item.json.id }}",
+       "type": "string"
+      },
+      {
+       "id": "899dcb6d-8ef8-4347-90cf-688e5ae389bb",
+       "name": "Client Name",
+       "value": "={{ $('Loop Over Items').item.json.Name }}",
+       "type": "string"
+      },
+      {
+       "id": "bd39952c-2c28-4ea2-8453-a13c45b278e6",
+       "name": "Client ID",
+       "value": "={{ $('Loop Over Items').item.json.ID }}",
+       "type": "string"
+      },
+      {
+       "id": "36228dfd-41ef-4f7e-8545-a0e1f3d5667d",
+       "name": "EmailBison API",
+       "value": "={{ $('Loop Over Items').item.json['EmailBison API'] }}",
+       "type": "string"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    1840,
+    2432
+   ],
+   "id": "bd026a71-648d-4968-af93-a38b33aad83b",
+   "name": "Edit Fields"
+  },
+  {
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "962d709d-fad6-42ce-a41f-8cf4cc01bacb",
+       "name": "RecordId",
+       "value": "={{ $('Loop Over Items').item.json.id }}",
+       "type": "string"
+      },
+      {
+       "id": "f186240f-5d09-4f37-b6e4-d9f8a58ba37c",
+       "name": "Client Name",
+       "value": "={{ $('Loop Over Items').item.json.Name }}",
+       "type": "string"
+      },
+      {
+       "id": "899dcb6d-8ef8-4347-90cf-688e5ae389bb",
+       "name": "Client ID",
+       "value": "={{ $('Loop Over Items').item.json.ID }}",
+       "type": "number"
+      },
+      {
+       "id": "36228dfd-41ef-4f7e-8545-a0e1f3d5667d",
+       "name": "EmailBison API",
+       "value": "={{ $('Loop Over Items').item.json['EmailBison API'] }}",
+       "type": "string"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    1840,
+    2624
+   ],
+   "id": "953edf09-9df1-4b7b-9af0-2863e009e99b",
+   "name": "Edit Fields1"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblZkEi6qylqfOj9Z",
+     "mode": "list",
+     "cachedResultName": "Email Analytics Overview",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblZkEi6qylqfOj9Z"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Date Period": "Last 120 days",
+      "Total Leads Contacted": "={{ $json.data.total_leads_contacted }}",
+      "Emails Sent": "={{ $json.data.emails_sent }}",
+      "Unique Replies": "={{ $json.data.unique_replies_per_contact }}",
+      "Interested": "={{ $json.data.interested }}",
+      "Bounced": "={{ $json.data.bounced }}",
+      "id": "={{ $('Check for campaign in Analytics Overview').item.json.id }}",
+      "Client ID": "={{ $('Edit Fields').item.json['Client ID'] + \"\"}}",
+      "Client": "={{ [$('Edit Fields').item.json.RecordId] }}",
+      "Meetings Booked": "={{ $('Summarize current meetings').item.json.count_id }}",
+      "Total Meetings Booked": "={{ $('Summarize all meetings').item.json.count_id }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": false
+      },
+      {
+       "id": "Identifier",
+       "displayName": "Identifier",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Date Period",
+       "displayName": "Date Period",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Last 10 days",
+         "value": "Last 10 days"
+        },
+        {
+         "name": "Last 30 days",
+         "value": "Last 30 days"
+        },
+        {
+         "name": "Last 60 days",
+         "value": "Last 60 days"
+        },
+        {
+         "name": "Last 120 days",
+         "value": "Last 120 days"
+        },
+        {
+         "name": "All time",
+         "value": "All time"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client ID",
+       "displayName": "Client ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Total Leads Contacted",
+       "displayName": "Total Leads Contacted",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Emails Sent",
+       "displayName": "Emails Sent",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Unique Replies",
+       "displayName": "Unique Replies",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Unique Replies %",
+       "displayName": "Unique Replies %",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Interested",
+       "displayName": "Interested",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Interested %",
+       "displayName": "Interested %",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Bounced",
+       "displayName": "Bounced",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Bounced %",
+       "displayName": "Bounced %",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Meetings Booked",
+       "displayName": "Meetings Booked",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Meetings Booked %",
+       "displayName": "Meetings Booked %",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Total Meetings Booked",
+       "displayName": "Total Meetings Booked",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Emails to Meeting Ratio",
+       "displayName": "Emails to Meeting Ratio",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    2320,
+    2432
+   ],
+   "id": "74c0f846-bb59-4d14-ac76-2e14b646b920",
+   "name": "Update record - Analytics Overview"
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblZkEi6qylqfOj9Z",
+     "mode": "list",
+     "cachedResultName": "Email Analytics Overview",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblZkEi6qylqfOj9Z"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Date Period": "Last 120 days",
+      "Total Leads Contacted": "={{ $json.data.total_leads_contacted }}",
+      "Emails Sent": "={{ $json.data.emails_sent }}",
+      "Unique Replies": "={{ $json.data.unique_replies_per_contact }}",
+      "Interested": "={{ $json.data.interested }}",
+      "Bounced": "={{ $json.data.bounced }}",
+      "Client ID": "={{ $('Edit Fields1').item.json['Client ID'] + \"\"}}",
+      "Client": "={{ [$('Edit Fields1').item.json.RecordId] }}",
+      "Meetings Booked": "={{ $('Summarize current meetings1').item.json.count_id }}",
+      "Total Meetings Booked": "={{ $('Summarize all meetings1').item.json.count_id }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "Identifier",
+       "displayName": "Identifier",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Date Period",
+       "displayName": "Date Period",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Last 10 days",
+         "value": "Last 10 days"
+        },
+        {
+         "name": "Last 30 days",
+         "value": "Last 30 days"
+        },
+        {
+         "name": "Last 60 days",
+         "value": "Last 60 days"
+        },
+        {
+         "name": "Last 120 days",
+         "value": "Last 120 days"
+        },
+        {
+         "name": "All time",
+         "value": "All time"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client ID",
+       "displayName": "Client ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Total Leads Contacted",
+       "displayName": "Total Leads Contacted",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Emails Sent",
+       "displayName": "Emails Sent",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Unique Replies",
+       "displayName": "Unique Replies",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Unique Replies %",
+       "displayName": "Unique Replies %",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Interested",
+       "displayName": "Interested",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Interested %",
+       "displayName": "Interested %",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Bounced",
+       "displayName": "Bounced",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Bounced %",
+       "displayName": "Bounced %",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Meetings Booked",
+       "displayName": "Meetings Booked",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Meetings Booked %",
+       "displayName": "Meetings Booked %",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Total Meetings Booked",
+       "displayName": "Total Meetings Booked",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Emails to Meeting Ratio",
+       "displayName": "Emails to Meeting Ratio",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    2320,
+    2624
+   ],
+   "id": "b5362125-82e2-49b7-9907-5e106626dfe0",
+   "name": "Create a record - Analytics Overview"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblADFhWhTcLrl1UY",
+     "mode": "list",
+     "cachedResultName": "Emails",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY"
+    },
+    "filterByFormula": "=AND(   {Workspace ID (Bison)} = {{ $json['Client ID'].toNumber() }},   IS_AFTER({Opp Last Modified}, DATEADD(TODAY(), -{{ $('Set Timelines').item.json.set_timeline_days }}, 'days')),   IS_BEFORE({Opp Last Modified}, TODAY()) )",
+    "options": {
+     "view": {
+      "__rl": true,
+      "value": "viwnUjp62RvUmmW0K",
+      "mode": "list",
+      "cachedResultName": "Meetings Booked",
+      "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY/viwnUjp62RvUmmW0K"
+     }
+    }
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1072,
+    2432
+   ],
+   "id": "0fd91c32-d954-4baa-ba73-e7deb9063c76",
+   "name": "Search records",
+   "executeOnce": false,
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblADFhWhTcLrl1UY",
+     "mode": "list",
+     "cachedResultName": "Emails",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY"
+    },
+    "filterByFormula": "=AND(   {Workspace ID (Bison)} = {{ $('Loop Over Items').item.json.ID }},   IS_AFTER({Opp Last Modified}, DATEADD(TODAY(), -11, 'days')),   IS_BEFORE({Opp Last Modified}, TODAY()) )",
+    "options": {
+     "view": {
+      "__rl": true,
+      "value": "viwnUjp62RvUmmW0K",
+      "mode": "list",
+      "cachedResultName": "Meetings Booked",
+      "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY/viwnUjp62RvUmmW0K"
+     }
+    }
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1072,
+    2624
+   ],
+   "id": "05dcc2a3-a269-4e6f-ab7c-89740ef9839d",
+   "name": "Search records1",
+   "executeOnce": false,
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "4fc615fc-3a1e-48e1-a84a-c7bccb9d4f7c",
+       "name": "set_timeline_days",
+       "value": "120",
+       "type": "string"
+      }
+     ]
+    },
+    "includeOtherFields": true,
+    "options": {}
+   },
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    384,
+    2528
+   ],
+   "id": "6f4a407d-9899-4c07-84a8-6f48f306be12",
+   "name": "Set Timelines"
+  },
+  {
+   "parameters": {
+    "url": "=https://send.dulcy.io/api/workspaces/v1.1/stats",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Get active clients').item.json['EmailBison API'] }}"
+      },
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={\n  \"start_date\": \"{{ $now.minus($('Set Timelines').item.json.set_timeline_days, 'days').format('yyyy-MM-dd') }}\",\n  \"end_date\": \"{{ $now.format('yyyy-MM-dd') }}\"\n}",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2064,
+    2432
+   ],
+   "id": "2eb56d54-12ad-4123-8f69-cca5fc4833dd",
+   "name": "Stats - Last X days"
+  },
+  {
+   "parameters": {
+    "url": "=https://send.dulcy.io/api/workspaces/v1.1/stats",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Get active clients').item.json['EmailBison API'] }}"
+      },
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={\n  \"start_date\": \"{{ $now.minus($('Set Timelines').item.json.set_timeline_days, 'days').format('yyyy-MM-dd') }}\",\n  \"end_date\": \"{{ $now.format('yyyy-MM-dd') }}\"\n}",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2064,
+    2624
+   ],
+   "id": "fdbc6108-53de-4c38-b546-2d0df10551b1",
+   "name": "Stats - Last X days1"
+  },
+  {
+   "parameters": {
+    "content": "Change the variable based on time period",
+    "height": 368,
+    "width": 150
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    352,
+    2368
+   ],
+   "typeVersion": 1,
+   "id": "a534e199-0c44-46af-9f57-650df2de78ca",
+   "name": "Sticky Note3"
+  },
+  {
+   "parameters": {
+    "fieldsToSummarize": {
+     "values": [
+      {
+       "field": "id"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.summarize",
+   "typeVersion": 1.1,
+   "position": [
+    1248,
+    2432
+   ],
+   "id": "58648066-13d3-40b9-9de7-9d4e74d8b6e7",
+   "name": "Summarize current meetings"
+  },
+  {
+   "parameters": {
+    "fieldsToSummarize": {
+     "values": [
+      {
+       "field": "id"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.summarize",
+   "typeVersion": 1.1,
+   "position": [
+    1248,
+    2624
+   ],
+   "id": "e118e7a0-0c34-41fd-b196-b60f3c650084",
+   "name": "Summarize current meetings1"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblADFhWhTcLrl1UY",
+     "mode": "list",
+     "cachedResultName": "Emails",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY"
+    },
+    "filterByFormula": "={Workspace ID (Bison)} = {{ $('If we have a record').item.json['Client ID'].toNumber() }}",
+    "options": {
+     "view": {
+      "__rl": true,
+      "value": "viwnUjp62RvUmmW0K",
+      "mode": "list",
+      "cachedResultName": "Meetings Booked",
+      "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY/viwnUjp62RvUmmW0K"
+     }
+    }
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1456,
+    2432
+   ],
+   "id": "82ac98c7-5a9b-479f-86fc-a59718b07b01",
+   "name": "Search records2",
+   "executeOnce": false,
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "fieldsToSummarize": {
+     "values": [
+      {
+       "field": "id"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.summarize",
+   "typeVersion": 1.1,
+   "position": [
+    1632,
+    2432
+   ],
+   "id": "9ce41b5f-04b2-4b13-9e9c-d0a9815622f5",
+   "name": "Summarize all meetings"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblADFhWhTcLrl1UY",
+     "mode": "list",
+     "cachedResultName": "Emails",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY"
+    },
+    "filterByFormula": "={Workspace ID (Bison)} = {{ $('Loop Over Items').item.json.ID }}",
+    "options": {
+     "view": {
+      "__rl": true,
+      "value": "viwnUjp62RvUmmW0K",
+      "mode": "list",
+      "cachedResultName": "Meetings Booked",
+      "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY/viwnUjp62RvUmmW0K"
+     }
+    }
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1456,
+    2624
+   ],
+   "id": "151b7aad-97bf-437b-bdb0-40b424be0a67",
+   "name": "Search records3",
+   "executeOnce": false,
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "fieldsToSummarize": {
+     "values": [
+      {
+       "field": "id"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.summarize",
+   "typeVersion": 1.1,
+   "position": [
+    1632,
+    2624
+   ],
+   "id": "76ec2d07-3148-4e27-8e64-99f301f43e11",
+   "name": "Summarize all meetings1"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

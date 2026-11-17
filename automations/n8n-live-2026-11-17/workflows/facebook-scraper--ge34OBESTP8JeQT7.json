@@ -1,0 +1,295 @@
+{
+ "id": "ge34OBESTP8JeQT7",
+ "name": "Facebook Scraper",
+ "active": true,
+ "isArchived": false,
+ "versionId": "934ae808-7e11-4cb9-aed2-999da6eecfd7",
+ "triggerCount": 1,
+ "createdAt": "2026-01-28T19:38:36.009Z",
+ "updatedAt": "2026-11-17T16:40:12.113Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Run Tik Tok actor": {
+   "main": [
+    [
+     {
+      "node": "Update Data ID's",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Receive Facebook webhook": {
+   "main": [
+    []
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appJNoGcSkyIEPQ68",
+     "mode": "list",
+     "cachedResultName": "Scrapers",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblXpHxFDaoChDd6m",
+     "mode": "list",
+     "cachedResultName": "Tik Tok Scraper",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68/tblXpHxFDaoChDd6m"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "N8N Automation Ran?": true,
+      "id": "{{ $('Receive Facebook webhook').item.json.body.recordId }}",
+      "List_ID": "={{ $json.defaultDatasetId }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true
+      },
+      {
+       "id": "Run - ID",
+       "displayName": "Run - ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "File Name",
+       "displayName": "File Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Hashtag to search",
+       "displayName": "Hashtag to search",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Total Videos",
+       "displayName": "Total Videos",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "List_ID",
+       "displayName": "List_ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "N8N Automation Ran?",
+       "displayName": "N8N Automation Ran?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "User",
+       "displayName": "User",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Discord Status (from User)",
+       "displayName": "Discord Status (from User)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "User Name",
+       "displayName": "User Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Source of Creation",
+       "displayName": "Source of Creation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Internal",
+         "value": "Internal"
+        },
+        {
+         "name": "Discord",
+         "value": "Discord"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Google Drive Link",
+       "displayName": "Google Drive Link",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Discord Tags",
+       "displayName": "Discord Tags",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Record Created at",
+       "displayName": "Record Created at",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "user_id",
+       "displayName": "user_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    448,
+    -32
+   ],
+   "id": "f1db0027-d365-4759-afe4-f00120c2a9b4",
+   "name": "Update Data ID's"
+  },
+  {
+   "parameters": {
+    "actorSource": "store",
+    "actorId": {
+     "__rl": true,
+     "value": "KoJrdxJCTtpon81KY",
+     "mode": "list",
+     "cachedResultName": "Facebook Posts Scraper (apify/facebook-posts-scraper)",
+     "cachedResultUrl": "https://console.apify.com/actors/KoJrdxJCTtpon81KY/input"
+    },
+    "customBody": "={\n    \"captionText\": false,\n    \"resultsLimit\": 20,\n    \"startUrls\": [\n        {\n            \"url\": \"https://www.facebook.com/humansofnewyork/\"\n        }\n    ]\n}",
+    "waitForFinish": false
+   },
+   "type": "@apify/n8n-nodes-apify.apify",
+   "typeVersion": 1,
+   "position": [
+    224,
+    -32
+   ],
+   "id": "9678bb6e-769b-469e-a508-f48b3070e718",
+   "name": "Run Tik Tok actor"
+  },
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    0,
+    -32
+   ],
+   "id": "e24bd19e-c17e-48cc-9cd6-39e7cefc90c7",
+   "name": "Receive Facebook webhook"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

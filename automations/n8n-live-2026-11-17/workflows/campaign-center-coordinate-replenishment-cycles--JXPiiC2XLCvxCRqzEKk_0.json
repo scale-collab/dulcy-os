@@ -1,0 +1,1348 @@
+{
+ "id": "JXPiiC2XLCvxCRqzEKk_0",
+ "name": "[Campaign Center] Coordinate Replenishment Cycles",
+ "active": true,
+ "isArchived": false,
+ "versionId": "6a7cada5-9f50-49c0-8c88-f954ad847327",
+ "triggerCount": 1,
+ "createdAt": "2026-11-11T20:00:12.671Z",
+ "updatedAt": "2026-11-17T16:43:35.947Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "executionTimeout": 7200,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Replenishment callback": {
+   "main": [
+    [
+     {
+      "node": "Validate callback",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Internal checkpoint": {
+   "main": [
+    [
+     {
+      "node": "Validate checkpoint",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate callback": {
+   "main": [
+    [
+     {
+      "node": "Plan atomic operation",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate checkpoint": {
+   "main": [
+    [
+     {
+      "node": "Plan atomic operation",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Is airtable?": {
+   "main": [
+    [
+     {
+      "node": "Run airtable",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Is bison?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Run airtable": {
+   "main": [
+    [
+     {
+      "node": "Run airtable read",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Run airtable write",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Collect airtable": {
+   "main": [
+    [
+     {
+      "node": "Plan atomic operation",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Is bison?": {
+   "main": [
+    [
+     {
+      "node": "Run bison",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Is pg_acquire?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Run bison": {
+   "main": [
+    [
+     {
+      "node": "Collect bison",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Collect bison": {
+   "main": [
+    [
+     {
+      "node": "Plan atomic operation",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Is pg_acquire?": {
+   "main": [
+    [
+     {
+      "node": "Run pg_acquire",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Is pg_release?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Run pg_acquire": {
+   "main": [
+    [
+     {
+      "node": "Collect pg_acquire",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Collect pg_acquire": {
+   "main": [
+    [
+     {
+      "node": "Plan atomic operation",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Is pg_release?": {
+   "main": [
+    [
+     {
+      "node": "Run pg_release",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Is pg_insert?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Run pg_release": {
+   "main": [
+    [
+     {
+      "node": "Collect pg_release",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Collect pg_release": {
+   "main": [
+    [
+     {
+      "node": "Plan atomic operation",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Is pg_insert?": {
+   "main": [
+    [
+     {
+      "node": "Run pg_insert",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Is pg_read?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Run pg_insert": {
+   "main": [
+    [
+     {
+      "node": "Collect pg_insert",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Collect pg_insert": {
+   "main": [
+    [
+     {
+      "node": "Plan atomic operation",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Is pg_read?": {
+   "main": [
+    [
+     {
+      "node": "Run pg_read",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Is pg_append?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Run pg_read": {
+   "main": [
+    [
+     {
+      "node": "Collect pg_read",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Collect pg_read": {
+   "main": [
+    [
+     {
+      "node": "Plan atomic operation",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Is pg_append?": {
+   "main": [
+    [
+     {
+      "node": "Run pg_append",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Is wait?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Run pg_append": {
+   "main": [
+    [
+     {
+      "node": "Collect pg_append",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Collect pg_append": {
+   "main": [
+    [
+     {
+      "node": "Plan atomic operation",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Is wait?": {
+   "main": [
+    [
+     {
+      "node": "Run wait",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Is downstream?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Run wait": {
+   "main": [
+    [
+     {
+      "node": "Collect wait",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Collect wait": {
+   "main": [
+    [
+     {
+      "node": "Plan atomic operation",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Is downstream?": {
+   "main": [
+    [
+     {
+      "node": "Run downstream",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Is respond?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Run downstream": {
+   "main": [
+    [
+     {
+      "node": "Collect downstream",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Collect downstream": {
+   "main": [
+    [
+     {
+      "node": "Plan atomic operation",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Is respond?": {
+   "main": [
+    [
+     {
+      "node": "Run respond",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Is done?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Run respond": {
+   "main": [
+    [
+     {
+      "node": "Raise callback blocker",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Is done?": {
+   "main": [
+    [
+     {
+      "node": "Run done",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Plan atomic operation": {
+   "main": [
+    [
+     {
+      "node": "Is airtable?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Run airtable read": {
+   "main": [
+    [
+     {
+      "node": "Collect airtable",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Run airtable write": {
+   "main": [
+    [
+     {
+      "node": "Collect airtable",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "authentication": "headerAuth",
+    "responseMode": "responseNode",
+    "options": {}
+   },
+   "name": "Replenishment callback",
+   "id": "3fa39cf0-463e-4286-8a1c-5c2060fdc44a",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    -1024,
+    1392
+   ]
+  },
+  {
+   "parameters": {
+    "inputSource": "passthrough"
+   },
+   "name": "Internal checkpoint",
+   "id": "2b6962c0-f251-464a-9035-b1a56770c922",
+   "type": "n8n-nodes-base.executeWorkflowTrigger",
+   "typeVersion": 1.1,
+   "position": [
+    -1024,
+    1696
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "'use strict';\n// Pure policy shared by the staged workflow snippets and the isolated test harness.\n// No API calls, writes, credentials, Slack sends, or research calls occur here.\nconst F = Object.freeze({\n  cycle:'Replenishment Cycle ID', baseline:'Replenishment Starting Queue',\n  receipt:'Replenishment Receipt', progress:'Replenishment Cycle Progress',\n  claim:'Replenishment Alert Claim', delivery:'Replenishment Alert Delivery',\n  ready:'Replenishment Alert Ready'\n});\nfunction integer(value, name, min=0) {\n  if(value===null || value===undefined || value==='' || typeof value==='boolean') throw Error(name+' is missing.');\n  const n=Number(value); if(!Number.isSafeInteger(n)||n<min)throw Error(name+' is invalid.');return n;\n}\nfunction timestamp(value,name){const t=Date.parse(value);if(!Number.isFinite(t))throw Error(name+' is invalid.');return t;}\nfunction cycleId(campaignId,importId){return 'bison:'+integer(campaignId,'campaign ID',1)+':import:'+integer(importId,'import ID',1);}\nfunction eventKey(recordId,cycle){if(!/^rec[a-zA-Z0-9]{14}$/.test(recordId))throw Error('Invalid campaign record ID.');if(cycle!=='initial'&&!/^bison:\\d+:import:\\d+$/.test(cycle))throw Error('Invalid cycle ID.');return recordId+'|progress_60'+(cycle==='initial'?'':'|'+cycle);}\nfunction progress(fields){\n  if(!fields[F.cycle]){const p=Number(fields.Progress);return Number.isFinite(p)?Math.max(0,Math.min(1,p)):null;}\n  const q=integer(fields[F.baseline],'starting queue',1),remaining=integer(fields['Total Leads Remaining'],'remaining queue');\n  // An increase can be an untracked import/counter correction. Never manufacture consumption.\n  if(remaining>q)return null;\n  return Math.max(0,Math.min(1,1-remaining/q));\n}\nfunction makeCheckpoint(input, existingFields={}){\n  const {recordId,receipt,snapshot,importCreatedAt,observedAt}=input;\n  const c=integer(receipt.campaignId,'campaign ID',1),i=integer(receipt.leadListId,'import ID',1);\n  const id=cycleId(c,i);eventKey(recordId,id);\n  if(receipt.error||integer(receipt.failed||0,'failed rows')!==0||integer(receipt.added,'net added',0)===0)return null;\n  if(receipt.attachmentReceipt?.success!==true||receipt.attachmentReceipt.campaignId!==c||receipt.attachmentReceipt.leadListId!==i)throw Error('Exact attachment acknowledgment missing.');\n  if(receipt.providerImport?.status!=='Processed'||integer(receipt.providerImport.id,'confirmed import',1)!==i)throw Error('Import is not confirmed processed.');\n  const oldCycle=String(existingFields[F.cycle]||'');\n  if(oldCycle===id)return null; // Never reset a baseline on a duplicate receipt.\n  const created=timestamp(importCreatedAt,'import creation time');timestamp(observedAt,'observation time');\n  if(oldCycle){\n    let old;try{old=JSON.parse(existingFields[F.receipt]||'');}catch{throw Error('Existing cycle receipt is missing or invalid.');}\n    if(old.cycleId!==oldCycle)throw Error('Existing receipt identity mismatch.');\n    const oldTime=timestamp(old.importCreatedAt,'previous import creation time');\n    if(created<=oldTime)throw Error('Old or ambiguously ordered import cannot replace the current cycle.');\n  }\n  if(integer(snapshot.id,'snapshot campaign',1)!==c)throw Error('Provider campaign identity mismatch.');\n  const total=integer(snapshot.total_leads,'total leads'),contacted=integer(snapshot.total_leads_contacted,'contacted leads');\n  if(contacted>total||total!==integer(receipt.afterTotal,'confirmed total'))throw Error('Post-import snapshot is inconsistent; reconcile the existing import, do not upload again.');\n  const queue=total-contacted;\n  if(queue===0)throw Error('Post-import uncontacted queue is zero; reconcile before initializing a fresh cycle.');\n  const record={schemaVersion:1,cycleId:id,campaignId:c,importId:i,importCreatedAt,observedAt,sourceLeadListId:input.sourceLeadListId,outputType:receipt.outputType,netAdded:receipt.added,startingQueue:queue,totalLeads:total,contactedLeads:contacted,metric:'uncontacted campaign queue after confirmed replenishment; includes older unsent leads'};\n  return {recordId,fields:{[F.cycle]:id,[F.baseline]:queue,[F.receipt]:JSON.stringify(record),'Total Leads':total,'Total Leads Contacted':contacted,'Total Leads Remaining':queue}};\n}\nfunction planAlert({recordId,triggerCycleId,fields,taskKeys=[]}){\n  const current=String(fields[F.cycle]||'initial');\n  if(String(triggerCycleId||'initial')!==current)return {send:false,reason:'stale event'};\n  const key=eventKey(recordId,current),p=progress(fields);\n  if(p===null||p<0.6)return {send:false,reason:'not eligible'};\n  if(fields[F.claim]===current||taskKeys.includes(key))return {send:false,reason:'already claimed; reconcile pending delivery instead of replaying'};\n  if(current==='initial'&&taskKeys.some(k=>[recordId+'|learning_60percent',recordId+'|forecast_60percent'].includes(k)))return {send:false,reason:'legacy checkpoint already handled'};\n  return {send:true,cycleId:current,key,progress:p,remaining:integer(fields['Total Leads Remaining']??0,'remaining queue')};\n}\nfunction validateEvent({recordId,cycleId:expected,fields}){\n  const current=String(fields[F.cycle]||'initial');eventKey(recordId,expected);\n  if(expected!==current)throw Error('Stale replenishment event: campaign cycle changed.');\n  const p=progress(fields);if(p===null||p<0.6)throw Error('Cycle is not at the replenishment threshold.');\n  return {cycleId:current,cycleProgress:p,eventKey:eventKey(recordId,current)};\n}\nfunction learningIdentity(campaignId,cycle,completion){\n  const checkpoint=cycle==='initial'?(completion>=0.999?'completed':'60percent'):'60percent';\n  return {checkpoint,marker:cycle==='initial'?`[Campaign learning v1:${campaignId}:${checkpoint}]`:`[Campaign learning v2:${campaignId}:${checkpoint}:${cycle}]`,suffix:cycle==='initial'?'':`|${cycle}`};\n}\n\n'use strict';\n// Pure coordinator state machine. SQL/native HTTP nodes perform all effects.\n\n\nconst AT='https://api.airtable.com/v0/appxqINt5XKw7a76A/';\nconst CAM=AT+'tblAVAA6uBPaMj28P/',TASK=AT+'tblRBxm2N53331mIm';\nconst PREFIX='replenishment:v2:';\nconst policyCycleId=(campaignId,importId)=>'bison:'+integer(campaignId,'receipt campaign',1)+':import:'+integer(importId,'receipt import',1);\nconst clone=x=>JSON.parse(JSON.stringify(x));\nfunction normalize(input,executionId,internal=false){\n const b=input.body??input;const recordId=String(b.recordId||'');\n if(!/^rec[a-zA-Z0-9]{14}$/.test(recordId))throw Error('Invalid campaign record ID.');\n const kind=internal?String(b.operation||'checkpoint'):String(b.operation||'');\n if(!(internal?['checkpoint','commit_review','commit_forecast']:['claim','complete']).includes(kind))throw Error('Unsupported coordinator operation.');\n const cycle=kind==='checkpoint'&&b.receipt?policyCycleId(b.receipt.campaignId,b.receipt.leadListId):String(b.cycleId||'initial');eventKey(recordId,cycle);\n if(!internal&&!/^[a-f0-9-]{36}$/i.test(String(b.attemptId||'')))throw Error('An exact delivery attempt ID is required.');\n if(kind==='complete'&&!/^\\d+$/.test(String(b.claimExecutionId||'')))throw Error('Exact claim execution ID required.');\n const attempt=internal?String(executionId)+':'+kind:b.attemptId;\n return {stage:'start',kind,internal,recordId,cycleId:cycle,attemptId:attempt,executionId:String(executionId),claimExecutionId:kind==='complete'?String(b.claimExecutionId):String(executionId),resource:PREFIX+'campaign:'+recordId,ownerRequest:PREFIX+'owner:'+recordId+':'+attempt,eventDbKey:PREFIX+'event:'+eventKey(recordId,cycle),eventKey:eventKey(recordId,cycle),commit:kind.startsWith('commit_')?clone(b):null,checkpoint:kind==='checkpoint'?{recordId,receipt:b.receipt,sourceLeadListId:b.sourceLeadListId}:null,startedAt:new Date().toISOString(),waitCount:0,lockOwned:false};\n}\nfunction responseData(response){\n if(!response||response.error)throw Error('The preceding operation did not confirm success.');\n if(response.statusCode!=null&&(Number(response.statusCode)<200||Number(response.statusCode)>=300))throw Error('Operation failed with HTTP '+response.statusCode+'.');\n const b=response.body??response;return typeof b==='string'?JSON.parse(b):b;\n}\nfunction result(state,response,action,extra={}){return {state,action,...extra};}\nfunction finish(s,payload,code=200){return result(s,null,s.internal?'done':'respond',{payload:{recordId:s.recordId,cycleId:s.newCycleId||s.cycleId,...payload},httpStatus:code});}\nfunction at(s,stage,method,url,body){s.stage=stage;return result(s,null,'airtable',{request:{method,url,...(body?{body}:{} )}});}\nfunction bison(s,stage,path){s.stage=stage;return result(s,null,'bison',{request:{method:'GET',url:'https://send.dulcy.io'+path,apiKey:s.apiKey}});}\nfunction pg(s,stage,op,params){s.stage=stage;return result(s,null,op,{params});}\nfunction record(s,r){if(r.id!==s.recordId)throw Error('Campaign identity mismatch.');s.fields=r.fields||{};return s.fields;}\nfunction providerContext(s){\n const f=s.fields;s.campaignId=integer(f.ID||f['EmailBison Direct Campaign ID'],'campaign ID',1);\n const key=f['EmailBison API (from Client)'];s.apiKey=Array.isArray(key)?key[0]:key;\n if(!s.apiKey)throw Error('Existing EmailBison credential lookup unavailable.');\n}\nfunction release(s,after,payload){s.afterRelease=after;s.finishPayload=payload;return pg(s,'released','pg_release',[s.resource,s.ownerRequest,s.claimExecutionId]);}\nfunction events(r){return Object.fromEntries((r.events||[]).map(e=>[e.request_id,e.context]));}\nfunction insert(s,stage,key,context){return pg(s,stage,'pg_insert',[s.resource,s.ownerRequest,s.claimExecutionId,key,JSON.stringify(context)]);}\nfunction existingTasksUrl(s){\n const keys=[s.eventKey];if(s.cycleId==='initial')keys.push(s.recordId+'|learning_60percent',s.recordId+'|forecast_60percent');\n const formula='OR('+keys.map(k=>'{Automation Key}='+JSON.stringify(k)).join(',')+')';\n return TASK+'?pageSize=100&filterByFormula='+encodeURIComponent(formula);\n}\nfunction delivery(s,downstream){return {schemaVersion:2,cycleId:s.cycleId,eventKey:s.eventKey,taskId:s.taskId,status:'sent',sentAt:s.sentAt,downstream,claimExecutionId:s.claimExecutionId,attemptId:s.attemptId};}\nfunction failure(s,error){\n const message=String(error.message||error).replace(s.apiKey||'__no_key__','[REDACTED]').slice(0,600);\n return finish(s,{ok:false,blocked:true,retainedLock:s.lockOwned||s.stage==='acquired',lockOutcome:s.lockOwned?'held':(s.stage==='acquired'?'uncertain':'not_owned'),recordId:s.recordId,cycleId:s.cycleId,reason:message,instruction:'Reconcile this exact operation. Do not reupload leads or blindly resend Slack.'},503);\n}\nfunction plan(input){\n const s=clone(input.state);let r;\n try{\n  if(s.stage!=='start')r=responseData(input.response);\n  // SQL transport success alone does not establish lock ownership or audit persistence.\n  const insertStages=['event_claimed','claim_task_audited','commit_claimed','commit_finished','completion_claimed','sent_audited','downstream_claimed','checkpoint_audited'];\n  if(insertStages.includes(s.stage)){\n   if(r.owned!==true)throw Error('Audit operation did not confirm exact mutex ownership. Reconcile before further effects.');\n   if(typeof r.inserted!=='boolean')throw Error('Audit insertion outcome is uncertain. Reconcile before further effects.');\n  }\n  if(['commit_finished','checkpoint_audited','claim_task_audited','sent_audited','downstream_audited'].includes(s.stage)&&r.inserted!==true)throw Error('New confirmation receipt was not inserted. Reconcile the existing receipt; do not repeat external effects.');\n  if(s.stage==='commit_existing'&&r.owned!==true)throw Error('Existing commit inspection did not confirm exact mutex ownership. Reconcile before further effects.');\n  switch(s.stage){\n   case 'start':\n    if(s.kind==='complete')return pg(s,'completion_owned','pg_read',[s.resource,s.ownerRequest,s.claimExecutionId,s.eventDbKey]);\n    return pg(s,'acquired','pg_acquire',[s.resource,s.ownerRequest,s.claimExecutionId,JSON.stringify({purpose:'replenishment-'+s.kind,recordId:s.recordId,attemptId:s.attemptId})]);\n   case 'acquired':\n    if(!r.acquired){\n     if(s.kind==='claim'){if(r.busy&&!r.already_used){s.stage='claim_busy_waited';return result(s,null,'wait');}return finish(s,{ok:true,shouldSend:false,busy:!!r.busy,alreadyUsed:!!r.already_used});}\n     if(r.already_used)throw Error('This mutex owner already ran; reconcile the prior checkpoint instead of reentering it.');\n     if(++s.waitCount>120)throw Error('Campaign mutex remains busy. Reconcile its existing owner; no expiry takeover was attempted.');\n     s.ownerRequest=PREFIX+'owner:'+s.recordId+':'+s.attemptId+':retry:'+s.waitCount;s.stage='waited';return result(s,null,'wait');\n    }\n    s.lockOwned=true;return at(s,'campaign_read','GET',CAM+s.recordId);\n   case 'claim_busy_waited':return finish(s,{ok:true,shouldSend:false,busy:true,reason:'campaign mutex busy; this owner was consumed'});\n   case 'waited':return pg(s,'acquired','pg_acquire',[s.resource,s.ownerRequest,s.claimExecutionId,JSON.stringify({purpose:'replenishment-'+s.kind,recordId:s.recordId,attemptId:s.attemptId})]);\n   case 'campaign_read':{\n    const f=record(s,r);\n    if(s.kind.startsWith('commit_')){\n     if(String(f[F.cycle]||'initial')!==s.cycleId)return release(s,'finish',{ok:true,committed:false,reason:'stale cycle'});\n     s.apiKey=undefined;\n     s.campaignId=integer(f.ID||f['EmailBison Direct Campaign ID'],'campaign ID',1);\n     const checkpoint=s.commit.checkpoint||'60percent';if(!['60percent','completed'].includes(checkpoint)||(s.cycleId!=='initial'&&checkpoint!=='60percent'))throw Error('Invalid original review checkpoint.');\n     const identity=learningIdentity(s.campaignId,s.cycleId,checkpoint==='completed'?1:.6);\n     s.commitKey=s.kind==='commit_review'?s.recordId+'|learning_'+identity.checkpoint+identity.suffix:s.eventKey;\n     if(s.kind==='commit_review'&&(typeof s.commit.report!=='string'||s.commit.report.length<200||!s.commit.report.includes(identity.marker)))throw Error('Review identity or content is invalid.');\n     if(s.kind==='commit_forecast'&&!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(s.commit.dueDate||'')))throw Error('Valid replenishment due date required.');\n     return insert(s,'commit_claimed',s.eventDbKey+':'+s.kind,{purpose:s.kind+'-attempt-reserved',recordId:s.recordId,cycleId:s.cycleId,ownerRequest:s.ownerRequest});\n    }\n    providerContext(s);\n    if(s.kind==='claim'){\n     const current=String(f[F.cycle]||'initial');\n     if(current!==s.cycleId)return release(s,'finish',{ok:true,shouldSend:false,reason:'stale cycle'});\n     if(f[F.claim]===s.cycleId)return release(s,'finish',{ok:true,shouldSend:false,reason:'already claimed'});\n     if(s.cycleId!=='initial'&&!s.cycleId.startsWith('bison:'+s.campaignId+':'))throw Error('Cycle provider identity mismatch.');\n     return bison(s,'claim_stats','/api/campaigns/'+s.campaignId);\n    }\n    const receipt=s.checkpoint.receipt;\n    if(!receipt||integer(receipt.campaignId,'receipt campaign',1)!==s.campaignId)throw Error('Checkpoint campaign identity mismatch.');\n    if(receipt.error||Number(receipt.failed||0)>0||Number(receipt.added||0)<=0)return release(s,'finish',{ok:true,checkpoint:false,reason:'no confirmed positive successful growth'});\n    return bison(s,'checkpoint_import','/api/lead-lists/'+integer(receipt.leadListId,'import ID',1));\n   }\n   case 'commit_claimed':\n    if(!r.inserted)return pg(s,'commit_existing','pg_read',[s.resource,s.ownerRequest,s.claimExecutionId,s.eventDbKey]);\n    return at(s,'commit_task_read','GET',TASK+'?pageSize=100&filterByFormula='+encodeURIComponent('{Automation Key}='+JSON.stringify(s.commitKey)));\n   case 'commit_existing':{\n    const e=events(r);if(e[s.eventDbKey+':'+s.kind+':done'])return release(s,'finish',{ok:true,committed:false,reason:'already committed'});\n    return release(s,'finish',{ok:false,blocked:true,reason:'Previous commit reserved but completion is uncertain. Reconcile exact cycle; do not repeat writes.'});\n   }\n   case 'commit_task_read':{\n    if(r.offset||!Array.isArray(r.records)||r.records.length>1)throw Error('Cannot safely resolve one cycle task.');\n    const existing=r.records[0], f=s.fields, client=f.Client||[];\n    let fields;\n    if(s.kind==='commit_review'){\n     // Existing owner status is never reset. Review content is updated only for this exact cycle.\n     fields={'Automation Key':s.commitKey,'Task Name':String(f.Name||s.recordId)+' - 60% review',Client:client,Campaign:[s.recordId],Stage:'Review/QA',Priority:'High',Notes:s.commit.report,...(!existing?{Status:'Not Started'}:{})};\n    }else{\n     if(!existing)throw Error('Forecast cannot create a second alert task; the claimed cycle ledger is missing.');\n     fields={'Due Date':s.commit.dueDate,...(s.commit.taskName?{'Task Name':String(s.commit.taskName).slice(0,300)}:{})};\n    }\n    s.commitTaskId=existing?.id;\n    return at(s,'commit_task_saved',existing?'PATCH':'POST',TASK+(existing?'/'+existing.id:''),{fields});\n   }\n   case 'commit_task_saved':\n    if(!/^rec[a-zA-Z0-9]{14}$/.test(String(r.id||''))||(s.commitTaskId&&r.id!==s.commitTaskId))throw Error('Cycle task write was not confirmed.');\n    if(s.kind==='commit_review')return at(s,'commit_campaign_saved','PATCH',CAM+s.recordId,{fields:{'Improvement Sugestion':s.commit.report}});\n    return insert(s,'commit_finished',s.eventDbKey+':'+s.kind+':done',{purpose:s.kind+'-write-confirmed',recordId:s.recordId,cycleId:s.cycleId,completedAt:new Date().toISOString()});\n   case 'commit_campaign_saved':\n    record(s,r);if(s.fields['Improvement Sugestion']!==s.commit.report)throw Error('Cycle review write not confirmed.');\n    return insert(s,'commit_finished',s.eventDbKey+':'+s.kind+':done',{purpose:s.kind+'-write-confirmed',recordId:s.recordId,cycleId:s.cycleId,completedAt:new Date().toISOString()});\n   case 'commit_finished':return release(s,'finish',{ok:true,committed:true,operation:s.kind,cycleId:s.cycleId});\n   case 'checkpoint_import':{\n    const v=r.data,receipt=s.checkpoint.receipt;\n    if(!v||Number(v.id)!==Number(receipt.leadListId)||v.status!=='Processed'||Number(v.leads_failed)!==0||Number(v.leads_succeeded)!==Number(receipt.providerImport?.succeeded)||Number(v.leads_processed)!==Number(receipt.providerImport?.processed))throw Error('Existing processed import no longer matches the successful receipt.');\n    s.importCreatedAt=v.created_at;return bison(s,'checkpoint_stats','/api/campaigns/'+s.campaignId);\n   }\n   case 'checkpoint_stats':{\n    let cp;\n    try{cp=makeCheckpoint({...s.checkpoint,snapshot:r.data,importCreatedAt:s.importCreatedAt,observedAt:new Date().toISOString()},s.fields);}\n    catch(e){s.checkpointError=String(e.message).slice(0,500);return at(s,'checkpoint_error_saved','PATCH',CAM+s.recordId,{fields:{'Replenishment Checkpoint Error':'Import '+s.checkpoint.receipt.leadListId+' is processed. Alert checkpoint not initialized: '+s.checkpointError+'. Reconcile this existing import; do not reupload.'}});}\n    if(!cp)return release(s,'finish',{ok:true,checkpoint:false,reason:'same import already checkpointed'});\n    cp.fields['Replenishment Checkpoint Error']='';s.newCycleId=cp.fields[F.cycle];return at(s,'checkpoint_saved','PATCH',CAM+s.recordId,{fields:cp.fields});\n   }\n   case 'checkpoint_saved':\n    record(s,r);if(s.fields[F.cycle]!==s.newCycleId)throw Error('Checkpoint write was not confirmed.');\n    return insert(s,'checkpoint_audited',PREFIX+'checkpoint:'+s.recordId+':'+s.newCycleId,{purpose:'replenishment-checkpoint',recordId:s.recordId,cycleId:s.newCycleId,receipt:JSON.parse(s.fields[F.receipt])});\n   case 'checkpoint_audited':return release(s,'finish',{ok:true,checkpoint:true,cycleId:s.newCycleId});\n   case 'checkpoint_error_saved':record(s,r);return release(s,'finish',{ok:false,blocked:true,checkpoint:false,reason:s.checkpointError,instruction:'Existing import is complete. Reconcile only this branch checkpoint; do not reupload.'});\n   case 'claim_stats':{\n    const c=r.data;if(!c||integer(c.id,'provider campaign',1)!==s.campaignId)throw Error('Provider identity mismatch.');\n    const total=integer(c.total_leads,'total leads'),contacted=integer(c.total_leads_contacted,'contacted leads');if(contacted>total)throw Error('Provider contacted count exceeds total.');\n    s.remaining=total-contacted;\n    const fresh={...s.fields,'Total Leads Remaining':s.remaining,Progress:Number(c.completion_percentage)/100};\n    s.cycleProgress=progress(fresh);\n    if(s.cycleProgress===null||s.cycleProgress<.6)return release(s,'finish',{ok:true,shouldSend:false,reason:'fresh provider queue is not at threshold'});\n    s.qualifiedAt=new Date().toISOString();return at(s,'claim_tasks','GET',existingTasksUrl(s));\n   }\n   case 'claim_tasks':{\n    if(r.offset||!Array.isArray(r.records))throw Error('Incomplete task reconciliation.');\n    if(r.records.length)return release(s,'finish',{ok:true,shouldSend:false,reason:'existing cycle or legacy task'});\n    const claim={purpose:'replenishment-alert-claim',recordId:s.recordId,cycleId:s.cycleId,eventKey:s.eventKey,attemptId:s.attemptId,claimExecutionId:s.claimExecutionId,ownerRequest:s.ownerRequest,qualifiedAt:s.qualifiedAt,cycleProgress:s.cycleProgress,remaining:s.remaining};\n    return insert(s,'event_claimed',s.eventDbKey,claim);\n   }\n   case 'event_claimed':\n    if(!r.inserted)return release(s,'finish',{ok:true,shouldSend:false,reason:'durable event claim already exists'});\n    return at(s,'claim_task_saved','POST',TASK,{fields:{'Task Name':'Replenishment alert - '+String(s.fields.Name||s.recordId),'Automation Key':s.eventKey,Campaign:[s.recordId],Client:s.fields.Client||[],Status:'Blocked',Priority:'High',Stage:'Intake',Notes:'PENDING ALERT DELIVERY. '+s.eventKey+'\\nClaimed '+s.qualifiedAt+'. Do not resend until Slack is reconciled. Cycle metric is the replenished uncontacted queue, including older unsent leads.'}});\n   case 'claim_task_saved':\n    if(!/^rec[a-zA-Z0-9]{14}$/.test(String(r.id||''))||r.fields?.['Automation Key']!==s.eventKey)throw Error('Alert task creation was not confirmed.');s.taskId=r.id;\n    return insert(s,'claim_task_audited',s.eventDbKey+':task',{taskId:s.taskId,recordId:s.recordId,cycleId:s.cycleId,attemptId:s.attemptId});\n   case 'claim_task_audited':\n    return at(s,'claim_mirrored','PATCH',CAM+s.recordId,{fields:{[F.claim]:s.cycleId,[F.delivery]:JSON.stringify({schemaVersion:2,status:'pending',cycleId:s.cycleId,eventKey:s.eventKey,taskId:s.taskId,claimedAt:s.qualifiedAt,attemptId:s.attemptId,claimExecutionId:s.claimExecutionId})}});\n   case 'claim_mirrored':{\n    record(s,r);if(s.fields[F.claim]!==s.cycleId)throw Error('Alert claim mirror not confirmed.');\n    const label=s.cycleId==='initial'?'campaign completion':'replenished uncontacted queue consumed';\n    const alertText='The campaign *'+String(s.fields.Name||s.recordId)+'* has reached *'+(s.cycleProgress*100).toFixed(1)+'% '+label+'*.\\n\\nTime to add more leads or schedule a new campaign.\\nUncontacted leads remaining: '+s.remaining+'.\\nReplenishment cycle: '+s.cycleId+'\\nEvent key: '+s.eventKey+'\\nChecked: '+s.qualifiedAt+'\\nThis is an early replenishment warning, not the date of the final follow-up.\\n\\n<!channel>';\n    // Persistently hold the mutex across the original Airtable Slack action.\n    // There is no lease expiry or automatic takeover. Only its exact completion may release it.\n    return finish(s,{ok:true,shouldSend:true,cycleId:s.cycleId,eventKey:s.eventKey,taskId:s.taskId,attemptId:s.attemptId,claimExecutionId:s.claimExecutionId,alertText});\n   }\n   case 'completion_owned':{\n    const e=events(r),claim=e[s.eventDbKey],sent=e[s.eventDbKey+':sent'];\n    if(!claim||claim.attemptId!==s.attemptId||claim.claimExecutionId!==s.claimExecutionId)throw Error('Completion does not match the durable alert claim.');\n    if(!r.owned){if(sent)return finish(s,{ok:true,alreadyComplete:true,slackSent:true});throw Error('Alert mutex ownership is not confirmed.');}\n    s.lockOwned=true;s.taskId=e[s.eventDbKey+':task']?.taskId;if(!s.taskId)throw Error('Claimed task identity is missing.');\n    s.sentAt=sent?.sentAt||new Date().toISOString();\n    return insert(s,'completion_claimed',s.eventDbKey+':completion',{purpose:'exclusive-completion-handler',executionId:s.executionId,attemptId:s.attemptId,claimExecutionId:s.claimExecutionId});\n   }\n   case 'completion_claimed':\n    if(!r.inserted)return finish(s,{ok:true,alreadyProcessing:true,slackSent:true,instruction:'An existing completion owns this receipt. Do not resend Slack or release its mutex.'});\n    return insert(s,'sent_audited',s.eventDbKey+':sent',{purpose:'slack-action-succeeded',recordId:s.recordId,cycleId:s.cycleId,eventKey:s.eventKey,taskId:s.taskId,sentAt:s.sentAt,attemptId:s.attemptId,claimExecutionId:s.claimExecutionId});\n   case 'sent_audited':return at(s,'complete_campaign','GET',CAM+s.recordId);\n   case 'complete_campaign':\n    record(s,r);if(String(s.fields[F.cycle]||'initial')!==s.cycleId)throw Error('Campaign cycle changed outside the coordinator while its mutex was held. Preserve the sent receipt and reconcile.');\n    return at(s,'sent_mirrored','PATCH',CAM+s.recordId,{fields:{[F.delivery]:JSON.stringify(delivery(s,'pending'))}});\n   case 'sent_mirrored':record(s,r);return at(s,'complete_task','GET',TASK+'/'+s.taskId);\n   case 'complete_task':{\n    if(r.id!==s.taskId||r.fields?.['Automation Key']!==s.eventKey)throw Error('Completion task identity mismatch.');\n    // Do not erase owner/listener work that already changed this task after the Slack event.\n    if(r.fields.Status==='Blocked'&&String(r.fields.Notes||'').startsWith('PENDING ALERT DELIVERY. '+s.eventKey))return at(s,'task_completed','PATCH',TASK+'/'+s.taskId,{fields:{Status:'Not Started',Notes:'SLACK ACTION SUCCEEDED. '+s.eventKey+'\\nDelivered '+s.sentAt+'. Replenishment queue warning, not the final send date. Any forecast due date is an earliest queue-depletion bound at configured capacity, not an exact normal-volume-drop prediction.'}});\n    return insert(s,'downstream_claimed',s.eventDbKey+':downstream_claim',{purpose:'downstream-request-claim',recordId:s.recordId,cycleId:s.cycleId,claimedAt:new Date().toISOString()});\n   }\n   case 'task_completed':return insert(s,'downstream_claimed',s.eventDbKey+':downstream_claim',{purpose:'downstream-request-claim',recordId:s.recordId,cycleId:s.cycleId,claimedAt:new Date().toISOString()});\n   case 'downstream_claimed':\n    s.sendDownstream=!!r.inserted;return release(s,'downstream',{ok:true,slackSent:true});\n   case 'released':\n    if(!r.released&&!r.already_released)throw Error('Mutex release is unconfirmed.');s.lockOwned=false;\n    if(s.afterRelease==='downstream'&&s.sendDownstream){s.stage='downstream_called';return result(s,null,'downstream',{request:{body:{recordId:s.recordId,cycleId:s.cycleId}}});}\n    return finish(s,s.finishPayload,s.finishPayload?.ok===false?409:200);\n   case 'downstream_called':\n    // An immutable acceptance record is stored without acquiring another campaign mutex.\n    // It does not rewrite mutable campaign metadata, and it never claims execution completion.\n    return pg(s,'downstream_audited','pg_append',[s.eventDbKey+':downstream_accepted',s.resource,s.claimExecutionId,JSON.stringify({purpose:'downstream-http-accepted',recordId:s.recordId,cycleId:s.cycleId,acceptedAt:new Date().toISOString()})]);\n   case 'downstream_audited':return finish(s,{ok:true,slackSent:true,downstream:'accepted'});\n   default:throw Error('Unexpected coordinator stage.');\n  }\n }catch(e){return failure(s,e);}\n}\n\nreturn [{json:{state:normalize($input.first().json,$execution.id,false)}}];"
+   },
+   "name": "Validate callback",
+   "id": "b97d9cca-898d-431f-8fc3-81e04734419c",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -784,
+    1392
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "'use strict';\n// Pure policy shared by the staged workflow snippets and the isolated test harness.\n// No API calls, writes, credentials, Slack sends, or research calls occur here.\nconst F = Object.freeze({\n  cycle:'Replenishment Cycle ID', baseline:'Replenishment Starting Queue',\n  receipt:'Replenishment Receipt', progress:'Replenishment Cycle Progress',\n  claim:'Replenishment Alert Claim', delivery:'Replenishment Alert Delivery',\n  ready:'Replenishment Alert Ready'\n});\nfunction integer(value, name, min=0) {\n  if(value===null || value===undefined || value==='' || typeof value==='boolean') throw Error(name+' is missing.');\n  const n=Number(value); if(!Number.isSafeInteger(n)||n<min)throw Error(name+' is invalid.');return n;\n}\nfunction timestamp(value,name){const t=Date.parse(value);if(!Number.isFinite(t))throw Error(name+' is invalid.');return t;}\nfunction cycleId(campaignId,importId){return 'bison:'+integer(campaignId,'campaign ID',1)+':import:'+integer(importId,'import ID',1);}\nfunction eventKey(recordId,cycle){if(!/^rec[a-zA-Z0-9]{14}$/.test(recordId))throw Error('Invalid campaign record ID.');if(cycle!=='initial'&&!/^bison:\\d+:import:\\d+$/.test(cycle))throw Error('Invalid cycle ID.');return recordId+'|progress_60'+(cycle==='initial'?'':'|'+cycle);}\nfunction progress(fields){\n  if(!fields[F.cycle]){const p=Number(fields.Progress);return Number.isFinite(p)?Math.max(0,Math.min(1,p)):null;}\n  const q=integer(fields[F.baseline],'starting queue',1),remaining=integer(fields['Total Leads Remaining'],'remaining queue');\n  // An increase can be an untracked import/counter correction. Never manufacture consumption.\n  if(remaining>q)return null;\n  return Math.max(0,Math.min(1,1-remaining/q));\n}\nfunction makeCheckpoint(input, existingFields={}){\n  const {recordId,receipt,snapshot,importCreatedAt,observedAt}=input;\n  const c=integer(receipt.campaignId,'campaign ID',1),i=integer(receipt.leadListId,'import ID',1);\n  const id=cycleId(c,i);eventKey(recordId,id);\n  if(receipt.error||integer(receipt.failed||0,'failed rows')!==0||integer(receipt.added,'net added',0)===0)return null;\n  if(receipt.attachmentReceipt?.success!==true||receipt.attachmentReceipt.campaignId!==c||receipt.attachmentReceipt.leadListId!==i)throw Error('Exact attachment acknowledgment missing.');\n  if(receipt.providerImport?.status!=='Processed'||integer(receipt.providerImport.id,'confirmed import',1)!==i)throw Error('Import is not confirmed processed.');\n  const oldCycle=String(existingFields[F.cycle]||'');\n  if(oldCycle===id)return null; // Never reset a baseline on a duplicate receipt.\n  const created=timestamp(importCreatedAt,'import creation time');timestamp(observedAt,'observation time');\n  if(oldCycle){\n    let old;try{old=JSON.parse(existingFields[F.receipt]||'');}catch{throw Error('Existing cycle receipt is missing or invalid.');}\n    if(old.cycleId!==oldCycle)throw Error('Existing receipt identity mismatch.');\n    const oldTime=timestamp(old.importCreatedAt,'previous import creation time');\n    if(created<=oldTime)throw Error('Old or ambiguously ordered import cannot replace the current cycle.');\n  }\n  if(integer(snapshot.id,'snapshot campaign',1)!==c)throw Error('Provider campaign identity mismatch.');\n  const total=integer(snapshot.total_leads,'total leads'),contacted=integer(snapshot.total_leads_contacted,'contacted leads');\n  if(contacted>total||total!==integer(receipt.afterTotal,'confirmed total'))throw Error('Post-import snapshot is inconsistent; reconcile the existing import, do not upload again.');\n  const queue=total-contacted;\n  if(queue===0)throw Error('Post-import uncontacted queue is zero; reconcile before initializing a fresh cycle.');\n  const record={schemaVersion:1,cycleId:id,campaignId:c,importId:i,importCreatedAt,observedAt,sourceLeadListId:input.sourceLeadListId,outputType:receipt.outputType,netAdded:receipt.added,startingQueue:queue,totalLeads:total,contactedLeads:contacted,metric:'uncontacted campaign queue after confirmed replenishment; includes older unsent leads'};\n  return {recordId,fields:{[F.cycle]:id,[F.baseline]:queue,[F.receipt]:JSON.stringify(record),'Total Leads':total,'Total Leads Contacted':contacted,'Total Leads Remaining':queue}};\n}\nfunction planAlert({recordId,triggerCycleId,fields,taskKeys=[]}){\n  const current=String(fields[F.cycle]||'initial');\n  if(String(triggerCycleId||'initial')!==current)return {send:false,reason:'stale event'};\n  const key=eventKey(recordId,current),p=progress(fields);\n  if(p===null||p<0.6)return {send:false,reason:'not eligible'};\n  if(fields[F.claim]===current||taskKeys.includes(key))return {send:false,reason:'already claimed; reconcile pending delivery instead of replaying'};\n  if(current==='initial'&&taskKeys.some(k=>[recordId+'|learning_60percent',recordId+'|forecast_60percent'].includes(k)))return {send:false,reason:'legacy checkpoint already handled'};\n  return {send:true,cycleId:current,key,progress:p,remaining:integer(fields['Total Leads Remaining']??0,'remaining queue')};\n}\nfunction validateEvent({recordId,cycleId:expected,fields}){\n  const current=String(fields[F.cycle]||'initial');eventKey(recordId,expected);\n  if(expected!==current)throw Error('Stale replenishment event: campaign cycle changed.');\n  const p=progress(fields);if(p===null||p<0.6)throw Error('Cycle is not at the replenishment threshold.');\n  return {cycleId:current,cycleProgress:p,eventKey:eventKey(recordId,current)};\n}\nfunction learningIdentity(campaignId,cycle,completion){\n  const checkpoint=cycle==='initial'?(completion>=0.999?'completed':'60percent'):'60percent';\n  return {checkpoint,marker:cycle==='initial'?`[Campaign learning v1:${campaignId}:${checkpoint}]`:`[Campaign learning v2:${campaignId}:${checkpoint}:${cycle}]`,suffix:cycle==='initial'?'':`|${cycle}`};\n}\n\n'use strict';\n// Pure coordinator state machine. SQL/native HTTP nodes perform all effects.\n\n\nconst AT='https://api.airtable.com/v0/appxqINt5XKw7a76A/';\nconst CAM=AT+'tblAVAA6uBPaMj28P/',TASK=AT+'tblRBxm2N53331mIm';\nconst PREFIX='replenishment:v2:';\nconst policyCycleId=(campaignId,importId)=>'bison:'+integer(campaignId,'receipt campaign',1)+':import:'+integer(importId,'receipt import',1);\nconst clone=x=>JSON.parse(JSON.stringify(x));\nfunction normalize(input,executionId,internal=false){\n const b=input.body??input;const recordId=String(b.recordId||'');\n if(!/^rec[a-zA-Z0-9]{14}$/.test(recordId))throw Error('Invalid campaign record ID.');\n const kind=internal?String(b.operation||'checkpoint'):String(b.operation||'');\n if(!(internal?['checkpoint','commit_review','commit_forecast']:['claim','complete']).includes(kind))throw Error('Unsupported coordinator operation.');\n const cycle=kind==='checkpoint'&&b.receipt?policyCycleId(b.receipt.campaignId,b.receipt.leadListId):String(b.cycleId||'initial');eventKey(recordId,cycle);\n if(!internal&&!/^[a-f0-9-]{36}$/i.test(String(b.attemptId||'')))throw Error('An exact delivery attempt ID is required.');\n if(kind==='complete'&&!/^\\d+$/.test(String(b.claimExecutionId||'')))throw Error('Exact claim execution ID required.');\n const attempt=internal?String(executionId)+':'+kind:b.attemptId;\n return {stage:'start',kind,internal,recordId,cycleId:cycle,attemptId:attempt,executionId:String(executionId),claimExecutionId:kind==='complete'?String(b.claimExecutionId):String(executionId),resource:PREFIX+'campaign:'+recordId,ownerRequest:PREFIX+'owner:'+recordId+':'+attempt,eventDbKey:PREFIX+'event:'+eventKey(recordId,cycle),eventKey:eventKey(recordId,cycle),commit:kind.startsWith('commit_')?clone(b):null,checkpoint:kind==='checkpoint'?{recordId,receipt:b.receipt,sourceLeadListId:b.sourceLeadListId}:null,startedAt:new Date().toISOString(),waitCount:0,lockOwned:false};\n}\nfunction responseData(response){\n if(!response||response.error)throw Error('The preceding operation did not confirm success.');\n if(response.statusCode!=null&&(Number(response.statusCode)<200||Number(response.statusCode)>=300))throw Error('Operation failed with HTTP '+response.statusCode+'.');\n const b=response.body??response;return typeof b==='string'?JSON.parse(b):b;\n}\nfunction result(state,response,action,extra={}){return {state,action,...extra};}\nfunction finish(s,payload,code=200){return result(s,null,s.internal?'done':'respond',{payload:{recordId:s.recordId,cycleId:s.newCycleId||s.cycleId,...payload},httpStatus:code});}\nfunction at(s,stage,method,url,body){s.stage=stage;return result(s,null,'airtable',{request:{method,url,...(body?{body}:{} )}});}\nfunction bison(s,stage,path){s.stage=stage;return result(s,null,'bison',{request:{method:'GET',url:'https://send.dulcy.io'+path,apiKey:s.apiKey}});}\nfunction pg(s,stage,op,params){s.stage=stage;return result(s,null,op,{params});}\nfunction record(s,r){if(r.id!==s.recordId)throw Error('Campaign identity mismatch.');s.fields=r.fields||{};return s.fields;}\nfunction providerContext(s){\n const f=s.fields;s.campaignId=integer(f.ID||f['EmailBison Direct Campaign ID'],'campaign ID',1);\n const key=f['EmailBison API (from Client)'];s.apiKey=Array.isArray(key)?key[0]:key;\n if(!s.apiKey)throw Error('Existing EmailBison credential lookup unavailable.');\n}\nfunction release(s,after,payload){s.afterRelease=after;s.finishPayload=payload;return pg(s,'released','pg_release',[s.resource,s.ownerRequest,s.claimExecutionId]);}\nfunction events(r){return Object.fromEntries((r.events||[]).map(e=>[e.request_id,e.context]));}\nfunction insert(s,stage,key,context){return pg(s,stage,'pg_insert',[s.resource,s.ownerRequest,s.claimExecutionId,key,JSON.stringify(context)]);}\nfunction existingTasksUrl(s){\n const keys=[s.eventKey];if(s.cycleId==='initial')keys.push(s.recordId+'|learning_60percent',s.recordId+'|forecast_60percent');\n const formula='OR('+keys.map(k=>'{Automation Key}='+JSON.stringify(k)).join(',')+')';\n return TASK+'?pageSize=100&filterByFormula='+encodeURIComponent(formula);\n}\nfunction delivery(s,downstream){return {schemaVersion:2,cycleId:s.cycleId,eventKey:s.eventKey,taskId:s.taskId,status:'sent',sentAt:s.sentAt,downstream,claimExecutionId:s.claimExecutionId,attemptId:s.attemptId};}\nfunction failure(s,error){\n const message=String(error.message||error).replace(s.apiKey||'__no_key__','[REDACTED]').slice(0,600);\n return finish(s,{ok:false,blocked:true,retainedLock:s.lockOwned||s.stage==='acquired',lockOutcome:s.lockOwned?'held':(s.stage==='acquired'?'uncertain':'not_owned'),recordId:s.recordId,cycleId:s.cycleId,reason:message,instruction:'Reconcile this exact operation. Do not reupload leads or blindly resend Slack.'},503);\n}\nfunction plan(input){\n const s=clone(input.state);let r;\n try{\n  if(s.stage!=='start')r=responseData(input.response);\n  // SQL transport success alone does not establish lock ownership or audit persistence.\n  const insertStages=['event_claimed','claim_task_audited','commit_claimed','commit_finished','completion_claimed','sent_audited','downstream_claimed','checkpoint_audited'];\n  if(insertStages.includes(s.stage)){\n   if(r.owned!==true)throw Error('Audit operation did not confirm exact mutex ownership. Reconcile before further effects.');\n   if(typeof r.inserted!=='boolean')throw Error('Audit insertion outcome is uncertain. Reconcile before further effects.');\n  }\n  if(['commit_finished','checkpoint_audited','claim_task_audited','sent_audited','downstream_audited'].includes(s.stage)&&r.inserted!==true)throw Error('New confirmation receipt was not inserted. Reconcile the existing receipt; do not repeat external effects.');\n  if(s.stage==='commit_existing'&&r.owned!==true)throw Error('Existing commit inspection did not confirm exact mutex ownership. Reconcile before further effects.');\n  switch(s.stage){\n   case 'start':\n    if(s.kind==='complete')return pg(s,'completion_owned','pg_read',[s.resource,s.ownerRequest,s.claimExecutionId,s.eventDbKey]);\n    return pg(s,'acquired','pg_acquire',[s.resource,s.ownerRequest,s.claimExecutionId,JSON.stringify({purpose:'replenishment-'+s.kind,recordId:s.recordId,attemptId:s.attemptId})]);\n   case 'acquired':\n    if(!r.acquired){\n     if(s.kind==='claim'){if(r.busy&&!r.already_used){s.stage='claim_busy_waited';return result(s,null,'wait');}return finish(s,{ok:true,shouldSend:false,busy:!!r.busy,alreadyUsed:!!r.already_used});}\n     if(r.already_used)throw Error('This mutex owner already ran; reconcile the prior checkpoint instead of reentering it.');\n     if(++s.waitCount>120)throw Error('Campaign mutex remains busy. Reconcile its existing owner; no expiry takeover was attempted.');\n     s.ownerRequest=PREFIX+'owner:'+s.recordId+':'+s.attemptId+':retry:'+s.waitCount;s.stage='waited';return result(s,null,'wait');\n    }\n    s.lockOwned=true;return at(s,'campaign_read','GET',CAM+s.recordId);\n   case 'claim_busy_waited':return finish(s,{ok:true,shouldSend:false,busy:true,reason:'campaign mutex busy; this owner was consumed'});\n   case 'waited':return pg(s,'acquired','pg_acquire',[s.resource,s.ownerRequest,s.claimExecutionId,JSON.stringify({purpose:'replenishment-'+s.kind,recordId:s.recordId,attemptId:s.attemptId})]);\n   case 'campaign_read':{\n    const f=record(s,r);\n    if(s.kind.startsWith('commit_')){\n     if(String(f[F.cycle]||'initial')!==s.cycleId)return release(s,'finish',{ok:true,committed:false,reason:'stale cycle'});\n     s.apiKey=undefined;\n     s.campaignId=integer(f.ID||f['EmailBison Direct Campaign ID'],'campaign ID',1);\n     const checkpoint=s.commit.checkpoint||'60percent';if(!['60percent','completed'].includes(checkpoint)||(s.cycleId!=='initial'&&checkpoint!=='60percent'))throw Error('Invalid original review checkpoint.');\n     const identity=learningIdentity(s.campaignId,s.cycleId,checkpoint==='completed'?1:.6);\n     s.commitKey=s.kind==='commit_review'?s.recordId+'|learning_'+identity.checkpoint+identity.suffix:s.eventKey;\n     if(s.kind==='commit_review'&&(typeof s.commit.report!=='string'||s.commit.report.length<200||!s.commit.report.includes(identity.marker)))throw Error('Review identity or content is invalid.');\n     if(s.kind==='commit_forecast'&&!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(s.commit.dueDate||'')))throw Error('Valid replenishment due date required.');\n     return insert(s,'commit_claimed',s.eventDbKey+':'+s.kind,{purpose:s.kind+'-attempt-reserved',recordId:s.recordId,cycleId:s.cycleId,ownerRequest:s.ownerRequest});\n    }\n    providerContext(s);\n    if(s.kind==='claim'){\n     const current=String(f[F.cycle]||'initial');\n     if(current!==s.cycleId)return release(s,'finish',{ok:true,shouldSend:false,reason:'stale cycle'});\n     if(f[F.claim]===s.cycleId)return release(s,'finish',{ok:true,shouldSend:false,reason:'already claimed'});\n     if(s.cycleId!=='initial'&&!s.cycleId.startsWith('bison:'+s.campaignId+':'))throw Error('Cycle provider identity mismatch.');\n     return bison(s,'claim_stats','/api/campaigns/'+s.campaignId);\n    }\n    const receipt=s.checkpoint.receipt;\n    if(!receipt||integer(receipt.campaignId,'receipt campaign',1)!==s.campaignId)throw Error('Checkpoint campaign identity mismatch.');\n    if(receipt.error||Number(receipt.failed||0)>0||Number(receipt.added||0)<=0)return release(s,'finish',{ok:true,checkpoint:false,reason:'no confirmed positive successful growth'});\n    return bison(s,'checkpoint_import','/api/lead-lists/'+integer(receipt.leadListId,'import ID',1));\n   }\n   case 'commit_claimed':\n    if(!r.inserted)return pg(s,'commit_existing','pg_read',[s.resource,s.ownerRequest,s.claimExecutionId,s.eventDbKey]);\n    return at(s,'commit_task_read','GET',TASK+'?pageSize=100&filterByFormula='+encodeURIComponent('{Automation Key}='+JSON.stringify(s.commitKey)));\n   case 'commit_existing':{\n    const e=events(r);if(e[s.eventDbKey+':'+s.kind+':done'])return release(s,'finish',{ok:true,committed:false,reason:'already committed'});\n    return release(s,'finish',{ok:false,blocked:true,reason:'Previous commit reserved but completion is uncertain. Reconcile exact cycle; do not repeat writes.'});\n   }\n   case 'commit_task_read':{\n    if(r.offset||!Array.isArray(r.records)||r.records.length>1)throw Error('Cannot safely resolve one cycle task.');\n    const existing=r.records[0], f=s.fields, client=f.Client||[];\n    let fields;\n    if(s.kind==='commit_review'){\n     // Existing owner status is never reset. Review content is updated only for this exact cycle.\n     fields={'Automation Key':s.commitKey,'Task Name':String(f.Name||s.recordId)+' - 60% review',Client:client,Campaign:[s.recordId],Stage:'Review/QA',Priority:'High',Notes:s.commit.report,...(!existing?{Status:'Not Started'}:{})};\n    }else{\n     if(!existing)throw Error('Forecast cannot create a second alert task; the claimed cycle ledger is missing.');\n     fields={'Due Date':s.commit.dueDate,...(s.commit.taskName?{'Task Name':String(s.commit.taskName).slice(0,300)}:{})};\n    }\n    s.commitTaskId=existing?.id;\n    return at(s,'commit_task_saved',existing?'PATCH':'POST',TASK+(existing?'/'+existing.id:''),{fields});\n   }\n   case 'commit_task_saved':\n    if(!/^rec[a-zA-Z0-9]{14}$/.test(String(r.id||''))||(s.commitTaskId&&r.id!==s.commitTaskId))throw Error('Cycle task write was not confirmed.');\n    if(s.kind==='commit_review')return at(s,'commit_campaign_saved','PATCH',CAM+s.recordId,{fields:{'Improvement Sugestion':s.commit.report}});\n    return insert(s,'commit_finished',s.eventDbKey+':'+s.kind+':done',{purpose:s.kind+'-write-confirmed',recordId:s.recordId,cycleId:s.cycleId,completedAt:new Date().toISOString()});\n   case 'commit_campaign_saved':\n    record(s,r);if(s.fields['Improvement Sugestion']!==s.commit.report)throw Error('Cycle review write not confirmed.');\n    return insert(s,'commit_finished',s.eventDbKey+':'+s.kind+':done',{purpose:s.kind+'-write-confirmed',recordId:s.recordId,cycleId:s.cycleId,completedAt:new Date().toISOString()});\n   case 'commit_finished':return release(s,'finish',{ok:true,committed:true,operation:s.kind,cycleId:s.cycleId});\n   case 'checkpoint_import':{\n    const v=r.data,receipt=s.checkpoint.receipt;\n    if(!v||Number(v.id)!==Number(receipt.leadListId)||v.status!=='Processed'||Number(v.leads_failed)!==0||Number(v.leads_succeeded)!==Number(receipt.providerImport?.succeeded)||Number(v.leads_processed)!==Number(receipt.providerImport?.processed))throw Error('Existing processed import no longer matches the successful receipt.');\n    s.importCreatedAt=v.created_at;return bison(s,'checkpoint_stats','/api/campaigns/'+s.campaignId);\n   }\n   case 'checkpoint_stats':{\n    let cp;\n    try{cp=makeCheckpoint({...s.checkpoint,snapshot:r.data,importCreatedAt:s.importCreatedAt,observedAt:new Date().toISOString()},s.fields);}\n    catch(e){s.checkpointError=String(e.message).slice(0,500);return at(s,'checkpoint_error_saved','PATCH',CAM+s.recordId,{fields:{'Replenishment Checkpoint Error':'Import '+s.checkpoint.receipt.leadListId+' is processed. Alert checkpoint not initialized: '+s.checkpointError+'. Reconcile this existing import; do not reupload.'}});}\n    if(!cp)return release(s,'finish',{ok:true,checkpoint:false,reason:'same import already checkpointed'});\n    cp.fields['Replenishment Checkpoint Error']='';s.newCycleId=cp.fields[F.cycle];return at(s,'checkpoint_saved','PATCH',CAM+s.recordId,{fields:cp.fields});\n   }\n   case 'checkpoint_saved':\n    record(s,r);if(s.fields[F.cycle]!==s.newCycleId)throw Error('Checkpoint write was not confirmed.');\n    return insert(s,'checkpoint_audited',PREFIX+'checkpoint:'+s.recordId+':'+s.newCycleId,{purpose:'replenishment-checkpoint',recordId:s.recordId,cycleId:s.newCycleId,receipt:JSON.parse(s.fields[F.receipt])});\n   case 'checkpoint_audited':return release(s,'finish',{ok:true,checkpoint:true,cycleId:s.newCycleId});\n   case 'checkpoint_error_saved':record(s,r);return release(s,'finish',{ok:false,blocked:true,checkpoint:false,reason:s.checkpointError,instruction:'Existing import is complete. Reconcile only this branch checkpoint; do not reupload.'});\n   case 'claim_stats':{\n    const c=r.data;if(!c||integer(c.id,'provider campaign',1)!==s.campaignId)throw Error('Provider identity mismatch.');\n    const total=integer(c.total_leads,'total leads'),contacted=integer(c.total_leads_contacted,'contacted leads');if(contacted>total)throw Error('Provider contacted count exceeds total.');\n    s.remaining=total-contacted;\n    const fresh={...s.fields,'Total Leads Remaining':s.remaining,Progress:Number(c.completion_percentage)/100};\n    s.cycleProgress=progress(fresh);\n    if(s.cycleProgress===null||s.cycleProgress<.6)return release(s,'finish',{ok:true,shouldSend:false,reason:'fresh provider queue is not at threshold'});\n    s.qualifiedAt=new Date().toISOString();return at(s,'claim_tasks','GET',existingTasksUrl(s));\n   }\n   case 'claim_tasks':{\n    if(r.offset||!Array.isArray(r.records))throw Error('Incomplete task reconciliation.');\n    if(r.records.length)return release(s,'finish',{ok:true,shouldSend:false,reason:'existing cycle or legacy task'});\n    const claim={purpose:'replenishment-alert-claim',recordId:s.recordId,cycleId:s.cycleId,eventKey:s.eventKey,attemptId:s.attemptId,claimExecutionId:s.claimExecutionId,ownerRequest:s.ownerRequest,qualifiedAt:s.qualifiedAt,cycleProgress:s.cycleProgress,remaining:s.remaining};\n    return insert(s,'event_claimed',s.eventDbKey,claim);\n   }\n   case 'event_claimed':\n    if(!r.inserted)return release(s,'finish',{ok:true,shouldSend:false,reason:'durable event claim already exists'});\n    return at(s,'claim_task_saved','POST',TASK,{fields:{'Task Name':'Replenishment alert - '+String(s.fields.Name||s.recordId),'Automation Key':s.eventKey,Campaign:[s.recordId],Client:s.fields.Client||[],Status:'Blocked',Priority:'High',Stage:'Intake',Notes:'PENDING ALERT DELIVERY. '+s.eventKey+'\\nClaimed '+s.qualifiedAt+'. Do not resend until Slack is reconciled. Cycle metric is the replenished uncontacted queue, including older unsent leads.'}});\n   case 'claim_task_saved':\n    if(!/^rec[a-zA-Z0-9]{14}$/.test(String(r.id||''))||r.fields?.['Automation Key']!==s.eventKey)throw Error('Alert task creation was not confirmed.');s.taskId=r.id;\n    return insert(s,'claim_task_audited',s.eventDbKey+':task',{taskId:s.taskId,recordId:s.recordId,cycleId:s.cycleId,attemptId:s.attemptId});\n   case 'claim_task_audited':\n    return at(s,'claim_mirrored','PATCH',CAM+s.recordId,{fields:{[F.claim]:s.cycleId,[F.delivery]:JSON.stringify({schemaVersion:2,status:'pending',cycleId:s.cycleId,eventKey:s.eventKey,taskId:s.taskId,claimedAt:s.qualifiedAt,attemptId:s.attemptId,claimExecutionId:s.claimExecutionId})}});\n   case 'claim_mirrored':{\n    record(s,r);if(s.fields[F.claim]!==s.cycleId)throw Error('Alert claim mirror not confirmed.');\n    const label=s.cycleId==='initial'?'campaign completion':'replenished uncontacted queue consumed';\n    const alertText='The campaign *'+String(s.fields.Name||s.recordId)+'* has reached *'+(s.cycleProgress*100).toFixed(1)+'% '+label+'*.\\n\\nTime to add more leads or schedule a new campaign.\\nUncontacted leads remaining: '+s.remaining+'.\\nReplenishment cycle: '+s.cycleId+'\\nEvent key: '+s.eventKey+'\\nChecked: '+s.qualifiedAt+'\\nThis is an early replenishment warning, not the date of the final follow-up.\\n\\n<!channel>';\n    // Persistently hold the mutex across the original Airtable Slack action.\n    // There is no lease expiry or automatic takeover. Only its exact completion may release it.\n    return finish(s,{ok:true,shouldSend:true,cycleId:s.cycleId,eventKey:s.eventKey,taskId:s.taskId,attemptId:s.attemptId,claimExecutionId:s.claimExecutionId,alertText});\n   }\n   case 'completion_owned':{\n    const e=events(r),claim=e[s.eventDbKey],sent=e[s.eventDbKey+':sent'];\n    if(!claim||claim.attemptId!==s.attemptId||claim.claimExecutionId!==s.claimExecutionId)throw Error('Completion does not match the durable alert claim.');\n    if(!r.owned){if(sent)return finish(s,{ok:true,alreadyComplete:true,slackSent:true});throw Error('Alert mutex ownership is not confirmed.');}\n    s.lockOwned=true;s.taskId=e[s.eventDbKey+':task']?.taskId;if(!s.taskId)throw Error('Claimed task identity is missing.');\n    s.sentAt=sent?.sentAt||new Date().toISOString();\n    return insert(s,'completion_claimed',s.eventDbKey+':completion',{purpose:'exclusive-completion-handler',executionId:s.executionId,attemptId:s.attemptId,claimExecutionId:s.claimExecutionId});\n   }\n   case 'completion_claimed':\n    if(!r.inserted)return finish(s,{ok:true,alreadyProcessing:true,slackSent:true,instruction:'An existing completion owns this receipt. Do not resend Slack or release its mutex.'});\n    return insert(s,'sent_audited',s.eventDbKey+':sent',{purpose:'slack-action-succeeded',recordId:s.recordId,cycleId:s.cycleId,eventKey:s.eventKey,taskId:s.taskId,sentAt:s.sentAt,attemptId:s.attemptId,claimExecutionId:s.claimExecutionId});\n   case 'sent_audited':return at(s,'complete_campaign','GET',CAM+s.recordId);\n   case 'complete_campaign':\n    record(s,r);if(String(s.fields[F.cycle]||'initial')!==s.cycleId)throw Error('Campaign cycle changed outside the coordinator while its mutex was held. Preserve the sent receipt and reconcile.');\n    return at(s,'sent_mirrored','PATCH',CAM+s.recordId,{fields:{[F.delivery]:JSON.stringify(delivery(s,'pending'))}});\n   case 'sent_mirrored':record(s,r);return at(s,'complete_task','GET',TASK+'/'+s.taskId);\n   case 'complete_task':{\n    if(r.id!==s.taskId||r.fields?.['Automation Key']!==s.eventKey)throw Error('Completion task identity mismatch.');\n    // Do not erase owner/listener work that already changed this task after the Slack event.\n    if(r.fields.Status==='Blocked'&&String(r.fields.Notes||'').startsWith('PENDING ALERT DELIVERY. '+s.eventKey))return at(s,'task_completed','PATCH',TASK+'/'+s.taskId,{fields:{Status:'Not Started',Notes:'SLACK ACTION SUCCEEDED. '+s.eventKey+'\\nDelivered '+s.sentAt+'. Replenishment queue warning, not the final send date. Any forecast due date is an earliest queue-depletion bound at configured capacity, not an exact normal-volume-drop prediction.'}});\n    return insert(s,'downstream_claimed',s.eventDbKey+':downstream_claim',{purpose:'downstream-request-claim',recordId:s.recordId,cycleId:s.cycleId,claimedAt:new Date().toISOString()});\n   }\n   case 'task_completed':return insert(s,'downstream_claimed',s.eventDbKey+':downstream_claim',{purpose:'downstream-request-claim',recordId:s.recordId,cycleId:s.cycleId,claimedAt:new Date().toISOString()});\n   case 'downstream_claimed':\n    s.sendDownstream=!!r.inserted;return release(s,'downstream',{ok:true,slackSent:true});\n   case 'released':\n    if(!r.released&&!r.already_released)throw Error('Mutex release is unconfirmed.');s.lockOwned=false;\n    if(s.afterRelease==='downstream'&&s.sendDownstream){s.stage='downstream_called';return result(s,null,'downstream',{request:{body:{recordId:s.recordId,cycleId:s.cycleId}}});}\n    return finish(s,s.finishPayload,s.finishPayload?.ok===false?409:200);\n   case 'downstream_called':\n    // An immutable acceptance record is stored without acquiring another campaign mutex.\n    // It does not rewrite mutable campaign metadata, and it never claims execution completion.\n    return pg(s,'downstream_audited','pg_append',[s.eventDbKey+':downstream_accepted',s.resource,s.claimExecutionId,JSON.stringify({purpose:'downstream-http-accepted',recordId:s.recordId,cycleId:s.cycleId,acceptedAt:new Date().toISOString()})]);\n   case 'downstream_audited':return finish(s,{ok:true,slackSent:true,downstream:'accepted'});\n   default:throw Error('Unexpected coordinator stage.');\n  }\n }catch(e){return failure(s,e);}\n}\n\nreturn [{json:{state:normalize($input.first().json,$execution.id,true)}}];"
+   },
+   "name": "Validate checkpoint",
+   "id": "fbbddd67-a696-4352-a051-609d5e9c7839",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -784,
+    1696
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "'use strict';\n// Pure policy shared by the staged workflow snippets and the isolated test harness.\n// No API calls, writes, credentials, Slack sends, or research calls occur here.\nconst F = Object.freeze({\n  cycle:'Replenishment Cycle ID', baseline:'Replenishment Starting Queue',\n  receipt:'Replenishment Receipt', progress:'Replenishment Cycle Progress',\n  claim:'Replenishment Alert Claim', delivery:'Replenishment Alert Delivery',\n  ready:'Replenishment Alert Ready'\n});\nfunction integer(value, name, min=0) {\n  if(value===null || value===undefined || value==='' || typeof value==='boolean') throw Error(name+' is missing.');\n  const n=Number(value); if(!Number.isSafeInteger(n)||n<min)throw Error(name+' is invalid.');return n;\n}\nfunction timestamp(value,name){const t=Date.parse(value);if(!Number.isFinite(t))throw Error(name+' is invalid.');return t;}\nfunction cycleId(campaignId,importId){return 'bison:'+integer(campaignId,'campaign ID',1)+':import:'+integer(importId,'import ID',1);}\nfunction eventKey(recordId,cycle){if(!/^rec[a-zA-Z0-9]{14}$/.test(recordId))throw Error('Invalid campaign record ID.');if(cycle!=='initial'&&!/^bison:\\d+:import:\\d+$/.test(cycle))throw Error('Invalid cycle ID.');return recordId+'|progress_60'+(cycle==='initial'?'':'|'+cycle);}\nfunction progress(fields){\n  if(!fields[F.cycle]){const p=Number(fields.Progress);return Number.isFinite(p)?Math.max(0,Math.min(1,p)):null;}\n  const q=integer(fields[F.baseline],'starting queue',1),remaining=integer(fields['Total Leads Remaining'],'remaining queue');\n  // An increase can be an untracked import/counter correction. Never manufacture consumption.\n  if(remaining>q)return null;\n  return Math.max(0,Math.min(1,1-remaining/q));\n}\nfunction makeCheckpoint(input, existingFields={}){\n  const {recordId,receipt,snapshot,importCreatedAt,observedAt}=input;\n  const c=integer(receipt.campaignId,'campaign ID',1),i=integer(receipt.leadListId,'import ID',1);\n  const id=cycleId(c,i);eventKey(recordId,id);\n  if(receipt.error||integer(receipt.failed||0,'failed rows')!==0||integer(receipt.added,'net added',0)===0)return null;\n  if(receipt.attachmentReceipt?.success!==true||receipt.attachmentReceipt.campaignId!==c||receipt.attachmentReceipt.leadListId!==i)throw Error('Exact attachment acknowledgment missing.');\n  if(receipt.providerImport?.status!=='Processed'||integer(receipt.providerImport.id,'confirmed import',1)!==i)throw Error('Import is not confirmed processed.');\n  const oldCycle=String(existingFields[F.cycle]||'');\n  if(oldCycle===id)return null; // Never reset a baseline on a duplicate receipt.\n  const created=timestamp(importCreatedAt,'import creation time');timestamp(observedAt,'observation time');\n  if(oldCycle){\n    let old;try{old=JSON.parse(existingFields[F.receipt]||'');}catch{throw Error('Existing cycle receipt is missing or invalid.');}\n    if(old.cycleId!==oldCycle)throw Error('Existing receipt identity mismatch.');\n    const oldTime=timestamp(old.importCreatedAt,'previous import creation time');\n    if(created<=oldTime)throw Error('Old or ambiguously ordered import cannot replace the current cycle.');\n  }\n  if(integer(snapshot.id,'snapshot campaign',1)!==c)throw Error('Provider campaign identity mismatch.');\n  const total=integer(snapshot.total_leads,'total leads'),contacted=integer(snapshot.total_leads_contacted,'contacted leads');\n  if(contacted>total||total!==integer(receipt.afterTotal,'confirmed total'))throw Error('Post-import snapshot is inconsistent; reconcile the existing import, do not upload again.');\n  const queue=total-contacted;\n  if(queue===0)throw Error('Post-import uncontacted queue is zero; reconcile before initializing a fresh cycle.');\n  const record={schemaVersion:1,cycleId:id,campaignId:c,importId:i,importCreatedAt,observedAt,sourceLeadListId:input.sourceLeadListId,outputType:receipt.outputType,netAdded:receipt.added,startingQueue:queue,totalLeads:total,contactedLeads:contacted,metric:'uncontacted campaign queue after confirmed replenishment; includes older unsent leads'};\n  return {recordId,fields:{[F.cycle]:id,[F.baseline]:queue,[F.receipt]:JSON.stringify(record),'Total Leads':total,'Total Leads Contacted':contacted,'Total Leads Remaining':queue}};\n}\nfunction planAlert({recordId,triggerCycleId,fields,taskKeys=[]}){\n  const current=String(fields[F.cycle]||'initial');\n  if(String(triggerCycleId||'initial')!==current)return {send:false,reason:'stale event'};\n  const key=eventKey(recordId,current),p=progress(fields);\n  if(p===null||p<0.6)return {send:false,reason:'not eligible'};\n  if(fields[F.claim]===current||taskKeys.includes(key))return {send:false,reason:'already claimed; reconcile pending delivery instead of replaying'};\n  if(current==='initial'&&taskKeys.some(k=>[recordId+'|learning_60percent',recordId+'|forecast_60percent'].includes(k)))return {send:false,reason:'legacy checkpoint already handled'};\n  return {send:true,cycleId:current,key,progress:p,remaining:integer(fields['Total Leads Remaining']??0,'remaining queue')};\n}\nfunction validateEvent({recordId,cycleId:expected,fields}){\n  const current=String(fields[F.cycle]||'initial');eventKey(recordId,expected);\n  if(expected!==current)throw Error('Stale replenishment event: campaign cycle changed.');\n  const p=progress(fields);if(p===null||p<0.6)throw Error('Cycle is not at the replenishment threshold.');\n  return {cycleId:current,cycleProgress:p,eventKey:eventKey(recordId,current)};\n}\nfunction learningIdentity(campaignId,cycle,completion){\n  const checkpoint=cycle==='initial'?(completion>=0.999?'completed':'60percent'):'60percent';\n  return {checkpoint,marker:cycle==='initial'?`[Campaign learning v1:${campaignId}:${checkpoint}]`:`[Campaign learning v2:${campaignId}:${checkpoint}:${cycle}]`,suffix:cycle==='initial'?'':`|${cycle}`};\n}\n\n'use strict';\n// Pure coordinator state machine. SQL/native HTTP nodes perform all effects.\n\n\nconst AT='https://api.airtable.com/v0/appxqINt5XKw7a76A/';\nconst CAM=AT+'tblAVAA6uBPaMj28P/',TASK=AT+'tblRBxm2N53331mIm';\nconst PREFIX='replenishment:v2:';\nconst policyCycleId=(campaignId,importId)=>'bison:'+integer(campaignId,'receipt campaign',1)+':import:'+integer(importId,'receipt import',1);\nconst clone=x=>JSON.parse(JSON.stringify(x));\nfunction normalize(input,executionId,internal=false){\n const b=input.body??input;const recordId=String(b.recordId||'');\n if(!/^rec[a-zA-Z0-9]{14}$/.test(recordId))throw Error('Invalid campaign record ID.');\n const kind=internal?String(b.operation||'checkpoint'):String(b.operation||'');\n if(!(internal?['checkpoint','commit_review','commit_forecast']:['claim','complete']).includes(kind))throw Error('Unsupported coordinator operation.');\n const cycle=kind==='checkpoint'&&b.receipt?policyCycleId(b.receipt.campaignId,b.receipt.leadListId):String(b.cycleId||'initial');eventKey(recordId,cycle);\n if(!internal&&!/^[a-f0-9-]{36}$/i.test(String(b.attemptId||'')))throw Error('An exact delivery attempt ID is required.');\n if(kind==='complete'&&!/^\\d+$/.test(String(b.claimExecutionId||'')))throw Error('Exact claim execution ID required.');\n const attempt=internal?String(executionId)+':'+kind:b.attemptId;\n return {stage:'start',kind,internal,recordId,cycleId:cycle,attemptId:attempt,executionId:String(executionId),claimExecutionId:kind==='complete'?String(b.claimExecutionId):String(executionId),resource:PREFIX+'campaign:'+recordId,ownerRequest:PREFIX+'owner:'+recordId+':'+attempt,eventDbKey:PREFIX+'event:'+eventKey(recordId,cycle),eventKey:eventKey(recordId,cycle),commit:kind.startsWith('commit_')?clone(b):null,checkpoint:kind==='checkpoint'?{recordId,receipt:b.receipt,sourceLeadListId:b.sourceLeadListId}:null,startedAt:new Date().toISOString(),waitCount:0,lockOwned:false};\n}\nfunction responseData(response){\n if(!response||response.error)throw Error('The preceding operation did not confirm success.');\n if(response.statusCode!=null&&(Number(response.statusCode)<200||Number(response.statusCode)>=300))throw Error('Operation failed with HTTP '+response.statusCode+'.');\n const b=response.body??response;return typeof b==='string'?JSON.parse(b):b;\n}\nfunction result(state,response,action,extra={}){return {state,action,...extra};}\nfunction finish(s,payload,code=200){return result(s,null,s.internal?'done':'respond',{payload:{recordId:s.recordId,cycleId:s.newCycleId||s.cycleId,...payload},httpStatus:code});}\nfunction at(s,stage,method,url,body){s.stage=stage;return result(s,null,'airtable',{request:{method,url,...(body?{body}:{} )}});}\nfunction bison(s,stage,path){s.stage=stage;return result(s,null,'bison',{request:{method:'GET',url:'https://send.dulcy.io'+path,apiKey:s.apiKey}});}\nfunction pg(s,stage,op,params){s.stage=stage;return result(s,null,op,{params});}\nfunction record(s,r){if(r.id!==s.recordId)throw Error('Campaign identity mismatch.');s.fields=r.fields||{};return s.fields;}\nfunction providerContext(s){\n const f=s.fields;s.campaignId=integer(f.ID||f['EmailBison Direct Campaign ID'],'campaign ID',1);\n const key=f['EmailBison API (from Client)'];s.apiKey=Array.isArray(key)?key[0]:key;\n if(!s.apiKey)throw Error('Existing EmailBison credential lookup unavailable.');\n}\nfunction release(s,after,payload){s.afterRelease=after;s.finishPayload=payload;return pg(s,'released','pg_release',[s.resource,s.ownerRequest,s.claimExecutionId]);}\nfunction events(r){return Object.fromEntries((r.events||[]).map(e=>[e.request_id,e.context]));}\nfunction insert(s,stage,key,context){return pg(s,stage,'pg_insert',[s.resource,s.ownerRequest,s.claimExecutionId,key,JSON.stringify(context)]);}\nfunction existingTasksUrl(s){\n const keys=[s.eventKey];if(s.cycleId==='initial')keys.push(s.recordId+'|learning_60percent',s.recordId+'|forecast_60percent');\n const formula='OR('+keys.map(k=>'{Automation Key}='+JSON.stringify(k)).join(',')+')';\n return TASK+'?pageSize=100&filterByFormula='+encodeURIComponent(formula);\n}\nfunction delivery(s,downstream){return {schemaVersion:2,cycleId:s.cycleId,eventKey:s.eventKey,taskId:s.taskId,status:'sent',sentAt:s.sentAt,downstream,claimExecutionId:s.claimExecutionId,attemptId:s.attemptId};}\nfunction failure(s,error){\n const message=String(error.message||error).replace(s.apiKey||'__no_key__','[REDACTED]').slice(0,600);\n return finish(s,{ok:false,blocked:true,retainedLock:s.lockOwned||s.stage==='acquired',lockOutcome:s.lockOwned?'held':(s.stage==='acquired'?'uncertain':'not_owned'),recordId:s.recordId,cycleId:s.cycleId,reason:message,instruction:'Reconcile this exact operation. Do not reupload leads or blindly resend Slack.'},503);\n}\nfunction plan(input){\n const s=clone(input.state);let r;\n try{\n  if(s.stage!=='start')r=responseData(input.response);\n  // SQL transport success alone does not establish lock ownership or audit persistence.\n  const insertStages=['event_claimed','claim_task_audited','commit_claimed','commit_finished','completion_claimed','sent_audited','downstream_claimed','checkpoint_audited'];\n  if(insertStages.includes(s.stage)){\n   if(r.owned!==true)throw Error('Audit operation did not confirm exact mutex ownership. Reconcile before further effects.');\n   if(typeof r.inserted!=='boolean')throw Error('Audit insertion outcome is uncertain. Reconcile before further effects.');\n  }\n  if(['commit_finished','checkpoint_audited','claim_task_audited','sent_audited','downstream_audited'].includes(s.stage)&&r.inserted!==true)throw Error('New confirmation receipt was not inserted. Reconcile the existing receipt; do not repeat external effects.');\n  if(s.stage==='commit_existing'&&r.owned!==true)throw Error('Existing commit inspection did not confirm exact mutex ownership. Reconcile before further effects.');\n  switch(s.stage){\n   case 'start':\n    if(s.kind==='complete')return pg(s,'completion_owned','pg_read',[s.resource,s.ownerRequest,s.claimExecutionId,s.eventDbKey]);\n    return pg(s,'acquired','pg_acquire',[s.resource,s.ownerRequest,s.claimExecutionId,JSON.stringify({purpose:'replenishment-'+s.kind,recordId:s.recordId,attemptId:s.attemptId})]);\n   case 'acquired':\n    if(!r.acquired){\n     if(s.kind==='claim'){if(r.busy&&!r.already_used){s.stage='claim_busy_waited';return result(s,null,'wait');}return finish(s,{ok:true,shouldSend:false,busy:!!r.busy,alreadyUsed:!!r.already_used});}\n     if(r.already_used)throw Error('This mutex owner already ran; reconcile the prior checkpoint instead of reentering it.');\n     if(++s.waitCount>120)throw Error('Campaign mutex remains busy. Reconcile its existing owner; no expiry takeover was attempted.');\n     s.ownerRequest=PREFIX+'owner:'+s.recordId+':'+s.attemptId+':retry:'+s.waitCount;s.stage='waited';return result(s,null,'wait');\n    }\n    s.lockOwned=true;return at(s,'campaign_read','GET',CAM+s.recordId);\n   case 'claim_busy_waited':return finish(s,{ok:true,shouldSend:false,busy:true,reason:'campaign mutex busy; this owner was consumed'});\n   case 'waited':return pg(s,'acquired','pg_acquire',[s.resource,s.ownerRequest,s.claimExecutionId,JSON.stringify({purpose:'replenishment-'+s.kind,recordId:s.recordId,attemptId:s.attemptId})]);\n   case 'campaign_read':{\n    const f=record(s,r);\n    if(s.kind.startsWith('commit_')){\n     if(String(f[F.cycle]||'initial')!==s.cycleId)return release(s,'finish',{ok:true,committed:false,reason:'stale cycle'});\n     s.apiKey=undefined;\n     s.campaignId=integer(f.ID||f['EmailBison Direct Campaign ID'],'campaign ID',1);\n     const checkpoint=s.commit.checkpoint||'60percent';if(!['60percent','completed'].includes(checkpoint)||(s.cycleId!=='initial'&&checkpoint!=='60percent'))throw Error('Invalid original review checkpoint.');\n     const identity=learningIdentity(s.campaignId,s.cycleId,checkpoint==='completed'?1:.6);\n     s.commitKey=s.kind==='commit_review'?s.recordId+'|learning_'+identity.checkpoint+identity.suffix:s.eventKey;\n     if(s.kind==='commit_review'&&(typeof s.commit.report!=='string'||s.commit.report.length<200||!s.commit.report.includes(identity.marker)))throw Error('Review identity or content is invalid.');\n     if(s.kind==='commit_forecast'&&!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(s.commit.dueDate||'')))throw Error('Valid replenishment due date required.');\n     return insert(s,'commit_claimed',s.eventDbKey+':'+s.kind,{purpose:s.kind+'-attempt-reserved',recordId:s.recordId,cycleId:s.cycleId,ownerRequest:s.ownerRequest});\n    }\n    providerContext(s);\n    if(s.kind==='claim'){\n     const current=String(f[F.cycle]||'initial');\n     if(current!==s.cycleId)return release(s,'finish',{ok:true,shouldSend:false,reason:'stale cycle'});\n     if(f[F.claim]===s.cycleId)return release(s,'finish',{ok:true,shouldSend:false,reason:'already claimed'});\n     if(s.cycleId!=='initial'&&!s.cycleId.startsWith('bison:'+s.campaignId+':'))throw Error('Cycle provider identity mismatch.');\n     return bison(s,'claim_stats','/api/campaigns/'+s.campaignId);\n    }\n    const receipt=s.checkpoint.receipt;\n    if(!receipt||integer(receipt.campaignId,'receipt campaign',1)!==s.campaignId)throw Error('Checkpoint campaign identity mismatch.');\n    if(receipt.error||Number(receipt.failed||0)>0||Number(receipt.added||0)<=0)return release(s,'finish',{ok:true,checkpoint:false,reason:'no confirmed positive successful growth'});\n    return bison(s,'checkpoint_import','/api/lead-lists/'+integer(receipt.leadListId,'import ID',1));\n   }\n   case 'commit_claimed':\n    if(!r.inserted)return pg(s,'commit_existing','pg_read',[s.resource,s.ownerRequest,s.claimExecutionId,s.eventDbKey]);\n    return at(s,'commit_task_read','GET',TASK+'?pageSize=100&filterByFormula='+encodeURIComponent('{Automation Key}='+JSON.stringify(s.commitKey)));\n   case 'commit_existing':{\n    const e=events(r);if(e[s.eventDbKey+':'+s.kind+':done'])return release(s,'finish',{ok:true,committed:false,reason:'already committed'});\n    return release(s,'finish',{ok:false,blocked:true,reason:'Previous commit reserved but completion is uncertain. Reconcile exact cycle; do not repeat writes.'});\n   }\n   case 'commit_task_read':{\n    if(r.offset||!Array.isArray(r.records)||r.records.length>1)throw Error('Cannot safely resolve one cycle task.');\n    const existing=r.records[0], f=s.fields, client=f.Client||[];\n    let fields;\n    if(s.kind==='commit_review'){\n     // Existing owner status is never reset. Review content is updated only for this exact cycle.\n     fields={'Automation Key':s.commitKey,'Task Name':String(f.Name||s.recordId)+' - 60% review',Client:client,Campaign:[s.recordId],Stage:'Review/QA',Priority:'High',Notes:s.commit.report,...(!existing?{Status:'Not Started'}:{})};\n    }else{\n     if(!existing)throw Error('Forecast cannot create a second alert task; the claimed cycle ledger is missing.');\n     fields={'Due Date':s.commit.dueDate,...(s.commit.taskName?{'Task Name':String(s.commit.taskName).slice(0,300)}:{})};\n    }\n    s.commitTaskId=existing?.id;\n    return at(s,'commit_task_saved',existing?'PATCH':'POST',TASK+(existing?'/'+existing.id:''),{fields});\n   }\n   case 'commit_task_saved':\n    if(!/^rec[a-zA-Z0-9]{14}$/.test(String(r.id||''))||(s.commitTaskId&&r.id!==s.commitTaskId))throw Error('Cycle task write was not confirmed.');\n    if(s.kind==='commit_review')return at(s,'commit_campaign_saved','PATCH',CAM+s.recordId,{fields:{'Improvement Sugestion':s.commit.report}});\n    return insert(s,'commit_finished',s.eventDbKey+':'+s.kind+':done',{purpose:s.kind+'-write-confirmed',recordId:s.recordId,cycleId:s.cycleId,completedAt:new Date().toISOString()});\n   case 'commit_campaign_saved':\n    record(s,r);if(s.fields['Improvement Sugestion']!==s.commit.report)throw Error('Cycle review write not confirmed.');\n    return insert(s,'commit_finished',s.eventDbKey+':'+s.kind+':done',{purpose:s.kind+'-write-confirmed',recordId:s.recordId,cycleId:s.cycleId,completedAt:new Date().toISOString()});\n   case 'commit_finished':return release(s,'finish',{ok:true,committed:true,operation:s.kind,cycleId:s.cycleId});\n   case 'checkpoint_import':{\n    const v=r.data,receipt=s.checkpoint.receipt;\n    if(!v||Number(v.id)!==Number(receipt.leadListId)||v.status!=='Processed'||Number(v.leads_failed)!==0||Number(v.leads_succeeded)!==Number(receipt.providerImport?.succeeded)||Number(v.leads_processed)!==Number(receipt.providerImport?.processed))throw Error('Existing processed import no longer matches the successful receipt.');\n    s.importCreatedAt=v.created_at;return bison(s,'checkpoint_stats','/api/campaigns/'+s.campaignId);\n   }\n   case 'checkpoint_stats':{\n    let cp;\n    try{cp=makeCheckpoint({...s.checkpoint,snapshot:r.data,importCreatedAt:s.importCreatedAt,observedAt:new Date().toISOString()},s.fields);}\n    catch(e){s.checkpointError=String(e.message).slice(0,500);return at(s,'checkpoint_error_saved','PATCH',CAM+s.recordId,{fields:{'Replenishment Checkpoint Error':'Import '+s.checkpoint.receipt.leadListId+' is processed. Alert checkpoint not initialized: '+s.checkpointError+'. Reconcile this existing import; do not reupload.'}});}\n    if(!cp)return release(s,'finish',{ok:true,checkpoint:false,reason:'same import already checkpointed'});\n    cp.fields['Replenishment Checkpoint Error']='';s.newCycleId=cp.fields[F.cycle];return at(s,'checkpoint_saved','PATCH',CAM+s.recordId,{fields:cp.fields});\n   }\n   case 'checkpoint_saved':\n    record(s,r);if(s.fields[F.cycle]!==s.newCycleId)throw Error('Checkpoint write was not confirmed.');\n    return insert(s,'checkpoint_audited',PREFIX+'checkpoint:'+s.recordId+':'+s.newCycleId,{purpose:'replenishment-checkpoint',recordId:s.recordId,cycleId:s.newCycleId,receipt:JSON.parse(s.fields[F.receipt])});\n   case 'checkpoint_audited':return release(s,'finish',{ok:true,checkpoint:true,cycleId:s.newCycleId});\n   case 'checkpoint_error_saved':record(s,r);return release(s,'finish',{ok:false,blocked:true,checkpoint:false,reason:s.checkpointError,instruction:'Existing import is complete. Reconcile only this branch checkpoint; do not reupload.'});\n   case 'claim_stats':{\n    const c=r.data;if(!c||integer(c.id,'provider campaign',1)!==s.campaignId)throw Error('Provider identity mismatch.');\n    const total=integer(c.total_leads,'total leads'),contacted=integer(c.total_leads_contacted,'contacted leads');if(contacted>total)throw Error('Provider contacted count exceeds total.');\n    s.remaining=total-contacted;\n    const fresh={...s.fields,'Total Leads Remaining':s.remaining,Progress:Number(c.completion_percentage)/100};\n    s.cycleProgress=progress(fresh);\n    if(s.cycleProgress===null||s.cycleProgress<.6)return release(s,'finish',{ok:true,shouldSend:false,reason:'fresh provider queue is not at threshold'});\n    s.qualifiedAt=new Date().toISOString();return at(s,'claim_tasks','GET',existingTasksUrl(s));\n   }\n   case 'claim_tasks':{\n    if(r.offset||!Array.isArray(r.records))throw Error('Incomplete task reconciliation.');\n    if(r.records.length)return release(s,'finish',{ok:true,shouldSend:false,reason:'existing cycle or legacy task'});\n    const claim={purpose:'replenishment-alert-claim',recordId:s.recordId,cycleId:s.cycleId,eventKey:s.eventKey,attemptId:s.attemptId,claimExecutionId:s.claimExecutionId,ownerRequest:s.ownerRequest,qualifiedAt:s.qualifiedAt,cycleProgress:s.cycleProgress,remaining:s.remaining};\n    return insert(s,'event_claimed',s.eventDbKey,claim);\n   }\n   case 'event_claimed':\n    if(!r.inserted)return release(s,'finish',{ok:true,shouldSend:false,reason:'durable event claim already exists'});\n    return at(s,'claim_task_saved','POST',TASK,{fields:{'Task Name':'Replenishment alert - '+String(s.fields.Name||s.recordId),'Automation Key':s.eventKey,Campaign:[s.recordId],Client:s.fields.Client||[],Status:'Blocked',Priority:'High',Stage:'Intake',Notes:'PENDING ALERT DELIVERY. '+s.eventKey+'\\nClaimed '+s.qualifiedAt+'. Do not resend until Slack is reconciled. Cycle metric is the replenished uncontacted queue, including older unsent leads.'}});\n   case 'claim_task_saved':\n    if(!/^rec[a-zA-Z0-9]{14}$/.test(String(r.id||''))||r.fields?.['Automation Key']!==s.eventKey)throw Error('Alert task creation was not confirmed.');s.taskId=r.id;\n    return insert(s,'claim_task_audited',s.eventDbKey+':task',{taskId:s.taskId,recordId:s.recordId,cycleId:s.cycleId,attemptId:s.attemptId});\n   case 'claim_task_audited':\n    return at(s,'claim_mirrored','PATCH',CAM+s.recordId,{fields:{[F.claim]:s.cycleId,[F.delivery]:JSON.stringify({schemaVersion:2,status:'pending',cycleId:s.cycleId,eventKey:s.eventKey,taskId:s.taskId,claimedAt:s.qualifiedAt,attemptId:s.attemptId,claimExecutionId:s.claimExecutionId})}});\n   case 'claim_mirrored':{\n    record(s,r);if(s.fields[F.claim]!==s.cycleId)throw Error('Alert claim mirror not confirmed.');\n    const label=s.cycleId==='initial'?'campaign completion':'replenished uncontacted queue consumed';\n    const alertText='The campaign *'+String(s.fields.Name||s.recordId)+'* has reached *'+(s.cycleProgress*100).toFixed(1)+'% '+label+'*.\\n\\nTime to add more leads or schedule a new campaign.\\nUncontacted leads remaining: '+s.remaining+'.\\nReplenishment cycle: '+s.cycleId+'\\nEvent key: '+s.eventKey+'\\nChecked: '+s.qualifiedAt+'\\nThis is an early replenishment warning, not the date of the final follow-up.\\n\\n<!channel>';\n    // Persistently hold the mutex across the original Airtable Slack action.\n    // There is no lease expiry or automatic takeover. Only its exact completion may release it.\n    return finish(s,{ok:true,shouldSend:true,cycleId:s.cycleId,eventKey:s.eventKey,taskId:s.taskId,attemptId:s.attemptId,claimExecutionId:s.claimExecutionId,alertText});\n   }\n   case 'completion_owned':{\n    const e=events(r),claim=e[s.eventDbKey],sent=e[s.eventDbKey+':sent'];\n    if(!claim||claim.attemptId!==s.attemptId||claim.claimExecutionId!==s.claimExecutionId)throw Error('Completion does not match the durable alert claim.');\n    if(!r.owned){if(sent)return finish(s,{ok:true,alreadyComplete:true,slackSent:true});throw Error('Alert mutex ownership is not confirmed.');}\n    s.lockOwned=true;s.taskId=e[s.eventDbKey+':task']?.taskId;if(!s.taskId)throw Error('Claimed task identity is missing.');\n    s.sentAt=sent?.sentAt||new Date().toISOString();\n    return insert(s,'completion_claimed',s.eventDbKey+':completion',{purpose:'exclusive-completion-handler',executionId:s.executionId,attemptId:s.attemptId,claimExecutionId:s.claimExecutionId});\n   }\n   case 'completion_claimed':\n    if(!r.inserted)return finish(s,{ok:true,alreadyProcessing:true,slackSent:true,instruction:'An existing completion owns this receipt. Do not resend Slack or release its mutex.'});\n    return insert(s,'sent_audited',s.eventDbKey+':sent',{purpose:'slack-action-succeeded',recordId:s.recordId,cycleId:s.cycleId,eventKey:s.eventKey,taskId:s.taskId,sentAt:s.sentAt,attemptId:s.attemptId,claimExecutionId:s.claimExecutionId});\n   case 'sent_audited':return at(s,'complete_campaign','GET',CAM+s.recordId);\n   case 'complete_campaign':\n    record(s,r);if(String(s.fields[F.cycle]||'initial')!==s.cycleId)throw Error('Campaign cycle changed outside the coordinator while its mutex was held. Preserve the sent receipt and reconcile.');\n    return at(s,'sent_mirrored','PATCH',CAM+s.recordId,{fields:{[F.delivery]:JSON.stringify(delivery(s,'pending'))}});\n   case 'sent_mirrored':record(s,r);return at(s,'complete_task','GET',TASK+'/'+s.taskId);\n   case 'complete_task':{\n    if(r.id!==s.taskId||r.fields?.['Automation Key']!==s.eventKey)throw Error('Completion task identity mismatch.');\n    // Do not erase owner/listener work that already changed this task after the Slack event.\n    if(r.fields.Status==='Blocked'&&String(r.fields.Notes||'').startsWith('PENDING ALERT DELIVERY. '+s.eventKey))return at(s,'task_completed','PATCH',TASK+'/'+s.taskId,{fields:{Status:'Not Started',Notes:'SLACK ACTION SUCCEEDED. '+s.eventKey+'\\nDelivered '+s.sentAt+'. Replenishment queue warning, not the final send date. Any forecast due date is an earliest queue-depletion bound at configured capacity, not an exact normal-volume-drop prediction.'}});\n    return insert(s,'downstream_claimed',s.eventDbKey+':downstream_claim',{purpose:'downstream-request-claim',recordId:s.recordId,cycleId:s.cycleId,claimedAt:new Date().toISOString()});\n   }\n   case 'task_completed':return insert(s,'downstream_claimed',s.eventDbKey+':downstream_claim',{purpose:'downstream-request-claim',recordId:s.recordId,cycleId:s.cycleId,claimedAt:new Date().toISOString()});\n   case 'downstream_claimed':\n    s.sendDownstream=!!r.inserted;return release(s,'downstream',{ok:true,slackSent:true});\n   case 'released':\n    if(!r.released&&!r.already_released)throw Error('Mutex release is unconfirmed.');s.lockOwned=false;\n    if(s.afterRelease==='downstream'&&s.sendDownstream){s.stage='downstream_called';return result(s,null,'downstream',{request:{body:{recordId:s.recordId,cycleId:s.cycleId}}});}\n    return finish(s,s.finishPayload,s.finishPayload?.ok===false?409:200);\n   case 'downstream_called':\n    // An immutable acceptance record is stored without acquiring another campaign mutex.\n    // It does not rewrite mutable campaign metadata, and it never claims execution completion.\n    return pg(s,'downstream_audited','pg_append',[s.eventDbKey+':downstream_accepted',s.resource,s.claimExecutionId,JSON.stringify({purpose:'downstream-http-accepted',recordId:s.recordId,cycleId:s.cycleId,acceptedAt:new Date().toISOString()})]);\n   case 'downstream_audited':return finish(s,{ok:true,slackSent:true,downstream:'accepted'});\n   default:throw Error('Unexpected coordinator stage.');\n  }\n }catch(e){return failure(s,e);}\n}\n\nreturn [{json:plan($input.first().json)}];"
+   },
+   "name": "Plan atomic operation",
+   "id": "94876a9a-eb42-44f1-916c-57fc5531135f",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -528,
+    1536
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "8832ad68-db7d-5c36-b07a-a5b96098159f",
+       "leftValue": "={{ $json.action }}",
+       "rightValue": "airtable",
+       "operator": {
+        "type": "string",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "Is airtable?",
+   "id": "40f87ed0-cd71-49be-8ce8-8d213d1714f5",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    -240,
+    1536
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "bfe41232-c1a1-5885-bacb-ade051f4fc8b",
+       "leftValue": "={{ $json.request.method }}",
+       "rightValue": "GET",
+       "operator": {
+        "type": "string",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "Run airtable",
+   "id": "e00b03a1-d288-42b1-b49d-36f673bfd46f",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    -240,
+    1280
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const item=$input.first().json;const response=item.error?{error:true}:$input.first().json;return [{json:{state:$('Plan atomic operation').item.json.state,response}}];"
+   },
+   "name": "Collect airtable",
+   "id": "cd5ae533-d1b3-44a7-a1b0-b48c4a132002",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -240,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "974603ee-9d43-56dc-bf70-95e5fe876bc0",
+       "leftValue": "={{ $json.action }}",
+       "rightValue": "bison",
+       "operator": {
+        "type": "string",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "Is bison?",
+   "id": "4e34b3a5-86a9-4bec-afbc-f3e42f74229b",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    0,
+    1536
+   ]
+  },
+  {
+   "parameters": {
+    "method": "={{ $json.request.method }}",
+    "url": "={{ $json.request.url }}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $json.request.apiKey }}"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "fullResponse": true
+      }
+     },
+     "timeout": 30000
+    }
+   },
+   "name": "Run bison",
+   "id": "43fcbc0f-5778-4a5b-a35d-1023a95beb88",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    0,
+    1280
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "jsCode": "const item=$input.first().json;const response=item.error?{error:true}:$input.first().json;return [{json:{state:$('Plan atomic operation').item.json.state,response}}];"
+   },
+   "name": "Collect bison",
+   "id": "530613ab-e27e-4905-84bb-37ca1efafe7e",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    0,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "0f471897-0e34-5f1f-89e9-a61815f848b7",
+       "leftValue": "={{ $json.action }}",
+       "rightValue": "pg_acquire",
+       "operator": {
+        "type": "string",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "Is pg_acquire?",
+   "id": "25dfef76-4468-4b82-9118-160109d532e3",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    240,
+    1536
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "WITH reserved AS (INSERT INTO dulcy_sender_updates.requests(request_id,resource,execution_id,context) VALUES($2,$1,$3,$4::jsonb) ON CONFLICT DO NOTHING RETURNING request_id), acquired AS (INSERT INTO dulcy_sender_updates.locks(resource,request_id,execution_id) SELECT $1,$2,$3 FROM reserved ON CONFLICT DO NOTHING RETURNING resource) SELECT EXISTS(SELECT 1 FROM acquired) AS acquired, NOT EXISTS(SELECT 1 FROM reserved) AS already_used, NOT EXISTS(SELECT 1 FROM acquired) AS busy;",
+    "options": {
+     "queryReplacement": "={{ $json.params }}"
+    }
+   },
+   "name": "Run pg_acquire",
+   "id": "08e5966a-4302-4eff-a834-d24c18e0ded8",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    240,
+    1280
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "jsCode": "const item=$input.first().json;const response=item.error?{error:true}:{statusCode:200,body:$input.first().json};return [{json:{state:$('Plan atomic operation').item.json.state,response}}];"
+   },
+   "name": "Collect pg_acquire",
+   "id": "5c4dcf14-9ebf-4726-9484-f1d4308ec4d5",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    240,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "d79a0d80-6d34-54b9-9872-a4ad32a5a709",
+       "leftValue": "={{ $json.action }}",
+       "rightValue": "pg_release",
+       "operator": {
+        "type": "string",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "Is pg_release?",
+   "id": "b0ac8149-b10e-4169-bc6d-10fe9e123482",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    480,
+    1536
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "WITH released AS (DELETE FROM dulcy_sender_updates.locks WHERE resource=$1 AND request_id=$2 AND execution_id=$3 RETURNING resource), audit AS (INSERT INTO dulcy_sender_updates.requests(request_id,resource,execution_id,context) SELECT $2||':released',$1,$3,jsonb_build_object('purpose','replenishment-mutex-released','releasedAt',now()) FROM released ON CONFLICT DO NOTHING RETURNING request_id) SELECT EXISTS(SELECT 1 FROM released) AS released, EXISTS(SELECT 1 FROM dulcy_sender_updates.requests WHERE request_id=$2||':released') AS already_released;",
+    "options": {
+     "queryReplacement": "={{ $json.params }}"
+    }
+   },
+   "name": "Run pg_release",
+   "id": "2eb17ec3-bfc4-4c9f-9a76-9919e8f5cb9f",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    480,
+    1280
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "jsCode": "const item=$input.first().json;const response=item.error?{error:true}:{statusCode:200,body:$input.first().json};return [{json:{state:$('Plan atomic operation').item.json.state,response}}];"
+   },
+   "name": "Collect pg_release",
+   "id": "c528c88d-5681-409e-ae2d-485984edee05",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    480,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "8bf4f7ea-9a1a-5d30-9184-e3bea55f94cd",
+       "leftValue": "={{ $json.action }}",
+       "rightValue": "pg_insert",
+       "operator": {
+        "type": "string",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "Is pg_insert?",
+   "id": "62abcf2b-bf5c-494e-b4cf-28162926e626",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    720,
+    1536
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "WITH inserted AS (INSERT INTO dulcy_sender_updates.requests(request_id,resource,execution_id,context) SELECT $4,$1,$3,$5::jsonb WHERE EXISTS(SELECT 1 FROM dulcy_sender_updates.locks WHERE resource=$1 AND request_id=$2 AND execution_id=$3) ON CONFLICT DO NOTHING RETURNING request_id) SELECT EXISTS(SELECT 1 FROM inserted) AS inserted, EXISTS(SELECT 1 FROM dulcy_sender_updates.locks WHERE resource=$1 AND request_id=$2 AND execution_id=$3) AS owned;",
+    "options": {
+     "queryReplacement": "={{ $json.params }}"
+    }
+   },
+   "name": "Run pg_insert",
+   "id": "96262957-b721-48da-b736-883a9b2bff33",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    720,
+    1280
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "jsCode": "const item=$input.first().json;const response=item.error?{error:true}:{statusCode:200,body:$input.first().json};return [{json:{state:$('Plan atomic operation').item.json.state,response}}];"
+   },
+   "name": "Collect pg_insert",
+   "id": "78b08592-7e8e-4c67-b0eb-755b0e0b5b28",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    720,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "d01bbf1a-19b6-5527-b947-4b935ee81cc1",
+       "leftValue": "={{ $json.action }}",
+       "rightValue": "pg_read",
+       "operator": {
+        "type": "string",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "Is pg_read?",
+   "id": "e0c0d0da-8e65-4665-bcda-97eb92a1077b",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    960,
+    1536
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "SELECT EXISTS(SELECT 1 FROM dulcy_sender_updates.locks WHERE resource=$1 AND request_id=$2 AND execution_id=$3) AS owned, COALESCE((SELECT jsonb_agg(jsonb_build_object('request_id',request_id,'context',context)) FROM dulcy_sender_updates.requests WHERE resource=$1 AND (request_id=$4 OR left(request_id,length($4)+1)=$4||':')),'[]'::jsonb) AS events;",
+    "options": {
+     "queryReplacement": "={{ $json.params }}"
+    }
+   },
+   "name": "Run pg_read",
+   "id": "6da5d716-3a72-40f8-95e3-2ecb442fe290",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    960,
+    1280
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "jsCode": "const item=$input.first().json;const response=item.error?{error:true}:{statusCode:200,body:$input.first().json};return [{json:{state:$('Plan atomic operation').item.json.state,response}}];"
+   },
+   "name": "Collect pg_read",
+   "id": "acd0a421-a35e-4c62-8068-a3543046e7ec",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    960,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "9b3546ed-511a-5801-b67f-5aaac4cc3f89",
+       "leftValue": "={{ $json.action }}",
+       "rightValue": "pg_append",
+       "operator": {
+        "type": "string",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "Is pg_append?",
+   "id": "b24c7eeb-e73b-4e06-976b-7069b8f11f30",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    1200,
+    1536
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "WITH inserted AS (INSERT INTO dulcy_sender_updates.requests(request_id,resource,execution_id,context) VALUES($1,$2,$3,$4::jsonb) ON CONFLICT DO NOTHING RETURNING request_id) SELECT EXISTS(SELECT 1 FROM inserted) AS inserted;",
+    "options": {
+     "queryReplacement": "={{ $json.params }}"
+    }
+   },
+   "name": "Run pg_append",
+   "id": "07d5e27a-17cc-443a-ab20-8e73c5413525",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    1200,
+    1280
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "jsCode": "const item=$input.first().json;const response=item.error?{error:true}:{statusCode:200,body:$input.first().json};return [{json:{state:$('Plan atomic operation').item.json.state,response}}];"
+   },
+   "name": "Collect pg_append",
+   "id": "2bc2aee1-cbe4-4428-a50c-7a01ddb5f8c1",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1200,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "7fe2c260-d3ff-53d7-87b0-812a394620c8",
+       "leftValue": "={{ $json.action }}",
+       "rightValue": "wait",
+       "operator": {
+        "type": "string",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "Is wait?",
+   "id": "7c33f92c-013e-4745-9e60-c276fbbcac23",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    1440,
+    1536
+   ]
+  },
+  {
+   "parameters": {},
+   "name": "Run wait",
+   "id": "cc01bd20-6f4f-4533-bff8-60a58ae4bddb",
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    1440,
+    1280
+   ],
+   "webhookId": "58d6ca5b-90da-5d4b-8be2-527fad517b00"
+  },
+  {
+   "parameters": {
+    "jsCode": "const item=$input.first().json;const response=item.error?{error:true}:{statusCode:200,body:{waited:true}};return [{json:{state:$('Plan atomic operation').item.json.state,response}}];"
+   },
+   "name": "Collect wait",
+   "id": "d2e6f4cb-b91e-4edf-8e02-f67765a96f39",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1440,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "fed06f34-6915-5451-8fe0-d5d0b9f9cf45",
+       "leftValue": "={{ $json.action }}",
+       "rightValue": "downstream",
+       "operator": {
+        "type": "string",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "Is downstream?",
+   "id": "e137f796-3a30-45b0-9ebc-3ac691206005",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    1680,
+    1536
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://n8n.dulcy.io/webhook/REDACTED_PATH",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json.request.body) }}",
+    "options": {
+     "response": {
+      "response": {
+       "fullResponse": true
+      }
+     },
+     "timeout": 30000
+    }
+   },
+   "name": "Run downstream",
+   "id": "a0dfe11a-db43-4275-908c-1b8ce2519e01",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1680,
+    1280
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "jsCode": "const item=$input.first().json;const response=item.error?{error:true}:$input.first().json;return [{json:{state:$('Plan atomic operation').item.json.state,response}}];"
+   },
+   "name": "Collect downstream",
+   "id": "ade30449-524a-4df1-9cc8-ffb11ac955eb",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1680,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "d1cc7197-5d9a-5c83-ad48-5f1fe1786204",
+       "leftValue": "={{ $json.action }}",
+       "rightValue": "respond",
+       "operator": {
+        "type": "string",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "Is respond?",
+   "id": "d3adcdf8-5fa4-4d66-beeb-882410e39a47",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    1920,
+    1536
+   ]
+  },
+  {
+   "parameters": {
+    "respondWith": "json",
+    "responseBody": "={{ $json.payload }}",
+    "options": {
+     "responseCode": "={{ $json.httpStatus }}"
+    }
+   },
+   "name": "Run respond",
+   "id": "c2d2eced-9d38-42cd-9484-26d8603bcc08",
+   "type": "n8n-nodes-base.respondToWebhook",
+   "typeVersion": 1.4,
+   "position": [
+    1920,
+    1280
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const p=$('Plan atomic operation').item.json.payload;if(p.ok===false)throw Error('Replenishment coordination blocked: '+JSON.stringify(p));return [{json:p}];"
+   },
+   "name": "Raise callback blocker",
+   "id": "d6441c2e-b181-4123-9f7c-e6d2579b25c0",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1920,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "1e589865-087c-528b-b9d0-c58253674677",
+       "leftValue": "={{ $json.action }}",
+       "rightValue": "done",
+       "operator": {
+        "type": "string",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "Is done?",
+   "id": "e21905bc-87dc-44a4-bfa7-4e9d5f55cd1f",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    2160,
+    1536
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "return [{json:$json.payload}];"
+   },
+   "name": "Run done",
+   "id": "56d0fef5-1e0a-4761-a4db-56180fa6995f",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2160,
+    1280
+   ]
+  },
+  {
+   "parameters": {
+    "method": "={{ $json.request.method }}",
+    "url": "={{ $json.request.url }}",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "airtableTokenApi",
+    "options": {
+     "response": {
+      "response": {
+       "fullResponse": true
+      }
+     },
+     "timeout": 30000
+    }
+   },
+   "name": "Run airtable read",
+   "id": "8a97b37c-3133-4aa2-8443-4a9f0b1783ed",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    -240,
+    800
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "method": "={{ $json.request.method }}",
+    "url": "={{ $json.request.url }}",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "airtableTokenApi",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json.request.body || {}) }}",
+    "options": {
+     "response": {
+      "response": {
+       "fullResponse": true
+      }
+     },
+     "timeout": 30000
+    }
+   },
+   "name": "Run airtable write",
+   "id": "9d2f7cd4-cfbe-48bc-aae0-c7ec1a2a1c7f",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    -240,
+    592
+   ],
+   "onError": "continueRegularOutput"
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

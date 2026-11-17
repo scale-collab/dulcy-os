@@ -1,0 +1,2678 @@
+{
+ "id": "bDwVoNKGlfAwBXuW",
+ "name": "Fanbasis Transaction Successful",
+ "active": true,
+ "isArchived": false,
+ "versionId": "96262d0e-530f-4afe-9153-376a6bde1cca",
+ "triggerCount": 1,
+ "createdAt": "2025-12-05T21:29:24.384Z",
+ "updatedAt": "2026-11-17T16:42:31.400Z",
+ "settings": {
+  "executionOrder": "v1",
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Webhook": {
+   "main": [
+    [
+     {
+      "node": "Filter",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Send a message": {
+   "main": [
+    [
+     {
+      "node": "create look up key",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get row(s) in sheet": {
+   "main": [
+    [
+     {
+      "node": "transaction type",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "If": {
+   "main": [
+    [
+     {
+      "node": "Get a contact",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Create a contact",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create a contact": {
+   "main": [
+    [
+     {
+      "node": "Append row in sheet",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Append row in sheet": {
+   "main": [
+    [
+     {
+      "node": "fee1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "separate look up key": {
+   "main": [
+    [
+     {
+      "node": "Send a message",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "create look up key": {
+   "main": [
+    [
+     {
+      "node": "Get row(s) in sheet",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "transaction type": {
+   "main": [
+    [
+     {
+      "node": "If",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "HTTP Request1": {
+   "main": [
+    [
+     {
+      "node": "separate look up key",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get a contact": {
+   "main": [
+    [
+     {
+      "node": "Append row in sheet1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Append row in sheet1": {
+   "main": [
+    [
+     {
+      "node": "fee",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "check payment method": {
+   "main": [
+    [
+     {
+      "node": "If card",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "set type",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "If card": {
+   "main": [
+    [
+     {
+      "node": "set type",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "set type",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "set type": {
+   "main": [
+    [
+     {
+      "node": "HTTP Request1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "HTTP Request2": {
+   "main": [
+    [
+     {
+      "node": "Search records",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records": {
+   "main": [
+    [
+     {
+      "node": "Search records1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records1": {
+   "main": [
+    [
+     {
+      "node": "Create a record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create a record": {
+   "main": [
+    []
+   ]
+  },
+  "Search records2": {
+   "main": [
+    [
+     {
+      "node": "Search records3",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records3": {
+   "main": [
+    [
+     {
+      "node": "Create a record1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create a record1": {
+   "main": [
+    [
+     {
+      "node": "Initial payment missing?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "HTTP Request": {
+   "main": [
+    [
+     {
+      "node": "Search records2",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "fee": {
+   "main": [
+    [
+     {
+      "node": "HTTP Request2",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "fee1": {
+   "main": [
+    [
+     {
+      "node": "HTTP Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Filter": {
+   "main": [
+    [
+     {
+      "node": "check payment method",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Initial payment missing?": {
+   "main": [
+    [
+     {
+      "node": "Mark initial payment received",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    -624,
+    -432
+   ],
+   "id": "4b4f20df-b99e-42d4-961f-26eb6720e2b9",
+   "name": "Webhook"
+  },
+  {
+   "parameters": {
+    "select": "channel",
+    "channelId": {
+     "__rl": true,
+     "value": "C075UR0HRRR",
+     "mode": "list",
+     "cachedResultName": "contract-events"
+    },
+    "text": "=New Fanbasis Payment Successful!  \n\nName: {{ $('Webhook').item.json.body.data.buyer.name }}\nEmail: {{ $('Webhook').item.json.body.data.buyer.email }}\nAmount: {{ $('Webhook').item.json.body.data.amount }} {{ $('Webhook').item.json.body.data.currency }}\nType: \n\n{{ $('Webhook').item.json.body.data.status }}\n\nFunds Release: {{ $('HTTP Request1').item.json.data.servicePayment.fund_release_on }}",
+    "otherOptions": {
+     "includeLinkToWorkflow": false
+    }
+   },
+   "type": "n8n-nodes-base.slack",
+   "typeVersion": 2.3,
+   "position": [
+    928,
+    -432
+   ],
+   "id": "8471cdc3-c3dd-4efa-8d37-dd5b93b0475f",
+   "name": "Send a message",
+   "webhookId": "ab2d5bff-69b5-4152-82b4-453dc730243e"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "90fca17a-0ea4-4c9f-addb-ccb54baa2280",
+       "leftValue": "={{ $json.row_number }}",
+       "rightValue": "",
+       "operator": {
+        "type": "number",
+        "operation": "exists",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    1824,
+    -432
+   ],
+   "id": "48130b82-97e0-4648-a698-d382caf00383",
+   "name": "If"
+  },
+  {
+   "parameters": {
+    "documentId": {
+     "__rl": true,
+     "value": "1nUf28kpRs2olqUIIfdrVdyH1q67hRT-zhmaD9UL3knM",
+     "mode": "list",
+     "cachedResultName": "***Dulcy Media P/L***",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1nUf28kpRs2olqUIIfdrVdyH1q67hRT-zhmaD9UL3knM/edit?usp=drivesdk"
+    },
+    "sheetName": {
+     "__rl": true,
+     "value": 1644579049,
+     "mode": "list",
+     "cachedResultName": "Email to ID",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1nUf28kpRs2olqUIIfdrVdyH1q67hRT-zhmaD9UL3knM/edit#gid=1644579049"
+    },
+    "filtersUI": {
+     "values": [
+      {
+       "lookupColumn": "Domain",
+       "lookupValue": "={{ $('create look up key').item.json.lookup_key }}"
+      }
+     ]
+    },
+    "options": {
+     "returnFirstMatch": true
+    }
+   },
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.7,
+   "position": [
+    1376,
+    -432
+   ],
+   "id": "7bfd5a89-dfda-4264-9ef9-a62f831d00e6",
+   "name": "Get row(s) in sheet",
+   "alwaysOutputData": true,
+   "notesInFlow": false
+  },
+  {
+   "parameters": {
+    "resource": "contact",
+    "organizationId": "d5379ec6-3c1b-445c-8929-25ce94b6837e",
+    "name": "={{ $('Webhook').item.json.body.data.buyer.name }}",
+    "additionalFields": {}
+   },
+   "type": "n8n-nodes-base.xero",
+   "typeVersion": 1,
+   "position": [
+    2048,
+    -336
+   ],
+   "id": "2819304d-68dc-4259-aac4-fc46d5b9696a",
+   "name": "Create a contact"
+  },
+  {
+   "parameters": {
+    "operation": "append",
+    "documentId": {
+     "__rl": true,
+     "value": "1nUf28kpRs2olqUIIfdrVdyH1q67hRT-zhmaD9UL3knM",
+     "mode": "list",
+     "cachedResultName": "***Dulcy Media P/L***",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1nUf28kpRs2olqUIIfdrVdyH1q67hRT-zhmaD9UL3knM/edit?usp=drivesdk"
+    },
+    "sheetName": {
+     "__rl": true,
+     "value": 1644579049,
+     "mode": "list",
+     "cachedResultName": "Email to ID",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1nUf28kpRs2olqUIIfdrVdyH1q67hRT-zhmaD9UL3knM/edit#gid=1644579049"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Client": "={{ $('Webhook').item.json.body.data.buyer.name }}",
+      "Domain": "={{ $('create look up key').item.json.lookup_key }}",
+      "Xero ID": "={{ $json.ContactID }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Domain",
+       "displayName": "Domain",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Xero ID",
+       "displayName": "Xero ID",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.7,
+   "position": [
+    2272,
+    -336
+   ],
+   "id": "1d171a24-a8ca-4d96-8129-b24fc52aa6c8",
+   "name": "Append row in sheet"
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.xero.com/api.xro/2.0/BankTransactions",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "xeroOAuth2Api",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "xero-tenant-id",
+       "value": "d5379ec6-3c1b-445c-8929-25ce94b6837e"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={\n  \"Type\": \"RECEIVE\",\n  \"Contact\": {\n    \"ContactID\": \"{{$('Create a contact').first().json.ContactID}}\"\n  },\n  \"BankAccount\": {\n    \"Code\": \"FANBASIS\"\n  },\n  \"Date\": \"{{$now.toFormat('yyyy-MM-dd')}}\",\n  \"LineAmountTypes\": \"Exclusive\",\n  \"Reference\": \"Fanbasis {{$('Webhook').first().json.body.data.payment_id}}\",\n  \"LineItems\": [\n    {\n      \"Description\": \"{{$('Webhook').first().json.body.data.item.title}}\",\n      \"Quantity\": 1,\n      \"UnitAmount\": {{ $('Webhook').first().json.body.data.amount }},\n      \"AccountCode\": \"{{$('transaction type').first().json.accountCode}}\"\n    },\n    {\n      \"Description\": \"Fanbasis processing fee\",\n      \"Quantity\": 1,\n      \"UnitAmount\": -{{ $json.fee }},\n      \"AccountCode\": \"6540\"\n    }\n  ]\n}",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.3,
+   "position": [
+    2720,
+    -336
+   ],
+   "id": "ac92dcb4-c823-492f-95e0-5ba6468a51ca",
+   "name": "HTTP Request"
+  },
+  {
+   "parameters": {
+    "jsCode": "const email = $('Webhook').first().json.body.data.buyer.email;; // adjust path if needed\n\nreturn [\n  {\n    json: {\n      full_email: email,\n      domain: email.split('@')[1]\n    }\n  }\n];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    704,
+    -432
+   ],
+   "id": "c1dae81f-2a92-421f-b9de-14acb8c45734",
+   "name": "separate look up key"
+  },
+  {
+   "parameters": {
+    "jsCode": "// Get email from webhook safely\nconst email = $('Webhook').first().json?.body?.data?.buyer?.email;\n\nif (!email || typeof email !== 'string') {\n\treturn [{\n\t\tlookup_key: null,\n\t\tlookup_error: \"Missing or invalid email at body.data.buyer.email\"\n\t}];\n}\n\n// Extract domain\nconst parts = email.split('@');\nconst domain = parts[1] ? parts[1].trim().toLowerCase() : null;\n\n// If no domain fallback\nif (!domain) {\n\treturn [{\n\t\tlookup_key: email,  // fallback to whole email\n\t\tlookup_error: \"Email missing domain — using full email as key\"\n\t}];\n}\n\n// List of \"generic\" consumer email domains\nconst genericDomains = [\n\t'gmail.com',\n\t'yahoo.com',\n\t'outlook.com',\n\t'hotmail.com',\n\t'icloud.com',\n\t'aol.com',\n\t'proton.me',\n\t'me.com'\n];\n\nlet lookup_key;\n\n// If domain is generic → use full email\nif (genericDomains.includes(domain)) {\n\tlookup_key = email.toLowerCase();   // full email\n} else {\n\tlookup_key = domain;                // just the business domain\n}\n\nreturn [{\n\tlookup_key,\n\tmessage_timestamp: Date.now()\n}];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1152,
+    -432
+   ],
+   "id": "7b8006f1-5c57-4bb7-9f49-5608c762e9e8",
+   "name": "create look up key"
+  },
+  {
+   "parameters": {
+    "jsCode": "const titleRaw = $('Webhook').first().json.body.data.item.title || '';\nconst title = titleRaw.toLowerCase();\n\nlet accountCode;\nlet categoryLabel;\n\n// Mapping logic\nif (title.includes('partnership')) {\n  accountCode = '4000';\n  categoryLabel = 'DFY';\n\n} else if (title.includes('system')) {\n  accountCode = '4020';\n  categoryLabel = 'Systems';\n\n} else if (title.includes('lead')) {\n  accountCode = '4010';\n  categoryLabel = 'Lead Lists';\n\n} else if (title.includes('access') || title.includes('agency ignition')) {\n  accountCode = '4040';\n  categoryLabel = 'Agency Ignition';\n\n} else if (title.includes('deal flux')) {\n  accountCode = '4050';\n  categoryLabel = 'Deal Flux';\n\n} else if (title.includes('coaching')) {\n  accountCode = '4030';\n  categoryLabel = 'Coaching';\n\n} else {\n  accountCode = '4060';\n  categoryLabel = 'Other';\n}\n\nreturn items.map(item => {\n  item.json.accountCode = accountCode;\n  item.json.categoryLabel = categoryLabel;\n  return item;\n});"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1600,
+    -432
+   ],
+   "id": "acc3e014-59ac-4bc1-ab48-18669c947b80",
+   "name": "transaction type"
+  },
+  {
+   "parameters": {
+    "url": "=https://www.fanbasis.com/public-api/transactions/{{ $('Webhook').item.json.body.data.payment_id }}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "x-api-key",
+       "value": "REDACTED"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.3,
+   "position": [
+    480,
+    -432
+   ],
+   "id": "2d38be78-af4a-46f2-8a7a-61bc05bd8317",
+   "name": "HTTP Request1",
+   "alwaysOutputData": false,
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "resource": "contact",
+    "operation": "get",
+    "organizationId": "d5379ec6-3c1b-445c-8929-25ce94b6837e",
+    "contactId": "={{ $('Get row(s) in sheet').item.json['Xero ID'] }}"
+   },
+   "type": "n8n-nodes-base.xero",
+   "typeVersion": 1,
+   "position": [
+    2048,
+    -528
+   ],
+   "id": "08c87947-6c88-4f2d-bb57-7759344394cb",
+   "name": "Get a contact"
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.xero.com/api.xro/2.0/BankTransactions",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "xeroOAuth2Api",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "xero-tenant-id",
+       "value": "d5379ec6-3c1b-445c-8929-25ce94b6837e"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={\n  \"Type\": \"RECEIVE\",\n  \"Contact\": {\n    \"ContactID\": \"{{ $('Get a contact').first().json.ContactID }}\"\n  },\n  \"BankAccount\": {\n    \"Code\": \"FANBASIS\"\n  },\n  \"Date\": \"{{$now.toFormat('yyyy-MM-dd')}}\",\n  \"LineAmountTypes\": \"Exclusive\",\n  \"Reference\": \"Fanbasis {{$('Webhook').first().json.body.data.payment_id}}\",\n  \"LineItems\": [\n    {\n      \"Description\": \"{{$('Webhook').first().json.body.data.item.title}}\",\n      \"Quantity\": 1,\n      \"UnitAmount\": {{ $('Webhook').first().json.body.data.amount }},\n      \"AccountCode\": \"{{$('transaction type').first().json.accountCode}}\"\n    },\n    {\n      \"Description\": \"Fanbasis processing fee\",\n      \"Quantity\": 1,\n      \"UnitAmount\": -{{ $json.fee }},\n      \"AccountCode\": \"6540\"\n    }\n  ]\n}",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.3,
+   "position": [
+    2720,
+    -528
+   ],
+   "id": "c3552736-11f9-4642-aa20-bf35aa8273ba",
+   "name": "HTTP Request2"
+  },
+  {
+   "parameters": {
+    "operation": "append",
+    "documentId": {
+     "__rl": true,
+     "value": "1nUf28kpRs2olqUIIfdrVdyH1q67hRT-zhmaD9UL3knM",
+     "mode": "list",
+     "cachedResultName": "***Dulcy Media P/L***",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1nUf28kpRs2olqUIIfdrVdyH1q67hRT-zhmaD9UL3knM/edit?usp=drivesdk"
+    },
+    "sheetName": {
+     "__rl": true,
+     "value": 1644579049,
+     "mode": "list",
+     "cachedResultName": "Email to ID",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1nUf28kpRs2olqUIIfdrVdyH1q67hRT-zhmaD9UL3knM/edit#gid=1644579049"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Client": "={{ $('Webhook').item.json.body.data.buyer.name }}",
+      "Domain": "={{ $('create look up key').item.json.lookup_key }}",
+      "Xero ID": "={{ $json.ContactID }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Domain",
+       "displayName": "Domain",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Xero ID",
+       "displayName": "Xero ID",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.7,
+   "position": [
+    2272,
+    -528
+   ],
+   "id": "cbdb5ad1-53e3-476a-abfc-9cf4818bc7c2",
+   "name": "Append row in sheet1"
+  },
+  {
+   "parameters": {
+    "url": "=https://www.fanbasis.com/public-api/customers/{{ $json.body.data.buyer.id }}/payment-methods",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "x-api-key",
+       "value": "REDACTED"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.3,
+   "position": [
+    -192,
+    -432
+   ],
+   "id": "e2fc01b3-3e68-4ab8-b848-e9824dc3ff79",
+   "name": "check payment method",
+   "onError": "continueErrorOutput"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "d4775cfd-02bd-4ee7-904c-4b79980eec86",
+       "leftValue": "={{ $json.data.payment_methods[0].type }}",
+       "rightValue": "card",
+       "operator": {
+        "type": "string",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.3,
+   "position": [
+    32,
+    -368
+   ],
+   "id": "3c30df62-7938-4ffc-a08d-ad035f290b63",
+   "name": "If card"
+  },
+  {
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "9108bdbc-4b35-4194-ac4a-358cc620bff6",
+       "name": "type",
+       "value": "={{ $json.data?.payment_methods?.[0]?.type ?? \"ach\" }}",
+       "type": "string"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    256,
+    -432
+   ],
+   "id": "1b830968-41ee-4dc9-b8f3-8e164a4ff9fd",
+   "name": "set type"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "=appxqINt5XKw7a76A",
+     "mode": "id"
+    },
+    "table": {
+     "__rl": true,
+     "value": "=tbljhM1JmUwr99tu4",
+     "mode": "id"
+    },
+    "filterByFormula": "=Domain = \"{{ $('Get row(s) in sheet').item.json.Domain }}\"",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    2944,
+    -528
+   ],
+   "id": "c4b41606-3e87-46c0-9e56-53f2ae656fec",
+   "name": "Search records",
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "=appxqINt5XKw7a76A",
+     "mode": "id"
+    },
+    "table": {
+     "__rl": true,
+     "value": "=tblxGQqMzeEu23iHi",
+     "mode": "id"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "ID": "={{ $('Webhook').item.json.body.id }}",
+      "Amount": "={{ $('Webhook').item.json.body.data.amount }}",
+      "Date": "={{ $now }}",
+      "Client": "={{ [$json.id] }}",
+      "Type": "Successful"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "ID",
+       "displayName": "ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Amount",
+       "displayName": "Amount",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Date",
+       "displayName": "Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Type",
+       "displayName": "Type",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Successful",
+         "value": "Successful"
+        },
+        {
+         "name": "Unpaid",
+         "value": "Unpaid"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Hide",
+       "displayName": "Hide",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    3392,
+    -528
+   ],
+   "id": "1295c5ea-e53c-43ee-a654-60bfd400fb7a",
+   "name": "Create a record"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "=appxqINt5XKw7a76A",
+     "mode": "id"
+    },
+    "table": {
+     "__rl": true,
+     "value": "=tblcjRBGJEWh5KgOt",
+     "mode": "id"
+    },
+    "filterByFormula": "=AND({Status}=\"Active\",OR(RECORD_ID()=\"{{ (($json['Workspace IDs'] || [])[0]) || '' }}\",LOWER(TRIM({Name}))=LOWER(TRIM(\"{{ $('Get row(s) in sheet').first().json.Client || '' }}\")),AND(LEN(TRIM({Name}))>=8,FIND(LOWER(TRIM({Name})),LOWER(TRIM(\"{{ $('Get row(s) in sheet').first().json.Client || '' }}\")))>0),AND(LEN(TRIM(\"{{ $('Get row(s) in sheet').first().json.Client || '' }}\"))>=8,FIND(LOWER(TRIM(\"{{ $('Get row(s) in sheet').first().json.Client || '' }}\")),LOWER(TRIM({Name})))>0),LOWER(TRIM({Name}))=LOWER(TRIM(\"{{ $('Webhook').first().json.body.data.buyer.name || '' }}\")),AND(LEN(TRIM({Name}))>=8,FIND(LOWER(TRIM({Name})),LOWER(TRIM(\"{{ $('Webhook').first().json.body.data.buyer.name || '' }}\")))>0),AND(LEN(TRIM(\"{{ $('Webhook').first().json.body.data.buyer.name || '' }}\"))>=8,FIND(LOWER(TRIM(\"{{ $('Webhook').first().json.body.data.buyer.name || '' }}\")),LOWER(TRIM({Name})))>0)))",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    3168,
+    -528
+   ],
+   "id": "9d09d10c-1503-49cb-914f-20c1d5ba13b1",
+   "name": "Search records1"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "=appxqINt5XKw7a76A",
+     "mode": "id"
+    },
+    "table": {
+     "__rl": true,
+     "value": "=tblcjRBGJEWh5KgOt",
+     "mode": "id"
+    },
+    "filterByFormula": "=AND({Status}=\"Active\",OR(LOWER(TRIM({Name}))=LOWER(TRIM(\"{{ $('Webhook').first().json.body.data.buyer.name || '' }}\")),AND(LEN(TRIM({Name}))>=8,FIND(LOWER(TRIM({Name})),LOWER(TRIM(\"{{ $('Webhook').first().json.body.data.buyer.name || '' }}\")))>0),AND(LEN(TRIM(\"{{ $('Webhook').first().json.body.data.buyer.name || '' }}\"))>=8,FIND(LOWER(TRIM(\"{{ $('Webhook').first().json.body.data.buyer.name || '' }}\")),LOWER(TRIM({Name})))>0),LOWER(TRIM({Name}))=LOWER(TRIM(\"{{ $('Get row(s) in sheet').first().json.Client || '' }}\")),AND(LEN(TRIM({Name}))>=8,FIND(LOWER(TRIM({Name})),LOWER(TRIM(\"{{ $('Get row(s) in sheet').first().json.Client || '' }}\")))>0),AND(LEN(TRIM(\"{{ $('Get row(s) in sheet').first().json.Client || '' }}\"))>=8,FIND(LOWER(TRIM(\"{{ $('Get row(s) in sheet').first().json.Client || '' }}\")),LOWER(TRIM({Name})))>0)))",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    2944,
+    -336
+   ],
+   "id": "c761e5d4-0968-42e1-af61-79cce5c8dc35",
+   "name": "Search records2"
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "=appxqINt5XKw7a76A",
+     "mode": "id"
+    },
+    "table": {
+     "__rl": true,
+     "value": "=tblxGQqMzeEu23iHi",
+     "mode": "id"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "ID": "={{ $('Webhook').item.json.body.id }}",
+      "Amount": "={{ $('Webhook').item.json.body.data.amount }}",
+      "Date": "={{ $now }}",
+      "Client": "={{ [$json.id] }}",
+      "Type": "Successful"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "ID",
+       "displayName": "ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Amount",
+       "displayName": "Amount",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Date",
+       "displayName": "Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Type",
+       "displayName": "Type",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Successful",
+         "value": "Successful"
+        },
+        {
+         "name": "Unpaid",
+         "value": "Unpaid"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Hide",
+       "displayName": "Hide",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    3392,
+    -336
+   ],
+   "id": "8f406375-5bbc-44d4-aa24-92829d74cd05",
+   "name": "Create a record1"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "=appxqINt5XKw7a76A",
+     "mode": "id"
+    },
+    "table": {
+     "__rl": true,
+     "value": "=tblcjRBGJEWh5KgOt",
+     "mode": "id"
+    },
+    "filterByFormula": "=RECORD_ID() = \"{{ $json.id }}\"",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    3168,
+    -336
+   ],
+   "id": "3dd90c53-5cba-4894-9867-383458a2f0e0",
+   "name": "Search records3"
+  },
+  {
+   "parameters": {
+    "jsCode": "const amount = Number($('Webhook').first().json.body.data.amount);\n\nconst paymentType = $('set type').first().json.type;\n\nconst rate = paymentType.includes('bank')\n  ? 0.008\n  : 0.035;\n\nconst fee = amount * rate;\n\nreturn [{\n  json: {\n    fee: Number(fee.toFixed(2))\n  }\n}];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2496,
+    -528
+   ],
+   "id": "42277dcf-65b7-4556-91b9-2585f8a8cdb6",
+   "name": "fee"
+  },
+  {
+   "parameters": {
+    "jsCode": "const amount = Number($('Webhook').first().json.body.data.amount);\n\nconst paymentType = $('set type').first().json.type;\n\nconst rate = paymentType.includes('bank')\n  ? 0.008\n  : 0.035;\n\nconst fee = amount * rate;\n\nreturn [{\n  json: {\n    fee: Number(fee.toFixed(2))\n  }\n}];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2496,
+    -336
+   ],
+   "id": "93983302-2c6f-480d-a609-f21aeb0b5486",
+   "name": "fee1"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "be17d7ff-db46-414e-8802-981665fdfd65",
+       "leftValue": "={{ $json.body.data.amount }}",
+       "rightValue": 0,
+       "operator": {
+        "type": "number",
+        "operation": "gt"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.filter",
+   "typeVersion": 2.3,
+   "position": [
+    -416,
+    -432
+   ],
+   "id": "2836dded-d506-4085-bf57-b0acc7566862",
+   "name": "Filter"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "=appxqINt5XKw7a76A",
+     "mode": "id"
+    },
+    "table": {
+     "__rl": true,
+     "value": "=tblcjRBGJEWh5KgOt",
+     "mode": "id"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "id": "={{ $('Search records2').item.json.id }}",
+      "Initial Payment Received": true
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": false
+      },
+      {
+       "id": "Name",
+       "displayName": "Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "ID",
+       "displayName": "ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Status",
+       "displayName": "Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Active",
+         "value": "Active"
+        },
+        {
+         "name": "Inactive",
+         "value": "Inactive"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "EmailBison API",
+       "displayName": "EmailBison API",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Slack Channel",
+       "displayName": "Slack Channel",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Logins",
+       "displayName": "Logins",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Campaigns",
+       "displayName": "Campaigns",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Email Accounts",
+       "displayName": "Email Accounts",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Portal Users",
+       "displayName": "Portal Users",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Record ID",
+       "displayName": "Record ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Onboarding",
+       "displayName": "Onboarding",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "onboarding_record_id (from Onboarding)",
+       "displayName": "onboarding_record_id (from Onboarding)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Onboarding_form_submitted",
+       "displayName": "Onboarding_form_submitted",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Documents",
+       "displayName": "Documents",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Email Analytics Overview",
+       "displayName": "Email Analytics Overview",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "PM",
+       "displayName": "PM",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Templates",
+       "displayName": "Templates",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Created",
+       "displayName": "Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "LinkedIn Analytics Overview",
+       "displayName": "LinkedIn Analytics Overview",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client Tasks",
+       "displayName": "Client Tasks",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Emails",
+       "displayName": "Emails",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Total Interested Leads",
+       "displayName": "Total Interested Leads",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Total Calls Booked",
+       "displayName": "Total Calls Booked",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Interested Conversion",
+       "displayName": "Interested Conversion",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Investment Per Call",
+       "displayName": "Investment Per Call",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Total Deals Closed",
+       "displayName": "Total Deals Closed",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Closed Deal Value",
+       "displayName": "Closed Deal Value",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Calls Booked KPI (Internal)",
+       "displayName": "Calls Booked KPI (Internal)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Calls Booked Status (Internal)",
+       "displayName": "Calls Booked Status (Internal)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Inbox Placement Testing",
+       "displayName": "Inbox Placement Testing",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Calls Booked KPI (from Onboarding)",
+       "displayName": "Calls Booked KPI (from Onboarding)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Calls Booked - Last 30 days",
+       "displayName": "Calls Booked - Last 30 days",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Calls Booked KPI (Client)",
+       "displayName": "Calls Booked KPI (Client)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Calls Booked Status (Client)",
+       "displayName": "Calls Booked Status (Client)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Total Investment",
+       "displayName": "Total Investment",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Calls Made",
+       "displayName": "Calls Made",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Completed Calls",
+       "displayName": "Completed Calls",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Answered Calls",
+       "displayName": "Answered Calls",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Interested Calls",
+       "displayName": "Interested Calls",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Answered Rate",
+       "displayName": "Answered Rate",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Interested Rate",
+       "displayName": "Interested Rate",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Apollo URL's",
+       "displayName": "Apollo URL's",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "HeyReach ID",
+       "displayName": "HeyReach ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "RevReply Email ID",
+       "displayName": "RevReply Email ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "RevReply LinkedIn ID",
+       "displayName": "RevReply LinkedIn ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Apollo ID",
+       "displayName": "Apollo ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "AI Model ID (PRE)",
+       "displayName": "AI Model ID (PRE)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Model ID (APTR)",
+       "displayName": "AI Model ID (APTR)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Email Signature",
+       "displayName": "Email Signature",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Cold Email",
+       "displayName": "Cold Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "LinkedIn",
+       "displayName": "LinkedIn",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Employee",
+       "displayName": "AI Employee",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Direct Mail",
+       "displayName": "Direct Mail",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Cold Traffic Offer",
+       "displayName": "Cold Traffic Offer",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Front End Offer(s)",
+       "displayName": "Front End Offer(s)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Back End Offer(s)",
+       "displayName": "Back End Offer(s)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Outbound Risk Reversal",
+       "displayName": "Outbound Risk Reversal",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Projects",
+       "displayName": "Projects",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Executive Dashboard Data",
+       "displayName": "Executive Dashboard Data",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "EmailGuard API",
+       "displayName": "EmailGuard API",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "HeyReach Workspace API",
+       "displayName": "HeyReach Workspace API",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Documents copy",
+       "displayName": "Documents copy",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client Tasks copy",
+       "displayName": "Client Tasks copy",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client Notifcations",
+       "displayName": "Client Notifcations",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client Invoices",
+       "displayName": "Client Invoices",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "From field: Workspace IDs",
+       "displayName": "From field: Workspace IDs",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Tasks",
+       "displayName": "Tasks",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Initial Payment Received",
+       "displayName": "Initial Payment Received",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Last Modified",
+       "displayName": "Last Modified",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "DiscoLike Exclusion Query ID",
+       "displayName": "DiscoLike Exclusion Query ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Domain Exclusion Count",
+       "displayName": "Domain Exclusion Count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Domain Exclusions Refreshed At",
+       "displayName": "Domain Exclusions Refreshed At",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Refresh Domain Exclusions",
+       "displayName": "Refresh Domain Exclusions",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client Start Date",
+       "displayName": "Client Start Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client End Date",
+       "displayName": "Client End Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Monthly Fee",
+       "displayName": "Monthly Fee",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Months Active",
+       "displayName": "Months Active",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Estimated LTV",
+       "displayName": "Estimated LTV",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Active Client Count",
+       "displayName": "Active Client Count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Active MRR",
+       "displayName": "Active MRR",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Client Health",
+       "displayName": "Client Health",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Healthy",
+         "value": "Healthy"
+        },
+        {
+         "name": "At Risk",
+         "value": "At Risk"
+        },
+        {
+         "name": "Needs Attention",
+         "value": "Needs Attention"
+        },
+        {
+         "name": "Onboarding",
+         "value": "Onboarding"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Portal User Count",
+       "displayName": "Portal User Count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Client Type",
+       "displayName": "Client Type",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Paying Client",
+         "value": "Paying Client"
+        },
+        {
+         "name": "Internal",
+         "value": "Internal"
+        },
+        {
+         "name": "Free / Trial",
+         "value": "Free / Trial"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "End Date Confidence",
+       "displayName": "End Date Confidence",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Exact",
+         "value": "Exact"
+        },
+        {
+         "name": "Strong",
+         "value": "Strong"
+        },
+        {
+         "name": "Approximate",
+         "value": "Approximate"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "End Date Evidence",
+       "displayName": "End Date Evidence",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Actual Lifetime Revenue",
+       "displayName": "Actual Lifetime Revenue",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Xero Revenue Transactions",
+       "displayName": "Xero Revenue Transactions",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Lifetime Revenue Source",
+       "displayName": "Lifetime Revenue Source",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "LTV Variance",
+       "displayName": "LTV Variance",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Average Monthly Collected",
+       "displayName": "Average Monthly Collected",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Revenue Match Status",
+       "displayName": "Revenue Match Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Inactive Reason",
+       "displayName": "Inactive Reason",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Paused",
+         "value": "Paused"
+        },
+        {
+         "name": "Churned",
+         "value": "Churned"
+        },
+        {
+         "name": "Completed Engagement",
+         "value": "Completed Engagement"
+        },
+        {
+         "name": "Non-payment",
+         "value": "Non-payment"
+        },
+        {
+         "name": "Business Closure",
+         "value": "Business Closure"
+        },
+        {
+         "name": "Unknown",
+         "value": "Unknown"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Outstanding Receivables",
+       "displayName": "Outstanding Receivables",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Xero Revenue Sync",
+       "displayName": "Last Xero Revenue Sync",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client Retained Indicator",
+       "displayName": "Client Retained Indicator",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Client Churn Indicator",
+       "displayName": "Client Churn Indicator",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Lifetime Churn Rate",
+       "displayName": "Lifetime Churn Rate",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Months Active (1 Decimal)",
+       "displayName": "Months Active (1 Decimal)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Months Active Dashboard",
+       "displayName": "Months Active Dashboard",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "New Clients This Month",
+       "displayName": "New Clients This Month",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Clients Lost This Month",
+       "displayName": "Clients Lost This Month",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Net Client Growth This Month",
+       "displayName": "Net Client Growth This Month",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Monthly Client Churn Rate",
+       "displayName": "Monthly Client Churn Rate",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Client Health Reasons",
+       "displayName": "Client Health Reasons",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Client Health Check",
+       "displayName": "Last Client Health Check",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Domains",
+       "displayName": "Domains",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Domain Purchase Requests",
+       "displayName": "Domain Purchase Requests",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Email Account Bulk Controls",
+       "displayName": "Email Account Bulk Controls",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Spam Remediation Queue",
+       "displayName": "Spam Remediation Queue",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "New Vertical Pivot",
+       "displayName": "New Vertical Pivot",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Enabled",
+         "value": "Enabled"
+        },
+        {
+         "name": "Disabled",
+         "value": "Disabled"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "New Offer Pivot",
+       "displayName": "New Offer Pivot",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Enabled",
+         "value": "Enabled"
+        },
+        {
+         "name": "Disabled",
+         "value": "Disabled"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Run Inbox Placement Test",
+       "displayName": "Run Inbox Placement Test",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Warmup Complete Notified At",
+       "displayName": "Warmup Complete Notified At",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Sender Title",
+       "displayName": "Sender Title",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Brand Name",
+       "displayName": "Brand Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    3680,
+    -352
+   ],
+   "id": "566ac341-7120-4d1e-ac76-eab10ec59cb3",
+   "name": "Mark initial payment received"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "295e7251-a3d2-475d-a787-7e709c29ccdb",
+       "leftValue": "={{ $('Search records2').item.json['Initial Payment Received'] ? 'received' : 'missing' }}",
+       "rightValue": "missing",
+       "operator": {
+        "type": "string",
+        "operation": "equals",
+        "name": "filter.operator.equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.3,
+   "position": [
+    3536,
+    -336
+   ],
+   "id": "6544caf0-4650-454b-b652-f058b72bbef6",
+   "name": "Initial payment missing?"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

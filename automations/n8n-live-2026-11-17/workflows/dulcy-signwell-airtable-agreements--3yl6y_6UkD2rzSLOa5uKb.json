@@ -1,0 +1,527 @@
+{
+ "id": "3yl6y_6UkD2rzSLOa5uKb",
+ "name": "Dulcy - SignWell Airtable Agreements",
+ "active": true,
+ "isArchived": false,
+ "versionId": "d584e14a-3102-430c-8feb-eab9f18d1d77",
+ "triggerCount": 2,
+ "createdAt": "2026-08-18T04:03:01.552Z",
+ "updatedAt": "2026-11-17T16:42:26.453Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Validate and Build SignWell Request": {
+   "main": [
+    [
+     {
+      "node": "Lock Airtable Record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Lock Airtable Record": {
+   "main": [
+    [
+     {
+      "node": "Create Draft or Send Approved Agreement",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "SignWell Events": {
+   "main": [
+    [
+     {
+      "node": "Normalize SignWell Event",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Normalize SignWell Event": {
+   "main": [
+    [
+     {
+      "node": "Find Airtable Agreement",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Find Airtable Agreement": {
+   "main": [
+    [
+     {
+      "node": "Build Airtable Event Update",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build Airtable Event Update": {
+   "main": [
+    [
+     {
+      "node": "Update Agreement Status",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Update Agreement Status": {
+   "main": [
+    [
+     {
+      "node": "New Completion?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "New Completion?": {
+   "main": [
+    [
+     {
+      "node": "Forward Completion to Client Onboarding",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Forward Completion to Client Onboarding": {
+   "main": [
+    [
+     {
+      "node": "Mark Completion Forwarded",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create Draft or Send Approved Agreement": {
+   "main": [
+    [
+     {
+      "node": "SignWell Request Succeeded?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "SignWell Request Succeeded?": {
+   "main": [
+    [
+     {
+      "node": "Save Draft or Sent Status",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Save SignWell Error",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Agreement Dispatcher": {
+   "main": [
+    [
+     {
+      "node": "Get Dispatched Agreement",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Dispatched Agreement": {
+   "main": [
+    [
+     {
+      "node": "Validate and Build SignWell Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "content": "## Setup required\n1. Bind **Airtable PAT Header** as Header Auth: `Authorization` = `Bearer REDACTED`.\n2. Bind **SignWell API Header** as Header Auth: `X-Api-Key` = your SignWell API key.\n3. Register the production URL of the SignWell Events webhook in SignWell.\n4. Set the onboarding webhook URL in the Forward Completion node.\n\n**Agreement Dispatcher** accepts `recordId` plus `action` (`Create SignWell Draft` or `Send SignWell Agreement`). The schedule remains enabled only as a recovery fallback.",
+    "height": 390,
+    "width": 460
+   },
+   "id": "c5f2fb94-3034-4659-adb3-6b2f458f1686",
+   "name": "Setup Notes",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    3152,
+    1584
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const record = $json.record || $json;\nconst f = record.fields || {};\n\nconst existingDocumentId = String(\n  f['SignWell Document ID'] || ''\n).trim();\n\nlet dispatchAction = '';\n\ntry {\n  dispatchAction = String(\n    $('Agreement Dispatcher').item.json.body?.action || ''\n  ).trim();\n} catch {}\n\nconst allowedActions = [\n  '',\n  'Create SignWell Draft',\n  'Send SignWell Agreement',\n];\n\nif (!allowedActions.includes(dispatchAction)) {\n  throw new Error(\n    'Unsupported agreement action: ' + dispatchAction\n  );\n}\n\nif (\n  dispatchAction === 'Create SignWell Draft' &&\n  existingDocumentId\n) {\n  throw new Error(\n    'A SignWell draft already exists for this record.'\n  );\n}\n\nif (\n  dispatchAction === 'Send SignWell Agreement' &&\n  !existingDocumentId\n) {\n  throw new Error(\n    'A SignWell Document ID is required before sending.'\n  );\n}\n\nconst shouldSend =\n  dispatchAction === 'Send SignWell Agreement' ||\n  (\n    !dispatchAction &&\n    Boolean(f['Send SignWell Agreement']) &&\n    Boolean(existingDocumentId)\n  );\n\nif (shouldSend) {\n  return [\n    {\n      json: {\n        action: 'send',\n        airtableRecordId: record.id,\n        documentId: existingDocumentId,\n        requestUrl:\n          'https://www.signwell.com/api/v1/documents/' +\n          existingDocumentId +\n          '/send',\n        signwellBody: {\n          test_mode: false,\n        },\n      },\n    },\n  ];\n}\n\nconst agreementType = String(\n  f['Agreement Type'] || ''\n).trim();\n\nconst normalizedAgreementType =\n  agreementType.toLowerCase();\n\nconst isMonthly = [\n  'retainer',\n  'monthly investment',\n].includes(normalizedAgreementType);\n\nconst isPpl = [\n  'ppl',\n  'pay per qualified call',\n].includes(normalizedAgreementType);\n\nif (!isMonthly && !isPpl) {\n  throw new Error(\n    'Agreement Type must be Retainer or PPL.'\n  );\n}\n\nconst commonRequired = {\n  'Agreement Type': agreementType,\n  'Company Name': f['Company Name'],\n  'First Name': f['First Name'],\n  'Last Name': f['Last Name'],\n  Email: f['Email'],\n  'Reference Number': f['Reference Number'],\n  'Company Address': f['Company Address'],\n  'Start Date': f['Start Date'],\n};\n\nconst pricingRequired = isMonthly\n  ? {\n      'Monthly Investment':\n        f['Monthly Investment'],\n    }\n  : {\n      'Monthly Technology Fee':\n        f['Monthly Technology Fee'],\n      'Price Per Qualified Call':\n        f['Price Per Qualified Call'],\n    };\n\nconst required = {\n  ...commonRequired,\n  ...pricingRequired,\n};\n\nconst missing = Object.entries(required)\n  .filter(([, value]) => {\n    return (\n      value === undefined ||\n      value === null ||\n      String(value).trim() === ''\n    );\n  })\n  .map(([key]) => key);\n\nif (missing.length) {\n  throw new Error(\n    'Missing required Airtable fields: ' +\n      missing.join(', ')\n  );\n}\n\nconst company = String(\n  f['Company Name']\n).trim();\n\nconst clientName = (\n  String(f['First Name']).trim() +\n  ' ' +\n  String(f['Last Name']).trim()\n).trim();\n\nconst email = String(\n  f['Email']\n).trim();\n\nconst address = String(\n  f['Company Address']\n).trim();\n\nconst referenceId = String(\n  f['Reference Number']\n).trim();\n\nconst agreementDate =\n  new Date().toLocaleDateString('en-US', {\n    timeZone: 'America/New_York',\n  });\n\nconst startDate = new Date(\n  String(f['Start Date']) + 'T12:00:00Z'\n).toLocaleDateString('en-US', {\n  timeZone: 'UTC',\n});\n\nconst additionalServices = [\n  f['LinkedIn'] ? 'LinkedIn' : '',\n  f['AI / Cold Caller'] ? 'AI / Cold Caller' : '',\n  f['Direct Mail'] ? 'Direct Mail' : '',\n]\n  .filter(Boolean)\n  .join(', ') || '\\u200B';\n\nconst currency = String(\n  f['Agreement Currency'] || 'USD'\n)\n  .trim()\n  .toUpperCase();\n\nconst currencySymbols = {\n  USD: '$',\n  GBP: '£',\n  EUR: '€',\n};\n\nconst currencySymbol =\n  currencySymbols[currency] || currency + ' ';\n\nconst money = (value) => {\n  return (\n    currencySymbol +\n    Number(value).toLocaleString('en-US', {\n      minimumFractionDigits: 2,\n      maximumFractionDigits: 2,\n    })\n  );\n};\n\nconst templateFields = [\n  {\n    api_id: 'COMPANY',\n    value: company,\n  },\n  {\n    api_id: 'ADDRESS',\n    value: address,\n  },\n  {\n    api_id: 'Agreement_Date',\n    value: agreementDate,\n  },\n  {\n    api_id: 'add_services',\n    value: additionalServices,\n  },\n  {\n    api_id: 'name2',\n    value: clientName,\n  },\n  {\n    api_id: 'company2',\n    value: company,\n  },\n  {\n    api_id: 'start_date',\n    value: startDate,\n  },\n];\n\nif (isPpl) {\n  templateFields.unshift({\n    api_id: 'NAME',\n    value: clientName,\n  });\n}\n\nif (isMonthly) {\n  templateFields.unshift({\n    api_id: 'Name',\n    value: clientName,\n  });\n\n  templateFields.push(\n    {\n      api_id: 'ref_ID',\n      value: referenceId,\n    },\n    {\n      api_id: 'investment',\n      value: money(f['Monthly Investment']),\n    },\n    {\n      api_id: 'td_date',\n      value: agreementDate,\n    }\n  );\n} else {\n  const ppc = money(\n    f['Price Per Qualified Call']\n  );\n\n  const techFee = money(\n    f['Monthly Technology Fee']\n  );\n\n  templateFields.push(\n    {\n      api_id: 'ref_ID',\n      value: referenceId,\n    },\n    {\n      api_id: 'ref_ID2',\n      value: referenceId,\n    },\n    {\n      api_id: 'ppc',\n      value: ppc,\n    },\n    {\n      api_id: 'tech_fee',\n      value: techFee,\n    },\n    {\n      api_id: 'tech_fee2',\n      value: techFee,\n    },\n    {\n      api_id: 'ppc2',\n      value: ppc,\n    },\n    {\n      api_id: 'ppc3',\n      value: ppc,\n    },\n    {\n      api_id: 'td_date',\n      value: agreementDate,\n    },\n    {\n      api_id: 'td_date2',\n      value: agreementDate,\n    }\n  );\n}\n\nconst templateId = isMonthly\n  ? 'fd4e95ca-23b6-4a12-a81e-500796acb55a'\n  : '4135ea10-93b8-483a-a94b-2df6401e1334';\n\nconst signwellBody = {\n  test_mode: false,\n  template_id: templateId,\n  name:\n    company +\n    ' <> Dulcy | Growth Partnership',\n  subject:\n    'Dulcy Growth Partnership Agreement',\n  message:\n    'Please review and sign your Dulcy Growth Partnership Agreement.',\n  recipients: [\n    {\n      id: '1',\n      placeholder_name: 'Client',\n      name: clientName,\n      email,\n    },\n  ],\n  draft: true,\n  reminders: true,\n  allow_decline: true,\n  allow_reassign: true,\n  template_fields: templateFields,\n  metadata: {\n    airtable_record_id: record.id,\n    agreement_type: agreementType,\n    reference_id: referenceId,\n    currency,\n  },\n};\n\nsignwellBody.recipients.push({\n  id: '2',\n  placeholder_name: 'Dulcy',\n  name: 'Alexander Woung',\n  email: 'scale@dulcy.io',\n});\n\nreturn [\n  {\n    json: {\n      action: 'create',\n      airtableRecordId: record.id,\n      company,\n      clientName,\n      email,\n      agreementType,\n      currency,\n      requestUrl:\n        'https://www.signwell.com/api/v1/document_templates/documents',\n      signwellBody,\n    },\n  },\n];"
+   },
+   "id": "076bd08a-eca4-4584-a90e-64288602b526",
+   "name": "Validate and Build SignWell Request",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3648,
+    2128
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "=https://api.airtable.com/v0/appxqINt5XKw7a76A/tbljivFOoUW2nZ6FN/{{$json.airtableRecordId}}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({ fields: $json.action === 'create' ? { 'Create SignWell Draft': false, 'Send SignWell Agreement': false, 'Agreement Status': 'Draft', 'SignWell Created At': $now.toISO(), 'SignWell Error': '' } : { 'Send SignWell Agreement': false, 'SignWell Error': '' } }) }}",
+    "options": {}
+   },
+   "id": "5aca5f76-2922-421b-b142-b5a3b4e4904d",
+   "name": "Lock Airtable Record",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    3872,
+    2128
+   ]
+  },
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "id": "1a9064d2-0367-4f77-bb2f-e71f50a72da8",
+   "name": "SignWell Events",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    3200,
+    2448
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const payload = $json.body || $json;\nconst eventName = payload.event?.type || payload.event?.name || payload.event || payload.type;\nconst doc = payload.data?.object || payload.data || payload.object || payload.document || {};\nconst documentId = doc.id || payload.document_id;\nif (!eventName || !documentId) throw new Error('SignWell webhook missing event type or document ID');\nconst eventTime = payload.event?.created_at || payload.created_at || new Date().toISOString();\nconst statusMap = {\n  document_created: 'Draft', document_sent: 'Sent', document_viewed: 'Viewed', document_in_progress: 'Viewed',\n  document_completed: 'Completed', document_declined: 'Declined', document_expired: 'Expired',\n  document_canceled: 'Declined', document_bounced: 'Error', document_error: 'Error'\n};\nreturn [{ json: { eventName: String(eventName), documentId: String(documentId), eventTime, status: statusMap[eventName] || null, payload, document: doc } }];"
+   },
+   "id": "e7ba7b10-a42b-4c2f-9558-5c5ba0bed628",
+   "name": "Normalize SignWell Event",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3424,
+    2448
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tbljivFOoUW2nZ6FN",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "filterByFormula",
+       "value": "={{ \"{SignWell Document ID}='\" + $('Normalize SignWell Event').item.json.documentId + \"'\" }}"
+      },
+      {
+       "name": "maxRecords",
+       "value": "1"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "id": "4963f434-4848-47f4-bb6b-8c644e2485ee",
+   "name": "Find Airtable Agreement",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    3648,
+    2448
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const event = $('Normalize SignWell Event').item.json;\nconst record = ($json.records || [])[0];\nif (!record) throw new Error(`No Airtable agreement found for SignWell document ${event.documentId}`);\nconst fields = { 'SignWell Last Event': event.eventName, 'Last SignWell Sync': new Date().toISOString() };\nif (event.status) fields['Agreement Status'] = event.status;\nif (event.eventName === 'document_sent') fields['SignWell Sent At'] = event.eventTime;\nif (event.eventName === 'document_viewed' || event.eventName === 'document_in_progress') fields['SignWell Viewed At'] = event.eventTime;\nif (event.eventName === 'document_completed') fields['SignWell Completed At'] = event.eventTime;\nif (['document_error','document_bounced'].includes(event.eventName)) fields['SignWell Error'] = JSON.stringify(event.payload).slice(0, 9000);\nreturn [{ json: { airtableRecordId: record.id, existingFields: record.fields || {}, updateFields: fields, isCompleted: event.eventName === 'document_completed', documentId: event.documentId, completedPdfUrl: event.document.completed_pdf_url || null, eventPayload: event.payload } }];"
+   },
+   "id": "3761f93f-405d-421d-8f96-cb35ea595646",
+   "name": "Build Airtable Event Update",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3872,
+    2448
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "=https://api.airtable.com/v0/appxqINt5XKw7a76A/tbljivFOoUW2nZ6FN/{{$json.airtableRecordId}}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({ fields: $json.updateFields }) }}",
+    "options": {}
+   },
+   "id": "f42a98a7-f6c1-4843-b9a6-ceea483c8932",
+   "name": "Update Agreement Status",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    4096,
+    2448
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "487bfe2a-a6a8-4e88-a7fe-542093fbf33d",
+       "leftValue": "={{ $('Build Airtable Event Update').item.json.isCompleted }}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      },
+      {
+       "id": "6b608c77-65d5-4e09-846d-b25d38af9f8e",
+       "leftValue": "={{ $('Build Airtable Event Update').item.json.existingFields['SignWell Completion Forwarded At'] || '' }}",
+       "rightValue": "",
+       "operator": {
+        "type": "string",
+        "operation": "empty",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "fc9cd4b9-4362-4946-a61a-f91fa0a690c8",
+   "name": "New Completion?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    4320,
+    2448
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://n8n.dulcy.io/webhook/REDACTED_PATH",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "=\n{\n{ JSON.stringify({leadId: $('Build Airtable Event Update').item.json.existingFields['Reference Number'] || $('Build Airtable Event Update').item.json.existingFields['Reference ID'], company: $('Build Airtable Event Update').item.json.existingFields['Company Name'], additional: [$('Build Airtable Event Update').item.json.existingFields['LinkedIn'] ? 'LinkedIn' : '', $('Build Airtable Event Update').item.json.existingFields['AI / Cold Caller'] ? 'AI / Cold Caller' : '', $('Build Airtable Event Update').item.json.existingFields['Direct Mail'] ? 'Direct Mail' : ''].filter(Boolean).join(', '), name: [$('Build Airtable Event Update').item.json.existingFields['First Name'], $('Build Airtable Event Update').item.json.existingFields['Last Name']].filter(Boolean).join(' ')}) }}",
+    "options": {}
+   },
+   "id": "e10768f2-bbe0-4dcf-bdbc-9e2095f5e28f",
+   "name": "Forward Completion to Client Onboarding",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    4544,
+    2448
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "=https://api.airtable.com/v0/appxqINt5XKw7a76A/tbljivFOoUW2nZ6FN/{{$('Build Airtable Event Update').item.json.airtableRecordId}}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({ fields: { 'SignWell Completion Forwarded At': $now.toISO() } }) }}",
+    "options": {}
+   },
+   "id": "d78e82d4-0707-4af8-ba8f-379853724497",
+   "name": "Mark Completion Forwarded",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    4768,
+    2448
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $('Validate and Build SignWell Request').item.json.requestUrl }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify($('Validate and Build SignWell Request').item.json.signwellBody) }}",
+    "options": {}
+   },
+   "id": "7999990d-a9ce-48aa-9ee5-f99d045e61e2",
+   "name": "Create Draft or Send Approved Agreement",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    4096,
+    2128
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "a939b5b6-9b68-4f89-8523-10c073d4d19c",
+       "leftValue": "={{ $json.id }}",
+       "rightValue": "",
+       "operator": {
+        "type": "string",
+        "operation": "notEmpty",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "37e9b019-5dd7-4270-89b8-acee61cdcbba",
+   "name": "SignWell Request Succeeded?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    4320,
+    2128
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "=https://api.airtable.com/v0/appxqINt5XKw7a76A/tbljivFOoUW2nZ6FN/{{$('Validate and Build SignWell Request').item.json.airtableRecordId}}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ (() => { const request = $('Validate and Build SignWell Request').item.json; const documentId = request.action === 'create' ? $json.id : request.documentId; const fields = request.action === 'create' ? { 'SignWell Document ID': documentId, 'SignWell Document URL': 'https://www.signwell.com/app/documents/' + documentId, 'Agreement Status': 'Draft', 'SignWell Created At': $now.toISO(), 'SignWell Last Event': 'document_created', 'Last SignWell Sync': $now.toISO(), 'SignWell Error': '' } : { 'Agreement Status': 'Sent', 'SignWell Sent At': $now.toISO(), 'SignWell Last Event': 'document_sent', 'Last SignWell Sync': $now.toISO(), 'SignWell Error': '' }; return JSON.stringify({ fields }); })() }}",
+    "options": {}
+   },
+   "id": "257e1784-98ea-4ace-a6c8-2942f2ca07c3",
+   "name": "Save Draft or Sent Status",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    4544,
+    2032
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "=https://api.airtable.com/v0/appxqINt5XKw7a76A/tbljivFOoUW2nZ6FN/{{$('Validate and Build SignWell Request').item.json.airtableRecordId}}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({ fields: { 'Agreement Status': 'Error', 'SignWell Error': String($json.error?.message || $json.message || JSON.stringify($json)).slice(0, 9000), 'Last SignWell Sync': $now.toISO() } }) }}",
+    "options": {}
+   },
+   "id": "85ed3522-cbc6-4fa5-95c0-abe345efa710",
+   "name": "Save SignWell Error",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    4544,
+    2224
+   ]
+  },
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    3200,
+    2128
+   ],
+   "id": "7572f25c-2234-4828-81d5-23e78d067a7d",
+   "name": "Agreement Dispatcher"
+  },
+  {
+   "parameters": {
+    "url": "=https://api.airtable.com/v0/appxqINt5XKw7a76A/tbljivFOoUW2nZ6FN/{{$json.body.recordId || $json.recordId}}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    3424,
+    2128
+   ],
+   "id": "0c758e1b-613c-44fc-a209-3af65070cf4b",
+   "name": "Get Dispatched Agreement"
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

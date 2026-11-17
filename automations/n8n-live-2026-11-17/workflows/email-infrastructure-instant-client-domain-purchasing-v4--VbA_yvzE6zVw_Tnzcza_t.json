@@ -1,0 +1,1674 @@
+{
+ "id": "VbA_yvzE6zVw_Tnzcza_t",
+ "name": "[Email Infrastructure] Instant Client Domain Purchasing v4",
+ "active": true,
+ "isArchived": false,
+ "versionId": "f81889c5-2739-4809-a30d-16fc62edc34a",
+ "triggerCount": 1,
+ "createdAt": "2026-08-17T14:08:35.159Z",
+ "updatedAt": "2026-11-17T16:42:43.462Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Instant Airtable Webhook": {
+   "main": [
+    [
+     {
+      "node": "Validate Webhook",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate Webhook": {
+   "main": [
+    [
+     {
+      "node": "Find Requests to Generate",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Find Next Approved Batch",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Find Requests to Generate": {
+   "main": [
+    [
+     {
+      "node": "Validate Request Defaults",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate Request Defaults": {
+   "main": [
+    [
+     {
+      "node": "Get Workspace",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Workspace": {
+   "main": [
+    [
+     {
+      "node": "Resolve Onboarding",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Resolve Onboarding": {
+   "main": [
+    [
+     {
+      "node": "Get Onboarding",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Onboarding": {
+   "main": [
+    [
+     {
+      "node": "Mix Domain Variants",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Mix Domain Variants": {
+   "main": [
+    [
+     {
+      "node": "Prepare Domain Search Batch",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search Availability": {
+   "main": [
+    [
+     {
+      "node": "Select Exact Generated Domains",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Select Exact Generated Domains": {
+   "main": [
+    [
+     {
+      "node": "Enough Domains Found",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Combined Quote": {
+   "main": [
+    [
+     {
+      "node": "Check Quote Response",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Map Quote": {
+   "main": [
+    [
+     {
+      "node": "Save Quote",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Find Next Approved Batch": {
+   "main": [
+    [
+     {
+      "node": "Build Next Batch",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build Next Batch": {
+   "main": [
+    [
+     {
+      "node": "Lock Batch",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Lock Batch": {
+   "main": [
+    [
+     {
+      "node": "PLACE ONE BATCH - CHARGES CARD",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "PLACE ONE BATCH - CHARGES CARD": {
+   "main": [
+    [
+     {
+      "node": "Map Batch Result",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Map Batch Result": {
+   "main": [
+    [
+     {
+      "node": "Save Batch",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Save Batch": {
+   "main": [
+    [
+     {
+      "node": "Restore Saved Purchase Context",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Wait For Saved Inventory",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wait Before Next Batch": {
+   "main": [
+    [
+     {
+      "node": "Resume Same Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Resume Same Request": {
+   "main": [
+    [
+     {
+      "node": "Find Next Approved Batch",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Purchased Inventory": {
+   "main": [
+    [
+     {
+      "node": "Create Domain Inventory",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Get Current Client Portal Logins",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create Domain Inventory": {
+   "main": [
+    [
+     {
+      "node": "Prepare Email Account Inventory",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Add Domain to EmailGuard",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Email Account Inventory": {
+   "main": [
+    [
+     {
+      "node": "Create Email Account Inventory",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Add Domain to EmailGuard": {
+   "main": [
+    [
+     {
+      "node": "Run Initial Blacklist Check",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Run Initial Blacklist Check": {
+   "main": [
+    [
+     {
+      "node": "Map EmailGuard Monitoring",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Map EmailGuard Monitoring": {
+   "main": [
+    [
+     {
+      "node": "Save EmailGuard Monitoring",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Current Client Portal Logins": {
+   "main": [
+    [
+     {
+      "node": "Build Client Portal Login Text",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build Client Portal Login Text": {
+   "main": [
+    [
+     {
+      "node": "Save Client Portal Logins",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Domain Search Batch": {
+   "main": [
+    [
+     {
+      "node": "Search Availability",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Enough Domains Found": {
+   "main": [
+    [
+     {
+      "node": "Prepare Quote Request",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "More Suggestions Available",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "More Suggestions Available": {
+   "main": [
+    [
+     {
+      "node": "Wait Before More Domain Searches",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Save Partial Domain Result",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wait Before More Domain Searches": {
+   "main": [
+    [
+     {
+      "node": "Prepare Domain Search Batch",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Save Partial Domain Result": {
+   "main": [
+    [
+     {
+      "node": "Save Quote",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Quote Request": {
+   "main": [
+    [
+     {
+      "node": "Get Combined Quote",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Check Quote Response": {
+   "main": [
+    [
+     {
+      "node": "Quote Ready",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Quote Ready": {
+   "main": [
+    [
+     {
+      "node": "Map Quote",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Retry Quote After Cooldown",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Retry Quote After Cooldown": {
+   "main": [
+    [
+     {
+      "node": "Wait Before Quote Retry",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Save Partial Domain Result",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wait Before Quote Retry": {
+   "main": [
+    [
+     {
+      "node": "Get Combined Quote",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Restore Saved Purchase Context": {
+   "main": [
+    [
+     {
+      "node": "Prepare Purchased Inventory",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create Email Account Inventory": {
+   "main": [
+    [
+     {
+      "node": "Wait For Saved Inventory",
+      "type": "main",
+      "index": 1
+     }
+    ]
+   ]
+  },
+  "Wait For Saved Inventory": {
+   "main": [
+    [
+     {
+      "node": "Confirm Batch Inventory Saved",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Confirm Batch Inventory Saved": {
+   "main": [
+    [
+     {
+      "node": "Wait Before Next Batch",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "id": "b5ab47be-8541-455e-b20e-d24fbac9f6e3",
+   "name": "Instant Airtable Webhook",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    2512,
+    1616
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const body=$json.body||$json;if(body.secret!=='dulcy_ci_v3_7M4p9Q2x')throw new Error('Unauthorized webhook');const recordId=String(body.recordId||'').trim();if(!/^rec[a-zA-Z0-9]{14,}$/.test(recordId))throw new Error('Invalid Airtable recordId');return [{json:{recordId}}];"
+   },
+   "id": "cb6f3013-4b22-41d7-a9ff-f622ab280a34",
+   "name": "Validate Webhook",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2736,
+    1616
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 5000
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblU6OstDVWeuYBxL",
+     "mode": "list",
+     "cachedResultName": "Domain Purchase Requests"
+    },
+    "filterByFormula": "={{ \"AND(RECORD_ID()='\"+$json.recordId+\"',{Status}='Generate Domains',{CheapInboxes Order ID}=BLANK())\" }}",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "id": "d343b522-b944-4239-90a2-5c3427fc65d7",
+   "name": "Find Requests to Generate",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    2960,
+    1208
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const link=Array.isArray($json['Client / Workspace'])?$json['Client / Workspace'][0]:$json['Client / Workspace']; const workspaceId=link?.id||link; if(!workspaceId) throw new Error('Select Client / Workspace'); const count=Number($json['Domain Count']); if(!Number.isInteger(count)||count<1||count>100) throw new Error('Domain Count must be 1-100'); const tlds=(Array.isArray($json['Preferred TLDs'])?$json['Preferred TLDs']:[]).map(x=>String(x?.name||x).replace(/^\\./,'')); return [{json:{request:$json,requestId:$json.id,workspaceId,count,tlds:tlds.length?tlds:['com'],provider:String($json['Inbox Provider']?.name||$json['Inbox Provider']||'Google').toLowerCase().includes('micro')?'microsoft':'google',promo:$json['Promo Code']||'agencyignition$',batchSize:Math.min(20,Math.max(10,Number($json['Batch Size']||15))),delayMinutes:Math.max(2,Number($json['Minutes Between Batches']||10))}}];"
+   },
+   "id": "a7b74cad-5f84-4c3d-986e-7d08e2186e93",
+   "name": "Validate Request Defaults",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3184,
+    1208
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 5000
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs"
+    },
+    "filterByFormula": "={{ \"RECORD_ID()='\"+$json.workspaceId+\"'\" }}",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "id": "8aca55c3-2fb5-4956-b271-fed647b3aa15",
+   "name": "Get Workspace",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    3408,
+    1208
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const req=$('Validate Request Defaults').item.json; const a=Array.isArray($json.Onboarding)?$json.Onboarding[0]:null; const onboardingId=a?.id||a; if(!onboardingId) throw new Error('Workspace has no linked Onboarding record'); return [{json:{...req,onboardingId,workspaceName:$json.Name||''}}];"
+   },
+   "id": "1e7d81ea-f283-4d39-a47a-ae8331315a2a",
+   "name": "Resolve Onboarding",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3632,
+    1208
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 5000
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tbljhM1JmUwr99tu4",
+     "mode": "list",
+     "cachedResultName": "Onboarding"
+    },
+    "filterByFormula": "={{ \"RECORD_ID()='\"+$json.onboardingId+\"'\" }}",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "id": "93998411-1aa8-421d-ad4d-c16d49d43578",
+   "name": "Get Onboarding",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    3856,
+    1208
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const req=$('Resolve Onboarding').item.json; const full=String($json['Full Name']||$json['Who takes the sales calls on your team? (This will be who the outreach is sent on behalf of)']||'').trim(); const p=full.split(/\\s+/),first=p.shift()||'',last=p.join(' '); if(!first||!last) throw new Error('Onboarding Full Name is incomplete'); const password=String($json.ci_password||'').trim(); if(!password) throw new Error('Onboarding ci_password is blank'); const profile=String($json['Profile Picture(s) for Email Accounts']||'').trim(); const pattern=String($json.ci_user_name_email_pattern||'first,first.last'); const banned=['google','gmail','microsoft','outlook','office365','yahoo','icloud','apple','amazon','aws','meta','facebook','instagram','linkedin','twitter','xcorp','slack','zoom','stripe','paypal','venmo','cashapp','visa','mastercard','amex','dropbox','salesforce','hubspot','shopify','quickbooks','xero','login','signin','signon','account','password','passwd','verify','verification','authenticate','authentication','auth','secure','security','support','admin','billing','payment','wallet','email','mailbox','webmail']; const unsafe=s=>banned.some(w=>s.includes(w)); const seeds=String($json['Suggested Domains']||req.workspaceName).split(/[\\n,;]+/).map(s=>s.trim().toLowerCase().replace(/^https?:\\/\\//,'').replace(/^www\\./,'').split('/')[0].replace(/\\.[a-z]{2,}$/,'').replace(/[^a-z0-9]/g,'')).filter(s=>s&&!unsafe(s)); if(!seeds.length) throw new Error('Suggested Domains is blank or every seed contains restricted brand/security wording'); const pre=['','get','try','use','go','join','meet','hello','with','team','hey','weare']; const suf=['','hq','group','media','agency','partners','solutions','team','connect','growth','online']; const repeated=s=>suf.filter(Boolean).some(w=>s.includes(w+w)); const variants=[],seen=new Set(); const add=k=>{if(k.length>=5&&k.length<=30&&!unsafe(k)&&!repeated(k)&&!seen.has(k)){seen.add(k);variants.push(k)}}; for(let ring=0;ring<Math.max(pre.length,suf.length);ring++){for(const seed of seeds){const pw=pre[ring%pre.length],sw=suf[ring%suf.length],cw=suf[(ring+3)%suf.length];add(pw&&!seed.startsWith(pw)?pw+seed:seed);add(sw&&!seed.endsWith(sw)?seed+sw:seed);let combined=seed;if(pw&&!combined.startsWith(pw))combined=pw+combined;if(cw&&!combined.endsWith(cw))combined+=cw;add(combined)}} for(const seed of seeds)for(const pw of pre)for(const sw of suf){let k=seed;if(pw&&!k.startsWith(pw))k=pw+k;if(sw&&!k.endsWith(sw))k+=sw;add(k)} const context={...req,onboardingId:$json.id,first,last,password,profile,pattern,seeds:seeds.join('\\n')}; return [{json:{...context,pendingKeywords:variants.slice(0,300),domains:[],searchRound:0,keywordRetries:{}}}];"
+   },
+   "id": "ee1c9928-3695-4f24-890c-671effe8960b",
+   "name": "Mix Domain Variants",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    4080,
+    1208
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 5000
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.cheapinboxes.com/v1/discovery/domains/search",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({keyword:$json.keyword,tlds:$json.tlds}) }}",
+    "options": {
+     "batching": {
+      "batch": {
+       "batchSize": 1,
+       "batchInterval": 1500
+      }
+     },
+     "response": {
+      "response": {
+       "fullResponse": true,
+       "neverError": true
+      }
+     },
+     "timeout": 45000
+    }
+   },
+   "id": "a965914c-f393-4214-b3ac-8376674669f2",
+   "name": "Search Availability",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    4528,
+    1136
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const inputs=$input.all(), prepared=$('Prepare Domain Search Batch').all(0,$runIndex);\nconst state=JSON.parse(JSON.stringify(prepared[0].json.state));\nconst priority=new Map(state.tlds.map((t,i)=>[t,i]));\nconst preferred=new Set(String(state.request['Selected Domains']||'').toLowerCase().split('\\n').map(s=>s.trim()).filter(Boolean));\nconst lev=(a,b)=>{const m=Array.from({length:b.length+1},(_,i)=>i);for(let i=1;i<=a.length;i++){let prev=m[0];m[0]=i;for(let j=1;j<=b.length;j++){const old=m[j];m[j]=Math.min(m[j]+1,m[j-1]+1,prev+(a[i-1]===b[j-1]?0:1));prev=old}}return m[b.length]};\nconst sim=(a,b)=>1-lev(a,b)/Math.max(a.length,b.length,1);\nconst map=new Map(), retry=[];\nfor(let index=0;index<inputs.length;index++) {\n const response=inputs[index].json, body=response.body??response;\n const status=Number(response.statusCode||200), error=body.error;\n if(status===429||error?.code==='RATE_LIMIT_EXCEEDED'||(error?.code==='DOMAIN_SEARCH_FAILED'&&/too many requests|rate limit/i.test(error?.message||''))) {\n  const keyword=prepared[index]?.json.keyword;\n  if(keyword&&(state.keywordRetries[keyword]||0)<3){state.keywordRetries[keyword]=(state.keywordRetries[keyword]||0)+1;retry.push(keyword)}\n  continue;\n }\n if(status>=400||error)throw new Error('Domain availability request failed: '+String(error?.message||status));\n if(!Array.isArray(body.exact)&&!Array.isArray(body.suggestions))throw new Error('Unexpected domain availability response');\n const add=(d,tier)=>{if(d?.available!==true||!d.domain)return;const domain=String(d.domain).trim().toLowerCase(),tld=domain.split('.').pop(),root=domain.split('.')[0];if(!state.tlds.includes(tld)||!Number.isFinite(Number(d.price))||Number(d.price)<0||map.has(domain))return;map.set(domain,{domain,tld,price:Number(d.price),root,preferred:preferred.has(domain)?0:1,tier})};\n for(const d of body.exact||[])add(d,0);for(const d of body.suggestions||[])add(d,1);\n}\nconst pool=[...map.values()].sort((a,b)=>a.preferred-b.preferred||a.tier-b.tier||(priority.get(a.tld)??99)-(priority.get(b.tld)??99)||a.price-b.price||a.domain.localeCompare(b.domain));\n// Keep all domains accepted in earlier passes; only fill the missing slots.\nfor(const d of pool){if(state.domains.length>=state.count)break;if(state.domains.every(x=>sim(d.root,x.root)<=0.78))state.domains.push(d)}\nstate.pendingKeywords=[...new Set([...retry,...state.pendingKeywords])];\nstate.complete=state.domains.length>=state.count;\nstate.canSearchMore=!state.complete&&state.pendingKeywords.length>0&&state.searchRound<20;\nstate.reviewMessage=state.complete?'':`Found ${state.domains.length} of ${state.count} distinct available domains. Saved the partial list. Add more Suggested Domains or permitted TLDs and generate again.`;\nstate.quoteBody={cart:{domains:state.domains.map(d=>({domain:d.domain,tld:d.tld,mailboxes:{provider:state.provider,count:2}}))},promo_code:state.promo};\nreturn [{json:state}];\n"
+   },
+   "id": "9b70309b-e538-4e27-91ac-03f8ad0bec0b",
+   "name": "Select Exact Generated Domains",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    4752,
+    1136
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 5000
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.cheapinboxes.com/v1/orders/quote",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify($json.quoteBody) }}",
+    "options": {
+     "response": {
+      "response": {
+       "fullResponse": true,
+       "neverError": true
+      }
+     },
+     "timeout": 45000
+    }
+   },
+   "id": "4874898d-14bd-4691-8a96-d4171b18acb2",
+   "name": "Get Combined Quote",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    5424,
+    1304
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const c=$json.context,q=$json.quote;if(!q?.totals)throw new Error($json.error?.message||'Quote failed');const t=q.totals;return [{json:{id:c.requestId,Request:c.request.Request||`${c.workspaceName} - ${c.count} domains`,Status:'Ready for Approval','Inbox Provider':c.provider==='microsoft'?'Microsoft':'Google','Preferred TLDs':c.tlds.map(x=>'.'+x),'Promo Code':c.promo,'Onboarding Record ID':c.onboardingId,'First Name':c.first,'Last Name':c.last,'Mailbox Password':c.password,'Profile Picture URL':c.profile||null,'Email Username Pattern':c.pattern,'Suggested Domain Seeds':c.seeds,'Selected Domains':c.domains.map(d=>d.domain).join('\\n'),'Available Domain Count':c.domains.length,'Total Mailboxes':c.domains.length*2,'Batch Size':c.batchSize,'Minutes Between Batches':c.delayMinutes,'Total Batches':Math.ceil(c.domains.length/c.batchSize),'Completed Batches':0,'Batch Order IDs':'','Quote Total Today':Number(t.total_today_cents||0)/100,'Monthly Inbox Cost':Number(t.mailbox_monthly_cents||0)/100,'Quote Generated At':new Date().toISOString(),'Automation Error':''}}];"
+   },
+   "id": "396dbffa-eda5-44d8-ac51-3a668858799d",
+   "name": "Map Quote",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    6320,
+    1208
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 5000
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblU6OstDVWeuYBxL",
+     "mode": "list",
+     "cachedResultName": "Domain Purchase Requests"
+    },
+    "columns": {
+     "mappingMode": "autoMapInputData",
+     "value": {},
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": []
+    },
+    "options": {
+     "typecast": true
+    }
+   },
+   "id": "9c57443c-c63d-4619-b5ac-51ca57e92fba",
+   "name": "Save Quote",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    6544,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblU6OstDVWeuYBxL",
+     "mode": "list",
+     "cachedResultName": "Domain Purchase Requests"
+    },
+    "filterByFormula": "={{ (() => { const id=String($json.recordId||''); if(!/^rec[a-zA-Z0-9]{14,}$/.test(id))throw Error('Invalid purchase request'); const now=\"DATETIME_PARSE('\"+new Date().toISOString()+\"')\"; return \"AND(RECORD_ID()='\"+id+\"',{Approve Purchase}=1,OR({Status}='Ready for Approval',AND({Status}='Purchasing',OR({Next Batch At}=BLANK(),IS_BEFORE({Next Batch At},\"+now+\"),IS_SAME({Next Batch At},\"+now+\",'second')))),{Quote Generated At}!=BLANK(),DATETIME_DIFF(\"+now+\",{Quote Generated At},'seconds')>=0,DATETIME_DIFF(\"+now+\",{Quote Generated At},'seconds')<=86400)\"; })() }}",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "id": "9bec3546-d6e4-4f6c-9547-d4499c1b25cd",
+   "name": "Find Next Approved Batch",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    2960,
+    2024
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const domains=String($json['Selected Domains']||'').split(/\\s+/).filter(Boolean),ids=String($json['Batch Order IDs']||'').split(/\\s+/).filter(Boolean),size=Math.min(20,Math.max(10,Number($json['Batch Size']||15))),start=ids.length*size,batch=domains.slice(start,start+size);if(!batch.length)throw new Error('No unpurchased batch remains');const first=String($json['First Name']),last=String($json['Last Name']),password=String($json['Mailbox Password']),profile=String($json['Profile Picture URL']||''),f=first.toLowerCase().replace(/[^a-z0-9]/g,''),l=last.toLowerCase().replace(/[^a-z0-9]/g,'');if(!f||!l||!password)throw new Error('Missing onboarding identity/password');let patterns=String($json['Email Username Pattern']||'first,first.last').toLowerCase().split(/[\\n,;|]+/).map(p=>p.trim()).filter(Boolean);const render=p=>p.replace(/first\\.?name/g,f).replace(/last\\.?name/g,l).replace(/first/g,f).replace(/last/g,l).replace(/[^a-z0-9._-]/g,'');let prefixes=[...new Set(patterns.map(render).filter(Boolean))];if(prefixes.length<2)prefixes=[f,`${f}.${l}`];const accounts=prefixes.slice(0,2).map(email_prefix=>({first_name:first,last_name:last,email_prefix,profile_picture_url:profile||null,preferred_password:password}));const provider=String($json['Inbox Provider']?.name||$json['Inbox Provider']||'Google').toLowerCase().includes('micro')?'microsoft':'google';const orderName=String($json['Name']||$json['Order Name']||'').trim().slice(0,240);return [{json:{requestSnapshot:$json,requestId:$json.id,previousIds:ids,totalBatches:Number($json['Total Batches']||Math.ceil(domains.length/size)),delay:Number($json['Minutes Between Batches']||10),checkoutBody:{...(orderName?{name:orderName}:{}),domains:batch.map(domain=>({domain,tld:domain.split('.').pop(),mailboxes:{provider,accounts}})),promo_code:$json['Promo Code']||'agencyignition$',integration_id:'9a3b6dd2-c9c8-4192-b71c-25eea40a57b4'}}}];"
+   },
+   "id": "47f56730-fe9b-4c9f-aa4c-326d01ec054f",
+   "name": "Build Next Batch",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3184,
+    1952
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 5000
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblU6OstDVWeuYBxL",
+     "mode": "list",
+     "cachedResultName": "Domain Purchase Requests"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "id": "={{$json.requestId}}",
+      "Status": "Purchasing",
+      "Next Batch At": "={{$now.plus({minutes:30})}}",
+      "Automation Error": ""
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": []
+    },
+    "options": {
+     "typecast": true
+    }
+   },
+   "id": "c661e08a-e6a4-42ec-8af0-b242ecaa696e",
+   "name": "Lock Batch",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    3408,
+    1952
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.cheapinboxes.com/v1/orders/checkout",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{JSON.stringify($('Build Next Batch').item.json.checkoutBody)}}",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "cca12246-9bf0-4411-850a-28aa208973d1",
+   "name": "PLACE ONE BATCH - CHARGES CARD",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    3632,
+    1952
+   ],
+   "retryOnFail": false
+  },
+  {
+   "parameters": {
+    "jsCode": "const c=$('Build Next Batch').item.json;\nif($json.error?.code==='DOMAINS_UNAVAILABLE'||String($json.error?.message||'').toLowerCase().includes('not available'))return [{json:{id:c.requestId,'Approve Purchase':false,Status:'Generate Domains','Next Batch At':null,'Automation Error':'Checkout rejected one or more unavailable domains. Previous selections will be excluded from the replacement quote.'}}];\nif(!$json.order_id)throw new Error($json.error?.message||'No order ID returned');\nconst ids=[...c.previousIds,$json.order_id],done=ids.length>=c.totalBatches;\nreturn [{json:{id:c.requestId,'Batch Order IDs':ids.join('\\n'),'CheapInboxes Order ID':ids[0],'Completed Batches':ids.length,Status:done?'Provisioning':'Purchasing','Next Batch At':done?null:new Date(Date.now()+c.delay*60000).toISOString(),'Automation Error':''}}];"
+   },
+   "id": "6513d891-bf10-4c0b-8ebd-b719a9b32717",
+   "name": "Map Batch Result",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3856,
+    1952
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 5000
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblU6OstDVWeuYBxL",
+     "mode": "list",
+     "cachedResultName": "Domain Purchase Requests"
+    },
+    "columns": {
+     "mappingMode": "autoMapInputData",
+     "value": {},
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": []
+    },
+    "options": {
+     "typecast": true
+    }
+   },
+   "id": "471e1424-4f48-4978-85da-26956ecf29b1",
+   "name": "Save Batch",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    4080,
+    1952
+   ]
+  },
+  {
+   "parameters": {
+    "amount": "={{ Math.max(2, Number(($json.fields || $json)['Minutes Between Batches'] || 10)) }}",
+    "unit": "minutes"
+   },
+   "id": "4e528ebe-e8bd-491d-a9e0-096233151ffb",
+   "name": "Wait Before Next Batch",
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    5872,
+    1760
+   ],
+   "webhookId": "53d08c7b-7f58-49a4-a188-814ad1cba696"
+  },
+  {
+   "parameters": {
+    "jsCode": "return [{json:{recordId:$('Validate Webhook').first().json.recordId}}];"
+   },
+   "id": "ce10cd40-6d8e-4268-89f1-54e213048512",
+   "name": "Resume Same Request",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    6096,
+    2024
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 5000
+  },
+  {
+   "parameters": {
+    "jsCode": "const response=$input.first().json;\nif(!response.order_id)return [];\nconst request=response._purchaseContext?.request;\nconst requestedDomains=response._purchaseContext?.requestedDomains||[];\nif(!request)throw Error('Saved purchase context missing; do not repurchase');\nconst workspaceLink=Array.isArray(request['Client / Workspace'])?request['Client / Workspace'][0]:request['Client / Workspace'];\nconst workspaceId=workspaceLink?.id||workspaceLink;\nif(!workspaceId)throw new Error('Purchased order has no linked Client / Workspace');\nconst password=String(request['Mailbox Password']||'');\n  if(!password)throw new Error('Purchased order is missing Mailbox Password');\nconst provider=String(request['Inbox Provider']?.name||request['Inbox Provider']||'Google');\nconst returnedDomains=Array.isArray(response.domains)?response.domains:[];\nreturn returnedDomains.map((domainResult,index)=>{const requested=requestedDomains.find(x=>x.domain===domainResult.domain)||requestedDomains[index]||{};const mailboxes=(Array.isArray(response.mailboxes)?response.mailboxes:[]).filter(m=>String(m.full_email||'').toLowerCase().endsWith('@'+String(domainResult.domain).toLowerCase()));return {json:{workspaceId,password,provider,orderId:response.order_id,totalCharged:Number(response.total_charged_cents||0)/100,monthlyCost:Number(request['Monthly Inbox Cost']||0),promo:String(request['Promo Code']||''),domain:String(domainResult.domain),cheapInboxesDomainId:String(domainResult.id||''),mailboxCount:mailboxes.length||Number(requested.mailboxes?.accounts?.length||2),mailboxes}}});"
+   },
+   "id": "19d03249-e4ee-4299-b729-03cb8cde7100",
+   "name": "Prepare Purchased Inventory",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    4528,
+    2024
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 5000
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblJHdcoT1x3vh3DN",
+     "mode": "list",
+     "cachedResultName": "Domains"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Domain": "={{$json.domain}}",
+      "Client / Workspace": "={{[$json.workspaceId]}}",
+      "Domain Provider": "CheapInboxes",
+      "Inbox Provider": "={{$json.provider}}",
+      "Purchase Status": "Provisioning",
+      "Purchase Date": "={{$now.toISODate()}}",
+      "Annual Cost": "={{$json.totalCharged}}",
+      "Provider Order ID": "={{$json.orderId}}",
+      "CheapInboxes Domain ID": "={{$json.cheapInboxesDomainId}}",
+      "Requested Mailbox Count": "={{$json.mailboxCount}}",
+      "Quote Total Today": "={{$json.totalCharged}}",
+      "Quote Monthly Cost": "={{$json.monthlyCost}}",
+      "Promo Code": "={{$json.promo}}",
+      "Provisioning Status": "Provisioning",
+      "Monitoring Status": "Pending EmailGuard",
+      "Notes": "Created automatically from a successful CheapInboxes checkout. EmailGuard registration follows in this workflow."
+     },
+     "matchingColumns": [],
+     "schema": []
+    },
+    "options": {
+     "typecast": true
+    }
+   },
+   "id": "09c88240-9f67-4085-b485-a14c9c4e92d1",
+   "name": "Create Domain Inventory",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    4752,
+    1928
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const sources=$('Prepare Purchased Inventory').all(0,$runIndex).map(i=>i.json);\nconst records=$input.all();if(records.length!==sources.length)throw Error('Domain inventory incomplete; next purchase blocked');\nreturn records.flatMap(item=>{const record=item.json;const source=sources.find(s=>s.domain===record.fields?.Domain);if(!record.id||!source)throw Error('Domain inventory identity mismatch');return source.mailboxes.map(m=>{if(!m.full_email)throw Error('Purchased mailbox missing email');return {json:{email:String(m.full_email),workspaceId:source.workspaceId,domainRecordId:record.id,password:source.password,loginUrl:source.provider.toLowerCase().includes('micro')?'https://outlook.office.com/mail/':'https://mail.google.com/'}};});});"
+   },
+   "id": "7f9cf8e7-cf65-4b74-bdca-df2e9b36f724",
+   "name": "Prepare Email Account Inventory",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    4976,
+    1832
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 5000
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMSOBJ0wMgxSg4l",
+     "mode": "list",
+     "cachedResultName": "Email Accounts"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Email Account": "={{$json.email}}",
+      "Client": "={{[$json.workspaceId]}}",
+      "Domains": "={{[$json.domainRecordId]}}",
+      "Login Password": "={{$json.password}}",
+      "Login URL": "={{$json.loginUrl}}",
+      "Client Visible": false
+     },
+     "matchingColumns": [],
+     "schema": []
+    },
+    "options": {
+     "typecast": true
+    }
+   },
+   "id": "500c9b74-3cf7-40e1-951f-5471755c7e07",
+   "name": "Create Email Account Inventory",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    5200,
+    1832
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://app.emailguard.io/api/v1/domains",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpBearerAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{JSON.stringify({name:$('Prepare Purchased Inventory').item.json.domain})}}",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "44359d91-41c2-4a7e-8ffd-ab157991a136",
+   "name": "Add Domain to EmailGuard",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    4976,
+    2024
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://app.emailguard.io/api/v1/blacklist-checks/ad-hoc",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpBearerAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{JSON.stringify({domain_or_ip:$('Prepare Purchased Inventory').item.json.domain})}}",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "4c5cff3a-af19-4e26-b3e2-0893deedf4b6",
+   "name": "Run Initial Blacklist Check",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    5200,
+    2032
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const domainRecord=$('Create Domain Inventory').item.json;const registration=$('Add Domain to EmailGuard').item.json;const check=$json;const registrationData=registration.data||registration;const checkData=check.data||check;const registrationId=registrationData.uuid||registrationData.id||'';const checkId=checkData.uuid||checkData.id||'';const error=registration.error?.message||check.error?.message||'';return [{json:{id:domainRecord.id,'EmailGuard Domain ID':registrationId||null,'Last Blacklist Check ID':checkId||null,'Monitoring Status':registrationId?'Active':'Needs Attention','Blacklist Status':error?'Check Failed':'Pending','Last Blacklist Check':new Date().toISOString(),Notes:error?`EmailGuard setup needs attention: ${error}`:'Registered with EmailGuard and initial blacklist check requested.'}}];"
+   },
+   "id": "7394da19-7855-472c-91cb-b720895a4eab",
+   "name": "Map EmailGuard Monitoring",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    5424,
+    2024
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 5000
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblJHdcoT1x3vh3DN",
+     "mode": "list",
+     "cachedResultName": "Domains"
+    },
+    "columns": {
+     "mappingMode": "autoMapInputData",
+     "value": {},
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": []
+    },
+    "options": {
+     "typecast": true
+    }
+   },
+   "id": "7a2803cd-200e-4191-ae48-fefae1f34bae",
+   "name": "Save EmailGuard Monitoring",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    5648,
+    2024
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs"
+    },
+    "filterByFormula": "={{ \"RECORD_ID()='\"+$json.workspaceId+\"'\" }}",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "id": "ab41db14-c91b-4da3-bc36-6b9e57fad27f",
+   "name": "Get Current Client Portal Logins",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    4752,
+    2216
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const workspace=$input.first().json;const purchased=$('Prepare Purchased Inventory').all().map(item=>item.json).filter(Boolean);if(!purchased.length)return [];const workspaceId=purchased[0].workspaceId||workspace.id;if(!workspaceId)throw new Error('Cannot save client portal credentials without a Workspace ID');const existing=String(workspace.Logins||'').trim();const orderId=String(purchased[0].orderId||'').trim();const marker=orderId?`Order: ${orderId}`:'';if(marker&&existing.includes(marker))return [{json:{id:workspaceId,Logins:existing}}];const sections=purchased.map(item=>{const provider=String(item.provider||'Email');const loginUrl=provider.toLowerCase().includes('micro')?'https://outlook.office.com/mail/':'https://mail.google.com/';const mailboxes=(Array.isArray(item.mailboxes)?item.mailboxes:[]).map(mailbox=>String(mailbox.full_email||'').trim()).filter(Boolean);const lines=[`Domain: ${item.domain}`,`Provider: ${provider}`,`Login URL: ${loginUrl}`];if(mailboxes.length){lines.push('',...mailboxes.flatMap(email=>[`Email: ${email}`,`Password: ${item.password}`,'']).slice(0,-1));}else{lines.push('','No mailbox addresses were returned for this domain.');}return lines.join('\\n');});const header=['EMAIL INFRASTRUCTURE',marker].filter(Boolean).join('\\n');const block=[header,'',...sections.flatMap((section,index)=>index?['------------------------------',section]:[section])].join('\\n').trim();const combined=[existing,block].filter(Boolean).join('\\n\\n==============================\\n\\n');return [{json:{id:workspaceId,Logins:combined}}];"
+   },
+   "id": "30a93a63-6ee3-419f-8600-6e86fe00cefe",
+   "name": "Build Client Portal Login Text",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    4976,
+    2216
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 5000
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs"
+    },
+    "columns": {
+     "mappingMode": "autoMapInputData",
+     "value": {},
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": []
+    },
+    "options": {
+     "typecast": true
+    }
+   },
+   "id": "977eb325-bcdd-4216-9172-be75d1222d8c",
+   "name": "Save Client Portal Logins",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    5200,
+    2216
+   ]
+  },
+  {
+   "parameters": {
+    "content": "## Instant Airtable webhook\nAirtable sends the changed record ID to the production webhook. Generate Domains creates the quote immediately. Approve Purchase starts checkout immediately. The approval checkbox and 24-hour quote guard remain required. Multi-batch orders default to 10 minutes between batches (editable per request). Selected domains must pass a pairwise similarity threshold.\n\nAfter checkout, Domains and Email Accounts records are linked to the client workspace. Passwords remain in Email Accounts → Login Password and are also appended as a readable domain/email/password block in Workspace IDs → Logins for the secure client portal. Both EmailGuard nodes use the existing EmailGuard Secret Relay credential. Keep workflow concurrency at 1.",
+    "height": 320,
+    "width": 620,
+    "color": 5
+   },
+   "id": "9ec1298b-698e-4963-8096-f382f99c8e0c",
+   "name": "Instructions",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    4602,
+    1768
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const state = JSON.parse(JSON.stringify($json));\nconst needed = Math.max(0,state.count-state.domains.length);\nconst size = Math.min(20, Math.max(4, needed*2));\nconst batch = state.pendingKeywords.splice(0,size);\nif(!batch.length) throw new Error('No remaining domain suggestions to check');\nstate.searchRound += 1;\nreturn batch.map(keyword=>({json:{keyword,tlds:state.tlds,state}}));\n"
+   },
+   "id": "51488a92-5832-4415-a3a8-0107cf6b3d1b",
+   "name": "Prepare Domain Search Batch",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    4304,
+    1208
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 5000
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "81a57489-f2dd-4d70-a9ee-c08070f9d199",
+       "leftValue": "={{ $json.complete }}",
+       "rightValue": "",
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "1bc1ba45-134b-4aec-8af5-1e7233293873",
+   "name": "Enough Domains Found",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    4976,
+    1136
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "3291cf71-8aee-4078-9ab8-03b939be0f02",
+       "leftValue": "={{ $json.canSearchMore }}",
+       "rightValue": "",
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "41e58d8f-e742-434f-bce2-a2d64b696fad",
+   "name": "More Suggestions Available",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    5200,
+    872
+   ]
+  },
+  {
+   "parameters": {
+    "amount": 65
+   },
+   "id": "75dd008a-fe50-4e0c-a1ea-a46b9cc508a1",
+   "name": "Wait Before More Domain Searches",
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    5424,
+    800
+   ],
+   "webhookId": "207805f0-e1ce-4262-873d-66295f5857f6"
+  },
+  {
+   "parameters": {
+    "jsCode": "const c=$json;\nreturn [{json:{id:c.requestId,Status:'Draft','Selected Domains':c.domains.map(d=>d.domain).join('\\n'),'Available Domain Count':c.domains.length,'Total Mailboxes':c.domains.length*2,'Quote Total Today':null,'Monthly Inbox Cost':null,'Quote Generated At':null,'Automation Error':c.reviewMessage}}];\n"
+   },
+   "id": "ba561922-88a1-4d9c-9625-69691aee1e14",
+   "name": "Save Partial Domain Result",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    6320,
+    1016
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 5000
+  },
+  {
+   "parameters": {
+    "jsCode": "return [{json:$json}];"
+   },
+   "id": "19b27f97-0f3e-4c83-b9dd-d08cd709fb32",
+   "name": "Prepare Quote Request",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    5200,
+    1304
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 5000
+  },
+  {
+   "parameters": {
+    "jsCode": "const context=$('Prepare Quote Request').first().json;\nconst response=$json,body=response.body??response,status=Number(response.statusCode||200);\nif(status===429||body.error?.code==='RATE_LIMIT_EXCEEDED') {\n return [{json:{...context,quoteReady:false,retryQuote:$runIndex<3,reviewMessage:'All requested domains were found, but the quote provider is still rate-limiting requests after automatic retries. Domains are saved; generate again later to refresh the quote.'}}];\n}\nif(status>=400||body.error||!body.quote?.totals)throw new Error(body.error?.message||'Invalid quote response');\nreturn [{json:{context,quote:body.quote,quoteReady:true,retryQuote:false}}];\n"
+   },
+   "id": "17686892-36ba-489b-a8ed-00c048047c78",
+   "name": "Check Quote Response",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    5648,
+    1208
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 5000
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "210dd360-03fd-42f4-b9fb-9e98adbebca2",
+       "leftValue": "={{ $json.quoteReady }}",
+       "rightValue": "",
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "56c705f8-629f-437b-bb89-a69998b91998",
+   "name": "Quote Ready",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    5872,
+    1208
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "be542f0f-881d-42d1-bbb9-00e1a570f78d",
+       "leftValue": "={{ $json.retryQuote }}",
+       "rightValue": "",
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "14a00eb1-aa41-46eb-9492-4d3f20beb5bb",
+   "name": "Retry Quote After Cooldown",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    6096,
+    1304
+   ]
+  },
+  {
+   "parameters": {
+    "amount": 65
+   },
+   "id": "62fe6fbc-57bd-46ac-8f1d-89d888162cd7",
+   "name": "Wait Before Quote Retry",
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    6320,
+    1424
+   ],
+   "webhookId": "8f928aa7-63fe-42ea-9b49-dca49dfad607"
+  },
+  {
+   "parameters": {
+    "jsCode": "const response=$('PLACE ONE BATCH - CHARGES CARD').all(0,$runIndex)[0]?.json;\nconst batch=$('Build Next Batch').all(0,$runIndex)[0]?.json;\nif(!response?.order_id)return [];\nif(!batch?.requestSnapshot||$input.first().json.id!==batch.requestId)throw Error('Saved order context mismatch; stop before next purchase');\nif(!Array.isArray(response.domains)||!response.domains.length||!Array.isArray(response.mailboxes)||!response.mailboxes.length)throw Error('Purchased inventory absent; reconcile existing order before continuing');\nreturn [{json:{...response,_purchaseContext:{request:batch.requestSnapshot,requestedDomains:batch.checkoutBody.domains}}}];"
+   },
+   "id": "54d9c753-bc8a-498c-ade0-7a20303fd199",
+   "name": "Restore Saved Purchase Context",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    4304,
+    2024
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 5000
+  },
+  {
+   "parameters": {},
+   "id": "ec0a1896-4f96-444c-894e-fd2944dfd420",
+   "name": "Wait For Saved Inventory",
+   "type": "n8n-nodes-base.merge",
+   "typeVersion": 3.2,
+   "position": [
+    5424,
+    1760
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const saved=$('Save Batch').all(0,$runIndex)[0]?.json;\nconst expected=$('Prepare Email Account Inventory').all(0,$runIndex).map(i=>i.json.email.toLowerCase());\nconst actual=$('Create Email Account Inventory').all(0,$runIndex).map(i=>{if(!i.json.id)throw Error('Mailbox save failed');return String(i.json.fields?.['Email Account']||'').toLowerCase();});\nif(!saved?.id||!expected.length||actual.length!==expected.length||new Set(actual).size!==actual.length||expected.some(e=>!actual.includes(e)))throw Error('Mailbox inventory incomplete; next purchase blocked');\nreturn [{json:saved}];"
+   },
+   "id": "a0354ef5-c24b-40ac-a6f8-6b74e2f95dbc",
+   "name": "Confirm Batch Inventory Saved",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    5648,
+    1760
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 5000
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

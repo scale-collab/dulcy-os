@@ -1,0 +1,332 @@
+{
+ "id": "CWKS3aMtFhOpndTFcAhPC",
+ "name": "[Lead List Center] LeadMagic Bulk Email Finder",
+ "active": true,
+ "isArchived": false,
+ "versionId": "09a6fdbc-fdc5-4730-a67b-916eb903f9c3",
+ "triggerCount": 1,
+ "createdAt": "2026-08-19T23:16:14.624Z",
+ "updatedAt": "2026-11-17T16:41:16.419Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Webhook": {
+   "main": [
+    [
+     {
+      "node": "HTTP Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "HTTP Request": {
+   "main": [
+    [
+     {
+      "node": "Wait",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wait": {
+   "main": [
+    [
+     {
+      "node": "HTTP Request1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "HTTP Request1": {
+   "main": [
+    [
+     {
+      "node": "Extract from File",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Extract from File": {
+   "main": [
+    [
+     {
+      "node": "Code in JavaScript",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "When Executed by Another Workflow": {
+   "main": [
+    [
+     {
+      "node": "HTTP Request2",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "HTTP Request2": {
+   "main": [
+    [
+     {
+      "node": "Wait1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wait1": {
+   "main": [
+    [
+     {
+      "node": "HTTP Request3",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "HTTP Request3": {
+   "main": [
+    [
+     {
+      "node": "Extract from File1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Extract from File1": {
+   "main": [
+    [
+     {
+      "node": "Code in JavaScript1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "responseMode": "lastNode",
+    "responseData": "allEntries",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    0,
+    32
+   ],
+   "id": "42bf6bc1-cbf2-46aa-9384-2ef638988606",
+   "name": "Webhook"
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.leadmagic.io/bulk/submit",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ product: 'email_finder', rows: ($json.body && $json.body.rows) ? $json.body.rows : ($json.rows || []), idempotencyKey: (($json.body && $json.body.idempotencyKey) || ('n8n-' + $execution.id)), callback: { url: $execution.resumeUrl, events: ['completed','failed'] } }) }}",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.3,
+   "position": [
+    224,
+    32
+   ],
+   "id": "6e9fbb35-8b88-4e99-8508-8058543cfc13",
+   "name": "HTTP Request"
+  },
+  {
+   "parameters": {
+    "resume": "webhook",
+    "httpMethod": "POST",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    448,
+    32
+   ],
+   "id": "5f5c470e-f100-40dc-81d8-ee550ce21f0f",
+   "name": "Wait",
+   "webhookId": "8818d33f-5527-490c-8d95-b10152c06683"
+  },
+  {
+   "parameters": {
+    "url": "={{ $('HTTP Request').item.json.downloadUrl }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "response": {
+      "response": {
+       "responseFormat": "file"
+      }
+     }
+    }
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.3,
+   "position": [
+    672,
+    32
+   ],
+   "id": "19d6a7c1-3a11-41d5-851a-078bb2ec0d4b",
+   "name": "HTTP Request1"
+  },
+  {
+   "parameters": {
+    "options": {}
+   },
+   "type": "n8n-nodes-base.extractFromFile",
+   "typeVersion": 1.1,
+   "position": [
+    896,
+    32
+   ],
+   "id": "9ccd5da0-3def-472d-9069-292b37bce8b2",
+   "name": "Extract from File"
+  },
+  {
+   "parameters": {
+    "jsCode": "const sources = $('Webhook').first().json.body?.sources || [];\nconst parseObject = (value) => {\n  if (value && typeof value === 'object') return value;\n  if (typeof value !== 'string' || !value.trim()) return {};\n  try { return JSON.parse(value); } catch { return {}; }\n};\nreturn $input.all().map((item, fallbackIndex) => {\n  const row = item.json || {};\n  const lmInput = parseObject(row.lm_input);\n  const lmOutput = parseObject(row.lm_output);\n  const rawIndex = row.source_index ?? lmInput.source_index ?? row.row_index ?? fallbackIndex;\n  const sourceIndex = Number(rawIndex);\n  const source = sources[sourceIndex] || {};\n  return {\n    json: {\n      source,\n      originalEmail: source.email || '',\n      ...lmOutput,\n      leadmagic_status: row.status || '',\n      leadmagic_error: row.error_message || null,\n      row_index: Number(row.row_index ?? sourceIndex),\n      source_index: sourceIndex,\n      lm_input: lmInput,\n      lm_output: lmOutput,\n    },\n  };\n});"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1120,
+    32
+   ],
+   "id": "11d2d77f-55b5-47d0-947a-9b3795103afd",
+   "name": "Code in JavaScript"
+  },
+  {
+   "parameters": {
+    "inputSource": "passthrough"
+   },
+   "type": "n8n-nodes-base.executeWorkflowTrigger",
+   "typeVersion": 1.1,
+   "position": [
+    0,
+    -192
+   ],
+   "id": "5c28efe0-b1ac-41f4-8bc9-010afe0d1fd7",
+   "name": "When Executed by Another Workflow"
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.leadmagic.io/bulk/submit",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ product: 'email_finder', rows: ($json.body && $json.body.rows) ? $json.body.rows : ($json.rows || []), idempotencyKey: (($json.body && $json.body.idempotencyKey) || ('n8n-' + $execution.id)), callback: { url: $execution.resumeUrl, events: ['completed','failed'] } }) }}",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.3,
+   "position": [
+    224,
+    -192
+   ],
+   "id": "e48681a1-7270-4bb7-b2e5-9507e5cea438",
+   "name": "HTTP Request2"
+  },
+  {
+   "parameters": {
+    "resume": "webhook",
+    "httpMethod": "POST",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    448,
+    -192
+   ],
+   "id": "54961904-6e88-48b1-9d06-728d27578c9e",
+   "name": "Wait1",
+   "webhookId": "c0338d1c-9fd4-4803-9351-afbb282347f9"
+  },
+  {
+   "parameters": {
+    "url": "={{ $('HTTP Request2').item.json.downloadUrl }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "response": {
+      "response": {
+       "responseFormat": "file"
+      }
+     }
+    }
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.3,
+   "position": [
+    672,
+    -192
+   ],
+   "id": "1a489875-9ee4-4a37-b5f9-896b2ddae377",
+   "name": "HTTP Request3"
+  },
+  {
+   "parameters": {
+    "options": {}
+   },
+   "type": "n8n-nodes-base.extractFromFile",
+   "typeVersion": 1.1,
+   "position": [
+    896,
+    -192
+   ],
+   "id": "2bda5d4a-e034-4c66-9c0f-318e6a8bbc91",
+   "name": "Extract from File1"
+  },
+  {
+   "parameters": {
+    "jsCode": "const request = $('When Executed by Another Workflow').first().json || {};\nconst sources = request.sources || request.rows || request.directRows || [];\nconst parseObject = (value) => {\n  if (value && typeof value === 'object') return value;\n  if (typeof value !== 'string' || !value.trim()) return {};\n  try { return JSON.parse(value); } catch { return {}; }\n};\nconst clean = (value) => String(value ?? '').trim();\nconst lower = (value) => clean(value).toLowerCase();\nconst host = (value) => {\n  let x = lower(value);\n  if (x.startsWith('https://')) x = x.slice(8);\n  else if (x.startsWith('http://')) x = x.slice(7);\n  if (x.startsWith('www.')) x = x.slice(4);\n  return x.split('/')[0];\n};\nconst identityKey = (value = {}) => [\n  lower(value.firstName || value.first_name),\n  lower(value.lastName || value.last_name),\n  host(value.domain || value.company_domain || value.website)\n].join('|');\nconst byEmail = new Map();\nconst byIdentity = new Map();\nsources.forEach((source, index) => {\n  const email = lower(source.email);\n  if (email) byEmail.set(email, { source, index });\n  const key = identityKey(source);\n  if (key !== '||') byIdentity.set(key, { source, index });\n});\nconst resolveSource = (row, lmInput, fallbackIndex) => {\n  const raw = row.source_index ?? lmInput.source_index ?? row.row_index;\n  const numeric = Number(raw);\n  const candidates = [numeric, numeric - 1, fallbackIndex].filter(Number.isInteger);\n  for (const index of candidates) {\n    if (index >= 0 && sources[index]) return { source: sources[index], index };\n  }\n  const inputEmail = lower(\n    row.original_email || row.input_email || lmInput.originalEmail ||\n    lmInput.original_email || lmInput.email\n  );\n  if (inputEmail && byEmail.has(inputEmail)) return byEmail.get(inputEmail);\n  const key = identityKey({\n    firstName: row.first_name || lmInput.firstName || lmInput.first_name,\n    lastName: row.last_name || lmInput.lastName || lmInput.last_name,\n    domain: row.domain || row.company_domain || lmInput.domain || lmInput.company_domain,\n  });\n  if (key !== '||' && byIdentity.has(key)) return byIdentity.get(key);\n  return { source: {}, index: Number.isInteger(numeric) ? numeric : fallbackIndex };\n};\nconst results = $input.all().map((item, fallbackIndex) => {\n  const row = item.json || {};\n  const lmInput = parseObject(row.lm_input);\n  const lmOutput = parseObject(row.lm_output);\n  const resolved = resolveSource(row, lmInput, fallbackIndex);\n  const source = resolved.source || {};\n  const email = clean(row.email_finder_email || lmOutput.email);\n  const providerStatus = clean(\n    row.email_finder_validation_status || row.email_finder_status_2 ||\n    row.email_finder_status1 || lmOutput.status\n  );\n  return {\n    ...lmOutput,\n    source,\n    sourceKey: identityKey(source),\n    originalEmail: clean(source.email),\n    email,\n    provider: 'LeadMagic',\n    status: email ? 'Good' : 'Bad',\n    detail: clean(\n      row.email_finder_message || lmOutput.message || row.error_message ||\n      (email ? providerStatus || 'valid' : 'not_found')\n    ),\n    leadmagic_status: clean(row.email_finder_status || row.status),\n    leadmagic_error: row.error_message || null,\n    row_index: Number(row.row_index ?? resolved.index),\n    source_index: resolved.index,\n  };\n});\nconst { rows, sources: omittedSources, directRows, ...meta } = request;\nconst leadmagicJob = $('HTTP Request2').first().json || {};\nreturn [{ json: {\n  ...meta,\n  results,\n  leadmagicJobId: leadmagicJob.jobId || '',\n  leadmagicJobName: request.jobName || ''\n} }];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1120,
+    -192
+   ],
+   "id": "b14eb3f2-5b43-4800-aa3e-11e61fac909c",
+   "name": "Code in JavaScript1"
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

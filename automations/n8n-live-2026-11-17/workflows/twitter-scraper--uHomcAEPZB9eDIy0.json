@@ -1,0 +1,313 @@
+{
+ "id": "uHomcAEPZB9eDIy0",
+ "name": "Twitter Scraper",
+ "active": true,
+ "isArchived": false,
+ "versionId": "88a4c5b2-7898-4895-9f5d-2fd05552fbc5",
+ "triggerCount": 1,
+ "createdAt": "2025-12-10T09:54:11.220Z",
+ "updatedAt": "2026-11-17T16:39:34.709Z",
+ "settings": {
+  "executionOrder": "v1",
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Receive Twitter Webhook": {
+   "main": [
+    [
+     {
+      "node": "RUN Twitter Actor",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "RUN Twitter Actor": {
+   "main": [
+    [
+     {
+      "node": "Update Data ID's",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appJNoGcSkyIEPQ68",
+     "mode": "list",
+     "cachedResultName": "Scrapers",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tbllFWCBkZ0MNBFHD",
+     "mode": "list",
+     "cachedResultName": "X(FKA Twitter) Scraper",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68/tbllFWCBkZ0MNBFHD"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "N8N Automation Ran?": true,
+      "id": "={{ $('Receive Twitter Webhook').item.json.body.recordId }}",
+      "List_ID": "={{ $json.defaultDatasetId }}",
+      "Source of Creation": "Discord"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true
+      },
+      {
+       "id": "Run - ID",
+       "displayName": "Run - ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "X Link",
+       "displayName": "X Link",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "List_ID",
+       "displayName": "List_ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "N8N Automation Ran?",
+       "displayName": "N8N Automation Ran?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Terms to search",
+       "displayName": "Terms to search",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Profile to search",
+       "displayName": "Profile to search",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "twitter handle to scrape",
+       "displayName": "twitter handle to scrape",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Total tweets to scrape",
+       "displayName": "Total tweets to scrape",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "User",
+       "displayName": "User",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "User Name",
+       "displayName": "User Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "File Name",
+       "displayName": "File Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Source of Creation",
+       "displayName": "Source of Creation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Internal",
+         "value": "Internal"
+        },
+        {
+         "name": "Discord",
+         "value": "Discord"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Google Drive Link",
+       "displayName": "Google Drive Link",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Discord Tags",
+       "displayName": "Discord Tags",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Record Created at",
+       "displayName": "Record Created at",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    448,
+    -32
+   ],
+   "id": "7ee8293a-f104-4c7c-83b7-7345a51ad86d",
+   "name": "Update Data ID's"
+  },
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    0,
+    -32
+   ],
+   "id": "eb39e127-f10a-4757-a08d-6bd1092965b4",
+   "name": "Receive Twitter Webhook"
+  },
+  {
+   "parameters": {
+    "actorSource": "store",
+    "actorId": {
+     "__rl": true,
+     "value": "61RPP7dywgiy0JPD0",
+     "mode": "list",
+     "cachedResultName": "🏯 Tweet Scraper V2 - X / Twitter Scraper (apidojo/tweet-scraper)",
+     "cachedResultUrl": "https://console.apify.com/actors/61RPP7dywgiy0JPD0/input"
+    },
+    "customBody": "={\n    \"author\": \"apify\",\n    \"customMapFunction\": \"(object) => { return {...object} }\",\n    \"end\": \"2021-07-02\",\n    \"geocode\": \"37.7764685,-122.4172004,100km\",\n    \"geotaggedNear\": \"Los Angeles\",\n    \"inReplyTo\": \"webexpo\",\n    \"includeSearchTerms\": false,\n    \"maxItems\": {{ $json.body['Total tweets to scrape'] }},\n    \"mentioning\": \"{{ $json.body['Profile to search'] }}\",\n    \"minimumFavorites\": 5,\n    \"minimumReplies\": 5,\n    \"minimumRetweets\": 5,\n    \"onlyImage\": false,\n    \"onlyQuote\": false,\n    \"onlyTwitterBlue\": false,\n    \"onlyVerifiedUsers\": false,\n    \"onlyVideo\": false,\n    \"placeObjectId\": \"96683cc9126741d1\",\n    \"searchTerms\": [\n        \"{{ $json.body['Terms to search'] }}\"\n    ],\n    \"sort\": \"Latest\",\n    \"start\": \"2021-07-01\",\n    \"startUrls\": [\n        \"https://twitter.com/apify\"\n    ],\n    \"tweetLanguage\": \"en\",\n    \"twitterHandles\": [\n        \"{{ $json.body['twitter handle to scrape'] }}\"\n    ],\n    \"withinRadius\": \"100km\"\n}",
+    "waitForFinish": false
+   },
+   "type": "@apify/n8n-nodes-apify.apify",
+   "typeVersion": 1,
+   "position": [
+    224,
+    -32
+   ],
+   "id": "d597709a-f28d-42f0-8719-3647e2490d69",
+   "name": "RUN Twitter Actor"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

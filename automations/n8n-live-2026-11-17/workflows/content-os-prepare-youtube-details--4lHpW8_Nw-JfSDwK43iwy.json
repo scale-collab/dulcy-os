@@ -1,0 +1,230 @@
+{
+ "id": "4lHpW8_Nw-JfSDwK43iwy",
+ "name": "[Content OS] Prepare YouTube Details",
+ "active": true,
+ "isArchived": false,
+ "versionId": "199803ae-d178-4266-b8cd-d05edc3e89fc",
+ "triggerCount": 1,
+ "createdAt": "2026-08-18T23:20:50.690Z",
+ "updatedAt": "2026-11-17T16:41:13.021Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "YouTube Details Webhook": {
+   "main": [
+    [
+     {
+      "node": "Validate Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate Request": {
+   "main": [
+    [
+     {
+      "node": "Return Accepted",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Get Airtable Content",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Airtable Content": {
+   "main": [
+    [
+     {
+      "node": "Build AI Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build AI Request": {
+   "main": [
+    [
+     {
+      "node": "Generate YouTube Metadata",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Generate YouTube Metadata": {
+   "main": [
+    [
+     {
+      "node": "Format Channel Description",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Format Channel Description": {
+   "main": [
+    [
+     {
+      "node": "Save YouTube Details",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "responseMode": "responseNode",
+    "options": {}
+   },
+   "id": "7ca15021-bb74-408c-9cb5-3f39ee2e51a5",
+   "name": "YouTube Details Webhook",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    -448,
+    160
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const body=$input.first().json.body??$input.first().json;const recordId=String(body.recordId??body.record_id??'').trim();if(!/^rec[A-Za-z0-9]+$/.test(recordId))throw new Error('A valid Airtable content recordId is required.');return [{json:{recordId,action:'Prepare YouTube Details'}}];"
+   },
+   "id": "8cd77f46-1e39-410b-97b7-2048dc46c2a3",
+   "name": "Validate Request",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -224,
+    160
+   ]
+  },
+  {
+   "parameters": {
+    "respondWith": "json",
+    "responseBody": "={{ JSON.stringify({success:true,accepted:true,message:'YouTube details generation started.'}) }}",
+    "options": {
+     "responseCode": 202
+    }
+   },
+   "id": "f5ec8081-c3c8-40d1-84cb-e825097a5d8b",
+   "name": "Return Accepted",
+   "type": "n8n-nodes-base.respondToWebhook",
+   "typeVersion": 1.4,
+   "position": [
+    0,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblcSzvicm3wivvhh/' + $('Validate Request').first().json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "f6b58021-5a2c-4505-8ae9-f6ed41e54c02",
+   "name": "Get Airtable Content",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    0,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const rec=$input.first().json;const f=rec.fields??{};const recordId=rec.id;const topic=String(f.Title??'').trim();const channel=String(f['Content Channel']??'Alex Woung').trim();const source=String(f['YouTube Transcript']??f.Script??f.Description??'').trim();if(!topic)throw new Error('The content record needs a title.');const prompt=[`Prepare YouTube metadata for Alexander Woung's ${channel} channel.`,`Topic: ${topic}`,`Video context: ${source.slice(0,10000)||'No transcript is available. Stay factual and do not invent specifics.'}`,'Use web search to study current title phrasing and search intent for this exact topic. Do not copy another creator.','Match Alexander Woung title style: direct, specific, practical, often using How To, Full Tutorial, Step-by-Step, a current year only when natural, or a strong concrete outcome. Avoid hype, vague claims, emojis, hashtags, and clickbait that the video cannot fulfill.','Return strict JSON only with keys title, bridgeSentence, summary. title must be under 90 characters. bridgeSentence must connect this lesson to the broader business-growth system and naturally recommend watching The Best Way To Grow An Online Business As A Beginner. summary must be one concise paragraph explaining what viewers learn, the immediate benefit, and the benefit of that benefit. Do not include links, offers, social profiles, chapters, markdown, or quotation marks around the JSON.'].join('\\n\\n');return [{json:{recordId,channel,topic,source,openAiBody:{model:'gpt-5',input:prompt,tools:[{type:'web_search'}],text:{format:{type:'json_schema',name:'youtube_metadata',strict:true,schema:{type:'object',properties:{title:{type:'string'},bridgeSentence:{type:'string'},summary:{type:'string'}},required:['title','bridgeSentence','summary'],additionalProperties:false}}}}}}];"
+   },
+   "id": "5e23d7bc-86c4-408f-ac8b-1e1f168b880e",
+   "name": "Build AI Request",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    224,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.openai.com/v1/responses",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "openAiApi",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json.openAiBody) }}",
+    "options": {
+     "timeout": 300000
+    }
+   },
+   "id": "25d77047-bb5d-4ffe-9b0b-64a66f0208dd",
+   "name": "Generate YouTube Metadata",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    448,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const cfg=$('Build AI Request').first().json;const response=$input.first().json;const raw=response.output_text??response.output?.flatMap(x=>x.content??[]).find(x=>x.type==='output_text')?.text??'';let ai;try{ai=JSON.parse(raw);}catch{throw new Error('OpenAI did not return valid YouTube metadata JSON.');}const title=String(ai.title??cfg.topic).trim().slice(0,100);const summary=String(ai.summary??'').trim();const bridge=String(ai.bridgeSentence??'').trim();const main=`${bridge} https://www.youtube.com/watch?v=PhPoRP3eyMc\\n\\n***\\n\\nDo you want done-for-you cold email:\\nhttps://dulcy.io\\n\\nJoin Agency Ignition:\\nhttps://agencyignition.io/ (7-day free trial)\\n\\nWant help to hit a $100k/mo (1:1):\\nhttps://dealflux.io/\\n\\n***\\n\\n${summary}\\n\\n***\\n\\nConnect with me:\\nInstagram: https://www.instagram.com/alexander.woung\\nTwitter: https://x.com/alexwoung\\nLinkedIn: https://www.linkedin.com/in/alexanderwoung/`;const rawChannel=`${summary}\\n\\n***\\n\\nConnect with me:\\n\\nInstagram: https://www.instagram.com/alexander.woung\\nTwitter: https://x.com/alexwoung\\nLinkedIn: https://www.linkedin.com/in/alexanderwoung/\\nYoutube Main: https://www.youtube.com/@alexwoung`;return [{json:{recordId:cfg.recordId,title,description:cfg.channel==='Alex Woung Raw'?rawChannel:main}}];"
+   },
+   "id": "127a088b-216a-45f8-9b2e-afcc46affcb6",
+   "name": "Format Channel Description",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    672,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblcSzvicm3wivvhh/' + $json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({fields:{'YouTube Title':$json.title,'YouTube Description':$json.description,'Last Automation Message':'AI prepared the YouTube title and channel-specific description. Review them with vidIQ in YouTube Studio.','Automation Error':''}}) }}",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "f704afd5-b614-4687-b774-1e080262be8a",
+   "name": "Save YouTube Details",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    880,
+    208
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

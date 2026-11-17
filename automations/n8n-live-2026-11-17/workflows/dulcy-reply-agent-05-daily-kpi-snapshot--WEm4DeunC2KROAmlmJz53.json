@@ -1,0 +1,505 @@
+{
+ "id": "WEm4DeunC2KROAmlmJz53",
+ "name": "[Dulcy Reply Agent] 05 Daily KPI Snapshot",
+ "active": true,
+ "isArchived": false,
+ "versionId": "0025ab18-aeaa-4c52-aa84-7de739b7239a",
+ "triggerCount": 1,
+ "createdAt": "2026-08-24T03:12:01.058Z",
+ "updatedAt": "2026-11-17T16:42:38.464Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Manual Trigger": {
+   "main": [
+    [
+     {
+      "node": "Get Workspaces",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Daily 1:15 AM": {
+   "main": [
+    [
+     {
+      "node": "Get Workspaces",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Workspaces": {
+   "main": [
+    [
+     {
+      "node": "Consolidate Workspaces",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Consolidate Workspaces": {
+   "main": [
+    [
+     {
+      "node": "Get Recent Reply Threads",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Recent Reply Threads": {
+   "main": [
+    [
+     {
+      "node": "Consolidate Emails",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Consolidate Emails": {
+   "main": [
+    [
+     {
+      "node": "Get Recent Reply Events",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Recent Reply Events": {
+   "main": [
+    [
+     {
+      "node": "Prepare Provider Metrics Reads",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build Daily KPI Snapshots": {
+   "main": [
+    [
+     {
+      "node": "Upsert KPI Snapshots",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Provider Metrics Reads": {
+   "main": [
+    [
+     {
+      "node": "Has Provider Reads",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read Provider Metrics Thread": {
+   "main": [
+    [
+     {
+      "node": "Normalize Provider Metrics",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Normalize Provider Metrics": {
+   "main": [
+    [
+     {
+      "node": "Cache Observed Metrics",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Cache Observed Metrics": {
+   "main": [
+    [
+     {
+      "node": "Read Cached Metrics",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read Cached Metrics": {
+   "main": [
+    [
+     {
+      "node": "Build Daily KPI Snapshots",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Has Provider Reads": {
+   "main": [
+    [
+     {
+      "node": "Read Provider Metrics Thread",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Normalize Provider Metrics",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {},
+   "id": "c0ef4d4a-2c40-4f43-ac93-1deb37069a9c",
+   "name": "Manual Trigger",
+   "type": "n8n-nodes-base.manualTrigger",
+   "typeVersion": 1,
+   "position": [
+    0,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "15 1 * * *"
+      }
+     ]
+    }
+   },
+   "id": "30f60559-5899-4b21-8beb-6fa73ffe8faf",
+   "name": "Daily 1:15 AM",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    260,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs"
+    },
+    "filterByFormula": "{Status}='Active'",
+    "options": {}
+   },
+   "id": "41bd22a0-027d-4103-9c7d-dbb6bb173cf9",
+   "name": "Get Workspaces",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    520,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const rows=$input.all().map(i=>i.json);const byId={};for(const row of rows){const f=row.fields??row;const id=String(row.id??f['Record ID']??'').trim();if(id)byId[id]=String(f.Name??id);}return [{json:{byId}}];"
+   },
+   "id": "91c4917a-0db5-4a8d-a642-9d10ffcecec7",
+   "name": "Consolidate Workspaces",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    780,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblADFhWhTcLrl1UY",
+     "mode": "list",
+     "cachedResultName": "Emails"
+    },
+    "filterByFormula": "=={{ (() => { const names = Object.values($('Consolidate Workspaces').first().json.byId || {}).filter(Boolean); const active = names.length ? 'OR(' + names.map(name => `ARRAYJOIN({Clients Table})='${String(name).replace(/'/g, \"\\\\'\")}'`).join(',') + ')' : 'FALSE()'; const day = \"DATEADD(TODAY(),-1,\\'days\\')\"; const recent = \"OR(IS_SAME({First Inbound Reply At},\"+day+\",'day'),IS_SAME({Latest Reply Time},\"+day+\",'day'),IS_SAME({First Response At},\"+day+\",'day'),IS_SAME({Meeting Booked At},\"+day+\",'day'),IS_SAME({Dulcy Reply Agent Sent At},\"+day+\",'day'),AND(OR(FIND('In Conversation',ARRAYJOIN({Lead Status})),{Pipeline Stage}='In Conversation'),IS_SAME(DATETIME_PARSE(ARRAYJOIN({Status timestamp})),\"+day+\",'day')))\"; return 'AND(' + active + ',' + recent + ')'; })() }}",
+    "options": {}
+   },
+   "id": "979f9d98-ae12-4f64-bb5c-d81e40684f26",
+   "name": "Get Recent Reply Threads",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1040,
+    0
+   ],
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "jsCode": "return [{json:{emails:$input.all().map(i=>i.json)}}];"
+   },
+   "id": "7be9e8c6-ea28-4984-8742-f435273d5e66",
+   "name": "Consolidate Emails",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1300,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblHznksXyc3DZAUu",
+     "mode": "list",
+     "cachedResultName": "Dulcy Reply Agent Events"
+    },
+    "filterByFormula": "IS_AFTER({Occurred At},DATEADD(TODAY(),-90,'days'))",
+    "options": {}
+   },
+   "id": "00124e4e-bbad-4cdc-820e-b6645d9f43f4",
+   "name": "Get Recent Reply Events",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1560,
+    0
+   ],
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "jsCode": "// Metrics require observed events. Labels and status modification times are not message timestamps.\nfunction replyMetrics({conversations,from,to,workspaceId}){\n const parse=x=>{const n=Date.parse(x||'');return Number.isFinite(n)?n:null};\n const lo=parse(from),hi=parse(to);if(lo===null||hi===null||hi<=lo)throw Error('Invalid reporting interval');\n const median=a=>{const b=[...a].sort((x,y)=>x-y);return b.length?(b[Math.floor((b.length-1)/2)]+b[Math.ceil((b.length-1)/2)])/2:null};\n const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;\n const unique=new Map(), issues=[];\n for(const c of conversations){\n  if(c.testOnly||c.workspaceId!==workspaceId)continue;\n  if(!c.id){issues.push('Missing conversation identity');continue;}\n  if(unique.has(c.id)){issues.push('Duplicate conversation excluded: '+c.id);continue;}unique.set(c.id,c);\n }\n const speeds=[],touches=[],bookHours=[];let inbound=0,positive=0,booked=0,positiveBooked=0,sent=0,aiSent=0,humanSent=0,unknownActor=0,unanswered=0,unknownResponse=0,unknownBooking=0;\n for(const c of unique.values()){\n  const ids=new Set(),messages=[];\n  for(const m of c.messages||[]){\n   if(m.testOnly||!m.id||ids.has(m.id))continue;ids.add(m.id);\n   const at=parse(m.at);if(at===null||at>=hi)continue;\n   if(m.direction==='inbound'&&m.automated!==true)messages.push({...m,at});\n   if(m.direction==='outbound'&&m.status==='sent')messages.push({...m,at});\n  }\n  messages.sort((a,b)=>a.at-b.at);\n  const first=messages.find(m=>m.direction==='inbound');\n  // Cohort is conversations whose first known human inbound occurred in the interval.\n  if(!first||first.at<lo||!c.firstInboundConfirmed)continue;\n  inbound++;if(c.positive===true){positive++;}\n  const responses=messages.filter(m=>m.direction==='outbound'&&m.at>=first.at);\n  for(const m of responses){sent++;if(m.actor==='AI')aiSent++;else if(m.actor==='Human')humanSent++;else unknownActor++;}\n  const response=responses[0];\n  if(response&&c.historyComplete){speeds.push((response.at-first.at)/60000);}\n  else if(!response&&c.historyComplete)unanswered++;else unknownResponse++;\n  const booking=c.booking;const bookedAt=parse(booking?.createdAt);\n  const confirmed=booking?.confirmed===true&&booking.id&&bookedAt!==null&&bookedAt>=first.at&&bookedAt<hi&&booking.cancelled!==true;\n  if(confirmed){booked++;if(c.positive===true)positiveBooked++;if(c.historyComplete){touches.push(responses.filter(m=>m.at<=bookedAt).length);if(response&&response.at<=bookedAt)bookHours.push((bookedAt-response.at)/3600000);}}\n  else if(c.wonLabel||c.bookingCoverageComplete!==true)unknownBooking++;\n }\n return {workspaceId,from,to,cohort:'First confirmed human inbound in range; outcomes observed before range end',conversations:inbound,positiveConversations:positive,confirmedMeetings:booked,positiveMeetings:positiveBooked,repliesSent:sent,aiRepliesSent:aiSent,humanRepliesSent:humanSent,unknownResponderReplies:unknownActor,avgFirstResponseMinutes:avg(speeds),medianFirstResponseMinutes:median(speeds),measuredFirstResponses:speeds.length,unansweredConversations:unanswered,unknownResponseConversations:unknownResponse,avgTouchesToMeeting:avg(touches),measuredMeetingTouches:touches.length,avgFirstResponseToBookingHours:avg(bookHours),measuredBookingResponseTimes:bookHours.length,replyToMeetingRate:inbound?booked/inbound:null,positiveToMeetingRate:positive?positiveBooked/positive:null,unverifiedBookingConversations:unknownBooking,coverage:unknownResponse||unknownBooking||issues.length?'Partial':inbound?'Complete':'Insufficient',issues};\n}\n\nfunction buildSnapshots({conversations,workspaceNames={},now=Date.now(),historicalCoverageComplete=false}){\n const day=stamp=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(stamp));const groups=new Map();\n for(const c of new Map(conversations.map(c=>[c.workspaceId+'|'+c.id,c])).values()){if(!c.valid||!c.firstInboundConfirmed)continue;const first=c.messages.find(m=>m.direction==='inbound');if(!first)continue;const date=day(first.at),key=c.workspaceId+'|'+date; if(Date.parse(first.at)<now-90*86400000)continue;if(!groups.has(key))groups.set(key,{workspaceId:c.workspaceId,date,rows:[]});groups.get(key).rows.push(c);}\n const records=[];\n // A responder cohort is owned by its first confirmed reply. Unknown authors stay in All only.\n const cohorts=[];\n for(const g of groups.values()){\n  cohorts.push({...g,responder:'All'});\n  for(const actor of ['AI','Human']){\n   const rows=g.rows.filter(c=>{const first=c.messages.find(m=>m.direction==='inbound');const response=c.messages.find(m=>m.direction==='outbound'&&m.status==='sent'&&Date.parse(m.at)>=Date.parse(first?.at));return c.historyComplete&&response?.actor===actor;});\n   // Include empty segment snapshots so corrected attribution can clear stale totals.\n   cohorts.push({...g,rows,responder:actor});\n  }\n }\n for(const g of cohorts){\n  const m=replyMetrics({conversations:g.rows,workspaceId:g.workspaceId,from:new Date(g.rows.length?Math.min(...g.rows.flatMap(c=>c.messages.filter(m=>m.direction==='inbound').map(m=>Date.parse(m.at)))):now-90*86400000).toISOString(),to:new Date(now+1).toISOString()});\n  // Cohort membership is fixed by first inbound date; outcomes are observed up to calculation time.\n  const bookingKnown=m.unverifiedBookingConversations===0;\n  records.push({fields:{'Snapshot Key':'v2|'+g.workspaceId+'|'+g.date+'|'+g.responder,'Date':g.date,'Workspace Name':workspaceNames[g.workspaceId]||g.workspaceId,'Workspace Record ID':g.workspaceId,'Responder Type':g.responder,'Inbound Replies':m.conversations,'Unique Leads':new Set(g.rows.map(c=>c.leadKey).filter(Boolean)).size,'Positive Replies':m.positiveConversations,'Meetings Booked':bookingKnown?m.confirmedMeetings:null,'Positive Meetings Booked':bookingKnown?m.positiveMeetings:null,'Unknown Responder Replies':m.unknownResponderReplies,'Measured Meeting Touches':m.measuredMeetingTouches,'Measured Booking Response Times':m.measuredBookingResponseTimes,'AI Replies Sent':m.aiRepliesSent,'Human Replies Sent':m.humanRepliesSent,'Unanswered Replies':m.unansweredConversations,'Human Review Count':g.rows.filter(c=>c.humanReview===true).length,'Needs Changes Count':g.rows.filter(c=>c.needsChanges===true).length,'AI Errors':g.rows.filter(c=>c.hasError===true).length,'Avg First Response Minutes':m.avgFirstResponseMinutes,'Avg Touchpoints to Meeting':m.avgTouchesToMeeting,'Avg First Response to Booked Hours':m.avgFirstResponseToBookingHours,'Responses Within 15 Minutes':g.rows.filter(c=>{const a=c.messages.find(m=>m.direction==='inbound'),b=c.messages.find(m=>m.direction==='outbound'&&Date.parse(m.at)>=Date.parse(a?.at));return a&&b&&c.historyComplete&&(Date.parse(b.at)-Date.parse(a.at))/60000<=15}).length,'Measured First Responses':m.measuredFirstResponses,'Data Coverage':historicalCoverageComplete&&m.coverage==='Complete'&&m.unknownResponderReplies===0?'Complete':g.rows.length?'Partial':'Insufficient','Source Notes':'Provider-backed first-human-reply cohort (America/New_York date). Segment '+g.responder+' is based on first confirmed responder; All includes unknown and unanswered. Outcomes through '+new Date(now).toISOString()+'. '+m.repliesSent+' confirmed sent replies; '+m.unknownResponderReplies+' have no verified author attribution. '+m.measuredFirstResponses+' measured first responses. Booking counts and conversion remain blank until calendar booking evidence is available. Historical import coverage may be incomplete.','Last Calculated At':new Date(now).toISOString()}});\n }\n return records;\n}\n\nconst conversations=$input.all().map(i=>i.json.facts).filter(Boolean);const records=buildSnapshots({conversations,workspaceNames:$('Consolidate Workspaces').first().json.byId||{}});const chunks=[];for(let i=0;i<records.length;i+=10)chunks.push({json:{body:{records:records.slice(i,i+10),performUpsert:{fieldsToMergeOn:['Snapshot Key']},typecast:false}}});return chunks;"
+   },
+   "id": "d3ac5929-5370-49a3-a8c6-1e1819c57a47",
+   "name": "Build Daily KPI Snapshots",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1820,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tblxJEt3ECTnEqGpd",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify($json.body) }}",
+    "options": {
+     "batching": {
+      "batch": {
+       "batchSize": 1,
+       "batchInterval": 300
+      }
+     },
+     "timeout": 120000
+    }
+   },
+   "id": "8f628349-99b5-4c8f-a5b2-3af03d618d11",
+   "name": "Upsert KPI Snapshots",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2080,
+    0
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 1500
+  },
+  {
+   "id": "6ec144e6-d3c6-45ce-b825-3a97c6aa79c3",
+   "name": "Prepare Provider Metrics Reads",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2340,
+    0
+   ],
+   "parameters": {
+    "jsCode": "const rows=$('Consolidate Emails').first().json.emails||[];const workspaces=$('Get Workspaces').all().map(i=>i.json);const out=[];for(const row of rows){const f=row.fields||row;if(f.duplicate_for_tests||String(f['Leads Email']||'').endsWith('.invalid'))continue;const ids=Array.isArray(f['Clients Table'])?f['Clients Table']:[];const ws=workspaces.filter(w=>ids.includes(w.id)&&String(w.ID)===String(f['Workspace ID (Bison)']));if(ws.length!==1||!ws[0]['EmailBison API']||!/^\\d+$/.test(String(f.reply_message_id||'')))continue;out.push({json:{record:{id:row.id,fields:f},workspaceId:ws[0].id,apiKey:ws[0]['EmailBison API'],replyId:String(f.reply_message_id)}});}if(out.length>1000)throw Error('Metrics batch exceeds 1000 conversations; review scope before requesting more');return out.length?out:[{json:{skip:true}}];"
+   }
+  },
+  {
+   "id": "f0acd003-59d6-4191-91b7-3827739f6051",
+   "name": "Read Provider Metrics Thread",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2600,
+    0
+   ],
+   "parameters": {
+    "url": "={{ 'https://send.dulcy.io/api/replies/'+$json.replyId+'/conversation-thread' }}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "={{ 'Bearer '+$json.apiKey }}"
+      },
+      {
+       "name": "Accept",
+       "value": "application/json"
+      }
+     ]
+    },
+    "options": {
+     "batching": {
+      "batch": {
+       "batchSize": 1,
+       "batchInterval": 300
+      }
+     },
+     "timeout": 30000,
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "retryOnFail": true,
+   "maxTries": 3,
+   "waitBetweenTries": 2000,
+   "onError": "continueRegularOutput"
+  },
+  {
+   "id": "f84796f9-eed6-4572-b9e2-20c475008489",
+   "name": "Normalize Provider Metrics",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2860,
+    0
+   ],
+   "parameters": {
+    "jsCode": "// Normalize observed provider data only. No business outcomes are inferred from a label.\nfunction normalizeThread({response,record,workspaceId,events=[],now=Date.now()}){\n const f=record.fields||record,root=response?.data||response;\n const fail=reason=>({valid:false,recordId:record.id,workspaceId,reason});\n if(response?.error||!root?.current_reply||String(root.current_reply.id)!==String(f.reply_message_id))return fail('Provider reply identity mismatch or unavailable');\n if(!Array.isArray(root.older_messages)||!Array.isArray(root.newer_messages)||response.meta?.next_page_url||response.links?.next||root.next_page_url)return fail('Incomplete provider conversation');\n const messages=[],seen=new Set();let invalidTime=false;\n for(const m of [...root.older_messages,root.current_reply,...root.newer_messages]){\n  if(!m.id||seen.has(String(m.id)))continue;seen.add(String(m.id));\n  const folder=String(m.folder||'').toLowerCase();\n  if(['outbox','draft','drafts','queued'].includes(folder))continue;\n  const outbound=['sent','delivered'].includes(folder)&&String(m.type||'').toLowerCase()==='outgoing email';\n  const inbound=['inbox','spam','archive','archived','trash'].includes(folder)&&m.automated_reply===false;\n  if(!outbound&&!inbound)continue;\n  const stamp=outbound?(m.sent_at||m.date_sent||m.date_received):m.date_received;\n  const at=Date.parse(stamp||'');if(!Number.isFinite(at)||at>now+60000){invalidTime=true;continue;}\n  const matching=events.filter(e=>e.workspaceId===workspaceId&&String(e.providerMessageId)===String(m.id)&&e.type==='Sent');\n  const actors=new Set(matching.map(e=>e.actor).filter(a=>['AI','Human'].includes(a)));\n  messages.push({id:String(m.id),at:new Date(at).toISOString(),direction:outbound?'outbound':'inbound',status:outbound?'sent':undefined,actor:actors.size===1?[...actors][0]:undefined,automated:false});\n }\n messages.sort((a,b)=>Date.parse(a.at)-Date.parse(b.at));\n const first=messages.find(m=>m.direction==='inbound');if(!first)return fail('No confirmed human inbound');\n const bookingAt=Date.parse(f['Meeting Booked At']||'');\n return {valid:true,id:String(first.id),recordId:record.id,workspaceId,leadKey:String(f['Leads Email']||'').trim().toLowerCase(),humanReview:['Needs Approval','Approved'].includes(String(f['Dulcy Reply Agent State']||'')),needsChanges:/needs changes/i.test(String(f['Dulcy Reply Agent Human Action']||'')),hasError:Boolean(f['Dulcy Reply Agent Last Error']),messages,firstInboundConfirmed:!invalidTime,historyComplete:!invalidTime,positive:root.current_reply.interested===true,wonLabel:String(f['Opportunity Status']?.name||f['Opportunity Status']||'').toUpperCase()==='WON',bookingCoverageComplete:false,booking:Number.isFinite(bookingAt)&&f['Calendar Booking ID']?{id:f['Calendar Booking ID'],createdAt:new Date(bookingAt).toISOString(),confirmed:true,cancelled:f['Meeting Cancelled']===true}:null,observedAt:new Date(now).toISOString()};\n}\n\nconst sources=$('Prepare Provider Metrics Reads').all();const events=$('Get Recent Reply Events').all().map(i=>i.json).flatMap(r=>{const f=r.fields||r;if(f['Event Type']!=='Sent')return [];let p;try{p=JSON.parse(f['Payload JSON']||'{}')}catch{return [];}const m=p.data?.reply||p.data||{};return m.id?[{workspaceId:f['Workspace Record ID'],providerMessageId:String(m.id),actor:f.Actor,type:'Sent'}]:[];});const results=$input.all().flatMap((item,i)=>sources[i]?.json.skip?[]:[normalizeThread({...sources[i].json,response:item.json,events})]);return [{json:{facts:[...new Map(results.filter(r=>r.valid).map(r=>[r.workspaceId+'|'+r.id,r])).values()],failures:results.filter(r=>!r.valid).map(r=>({recordId:r.recordId,reason:r.reason}))}}];"
+   }
+  },
+  {
+   "id": "56c5f719-79ff-4bc1-85fc-8db6b2517535",
+   "name": "Cache Observed Metrics",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    3120,
+    0
+   ],
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "WITH rows AS (SELECT * FROM jsonb_array_elements($1::jsonb)), saved AS (INSERT INTO dulcy_reply_agent.thread_metrics (workspace_id,conversation_id,record_id,facts,observed_at) SELECT value->>'workspaceId',value->>'id',value->>'recordId',value,(value->>'observedAt')::timestamptz FROM rows ON CONFLICT (workspace_id,conversation_id) DO UPDATE SET record_id=EXCLUDED.record_id,facts=EXCLUDED.facts,observed_at=EXCLUDED.observed_at RETURNING conversation_id) SELECT count(*) AS saved FROM saved;",
+    "options": {
+     "queryReplacement": "={{ [JSON.stringify($json.facts)] }}"
+    }
+   }
+  },
+  {
+   "id": "b5fd67f7-0b15-43fb-b29e-0923d12d46ff",
+   "name": "Read Cached Metrics",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    3380,
+    0
+   ],
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "SELECT facts FROM dulcy_reply_agent.thread_metrics WHERE observed_at>now()-interval '90 days' ORDER BY workspace_id,conversation_id;",
+    "options": {}
+   },
+   "alwaysOutputData": true
+  },
+  {
+   "id": "b29ecd78-cda6-4471-938f-4c90ac52ba9a",
+   "name": "Has Provider Reads",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    3640,
+    0
+   ],
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "d6e1842f-c183-46cb-a644-dbe5aac919b4",
+       "leftValue": "={{ $json.skip === true }}",
+       "rightValue": "",
+       "operator": {
+        "type": "boolean",
+        "operation": "false",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    }
+   }
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

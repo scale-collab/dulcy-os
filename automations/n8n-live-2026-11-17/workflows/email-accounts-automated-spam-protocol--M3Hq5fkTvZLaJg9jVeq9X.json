@@ -1,0 +1,724 @@
+{
+ "id": "M3Hq5fkTvZLaJg9jVeq9X",
+ "name": "[Email Accounts] Automated Spam Protocol",
+ "active": true,
+ "isArchived": false,
+ "versionId": "b54ba55a-27de-4dd8-8df1-b1ef55a21711",
+ "triggerCount": 1,
+ "createdAt": "2026-08-17T21:13:27.680Z",
+ "updatedAt": "2026-11-17T16:41:52.286Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Test Manually": {
+   "main": [
+    [
+     {
+      "node": "Find Unprocessed Tests",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Find Unprocessed Tests": {
+   "main": [
+    [
+     {
+      "node": "Find Email Account",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Find Email Account": {
+   "main": [
+    [
+     {
+      "node": "Get Workspace",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Workspace": {
+   "main": [
+    [
+     {
+      "node": "Get Domain",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Domain": {
+   "main": [
+    [
+     {
+      "node": "Decide Protocol Action",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Decide Protocol Action": {
+   "main": [
+    [
+     {
+      "node": "Needs Bison Update?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Needs Bison Update?": {
+   "main": [
+    [
+     {
+      "node": "Set Cold Daily Limit",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Continue After Optional API",
+      "type": "main",
+      "index": 1
+     }
+    ]
+   ]
+  },
+  "Set Cold Daily Limit": {
+   "main": [
+    [
+     {
+      "node": "Keep Warmup Enabled",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Keep Warmup Enabled": {
+   "main": [
+    [
+     {
+      "node": "Continue After Optional API",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Continue After Optional API": {
+   "main": [
+    [
+     {
+      "node": "Update Email Account",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Update Email Account": {
+   "main": [
+    [
+     {
+      "node": "Replacement Needed?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Replacement Needed?": {
+   "main": [
+    [
+     {
+      "node": "Queue Replacement For Approval",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Continue After Optional Queue",
+      "type": "main",
+      "index": 1
+     }
+    ]
+   ]
+  },
+  "Queue Replacement For Approval": {
+   "main": [
+    [
+     {
+      "node": "Create Approval Task",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create Approval Task": {
+   "main": [
+    [
+     {
+      "node": "Continue After Optional Queue",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Continue After Optional Queue": {
+   "main": [
+    [
+     {
+      "node": "Mark Test Processed",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Every 60 Minutes": {
+   "main": [
+    [
+     {
+      "node": "Find Unprocessed Tests",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {},
+   "id": "29ebc78b-67be-43bf-9cd6-1310e76fcde2",
+   "name": "Test Manually",
+   "type": "n8n-nodes-base.manualTrigger",
+   "typeVersion": 1,
+   "position": [
+    -3280,
+    -176
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblGjv6A5r7md3kxX",
+     "mode": "list",
+     "cachedResultName": "Inbox Placement Testing"
+    },
+    "filterByFormula": "=AND(NOT({Spam Protocol Processed}),IS_AFTER({Test Date},'2026-08-17T20:45:00.000Z'),{Overall Score}!='')",
+    "returnAll": false,
+    "limit": 25,
+    "options": {}
+   },
+   "id": "07a0a11c-ad9a-4b0c-8139-0d0de9285ffd",
+   "name": "Find Unprocessed Tests",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -3056,
+    -272
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMSOBJ0wMgxSg4l",
+     "mode": "list",
+     "cachedResultName": "Email Accounts"
+    },
+    "filterByFormula": "={{ \"{Email ID}='\" + String($('Find Unprocessed Tests').item.json['Email ID']).replace(/'/g,\"\\\\'\") + \"'\" }}",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "id": "0f697b52-78c3-46be-8e1e-01a02f3cf0ff",
+   "name": "Find Email Account",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -2832,
+    -272
+   ],
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs"
+    },
+    "filterByFormula": "=={{ \"{ID}='\" + ($('Find Email Account').first().json['Workspace ID'] || '') + \"'\" }}",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "id": "f3268695-374b-4698-99f1-0229f21a9c03",
+   "name": "Get Workspace",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -2608,
+    -272
+   ],
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblJHdcoT1x3vh3DN",
+     "mode": "list",
+     "cachedResultName": "Domains"
+    },
+    "filterByFormula": "=={{ \"RECORD_ID()='\" + (($('Find Email Account').first().json.Domains || [])[0] || '') + \"'\" }}",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "id": "8a1c7584-14f8-4932-8020-94d222c0da15",
+   "name": "Get Domain",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -2384,
+    -272
+   ],
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "jsCode": "const test = $('Find Unprocessed Tests').first().json;\nconst a = $('Find Email Account').first().json;\nconst ws = $('Get Workspace').first().json;\n\nif (!a.id) throw new Error('No Email Account matched Email ID ' + test['Email ID']);\nif (!ws['EmailBison API']) throw new Error('Workspace is missing EmailBison API');\n\nconst score = Number(test['Overall Score']);\nconst stage = a['Spam Protocol Stage'] || 'Monitoring';\nconst due = a['Spam Retest Due'] ? new Date(a['Spam Retest Due']) : null;\nconst testDate = new Date(test['Test Date'] || test.createdTime || Date.now());\nconst poor = score <= 60;\nconst dueNow = due && testDate >= due;\nconst duplicate = String(a['Last Spam Protocol Test ID'] || '') === String(test['Test ID'] || '');\n\nlet action = 'no_action';\nlet outcome = 'No Action';\nlet newLimit = Number(a.email_daily_limit || 15);\nlet failed = Number(a['Spam Failed Tests'] || 0);\n\nif (!duplicate && poor && stage !== 'Resting 7 Days' && !String(stage).startsWith('Replace')) {\n  action = 'rest';\n  outcome = 'Rest Started';\n  newLimit = 1;\n  failed += 1;\n} else if (!duplicate && !poor && stage === 'Resting 7 Days' && dueNow) {\n  action = 'recover';\n  outcome = 'Recovered';\n  newLimit = Number(a['Previous Daily Limit'] || 15);\n} else if (!duplicate && poor && stage === 'Resting 7 Days' && dueNow) {\n  action = 'replace_domain';\n  outcome = 'Replace Domain';\n  newLimit = 1;\n  failed += 1;\n} else if (!duplicate && poor && stage === 'Resting 7 Days') {\n  action = 'hold';\n  newLimit = 1;\n}\n\nconst now = new Date();\nconst retest = new Date(now.getTime() + 7 * 86400000);\n\nconst reasons = Array.isArray(a['Health Reason'])\n  ? a['Health Reason'].map(x => x.name || x)\n  : [];\n\nconst nextReasons = poor\n  ? [...new Set([...reasons, 'Poor Inbox Placement'])]\n  : reasons.filter(x => x !== 'Poor Inbox Placement');\n\nreturn [{\n  json: {\n    action,\n    outcome,\n    score,\n    poor,\n    newLimit,\n    failed,\n    accountRecordId: a.id,\n    testRecordId: test.id,\n    testId: String(test['Test ID'] || ''),\n    emailId: Number(a['Email ID']),\n    apiKey: ws['EmailBison API'],\n    previousLimit: Number(a['Previous Daily Limit'] || a.email_daily_limit || 15),\n    restStarted: action === 'rest' ? now.toISOString() : (a['Spam Rest Started'] || null),\n    retestDue: action === 'rest' ? retest.toISOString() : (a['Spam Retest Due'] || null),\n    nextReasons,\n    clientLinks: a.Client || [],\n    domainLinks: a.Domains || [],\n    email: a['Email Account'],\n    stage:\n      action === 'rest' ? 'Resting 7 Days' :\n      action === 'recover' ? 'Recovered' :\n      action === 'replace_domain' ? 'Replace Domain' :\n      stage,\n    accountStatus: poor ? 'Resting' : (nextReasons.length ? 'At Risk' : 'Healthy'),\n    needsApi: ['rest', 'recover', 'hold', 'replace_domain'].includes(action),\n    needsQueue: action === 'replace_domain'\n  }\n}];"
+   },
+   "id": "05d01907-6a36-47f4-9b9d-87dc87f5e77c",
+   "name": "Decide Protocol Action",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -2160,
+    -272
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "leftValue": "={{ $json.needsApi }}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "2ed98d1e-5c07-444f-9d1f-00a5dbbf62b0",
+   "name": "Needs Bison Update?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    -1936,
+    -272
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "https://send.dulcy.io/api/sender-emails/daily-limits/bulk",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Decide Protocol Action').item.json.apiKey }}"
+      },
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({sender_email_ids:[$('Decide Protocol Action').item.json.emailId],daily_limit:$('Decide Protocol Action').item.json.newLimit}) }}",
+    "options": {}
+   },
+   "id": "31b38c83-7c87-420f-85b5-805580caa968",
+   "name": "Set Cold Daily Limit",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    -1712,
+    -352
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "https://send.dulcy.io/api/warmup/sender-emails/enable",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Decide Protocol Action').item.json.apiKey }}"
+      },
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({sender_email_ids:[$('Decide Protocol Action').item.json.emailId]}) }}",
+    "options": {}
+   },
+   "id": "42768fdd-6e6f-4680-81e8-7debfa618d4d",
+   "name": "Keep Warmup Enabled",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    -1488,
+    -352
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblRBxm2N53331mIm",
+     "mode": "list",
+     "cachedResultName": "Tasks"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Task Name": "={{ 'Approve replacement domain — ' + $('Decide Protocol Action').item.json.email }}",
+      "Client": "={{ $('Decide Protocol Action').item.json.clientLinks }}",
+      "Stage": "Review",
+      "Due Date": "={{ $now.toISODate() }}",
+      "Priority": "Urgent",
+      "Status": "Not Started",
+      "Notes": "={{ 'This sender failed its seven-day inbox-placement retest at ' + $('Decide Protocol Action').item.json.score + '%. Open Spam Remediation Queue, review the record, and check Approve Purchase to generate a CheapInboxes domain quote. The final card charge still requires approval in Buy Domains & Inboxes.' }}"
+     },
+     "matchingColumns": [],
+     "schema": []
+    },
+    "options": {
+     "typecast": true
+    }
+   },
+   "id": "283c5de1-096d-4a08-84b5-e0506e5558ed",
+   "name": "Create Approval Task",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -368,
+    -352
+   ]
+  },
+  {
+   "parameters": {
+    "mode": "chooseBranch",
+    "output": "empty"
+   },
+   "id": "d0186506-8726-4609-87ef-8cd83397c493",
+   "name": "Continue After Optional API",
+   "type": "n8n-nodes-base.merge",
+   "typeVersion": 3.2,
+   "position": [
+    -1264,
+    -272
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMSOBJ0wMgxSg4l",
+     "mode": "list",
+     "cachedResultName": "Email Accounts"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "id": "={{ $('Decide Protocol Action').item.json.accountRecordId }}",
+      "Spam Protocol Stage": "={{ $('Decide Protocol Action').item.json.stage }}",
+      "Spam Rest Started": "={{ $('Decide Protocol Action').item.json.restStarted }}",
+      "Spam Retest Due": "={{ $('Decide Protocol Action').item.json.retestDue }}",
+      "Last Inbox Placement Score": "={{ $('Decide Protocol Action').item.json.score }}",
+      "Previous Daily Limit": "={{ $('Decide Protocol Action').item.json.previousLimit }}",
+      "Spam Failed Tests": "={{ $('Decide Protocol Action').item.json.failed }}",
+      "Last Spam Protocol Action": "={{ $('Decide Protocol Action').item.json.action + ' at ' + $now }}",
+      "Spam Protocol Error": "",
+      "Last Spam Protocol Test ID": "={{ $('Decide Protocol Action').item.json.testId }}",
+      "email_daily_limit": "={{ $('Decide Protocol Action').item.json.newLimit }}",
+      "warmup_enabled": true,
+      "Status": "={{ $('Decide Protocol Action').item.json.accountStatus }}",
+      "Health Reason": "={{ $('Decide Protocol Action').item.json.nextReasons }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": []
+    },
+    "options": {}
+   },
+   "id": "4412eba2-e3d8-418b-ba54-c1884eb2d4bd",
+   "name": "Update Email Account",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -1040,
+    -272
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "leftValue": "={{ $('Decide Protocol Action').item.json.needsQueue }}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "11a4fc86-faef-4db5-93bc-3a631d7fef83",
+   "name": "Replacement Needed?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    -816,
+    -272
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblaJZ3ru2TOiHOOM",
+     "mode": "list",
+     "cachedResultName": "Spam Remediation Queue"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Remediation": "={{ $('Decide Protocol Action').item.json.outcome + ' — ' + $('Decide Protocol Action').item.json.email }}",
+      "Email Account": "={{ [$('Decide Protocol Action').item.json.accountRecordId] }}",
+      "Domain": "={{ $('Decide Protocol Action').item.json.domainLinks }}",
+      "Client": "={{ $('Decide Protocol Action').item.json.clientLinks }}",
+      "Recommended Action": "={{ $('Decide Protocol Action').item.json.outcome }}",
+      "Reason": "={{ 'Failed 7-day retest at ' + $('Decide Protocol Action').item.json.score + '% inbox placement' }}",
+      "Inbox Placement Score": "={{ $('Decide Protocol Action').item.json.score }}",
+      "Failed Test Count": "={{ $('Decide Protocol Action').item.json.failed }}",
+      "Status": "Pending Review",
+      "Approve Purchase": false,
+      "Automation Key": "={{ $('Decide Protocol Action').item.json.accountRecordId + ':' + $('Decide Protocol Action').item.json.testId + ':' + $('Decide Protocol Action').item.json.action }}",
+      "Created At": "={{ $now }}"
+     },
+     "matchingColumns": [],
+     "schema": []
+    },
+    "options": {}
+   },
+   "id": "007a7e69-6ac8-4365-88c9-95b6511ea88f",
+   "name": "Queue Replacement For Approval",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -592,
+    -352
+   ]
+  },
+  {
+   "parameters": {
+    "mode": "chooseBranch",
+    "output": "empty"
+   },
+   "id": "13d9141a-81b7-4eef-b537-1b2d5aff79ac",
+   "name": "Continue After Optional Queue",
+   "type": "n8n-nodes-base.merge",
+   "typeVersion": 3.2,
+   "position": [
+    -144,
+    -272
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblGjv6A5r7md3kxX",
+     "mode": "list",
+     "cachedResultName": "Inbox Placement Testing"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "id": "={{ $('Decide Protocol Action').item.json.testRecordId }}",
+      "Spam Protocol Processed": true,
+      "Spam Protocol Outcome": "={{ $('Decide Protocol Action').item.json.outcome }}",
+      "Spam Protocol Error": "",
+      "Spam Protocol Processed At": "={{ $now }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": []
+    },
+    "options": {}
+   },
+   "id": "630146f2-01a8-4753-89f2-4eebca2933aa",
+   "name": "Mark Test Processed",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    80,
+    -272
+   ]
+  },
+  {
+   "parameters": {
+    "content": "## Safety and operating rules\n- Go-live cutoff prevents historical tests from being actioned.\n- Score **≤ 60%** starts a 7-day rest: cold daily limit becomes 1 and warmup stays enabled.\n- A later test **> 60%** after the due date restores the previous daily limit.\n- A failed retest queues replacement for human approval; it never charges a card.\n- Set Domains → **Mailbox Source** to `Direct Panel` where applicable. Direct-panel failures and listed domains recommend domain replacement.\n- Phase 1 uses daily limit 1. Replace this with campaign detachment only after the exact Email Bison endpoint is verified.",
+    "height": 360,
+    "width": 500,
+    "color": 5
+   },
+   "id": "dc091045-5976-4f10-99ab-f93aa4d7d892",
+   "name": "Protocol Notes",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    -3280,
+    32
+   ]
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "hours"
+      }
+     ]
+    }
+   },
+   "id": "d15da5fc-2c3a-4c69-be2e-2006a6cfcc26",
+   "name": "Every 60 Minutes",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    -3280,
+    -368
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

@@ -1,0 +1,258 @@
+{
+ "id": "_kaI9vi79dXsM_EW64egu",
+ "name": "[Content OS] Generate Teleprompter Script",
+ "active": true,
+ "isArchived": false,
+ "versionId": "8d22f47e-a7f0-4517-a17c-5999fbf80d20",
+ "triggerCount": 1,
+ "createdAt": "2026-08-19T17:15:18.778Z",
+ "updatedAt": "2026-11-17T16:41:11.189Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Script Webhook": {
+   "main": [
+    [
+     {
+      "node": "Validate Script Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate Script Request": {
+   "main": [
+    [
+     {
+      "node": "Get Airtable Content",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Return Accepted",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Airtable Content": {
+   "main": [
+    [
+     {
+      "node": "Prepare Teleprompter Prompt",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Teleprompter Prompt": {
+   "main": [
+    [
+     {
+      "node": "Mark Script Generating",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Generate Script",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Generate Script": {
+   "main": [
+    [
+     {
+      "node": "Extract Script",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Extract Script": {
+   "main": [
+    [
+     {
+      "node": "Save Script to Airtable",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "responseMode": "responseNode",
+    "options": {}
+   },
+   "id": "8665921c-68e0-4df2-83f0-bee2215378ba",
+   "name": "Script Webhook",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    -448,
+    160
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const body=$input.first().json.body??$input.first().json;const recordId=String(body.recordId??body.record_id??'').trim();const action=String(body.action??'Generate Script').trim();if(!/^rec[A-Za-z0-9]+$/.test(recordId))throw new Error('A valid Airtable content recordId is required.');if(action!=='Generate Script')throw new Error('This workflow only handles Generate Script.');return [{json:{recordId,action}}];"
+   },
+   "id": "af786765-dcb8-470b-8243-78533b7df8bb",
+   "name": "Validate Script Request",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -224,
+    160
+   ]
+  },
+  {
+   "parameters": {
+    "respondWith": "json",
+    "responseBody": "={{ JSON.stringify({success:true,accepted:true,message:'Script generation started.'}) }}",
+    "options": {
+     "responseCode": 202
+    }
+   },
+   "id": "c9329679-4c22-45c6-9018-4006fbe65591",
+   "name": "Return Accepted",
+   "type": "n8n-nodes-base.respondToWebhook",
+   "typeVersion": 1.4,
+   "position": [
+    0,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblcSzvicm3wivvhh/' + $('Validate Script Request').first().json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "991e4ba3-fd0b-4f2b-8b46-c0f6d050b750",
+   "name": "Get Airtable Content",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    0,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const rec=$input.first().json;const f=rec.fields??{};const title=String(f.Title??'').trim();const description=String(f.Description??'').trim();const channel=String(f['Content Channel']??'Alex Woung').trim();const prior=String(f.Script??'').trim();const reason=String(f['Idea Qualification Reason']??'').trim();if(!title)throw new Error('A title is required before generating a script.');const raw=channel==='Alex Woung Raw';const modes=['contrarian breakdown','step-by-step tutorial','mistakes and diagnosis','question-led exploration','case study or teardown','story-to-lesson','before-and-after system breakdown'];const seed=[...rec.id+title].reduce((n,c)=>n+c.charCodeAt(0),0);const mode=modes[seed%modes.length];const target=raw?'roughly 750-1,350 words for a natural 5-10 minute video':'roughly 1,050-1,700 words for a focused 7-12 minute video';const prompt=[\n'Write a teleprompter-ready YouTube script for Alexander Woung.',\n'Channel: '+channel+'.',\n'Video title: '+title,\n'Description or premise: '+(description||'Use the title as the premise and do not invent unsupported facts.'),\nreason?'Why the idea was selected: '+reason:'',\n'Target length: '+target+'.',\n'Use this narrative approach for this draft: '+mode+'. Choose the best natural execution of that approach; do not print the approach name.',\n'VOICE: Direct, intelligent, conversational, practical, and confident. Alexander runs Dulcy and teaches cold outreach, agency growth, business systems, and beginner entrepreneurship. Use first person only when the supplied facts support it.',\n'TELEPROMPTER FORMAT: Output only the words to be spoken. Use short readable paragraphs and intentional line breaks. Add [pause], [emphasis], or [on screen: ...] only when they genuinely help. No outline, production memo, or explanation before the script.',\n'ANTI-TEMPLATE RULES: Do not force a personal origin story, numbered framework, Dulcy mention, or sales CTA into every video. Do not repeatedly use stock openings such as “Most people,” “Here is the truth,” or “In this video.” Do not force catchphrases or filler-word quotas. Vary the hook, pacing, transitions, examples, section count, and ending according to the subject.',\n'ACCURACY: Never invent revenue figures, client results, personal experiences, quotes, or statistics. If an essential fact is missing, phrase the lesson without the claim instead of adding a placeholder.',\n'QUALITY: Open with a topic-specific reason to keep watching. Make every section advance the idea. Use concrete examples when supported. End with the most natural choice for the topic: a concise takeaway, an action to try, a question, or a relevant CTA. Do not use the same ending by default.',\nprior?'A prior script exists. Create a meaningfully fresher version with a different opening, flow, transitions, and ending. Do not closely paraphrase it. Prior script for avoidance only:\n'+prior.slice(0,6000):'',\n'Return only the finished spoken script.'\n].filter(Boolean).join('\\n\\n');return [{json:{recordId:rec.id,title,channel,prompt,request:{model:'gpt-5',input:[{role:'user',content:[{type:'input_text',text:prompt}]}]}}}];"
+   },
+   "id": "64358646-4118-4d34-b3fe-9599a4aaa353",
+   "name": "Prepare Teleprompter Prompt",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    224,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblcSzvicm3wivvhh/' + $json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({fields:{'Last Automation Message':'Generating a fresh teleprompter script with a topic-specific structure.','Automation Error':''}}) }}",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "1baab7f3-9eae-44d5-817b-ee92b76c6089",
+   "name": "Mark Script Generating",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    448,
+    64
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.openai.com/v1/responses",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "openAiApi",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json.request) }}",
+    "options": {
+     "timeout": 600000
+    }
+   },
+   "id": "16a5f91a-4021-4b85-bdaf-e8c593127349",
+   "name": "Generate Script",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    464,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const cfg=$('Prepare Teleprompter Prompt').first().json;const response=$input.first().json;const direct=String(response.output_text??'').trim();const nested=(response.output??[]).flatMap(x=>x.content??[]).filter(x=>x.type==='output_text'||x.type==='text').map(x=>x.text??x.value??'').join('\\n').trim();const script=direct||nested;if(!script)throw new Error('OpenAI completed without returning script text.');return [{json:{...cfg,script}}];"
+   },
+   "id": "657c19a9-737a-4058-8dfe-e18164728d73",
+   "name": "Extract Script",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    688,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblcSzvicm3wivvhh/' + $json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({fields:{'Script':$json.script,'Production Stage':'Script','Last Automation Message':'Teleprompter script generated and ready for review.','Automation Error':''},typecast:true}) }}",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "1e891f30-fc5a-4a68-9853-196bdd59ab19",
+   "name": "Save Script to Airtable",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    912,
+    208
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

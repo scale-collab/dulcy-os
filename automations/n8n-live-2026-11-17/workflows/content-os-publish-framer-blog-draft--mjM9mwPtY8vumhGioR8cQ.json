@@ -1,0 +1,211 @@
+{
+ "id": "mjM9mwPtY8vumhGioR8cQ",
+ "name": "[Content OS] Publish Framer Blog Draft",
+ "active": true,
+ "isArchived": false,
+ "versionId": "10a34d49-8db2-4e3b-91e2-466399a8eae0",
+ "triggerCount": 1,
+ "createdAt": "2026-08-19T04:23:12.400Z",
+ "updatedAt": "2026-11-17T16:41:23.026Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Framer Draft Webhook": {
+   "main": [
+    [
+     {
+      "node": "Validate Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate Request": {
+   "main": [
+    [
+     {
+      "node": "Get Distribution Item",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Distribution Item": {
+   "main": [
+    [
+     {
+      "node": "Prepare Framer Draft",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Framer Draft": {
+   "main": [
+    [
+     {
+      "node": "Create Framer Blog Draft",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create Framer Blog Draft": {
+   "main": [
+    [
+     {
+      "node": "Save Framer Result",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Save Framer Result": {
+   "main": [
+    [
+     {
+      "node": "Return Result",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "responseMode": "responseNode",
+    "options": {}
+   },
+   "id": "8c402d1a-b1e6-4bf4-9249-1a7c0ac706d6",
+   "name": "Framer Draft Webhook",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    0,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const body=$input.first().json.body??$input.first().json;const recordId=String(body.recordId??body.record_id??'').trim();if(!/^rec[A-Za-z0-9]+$/.test(recordId))throw new Error('A valid Content Distribution recordId is required.');return [{json:{recordId}}];"
+   },
+   "id": "aad87a6e-750f-46e1-a371-491830598d6f",
+   "name": "Validate Request",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    224,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblDWJrmIcBJDykIP/' + $('Validate Request').first().json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "c66f51cf-bd75-4685-9db0-ad6f54114fc0",
+   "name": "Get Distribution Item",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    448,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const rec=$input.first().json;const f=rec.fields??{};const pick=v=>typeof v==='object'&&v?v.name??v.value??String(v):String(v??'');const platform=pick(f.Platform).trim();const outputType=pick(f['Output Type']).trim();const approval=pick(f['Approval Status']).trim();if(platform.toLowerCase()!=='framer')throw new Error('This action only supports Framer distribution items.');if(!/blog/i.test(outputType))throw new Error('This distribution item is not a Framer Blog draft.');if(approval.toLowerCase()!=='approved')throw new Error('Approve the blog draft before sending it to Framer.');const title=String(f['Draft Title']??'').trim();const content=String(f['Draft Body']??'').trim();if(!title||!content)throw new Error('Draft Title and Draft Body are required.');const plain=content.replace(/[#*_>`~\\[\\]()]/g,' ').replace(/\\s+/g,' ').trim();const description=plain.slice(0,240).replace(/\\s+\\S*$/,'').trim()||title;const slug=title.normalize('NFKD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,90);return [{json:{distributionRecordId:rec.id,title,description,slug,content,date:new Date().toISOString(),author:'Alexander Woung',authorLink:'https://www.linkedin.com/in/alexanderwoung/'}}];"
+   },
+   "id": "e3b4d5ea-b8c4-4956-a8a2-a23d9d06a507",
+   "name": "Prepare Framer Draft",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    672,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "http://framer-blog-relay:8787/v1/blog-drafts",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({title:$json.title,description:$json.description,slug:$json.slug,content:$json.content,date:$json.date,author:$json.author,authorLink:$json.authorLink}) }}",
+    "options": {
+     "timeout": 180000
+    }
+   },
+   "id": "ad04b9c7-3652-4484-9450-cba3f5c51965",
+   "name": "Create Framer Blog Draft",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    880,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblDWJrmIcBJDykIP/' + $('Prepare Framer Draft').first().json.distributionRecordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({fields:{'External Post ID':String($json.itemId??''),'Last Error':''}}) }}",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "9fb02921-f9d8-432a-b90f-992e7707e783",
+   "name": "Save Framer Result",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1104,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "respondWith": "json",
+    "responseBody": "={{ JSON.stringify({success:true,draft:true,message:'Framer blog draft created for review.',itemId:$('Create Framer Blog Draft').first().json.itemId,slug:$('Create Framer Blog Draft').first().json.slug}) }}",
+    "options": {
+     "responseCode": 200
+    }
+   },
+   "id": "e339dc1d-033e-4476-9493-18f55a89569d",
+   "name": "Return Result",
+   "type": "n8n-nodes-base.respondToWebhook",
+   "typeVersion": 1.4,
+   "position": [
+    1328,
+    0
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

@@ -1,0 +1,99 @@
+{
+ "id": "t1fOzHMih4EHW0mN",
+ "name": "[Scroll Stop] Automation For Booked Meeting",
+ "active": true,
+ "isArchived": false,
+ "versionId": "bb17497d-a5d0-471d-a82e-486b78124c0f",
+ "triggerCount": 1,
+ "createdAt": "2025-09-09T17:51:13.381Z",
+ "updatedAt": "2026-11-17T16:41:02.826Z",
+ "settings": {
+  "executionOrder": "v1",
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Webhook": {
+   "main": [
+    [
+     {
+      "node": "Get items item by column value",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get items item by column value": {
+   "main": [
+    [
+     {
+      "node": "Change a column value for a board item",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    32,
+    0
+   ],
+   "id": "ac6e22d3-3a5b-4554-a57e-7e9753740243",
+   "name": "Webhook"
+  },
+  {
+   "parameters": {
+    "resource": "boardItem",
+    "operation": "getByColumnValue",
+    "boardId": "={{ '2024595094' }}",
+    "columnId": "={{ 'email_mknz6689' }}",
+    "columnValue": "={{ $('Webhook').item.json.query.Email }}",
+    "limit": 1
+   },
+   "type": "n8n-nodes-base.mondayCom",
+   "typeVersion": 1,
+   "position": [
+    448,
+    0
+   ],
+   "id": "477d7988-d13f-44e5-999c-f5df268b0a1b",
+   "name": "Get items item by column value"
+  },
+  {
+   "parameters": {
+    "resource": "boardItem",
+    "operation": "changeColumnValue",
+    "boardId": "={{ '2024595094' }}",
+    "itemId": "={{ $('Get items item by column value').item.json.id }}",
+    "columnId": "={{ 'color_mm6bt2hw' }}",
+    "value": "={{ JSON.stringify({ label: 'Booked Meeting' }) }}"
+   },
+   "type": "n8n-nodes-base.mondayCom",
+   "typeVersion": 1,
+   "position": [
+    864,
+    0
+   ],
+   "id": "752ffcaf-a25c-43d3-8982-d14ce434cb77",
+   "name": "Change a column value for a board item"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

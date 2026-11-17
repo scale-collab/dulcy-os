@@ -1,0 +1,357 @@
+{
+ "id": "lQp9rrHqP61yIqAy",
+ "name": "Yelp Scraper",
+ "active": true,
+ "isArchived": false,
+ "versionId": "f3a59b82-e5f5-4cdb-9197-36ea3114f7fa",
+ "triggerCount": 1,
+ "createdAt": "2025-12-17T11:25:43.398Z",
+ "updatedAt": "2026-11-17T16:39:45.642Z",
+ "settings": {
+  "executionOrder": "v1",
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Receive Yelp webhook": {
+   "main": [
+    [
+     {
+      "node": "Run Yelp Actor",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Run Yelp Actor": {
+   "main": [
+    [
+     {
+      "node": "Update Data ID's",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appJNoGcSkyIEPQ68",
+     "mode": "list",
+     "cachedResultName": "Scrapers",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tbl329JDM8wHpX8uO",
+     "mode": "list",
+     "cachedResultName": "Yelp Scraper",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68/tbl329JDM8wHpX8uO"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "N8N Automation Ran?": true,
+      "id": "={{ $('Receive Yelp webhook').item.json.body.recordId }}",
+      "List_ID": "={{ $json.defaultDatasetId }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true
+      },
+      {
+       "id": "Run - ID",
+       "displayName": "Run - ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Key Words",
+       "displayName": "Key Words",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Location",
+       "displayName": "Location",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Los Angeles ",
+         "value": "Los Angeles "
+        },
+        {
+         "name": "New York",
+         "value": "New York"
+        },
+        {
+         "name": "Alabama ",
+         "value": "Alabama "
+        },
+        {
+         "name": "Utah",
+         "value": "Utah"
+        },
+        {
+         "name": "Carolina ",
+         "value": "Carolina "
+        },
+        {
+         "name": "South Dakota",
+         "value": "South Dakota"
+        },
+        {
+         "name": "North Dakota",
+         "value": "North Dakota"
+        },
+        {
+         "name": "Texas",
+         "value": "Texas"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Pre-defined URL",
+       "displayName": "Pre-defined URL",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "List_ID",
+       "displayName": "List_ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "N8N Automation Ran?",
+       "displayName": "N8N Automation Ran?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Total Results per page",
+       "displayName": "Total Results per page",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "User",
+       "displayName": "User",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Discord Status (from User)",
+       "displayName": "Discord Status (from User)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "User Name",
+       "displayName": "User Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "File Name",
+       "displayName": "File Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Source of Creation",
+       "displayName": "Source of Creation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Internal",
+         "value": "Internal"
+        },
+        {
+         "name": "Discord",
+         "value": "Discord"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Google Drive Link",
+       "displayName": "Google Drive Link",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Discord Tags",
+       "displayName": "Discord Tags",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Record Created at",
+       "displayName": "Record Created at",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "user_id",
+       "displayName": "user_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    448,
+    -32
+   ],
+   "id": "8ab36294-19eb-4879-97b0-a9b5576a5734",
+   "name": "Update Data ID's"
+  },
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    0,
+    -32
+   ],
+   "id": "4c7b7aa6-56a9-48b2-bed7-efd28b626829",
+   "name": "Receive Yelp webhook"
+  },
+  {
+   "parameters": {
+    "actorSource": "store",
+    "actorId": {
+     "__rl": true,
+     "value": "BxxFJax5cSD2VeXkV",
+     "mode": "list",
+     "cachedResultName": "Yelp Advanced Business Scraper: Pay Per Result (delicious_zebu/yelp-advanced-business-scraper-pay-per-result)",
+     "cachedResultUrl": "https://console.apify.com/actors/BxxFJax5cSD2VeXkV/input"
+    },
+    "customBody": "={\n    \"maxCrawlPages\": {{ $json.body['Total Results per page'] }},\n    \"unique_only\": false,\n    \"urls\": [\n        \"{{ $json.body['Pre-defined URL'] }}\"\n    ]\n}",
+    "waitForFinish": false
+   },
+   "type": "@apify/n8n-nodes-apify.apify",
+   "typeVersion": 1,
+   "position": [
+    224,
+    -32
+   ],
+   "id": "bc4e5a56-6f5c-4acc-a0df-cca2ae004c63",
+   "name": "Run Yelp Actor"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

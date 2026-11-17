@@ -1,0 +1,302 @@
+{
+ "id": "eytiAHCN7lBsI1bS",
+ "name": "Clutch Scraper",
+ "active": true,
+ "isArchived": false,
+ "versionId": "018cff33-d843-48cd-ac11-5f5ca801afaa",
+ "triggerCount": 1,
+ "createdAt": "2025-12-01T09:42:05.218Z",
+ "updatedAt": "2026-11-17T16:39:37.728Z",
+ "settings": {
+  "executionOrder": "v1",
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Received Clutch Webhook": {
+   "main": [
+    [
+     {
+      "node": "Run Clutch Actor",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Run Clutch Actor": {
+   "main": [
+    [
+     {
+      "node": "Update Data ID's",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appJNoGcSkyIEPQ68",
+     "mode": "list",
+     "cachedResultName": "Scrapers",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblbJeeaZYOKW7Grc",
+     "mode": "list",
+     "cachedResultName": "Clutch Scraper",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68/tblbJeeaZYOKW7Grc"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "N8N Automation Ran?": true,
+      "id": "={{ $('Received Clutch Webhook').item.json.body.recordId }}",
+      "List_ID": "={{ $json.defaultDatasetId }}",
+      "Source of Creation": "Discord"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true
+      },
+      {
+       "id": "Run - ID",
+       "displayName": "Run - ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "URL to scraper",
+       "displayName": "URL to scraper",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "List_ID",
+       "displayName": "List_ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "N8N Automation Ran?",
+       "displayName": "N8N Automation Ran?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "How many pages of leads?",
+       "displayName": "How many pages of leads?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "User",
+       "displayName": "User",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Discord Status (from User)",
+       "displayName": "Discord Status (from User)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "User Name",
+       "displayName": "User Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "File Name",
+       "displayName": "File Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Source of Creation",
+       "displayName": "Source of Creation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Internal",
+         "value": "Internal"
+        },
+        {
+         "name": "Discord",
+         "value": "Discord"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Google Drive Link",
+       "displayName": "Google Drive Link",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Discord Tags",
+       "displayName": "Discord Tags",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Record Created at",
+       "displayName": "Record Created at",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "user_id",
+       "displayName": "user_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    448,
+    -32
+   ],
+   "id": "a7aa3ae1-66f0-4fa2-aca1-f7df61a20544",
+   "name": "Update Data ID's"
+  },
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    0,
+    -32
+   ],
+   "id": "ba12de19-6edc-45a7-b5c2-19f9d0ba0c78",
+   "name": "Received Clutch Webhook"
+  },
+  {
+   "parameters": {
+    "actorSource": "store",
+    "actorId": {
+     "__rl": true,
+     "value": "T0VGd2P7iClXZZWAQ",
+     "mode": "list",
+     "cachedResultName": "Clutch.co Search Results Scraper ( Pay Per Results) (gopalakrishnan/clutch-companies-scraper)",
+     "cachedResultUrl": "https://console.apify.com/actors/T0VGd2P7iClXZZWAQ/input"
+    },
+    "customBody": "={\n  \"maxPagesPerUrl\": {{ $json.body[\"How many pages of leads?\"] }},\n  \"urls\": [\n    \"{{ $json.body[\"URL to scraper\"] }}\"\n  ],\n  \"proxyConfiguration\": {\n    \"useApifyProxy\": true,\n    \"groups\": [\n      \"RESIDENTIAL\"\n    ]\n  }\n}",
+    "waitForFinish": false
+   },
+   "type": "@apify/n8n-nodes-apify.apify",
+   "typeVersion": 1,
+   "position": [
+    224,
+    -32
+   ],
+   "id": "989b1d00-27d1-43a3-8541-61d829e9890b",
+   "name": "Run Clutch Actor"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

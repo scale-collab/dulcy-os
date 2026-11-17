@@ -1,0 +1,834 @@
+{
+ "id": "CJfFbrCIOS4BZMQxf_Huj",
+ "name": "Dulcy - SignWell Contract Events",
+ "active": true,
+ "isArchived": false,
+ "versionId": "4d005c7d-102b-4a74-b47a-f5c13e9c2eba",
+ "triggerCount": 1,
+ "createdAt": "2026-08-18T04:56:43.941Z",
+ "updatedAt": "2026-11-17T16:42:21.441Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "SignWell Events": {
+   "main": [
+    [
+     {
+      "node": "Normalize SignWell Event",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Normalize SignWell Event": {
+   "main": [
+    [
+     {
+      "node": "Agreement Completed?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Agreement Completed?": {
+   "main": [
+    [
+     {
+      "node": "Find Airtable Agreement",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Agreement Sent?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Find Airtable Agreement": {
+   "main": [
+    [
+     {
+      "node": "Prepare Completion",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "New Completion?": {
+   "main": [
+    [
+     {
+      "node": "Get Completed PDF URL",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Completed PDF URL": {
+   "main": [
+    [
+     {
+      "node": "Prepare Signed PDF",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Signed PDF": {
+   "main": [
+    [
+     {
+      "node": "Save Completed Agreement",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Save Completed Agreement": {
+   "main": [
+    [
+     {
+      "node": "Start New Client Onboarding",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Start New Client Onboarding": {
+   "main": [
+    [
+     {
+      "node": "Mark Onboarding Started",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Agreement Sent?": {
+   "main": [
+    [
+     {
+      "node": "Find Sent Airtable Agreement",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Find Sent Airtable Agreement": {
+   "main": [
+    [
+     {
+      "node": "Prepare Sent or Viewed Event",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Completion": {
+   "main": [
+    [
+     {
+      "node": "New Completion?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Notify Slack - Sent or Viewed": {
+   "main": [
+    []
+   ]
+  },
+  "Prepare Sent or Viewed Event": {
+   "main": [
+    [
+     {
+      "node": "Notify Slack - Sent or Viewed",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Save Sent or Viewed Event",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Prepare Close Contract Sent",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Close Contract Sent": {
+   "main": [
+    [
+     {
+      "node": "Update a lead",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Save Contract Link in Close": {
+   "main": [
+    [
+     {
+      "node": "Find Latest Close Opportunity",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Find Latest Close Opportunity": {
+   "main": [
+    [
+     {
+      "node": "Move Opportunity to Contract Sent",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Opportunity Found?": {
+   "main": [
+    [
+     {
+      "node": "Update an opportunity status",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Update a lead": {
+   "main": [
+    [
+     {
+      "node": "Find opportunities",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Find opportunities": {
+   "main": [
+    [
+     {
+      "node": "Opportunity Found?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "content": "## SignWell contract-events workflow\n\n1. Import this workflow into n8n.\n2. Bind **Airtable PAT Header** (`Authorization: Bearer ...`).\n3. Bind **SignWell API Header** (`X-Api-Key: ...`).\n4. Bind **Close API Header** as Header Auth: `Authorization` = `Bearer REDACTED`.\n5. Activate this workflow and copy the **Production URL** from **SignWell Events**.\n6. Register that URL once with SignWell using `POST https://www.signwell.com/api/v1/hooks`.\n\n`document_sent` saves the SignWell contract link on the Close lead and moves the latest opportunity to the same Contract Sent status used by the PandaDoc blueprint. `document_completed` stores the signed PDF in Airtable and posts `leadId`, `company`, and `additional` to onboarding. Duplicate completions are stopped by **SignWell Completion Forwarded At**.",
+    "height": 440,
+    "width": 500
+   },
+   "id": "90b5ff56-db96-407e-a160-775107443c4c",
+   "name": "Setup Notes",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    4048,
+    528
+   ]
+  },
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "id": "bc60a737-5529-481c-b32f-ea9f3def9719",
+   "name": "SignWell Events",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    4128,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const payload = $json.body || $json;\nconst eventType = String(payload.event?.type || '');\nconst document = payload.data?.object || {};\nconst documentId = String(document.id || '');\nif (!eventType || !documentId) throw new Error('Invalid SignWell webhook: event type or document ID is missing');\nconst rawTime = payload.event?.time;\nconst completedAt = rawTime\n  ? new Date(Number(rawTime) * 1000).toISOString()\n  : new Date().toISOString();\nreturn [{ json: {\n  eventType,\n  eventHash: String(payload.event?.hash || ''),\n  documentId,\n  completedAt,\n  documentName: String(document.name || `SignWell Agreement ${documentId}`),\n  metadata: document.metadata || {},\n  recipients: document.recipients || [],\n  payload\n} }];"
+   },
+   "id": "82b172b3-85ed-43d9-a53d-950ee65ea61a",
+   "name": "Normalize SignWell Event",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    4352,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "7ff56610-91cd-43a4-b867-300368377146",
+       "leftValue": "={{ $json.eventType }}",
+       "rightValue": "document_completed",
+       "operator": {
+        "type": "string",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "47e06687-38d8-4afd-8453-a09a36c5d566",
+   "name": "Agreement Completed?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    4576,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tbljivFOoUW2nZ6FN",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "filterByFormula",
+       "value": "={{ \"{SignWell Document ID}='\" + $('Normalize SignWell Event').item.json.documentId + \"'\" }}"
+      },
+      {
+       "name": "maxRecords",
+       "value": "1"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "id": "1c9464bc-2f32-40e8-a20d-c1a153c78b05",
+   "name": "Find Airtable Agreement",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    4800,
+    848
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "b7f55cf2-9daa-43b4-aa04-a80c1f66f524",
+       "leftValue": "={{ $json.alreadyForwarded }}",
+       "rightValue": false,
+       "operator": {
+        "type": "boolean",
+        "operation": "false",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "26862fc8-674f-4c83-94cc-103551a0f674",
+   "name": "New Completion?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    5248,
+    848
+   ]
+  },
+  {
+   "parameters": {
+    "url": "=https://www.signwell.com/api/v1/documents/{{$('Prepare Completion').item.json.documentId}}/completed_pdf",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "url_only",
+       "value": "true"
+      },
+      {
+       "name": "audit_page",
+       "value": "true"
+      },
+      {
+       "name": "file_format",
+       "value": "pdf"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "id": "beacc50e-f3fa-41b3-9e0d-a2216bb907d0",
+   "name": "Get Completed PDF URL",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    5472,
+    848
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const prep = $('Prepare Completion').item.json;\nconst pdfUrl = String($json.url || $json.download_url || $json.file_url || '');\nif (!pdfUrl) throw new Error('SignWell completed PDF endpoint did not return a URL');\nconst safeName = prep.documentName.replace(/[^a-z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '');\nreturn [{ json: { ...prep, pdfUrl, filename: `${safeName || prep.documentId}-signed.pdf` } }];"
+   },
+   "id": "30a42781-b0db-4b22-a03e-3ba1bcc01735",
+   "name": "Prepare Signed PDF",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    5696,
+    848
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "=https://api.airtable.com/v0/appxqINt5XKw7a76A/tbljivFOoUW2nZ6FN/{{$json.airtableRecordId}}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({ fields: { 'Agreement Status': 'Completed', 'SignWell Completed At': $json.completedAt, 'SignWell Last Event': 'document_completed', 'Last SignWell Sync': $now.toISO(), 'SignWell Error': '', 'Signed Agreement': [{ url: $json.pdfUrl, filename: $json.filename }] } }) }}",
+    "options": {}
+   },
+   "id": "2fc45d1d-6b2d-4738-8de9-19915d00d035",
+   "name": "Save Completed Agreement",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    5920,
+    848
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://n8n.dulcy.io/webhook/REDACTED_PATH",
+    "sendBody": true,
+    "contentType": "multipart-form-data",
+    "bodyParameters": {
+     "parameters": [
+      {
+       "name": "leadId",
+       "value": "={{ $('Prepare Signed PDF').item.json.leadId }}"
+      },
+      {
+       "name": "company",
+       "value": "={{ $('Prepare Signed PDF').item.json.company }}"
+      },
+      {
+       "name": "additional",
+       "value": "={{ $('Prepare Signed PDF').item.json.additional }}"
+      },
+      {
+       "name": "name",
+       "value": "={{ $('Prepare Signed PDF').item.json.name }}"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "id": "7178d11c-a115-47ae-a311-2aea321f5516",
+   "name": "Start New Client Onboarding",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    6144,
+    848
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "=https://api.airtable.com/v0/appxqINt5XKw7a76A/tbljivFOoUW2nZ6FN/{{$('Prepare Signed PDF').item.json.airtableRecordId}}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({ fields: { 'SignWell Completion Forwarded At': $now.toISO(), 'Last SignWell Sync': $now.toISO() } }) }}",
+    "options": {}
+   },
+   "id": "2835de54-6e73-406f-a946-b83eff5b40eb",
+   "name": "Mark Onboarding Started",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    6368,
+    848
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "8a3a6dc1-23fc-47ce-aa25-737af8f93581",
+       "leftValue": "={{ $json.eventType === 'document_viewed' ? 'document_sent' : $json.eventType }}",
+       "rightValue": "document_sent",
+       "operator": {
+        "type": "string",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "c5e14f08-43bf-450d-b2b7-73f8ef850442",
+   "name": "Agreement Sent?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    4800,
+    1232
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tbljivFOoUW2nZ6FN",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "filterByFormula",
+       "value": "={{ \"{SignWell Document ID}='\" + $('Normalize SignWell Event').item.json.documentId + \"'\" }}"
+      },
+      {
+       "name": "maxRecords",
+       "value": "1"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "id": "cd246233-4b2e-4504-914b-d79029168ee5",
+   "name": "Find Sent Airtable Agreement",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    5024,
+    1232
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const event = $('Normalize SignWell Event').item.json;\nconst agreement = ($json.records || [])[0];\nif (!agreement) return [];\nconst f = agreement.fields || {};\nconst leadId = String(f['Reference Number'] || f['Reference ID'] || '').trim();\nif (!leadId) throw new Error('Reference Number is missing from the Airtable agreement');\nconst additional = ['Cold Email'];\nif (f['LinkedIn']) additional.push('LinkedIn');\nif (f['AI / Cold Caller']) additional.push('AI Caller / Call Flow');\nif (f['Direct Mail']) additional.push('Direct Mail');\nreturn [{ json: {\n  airtableRecordId: agreement.id,\n  existingFields: f,\n  alreadyForwarded: Boolean(f['SignWell Completion Forwarded At']),\n  documentId: event.documentId,\n  documentName: event.documentName,\n  completedAt: event.completedAt,\n  eventHash: event.eventHash,\n  recipients: event.recipients,\n  leadId,\n  company: String(f['Company Name'] || '').trim(),\n  name: [f['First Name'], f['Last Name']].filter(Boolean).join(' ').trim(),\n  additional: additional.join(', '),\n  payload: event.payload\n} }];"
+   },
+   "id": "b1243884-3716-43e3-8429-217e72a98170",
+   "name": "Prepare Completion",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    5024,
+    848
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "=https://api.airtable.com/v0/appxqINt5XKw7a76A/tbljivFOoUW2nZ6FN/{{$json.airtableRecordId}}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({ fields: $json.eventType === 'document_viewed' ? { 'Agreement Status': 'Viewed', 'SignWell Viewed At': $json.eventAt, 'SignWell Last Event': 'document_viewed', 'Last SignWell Sync': $now.toISO(), 'SignWell Error': '' } : { 'Agreement Status': 'Sent', 'SignWell Sent At': $json.eventAt, 'SignWell Last Event': 'document_sent', 'Last SignWell Sync': $now.toISO(), 'SignWell Error': '' } }) }}",
+    "options": {}
+   },
+   "id": "f5b19f8d-4f99-4549-a3c7-0a2dcdf8b2b9",
+   "name": "Save Sent or Viewed Event",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    5472,
+    1232
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://slack.com/api/chat.postMessage",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "slackApi",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({ channel: 'C075UR0HRRR', text: (() => { const e = $('Normalize SignWell Event').item.json; const a = ($('Find Sent Airtable Agreement').item.json.records || [])[0]?.fields || {}; const company = a['Company Name'] || e.recipients?.[0]?.email || 'A client'; const type = a['Agreement Type']?.name || a['Agreement Type'] || 'agreement'; return e.eventType === 'document_viewed' ? company + ' viewed the ' + type + ' agreement on ' + $now.toFormat('MM-dd-yyyy') + '.' : company + ' was sent the ' + type + ' agreement on ' + $now.toFormat('MM-dd-yyyy') + '.'; })() }) }}",
+    "options": {}
+   },
+   "id": "9971fd63-dba6-401c-aaff-ce0010657e27",
+   "name": "Notify Slack - Sent or Viewed",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    5472,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const event = $('Normalize SignWell Event').item.json;\nconst agreement = ($json.records || [])[0];\nif (!agreement) return [];\nreturn [{ json: {\n  airtableRecordId: agreement.id,\n  eventType: event.eventType,\n  eventAt: event.completedAt,\n  documentId: event.documentId,\n  contractUrl: `https://www.signwell.com/app/documents/${event.documentId}`\n} }];"
+   },
+   "id": "4eab762a-fc4e-4b4b-a580-f8aae4a9b767",
+   "name": "Prepare Sent or Viewed Event",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    5248,
+    1232
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const item = $json;\nif (item.eventType !== 'document_sent') return [];\nconst agreement = ($('Find Sent Airtable Agreement').item.json.records || [])[0];\nconst fields = agreement?.fields || {};\nconst leadId = String(fields['Reference Number'] || '').trim();\nif (!leadId.startsWith('lead_')) return [];\nreturn [{ json: { ...item, leadId } }];"
+   },
+   "id": "67d85c48-8b41-4296-8141-ea25509ca45e",
+   "name": "Prepare Close Contract Sent",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    5472,
+    1424
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PUT",
+    "url": "=https://api.close.com/api/v1/lead/{{$json.leadId}}/",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({ ['custom.cf_pdFQlR5IaMeYvZamaxZ20JEoUlkY6Oc5YV7aNo8F7Qe']: $json.contractUrl }) }}",
+    "options": {}
+   },
+   "id": "087be15a-b377-49d1-8581-729feb56b166",
+   "name": "Save Contract Link in Close",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    4128,
+    1648
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.close.com/api/v1/opportunity/",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "lead_id",
+       "value": "={{ $('Prepare Close Contract Sent').item.json.leadId }}"
+      },
+      {
+       "name": "_order_by",
+       "value": "-date_created"
+      },
+      {
+       "name": "_limit",
+       "value": "1"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "id": "fe70b181-d3aa-4929-9b52-7dd63defa56c",
+   "name": "Find Latest Close Opportunity",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    4352,
+    1648
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "8f5ecf80-05d2-4e1f-b247-1cf777ea2267",
+       "leftValue": "={{ $json.id || '' }}",
+       "rightValue": "",
+       "operator": {
+        "type": "string",
+        "operation": "notEmpty",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "7d8f7f0f-f0af-4328-8d69-b6438e86accb",
+   "name": "Opportunity Found?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    6144,
+    1424
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PUT",
+    "url": "=https://api.close.com/api/v1/opportunity/{{$json.data[0].id}}/",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({ status_id: 'stat_pQPaE8gYxCL8YnN3BfR8nX3Gup4mRztvNNHwABOkzOs' }) }}",
+    "options": {}
+   },
+   "id": "c0560db8-801b-419b-812e-a1bb53062674",
+   "name": "Move Opportunity to Contract Sent",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    4576,
+    1648
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "leadId": "={{ $json.leadId }}",
+    "updateFields": {},
+    "addressUi": {},
+    "customFields": {
+     "textField": {
+      "textFields": [
+       {
+        "fieldId": "cf_pdFQlR5IaMeYvZamaxZ20JEoUlkY6Oc5YV7aNo8F7Qe",
+        "fieldValue": "={{ $json.contractUrl }}"
+       }
+      ]
+     }
+    }
+   },
+   "type": "n8n-nodes-close-crm.close",
+   "typeVersion": 1,
+   "position": [
+    5696,
+    1424
+   ],
+   "id": "9159aed0-1385-4ff2-a9e7-82962ccadcac",
+   "name": "Update a lead"
+  },
+  {
+   "parameters": {
+    "resource": "opportunity",
+    "leadId": "={{ $('Prepare Close Contract Sent').item.json.leadId }}",
+    "additionalFilters": {},
+    "limit": 1
+   },
+   "type": "n8n-nodes-close-crm.close",
+   "typeVersion": 1,
+   "position": [
+    5920,
+    1424
+   ],
+   "id": "0d34674a-1b68-4541-abf3-6c47b2c1e2f3",
+   "name": "Find opportunities"
+  },
+  {
+   "parameters": {
+    "resource": "opportunity",
+    "operation": "update",
+    "opportunityId": "={{ $json.id }}",
+    "updateFields": {
+     "statusId": "stat_pQPaE8gYxCL8YnN3BfR8nX3Gup4mRztvNNHwABOkzOs"
+    },
+    "customFields": {}
+   },
+   "type": "n8n-nodes-close-crm.close",
+   "typeVersion": 1,
+   "position": [
+    6368,
+    1424
+   ],
+   "id": "2000e602-07f1-4239-8b19-51921c220be6",
+   "name": "Update an opportunity status"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

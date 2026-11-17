@@ -1,0 +1,248 @@
+{
+ "id": "8XuaP0rbqqxsyYWNOYWVI",
+ "name": "[Lead List Center] Weekly Client Domain Exclusion Refresh",
+ "active": true,
+ "isArchived": false,
+ "versionId": "de8db316-f8c7-42dd-b9a6-4a08469e952d",
+ "triggerCount": 1,
+ "createdAt": "2026-08-10T16:52:39.590Z",
+ "updatedAt": "2026-11-17T16:41:28.567Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Weekly Sunday 2 AM ET": {
+   "main": [
+    [
+     {
+      "node": "Get Client Workspaces",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Client Workspaces": {
+   "main": [
+    [
+     {
+      "node": "Prepare Active Clients",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Active Clients": {
+   "main": [
+    [
+     {
+      "node": "Refresh Clients One at a Time",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Refresh Clients One at a Time": {
+   "main": [
+    [
+     {
+      "node": "Weekly Refresh Finished",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Call Client Refresh Worker",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Call Client Refresh Worker": {
+   "main": [
+    [
+     {
+      "node": "Pause Between Clients",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Pause Between Clients": {
+   "main": [
+    [
+     {
+      "node": "Refresh Clients One at a Time",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "0 2 * * 0"
+      }
+     ]
+    }
+   },
+   "id": "7da6ba7e-1deb-43c2-bf11-331c3b7d78c9",
+   "name": "Weekly Sunday 2 AM ET",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    -928,
+    112
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/Workspace%20IDs?pageSize=100",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Accept",
+       "value": "application/json"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "responseFormat": "json"
+      }
+     },
+     "pagination": {
+      "pagination": {
+       "paginationMode": "responseContainsNextURL",
+       "nextURL": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/Workspace%20IDs?pageSize=100' + ($response.body.offset ? '&offset=' + encodeURIComponent($response.body.offset) : '') }}",
+       "paginationCompleteWhen": "other",
+       "completeExpression": "={{ !$response.body.offset }}",
+       "limitPagesFetched": true,
+       "maxRequests": 20,
+       "requestInterval": 100
+      }
+     },
+     "timeout": 30000
+    }
+   },
+   "id": "891bb3e9-1ab8-4c4e-8016-d2062e421391",
+   "name": "Get Client Workspaces",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    -704,
+    112
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const parse=value=>{if(typeof value!=='string')return value;try{return JSON.parse(value);}catch{return value;}};const responses=$input.all().map(item=>parse(item.json?.body??item.json));const records=responses.flatMap(value=>Array.isArray(value?.records)?value.records:(value?.fields?[value]:[]));const statusFields=['Status','Client Status','Workspace Status'];const nameFields=['Client Name','Name','Client','Company Name','Workspace Name'];const allowed=new Set(['active','onboarding']);const clients=[];for(const record of records){const fields=record?.fields??{};let status='';for(const key of statusFields){const raw=fields[key];const value=Array.isArray(raw)?raw[0]:raw;if(value!==undefined&&value!==null&&String(value).trim()){status=String(value).trim();break;}}if(!status||!allowed.has(status.toLowerCase()))continue;let clientName='';for(const key of nameFields){const raw=fields[key];const value=Array.isArray(raw)?raw[0]:raw;if(value!==undefined&&value!==null&&String(value).trim()){clientName=String(value).trim();break;}}if(!/^rec[A-Za-z0-9]+$/.test(String(record?.id??'')))continue;clients.push({json:{recordId:record.id,clientName,status}});}if(!clients.length)throw new Error('No active or onboarding Workspace IDs records were found. Confirm the client status field name and values.');return clients;"
+   },
+   "id": "5282877d-b87a-486a-833d-cc14f9f3b6e3",
+   "name": "Prepare Active Clients",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -480,
+    112
+   ]
+  },
+  {
+   "parameters": {
+    "options": {
+     "reset": false
+    }
+   },
+   "id": "f2bbba11-ee44-4d34-9353-183e45ff9ea0",
+   "name": "Refresh Clients One at a Time",
+   "type": "n8n-nodes-base.splitInBatches",
+   "typeVersion": 3,
+   "position": [
+    -240,
+    112
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://n8n.dulcy.io/webhook/REDACTED_PATH",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({recordId:$json.recordId}) }}",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true,
+       "responseFormat": "json"
+      }
+     },
+     "timeout": 1800000
+    }
+   },
+   "id": "415e22b7-f069-482b-a41c-6b71c15ae17a",
+   "name": "Call Client Refresh Worker",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    0,
+    192
+   ]
+  },
+  {
+   "parameters": {},
+   "id": "175b1148-32ea-4f55-a570-f5d2cf217cb5",
+   "name": "Pause Between Clients",
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    240,
+    192
+   ],
+   "webhookId": "efe9b652-0bc4-49ba-85db-4ea3bbec6671"
+  },
+  {
+   "parameters": {
+    "jsCode": "return [{json:{success:true,completedAt:new Date().toISOString(),message:'Weekly client domain exclusion refresh completed.'}}];"
+   },
+   "id": "cd4c78b2-5154-4cfa-971e-68bde615688f",
+   "name": "Weekly Refresh Finished",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    0,
+    0
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

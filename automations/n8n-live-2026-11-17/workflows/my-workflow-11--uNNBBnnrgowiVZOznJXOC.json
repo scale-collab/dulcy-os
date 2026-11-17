@@ -1,0 +1,35 @@
+{
+ "id": "uNNBBnnrgowiVZOznJXOC",
+ "name": "My workflow 11",
+ "active": true,
+ "isArchived": false,
+ "versionId": "8aee8272-2d79-4a58-9fea-e65d11dbffd8",
+ "triggerCount": 1,
+ "createdAt": "2026-03-19T08:01:35.697Z",
+ "updatedAt": "2026-11-17T16:30:18.968Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true
+ },
+ "connections": {},
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    0,
+    0
+   ],
+   "id": "2d3ac8de-d0fb-4938-9e67-77c73c16c26f",
+   "name": "Webhook"
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

@@ -1,0 +1,344 @@
+{
+ "id": "9nJGugQ8jg0DIQKW",
+ "name": "BBB Scraper",
+ "active": true,
+ "isArchived": false,
+ "versionId": "94f9456d-bfaa-4776-bf85-e8866bb906bd",
+ "triggerCount": 1,
+ "createdAt": "2025-12-18T08:30:33.068Z",
+ "updatedAt": "2026-11-17T16:39:48.681Z",
+ "settings": {
+  "executionOrder": "v1",
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Receive BB Scraper Webhook": {
+   "main": [
+    [
+     {
+      "node": "Run BBB Actor",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Run BBB Actor": {
+   "main": [
+    [
+     {
+      "node": "Update Data ID's",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appJNoGcSkyIEPQ68",
+     "mode": "list",
+     "cachedResultName": "Scrapers",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblQGIbIPEsv0m7zz",
+     "mode": "list",
+     "cachedResultName": "BBB Scraper",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68/tblQGIbIPEsv0m7zz"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "N8N Automation Ran?": true,
+      "id": "={{ $('Receive BB Scraper Webhook').item.json.body.recordId }}",
+      "List_ID": "={{ $json.defaultDatasetId }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true
+      },
+      {
+       "id": "Run - ID",
+       "displayName": "Run - ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Keywords",
+       "displayName": "Keywords",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Location Search",
+       "displayName": "Location Search",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Country",
+       "displayName": "Country",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "USA",
+         "value": "USA"
+        },
+        {
+         "name": "CAN",
+         "value": "CAN"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "List_ID",
+       "displayName": "List_ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "How many leads per location",
+       "displayName": "How many leads per location",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Total Leads",
+       "displayName": "Total Leads",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "N8N Automation Ran?",
+       "displayName": "N8N Automation Ran?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "User",
+       "displayName": "User",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Discord Status (from User)",
+       "displayName": "Discord Status (from User)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "User Name",
+       "displayName": "User Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Tag",
+       "displayName": "Tag",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "File Name",
+       "displayName": "File Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Source of Creation",
+       "displayName": "Source of Creation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Internal",
+         "value": "Internal"
+        },
+        {
+         "name": "Discord",
+         "value": "Discord"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Google Drive Link",
+       "displayName": "Google Drive Link",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Discord Tags",
+       "displayName": "Discord Tags",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "user_id",
+       "displayName": "user_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    368,
+    -32
+   ],
+   "id": "d7c2dd7e-bde0-4852-90d7-e95665bc23b1",
+   "name": "Update Data ID's"
+  },
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    -80,
+    -32
+   ],
+   "id": "81845d3e-deae-41cf-a749-2a23bd7e3665",
+   "name": "Receive BB Scraper Webhook"
+  },
+  {
+   "parameters": {
+    "actorSource": "store",
+    "actorId": {
+     "__rl": true,
+     "value": "ixrIuNgGhGIaGdbdg",
+     "mode": "list",
+     "cachedResultName": "The Best BBB Advanced Scraper (intelecta/bbb)",
+     "cachedResultUrl": "https://console.apify.com/actors/ixrIuNgGhGIaGdbdg/input"
+    },
+    "customBody": "={\n    \"countries\": \"USA\",\n    \"keywords\": [\n        \"{{ $json.body.Keywords }}\"\n    ],\n    \"locations\": [\n        \"{{ $json.body['Location Search'] }}\"\n    ],\n    \"max_records_per_location\": {{ $json.body['Total Leads'] }},\n    \"max_records_per_run\": {{ $json.body['Total Leads'] }}\n}",
+    "waitForFinish": false
+   },
+   "type": "@apify/n8n-nodes-apify.apify",
+   "typeVersion": 1,
+   "position": [
+    144,
+    -32
+   ],
+   "id": "6f8c1aa9-7405-4762-a0fe-c39c61ac78dc",
+   "name": "Run BBB Actor"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

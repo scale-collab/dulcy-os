@@ -1,0 +1,291 @@
+{
+ "id": "jqyCEPPExotmgKOKkrlYo",
+ "name": "[Clients] Daily Client Health Check",
+ "active": true,
+ "isArchived": false,
+ "versionId": "1ce40da7-6d0c-4af5-b080-a787a899604d",
+ "triggerCount": 1,
+ "createdAt": "2026-08-17T03:33:48.347Z",
+ "updatedAt": "2026-11-17T16:41:01.269Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true
+ },
+ "connections": {
+  "Daily 7 AM": {
+   "main": [
+    [
+     {
+      "node": "Search Active Paying Clients",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search Active Paying Clients": {
+   "main": [
+    [
+     {
+      "node": "Search Linked Email Accounts",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search Linked Email Accounts": {
+   "main": [
+    [
+     {
+      "node": "Calculate Client Health",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Calculate Client Health": {
+   "main": [
+    [
+     {
+      "node": "Search Meetings Booked This Month",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search Meetings Booked This Month": {
+   "main": [
+    [
+     {
+      "node": "Apply Monthly Meeting Pace",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Apply Monthly Meeting Pace": {
+   "main": [
+    [
+     {
+      "node": "Update Client Health",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Update Client Health": {
+   "main": [
+    [
+     {
+      "node": "Health Check Summary",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblADFhWhTcLrl1UY",
+     "mode": "list",
+     "cachedResultName": "Emails",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY"
+    },
+    "filterByFormula": "AND(COUNTA({Clients Table})>0,{Date of Call Booked}>=DATETIME_PARSE(DATETIME_FORMAT(TODAY(),'YYYY-MM')&'-01'),{Date of Call Booked}<DATEADD(DATETIME_PARSE(DATETIME_FORMAT(TODAY(),'YYYY-MM')&'-01'),1,'month'))",
+    "options": {}
+   },
+   "id": "c884b774-9134-44d2-8545-6e9e549ef988",
+   "name": "Search Meetings Booked This Month",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    2096,
+    -112
+   ],
+   "executeOnce": true,
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "jsCode": "const baseResults = $('Calculate Client Health').all().map(item => item.json);\nconst clients = $('Search Active Paying Clients').all().map(item => item.json);\nconst meetings = $input.all().map(item => item.json);\nconst clientsById = new Map(clients.map(client => [client.id, client]));\nconst value = (row, name) => row[name] ?? row.fields?.[name];\nconst numeric = v => { const raw = Array.isArray(v) ? v[0] : (v?.value ?? v); const n = Number(raw); return Number.isFinite(n) ? n : 0; };\nconst linkedIds = v => (Array.isArray(v) ? v : []).map(x => typeof x === 'string' ? x : x?.id).filter(Boolean);\n\nconst meetingsByClient = new Map();\nfor (const meeting of meetings) {\n  for (const clientId of linkedIds(value(meeting, 'Clients Table'))) {\n    meetingsByClient.set(clientId, (meetingsByClient.get(clientId) ?? 0) + 1);\n  }\n}\n\nconst now = new Date();\nconst daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();\nconst elapsedDays = now.getDate();\nconst elapsedRatio = elapsedDays / daysInMonth;\n\nreturn baseResults.map(base => {\n  const result = { ...base };\n  const client = clientsById.get(result.recordId) ?? {};\n  const meetingsBooked = meetingsByClient.get(result.recordId) ?? 0;\n  const clientKpi = numeric(value(client, 'Calls Booked KPI (Client)'));\n  const internalKpi = numeric(value(client, 'Calls Booked KPI (Internal)'));\n  const onboardingKpi = numeric(value(client, 'Calls Booked KPI (from Onboarding)'));\n  const explicitKpi = clientKpi || internalKpi || onboardingKpi;\n  const accountCount = Number(result.totalAccounts ?? 0);\n  const capacityMidpoint = Math.max(1, accountCount * 0.15);\n  const capacityLow = Math.max(1, accountCount * 0.10);\n  const capacityHigh = Math.max(1, accountCount * 0.20);\n  const monthlyGoal = explicitKpi > 0\n    ? (accountCount > 0 ? Math.min(Math.max(explicitKpi, capacityLow), capacityHigh) : explicitKpi)\n    : capacityMidpoint;\n  const expectedByToday = monthlyGoal * elapsedRatio;\n  const paceRatio = expectedByToday > 0 ? meetingsBooked / expectedByToday : 1;\n\n  if (result.health !== 'Onboarding') {\n    const paceReason = `${meetingsBooked} meetings booked MTD; ${expectedByToday.toFixed(1)} expected by today toward a ${monthlyGoal.toFixed(1)} monthly goal (${Math.round(paceRatio * 100)}% of pace)`;\n    if (elapsedDays > 5 && paceRatio < 0.50) {\n      result.health = 'At Risk';\n      result.reasons = `${result.reasons}; ${paceReason}`;\n    } else if (paceRatio < 0.80) {\n      if (result.health === 'Healthy') result.health = 'Needs Attention';\n      result.reasons = `${result.reasons}; ${paceReason}`;\n    }\n  }\n\n  result.meetingsBookedThisMonth = meetingsBooked;\n  result.monthlyMeetingGoal = Math.round(monthlyGoal * 10) / 10;\n  result.expectedMeetingsByToday = Math.round(expectedByToday * 10) / 10;\n  result.meetingPacePercent = Math.round(paceRatio * 1000) / 10;\n  return { json: result };\n});"
+   },
+   "id": "3d5999b8-e606-4975-bfef-599b38884690",
+   "name": "Apply Monthly Meeting Pace",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2240,
+    -112
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const clients = $('Search Active Paying Clients').all().map(item => item.json);\nconst clientsById = new Map(clients.map(client => [client.id, client]));\nconst value = (row, name) => row[name] ?? row.fields?.[name];\nconst numeric = v => {\n  const raw = Array.isArray(v) ? v[0] : (v?.value ?? v);\n  const n = Number(raw);\n  return Number.isFinite(n) ? n : 0;\n};\n\nreturn $input.all().map(item => {\n  const result = { ...item.json };\n  const client = clientsById.get(result.recordId) ?? {};\n  const callsBooked = numeric(value(client, 'Calls Booked - Last 30 days'));\n  const clientKpi = numeric(value(client, 'Calls Booked KPI (Client)'));\n  const internalKpi = numeric(value(client, 'Calls Booked KPI (Internal)'));\n  const onboardingKpi = numeric(value(client, 'Calls Booked KPI (from Onboarding)'));\n  const bookingKpi = clientKpi || internalKpi || onboardingKpi;\n\n  if (result.health !== 'Onboarding' && bookingKpi > 0) {\n    const ratio = callsBooked / bookingKpi;\n    const performanceReason = `${callsBooked} of ${bookingKpi} booked-meeting KPI achieved in the last 30 days (${Math.round(ratio * 100)}%)`;\n    if (ratio < 0.50) {\n      result.health = 'At Risk';\n      result.reasons = `${result.reasons}; ${performanceReason}`;\n    } else if (ratio < 0.80) {\n      if (result.health === 'Healthy') result.health = 'Needs Attention';\n      result.reasons = `${result.reasons}; ${performanceReason}`;\n    }\n    result.callsBooked = callsBooked;\n    result.bookingKpi = bookingKpi;\n    result.bookingPerformance = Math.round(ratio * 1000) / 10;\n  }\n  return { json: result };\n});"
+   },
+   "id": "4a979450-4e7d-4daf-911f-7c0d665d6939",
+   "name": "Apply Booking Performance",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2128,
+    -272
+   ],
+   "disabled": true
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "triggerAtHour": 7
+      }
+     ]
+    }
+   },
+   "id": "5e554215-b4ac-4654-be2e-140d33a852c0",
+   "name": "Daily 7 AM",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    1296,
+    -272
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt"
+    },
+    "filterByFormula": "AND({Status}='Active',{Client Type}='Paying Client')",
+    "options": {}
+   },
+   "id": "1839278c-c6e9-4569-b27c-0f3c6eb0da9d",
+   "name": "Search Active Paying Clients",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1520,
+    -272
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMSOBJ0wMgxSg4l",
+     "mode": "list",
+     "cachedResultName": "Email Accounts",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblMSOBJ0wMgxSg4l"
+    },
+    "filterByFormula": "COUNTA({Client})>0",
+    "options": {}
+   },
+   "id": "3af1a3f1-0965-4456-9aa8-f960dec5282f",
+   "name": "Search Linked Email Accounts",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1760,
+    -272
+   ],
+   "executeOnce": true
+  },
+  {
+   "parameters": {
+    "jsCode": "const clients = $('Search Active Paying Clients').all().map(item => item.json);\nconst accounts = $input.all().map(item => item.json);\nconst checkedAt = new Date().toISOString();\n\nconst value = (row, name) => row[name] ?? row.fields?.[name];\nconst selectName = v => typeof v === 'string' ? v : (v?.name ?? '');\nconst linkedIds = v => (Array.isArray(v) ? v : []).map(x => typeof x === 'string' ? x : x?.id).filter(Boolean);\nconst reasonNames = v => (Array.isArray(v) ? v : []).map(x => typeof x === 'string' ? x : x?.name).filter(Boolean);\nconst severeReasons = new Set(['Poor Inbox Placement', 'Blacklist', 'Manual Review']);\n\nconst accountsByClient = new Map();\nfor (const account of accounts) {\n  for (const clientId of linkedIds(value(account, 'Client'))) {\n    if (!accountsByClient.has(clientId)) accountsByClient.set(clientId, []);\n    accountsByClient.get(clientId).push(account);\n  }\n}\n\nconst updates = [];\nfor (const client of clients) {\n  const recordId = client.id;\n  const name = value(client, 'Name') ?? recordId;\n  const onboardingComplete = Boolean(value(client, 'Onboarding_form_submitted'));\n  const startDate = value(client, 'Client Start Date');\n  const monthlyFee = Number(value(client, 'Monthly Fee') ?? 0);\n  const outstanding = Number(value(client, 'Outstanding Receivables') ?? 0);\n  const revenueMatch = String(value(client, 'Revenue Match Status') ?? '');\n  const clientAccounts = accountsByClient.get(recordId) ?? [];\n\n  let atRiskAccounts = 0;\n  let severeAccounts = 0;\n  const accountReasons = new Set();\n  for (const account of clientAccounts) {\n    const status = selectName(value(account, 'Status'));\n    const reasons = reasonNames(value(account, 'Health Reason'));\n    if (status === 'At Risk') atRiskAccounts += 1;\n    if (reasons.some(r => severeReasons.has(r))) severeAccounts += 1;\n    for (const r of reasons) accountReasons.add(r);\n  }\n\n  const totalAccounts = clientAccounts.length;\n  const atRiskRatio = totalAccounts ? atRiskAccounts / totalAccounts : 0;\n  const severeRatio = totalAccounts ? severeAccounts / totalAccounts : 0;\n  const financialSevere = outstanding > 0 && outstanding >= Math.max(monthlyFee, 1);\n  const emailSevere = totalAccounts >= 5 && (atRiskRatio >= 0.20 || severeRatio >= 0.10);\n\n  let health = 'Healthy';\n  const reasons = [];\n  if (!onboardingComplete || !startDate) {\n    health = 'Onboarding';\n    if (!onboardingComplete) reasons.push('Onboarding form is incomplete');\n    if (!startDate) reasons.push('Client start date is missing');\n  } else if (financialSevere || emailSevere) {\n    health = 'At Risk';\n    if (financialSevere) reasons.push(`Outstanding receivables ($${outstanding.toFixed(2)}) are at least one monthly fee`);\n    if (emailSevere) reasons.push(`${atRiskAccounts} of ${totalAccounts} email accounts are at risk`);\n  } else {\n    if (outstanding > 0) reasons.push(`Outstanding receivables: $${outstanding.toFixed(2)}`);\n    if (revenueMatch && revenueMatch !== 'Matched') reasons.push(`Revenue match status: ${revenueMatch}`);\n    if (atRiskAccounts > 0) reasons.push(`${atRiskAccounts} of ${totalAccounts} email accounts need attention`);\n    if (totalAccounts === 0) reasons.push('No linked email accounts found');\n    if (reasons.length) health = 'Needs Attention';\n  }\n\n  if (!reasons.length) reasons.push('Onboarding complete, payments clear, and email accounts healthy');\n  if (accountReasons.size) reasons.push(`Email signals: ${[...accountReasons].join(', ')}`);\n\n  updates.push({ json: { recordId, name, health, reasons: reasons.join('; '), checkedAt, totalAccounts, atRiskAccounts } });\n}\n\nreturn updates;"
+   },
+   "id": "9c5b78ff-b83c-4bb8-ae05-5f9d6fdddcc6",
+   "name": "Calculate Client Health",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2000,
+    -272
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "=https://api.airtable.com/v0/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt/{{ $json.recordId }}",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "airtableTokenApi",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({ fields: { 'Client Health': $json.health, 'Client Health Reasons': $json.reasons, 'Last Client Health Check': $json.checkedAt } }) }}",
+    "options": {
+     "batching": {
+      "batch": {
+       "batchSize": 1,
+       "batchInterval": 250
+      }
+     }
+    }
+   },
+   "id": "a5c4fa31-68e7-4ffa-8783-e09885022634",
+   "name": "Update Client Health",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2368,
+    -272
+   ],
+   "retryOnFail": true,
+   "maxTries": 3,
+   "waitBetweenTries": 1000
+  },
+  {
+   "parameters": {
+    "jsCode": "const calculated = $('Apply Monthly Meeting Pace').all().map(item => item.json);\nconst counts = calculated.reduce((acc, row) => { acc[row.health] = (acc[row.health] ?? 0) + 1; return acc; }, {});\nreturn [{ json: { status: 'completed', clientsChecked: calculated.length, counts, checkedAt: new Date().toISOString() } }];"
+   },
+   "id": "217cfccc-ef52-4075-9906-be34e309d11e",
+   "name": "Health Check Summary",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2608,
+    -272
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

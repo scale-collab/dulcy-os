@@ -1,0 +1,456 @@
+{
+ "id": "2O5ubIH_WhisiQcrqBZlo",
+ "name": "[Content OS] Generate Instagram Story Sequence",
+ "active": true,
+ "isArchived": false,
+ "versionId": "34e5f603-d898-4f42-85ac-bc4c27ae06e6",
+ "triggerCount": 1,
+ "createdAt": "2026-08-20T17:12:00.812Z",
+ "updatedAt": "2026-11-17T16:41:09.586Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Story Sequence Webhook": {
+   "main": [
+    [
+     {
+      "node": "Validate Story Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate Story Request": {
+   "main": [
+    [
+     {
+      "node": "Get Story Sequence",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Story Sequence": {
+   "main": [
+    [
+     {
+      "node": "Get Parent Content",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Parent Content": {
+   "main": [
+    [
+     {
+      "node": "Prepare Story Plan",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Story Plan": {
+   "main": [
+    [
+     {
+      "node": "Generate Story Plan",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Generate Story Plan": {
+   "main": [
+    [
+     {
+      "node": "Parse Story Plan",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Parse Story Plan": {
+   "main": [
+    [
+     {
+      "node": "Resolve Frame.io Account",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Resolve Frame.io Account": {
+   "main": [
+    [
+     {
+      "node": "Select Frame.io Account",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Select Frame.io Account": {
+   "main": [
+    [
+     {
+      "node": "List Weekly Story Frames",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "List Weekly Story Frames": {
+   "main": [
+    [
+     {
+      "node": "List Approved Story Photos",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "List Approved Story Photos": {
+   "main": [
+    [
+     {
+      "node": "Expand Story Photo Folders",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Expand Story Photo Folders": {
+   "main": [
+    [
+     {
+      "node": "List Nested Approved Story Photos",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "List Nested Approved Story Photos": {
+   "main": [
+    [
+     {
+      "node": "Assign Unique Weekly Photos",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Assign Unique Weekly Photos": {
+   "main": [
+    [
+     {
+      "node": "Create Story Frame Records",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create Story Frame Records": {
+   "main": [
+    [
+     {
+      "node": "Mark Sequence Ready",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "id": "c38f43c0-86c7-40a3-9d33-9d65807b53f4",
+   "name": "Story Sequence Webhook",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    560,
+    64
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const body=$input.first().json.body??$input.first().json;const sequenceId=String(body.sequenceId??'').trim();const recordId=String(body.recordId??'').trim();if(!/^rec[a-zA-Z0-9]{14}$/.test(sequenceId))throw new Error('A valid story sequence record ID is required.');if(!/^rec[a-zA-Z0-9]{14}$/.test(recordId))throw new Error('A valid parent content record ID is required.');return [{json:{sequenceId,recordId}}];"
+   },
+   "id": "e395634d-a5f7-4536-a27f-4440d09c2663",
+   "name": "Validate Story Request",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    784,
+    64
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblB0cnjeIlhW2sSj/' + $json.sequenceId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "e0cd2d86-f793-42eb-84a2-1af116815f23",
+   "name": "Get Story Sequence",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    992,
+    -48
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblcSzvicm3wivvhh/' + $('Validate Story Request').first().json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "f7de92e5-abe8-4b38-8dc4-b16d6ad633d2",
+   "name": "Get Parent Content",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    992,
+    160
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const seq=$('Get Story Sequence').first().json;const content=$('Get Parent Content').first().json;const s=seq.fields??{};const c=content.fields??{};const title=String(c.Title??'').trim();const source=String(c['YouTube Transcript']??c.Script??c.Description??'').trim();if(!title||!source)throw new Error('The content needs a title and script, transcript, or description before creating stories.');const count=Math.max(4,Math.min(6,Number(s['Frames Requested']??5)));const mode=String(s.Mode??'Evergreen');const framework=String(s.Framework??'Auto');const brief=String(s['Sequence Brief']??'').trim();const date=String(s['Story Date']??new Date().toISOString().slice(0,10));const day=new Date(date+'T12:00:00');const delta=(day.getDay()+6)%7;const monday=new Date(day);monday.setDate(day.getDate()-delta);const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);const fmt=d=>d.toISOString().slice(0,10);const system=['Create an Instagram Story sequence for Alexander Woung. Return strict JSON only.','Use '+count+' frames. Mode: '+mode+'. Framework: '+framework+'.','Follow these rules: first frame is a strong image hook or poll; keep every frame to 1-2 short sentences or at most 3 bullets; use proof and specificity; avoid AI-sounding hype; do not hard sell unless mode is Promotional; end with a natural reply, DM, poll, or link CTA.','Use a coherent arc selected from Results-Angle-Process-Identity-Response, problem-agitation, lesson-proof-CTA, or lifestyle-authority. Space suggested posting times across the day, with frame 1 at 9:00 AM and later frames 2-3 hours apart.','For every frame include a short visualPrompt describing the most appropriate real photo from Alex approved lifestyle and business photo library. Vary settings, poses, and moods across frames.','Output shape: {\"sequenceTitle\":\"...\",\"frames\":[{\"frameNumber\":1,\"role\":\"Hook / Poll\",\"copy\":\"...\",\"interactiveElement\":\"Poll\",\"cta\":\"...\",\"visualPrompt\":\"...\",\"scheduledTime\":\"09:00\"}]}','Allowed roles: Hook / Poll, Context, Proof, Value, Process, Identity, CTA, Personal / BTS. Allowed interactive elements: None, Poll, Question, Quiz, Countdown, Link, DM Prompt.','Topic: '+title,'Optional brief: '+brief,'Source material: '+source.slice(0,12000)].join('\\n');return [{json:{sequenceId:seq.id,recordId:content.id,title,date,count,mode,framework,weekStart:fmt(monday),weekEnd:fmt(sunday),libraryFolderId:'23164113-af93-4cb5-beb6-0f5d6413433d',frameProjectId:'4dc8ec5f-18e7-4e31-be46-96851ff020c7',openAiBody:{model:'gpt-5',input:system,text:{format:{type:'json_object'}}}}}];"
+   },
+   "id": "44cd9048-de71-4ad1-b528-a23f8cdadfb1",
+   "name": "Prepare Story Plan",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1216,
+    64
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.openai.com/v1/responses",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "openAiApi",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json.openAiBody) }}",
+    "options": {
+     "timeout": 300000
+    }
+   },
+   "id": "6ed4d838-cb5d-4d9a-bd2d-a914ba6e8799",
+   "name": "Generate Story Plan",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1440,
+    64
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const cfg=$('Prepare Story Plan').first().json;const response=$input.first().json;const text=response.output_text??response.output?.flatMap(x=>x.content??[]).find(x=>x.type==='output_text')?.text??'';let parsed;try{parsed=JSON.parse(text);}catch{throw new Error('The AI did not return valid story JSON.');}const frames=Array.isArray(parsed.frames)?parsed.frames.slice(0,cfg.count):[];if(frames.length<4)throw new Error('The generated story plan contains fewer than four frames.');return [{json:{...cfg,sequenceTitle:String(parsed.sequenceTitle??cfg.title),frames}}];"
+   },
+   "id": "d3b5ca6d-9e88-42f6-8600-849c53b4fd9c",
+   "name": "Parse Story Plan",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1664,
+    64
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.frame.io/v4/accounts",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "oAuth2Api",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "192280ea-b698-48f4-ba67-b25baf5f7086",
+   "name": "Resolve Frame.io Account",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1872,
+    64
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const cfg=$('Parse Story Plan').first().json;const raw=$input.first().json;const accounts=Array.isArray(raw)?raw:(raw.data??raw.items??raw.accounts??[]);const preferred=accounts.find(x=>String(x.name??x.data?.name??'').toLowerCase().includes('alexander'))??accounts[0];const accountId=preferred?.id??preferred?.data?.id??'';if(!accountId)throw new Error('Frame.io account could not be resolved.');return [{json:{...cfg,accountId}}];"
+   },
+   "id": "7902d9a4-8780-4f59-b92a-c3fb6ccd476a",
+   "name": "Select Frame.io Account",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2096,
+    64
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.frame.io/v4/accounts/' + $('Select Frame.io Account').first().json.accountId + '/folders/' + $('Select Frame.io Account').first().json.libraryFolderId + '/children' }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "oAuth2Api",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "44088d91-6ee9-4154-93b4-ffd3d010aa45",
+   "name": "List Approved Story Photos",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2320,
+    -32
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tblRks0M8xnNa3XPr?maxRecords=500",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "15dfd5bb-2c0f-4515-aca7-ed059c0af8f0",
+   "name": "List Weekly Story Frames",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2320,
+    144
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const cfg=$('Select Frame.io Account').first().json;const raw=$input.first().json;const list=x=>Array.isArray(x)?x:(x.data??x.items??x.children??[]);const folders=list(raw).filter(x=>String(x.type??x.data?.type??'').toLowerCase()==='folder').map(x=>({id:x.id??x.data?.id??'',name:String(x.name??x.data?.name??'Photo folder')})).filter(x=>x.id);if(!folders.length)throw new Error('The approved Frame.io photo library has no child folders to scan.');return folders.map(folder=>({json:{...cfg,photoFolderId:folder.id,photoFolderName:folder.name}}));"
+   },
+   "id": "08522e04-d934-46dd-8362-994be52b3d37",
+   "name": "Expand Story Photo Folders",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2544,
+    -32
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.frame.io/v4/accounts/' + $json.accountId + '/folders/' + $json.photoFolderId + '/children' }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "oAuth2Api",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "d14f0938-4d31-435f-9145-f3c1e506aa72",
+   "name": "List Nested Approved Story Photos",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2752,
+    -32
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const cfg=$('Select Frame.io Account').first().json;const usedRaw=$('List Weekly Story Frames').first().json;const responses=$('List Nested Approved Story Photos').all().map(i=>i.json);const list=x=>Array.isArray(x)?x:(x.data??x.items??x.children??x.records??[]);const norm=x=>String(x??'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').replace(/\\s+/g,' ').trim();const tokens=x=>new Set(norm(x).split(' ').filter(w=>w.length>2));const assets=responses.flatMap(list);const photos=assets.filter(x=>{const type=String(x.type??x.data?.type??'').toLowerCase();const media=String(x.media_type_name??x.media_type??x.data?.media_type_name??x.data?.media_type??'').toLowerCase();return (type==='file'||!type)&&(media.startsWith('image')||/\\.(png|jpe?g|webp|heic)$/i.test(String(x.name??x.data?.name??'')));}).map(x=>{const id=x.id??x.data?.id??'';const stable=x.view_url??x.data?.view_url??(id?'https://next.frame.io/project/'+cfg.frameProjectId+'/'+id:'');return {id,name:String(x.name??x.data?.name??'Approved photo'),url:stable,updated:String(x.updated_at??x.created_at??'')};}).filter(x=>x.id&&x.url).filter((x,i,a)=>a.findIndex(y=>y.id===x.id)===i);const start=cfg.weekStart+'T00:00:00';const end=cfg.weekEnd+'T23:59:59';const used=new Set(list(usedRaw).filter(r=>{const at=String(r.fields?.['Scheduled At']??'');return at>=start&&at<=end;}).map(r=>String(r.fields?.['Asset Source URL']??'')).filter(Boolean));const available=photos.filter(p=>!used.has(p.url));if(available.length<cfg.frames.length)throw new Error('Only '+available.length+' unused approved Frame.io photos remain for '+cfg.weekStart+' through '+cfg.weekEnd+'. Add photos or review the week before generating this sequence.');const chosen=new Set();const score=(photo,frame)=>{const wanted=tokens([frame.visualPrompt,frame.copy,frame.role].join(' '));const have=tokens(photo.name);let n=0;for(const word of wanted)if(have.has(word))n+=10;return n;};const startAt=new Date(cfg.date+'T09:00:00');return cfg.frames.map((frame,index)=>{const candidates=available.filter(p=>!chosen.has(p.id)).sort((a,b)=>score(b,frame)-score(a,frame)||b.updated.localeCompare(a.updated)||a.id.localeCompare(b.id));const photo=candidates[0];chosen.add(photo.id);const at=new Date(startAt);at.setHours(9+index*2,index%2?30:0,0,0);const frameNumber=index+1;const role=String(frame.role??(index===0?'Hook / Poll':index===cfg.frames.length-1?'CTA':'Value'));const copy=String(frame.copy??'');const interactiveElement=String(frame.interactiveElement??'None');const cta=String(frame.cta??'');const scheduledAt=at.toISOString();const airtableBody={typecast:true,records:[{fields:{'Story Frame':cfg.sequenceTitle+' · Frame '+frameNumber,'Story Sequence':[cfg.sequenceId],'Parent Content':[cfg.recordId],'Frame Number':frameNumber,'Frame Role':role,'Frame Copy':copy,'Asset Source URL':photo.url,'Interactive Element':interactiveElement,'CTA / Link':cta,'Scheduled At':scheduledAt,'Status':'Draft'}}]};return {json:{...cfg,frames:undefined,frameNumber,role,copy,interactiveElement,cta,visualPrompt:String(frame.visualPrompt??''),scheduledAt,photoName:photo.name,photoUrl:photo.url,airtableBody}};});"
+   },
+   "id": "79e6b697-4798-4719-a29b-cc059b344552",
+   "name": "Assign Unique Weekly Photos",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2976,
+    64
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tblRks0M8xnNa3XPr",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json.airtableBody) }}",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "ffe9d77e-8428-4c11-b562-01840c0e964a",
+   "name": "Create Story Frame Records",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2752,
+    64
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblB0cnjeIlhW2sSj/' + $('Prepare Story Plan').first().json.sequenceId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"fields\":{\"Status\":\"Needs Review\",\"Generation Notes\":\"Story copy, schedule, and unique approved Frame.io photo selections created. Photos are not reused within the same Monday-Sunday content week.\",\"Generate Sequence\":false,\"Automation Error\":\"\"}}",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "7a32db26-a1eb-469b-9977-582323af09ed",
+   "name": "Mark Sequence Ready",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2976,
+    64
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

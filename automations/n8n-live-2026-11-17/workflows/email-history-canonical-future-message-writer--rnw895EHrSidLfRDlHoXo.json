@@ -1,0 +1,604 @@
+{
+ "id": "rnw895EHrSidLfRDlHoXo",
+ "name": "[EMAIL HISTORY] Canonical future-message writer",
+ "active": true,
+ "isArchived": false,
+ "versionId": "9d792e3c-ba7c-4ec4-9d87-89fe9e669533",
+ "triggerCount": 1,
+ "createdAt": "2026-10-09T22:09:38.911Z",
+ "updatedAt": "2026-11-17T16:43:42.660Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "timezone": "Etc/UTC",
+  "callerPolicy": "workflowsFromSameOwner",
+  "executionTimeout": 540,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Every 10 minutes": {
+   "main": [
+    [
+     {
+      "node": "Get History Events",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get History Events": {
+   "main": [
+    [
+     {
+      "node": "Read change index once",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read change index once": {
+   "main": [
+    [
+     {
+      "node": "Get Conversation Change Index",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Conversation Change Index": {
+   "main": [
+    [
+     {
+      "node": "Prepare History Batches",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare History Batches": {
+   "main": [
+    [
+     {
+      "node": "Any New or Changed Histories?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Any New or Changed Histories?": {
+   "main": [
+    [
+     {
+      "node": "Prepare History Read Requests",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "No History Changes",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare History Read Requests": {
+   "main": [
+    [
+     {
+      "node": "Get Email Record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Email Record": {
+   "main": [
+    [
+     {
+      "node": "Render Canonical History",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Render Canonical History": {
+   "main": [
+    [
+     {
+      "node": "Prepare Pre-write Recheck",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Pre-write Recheck": {
+   "main": [
+    [
+     {
+      "node": "Recheck Current Histories",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Recheck Current Histories": {
+   "main": [
+    [
+     {
+      "node": "Prepare History Effects",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare History Effects": {
+   "main": [
+    [
+     {
+      "node": "Expand History Effects",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Expand History Effects": {
+   "main": [
+    [
+     {
+      "node": "Apply History Effects",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Apply History Effects": {
+   "main": [
+    [
+     {
+      "node": "Prepare Durable Checkpoints",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Durable Checkpoints": {
+   "main": [
+    [
+     {
+      "node": "Save Durable Checkpoints",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Save Durable Checkpoints": {
+   "main": [
+    [
+     {
+      "node": "Report New History Reviews",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "minutes",
+       "minutesInterval": 10
+      }
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    0
+   ],
+   "id": "7b8a4f8d-a9cf-4c50-b190-5a9de7a1e91e",
+   "name": "Every 10 minutes"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblHznksXyc3DZAUu",
+     "mode": "list",
+     "cachedResultName": "Dulcy Reply Agent Events",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblHznksXyc3DZAUu"
+    },
+    "filterByFormula": "=OR(LEFT({Event Key},11)='history:v1:',LEFT({Event Key},18)='history-review:v1:',LEFT({Event Key},22)='history-checkpoint:v1:')",
+    "options": {
+     "fields": [
+      "Event Key",
+      "Payload JSON"
+     ]
+    },
+    "returnAll": true
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    200,
+    0
+   ],
+   "id": "2db84fc3-68fd-4bd6-b20f-11414a1cb91c",
+   "name": "Get History Events",
+   "alwaysOutputData": true,
+   "retryOnFail": true,
+   "maxTries": 3,
+   "waitBetweenTries": 5000
+  },
+  {
+   "id": "89ae8a62-97f4-46ee-8c0b-7632f571c79d",
+   "name": "Read change index once",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    400,
+    0
+   ],
+   "parameters": {
+    "jsCode": "// Read only the thin change index for conversations with canonical events.\nconst ids=new Set();\nfor(const item of $input.all()){\n const r=item.json.fields||item.json;if(!String(r['Event Key']||'').startsWith('history:v1:'))continue;\n try{const p=JSON.parse(r['Payload JSON']||'');if(/^rec[A-Za-zA-Z0-9]{14,}$/.test(String(p.recordId||'')))ids.add(p.recordId);}catch{}\n}\nconst list=[...ids],out=[];\nfor(let i=0;i<list.length;i+=40){const group=list.slice(i,i+40);out.push({json:{filter:'OR('+group.map(id=>'RECORD_ID()='+JSON.stringify(id)).join(',')+')',recordIds:group}});}\nreturn out.length?out:[{json:{filter:'FALSE()',recordIds:[]}}];\n"
+   }
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblADFhWhTcLrl1UY",
+     "mode": "list",
+     "cachedResultName": "Emails",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY"
+    },
+    "filterByFormula": "={{ $json.filter }}",
+    "returnAll": true,
+    "options": {
+     "fields": [
+      "Last Reply"
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    600,
+    0
+   ],
+   "id": "988142f9-3bee-47d1-accc-aaeb1cd3b4ae",
+   "name": "Get Conversation Change Index",
+   "alwaysOutputData": true,
+   "retryOnFail": true,
+   "waitBetweenTries": 5000,
+   "maxTries": 3
+  },
+  {
+   "id": "e042f68b-847d-4671-84b9-e23d32cd4866",
+   "name": "Prepare History Batches",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    800,
+    0
+   ],
+   "parameters": {
+    "jsCode": "function snapshotDigest(value){\n const text=String(value),bytes=[];\n for(let i=0;i<text.length;i++){let c=text.codePointAt(i);if(c>65535)i++;if(c>=0xd800&&c<=0xdfff)c=0xfffd;if(c<128)bytes.push(c);else if(c<2048)bytes.push(192|(c>>>6),128|(c&63));else if(c<65536)bytes.push(224|(c>>>12),128|((c>>>6)&63),128|(c&63));else bytes.push(240|(c>>>18),128|((c>>>12)&63),128|((c>>>6)&63),128|(c&63));}\n const bitLength=bytes.length*8;bytes.push(128);while(bytes.length%64!==56)bytes.push(0);for(let i=7;i>=0;i--)bytes.push(i>=4?Math.floor(bitLength/2**(8*i))&255:(bitLength/2**(8*i))&255);\n const k=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];\n const h=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19],w=new Uint32Array(64),rotr=(x,n)=>(x>>>n)|(x<<(32-n));\n for(let start=0;start<bytes.length;start+=64){for(let i=0;i<16;i++)w[i]=(bytes[start+4*i]<<24)|(bytes[start+4*i+1]<<16)|(bytes[start+4*i+2]<<8)|bytes[start+4*i+3];for(let i=16;i<64;i++){const x=w[i-15],y=w[i-2];w[i]=(w[i-16]+(rotr(x,7)^rotr(x,18)^(x>>>3))+w[i-7]+(rotr(y,17)^rotr(y,19)^(y>>>10)))>>>0;}\n let[a,b,c,d,e,f,g,z]=h;for(let i=0;i<64;i++){const t1=(z+(rotr(e,6)^rotr(e,11)^rotr(e,25))+((e&f)^(~e&g))+k[i]+w[i])>>>0,t2=((rotr(a,2)^rotr(a,13)^rotr(a,22))+((a&b)^(a&c)^(b&c)))>>>0;z=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=b;b=a;a=(t1+t2)>>>0;}for(const[i,x]of[a,b,c,d,e,f,g,z].entries())h[i]=(h[i]+x)>>>0;}\n return h.map(x=>x.toString(16).padStart(8,'0')).join('');\n}\n\n// A checkpoint is acknowledged only after its exact Airtable result is verified.\nconst PROCESSOR_VERSION='history-incremental-v1-plain-prefix2';\nconst flat=x=>x?.json?.fields?{id:x.json.id,...x.json.fields}:x?.json||{};\nfunction stable(x){if(Array.isArray(x))return x.map(stable);if(x&&typeof x==='object')return Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])]));return x;}\nconst source=$('Get History Events').all().map(flat),index=new Map(),checkpoints=new Map(),known=new Set(),grouped=new Map(),invalid=[];\nfor(const item of $input.all()){const r=flat(item);if(!r.id)continue;if(index.has(r.id))throw Error('Duplicate conversation change-index identity');index.set(r.id,String(r['Last Reply']||''));}\nfor(const r of source){\n const key=String(r['Event Key']||'');\n if(key.startsWith('history-review:v1:')){known.add(key);continue;}\n if(key.startsWith('history-checkpoint:v1:')){\n  const id=key.slice('history-checkpoint:v1:'.length);let p;try{p=JSON.parse(r['Payload JSON']||'');}catch{continue;}\n  if(checkpoints.has(id))throw Error('Duplicate durable history checkpoint for '+id);\n  if(p.version===1&&p.recordId===id&&/^[a-f0-9]{64}$/.test(String(p.inputDigest||''))&&/^[a-f0-9]{64}$/.test(String(p.historyDigest||''))&&typeof p.recordExists==='boolean'&&typeof p.historyModifiedAt==='string'&&['materialized','review_required','blocked_invalid'].includes(p.status))checkpoints.set(id,p);\n  continue;\n }\n if(!key.startsWith('history:v1:'))continue;\n let p,reason;try{p=JSON.parse(r['Payload JSON']||'');}catch{reason='Missing or malformed event payload';}\n if(!reason&&(!p||p.version!==1||p.key!==key))reason='Canonical event identity mismatch';\n if(!reason&&!/^rec[A-Za-zA-Z0-9]{14,}$/.test(String(p.recordId||'')))reason='Canonical event has invalid Email record ID';\n if(!reason&&(!p.body||typeof p.body!=='string'||!p.clock?.iso||!Number.isFinite(Date.parse(p.clock.iso))||!p.messageId||!p.fingerprint||!p.admittedAt||!['inbound','outbound'].includes(p.direction)))reason='Canonical event is missing complete message fields';\n if(!reason&&p.storageVersion!=null&&p.storageVersion!==2)reason='Unsupported canonical storage version';\n if(!reason&&p.storageVersion===2&&(!/^[a-f0-9]{64}$/.test(String(p.priorHistoryDigest||''))||!String(p.baselineEventKey||'').startsWith('history:v1:')))reason='Invalid compact history snapshot proof';\n if(reason){invalid.push({id:String(r.id||''),key,recordId:/^rec[A-Za-z0-9]{14,}$/.test(String(p?.recordId||''))?p.recordId:'',reason,payloadDigest:snapshotDigest(String(r['Payload JSON']||''))});continue;}\n const es=grouped.get(p.recordId)||[];es.push(p);grouped.set(p.recordId,es);\n}\nconst blocked=new Map(),reviews=[];\nconst parent=k=>String(k).slice(0,String(k).lastIndexOf(':'));\nfor(const bad of invalid){\n const affected=new Set(bad.recordId?[bad.recordId]:[]);\n for(const [id,es] of grouped)if(es.some(e=>parent(e.key)===parent(bad.key)))affected.add(id);\n for(const id of affected){const v=blocked.get(id)||[];v.push(bad);blocked.set(id,v);}\n const reviewKey='history-review:v1:event:'+bad.id+':'+bad.payloadDigest;\n if(!known.has(reviewKey))reviews.push({kind:'review',reviewType:'malformed_history_event',reviewKey,recordId:bad.recordId,sourceEventId:bad.id,reason:bad.reason,affectedRecordIds:[...affected],eventKeys:[bad.key],occurredAt:new Date().toISOString(),newReview:true,checkpointEligible:false});\n}\nconst batches=[];let skipped=0;\nfor(const [id,es] of grouped){\n const bad=blocked.get(id)||[],events=[...es].sort((a,b)=>String(a.key).localeCompare(String(b.key))||String(a.fingerprint).localeCompare(String(b.fingerprint))||String(a.admittedAt).localeCompare(String(b.admittedAt))||JSON.stringify(stable(a)).localeCompare(JSON.stringify(stable(b))));\n const inputDigest=snapshotDigest(JSON.stringify(stable({processorVersion:PROCESSOR_VERSION,events,invalid:bad})));\n const cp=checkpoints.get(id),recordExists=index.has(id),modified=index.get(id)||'';\n if(cp&&cp.processorVersion===PROCESSOR_VERSION&&cp.inputDigest===inputDigest&&cp.recordExists===recordExists&&cp.historyModifiedAt===modified){skipped++;continue;}\n batches.push({recordId:id,events:es,blockedByInvalidEvents:bad.map(x=>x.id),knownReviewKeys:[...known].filter(k=>k.startsWith('history-review:v1:'+id+':')),inputDigest,processorVersion:PROCESSOR_VERSION,indexModifiedAt:modified,indexExists:recordExists});\n}\nreturn [{json:{batches,invalidReviews:reviews,knownReviewKeys:[...known],summary:{processorVersion:PROCESSOR_VERSION,eventRows:source.length,conversations:grouped.size,pending:batches.length,skipped,invalidEvents:invalid.length,newMalformedReviews:reviews.length},workRequired:batches.length>0||reviews.length>0}}];\n"
+   }
+  },
+  {
+   "id": "b767ba0c-3c66-49c1-b75f-bf130d41dbb3",
+   "name": "Any New or Changed Histories?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    1000,
+    0
+   ],
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "dd9bfd63-c232-4358-be0c-140a7e0abc1d",
+       "leftValue": "={{ $json.workRequired }}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   }
+  },
+  {
+   "id": "6edaabc2-2393-4d5f-a1f4-8ee386d7c84b",
+   "name": "Prepare History Read Requests",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1200,
+    0
+   ],
+   "parameters": {
+    "jsCode": "const plan=$input.first().json,ids=plan.batches.map(b=>b.recordId),out=[];\nfor(let i=0;i<ids.length;i+=40){const group=ids.slice(i,i+40);out.push({json:{recordIds:group,filter:'OR('+group.map(id=>'RECORD_ID()='+JSON.stringify(id)).join(',')+')'}});}\nif(!out.length)out.push({json:{recordIds:[],filter:'FALSE()'}});\nreturn out;\n"
+   }
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblADFhWhTcLrl1UY",
+     "mode": "list",
+     "cachedResultName": "Emails",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY"
+    },
+    "filterByFormula": "={{ $json.filter }}",
+    "returnAll": true,
+    "options": {
+     "fields": [
+      "Conversation History",
+      "Last Reply"
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1400,
+    0
+   ],
+   "id": "47f9eccf-e46d-4253-8063-de9a6bba8802",
+   "name": "Get Email Record",
+   "alwaysOutputData": true,
+   "retryOnFail": true,
+   "waitBetweenTries": 5000,
+   "maxTries": 3
+  },
+  {
+   "id": "20f00b54-fbb4-4b85-ac98-82fe2654fe48",
+   "name": "Render Canonical History",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1600,
+    0
+   ],
+   "parameters": {
+    "jsCode": "function snapshotDigest(value){\n const text=String(value),bytes=[];\n for(let i=0;i<text.length;i++){let c=text.codePointAt(i);if(c>65535)i++;if(c>=0xd800&&c<=0xdfff)c=0xfffd;if(c<128)bytes.push(c);else if(c<2048)bytes.push(192|(c>>>6),128|(c&63));else if(c<65536)bytes.push(224|(c>>>12),128|((c>>>6)&63),128|(c&63));else bytes.push(240|(c>>>18),128|((c>>>12)&63),128|((c>>>6)&63),128|(c&63));}\n const bitLength=bytes.length*8;bytes.push(128);while(bytes.length%64!==56)bytes.push(0);for(let i=7;i>=0;i--)bytes.push(i>=4?Math.floor(bitLength/2**(8*i))&255:(bitLength/2**(8*i))&255);\n const k=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];\n const h=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19],w=new Uint32Array(64),rotr=(x,n)=>(x>>>n)|(x<<(32-n));\n for(let start=0;start<bytes.length;start+=64){for(let i=0;i<16;i++)w[i]=(bytes[start+4*i]<<24)|(bytes[start+4*i+1]<<16)|(bytes[start+4*i+2]<<8)|bytes[start+4*i+3];for(let i=16;i<64;i++){const x=w[i-15],y=w[i-2];w[i]=(w[i-16]+(rotr(x,7)^rotr(x,18)^(x>>>3))+w[i-7]+(rotr(y,17)^rotr(y,19)^(y>>>10)))>>>0;}\n let[a,b,c,d,e,f,g,z]=h;for(let i=0;i<64;i++){const t1=(z+(rotr(e,6)^rotr(e,11)^rotr(e,25))+((e&f)^(~e&g))+k[i]+w[i])>>>0,t2=((rotr(a,2)^rotr(a,13)^rotr(a,22))+((a&b)^(a&c)^(b&c)))>>>0;z=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=b;b=a;a=(t1+t2)>>>0;}for(const[i,x]of[a,b,c,d,e,f,g,z].entries())h[i]=(h[i]+x)>>>0;}\n return h.map(x=>x.toString(16).padStart(8,'0')).join('');\n}\n\nconst markdownParser=(()=>{\n/**\n * marked v17.0.5 - a markdown parser\n * Copyright (c) 2018-2026, MarkedJS. (MIT License)\n * Copyright (c) 2011-2018, Christopher Jeffrey. (MIT License)\n * https://github.com/markedjs/marked\n */\n\n/**\n * DO NOT EDIT THIS FILE\n * The code in this file is generated from files in ./src/\n */\n\nfunction M(){return{async:!1,breaks:!1,extensions:null,gfm:!0,hooks:null,pedantic:!1,renderer:null,silent:!1,tokenizer:null,walkTokens:null}}var T=M();function G(u){T=u}var _={exec:()=>null};function k(u,e=\"\"){let t=typeof u==\"string\"?u:u.source,n={replace:(r,i)=>{let s=typeof i==\"string\"?i:i.source;return s=s.replace(m.caret,\"$1\"),t=t.replace(r,s),n},getRegex:()=>new RegExp(t,e)};return n}var be=(()=>{try{return!!new RegExp(\"(?<=1)(?<!1)\")}catch{return!1}})(),m={codeRemoveIndent:/^(?: {1,4}| {0,3}\\t)/gm,outputLinkReplace:/\\\\([\\[\\]])/g,indentCodeCompensation:/^(\\s+)(?:```)/,beginningSpace:/^\\s+/,endingHash:/#$/,startingSpaceChar:/^ /,endingSpaceChar:/ $/,nonSpaceChar:/[^ ]/,newLineCharGlobal:/\\n/g,tabCharGlobal:/\\t/g,multipleSpaceGlobal:/\\s+/g,blankLine:/^[ \\t]*$/,doubleBlankLine:/\\n[ \\t]*\\n[ \\t]*$/,blockquoteStart:/^ {0,3}>/,blockquoteSetextReplace:/\\n {0,3}((?:=+|-+) *)(?=\\n|$)/g,blockquoteSetextReplace2:/^ {0,3}>[ \\t]?/gm,listReplaceNesting:/^ {1,4}(?=( {4})*[^ ])/g,listIsTask:/^\\[[ xX]\\] +\\S/,listReplaceTask:/^\\[[ xX]\\] +/,listTaskCheckbox:/\\[[ xX]\\]/,anyLine:/\\n.*\\n/,hrefBrackets:/^<(.*)>$/,tableDelimiter:/[:|]/,tableAlignChars:/^\\||\\| *$/g,tableRowBlankLine:/\\n[ \\t]*$/,tableAlignRight:/^ *-+: *$/,tableAlignCenter:/^ *:-+: *$/,tableAlignLeft:/^ *:-+ *$/,startATag:/^<a /i,endATag:/^<\\/a>/i,startPreScriptTag:/^<(pre|code|kbd|script)(\\s|>)/i,endPreScriptTag:/^<\\/(pre|code|kbd|script)(\\s|>)/i,startAngleBracket:/^</,endAngleBracket:/>$/,pedanticHrefTitle:/^([^'\"]*[^\\s])\\s+(['\"])(.*)\\2/,unicodeAlphaNumeric:/[\\p{L}\\p{N}]/u,escapeTest:/[&<>\"']/,escapeReplace:/[&<>\"']/g,escapeTestNoEncode:/[<>\"']|&(?!(#\\d{1,7}|#[Xx][a-fA-F0-9]{1,6}|\\w+);)/,escapeReplaceNoEncode:/[<>\"']|&(?!(#\\d{1,7}|#[Xx][a-fA-F0-9]{1,6}|\\w+);)/g,caret:/(^|[^\\[])\\^/g,percentDecode:/%25/g,findPipe:/\\|/g,splitPipe:/ \\|/,slashPipe:/\\\\\\|/g,carriageReturn:/\\r\\n|\\r/g,spaceLine:/^ +$/gm,notSpaceStart:/^\\S*/,endingNewline:/\\n$/,listItemRegex:u=>new RegExp(`^( {0,3}${u})((?:[\t ][^\\\\n]*)?(?:\\\\n|$))`),nextBulletRegex:u=>new RegExp(`^ {0,${Math.min(3,u-1)}}(?:[*+-]|\\\\d{1,9}[.)])((?:[ \t][^\\\\n]*)?(?:\\\\n|$))`),hrRegex:u=>new RegExp(`^ {0,${Math.min(3,u-1)}}((?:- *){3,}|(?:_ *){3,}|(?:\\\\* *){3,})(?:\\\\n+|$)`),fencesBeginRegex:u=>new RegExp(`^ {0,${Math.min(3,u-1)}}(?:\\`\\`\\`|~~~)`),headingBeginRegex:u=>new RegExp(`^ {0,${Math.min(3,u-1)}}#`),htmlBeginRegex:u=>new RegExp(`^ {0,${Math.min(3,u-1)}}<(?:[a-z].*>|!--)`,\"i\"),blockquoteBeginRegex:u=>new RegExp(`^ {0,${Math.min(3,u-1)}}>`)},Re=/^(?:[ \\t]*(?:\\n|$))+/,Te=/^((?: {4}| {0,3}\\t)[^\\n]+(?:\\n(?:[ \\t]*(?:\\n|$))*)?)+/,Oe=/^ {0,3}(`{3,}(?=[^`\\n]*(?:\\n|$))|~{3,})([^\\n]*)(?:\\n|$)(?:|([\\s\\S]*?)(?:\\n|$))(?: {0,3}\\1[~`]* *(?=\\n|$)|$)/,C=/^ {0,3}((?:-[\\t ]*){3,}|(?:_[ \\t]*){3,}|(?:\\*[ \\t]*){3,})(?:\\n+|$)/,we=/^ {0,3}(#{1,6})(?=\\s|$)(.*)(?:\\n+|$)/,Q=/ {0,3}(?:[*+-]|\\d{1,9}[.)])/,se=/^(?!bull |blockCode|fences|blockquote|heading|html|table)((?:.|\\n(?!\\s*?\\n|bull |blockCode|fences|blockquote|heading|html|table))+?)\\n {0,3}(=+|-+) *(?:\\n+|$)/,ie=k(se).replace(/bull/g,Q).replace(/blockCode/g,/(?: {4}| {0,3}\\t)/).replace(/fences/g,/ {0,3}(?:`{3,}|~{3,})/).replace(/blockquote/g,/ {0,3}>/).replace(/heading/g,/ {0,3}#{1,6}/).replace(/html/g,/ {0,3}<[^\\n>]+>\\n/).replace(/\\|table/g,\"\").getRegex(),ye=k(se).replace(/bull/g,Q).replace(/blockCode/g,/(?: {4}| {0,3}\\t)/).replace(/fences/g,/ {0,3}(?:`{3,}|~{3,})/).replace(/blockquote/g,/ {0,3}>/).replace(/heading/g,/ {0,3}#{1,6}/).replace(/html/g,/ {0,3}<[^\\n>]+>\\n/).replace(/table/g,/ {0,3}\\|?(?:[:\\- ]*\\|)+[\\:\\- ]*\\n/).getRegex(),j=/^([^\\n]+(?:\\n(?!hr|heading|lheading|blockquote|fences|list|html|table| +\\n)[^\\n]+)*)/,Pe=/^[^\\n]+/,F=/(?!\\s*\\])(?:\\\\[\\s\\S]|[^\\[\\]\\\\])+/,Se=k(/^ {0,3}\\[(label)\\]: *(?:\\n[ \\t]*)?([^<\\s][^\\s]*|<.*?>)(?:(?: +(?:\\n[ \\t]*)?| *\\n[ \\t]*)(title))? *(?:\\n+|$)/).replace(\"label\",F).replace(\"title\",/(?:\"(?:\\\\\"?|[^\"\\\\])*\"|'[^'\\n]*(?:\\n[^'\\n]+)*\\n?'|\\([^()]*\\))/).getRegex(),$e=k(/^(bull)([ \\t][^\\n]+?)?(?:\\n|$)/).replace(/bull/g,Q).getRegex(),v=\"address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul\",U=/<!--(?:-?>|[\\s\\S]*?(?:-->|$))/,_e=k(\"^ {0,3}(?:<(script|pre|style|textarea)[\\\\s>][\\\\s\\\\S]*?(?:</\\\\1>[^\\\\n]*\\\\n+|$)|comment[^\\\\n]*(\\\\n+|$)|<\\\\?[\\\\s\\\\S]*?(?:\\\\?>\\\\n*|$)|<![A-Z][\\\\s\\\\S]*?(?:>\\\\n*|$)|<!\\\\[CDATA\\\\[[\\\\s\\\\S]*?(?:\\\\]\\\\]>\\\\n*|$)|</?(tag)(?: +|\\\\n|/?>)[\\\\s\\\\S]*?(?:(?:\\\\n[ \t]*)+\\\\n|$)|<(?!script|pre|style|textarea)([a-z][\\\\w-]*)(?:attribute)*? */?>(?=[ \\\\t]*(?:\\\\n|$))[\\\\s\\\\S]*?(?:(?:\\\\n[ \t]*)+\\\\n|$)|</(?!script|pre|style|textarea)[a-z][\\\\w-]*\\\\s*>(?=[ \\\\t]*(?:\\\\n|$))[\\\\s\\\\S]*?(?:(?:\\\\n[ \t]*)+\\\\n|$))\",\"i\").replace(\"comment\",U).replace(\"tag\",v).replace(\"attribute\",/ +[a-zA-Z:_][\\w.:-]*(?: *= *\"[^\"\\n]*\"| *= *'[^'\\n]*'| *= *[^\\s\"'=<>`]+)?/).getRegex(),oe=k(j).replace(\"hr\",C).replace(\"heading\",\" {0,3}#{1,6}(?:\\\\s|$)\").replace(\"|lheading\",\"\").replace(\"|table\",\"\").replace(\"blockquote\",\" {0,3}>\").replace(\"fences\",\" {0,3}(?:`{3,}(?=[^`\\\\n]*\\\\n)|~{3,})[^\\\\n]*\\\\n\").replace(\"list\",\" {0,3}(?:[*+-]|1[.)])[ \\\\t]\").replace(\"html\",\"</?(?:tag)(?: +|\\\\n|/?>)|<(?:script|pre|style|textarea|!--)\").replace(\"tag\",v).getRegex(),Le=k(/^( {0,3}> ?(paragraph|[^\\n]*)(?:\\n|$))+/).replace(\"paragraph\",oe).getRegex(),K={blockquote:Le,code:Te,def:Se,fences:Oe,heading:we,hr:C,html:_e,lheading:ie,list:$e,newline:Re,paragraph:oe,table:_,text:Pe},ne=k(\"^ *([^\\\\n ].*)\\\\n {0,3}((?:\\\\| *)?:?-+:? *(?:\\\\| *:?-+:? *)*(?:\\\\| *)?)(?:\\\\n((?:(?! *\\\\n|hr|heading|blockquote|code|fences|list|html).*(?:\\\\n|$))*)\\\\n*|$)\").replace(\"hr\",C).replace(\"heading\",\" {0,3}#{1,6}(?:\\\\s|$)\").replace(\"blockquote\",\" {0,3}>\").replace(\"code\",\"(?: {4}| {0,3}\t)[^\\\\n]\").replace(\"fences\",\" {0,3}(?:`{3,}(?=[^`\\\\n]*\\\\n)|~{3,})[^\\\\n]*\\\\n\").replace(\"list\",\" {0,3}(?:[*+-]|1[.)])[ \\\\t]\").replace(\"html\",\"</?(?:tag)(?: +|\\\\n|/?>)|<(?:script|pre|style|textarea|!--)\").replace(\"tag\",v).getRegex(),Me={...K,lheading:ye,table:ne,paragraph:k(j).replace(\"hr\",C).replace(\"heading\",\" {0,3}#{1,6}(?:\\\\s|$)\").replace(\"|lheading\",\"\").replace(\"table\",ne).replace(\"blockquote\",\" {0,3}>\").replace(\"fences\",\" {0,3}(?:`{3,}(?=[^`\\\\n]*\\\\n)|~{3,})[^\\\\n]*\\\\n\").replace(\"list\",\" {0,3}(?:[*+-]|1[.)])[ \\\\t]\").replace(\"html\",\"</?(?:tag)(?: +|\\\\n|/?>)|<(?:script|pre|style|textarea|!--)\").replace(\"tag\",v).getRegex()},ze={...K,html:k(`^ *(?:comment *(?:\\\\n|\\\\s*$)|<(tag)[\\\\s\\\\S]+?</\\\\1> *(?:\\\\n{2,}|\\\\s*$)|<tag(?:\"[^\"]*\"|'[^']*'|\\\\s[^'\"/>\\\\s]*)*?/?> *(?:\\\\n{2,}|\\\\s*$))`).replace(\"comment\",U).replace(/tag/g,\"(?!(?:a|em|strong|small|s|cite|q|dfn|abbr|data|time|code|var|samp|kbd|sub|sup|i|b|u|mark|ruby|rt|rp|bdi|bdo|span|br|wbr|ins|del|img)\\\\b)\\\\w+(?!:|[^\\\\w\\\\s@]*@)\\\\b\").getRegex(),def:/^ *\\[([^\\]]+)\\]: *<?([^\\s>]+)>?(?: +([\"(][^\\n]+[\")]))? *(?:\\n+|$)/,heading:/^(#{1,6})(.*)(?:\\n+|$)/,fences:_,lheading:/^(.+?)\\n {0,3}(=+|-+) *(?:\\n+|$)/,paragraph:k(j).replace(\"hr\",C).replace(\"heading\",` *#{1,6} *[^\n]`).replace(\"lheading\",ie).replace(\"|table\",\"\").replace(\"blockquote\",\" {0,3}>\").replace(\"|fences\",\"\").replace(\"|list\",\"\").replace(\"|html\",\"\").replace(\"|tag\",\"\").getRegex()},Ee=/^\\\\([!\"#$%&'()*+,\\-./:;<=>?@\\[\\]\\\\^_`{|}~])/,Ie=/^(`+)([^`]|[^`][\\s\\S]*?[^`])\\1(?!`)/,ae=/^( {2,}|\\\\)\\n(?!\\s*$)/,Ae=/^(`+|[^`])(?:(?= {2,}\\n)|[\\s\\S]*?(?:(?=[\\\\<!\\[`*_]|\\b_|$)|[^ ](?= {2,}\\n)))/,z=/[\\p{P}\\p{S}]/u,H=/[\\s\\p{P}\\p{S}]/u,W=/[^\\s\\p{P}\\p{S}]/u,Ce=k(/^((?![*_])punctSpace)/,\"u\").replace(/punctSpace/g,H).getRegex(),le=/(?!~)[\\p{P}\\p{S}]/u,Be=/(?!~)[\\s\\p{P}\\p{S}]/u,De=/(?:[^\\s\\p{P}\\p{S}]|~)/u,qe=k(/link|precode-code|html/,\"g\").replace(\"link\",/\\[(?:[^\\[\\]`]|(?<a>`+)[^`]+\\k<a>(?!`))*?\\]\\((?:\\\\[\\s\\S]|[^\\\\\\(\\)]|\\((?:\\\\[\\s\\S]|[^\\\\\\(\\)])*\\))*\\)/).replace(\"precode-\",be?\"(?<!`)()\":\"(^^|[^`])\").replace(\"code\",/(?<b>`+)[^`]+\\k<b>(?!`)/).replace(\"html\",/<(?! )[^<>]*?>/).getRegex(),ue=/^(?:\\*+(?:((?!\\*)punct)|([^\\s*]))?)|^_+(?:((?!_)punct)|([^\\s_]))?/,ve=k(ue,\"u\").replace(/punct/g,z).getRegex(),He=k(ue,\"u\").replace(/punct/g,le).getRegex(),pe=\"^[^_*]*?__[^_*]*?\\\\*[^_*]*?(?=__)|[^*]+(?=[^*])|(?!\\\\*)punct(\\\\*+)(?=[\\\\s]|$)|notPunctSpace(\\\\*+)(?!\\\\*)(?=punctSpace|$)|(?!\\\\*)punctSpace(\\\\*+)(?=notPunctSpace)|[\\\\s](\\\\*+)(?!\\\\*)(?=punct)|(?!\\\\*)punct(\\\\*+)(?!\\\\*)(?=punct)|notPunctSpace(\\\\*+)(?=notPunctSpace)\",Ze=k(pe,\"gu\").replace(/notPunctSpace/g,W).replace(/punctSpace/g,H).replace(/punct/g,z).getRegex(),Ge=k(pe,\"gu\").replace(/notPunctSpace/g,De).replace(/punctSpace/g,Be).replace(/punct/g,le).getRegex(),Ne=k(\"^[^_*]*?\\\\*\\\\*[^_*]*?_[^_*]*?(?=\\\\*\\\\*)|[^_]+(?=[^_])|(?!_)punct(_+)(?=[\\\\s]|$)|notPunctSpace(_+)(?!_)(?=punctSpace|$)|(?!_)punctSpace(_+)(?=notPunctSpace)|[\\\\s](_+)(?!_)(?=punct)|(?!_)punct(_+)(?!_)(?=punct)\",\"gu\").replace(/notPunctSpace/g,W).replace(/punctSpace/g,H).replace(/punct/g,z).getRegex(),Qe=k(/^~~?(?:((?!~)punct)|[^\\s~])/,\"u\").replace(/punct/g,z).getRegex(),je=\"^[^~]+(?=[^~])|(?!~)punct(~~?)(?=[\\\\s]|$)|notPunctSpace(~~?)(?!~)(?=punctSpace|$)|(?!~)punctSpace(~~?)(?=notPunctSpace)|[\\\\s](~~?)(?!~)(?=punct)|(?!~)punct(~~?)(?!~)(?=punct)|notPunctSpace(~~?)(?=notPunctSpace)\",Fe=k(je,\"gu\").replace(/notPunctSpace/g,W).replace(/punctSpace/g,H).replace(/punct/g,z).getRegex(),Ue=k(/\\\\(punct)/,\"gu\").replace(/punct/g,z).getRegex(),Ke=k(/^<(scheme:[^\\s\\x00-\\x1f<>]*|email)>/).replace(\"scheme\",/[a-zA-Z][a-zA-Z0-9+.-]{1,31}/).replace(\"email\",/[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+(@)[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+(?![-_])/).getRegex(),We=k(U).replace(\"(?:-->|$)\",\"-->\").getRegex(),Xe=k(\"^comment|^</[a-zA-Z][\\\\w:-]*\\\\s*>|^<[a-zA-Z][\\\\w-]*(?:attribute)*?\\\\s*/?>|^<\\\\?[\\\\s\\\\S]*?\\\\?>|^<![a-zA-Z]+\\\\s[\\\\s\\\\S]*?>|^<!\\\\[CDATA\\\\[[\\\\s\\\\S]*?\\\\]\\\\]>\").replace(\"comment\",We).replace(\"attribute\",/\\s+[a-zA-Z:_][\\w.:-]*(?:\\s*=\\s*\"[^\"]*\"|\\s*=\\s*'[^']*'|\\s*=\\s*[^\\s\"'=<>`]+)?/).getRegex(),q=/(?:\\[(?:\\\\[\\s\\S]|[^\\[\\]\\\\])*\\]|\\\\[\\s\\S]|`+(?!`)[^`]*?`+(?!`)|``+(?=\\])|[^\\[\\]\\\\`])*?/,Je=k(/^!?\\[(label)\\]\\(\\s*(href)(?:(?:[ \\t]+(?:\\n[ \\t]*)?|\\n[ \\t]*)(title))?\\s*\\)/).replace(\"label\",q).replace(\"href\",/<(?:\\\\.|[^\\n<>\\\\])+>|[^ \\t\\n\\x00-\\x1f]*/).replace(\"title\",/\"(?:\\\\\"?|[^\"\\\\])*\"|'(?:\\\\'?|[^'\\\\])*'|\\((?:\\\\\\)?|[^)\\\\])*\\)/).getRegex(),ce=k(/^!?\\[(label)\\]\\[(ref)\\]/).replace(\"label\",q).replace(\"ref\",F).getRegex(),he=k(/^!?\\[(ref)\\](?:\\[\\])?/).replace(\"ref\",F).getRegex(),Ve=k(\"reflink|nolink(?!\\\\()\",\"g\").replace(\"reflink\",ce).replace(\"nolink\",he).getRegex(),re=/[hH][tT][tT][pP][sS]?|[fF][tT][pP]/,X={_backpedal:_,anyPunctuation:Ue,autolink:Ke,blockSkip:qe,br:ae,code:Ie,del:_,delLDelim:_,delRDelim:_,emStrongLDelim:ve,emStrongRDelimAst:Ze,emStrongRDelimUnd:Ne,escape:Ee,link:Je,nolink:he,punctuation:Ce,reflink:ce,reflinkSearch:Ve,tag:Xe,text:Ae,url:_},Ye={...X,link:k(/^!?\\[(label)\\]\\((.*?)\\)/).replace(\"label\",q).getRegex(),reflink:k(/^!?\\[(label)\\]\\s*\\[([^\\]]*)\\]/).replace(\"label\",q).getRegex()},N={...X,emStrongRDelimAst:Ge,emStrongLDelim:He,delLDelim:Qe,delRDelim:Fe,url:k(/^((?:protocol):\\/\\/|www\\.)(?:[a-zA-Z0-9\\-]+\\.?)+[^\\s<]*|^email/).replace(\"protocol\",re).replace(\"email\",/[A-Za-z0-9._+-]+(@)[a-zA-Z0-9-_]+(?:\\.[a-zA-Z0-9-_]*[a-zA-Z0-9])+(?![-_])/).getRegex(),_backpedal:/(?:[^?!.,:;*_'\"~()&]+|\\([^)]*\\)|&(?![a-zA-Z0-9]+;$)|[?!.,:;*_'\"~)]+(?!$))+/,del:/^(~~?)(?=[^\\s~])((?:\\\\[\\s\\S]|[^\\\\])*?(?:\\\\[\\s\\S]|[^\\s~\\\\]))\\1(?=[^~]|$)/,text:k(/^([`~]+|[^`~])(?:(?= {2,}\\n)|(?=[a-zA-Z0-9.!#$%&'*+\\/=?_`{\\|}~-]+@)|[\\s\\S]*?(?:(?=[\\\\<!\\[`*~_]|\\b_|protocol:\\/\\/|www\\.|$)|[^ ](?= {2,}\\n)|[^a-zA-Z0-9.!#$%&'*+\\/=?_`{\\|}~-](?=[a-zA-Z0-9.!#$%&'*+\\/=?_`{\\|}~-]+@)))/).replace(\"protocol\",re).getRegex()},et={...N,br:k(ae).replace(\"{2,}\",\"*\").getRegex(),text:k(N.text).replace(\"\\\\b_\",\"\\\\b_| {2,}\\\\n\").replace(/\\{2,\\}/g,\"*\").getRegex()},B={normal:K,gfm:Me,pedantic:ze},E={normal:X,gfm:N,breaks:et,pedantic:Ye};var tt={\"&\":\"&amp;\",\"<\":\"&lt;\",\">\":\"&gt;\",'\"':\"&quot;\",\"'\":\"&#39;\"},ke=u=>tt[u];function O(u,e){if(e){if(m.escapeTest.test(u))return u.replace(m.escapeReplace,ke)}else if(m.escapeTestNoEncode.test(u))return u.replace(m.escapeReplaceNoEncode,ke);return u}function J(u){try{u=encodeURI(u).replace(m.percentDecode,\"%\")}catch{return null}return u}function V(u,e){let t=u.replace(m.findPipe,(i,s,a)=>{let o=!1,l=s;for(;--l>=0&&a[l]===\"\\\\\";)o=!o;return o?\"|\":\" |\"}),n=t.split(m.splitPipe),r=0;if(n[0].trim()||n.shift(),n.length>0&&!n.at(-1)?.trim()&&n.pop(),e)if(n.length>e)n.splice(e);else for(;n.length<e;)n.push(\"\");for(;r<n.length;r++)n[r]=n[r].trim().replace(m.slashPipe,\"|\");return n}function I(u,e,t){let n=u.length;if(n===0)return\"\";let r=0;for(;r<n;){let i=u.charAt(n-r-1);if(i===e&&!t)r++;else if(i!==e&&t)r++;else break}return u.slice(0,n-r)}function de(u,e){if(u.indexOf(e[1])===-1)return-1;let t=0;for(let n=0;n<u.length;n++)if(u[n]===\"\\\\\")n++;else if(u[n]===e[0])t++;else if(u[n]===e[1]&&(t--,t<0))return n;return t>0?-2:-1}function ge(u,e=0){let t=e,n=\"\";for(let r of u)if(r===\"\t\"){let i=4-t%4;n+=\" \".repeat(i),t+=i}else n+=r,t++;return n}function fe(u,e,t,n,r){let i=e.href,s=e.title||null,a=u[1].replace(r.other.outputLinkReplace,\"$1\");n.state.inLink=!0;let o={type:u[0].charAt(0)===\"!\"?\"image\":\"link\",raw:t,href:i,title:s,text:a,tokens:n.inlineTokens(a)};return n.state.inLink=!1,o}function nt(u,e,t){let n=u.match(t.other.indentCodeCompensation);if(n===null)return e;let r=n[1];return e.split(`\n`).map(i=>{let s=i.match(t.other.beginningSpace);if(s===null)return i;let[a]=s;return a.length>=r.length?i.slice(r.length):i}).join(`\n`)}var w=class{options;rules;lexer;constructor(e){this.options=e||T}space(e){let t=this.rules.block.newline.exec(e);if(t&&t[0].length>0)return{type:\"space\",raw:t[0]}}code(e){let t=this.rules.block.code.exec(e);if(t){let n=t[0].replace(this.rules.other.codeRemoveIndent,\"\");return{type:\"code\",raw:t[0],codeBlockStyle:\"indented\",text:this.options.pedantic?n:I(n,`\n`)}}}fences(e){let t=this.rules.block.fences.exec(e);if(t){let n=t[0],r=nt(n,t[3]||\"\",this.rules);return{type:\"code\",raw:n,lang:t[2]?t[2].trim().replace(this.rules.inline.anyPunctuation,\"$1\"):t[2],text:r}}}heading(e){let t=this.rules.block.heading.exec(e);if(t){let n=t[2].trim();if(this.rules.other.endingHash.test(n)){let r=I(n,\"#\");(this.options.pedantic||!r||this.rules.other.endingSpaceChar.test(r))&&(n=r.trim())}return{type:\"heading\",raw:t[0],depth:t[1].length,text:n,tokens:this.lexer.inline(n)}}}hr(e){let t=this.rules.block.hr.exec(e);if(t)return{type:\"hr\",raw:I(t[0],`\n`)}}blockquote(e){let t=this.rules.block.blockquote.exec(e);if(t){let n=I(t[0],`\n`).split(`\n`),r=\"\",i=\"\",s=[];for(;n.length>0;){let a=!1,o=[],l;for(l=0;l<n.length;l++)if(this.rules.other.blockquoteStart.test(n[l]))o.push(n[l]),a=!0;else if(!a)o.push(n[l]);else break;n=n.slice(l);let p=o.join(`\n`),c=p.replace(this.rules.other.blockquoteSetextReplace,`\n    $1`).replace(this.rules.other.blockquoteSetextReplace2,\"\");r=r?`${r}\n${p}`:p,i=i?`${i}\n${c}`:c;let d=this.lexer.state.top;if(this.lexer.state.top=!0,this.lexer.blockTokens(c,s,!0),this.lexer.state.top=d,n.length===0)break;let h=s.at(-1);if(h?.type===\"code\")break;if(h?.type===\"blockquote\"){let R=h,f=R.raw+`\n`+n.join(`\n`),S=this.blockquote(f);s[s.length-1]=S,r=r.substring(0,r.length-R.raw.length)+S.raw,i=i.substring(0,i.length-R.text.length)+S.text;break}else if(h?.type===\"list\"){let R=h,f=R.raw+`\n`+n.join(`\n`),S=this.list(f);s[s.length-1]=S,r=r.substring(0,r.length-h.raw.length)+S.raw,i=i.substring(0,i.length-R.raw.length)+S.raw,n=f.substring(s.at(-1).raw.length).split(`\n`);continue}}return{type:\"blockquote\",raw:r,tokens:s,text:i}}}list(e){let t=this.rules.block.list.exec(e);if(t){let n=t[1].trim(),r=n.length>1,i={type:\"list\",raw:\"\",ordered:r,start:r?+n.slice(0,-1):\"\",loose:!1,items:[]};n=r?`\\\\d{1,9}\\\\${n.slice(-1)}`:`\\\\${n}`,this.options.pedantic&&(n=r?n:\"[*+-]\");let s=this.rules.other.listItemRegex(n),a=!1;for(;e;){let l=!1,p=\"\",c=\"\";if(!(t=s.exec(e))||this.rules.block.hr.test(e))break;p=t[0],e=e.substring(p.length);let d=ge(t[2].split(`\n`,1)[0],t[1].length),h=e.split(`\n`,1)[0],R=!d.trim(),f=0;if(this.options.pedantic?(f=2,c=d.trimStart()):R?f=t[1].length+1:(f=d.search(this.rules.other.nonSpaceChar),f=f>4?1:f,c=d.slice(f),f+=t[1].length),R&&this.rules.other.blankLine.test(h)&&(p+=h+`\n`,e=e.substring(h.length+1),l=!0),!l){let S=this.rules.other.nextBulletRegex(f),Y=this.rules.other.hrRegex(f),ee=this.rules.other.fencesBeginRegex(f),te=this.rules.other.headingBeginRegex(f),me=this.rules.other.htmlBeginRegex(f),xe=this.rules.other.blockquoteBeginRegex(f);for(;e;){let Z=e.split(`\n`,1)[0],A;if(h=Z,this.options.pedantic?(h=h.replace(this.rules.other.listReplaceNesting,\"  \"),A=h):A=h.replace(this.rules.other.tabCharGlobal,\"    \"),ee.test(h)||te.test(h)||me.test(h)||xe.test(h)||S.test(h)||Y.test(h))break;if(A.search(this.rules.other.nonSpaceChar)>=f||!h.trim())c+=`\n`+A.slice(f);else{if(R||d.replace(this.rules.other.tabCharGlobal,\"    \").search(this.rules.other.nonSpaceChar)>=4||ee.test(d)||te.test(d)||Y.test(d))break;c+=`\n`+h}R=!h.trim(),p+=Z+`\n`,e=e.substring(Z.length+1),d=A.slice(f)}}i.loose||(a?i.loose=!0:this.rules.other.doubleBlankLine.test(p)&&(a=!0)),i.items.push({type:\"list_item\",raw:p,task:!!this.options.gfm&&this.rules.other.listIsTask.test(c),loose:!1,text:c,tokens:[]}),i.raw+=p}let o=i.items.at(-1);if(o)o.raw=o.raw.trimEnd(),o.text=o.text.trimEnd();else return;i.raw=i.raw.trimEnd();for(let l of i.items){if(this.lexer.state.top=!1,l.tokens=this.lexer.blockTokens(l.text,[]),l.task){if(l.text=l.text.replace(this.rules.other.listReplaceTask,\"\"),l.tokens[0]?.type===\"text\"||l.tokens[0]?.type===\"paragraph\"){l.tokens[0].raw=l.tokens[0].raw.replace(this.rules.other.listReplaceTask,\"\"),l.tokens[0].text=l.tokens[0].text.replace(this.rules.other.listReplaceTask,\"\");for(let c=this.lexer.inlineQueue.length-1;c>=0;c--)if(this.rules.other.listIsTask.test(this.lexer.inlineQueue[c].src)){this.lexer.inlineQueue[c].src=this.lexer.inlineQueue[c].src.replace(this.rules.other.listReplaceTask,\"\");break}}let p=this.rules.other.listTaskCheckbox.exec(l.raw);if(p){let c={type:\"checkbox\",raw:p[0]+\" \",checked:p[0]!==\"[ ]\"};l.checked=c.checked,i.loose?l.tokens[0]&&[\"paragraph\",\"text\"].includes(l.tokens[0].type)&&\"tokens\"in l.tokens[0]&&l.tokens[0].tokens?(l.tokens[0].raw=c.raw+l.tokens[0].raw,l.tokens[0].text=c.raw+l.tokens[0].text,l.tokens[0].tokens.unshift(c)):l.tokens.unshift({type:\"paragraph\",raw:c.raw,text:c.raw,tokens:[c]}):l.tokens.unshift(c)}}if(!i.loose){let p=l.tokens.filter(d=>d.type===\"space\"),c=p.length>0&&p.some(d=>this.rules.other.anyLine.test(d.raw));i.loose=c}}if(i.loose)for(let l of i.items){l.loose=!0;for(let p of l.tokens)p.type===\"text\"&&(p.type=\"paragraph\")}return i}}html(e){let t=this.rules.block.html.exec(e);if(t)return{type:\"html\",block:!0,raw:t[0],pre:t[1]===\"pre\"||t[1]===\"script\"||t[1]===\"style\",text:t[0]}}def(e){let t=this.rules.block.def.exec(e);if(t){let n=t[1].toLowerCase().replace(this.rules.other.multipleSpaceGlobal,\" \"),r=t[2]?t[2].replace(this.rules.other.hrefBrackets,\"$1\").replace(this.rules.inline.anyPunctuation,\"$1\"):\"\",i=t[3]?t[3].substring(1,t[3].length-1).replace(this.rules.inline.anyPunctuation,\"$1\"):t[3];return{type:\"def\",tag:n,raw:t[0],href:r,title:i}}}table(e){let t=this.rules.block.table.exec(e);if(!t||!this.rules.other.tableDelimiter.test(t[2]))return;let n=V(t[1]),r=t[2].replace(this.rules.other.tableAlignChars,\"\").split(\"|\"),i=t[3]?.trim()?t[3].replace(this.rules.other.tableRowBlankLine,\"\").split(`\n`):[],s={type:\"table\",raw:t[0],header:[],align:[],rows:[]};if(n.length===r.length){for(let a of r)this.rules.other.tableAlignRight.test(a)?s.align.push(\"right\"):this.rules.other.tableAlignCenter.test(a)?s.align.push(\"center\"):this.rules.other.tableAlignLeft.test(a)?s.align.push(\"left\"):s.align.push(null);for(let a=0;a<n.length;a++)s.header.push({text:n[a],tokens:this.lexer.inline(n[a]),header:!0,align:s.align[a]});for(let a of i)s.rows.push(V(a,s.header.length).map((o,l)=>({text:o,tokens:this.lexer.inline(o),header:!1,align:s.align[l]})));return s}}lheading(e){let t=this.rules.block.lheading.exec(e);if(t){let n=t[1].trim();return{type:\"heading\",raw:t[0],depth:t[2].charAt(0)===\"=\"?1:2,text:n,tokens:this.lexer.inline(n)}}}paragraph(e){let t=this.rules.block.paragraph.exec(e);if(t){let n=t[1].charAt(t[1].length-1)===`\n`?t[1].slice(0,-1):t[1];return{type:\"paragraph\",raw:t[0],text:n,tokens:this.lexer.inline(n)}}}text(e){let t=this.rules.block.text.exec(e);if(t)return{type:\"text\",raw:t[0],text:t[0],tokens:this.lexer.inline(t[0])}}escape(e){let t=this.rules.inline.escape.exec(e);if(t)return{type:\"escape\",raw:t[0],text:t[1]}}tag(e){let t=this.rules.inline.tag.exec(e);if(t)return!this.lexer.state.inLink&&this.rules.other.startATag.test(t[0])?this.lexer.state.inLink=!0:this.lexer.state.inLink&&this.rules.other.endATag.test(t[0])&&(this.lexer.state.inLink=!1),!this.lexer.state.inRawBlock&&this.rules.other.startPreScriptTag.test(t[0])?this.lexer.state.inRawBlock=!0:this.lexer.state.inRawBlock&&this.rules.other.endPreScriptTag.test(t[0])&&(this.lexer.state.inRawBlock=!1),{type:\"html\",raw:t[0],inLink:this.lexer.state.inLink,inRawBlock:this.lexer.state.inRawBlock,block:!1,text:t[0]}}link(e){let t=this.rules.inline.link.exec(e);if(t){let n=t[2].trim();if(!this.options.pedantic&&this.rules.other.startAngleBracket.test(n)){if(!this.rules.other.endAngleBracket.test(n))return;let s=I(n.slice(0,-1),\"\\\\\");if((n.length-s.length)%2===0)return}else{let s=de(t[2],\"()\");if(s===-2)return;if(s>-1){let o=(t[0].indexOf(\"!\")===0?5:4)+t[1].length+s;t[2]=t[2].substring(0,s),t[0]=t[0].substring(0,o).trim(),t[3]=\"\"}}let r=t[2],i=\"\";if(this.options.pedantic){let s=this.rules.other.pedanticHrefTitle.exec(r);s&&(r=s[1],i=s[3])}else i=t[3]?t[3].slice(1,-1):\"\";return r=r.trim(),this.rules.other.startAngleBracket.test(r)&&(this.options.pedantic&&!this.rules.other.endAngleBracket.test(n)?r=r.slice(1):r=r.slice(1,-1)),fe(t,{href:r&&r.replace(this.rules.inline.anyPunctuation,\"$1\"),title:i&&i.replace(this.rules.inline.anyPunctuation,\"$1\")},t[0],this.lexer,this.rules)}}reflink(e,t){let n;if((n=this.rules.inline.reflink.exec(e))||(n=this.rules.inline.nolink.exec(e))){let r=(n[2]||n[1]).replace(this.rules.other.multipleSpaceGlobal,\" \"),i=t[r.toLowerCase()];if(!i){let s=n[0].charAt(0);return{type:\"text\",raw:s,text:s}}return fe(n,i,n[0],this.lexer,this.rules)}}emStrong(e,t,n=\"\"){let r=this.rules.inline.emStrongLDelim.exec(e);if(!r||!r[1]&&!r[2]&&!r[3]&&!r[4]||r[4]&&n.match(this.rules.other.unicodeAlphaNumeric))return;if(!(r[1]||r[3]||\"\")||!n||this.rules.inline.punctuation.exec(n)){let s=[...r[0]].length-1,a,o,l=s,p=0,c=r[0][0]===\"*\"?this.rules.inline.emStrongRDelimAst:this.rules.inline.emStrongRDelimUnd;for(c.lastIndex=0,t=t.slice(-1*e.length+s);(r=c.exec(t))!=null;){if(a=r[1]||r[2]||r[3]||r[4]||r[5]||r[6],!a)continue;if(o=[...a].length,r[3]||r[4]){l+=o;continue}else if((r[5]||r[6])&&s%3&&!((s+o)%3)){p+=o;continue}if(l-=o,l>0)continue;o=Math.min(o,o+l+p);let d=[...r[0]][0].length,h=e.slice(0,s+r.index+d+o);if(Math.min(s,o)%2){let f=h.slice(1,-1);return{type:\"em\",raw:h,text:f,tokens:this.lexer.inlineTokens(f)}}let R=h.slice(2,-2);return{type:\"strong\",raw:h,text:R,tokens:this.lexer.inlineTokens(R)}}}}codespan(e){let t=this.rules.inline.code.exec(e);if(t){let n=t[2].replace(this.rules.other.newLineCharGlobal,\" \"),r=this.rules.other.nonSpaceChar.test(n),i=this.rules.other.startingSpaceChar.test(n)&&this.rules.other.endingSpaceChar.test(n);return r&&i&&(n=n.substring(1,n.length-1)),{type:\"codespan\",raw:t[0],text:n}}}br(e){let t=this.rules.inline.br.exec(e);if(t)return{type:\"br\",raw:t[0]}}del(e,t,n=\"\"){let r=this.rules.inline.delLDelim.exec(e);if(!r)return;if(!(r[1]||\"\")||!n||this.rules.inline.punctuation.exec(n)){let s=[...r[0]].length-1,a,o,l=s,p=this.rules.inline.delRDelim;for(p.lastIndex=0,t=t.slice(-1*e.length+s);(r=p.exec(t))!=null;){if(a=r[1]||r[2]||r[3]||r[4]||r[5]||r[6],!a||(o=[...a].length,o!==s))continue;if(r[3]||r[4]){l+=o;continue}if(l-=o,l>0)continue;o=Math.min(o,o+l);let c=[...r[0]][0].length,d=e.slice(0,s+r.index+c+o),h=d.slice(s,-s);return{type:\"del\",raw:d,text:h,tokens:this.lexer.inlineTokens(h)}}}}autolink(e){let t=this.rules.inline.autolink.exec(e);if(t){let n,r;return t[2]===\"@\"?(n=t[1],r=\"mailto:\"+n):(n=t[1],r=n),{type:\"link\",raw:t[0],text:n,href:r,tokens:[{type:\"text\",raw:n,text:n}]}}}url(e){let t;if(t=this.rules.inline.url.exec(e)){let n,r;if(t[2]===\"@\")n=t[0],r=\"mailto:\"+n;else{let i;do i=t[0],t[0]=this.rules.inline._backpedal.exec(t[0])?.[0]??\"\";while(i!==t[0]);n=t[0],t[1]===\"www.\"?r=\"http://\"+t[0]:r=t[0]}return{type:\"link\",raw:t[0],text:n,href:r,tokens:[{type:\"text\",raw:n,text:n}]}}}inlineText(e){let t=this.rules.inline.text.exec(e);if(t){let n=this.lexer.state.inRawBlock;return{type:\"text\",raw:t[0],text:t[0],escaped:n}}}};var x=class u{tokens;options;state;inlineQueue;tokenizer;constructor(e){this.tokens=[],this.tokens.links=Object.create(null),this.options=e||T,this.options.tokenizer=this.options.tokenizer||new w,this.tokenizer=this.options.tokenizer,this.tokenizer.options=this.options,this.tokenizer.lexer=this,this.inlineQueue=[],this.state={inLink:!1,inRawBlock:!1,top:!0};let t={other:m,block:B.normal,inline:E.normal};this.options.pedantic?(t.block=B.pedantic,t.inline=E.pedantic):this.options.gfm&&(t.block=B.gfm,this.options.breaks?t.inline=E.breaks:t.inline=E.gfm),this.tokenizer.rules=t}static get rules(){return{block:B,inline:E}}static lex(e,t){return new u(t).lex(e)}static lexInline(e,t){return new u(t).inlineTokens(e)}lex(e){e=e.replace(m.carriageReturn,`\n`),this.blockTokens(e,this.tokens);for(let t=0;t<this.inlineQueue.length;t++){let n=this.inlineQueue[t];this.inlineTokens(n.src,n.tokens)}return this.inlineQueue=[],this.tokens}blockTokens(e,t=[],n=!1){for(this.tokenizer.lexer=this,this.options.pedantic&&(e=e.replace(m.tabCharGlobal,\"    \").replace(m.spaceLine,\"\"));e;){let r;if(this.options.extensions?.block?.some(s=>(r=s.call({lexer:this},e,t))?(e=e.substring(r.raw.length),t.push(r),!0):!1))continue;if(r=this.tokenizer.space(e)){e=e.substring(r.raw.length);let s=t.at(-1);r.raw.length===1&&s!==void 0?s.raw+=`\n`:t.push(r);continue}if(r=this.tokenizer.code(e)){e=e.substring(r.raw.length);let s=t.at(-1);s?.type===\"paragraph\"||s?.type===\"text\"?(s.raw+=(s.raw.endsWith(`\n`)?\"\":`\n`)+r.raw,s.text+=`\n`+r.text,this.inlineQueue.at(-1).src=s.text):t.push(r);continue}if(r=this.tokenizer.fences(e)){e=e.substring(r.raw.length),t.push(r);continue}if(r=this.tokenizer.heading(e)){e=e.substring(r.raw.length),t.push(r);continue}if(r=this.tokenizer.hr(e)){e=e.substring(r.raw.length),t.push(r);continue}if(r=this.tokenizer.blockquote(e)){e=e.substring(r.raw.length),t.push(r);continue}if(r=this.tokenizer.list(e)){e=e.substring(r.raw.length),t.push(r);continue}if(r=this.tokenizer.html(e)){e=e.substring(r.raw.length),t.push(r);continue}if(r=this.tokenizer.def(e)){e=e.substring(r.raw.length);let s=t.at(-1);s?.type===\"paragraph\"||s?.type===\"text\"?(s.raw+=(s.raw.endsWith(`\n`)?\"\":`\n`)+r.raw,s.text+=`\n`+r.raw,this.inlineQueue.at(-1).src=s.text):this.tokens.links[r.tag]||(this.tokens.links[r.tag]={href:r.href,title:r.title},t.push(r));continue}if(r=this.tokenizer.table(e)){e=e.substring(r.raw.length),t.push(r);continue}if(r=this.tokenizer.lheading(e)){e=e.substring(r.raw.length),t.push(r);continue}let i=e;if(this.options.extensions?.startBlock){let s=1/0,a=e.slice(1),o;this.options.extensions.startBlock.forEach(l=>{o=l.call({lexer:this},a),typeof o==\"number\"&&o>=0&&(s=Math.min(s,o))}),s<1/0&&s>=0&&(i=e.substring(0,s+1))}if(this.state.top&&(r=this.tokenizer.paragraph(i))){let s=t.at(-1);n&&s?.type===\"paragraph\"?(s.raw+=(s.raw.endsWith(`\n`)?\"\":`\n`)+r.raw,s.text+=`\n`+r.text,this.inlineQueue.pop(),this.inlineQueue.at(-1).src=s.text):t.push(r),n=i.length!==e.length,e=e.substring(r.raw.length);continue}if(r=this.tokenizer.text(e)){e=e.substring(r.raw.length);let s=t.at(-1);s?.type===\"text\"?(s.raw+=(s.raw.endsWith(`\n`)?\"\":`\n`)+r.raw,s.text+=`\n`+r.text,this.inlineQueue.pop(),this.inlineQueue.at(-1).src=s.text):t.push(r);continue}if(e){let s=\"Infinite loop on byte: \"+e.charCodeAt(0);if(this.options.silent){console.error(s);break}else throw new Error(s)}}return this.state.top=!0,t}inline(e,t=[]){return this.inlineQueue.push({src:e,tokens:t}),t}inlineTokens(e,t=[]){this.tokenizer.lexer=this;let n=e,r=null;if(this.tokens.links){let o=Object.keys(this.tokens.links);if(o.length>0)for(;(r=this.tokenizer.rules.inline.reflinkSearch.exec(n))!=null;)o.includes(r[0].slice(r[0].lastIndexOf(\"[\")+1,-1))&&(n=n.slice(0,r.index)+\"[\"+\"a\".repeat(r[0].length-2)+\"]\"+n.slice(this.tokenizer.rules.inline.reflinkSearch.lastIndex))}for(;(r=this.tokenizer.rules.inline.anyPunctuation.exec(n))!=null;)n=n.slice(0,r.index)+\"++\"+n.slice(this.tokenizer.rules.inline.anyPunctuation.lastIndex);let i;for(;(r=this.tokenizer.rules.inline.blockSkip.exec(n))!=null;)i=r[2]?r[2].length:0,n=n.slice(0,r.index+i)+\"[\"+\"a\".repeat(r[0].length-i-2)+\"]\"+n.slice(this.tokenizer.rules.inline.blockSkip.lastIndex);n=this.options.hooks?.emStrongMask?.call({lexer:this},n)??n;let s=!1,a=\"\";for(;e;){s||(a=\"\"),s=!1;let o;if(this.options.extensions?.inline?.some(p=>(o=p.call({lexer:this},e,t))?(e=e.substring(o.raw.length),t.push(o),!0):!1))continue;if(o=this.tokenizer.escape(e)){e=e.substring(o.raw.length),t.push(o);continue}if(o=this.tokenizer.tag(e)){e=e.substring(o.raw.length),t.push(o);continue}if(o=this.tokenizer.link(e)){e=e.substring(o.raw.length),t.push(o);continue}if(o=this.tokenizer.reflink(e,this.tokens.links)){e=e.substring(o.raw.length);let p=t.at(-1);o.type===\"text\"&&p?.type===\"text\"?(p.raw+=o.raw,p.text+=o.text):t.push(o);continue}if(o=this.tokenizer.emStrong(e,n,a)){e=e.substring(o.raw.length),t.push(o);continue}if(o=this.tokenizer.codespan(e)){e=e.substring(o.raw.length),t.push(o);continue}if(o=this.tokenizer.br(e)){e=e.substring(o.raw.length),t.push(o);continue}if(o=this.tokenizer.del(e,n,a)){e=e.substring(o.raw.length),t.push(o);continue}if(o=this.tokenizer.autolink(e)){e=e.substring(o.raw.length),t.push(o);continue}if(!this.state.inLink&&(o=this.tokenizer.url(e))){e=e.substring(o.raw.length),t.push(o);continue}let l=e;if(this.options.extensions?.startInline){let p=1/0,c=e.slice(1),d;this.options.extensions.startInline.forEach(h=>{d=h.call({lexer:this},c),typeof d==\"number\"&&d>=0&&(p=Math.min(p,d))}),p<1/0&&p>=0&&(l=e.substring(0,p+1))}if(o=this.tokenizer.inlineText(l)){e=e.substring(o.raw.length),o.raw.slice(-1)!==\"_\"&&(a=o.raw.slice(-1)),s=!0;let p=t.at(-1);p?.type===\"text\"?(p.raw+=o.raw,p.text+=o.text):t.push(o);continue}if(e){let p=\"Infinite loop on byte: \"+e.charCodeAt(0);if(this.options.silent){console.error(p);break}else throw new Error(p)}}return t}};var y=class{options;parser;constructor(e){this.options=e||T}space(e){return\"\"}code({text:e,lang:t,escaped:n}){let r=(t||\"\").match(m.notSpaceStart)?.[0],i=e.replace(m.endingNewline,\"\")+`\n`;return r?'<pre><code class=\"language-'+O(r)+'\">'+(n?i:O(i,!0))+`</code></pre>\n`:\"<pre><code>\"+(n?i:O(i,!0))+`</code></pre>\n`}blockquote({tokens:e}){return`<blockquote>\n${this.parser.parse(e)}</blockquote>\n`}html({text:e}){return e}def(e){return\"\"}heading({tokens:e,depth:t}){return`<h${t}>${this.parser.parseInline(e)}</h${t}>\n`}hr(e){return`<hr>\n`}list(e){let t=e.ordered,n=e.start,r=\"\";for(let a=0;a<e.items.length;a++){let o=e.items[a];r+=this.listitem(o)}let i=t?\"ol\":\"ul\",s=t&&n!==1?' start=\"'+n+'\"':\"\";return\"<\"+i+s+`>\n`+r+\"</\"+i+`>\n`}listitem(e){return`<li>${this.parser.parse(e.tokens)}</li>\n`}checkbox({checked:e}){return\"<input \"+(e?'checked=\"\" ':\"\")+'disabled=\"\" type=\"checkbox\"> '}paragraph({tokens:e}){return`<p>${this.parser.parseInline(e)}</p>\n`}table(e){let t=\"\",n=\"\";for(let i=0;i<e.header.length;i++)n+=this.tablecell(e.header[i]);t+=this.tablerow({text:n});let r=\"\";for(let i=0;i<e.rows.length;i++){let s=e.rows[i];n=\"\";for(let a=0;a<s.length;a++)n+=this.tablecell(s[a]);r+=this.tablerow({text:n})}return r&&(r=`<tbody>${r}</tbody>`),`<table>\n<thead>\n`+t+`</thead>\n`+r+`</table>\n`}tablerow({text:e}){return`<tr>\n${e}</tr>\n`}tablecell(e){let t=this.parser.parseInline(e.tokens),n=e.header?\"th\":\"td\";return(e.align?`<${n} align=\"${e.align}\">`:`<${n}>`)+t+`</${n}>\n`}strong({tokens:e}){return`<strong>${this.parser.parseInline(e)}</strong>`}em({tokens:e}){return`<em>${this.parser.parseInline(e)}</em>`}codespan({text:e}){return`<code>${O(e,!0)}</code>`}br(e){return\"<br>\"}del({tokens:e}){return`<del>${this.parser.parseInline(e)}</del>`}link({href:e,title:t,tokens:n}){let r=this.parser.parseInline(n),i=J(e);if(i===null)return r;e=i;let s='<a href=\"'+e+'\"';return t&&(s+=' title=\"'+O(t)+'\"'),s+=\">\"+r+\"</a>\",s}image({href:e,title:t,text:n,tokens:r}){r&&(n=this.parser.parseInline(r,this.parser.textRenderer));let i=J(e);if(i===null)return O(n);e=i;let s=`<img src=\"${e}\" alt=\"${O(n)}\"`;return t&&(s+=` title=\"${O(t)}\"`),s+=\">\",s}text(e){return\"tokens\"in e&&e.tokens?this.parser.parseInline(e.tokens):\"escaped\"in e&&e.escaped?e.text:O(e.text)}};var $=class{strong({text:e}){return e}em({text:e}){return e}codespan({text:e}){return e}del({text:e}){return e}html({text:e}){return e}text({text:e}){return e}link({text:e}){return\"\"+e}image({text:e}){return\"\"+e}br(){return\"\"}checkbox({raw:e}){return e}};var b=class u{options;renderer;textRenderer;constructor(e){this.options=e||T,this.options.renderer=this.options.renderer||new y,this.renderer=this.options.renderer,this.renderer.options=this.options,this.renderer.parser=this,this.textRenderer=new $}static parse(e,t){return new u(t).parse(e)}static parseInline(e,t){return new u(t).parseInline(e)}parse(e){this.renderer.parser=this;let t=\"\";for(let n=0;n<e.length;n++){let r=e[n];if(this.options.extensions?.renderers?.[r.type]){let s=r,a=this.options.extensions.renderers[s.type].call({parser:this},s);if(a!==!1||![\"space\",\"hr\",\"heading\",\"code\",\"table\",\"blockquote\",\"list\",\"html\",\"def\",\"paragraph\",\"text\"].includes(s.type)){t+=a||\"\";continue}}let i=r;switch(i.type){case\"space\":{t+=this.renderer.space(i);break}case\"hr\":{t+=this.renderer.hr(i);break}case\"heading\":{t+=this.renderer.heading(i);break}case\"code\":{t+=this.renderer.code(i);break}case\"table\":{t+=this.renderer.table(i);break}case\"blockquote\":{t+=this.renderer.blockquote(i);break}case\"list\":{t+=this.renderer.list(i);break}case\"checkbox\":{t+=this.renderer.checkbox(i);break}case\"html\":{t+=this.renderer.html(i);break}case\"def\":{t+=this.renderer.def(i);break}case\"paragraph\":{t+=this.renderer.paragraph(i);break}case\"text\":{t+=this.renderer.text(i);break}default:{let s='Token with \"'+i.type+'\" type was not found.';if(this.options.silent)return console.error(s),\"\";throw new Error(s)}}}return t}parseInline(e,t=this.renderer){this.renderer.parser=this;let n=\"\";for(let r=0;r<e.length;r++){let i=e[r];if(this.options.extensions?.renderers?.[i.type]){let a=this.options.extensions.renderers[i.type].call({parser:this},i);if(a!==!1||![\"escape\",\"html\",\"link\",\"image\",\"strong\",\"em\",\"codespan\",\"br\",\"del\",\"text\"].includes(i.type)){n+=a||\"\";continue}}let s=i;switch(s.type){case\"escape\":{n+=t.text(s);break}case\"html\":{n+=t.html(s);break}case\"link\":{n+=t.link(s);break}case\"image\":{n+=t.image(s);break}case\"checkbox\":{n+=t.checkbox(s);break}case\"strong\":{n+=t.strong(s);break}case\"em\":{n+=t.em(s);break}case\"codespan\":{n+=t.codespan(s);break}case\"br\":{n+=t.br(s);break}case\"del\":{n+=t.del(s);break}case\"text\":{n+=t.text(s);break}default:{let a='Token with \"'+s.type+'\" type was not found.';if(this.options.silent)return console.error(a),\"\";throw new Error(a)}}}return n}};var P=class{options;block;constructor(e){this.options=e||T}static passThroughHooks=new Set([\"preprocess\",\"postprocess\",\"processAllTokens\",\"emStrongMask\"]);static passThroughHooksRespectAsync=new Set([\"preprocess\",\"postprocess\",\"processAllTokens\"]);preprocess(e){return e}postprocess(e){return e}processAllTokens(e){return e}emStrongMask(e){return e}provideLexer(){return this.block?x.lex:x.lexInline}provideParser(){return this.block?b.parse:b.parseInline}};var D=class{defaults=M();options=this.setOptions;parse=this.parseMarkdown(!0);parseInline=this.parseMarkdown(!1);Parser=b;Renderer=y;TextRenderer=$;Lexer=x;Tokenizer=w;Hooks=P;constructor(...e){this.use(...e)}walkTokens(e,t){let n=[];for(let r of e)switch(n=n.concat(t.call(this,r)),r.type){case\"table\":{let i=r;for(let s of i.header)n=n.concat(this.walkTokens(s.tokens,t));for(let s of i.rows)for(let a of s)n=n.concat(this.walkTokens(a.tokens,t));break}case\"list\":{let i=r;n=n.concat(this.walkTokens(i.items,t));break}default:{let i=r;this.defaults.extensions?.childTokens?.[i.type]?this.defaults.extensions.childTokens[i.type].forEach(s=>{let a=i[s].flat(1/0);n=n.concat(this.walkTokens(a,t))}):i.tokens&&(n=n.concat(this.walkTokens(i.tokens,t)))}}return n}use(...e){let t=this.defaults.extensions||{renderers:{},childTokens:{}};return e.forEach(n=>{let r={...n};if(r.async=this.defaults.async||r.async||!1,n.extensions&&(n.extensions.forEach(i=>{if(!i.name)throw new Error(\"extension name required\");if(\"renderer\"in i){let s=t.renderers[i.name];s?t.renderers[i.name]=function(...a){let o=i.renderer.apply(this,a);return o===!1&&(o=s.apply(this,a)),o}:t.renderers[i.name]=i.renderer}if(\"tokenizer\"in i){if(!i.level||i.level!==\"block\"&&i.level!==\"inline\")throw new Error(\"extension level must be 'block' or 'inline'\");let s=t[i.level];s?s.unshift(i.tokenizer):t[i.level]=[i.tokenizer],i.start&&(i.level===\"block\"?t.startBlock?t.startBlock.push(i.start):t.startBlock=[i.start]:i.level===\"inline\"&&(t.startInline?t.startInline.push(i.start):t.startInline=[i.start]))}\"childTokens\"in i&&i.childTokens&&(t.childTokens[i.name]=i.childTokens)}),r.extensions=t),n.renderer){let i=this.defaults.renderer||new y(this.defaults);for(let s in n.renderer){if(!(s in i))throw new Error(`renderer '${s}' does not exist`);if([\"options\",\"parser\"].includes(s))continue;let a=s,o=n.renderer[a],l=i[a];i[a]=(...p)=>{let c=o.apply(i,p);return c===!1&&(c=l.apply(i,p)),c||\"\"}}r.renderer=i}if(n.tokenizer){let i=this.defaults.tokenizer||new w(this.defaults);for(let s in n.tokenizer){if(!(s in i))throw new Error(`tokenizer '${s}' does not exist`);if([\"options\",\"rules\",\"lexer\"].includes(s))continue;let a=s,o=n.tokenizer[a],l=i[a];i[a]=(...p)=>{let c=o.apply(i,p);return c===!1&&(c=l.apply(i,p)),c}}r.tokenizer=i}if(n.hooks){let i=this.defaults.hooks||new P;for(let s in n.hooks){if(!(s in i))throw new Error(`hook '${s}' does not exist`);if([\"options\",\"block\"].includes(s))continue;let a=s,o=n.hooks[a],l=i[a];P.passThroughHooks.has(s)?i[a]=p=>{if(this.defaults.async&&P.passThroughHooksRespectAsync.has(s))return(async()=>{let d=await o.call(i,p);return l.call(i,d)})();let c=o.call(i,p);return l.call(i,c)}:i[a]=(...p)=>{if(this.defaults.async)return(async()=>{let d=await o.apply(i,p);return d===!1&&(d=await l.apply(i,p)),d})();let c=o.apply(i,p);return c===!1&&(c=l.apply(i,p)),c}}r.hooks=i}if(n.walkTokens){let i=this.defaults.walkTokens,s=n.walkTokens;r.walkTokens=function(a){let o=[];return o.push(s.call(this,a)),i&&(o=o.concat(i.call(this,a))),o}}this.defaults={...this.defaults,...r}}),this}setOptions(e){return this.defaults={...this.defaults,...e},this}lexer(e,t){return x.lex(e,t??this.defaults)}parser(e,t){return b.parse(e,t??this.defaults)}parseMarkdown(e){return(n,r)=>{let i={...r},s={...this.defaults,...i},a=this.onError(!!s.silent,!!s.async);if(this.defaults.async===!0&&i.async===!1)return a(new Error(\"marked(): The async option was set to true by an extension. Remove async: false from the parse options object to return a Promise.\"));if(typeof n>\"u\"||n===null)return a(new Error(\"marked(): input parameter is undefined or null\"));if(typeof n!=\"string\")return a(new Error(\"marked(): input parameter is of type \"+Object.prototype.toString.call(n)+\", string expected\"));if(s.hooks&&(s.hooks.options=s,s.hooks.block=e),s.async)return(async()=>{let o=s.hooks?await s.hooks.preprocess(n):n,p=await(s.hooks?await s.hooks.provideLexer():e?x.lex:x.lexInline)(o,s),c=s.hooks?await s.hooks.processAllTokens(p):p;s.walkTokens&&await Promise.all(this.walkTokens(c,s.walkTokens));let h=await(s.hooks?await s.hooks.provideParser():e?b.parse:b.parseInline)(c,s);return s.hooks?await s.hooks.postprocess(h):h})().catch(a);try{s.hooks&&(n=s.hooks.preprocess(n));let l=(s.hooks?s.hooks.provideLexer():e?x.lex:x.lexInline)(n,s);s.hooks&&(l=s.hooks.processAllTokens(l)),s.walkTokens&&this.walkTokens(l,s.walkTokens);let c=(s.hooks?s.hooks.provideParser():e?b.parse:b.parseInline)(l,s);return s.hooks&&(c=s.hooks.postprocess(c)),c}catch(o){return a(o)}}}onError(e,t){return n=>{if(n.message+=`\nPlease report this to https://github.com/markedjs/marked.`,e){let r=\"<p>An error occurred:</p><pre>\"+O(n.message+\"\",!0)+\"</pre>\";return t?Promise.resolve(r):r}if(t)return Promise.reject(n);throw n}}};var L=new D;function g(u,e){return L.parse(u,e)}g.options=g.setOptions=function(u){return L.setOptions(u),g.defaults=L.defaults,G(g.defaults),g};g.getDefaults=M;g.defaults=T;g.use=function(...u){return L.use(...u),g.defaults=L.defaults,G(g.defaults),g};g.walkTokens=function(u,e){return L.walkTokens(u,e)};g.parseInline=L.parseInline;g.Parser=b;g.parser=b.parse;g.Renderer=y;g.TextRenderer=$;g.Lexer=x;g.lexer=x.lex;g.Tokenizer=w;g.Hooks=P;g.parse=g;var Qt=g.options,jt=g.setOptions,Ft=g.use,Ut=g.walkTokens,Kt=g.parseInline,Wt=g,Xt=b.parse,Jt=x.lex;\nreturn {lexer:Jt};})();\n// Plain-text presentation only. Original provider events remain unchanged.\nfunction plainPass(value){\n const source=String(value||'').replace(/\\r\\n?/g,'\\n');\n function inline(tokens){return (tokens||[]).map((t,index)=>{\n  switch(t.type){\n   case 'strong':case 'em':case 'del':return inline(t.tokens);\n   case 'link':case 'image':{\n    const label=t.tokens?inline(t.tokens):String(t.text||'');\n    const href=String(t.href||'');const address=href.replace(/^mailto:/i,'');\n    const next=tokens.slice(index+1).map(t=>String(t.raw??t.text??'')).join('');\n    return !href||label===href||label===address||next.startsWith(' ('+href+')')?label||address:label+' ('+href+')';\n   }\n   case 'codespan':return t.text;\n   case 'br':return '\\n';\n   case 'escape':return t.text;\n   case 'html':return t.raw.replace(/<br\\s*\\/?>/gi,'\\n').replace(/<\\/?(?:b|strong|i|em|u|s|del|span|p|div|blockquote)(?:\\s[^>]*)?>/gi,'');\n   default:return t.tokens?inline(t.tokens):String(t.text??t.raw??'').replace(/(^|[ \\t])_([A-Z][a-z]+(?:[ \\t]+[A-Z][a-z]+)+)_(?=[A-Z])/g,'$1$2');\n  }\n }).join('');}\n function blocks(tokens){return tokens.map(t=>{\n  switch(t.type){\n   case 'space':return '\\n';\n   case 'paragraph':case 'heading':case 'text':return inline(t.tokens||[{type:'text',text:t.text}])+'\\n\\n';\n   case 'list':return t.items.map((item,i)=>(t.ordered?String((Number(t.start)||1)+i)+'. ':'• ')+blocks(item.tokens).trim()).join('\\n')+'\\n\\n';\n   case 'blockquote':return blocks(t.tokens).trim().split('\\n').map(line=>'│ '+line).join('\\n')+'\\n\\n';\n   case 'code':return t.text.split('\\n').map(line=>'    '+line).join('\\n')+'\\n\\n';\n   case 'hr':return '──────────\\n\\n';\n   case 'table':return [t.header,...t.rows].map(row=>row.map(cell=>inline(cell.tokens)).join(' | ')).join('\\n')+'\\n\\n';\n   case 'html':return inline([t])+'\\n\\n';\n   default:return inline([t]);\n  }\n }).join('');}\n return blocks(markdownParser.lexer(source,{gfm:true,breaks:false})).replace(/(\\(https?:\\/\\/[^\\s()]+\\))(?:[ \\t]+\\1)+/g,'$1').replace(/\\n{3,}/g,'\\n\\n').trimEnd();\n}\n\nfunction plainText(value){let text=String(value||'');for(let i=0;i<6;i++){const next=plainPass(text);if(next===text)return text;text=next;}throw Error('Plain-text rendering did not stabilize; original preserved');}\n\nfunction airtableStableMarkdown(value){\n const lines=String(value||'').split('\\n');\n for(let start=0;start<lines.length;){\n   let end=start;\n   while(end<lines.length&&lines[end].trim()!=='')end++;\n   const markers=[];\n   for(let index=start;index<end;index++){\n     const match=lines[index].match(/^(\\s*)(\\d+)\\.(?=\\s)/);\n     if(match)markers.push({index,number:Number(match[2])});\n   }\n   const sequential=markers.length>1&&markers[0].number===1&&markers.every((marker,index)=>marker.number===index+1);\n   if(sequential){\n     for(const marker of markers){\n       lines[marker.index]=lines[marker.index].replace(/^(\\s*)\\d+\\./,(_match,indent)=>indent+'1.');\n     }\n   }\n   start=end+1;\n }\n return lines.join('\\n');\n}\nfunction renderEntry(e){\n const c=e.clock||{},\n stamp=c.kind==='Sent'?'Sent '+c.display:\n       c.kind==='Received'?'Received '+c.display:\n       c.kind==='Provider time'?'Provider time '+c.display:'Time unavailable';\n return e.sender+' · '+stamp+'\\n\\n'+airtableStableMarkdown(e.body);\n}\nfunction render(events,legacy){\n const complete=events.every(e=>e.clock?.iso);\n const ordered=[...events].sort((a,b)=>\n   complete?String(b.clock.iso).localeCompare(String(a.clock.iso)):\n            String(b.admittedAt).localeCompare(String(a.admittedAt)));\n const future=ordered.map(renderEntry).join('\\n\\n──────────\\n\\n');\n return [future,airtableStableMarkdown(legacy)].filter(Boolean).join('\\n\\n──────────\\n\\n');\n}\nfunction normalizeSignatureEmphasis(line){\n // Airtable rewrites single-star italics to underscores next to email/phone text.\n // Keep code, escaped markers, message wording, addresses and digits distinct.\n if (/^(?: {4}|\\t)/.test(line)||line.includes('\\x60')||line.includes('\\\\')) return line;\n return line\n // Signature-only rich-text rewrites. Retain every word, digit and domain.\n .replace(/^([*_])\\/\\/\\/(?:\\*\\*)?([A-Za-z]+\\.[A-Za-z]+\\.[A-Za-z]+)\\1$/,(_m,_mark,words)=>'*///'+words+'*')\n .replace(/^([*_])(main:[ \\t]+[+\\d][\\d. ()+-]*)\\*\\*([A-Za-z0-9-]+)\\*\\*\\.(?:\\*\\*)?([A-Za-z]{2,})\\1$/,(_m,_mark,phone,domain,tld)=>'*'+phone+'**'+domain+'**.'+tld+'*')\n // Airtable can wrap a nested mailto label as a link. Accept only when\n // every repeated address is identical; different destinations remain conflicts.\n .replace(/\\[([^\\s<>\\[\\]()]+@[^\\s<>\\[\\]()]+) <mailto:\\1\\]\\(mailto:\\1 <mailto:\\1\\)/g,(_m,email)=>'<'+email+' <mailto:'+email+'>')\n // Exact observed Small Wonder newsletter link-label italics rewrite only.\n // Preserve the full wording, numbers and destination; never strip arbitrary markers.\n .replaceAll(\"[After just 2 weeks_... 2.5x more shine. 3.6x smoother hair. 0 single use plastics wasted. _Based on a 3rd party conducted consumer study. Powder might be the technology. But this is the proof. | See what\\u2019s possible with powder](https://smallwonder.world/collections)\", \"[After just 2 weeks*... 2.5x more shine. 3.6x smoother hair. 0 single use plastics wasted. *Based on a 3rd party conducted consumer study. Powder might be the technology. But this is the proof. | See what\\u2019s possible with powder](https://smallwonder.world/collections)\")\n // Airtable can move emphasis boundaries inside signature punctuation and labels.\n // Preserve all content; normalize only these two paired-delimiter shapes.\n .replace(/([A-Za-z0-9])([*_])([,;:][ \t]+)\\2(?=[A-Za-z0-9])/g,(_m,p,_marker,body)=>p+'*'+body+'*')\n .replace(/(^|[ \t])([*_])([A-Za-z][A-Za-z ]{0,30}:[ \t]+)\\2(?=\\S)/g,(_m,p,_marker,body)=>p+'*'+body+'*')\n .replace(/(^|[\\s<(])([*_])([A-Za-z0-9][A-Za-z0-9.!#$%&'+/=?^{}~-]*)\\2(?=@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}(?:$|[\\s>),;]))/g,(_m,p,_mark,text)=>p+'*'+text+'*')\n .replace(/(\\+\\d[\\d ()-]*<\\+\\d+>)([*_])(\\d+)\\2(?=$|[\\s.,;])/g,(_m,p,_mark,text)=>p+'*'+text+'*');\n}\nfunction comparePass(value){\n let fenced=false;\n const normalized=String(value||'').split('\\n').map(line=>{\n   if(/^[ \\t]*(```|~~~)/.test(line)){\n     fenced=!fenced;\n     return line;\n   }\n   if(fenced)return line;\n    // Exact observed Airtable rich-text rewrite of this disclaimer divider only.\n    if(line===\"_______________________*** Disclaimer Notice ***________________\"||line===\"\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_**_ Disclaimer Notice _**\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\\\\_\")return \"___________________________ Disclaimer Notice ____________________\";\n   let adjacent=normalizeSignatureEmphasis(line);\n   const sameDestinationAdjacentLinks=/\\[([^\\[\\]\\n\\\\*_`~]+)\\]\\(([^()\\s]+)\\)\\[([^\\[\\]\\n\\\\*_`~]+)\\]\\(\\2\\)/g;\n   while(sameDestinationAdjacentLinks.test(adjacent)){\n     adjacent=adjacent.replace(sameDestinationAdjacentLinks,'[$1$3]($2)');\n     sameDestinationAdjacentLinks.lastIndex=0;\n   }\n   return adjacent\n   .replace(/^ {0,3}[*-][ \\t]*$/, '- ')\n   .replace(/\\[([^\\]\\n]+)\\]\\(mailto:([^()\\s]+)\\)/gi,(whole,label,destination)=>label.replace(/\\\\_/g,'_')===destination?destination:whole)\n   .replace(/<([^<>\\s]+@[^<>\\s]+)>/g,'$1')\n   .replace(/\\\\_/g,'_')\n   .replace(/\\\\\\*/g,'*')\n   .replace(/\\*\\*_([^\\n]*?)_\\*\\*/g,'***$1***')\n   .replace(/(^|[\\s(])([*_])([^*_\\n]+)\\2(?=$|[\\s.,!?;:)])/g,(_match,prefix,_marker,content)=>prefix+'*'+content+'*')\n   .replace(/^(?:>[ \\t]*)+/,prefix=>'>'.repeat((prefix.match(/>/g)||[]).length)+' ')\n   .replace(/^> +$/,'>');\n }).join('\\n');\n return normalized.replace(/\\n$/,'');\n}\nfunction legacyCompareForm(value){\n let prior=String(value||'').replace(/\\r\\n?/g,'\\n');\n for(let i=0;i<6;i++){const next=comparePass(prior);if(next===prior)return next;prior=next;}\n throw Error('History formatting normalization did not stabilize');\n}\nfunction compareForm(value){return plainText(legacyCompareForm(value));}\nfunction reviewFingerprint(value){\n const text=String(value);let a=2166136261,b=2246822519,c=3266489917,d=668265263;\n for(let i=0;i<text.length;i++){const x=text.charCodeAt(i);a=Math.imul(a^x,16777619);b=Math.imul(b^x,2246822519);c=Math.imul(c^x,3266489917);d=Math.imul(d^x,668265263);}\n return [a,b,c,d].map(x=>(x>>>0).toString(16).padStart(8,'0')).join('');\n}\nconst records=$input.all(),batches=$('Prepare History Batches').first().json.batches.map(json=>({json}));\nconst recordsById=new Map();\nfor(const item of records){const id=String(item.json?.id||'');if(!id)continue;if(recordsById.has(id))throw Error('Duplicate Email record returned for '+id);recordsById.set(id,item.json);}\nconst expectedIds=new Set(batches.map(x=>String(x.json?.recordId||'')));\nfor(const id of recordsById.keys())if(!expectedIds.has(id))throw Error('Canonical history writer record lineage mismatch');\nconst output=[];\nfor(let index=0;index<batches.length;index++){\n const batch=batches[index].json||{},record=recordsById.get(String(batch.recordId))||{},\n current=String(record['Conversation History']||'');\n try {\n if(!record.id)throw Error('Email record missing; history preserved for review');\n if(String(record.id||'')!==String(batch.recordId))\n   throw Error('Canonical history writer record lineage mismatch');\n if((batch.blockedByInvalidEvents||[]).length){output.push({json:{kind:'blocked',id:record.id,recordId:batch.recordId,observedHistory:current,observedModifiedAt:String(record['Last Reply']||''),recordExists:!!record.id,eventCount:(batch.events||[]).length,inputDigest:batch.inputDigest,processorVersion:batch.processorVersion}});continue;}\n const byKey=new Map();\n for(const e of batch.events||[]){\n   const old=byKey.get(e.key);\n   if(old&&(old.fingerprint!==e.fingerprint||old.body!==e.body||old.sender!==e.sender||old.direction!==e.direction||String(old.clock?.iso)!==String(e.clock?.iso)))\n     throw Error('Conflicting duplicate canonical history event '+e.key);\n   if(!old)byKey.set(e.key,e);\n }\n const events=[...byKey.values()].sort((a,b)=>\n   String(a.admittedAt).localeCompare(String(b.admittedAt))||\n   String(a.key).localeCompare(String(b.key)));\n const legacy=String(events[0]?.legacyHistory||'');\n const baseComparable=compareForm(legacy);\n if(events[0]?.storageVersion===2&&(events[0].baselineEventKey!==events[0].key||events[0].priorHistoryDigest!==snapshotDigest(baseComparable)))throw Error('Invalid initial compact history baseline; no overwrite performed');\n for(let i=1;i<events.length;i++){\n   if(events[i].storageVersion===2){\n     const initialSibling=events[i].baselineEventKey===events[i].key&&typeof events[i].legacyHistory==='string'&&compareForm(events[i].legacyHistory)===baseComparable&&events[i].priorHistoryDigest===snapshotDigest(baseComparable);\n     if(events[i].baselineEventKey!==events[0].key&&!initialSibling)throw Error('Compact history baseline does not match canonical lineage; no overwrite performed');\n     const admitted=Date.parse(String(events[i].admittedAt||''));\n     let matched=events[i].priorHistoryDigest===snapshotDigest(baseComparable),lastPrior=-Infinity;\n     if(Number.isFinite(admitted))for(let n=1;!matched&&n<=i;n++){\n       const prior=Date.parse(String(events[n-1].admittedAt||''));\n       if(!Number.isFinite(prior)||prior>=admitted||prior<lastPrior)break;\n       lastPrior=prior;const prefix=render(events.slice(0,n),legacy);matched=events[i].priorHistoryDigest===snapshotDigest(compareForm(prefix))||events[i].priorHistoryDigest===snapshotDigest(compareForm(plainText(prefix)));\n     }\n     if(!matched)throw Error('Compact history snapshot is not a proven earlier canonical prefix; no overwrite performed');\n     continue;\n   }\n   const claimed=compareForm(String(events[i].legacyHistory||''));\n   if(claimed===baseComparable)continue;\n   const admitted=Date.parse(String(events[i].admittedAt||''));\n   let matched=false,lastPrior=-Infinity;\n   if(Number.isFinite(admitted)){\n     for(let n=1;n<=i;n++){\n       const prior=Date.parse(String(events[n-1].admittedAt||''));\n       if(!Number.isFinite(prior)||prior>=admitted||prior<lastPrior)break;\n       lastPrior=prior;\n       if(claimed===compareForm(render(events.slice(0,n),legacy))||claimed===compareForm(plainText(render(events.slice(0,n),legacy)))){\n         matched=true;break;\n       }\n     }\n   }\n   if(!matched)throw Error('Legacy history snapshot is not a proven earlier canonical prefix; no overwrite performed');\n }\n const originalTarget=render(events,legacy);\n const target=plainText(originalTarget);\n if(target.length>95000)throw Error('Complete canonical history exceeds safe Airtable field size; no overwrite performed');\n if(current.replace(/\\n$/,'')===target.replace(/\\n$/,'')){output.push({json:{kind:'unchanged',id:record.id,recordId:batch.recordId,observedHistory:current,observedModifiedAt:String(record['Last Reply']||''),recordExists:true,eventCount:events.length,inputDigest:batch.inputDigest,processorVersion:batch.processorVersion}});continue;}\n const equivalentTarget=compareForm(current)===compareForm(target)||compareForm(current)===compareForm(originalTarget)||legacyCompareForm(current)===legacyCompareForm(originalTarget);\n const allowed=new Set([legacy]);\n for(let i=1;i<events.length;i++)allowed.add(render(events.slice(0,i),legacy));\n if(!equivalentTarget&&!new Set([...allowed].flatMap(x=>[compareForm(x),compareForm(plainText(x))])).has(compareForm(current)))\n   throw Error('Stale or noncanonical Conversation History detected; no overwrite performed');\n output.push({json:{kind:'update',id:record.id,recordId:batch.recordId,nextHistory:target,eventCount:events.length,observedHistory:current,observedModifiedAt:String(record['Last Reply']||''),recordExists:true,inputDigest:batch.inputDigest,processorVersion:batch.processorVersion}});\n }catch(error){\n   const reason=String(error.message||error);\n   const key='history-review:v1:'+batch.recordId+':'+reviewFingerprint(JSON.stringify({current,reason,events:batch.events}));\n   output.push({json:{kind:'review',id:batch.recordId,reviewKey:key,recordId:batch.recordId,reason,eventKeys:(batch.events||[]).map(e=>e.key),occurredAt:new Date().toISOString(),newReview:!(batch.knownReviewKeys||[]).includes(key),observedHistory:current,observedModifiedAt:String(record['Last Reply']||''),recordExists:!!record.id,eventCount:(batch.events||[]).length,inputDigest:batch.inputDigest,processorVersion:batch.processorVersion}});\n }\n}\nreturn output.concat($('Prepare History Batches').first().json.invalidReviews.map(json=>({json})));\n\n\n"
+   }
+  },
+  {
+   "id": "6853350a-96af-4ae7-9d2b-f602b07d8787",
+   "name": "Prepare Pre-write Recheck",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1800,
+    0
+   ],
+   "parameters": {
+    "jsCode": "const actions=$input.all().map(x=>x.json),ids=actions.filter(a=>a.kind==='update').map(a=>a.id),out=[];\nfor(let i=0;i<ids.length;i+=40){const batch=ids.slice(i,i+40);out.push({json:{url:'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY',filter:'OR('+batch.map(id=>'RECORD_ID()='+JSON.stringify(id)).join(',')+')',recordIds:batch}});}\nif(!out.length)out.push({json:{url:'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY',filter:'FALSE()',recordIds:[]}});\nreturn out;\n"
+   }
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblADFhWhTcLrl1UY",
+     "mode": "list",
+     "cachedResultName": "Emails",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY"
+    },
+    "filterByFormula": "={{ $json.filter }}",
+    "returnAll": true,
+    "options": {
+     "fields": [
+      "Conversation History",
+      "Last Reply"
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    2000,
+    0
+   ],
+   "id": "a277a849-b57d-4be1-8a30-033fcd30a7fb",
+   "name": "Recheck Current Histories",
+   "alwaysOutputData": true,
+   "retryOnFail": true,
+   "waitBetweenTries": 5000,
+   "maxTries": 3
+  },
+  {
+   "id": "6c837bbe-212e-41bf-9c33-99e3f3e9f3af",
+   "name": "Prepare History Effects",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2200,
+    0
+   ],
+   "parameters": {
+    "jsCode": "function reviewFingerprint(value){\n const text=String(value);let a=2166136261,b=2246822519,c=3266489917,d=668265263;\n for(let i=0;i<text.length;i++){const x=text.charCodeAt(i);a=Math.imul(a^x,16777619);b=Math.imul(b^x,2246822519);c=Math.imul(c^x,3266489917);d=Math.imul(d^x,668265263);}\n return [a,b,c,d].map(x=>(x>>>0).toString(16).padStart(8,'0')).join('');\n}\nconst plan=$('Prepare History Batches').first().json,actions=$('Render Canonical History').all().map(x=>({...x.json})),current=new Map(),requests=[],known=new Set(plan.knownReviewKeys);\nfor(const i of $input.all()){\n const r=i.json?.body??i.json;if(r.error||r.offset)throw Error('Incomplete pre-write history recheck');\n const records=Array.isArray(r.records)?r.records:r.id?[{id:r.id,fields:r.fields||r}]:Object.keys(r).length===0?[]:null;\n if(!records)throw Error('Malformed pre-write history recheck');\n for(const rec of records){if(current.has(rec.id))throw Error('Duplicate pre-write conversation');current.set(rec.id,{id:rec.id,...rec.fields});}\n}\nconst requested=new Set(actions.filter(a=>a.kind==='update').map(a=>a.id));\nfor(const id of current.keys())if(!requested.has(id))throw Error('Unexpected pre-write conversation identity');\nfor(const a of actions){\n if(a.kind!=='update')continue;\n const now=current.get(a.id),history=String(now?.['Conversation History']||'');\n if(!now||history!==a.observedHistory||String(now['Last Reply']||'')!==a.observedModifiedAt){\n  a.kind='review';a.reason='Conversation changed after rendering; current work preserved';a.recordExists=!!now;a.observedHistory=history;a.observedModifiedAt=String(now?.['Last Reply']||'');\n  a.reviewKey='history-review:v1:'+a.id+':'+reviewFingerprint(JSON.stringify({current:history,reason:a.reason,inputDigest:a.inputDigest}));a.newReview=!known.has(a.reviewKey);delete a.nextHistory;\n }\n}\nconst AT='https://api.airtable.com/v0/appxqINt5XKw7a76A/';\nconst updates=actions.filter(a=>a.kind==='update');\nfor(let i=0;i<updates.length;i+=10){const batch=updates.slice(i,i+10);requests.push({phase:'history_update',method:'PATCH',url:AT+'tblADFhWhTcLrl1UY',body:{records:batch.map(a=>({id:a.id,fields:{'Conversation History':a.nextHistory}}))},expected:batch.map(a=>({id:a.id,value:a.nextHistory}))});}\nconst reviews=actions.filter(a=>a.kind==='review'&&a.newReview);\nfor(let i=0;i<reviews.length;i+=10){const batch=reviews.slice(i,i+10);requests.push({phase:'history_review',method:'PATCH',url:AT+'tblHznksXyc3DZAUu',body:{performUpsert:{fieldsToMergeOn:['Event Key']},records:batch.map(a=>({fields:{'Event Key':a.reviewKey,'Occurred At':a.occurredAt,'Payload JSON':JSON.stringify({version:1,status:'review_required',reviewType:a.reviewType||'history_conflict',recordId:a.recordId||a.id,reason:a.reason,eventKeys:a.eventKeys,occurredAt:a.occurredAt,...(a.sourceEventId?{sourceEventId:a.sourceEventId,affectedRecordIds:a.affectedRecordIds}:{})})}}))},expected:batch.map(a=>({key:a.reviewKey}))});}\nif(!requests.length)requests.push({phase:'noop',method:'GET',url:AT+'tblHznksXyc3DZAUu?maxRecords=1&fields%5B%5D=Event%20Key'});\nreturn [{json:{actions,requests,summary:plan.summary,newConflicts:reviews.filter(a=>a.reviewType!=='malformed_history_event').map(a=>({recordId:a.id||a.recordId,reason:a.reason})),newMalformedReviews:reviews.filter(a=>a.reviewType==='malformed_history_event').length}}];\n"
+   }
+  },
+  {
+   "id": "8092e364-fe39-4daf-b24a-19c518569ac0",
+   "name": "Expand History Effects",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2400,
+    0
+   ],
+   "parameters": {
+    "jsCode": "return $input.first().json.requests.map(json=>({json}));"
+   }
+  },
+  {
+   "id": "008f415e-745e-4851-aae9-9885638aebb2",
+   "name": "Apply History Effects",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2600,
+    0
+   ],
+   "parameters": {
+    "url": "={{ $json.url }}",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "airtableTokenApi",
+    "options": {
+     "timeout": 30000,
+     "batching": {
+      "batch": {
+       "batchSize": 1,
+       "batchInterval": 300
+      }
+     }
+    },
+    "method": "={{ $json.method }}",
+    "sendBody": "={{ $json.method === 'PATCH' }}",
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json.body || {}) }}"
+   }
+  },
+  {
+   "id": "e092cc51-2426-4c5c-8f98-c8fdb2952b6d",
+   "name": "Prepare Durable Checkpoints",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2800,
+    0
+   ],
+   "parameters": {
+    "jsCode": "function snapshotDigest(value){\n const text=String(value),bytes=[];\n for(let i=0;i<text.length;i++){let c=text.codePointAt(i);if(c>65535)i++;if(c>=0xd800&&c<=0xdfff)c=0xfffd;if(c<128)bytes.push(c);else if(c<2048)bytes.push(192|(c>>>6),128|(c&63));else if(c<65536)bytes.push(224|(c>>>12),128|((c>>>6)&63),128|(c&63));else bytes.push(240|(c>>>18),128|((c>>>12)&63),128|((c>>>6)&63),128|(c&63));}\n const bitLength=bytes.length*8;bytes.push(128);while(bytes.length%64!==56)bytes.push(0);for(let i=7;i>=0;i--)bytes.push(i>=4?Math.floor(bitLength/2**(8*i))&255:(bitLength/2**(8*i))&255);\n const k=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];\n const h=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19],w=new Uint32Array(64),rotr=(x,n)=>(x>>>n)|(x<<(32-n));\n for(let start=0;start<bytes.length;start+=64){for(let i=0;i<16;i++)w[i]=(bytes[start+4*i]<<24)|(bytes[start+4*i+1]<<16)|(bytes[start+4*i+2]<<8)|bytes[start+4*i+3];for(let i=16;i<64;i++){const x=w[i-15],y=w[i-2];w[i]=(w[i-16]+(rotr(x,7)^rotr(x,18)^(x>>>3))+w[i-7]+(rotr(y,17)^rotr(y,19)^(y>>>10)))>>>0;}\n let[a,b,c,d,e,f,g,z]=h;for(let i=0;i<64;i++){const t1=(z+(rotr(e,6)^rotr(e,11)^rotr(e,25))+((e&f)^(~e&g))+k[i]+w[i])>>>0,t2=((rotr(a,2)^rotr(a,13)^rotr(a,22))+((a&b)^(a&c)^(b&c)))>>>0;z=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=b;b=a;a=(t1+t2)>>>0;}for(const[i,x]of[a,b,c,d,e,f,g,z].entries())h[i]=(h[i]+x)>>>0;}\n return h.map(x=>x.toString(16).padStart(8,'0')).join('');\n}\n\nconst plan=$('Prepare History Effects').first().json,requests=plan.requests,responses=$input.all(),updated=new Map();\nif(responses.length!==requests.length)throw Error('Incomplete history effect acknowledgments');\nfor(let i=0;i<responses.length;i++){\n let expected;try{expected=$('Expand History Effects').itemMatching(i).json;}catch{throw Error('History effect response lineage missing');}\n if(JSON.stringify(expected)!==JSON.stringify(requests[i]))throw Error('History effect response order mismatch');\n const raw=responses[i].json,r=raw.body??raw;if(raw.error||(raw.statusCode!=null&&(raw.statusCode<200||raw.statusCode>=300)))throw Error('History write outcome uncertain; do not acknowledge it');\n if(expected.phase==='noop')continue;\n if(!Array.isArray(r.records)||r.records.length!==expected.expected.length)throw Error('Incomplete history write receipt');\n const actualIds=new Set();\n for(const rec of r.records){\n  if(actualIds.has(rec.id))throw Error('Duplicate history receipt');actualIds.add(rec.id);\n  if(expected.phase==='history_update'){\n   const e=expected.expected.find(x=>x.id===rec.id);\n   if(!e||rec.fields?.['Conversation History']!==e.value||typeof rec.fields?.['Last Reply']!=='string')throw Error('Exact history write not confirmed');\n   updated.set(rec.id,rec);\n  }else{\n   const e=expected.expected.find(x=>x.key===rec.fields?.['Event Key']);const original=expected.body.records.find(x=>x.fields['Event Key']===e?.key);\n   if(!e||rec.fields?.['Payload JSON']!==original?.fields['Payload JSON'])throw Error('Exact review upsert not confirmed');\n  }\n }\n}\nconst records=[];\nfor(const a of plan.actions){\n if(a.checkpointEligible===false)continue;\n const id=a.id||a.recordId,write=updated.get(id),value=a.kind==='update'?a.nextHistory:a.observedHistory,exists=a.kind==='update'?true:a.recordExists;\n if(a.kind==='update'&&!write)throw Error('Missing confirmed history update before checkpoint');\n const cp={version:1,recordId:id,processorVersion:a.processorVersion,inputDigest:a.inputDigest,eventCount:a.eventCount,recordExists:exists,historyModifiedAt:write?write.fields['Last Reply']:a.observedModifiedAt,historyDigest:snapshotDigest(String(value||'')),status:a.kind==='review'?'review_required':a.kind==='blocked'?'blocked_invalid':'materialized',observedAt:new Date().toISOString(),executionId:String($execution.id),...(a.kind==='review'?{reviewKey:a.reviewKey}: {})};\n records.push({fields:{'Event Key':'history-checkpoint:v1:'+id,'Email Record ID':id,'Occurred At':cp.observedAt,'Payload JSON':JSON.stringify(cp)}});\n}\nconst out=[];\nfor(let i=0;i<records.length;i+=10){const batch=records.slice(i,i+10);out.push({json:{method:'PATCH',url:'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblHznksXyc3DZAUu',body:{performUpsert:{fieldsToMergeOn:['Event Key']},records:batch},expected:batch.map(r=>({key:r.fields['Event Key'],payload:r.fields['Payload JSON']}))}});}\nif(!out.length)out.push({json:{method:'GET',url:'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblHznksXyc3DZAUu?maxRecords=1&fields%5B%5D=Event%20Key',expected:[]}});\nreturn out;\n"
+   }
+  },
+  {
+   "id": "ccd30e7f-bf70-4cbf-889b-949496065be5",
+   "name": "Save Durable Checkpoints",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    3000,
+    0
+   ],
+   "parameters": {
+    "url": "={{ $json.url }}",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "airtableTokenApi",
+    "options": {
+     "timeout": 30000,
+     "batching": {
+      "batch": {
+       "batchSize": 1,
+       "batchInterval": 300
+      }
+     }
+    },
+    "method": "={{ $json.method }}",
+    "sendBody": "={{ $json.method === 'PATCH' }}",
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json.body || {}) }}"
+   }
+  },
+  {
+   "id": "92c94e99-bb7a-4fec-a628-22b2a6ab741a",
+   "name": "Report New History Reviews",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3200,
+    0
+   ],
+   "parameters": {
+    "jsCode": "const requests=$('Prepare Durable Checkpoints').all().map(i=>i.json),responses=$input.all();\nif(requests.length!==responses.length)throw Error('Incomplete durable checkpoint acknowledgment');\nfor(let i=0;i<responses.length;i++){\n const expected=$('Prepare Durable Checkpoints').itemMatching(i).json;\n if(JSON.stringify(expected)!==JSON.stringify(requests[i]))throw Error('Checkpoint response lineage mismatch');\n const raw=responses[i].json,r=raw.body??raw;\n if(raw.error||(raw.statusCode!=null&&(raw.statusCode<200||raw.statusCode>=300)))throw Error('Checkpoint persistence uncertain');\n if(!expected.expected.length)continue;\n if(!Array.isArray(r.records)||r.records.length!==expected.expected.length)throw Error('Incomplete durable history checkpoint');\n const seen=new Set();for(const rec of r.records){const key=rec.fields?.['Event Key'],e=expected.expected.find(x=>x.key===key);if(!e||seen.has(key)||rec.fields['Payload JSON']!==e.payload)throw Error('Durable history checkpoint content mismatch');seen.add(key);}\n}\nconst plan=$('Prepare History Effects').first().json;\nif(plan.newConflicts.length)throw Error('History preserved for review: '+plan.newConflicts.map(c=>c.recordId+': '+c.reason).join('; ').slice(0,1400)+'. All other eligible histories and durable checkpoints completed; identical conflicts will not alert again.');\nreturn [{json:{...plan.summary,updated:plan.actions.filter(a=>a.kind==='update').length,acknowledged:plan.actions.filter(a=>a.checkpointEligible!==false).length,newMalformedReviews:plan.newMalformedReviews,historyPreserved:true,noMessagesSent:true}}];\n"
+   }
+  },
+  {
+   "id": "bc124da8-cd5a-4aea-853e-35962d184af2",
+   "name": "No History Changes",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1200,
+    240
+   ],
+   "parameters": {
+    "jsCode": "return [{json:{...$json.summary,updated:0,acknowledged:0,noMessagesSent:true}}];"
+   }
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

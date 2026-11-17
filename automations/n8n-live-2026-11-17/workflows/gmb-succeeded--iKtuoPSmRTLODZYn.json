@@ -1,0 +1,833 @@
+{
+ "id": "iKtuoPSmRTLODZYn",
+ "name": "GMB Succeeded",
+ "active": true,
+ "isArchived": false,
+ "versionId": "94c4a066-e5ed-48ed-834a-da44903d8faa",
+ "triggerCount": 1,
+ "createdAt": "2025-11-14T16:12:24.390Z",
+ "updatedAt": "2026-11-17T16:39:19.991Z",
+ "settings": {
+  "executionOrder": "v1",
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Search Data ID": {
+   "main": [
+    [
+     {
+      "node": "Get dataset items",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get dataset items": {
+   "main": [
+    [
+     {
+      "node": "Convert to File",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Convert to File": {
+   "main": [
+    [
+     {
+      "node": "Upload to Agency CSV Folder",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Upload to Agency CSV Folder": {
+   "main": [
+    [
+     {
+      "node": "Share file1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Webhook": {
+   "main": [
+    [
+     {
+      "node": "Search Data ID",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Share file1": {
+   "main": [
+    [
+     {
+      "node": "Search Users",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Update g-drive link",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search Users": {
+   "main": [
+    [
+     {
+      "node": "Send a message",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "If error": {
+   "main": [
+    []
+   ]
+  },
+  "Create error message": {
+   "main": [
+    [
+     {
+      "node": "Wait",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Send a message": {
+   "main": [
+    [
+     {
+      "node": "If error",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wait": {
+   "main": [
+    [
+     {
+      "node": "Send Error Message",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appJNoGcSkyIEPQ68",
+     "mode": "list",
+     "cachedResultName": "Scrapers",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblW2WSHn4bKLLM9Y",
+     "mode": "list",
+     "cachedResultName": "GMB Scraper",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68/tblW2WSHn4bKLLM9Y"
+    },
+    "filterByFormula": "=List_ID = \"{{ $json.body.resource.defaultDatasetId }}\" ",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    208,
+    96
+   ],
+   "id": "c0cd830a-e22f-4630-aa7d-55590e749521",
+   "name": "Search Data ID"
+  },
+  {
+   "parameters": {
+    "options": {
+     "fileName": "={{ $('Search Data ID').item.json['File Name'] + \".csv\" }}",
+     "headerRow": true
+    }
+   },
+   "type": "n8n-nodes-base.convertToFile",
+   "typeVersion": 1.1,
+   "position": [
+    656,
+    96
+   ],
+   "id": "22ab95d3-ff10-4932-b4a6-20a4dd86cc8a",
+   "name": "Convert to File"
+  },
+  {
+   "parameters": {
+    "resource": "Datasets",
+    "datasetId": "={{ $json.List_ID }}",
+    "offset": {},
+    "limit": 100
+   },
+   "type": "@apify/n8n-nodes-apify.apify",
+   "typeVersion": 1,
+   "position": [
+    432,
+    96
+   ],
+   "id": "bbe13f3c-1648-49bf-a3e5-89de3c5323a6",
+   "name": "Get dataset items"
+  },
+  {
+   "parameters": {
+    "name": "={{ $('Search Data ID').first().json['File Name'] + \".csv\" }}",
+    "driveId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "My Drive"
+    },
+    "folderId": {
+     "__rl": true,
+     "value": "1nASQd6-Xh9JX0V6vgrRinhwBEIfD3L48",
+     "mode": "list",
+     "cachedResultName": "Agency Ignition CSVs",
+     "cachedResultUrl": "https://drive.google.com/drive/folders/1nASQd6-Xh9JX0V6vgrRinhwBEIfD3L48"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.googleDrive",
+   "typeVersion": 3,
+   "position": [
+    880,
+    96
+   ],
+   "id": "c09f94a2-f24d-4865-9e9e-ee2c2f113710",
+   "name": "Upload to Agency CSV Folder"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appJNoGcSkyIEPQ68",
+     "mode": "list",
+     "cachedResultName": "Scrapers",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblW2WSHn4bKLLM9Y",
+     "mode": "list",
+     "cachedResultName": "GMB Scraper",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68/tblW2WSHn4bKLLM9Y"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "id": "={{ $('Search Data ID').item.json.id }}",
+      "Google Drive Link": "={{ $('Upload to Agency CSV Folder').item.json.webViewLink }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": false
+      },
+      {
+       "id": "Run - ID",
+       "displayName": "Run - ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Job Search",
+       "displayName": "Job Search",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Location Search",
+       "displayName": "Location Search",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "List_ID",
+       "displayName": "List_ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "N8N Automation Ran?",
+       "displayName": "N8N Automation Ran?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "How many leads?",
+       "displayName": "How many leads?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Language",
+       "displayName": "Language",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "English",
+         "value": "English"
+        },
+        {
+         "name": "Spanish",
+         "value": "Spanish"
+        },
+        {
+         "name": "French",
+         "value": "French"
+        },
+        {
+         "name": "German",
+         "value": "German"
+        },
+        {
+         "name": "Chinese",
+         "value": "Chinese"
+        },
+        {
+         "name": "Japanese",
+         "value": "Japanese"
+        },
+        {
+         "name": "Russian",
+         "value": "Russian"
+        },
+        {
+         "name": "Portuguese",
+         "value": "Portuguese"
+        },
+        {
+         "name": "Italian",
+         "value": "Italian"
+        },
+        {
+         "name": "Arabic",
+         "value": "Arabic"
+        },
+        {
+         "name": "Korean",
+         "value": "Korean"
+        },
+        {
+         "name": "Hindi",
+         "value": "Hindi"
+        },
+        {
+         "name": "Turkish",
+         "value": "Turkish"
+        },
+        {
+         "name": "Dutch",
+         "value": "Dutch"
+        },
+        {
+         "name": "Polish",
+         "value": "Polish"
+        },
+        {
+         "name": "Swedish",
+         "value": "Swedish"
+        },
+        {
+         "name": "Greek",
+         "value": "Greek"
+        },
+        {
+         "name": "Czech",
+         "value": "Czech"
+        },
+        {
+         "name": "Danish",
+         "value": "Danish"
+        },
+        {
+         "name": "Finnish",
+         "value": "Finnish"
+        },
+        {
+         "name": "Norwegian",
+         "value": "Norwegian"
+        },
+        {
+         "name": "Hebrew",
+         "value": "Hebrew"
+        },
+        {
+         "name": "Thai",
+         "value": "Thai"
+        },
+        {
+         "name": "Vietnamese",
+         "value": "Vietnamese"
+        },
+        {
+         "name": "Hungarian",
+         "value": "Hungarian"
+        },
+        {
+         "name": "Romanian",
+         "value": "Romanian"
+        },
+        {
+         "name": "Bengali",
+         "value": "Bengali"
+        },
+        {
+         "name": "Indonesian",
+         "value": "Indonesian"
+        },
+        {
+         "name": "Malay",
+         "value": "Malay"
+        },
+        {
+         "name": "Ukrainian",
+         "value": "Ukrainian"
+        },
+        {
+         "name": "Serbian",
+         "value": "Serbian"
+        },
+        {
+         "name": "Croatian",
+         "value": "Croatian"
+        },
+        {
+         "name": "Bulgarian",
+         "value": "Bulgarian"
+        },
+        {
+         "name": "Slovak",
+         "value": "Slovak"
+        },
+        {
+         "name": "Lithuanian",
+         "value": "Lithuanian"
+        },
+        {
+         "name": "Slovenian",
+         "value": "Slovenian"
+        },
+        {
+         "name": "Estonian",
+         "value": "Estonian"
+        },
+        {
+         "name": "Latvian",
+         "value": "Latvian"
+        },
+        {
+         "name": "Filipino",
+         "value": "Filipino"
+        },
+        {
+         "name": "Swahili",
+         "value": "Swahili"
+        },
+        {
+         "name": "Persian",
+         "value": "Persian"
+        },
+        {
+         "name": "Afrikaans",
+         "value": "Afrikaans"
+        },
+        {
+         "name": "Icelandic",
+         "value": "Icelandic"
+        },
+        {
+         "name": "Irish",
+         "value": "Irish"
+        },
+        {
+         "name": "Galician",
+         "value": "Galician"
+        },
+        {
+         "name": "Catalan",
+         "value": "Catalan"
+        },
+        {
+         "name": "Basque",
+         "value": "Basque"
+        },
+        {
+         "name": "Urdu",
+         "value": "Urdu"
+        },
+        {
+         "name": "Punjabi",
+         "value": "Punjabi"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "User",
+       "displayName": "User",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Discord Status (from User)",
+       "displayName": "Discord Status (from User)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "User Name",
+       "displayName": "User Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Tag",
+       "displayName": "Tag",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "File Name",
+       "displayName": "File Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Google Drive Link",
+       "displayName": "Google Drive Link",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Discord Tags",
+       "displayName": "Discord Tags",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1328,
+    192
+   ],
+   "id": "df06b770-20fd-4676-9522-b09a7950ed08",
+   "name": "Update g-drive link"
+  },
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    -16,
+    96
+   ],
+   "id": "220b89dc-c3ff-46bc-aeec-e3a170368a85",
+   "name": "Webhook"
+  },
+  {
+   "parameters": {
+    "operation": "share",
+    "fileId": {
+     "__rl": true,
+     "value": "={{ $json.id }}",
+     "mode": "id"
+    },
+    "permissionsUi": {
+     "permissionsValues": {
+      "role": "reader",
+      "type": "anyone"
+     }
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.googleDrive",
+   "typeVersion": 3,
+   "position": [
+    1104,
+    96
+   ],
+   "id": "8a4f8f6f-0a28-43d1-8b23-b2893bfeaa8e",
+   "name": "Share file1"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appJNoGcSkyIEPQ68",
+     "mode": "list",
+     "cachedResultName": "Ignition Dev Database",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tbl2MDaQIDFNJ7LR4",
+     "mode": "list",
+     "cachedResultName": "Discord User",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68/tbl2MDaQIDFNJ7LR4"
+    },
+    "filterByFormula": "={Record ID} = \"{{ $('Search Data ID').item.json.user_id }}\"",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1328,
+    0
+   ],
+   "id": "8d6f6f2e-f1d9-41a7-854a-8e352155c389",
+   "name": "Search Users"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "d03dbf11-b51e-4c06-839e-fb5c62b821b7",
+       "leftValue": "={{ $json.error }}",
+       "rightValue": "",
+       "operator": {
+        "type": "string",
+        "operation": "exists",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.filter",
+   "typeVersion": 2.2,
+   "position": [
+    1776,
+    0
+   ],
+   "id": "ef0d1f2c-2d76-43b1-a1ed-19785510463e",
+   "name": "If error"
+  },
+  {
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "9e8588ba-c2e6-4ede-ab35-64d281cc4cdc",
+       "name": "Error Message",
+       "value": "=We could not send {{ $('Search Users').item.json[\"Discord Name\"] }} their scraper because they havn't allowed us to send messages to them.   \n\nError: {{ $json.error }} \nTime: {{ $('Search Data ID').item.json.createdTime }}",
+       "type": "string"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    2000,
+    0
+   ],
+   "id": "4946eaaf-3697-404d-af4e-cc51218bacb4",
+   "name": "Create error message"
+  },
+  {
+   "parameters": {
+    "authentication": "oAuth2",
+    "resource": "message",
+    "guildId": {
+     "__rl": true,
+     "value": "1349530994738466816",
+     "mode": "id"
+    },
+    "channelId": {
+     "__rl": true,
+     "mode": "id",
+     "value": "1365362559234080892"
+    },
+    "content": "={{ $json['Error Message'] }}",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.discord",
+   "typeVersion": 2,
+   "position": [
+    2432,
+    0
+   ],
+   "id": "f1a45353-3c0e-4620-8fb0-22773e12f91b",
+   "name": "Send Error Message",
+   "webhookId": "19a6bb65-c48c-4087-a99c-ece4d144307b"
+  },
+  {
+   "parameters": {
+    "authentication": "oAuth2",
+    "resource": "message",
+    "guildId": {
+     "__rl": true,
+     "value": "https://discord.com/channels/1349530994738466816",
+     "mode": "url"
+    },
+    "sendTo": "user",
+    "userId": {
+     "__rl": true,
+     "value": "={{ $json.Discord_Tag }}",
+     "mode": "id"
+    },
+    "content": "=Hi there, here is your GMB scraper results:\n\n{{ $('Upload to Agency CSV Folder').item.json.webViewLink }}\n\n",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.discord",
+   "typeVersion": 2,
+   "position": [
+    1552,
+    0
+   ],
+   "id": "dc5cb166-ce9e-48f1-8451-916303876a09",
+   "name": "Send a message",
+   "webhookId": "6b8faee6-e88c-4d29-af20-0a3e81f0d9a5",
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "amount": 3
+   },
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    2208,
+    0
+   ],
+   "id": "9fd03290-af2c-4285-98f2-3f546f2ac62a",
+   "name": "Wait",
+   "webhookId": "a134b724-bacf-47b6-8554-e9e728d9cc04"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

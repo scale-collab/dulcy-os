@@ -1,0 +1,1162 @@
+{
+ "id": "yrm5yHj5EJSuQVGVjwUEE",
+ "name": "[Content OS] Generate Distribution Pack",
+ "active": true,
+ "isArchived": false,
+ "versionId": "60adb585-f3f7-4baf-958b-ed617297236b",
+ "triggerCount": 1,
+ "createdAt": "2026-08-17T17:02:59.334Z",
+ "updatedAt": "2026-11-17T16:44:17.959Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Distribution Webhook": {
+   "main": [
+    [
+     {
+      "node": "Validate Distribution Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate Distribution Request": {
+   "main": [
+    [
+     {
+      "node": "Return Accepted",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Get Parent Content",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Parent Content": {
+   "main": [
+    [
+     {
+      "node": "Get Approved Clips",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Approved Clips": {
+   "main": [
+    [
+     {
+      "node": "Acquire Distribution Source Lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Distribution Prompt": {
+   "main": [
+    [
+     {
+      "node": "Release Distribution Source Lock",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Release Distribution Error Lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "OpenAI Chat Model - Distribution": {
+   "ai_languageModel": [
+    [
+     {
+      "node": "Generate Distribution Drafts",
+      "type": "ai_languageModel",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Generate Distribution Drafts": {
+   "main": [
+    [
+     {
+      "node": "Parse Distribution Drafts",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Parse Distribution Drafts": {
+   "main": [
+    [
+     {
+      "node": "Acquire Distribution Write Lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Existing Distribution Items": {
+   "main": [
+    [
+     {
+      "node": "Build Distribution Batches",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Release Distribution Error Lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build Distribution Batches": {
+   "main": [
+    [
+     {
+      "node": "Plan Distribution Create Intent",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Release Distribution Error Lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create Distribution Items": {
+   "main": [
+    [
+     {
+      "node": "Plan Distribution Bindings",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Release Distribution Error Lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Acquire Distribution Source Lock": {
+   "main": [
+    [
+     {
+      "node": "Prepare Distribution Prompt",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Release Distribution Source Lock": {
+   "main": [
+    [
+     {
+      "node": "Restore Distribution Prompt",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Restore Distribution Prompt": {
+   "main": [
+    [
+     {
+      "node": "Generate Distribution Drafts",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Acquire Distribution Write Lock": {
+   "main": [
+    [
+     {
+      "node": "Recheck Distribution Parent",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Recheck Distribution Parent": {
+   "main": [
+    [
+     {
+      "node": "Validate Current Distribution Sources",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Release Distribution Error Lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate Current Distribution Sources": {
+   "main": [
+    [
+     {
+      "node": "Get Existing Distribution Items",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Release Distribution Error Lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Plan Distribution Bindings": {
+   "main": [
+    [
+     {
+      "node": "Persist Distribution Bindings",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Release Distribution Error Lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Persist Distribution Bindings": {
+   "main": [
+    [
+     {
+      "node": "Verify Distribution Bindings",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Release Distribution Error Lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Verify Distribution Bindings": {
+   "main": [
+    [
+     {
+      "node": "Release Distribution Write Lock",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Release Distribution Error Lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Release Distribution Write Lock": {
+   "main": [
+    [
+     {
+      "node": "Distribution Binding Complete",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Distribution Binding Complete": {
+   "main": [
+    [
+     {
+      "node": "Mark Distribution Ready",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Release Distribution Error Lock": {
+   "main": [
+    [
+     {
+      "node": "Distribution Reconciliation Required",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Plan Distribution Create Intent": {
+   "main": [
+    [
+     {
+      "node": "Persist Distribution Create Intent",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Release Distribution Error Lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Persist Distribution Create Intent": {
+   "main": [
+    [
+     {
+      "node": "Verify Distribution Create Intent",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Release Distribution Error Lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Verify Distribution Create Intent": {
+   "main": [
+    [
+     {
+      "node": "Recover Existing Distribution Drafts",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Release Distribution Error Lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Recovered Distribution Records": {
+   "main": [
+    [
+     {
+      "node": "Plan Distribution Bindings",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Release Distribution Error Lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Split Durable Distribution Create Batches": {
+   "main": [
+    [
+     {
+      "node": "Create Distribution Items",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Release Distribution Error Lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Recover Existing Distribution Drafts": {
+   "main": [
+    [
+     {
+      "node": "Recovered Distribution Records",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Split Durable Distribution Create Batches",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Release Distribution Error Lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "responseMode": "responseNode",
+    "options": {}
+   },
+   "id": "b8765314-5e85-4693-ae62-e3611a9fdbd8",
+   "name": "Distribution Webhook",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    1680,
+    80
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const body=$input.first().json.body??$input.first().json;const recordId=String(body.recordId??body.record_id??'').trim();const action=String(body.action??'').trim();if(!/^rec[A-Za-z0-9]+$/.test(recordId))throw new Error('A valid Airtable content recordId is required.');if(action!=='Generate Distribution Pack')throw new Error('Unsupported Content OS action: '+action);return [{json:{recordId,action}}];"
+   },
+   "id": "0153fd54-4f68-4d3d-b5f2-83611a9ebcb4",
+   "name": "Validate Distribution Request",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1904,
+    80
+   ]
+  },
+  {
+   "parameters": {
+    "respondWith": "json",
+    "responseBody": "={{ JSON.stringify({success:true,accepted:true,message:'Distribution pack generation started.'}) }}",
+    "options": {}
+   },
+   "id": "e76bafe1-2891-4fcb-aa9d-330d9aae2723",
+   "name": "Return Accepted",
+   "type": "n8n-nodes-base.respondToWebhook",
+   "typeVersion": 1.4,
+   "position": [
+    2112,
+    -80
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblcSzvicm3wivvhh/' + $('Validate Distribution Request').first().json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "1903b073-5c49-4db9-a4be-f65cff7c527e",
+   "name": "Get Parent Content",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2112,
+    144
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tblg1Tj9atyxN0piT",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "filterByFormula",
+       "value": "={{ (() => { const ids=$('Get Parent Content').first().json.fields?.['Content Clips']??[]; if(!Array.isArray(ids)||ids.some(id=>!/^rec[A-Za-z0-9]+$/.test(String(id)))) throw new Error('Invalid parent-linked clip IDs; reconcile before generating.'); return ids.length ? 'AND(OR('+ids.map(id=>'RECORD_ID()=\"'+id+'\"').join(',')+'),{Clip Status}=\"Approved\")' : 'FALSE()'; })() }}"
+      },
+      {
+       "name": "pageSize",
+       "value": "100"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "ffdabc45-7462-4bf5-8309-c2d9e1f7720f",
+   "name": "Get Approved Clips",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2352,
+    144
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "'use strict';\n// STAGED ONLY. Pure adapters: persistence and provider submission are deliberately injected elsewhere.\nconst check=(v,m)=>{if(!v)throw Error(m)};\nconst copy=x=>JSON.parse(JSON.stringify(x));\nconst same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);\nfunction readLocked(row,owner){\n check(row?.id===1&&row.owner===String(owner),'Shared lock not owned');\n const s=typeof row.reviewLedger==='string'?JSON.parse(row.reviewLedger):copy(row.reviewLedger);\n const r=typeof row.managedClips==='string'?JSON.parse(row.managedClips):copy(row.managedClips);\n check(s?.schemaVersion===1&&Number.isSafeInteger(s.generation)&&s.clips&&s.receipts,'Invalid ledger');\n check(r?.schemaVersion===1&&Array.isArray(r.clipIds)&&new Set(r.clipIds).size===r.clipIds.length,'Invalid registry');\n return {s,r};\n}\nfunction approvedClip(row,owner,id){\n const {s,r}=readLocked(row,owner),c=s.clips[id];\n check(r.clipIds.includes(id)&&c?.mode==='current-render-v1','Current-render managed review required');\n check(c.status==='Approved'&&!c.pendingRefresh&&c.final?.reviewGeneration&&c.approval?.reviewGeneration===c.final.reviewGeneration,'Current clip approval required');\n check(c.approval.projectId===c.projectId&&c.approval.clipId===c.final.clipId&&c.approval.actor,'Approval identity mismatch');\n return {s,r,c};\n}\nfunction approveCurrent({row,owner,recordId,expectedVersion,reviewGeneration,persistedAuthor,verifiedOwner}){\n const {s,r}=readLocked(row,owner),c=s.clips[recordId];\n check(persistedAuthor?.id===verifiedOwner?.id&&persistedAuthor?.email===verifiedOwner?.email&&verifiedOwner?.id,'Owner-authored persisted intent required');\n check(r.clipIds.includes(recordId)&&c?.mode==='current-render-v1'&&!c.pendingRefresh,'Current-render preview required');\n check(c.version===expectedVersion&&c.status==='Needs Review'&&c.final?.reviewGeneration===reviewGeneration&&reviewGeneration,'Displayed preview stale');\n check(c.final.renderReady===true&&c.final.transcript?.trim()&&/^https:\\/\\//.test(c.final.url),'Ready media and transcript required');\n check(!Object.values(s.receipts).some(x=>x.recordId===recordId&&x.state!=='completed'),'Unresolved review receipt');\n const next=copy(s);next.generation++;next.clips[recordId]={...c,version:c.version+1,status:'Approved',approval:{projectId:c.projectId,clipId:c.final.clipId,reviewGeneration,actor:persistedAuthor.id}};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(next)};\n}\nfunction draftSource({row,owner,recordId,parentId}){\n const {c}=approvedClip(row,owner,recordId);check(c.parentId===parentId,'Parent mismatch');\n return {recordId,parentId,projectId:c.projectId,clipId:c.final.clipId,url:c.final.url,transcript:c.final.transcript,reviewGeneration:c.final.reviewGeneration};\n}\nfunction draftBinding({source,post}){\n check(post.parentId===source.parentId&&post.clipRecordId===source.recordId,'Draft linkage mismatch');\n check(['Instagram','YouTube'].includes(post.platform)&&post.body?.trim(),'Invalid clip draft');\n return {...post,reviewGeneration:source.reviewGeneration,approved:false,publishingStatus:'Draft'};\n}\nfunction prepareSchedule({row,owner,post,provider,accounts,now}){\n const {s,c}=approvedClip(row,owner,post.clipRecordId);\n check(post.parentId===c.parentId,'Post parent mismatch');\n const key='schedule|'+post.id,old=s.receipts[key];\n if(old){check(old.postId===post.id,'Receipt mismatch');return {action:old.state==='confirmed'?'already-scheduled':'reconcile',receipt:old};}\n check(post.approved===true&&post.publishingStatus==='Draft'&&!post.externalPostId,'Post not eligible');\n check(post.reviewGeneration===c.final.reviewGeneration,'Draft review stale');\n check(provider.id===c.projectId+'.'+c.final.clipId&&provider.renderAsVideoFile?.pending===false,'Provider identity/render mismatch');\n check(['Instagram','YouTube'].includes(post.platform),'Unsupported automatic platform');\n check(['Alex Woung','Alex Woung Raw'].includes(post.channel),'Unknown content channel');\n check(Number.isFinite(Date.parse(post.publishAt))&&Date.parse(post.publishAt)>now,'Future time required');\n const account=accounts.find(a=>a.id===post.accountId&&a.platform===post.platform&&a.channel===post.channel);\n check(account,'Exact connected destination required');\n check(post.platform!=='Instagram'||account.subAccountId,'Instagram subaccount required');\n const body={projectId:c.projectId,clipId:c.final.clipId,postAccountId:account.id,...(account.subAccountId?{subAccountId:account.subAccountId}:{}),postDetail:{title:post.title||'',custom:{description:post.body,privacy:'public'},mediaType:'video'},publishAt:new Date(post.publishAt).toISOString()};\n return {action:'persist-intent-first',key,expectedGeneration:s.generation,postId:post.id,recordId:c.id,reviewGeneration:c.final.reviewGeneration,body};\n}\nfunction persistScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner);check(prepared.action==='persist-intent-first'&&s.generation===prepared.expectedGeneration&&!s.receipts[prepared.key],'Concurrent schedule intent');\n const n=copy(s);n.generation++;n.receipts[prepared.key]={state:'pending',postId:prepared.postId,recordId:prepared.recordId,reviewGeneration:prepared.reviewGeneration,body:prepared.body};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nfunction verifyScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner),r=s.receipts[prepared.key];check(r?.state==='pending'&&r.postId===prepared.postId&&same(r.body,prepared.body),'Durable intent readback required');return prepared.body;\n}\nfunction providerOutcome({row,owner,key,response}){\n const {s}=readLocked(row,owner),r=s.receipts[key];check(r?.state==='pending','Pending receipt required');\n const rawId=response?.data?.scheduleId??response?.scheduleId;\n const id=typeof rawId==='string'&&rawId.trim()?rawId.trim():null;\n const n=copy(s);n.generation++;n.receipts[key]={...r,state:typeof id==='string'&&id.trim()?'confirmed':'uncertain',...(typeof id==='string'&&id.trim()?{scheduleId:id}:{})};\n // Failure/timeout never resets to Draft. Reconcile the provider before any retry.\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n),fields:id?{'Publishing Status':'Scheduled','External Post ID':id}:{'Publishing Status':'Publishing','Last Error':'Provider result uncertain. Reconcile before retry.'}};\n}\n\n'use strict';\n// Pure plans only. Caller owns shared lock, authoritative parent read, durable CAS/readback.\nfunction canonicalSources({row,owner,parent,recordIds}) {\n check(parent?.id&&['Alex Woung','Alex Woung Raw'].includes(parent.fields?.['Content Channel']),'Unknown parent channel');\n const linked=parent.fields['Content Clips'];\n check(Array.isArray(linked)&&Array.isArray(recordIds)&&recordIds.length&&new Set(recordIds).size===recordIds.length,'Invalid clip selection');\n return recordIds.map(recordId=>{check(linked.includes(recordId),'Unlinked clip');return {...draftSource({row,owner,recordId,parentId:parent.id}),channel:parent.fields['Content Channel']};});\n}\nfunction bindCreatedDrafts({row,owner,parent,sources,records}) {\n const {s}=readLocked(row,owner); const n=JSON.parse(JSON.stringify(s));n.drafts??={};\n check(Array.isArray(records)&&records.length,'No created drafts');const seen=new Set();\n for(const post of records){\n  check(/^rec[A-Za-z0-9]+$/.test(post.id)&&!seen.has(post.id),'Invalid/duplicate post');seen.add(post.id);\n  const f=post.fields||{},ids=f['Content Clip'],parents=f['Parent Content'];\n  check(Array.isArray(ids)&&ids.length===1&&Array.isArray(parents)&&parents.length===1&&parents[0]===parent.id,'Draft linkage mismatch');\n  const source=sources.find(x=>x.recordId===ids[0]);check(source,'Missing generation source');\n  const [current]=canonicalSources({row,owner,parent,recordIds:ids});\n  check(current.reviewGeneration===source.reviewGeneration&&current.clipId===source.clipId&&current.projectId===source.projectId,'Source changed during generation');\n  check(['Instagram','YouTube'].includes(f.Platform)&&f['Content Channel']===current.channel,'Wrong draft destination');\n  check(f['Approval Status']==='Needs Review'&&f['Publishing Status']==='Draft'&&!f['External Post ID']&&!f['Scheduled At'],'Created draft is not review-only');\n  check(f['Media URL']===current.url&&typeof f['Draft Body']==='string'&&f['Draft Body'].trim(),'Wrong media or empty copy');\n  check(!Object.values(s.receipts).some(r=>r.postId===post.id),'Post already has schedule receipt');\n  const binding={reviewGeneration:current.reviewGeneration,content:JSON.stringify({clipRecordId:ids[0],parentId:parent.id,platform:f.Platform,channel:current.channel,title:f['Draft Title']||'',body:f['Draft Body']})};\n  check(!n.drafts[post.id]||JSON.stringify(n.drafts[post.id])===JSON.stringify(binding),'Existing binding differs; explicit regeneration required');\n  n.drafts[post.id]=binding;\n }\n n.generation++;\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nconst parent=$('Get Parent Content').first().json;\nconst f=parent.fields??{};\nconst linkedClipIds=new Set(Array.isArray(f['Content Clips'])?f['Content Clips']:[]);\nconst clipResponse=$('Get Approved Clips').first().json;\nif(clipResponse.offset)throw new Error('Approved clip lookup is paginated; reconcile before generating.');\nif((clipResponse.records??[]).some(r=>!linkedClipIds.has(r.id)||r.fields?.['Clip Status']!=='Approved'))throw new Error('Clip lookup returned an unapproved or unrelated clip.');\nconst contentChannel=String(f['Content Channel']?.name??f['Content Channel']??'').trim();\nif(!['Alex Woung','Alex Woung Raw'].includes(contentChannel)) throw new Error('Choose Alex Woung or Alex Woung Raw in the Content Channel field before generating the distribution pack.');\n\nconst requestedChannels=(Array.isArray(f['Distribution Channels'])?f['Distribution Channels']:[])\n  .map(v=>String(v?.name??v).trim())\n  .filter(Boolean);\nif(!requestedChannels.length) throw new Error('Choose at least one Distribution Channel before generating the distribution pack.');\n\nconst requestedCount=Math.max(1,Math.min(50,Math.round(Number(f['Requested Clip Count']??3))));\nconst minimumScore=Math.max(0,Math.min(100,Math.round(Number(f['Minimum Clip Score']??85))));\n\nconst rawClips=($('Get Approved Clips').first().json.records??[]).map(r=>({\n  recordId:r.id,\n  clipId:String(r.fields?.['OpusClip Clip ID']??r.id),\n  name:String(r.fields?.['Clip Name']??''),\n  url:String(r.fields?.['Frame.io Clip URL']??''),\n  hook:String(r.fields?.Hook??''),\n  caption:String(r.fields?.Caption??''),\n  transcript:String(r.fields?.['Clip Transcript']??''),\n  score:Number(r.fields?.['Virality Score']??0),\n}));\nconst locked=$('Acquire Distribution Source Lock').first().json;\nconst {r:registry}=readLocked(locked,$execution.id);\nconst managedSources=rawClips.filter(x=>registry.clipIds.includes(x.recordId));\nconst verifiedSources=managedSources.length?canonicalSources({row:locked,owner:$execution.id,parent,recordIds:managedSources.map(x=>x.recordId)}):[];\nfor(const clip of rawClips){const source=verifiedSources.find(x=>x.recordId===clip.recordId);if(source){clip.clipId=source.projectId+'.'+source.clipId;clip.url=source.url;clip.transcript=source.transcript;clip.reviewGeneration=source.reviewGeneration;}}\nconst uniqueByClipId=new Map();\nfor(const clip of rawClips){\n  const existing=uniqueByClipId.get(clip.clipId);\n  if(!existing || (!existing.transcript && clip.transcript)) uniqueByClipId.set(clip.clipId,clip);\n}\nconst clips=[...uniqueByClipId.values()]\n  .filter(c=>c.score>=minimumScore)\n  .sort((a,b)=>b.score-a.score)\n  .slice(0,requestedCount);\n\nif(!clips.length)throw new Error('Approve at least one qualifying clip before generating this distribution pack.');\nif(clips.some(c=>!c.transcript.trim()||!/^https?:\\/\\//i.test(c.url)))throw new Error('Every selected clip needs its actual transcript and valid media URL before generating.');\nconst youtubeUrl=String(f['YouTube URL']??'').trim();\nconst videoUrl=youtubeUrl||String(f['Frame.io Final Asset URL']??'').trim()||String(f.Link??'').trim()||String(f['Frame.io Final Folder URL']??'').trim()||String(f['Frame.io Raw Folder URL']??'').trim();\nconst transcript=String(f['YouTube Transcript']??'').trim();\nif(!transcript)throw new Error('The actual parent video transcript is required before generating distribution drafts.');\nconst script=String(f.Script??'').trim();\nconst description=String(f.Description??'').trim();\nif(!transcript&&!script&&!description&&!clips.length) throw new Error('No usable source text is available for the selected outputs.');\n\nconst specs=[];\nif(requestedChannels.includes('Instagram')) specs.push({channel:'Instagram',platform:'Instagram',outputType:'Reel',scope:'one per selected clip'});\nif(requestedChannels.includes('YouTube Shorts')) specs.push({channel:'YouTube Shorts',platform:'YouTube',outputType:'Short',scope:'one per selected clip'});\nif(requestedChannels.includes('Reddit')) specs.push({channel:'Reddit',platform:'Reddit',outputType:'Discussion Draft',scope:'one long-form draft'});\nif(requestedChannels.includes('X / Twitter')) specs.push(\n  {channel:'X / Twitter',platform:'X',outputType:'Value Post',scope:'one strong standalone post'},\n  {channel:'X / Twitter',platform:'X',outputType:'Thread',scope:'one concise thread'}\n);\nif(requestedChannels.includes('LinkedIn')) specs.push({channel:'LinkedIn',platform:'LinkedIn',outputType:'Value Post',scope:'one concise professional post'});\nif(requestedChannels.includes('Blog')) specs.push({channel:'Blog',platform:'Framer',outputType:'Framer Blog',scope:'one long-form blog'});\nif(requestedChannels.includes('Resource')) specs.push({channel:'Resource',platform:'Framer',outputType:'Resource',scope:'one downloadable resource outline'});\nif(requestedChannels.includes('Newsletter')) specs.push({channel:'Newsletter',platform:'Newsletter',outputType:contentChannel==='Alex Woung'?'Dulcy Newsletter':'Client Newsletter',scope:'one newsletter'});\nif(!specs.length) throw new Error('None of the selected Distribution Channels have a configured output mapping.');\n\nconst context={parentRecordId:parent.id,contentChannel,title:String(f['YouTube Title']??'').trim()||String(f.Title??parent.id),description,script,youtubeUrl,videoUrl,transcript,clips,requestedChannels,specs,minimumScore,requestedCount};\nconst prompt=`You are Dulcy's content distribution editor. Generate only the outputs listed in OUTPUT SPECS. Do not create any unselected platform or output type. Return valid JSON only with one top-level key named drafts containing a non-empty array.\n\nFor clip-scoped outputs, create the requested platform row for each supplied clip and preserve that clip's recordId and media URL. For long-form outputs, use an empty clipRecordId. Every draft object must contain exactly: clipRecordId, platform, outputType, title, body, mediaUrl. Platform and outputType must exactly match OUTPUT SPECS. Use the actual video transcript and the actual selected clip transcripts as factual authority. Title, description, script and existing captions are secondary labels or drafts, never independent evidence for metrics, results, quotes, promises, or facts. Resolve any disagreement in favor of the actual transcripts. If a title contains a metric absent from the transcripts, do not repeat it. Clip-scoped posts must accurately describe that specific clip, not another clip or a broader unsupported parent claim. Use only evidence in the supplied context. Do not invent results, quotes, statistics, links, assets, giveaways, or client facts. Do not include markdown fences.\n\nX / TWITTER VOICE AND SOP:\n- Write as Alexander Woung (@alexwoung), not as a generic brand or content marketer.\n- The purpose of X is fast ideas + a different angle + proof: sharpen thinking, test hooks, find winning angles, and turn winners into larger content.\n- Match Alexander's observed voice: blunt, direct, compact, conversational, confident, occasionally lowercase, and willing to make a sharp comparison. It should sound typed by a founder, not polished by a corporate copywriter.\n- Strong examples of the voice are: a clear contrast, an earned opinion, a specific bottleneck, a short reaction to proof, or a direct question.\n- Never write generic tip-list filler, motivational-speaker language, engagement bait, fake controversy, AI-sounding transitions, hashtags, or unnecessary emojis.\n- Do not over-explain. The first line must work alone, and the post must be interesting by line 3.\n- Standalone Value Posts should normally fit within 280 characters. Prefer one strong idea over multiple weak ideas.\n- Create one strong Value Post: choose a sharp opinion, specific earned lesson, proof/reaction, one-liner/pulse check, or compact story angle only as supported by the actual transcripts.\n- A proof/case-study post may use a metric or result only when it appears in CONTENT CONTEXT. Format it as receipt + brief reaction + takeaway.\n- Use a personal story only when the source contains a real situation, tension, and lesson. Keep the ending clean.\n- Use a giveaway format only when CONTENT CONTEXT contains a real asset that can actually be delivered. Never invent a giveaway.\n- A Thread should contain 3-6 short posts, each useful on its own, clearly separated with numbered labels such as \"1/\" and \"2/\". Do not stretch a single idea into filler.\n- Titles are internal review labels, not text to publish. Keep each title short and descriptive.\n- The operating cadence is 3-5 solid posts per week, Monday-Friday. Consistency and value matter more than trying to force one viral moment.\n- Across an ongoing content mix, favor proof/case studies when supported, then personal stories, with occasional value posts, one-liners, or genuine giveaways. For this individual source, choose only formats supported by its evidence.\n\nLINKEDIN VOICE AND SOP:\n- Write as Alexander Woung for a professional audience that may be validating him after finding him through cold email, X, YouTube, Instagram, a referral, or search. LinkedIn is part of the trust funnel.\n- LinkedIn is not X. Keep the post short, clean, straightforward, lead-focused, and credible. The goal is not to be the funniest person; it is to be the person the reader trusts.\n- Every post must deliver real value and clarity. Use one point, one stance, and one clear takeaway. Do not turn a post into a blog or a generic list of 12 tips.\n- Choose only one of three formats supported by CONTENT CONTEXT:\n  1. Giveaway: a pain- or curiosity-led hook, three specific value bullets, real proof if available, and a CTA to comment a word and connect. Use this only when a genuinely valuable asset exists and can actually be delivered. Never invent an asset or recycled PDF.\n  2. Story: a real moment, mistake or tension, lesson, and clean takeaway. A CTA is optional. Write it like a lesson, not a journal entry.\n  3. Value post: teach one specific lesson with a clear stance and practical takeaway. Favor topics such as offer positioning, outreach bottlenecks, specific mistakes, or useful frameworks when supported by the source.\n- The first two lines must establish the pain, curiosity, tension, or contrarian stance. Avoid vague openings, corporate throat-clearing, and AI-sounding transitions.\n- Use short paragraphs with whitespace. Keep bullets tactical and specific. Do not use hashtags, fake vulnerability, invented dialogue, unsupported proof, or engagement bait.\n- When CONTENT CONTEXT includes a clip or relevant media URL, preserve it in mediaUrl. Media should feel real: a video, personal photo, result screenshot, or simple one-idea graphic—not a generic template.\n- Rough ongoing mix: about 75% of LinkedIn posts should use relevant media and 25% may be text-only. Do not invent a media URL when none is supplied.\n- Titles are internal review labels, not copy to publish. Keep them short and descriptive.\n\nOUTPUT SPECS:\n${JSON.stringify(specs)}\n\nCONTENT CONTEXT:\n${JSON.stringify(context)}`;\nreturn [{json:{parentRecordId:parent.id,contentChannel,context,prompt,requestedChannels,specs,managedSources:verifiedSources.filter(x=>clips.some(c=>c.recordId===x.recordId))}}];"
+   },
+   "id": "b6c74ed4-9a5f-4626-aae1-8a3f96c5d362",
+   "name": "Prepare Distribution Prompt",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2592,
+    144
+   ],
+   "onError": "continueErrorOutput"
+  },
+  {
+   "parameters": {
+    "promptType": "define",
+    "text": "={{ $json.prompt }}",
+    "batching": {}
+   },
+   "id": "edc99edc-3cfd-4b6d-90a5-ce0148ce5448",
+   "name": "Generate Distribution Drafts",
+   "type": "@n8n/n8n-nodes-langchain.chainLlm",
+   "typeVersion": 1.7,
+   "position": [
+    2832,
+    144
+   ]
+  },
+  {
+   "parameters": {
+    "model": {
+     "__rl": true,
+     "value": "gpt-5.6",
+     "mode": "list",
+     "cachedResultName": "gpt-5.6"
+    },
+    "builtInTools": {},
+    "options": {}
+   },
+   "id": "d0dabdd2-4f4d-490e-9a3f-85f8b8e05823",
+   "name": "OpenAI Chat Model - Distribution",
+   "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+   "typeVersion": 1.3,
+   "position": [
+    2832,
+    368
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const response=$input.first().json;const clean=s=>String(s??'').trim().replace(/^```(?:json)?\\s*/i,'').replace(/```\\s*$/,'').trim();const parseText=s=>{const t=clean(s);if(!t)return null;try{return JSON.parse(t);}catch{}const a=t.indexOf('{'),b=t.lastIndexOf('}');if(a>=0&&b>a){try{return JSON.parse(t.slice(a,b+1));}catch{}}const x=t.indexOf('['),y=t.lastIndexOf(']');if(x>=0&&y>x){try{return JSON.parse(t.slice(x,y+1));}catch{}}return null;};const looksLikeDraftArray=v=>Array.isArray(v)&&v.some(d=>d&&typeof d==='object'&&('platform'in d||'outputType'in d||'body'in d));const findDrafts=(v,depth=0)=>{if(depth>8||v==null)return null;if(looksLikeDraftArray(v))return v;if(typeof v==='string'){const p=parseText(v);return p?findDrafts(p,depth+1):null;}if(Array.isArray(v)){for(const item of v){const found=findDrafts(item,depth+1);if(found)return found;}return null;}if(typeof v==='object'){if(Array.isArray(v.drafts))return v.drafts;for(const key of ['output','text','content','response','message','data','result','json']){if(key in v){const found=findDrafts(v[key],depth+1);if(found)return found;}}for(const value of Object.values(v)){const found=findDrafts(value,depth+1);if(found)return found;}}return null;};const drafts=findDrafts(response);if(!Array.isArray(drafts)||!drafts.length)throw new Error('AI returned no usable distribution drafts. AI response preview: '+JSON.stringify(response).slice(0,900));const prep=$('Prepare Distribution Prompt').first().json;return [{json:{parentRecordId:prep.parentRecordId,drafts:drafts.map(d=>({...d,clipRecordId:String(d.clipRecordId??'').trim(),platform:String(d.platform??'').trim(),outputType:String(d.outputType??d.output_type??'').trim(),title:String(d.title??'').trim(),body:String(d.body??d.copy??d.caption??'').trim(),mediaUrl:String(d.mediaUrl??d.media_url??'').trim()}))}}];"
+   },
+   "id": "8c9a298f-77e8-476d-948e-c90c7c4d651e",
+   "name": "Parse Distribution Drafts",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3072,
+    144
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tblDWJrmIcBJDykIP",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "filterByFormula",
+       "value": "={{ (() => { const id=$('Parse Distribution Drafts').first().json.parentRecordId; if(!/^rec[A-Za-z0-9]+$/.test(String(id))) throw new Error('Invalid parent ID'); return 'LEFT({Deduplication Key},'+(id.length+1)+')=\"'+id+'|\"'; })() }}"
+      },
+      {
+       "name": "pageSize",
+       "value": "100"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "5a59c1dc-af78-40d5-bcf6-bd6053ac652d",
+   "name": "Get Existing Distribution Items",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    3312,
+    144
+   ],
+   "onError": "continueErrorOutput"
+  },
+  {
+   "parameters": {
+    "jsCode": "'use strict';\n// STAGED ONLY. Pure adapters: persistence and provider submission are deliberately injected elsewhere.\nconst check=(v,m)=>{if(!v)throw Error(m)};\nconst copy=x=>JSON.parse(JSON.stringify(x));\nconst same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);\nfunction readLocked(row,owner){\n check(row?.id===1&&row.owner===String(owner),'Shared lock not owned');\n const s=typeof row.reviewLedger==='string'?JSON.parse(row.reviewLedger):copy(row.reviewLedger);\n const r=typeof row.managedClips==='string'?JSON.parse(row.managedClips):copy(row.managedClips);\n check(s?.schemaVersion===1&&Number.isSafeInteger(s.generation)&&s.clips&&s.receipts,'Invalid ledger');\n check(r?.schemaVersion===1&&Array.isArray(r.clipIds)&&new Set(r.clipIds).size===r.clipIds.length,'Invalid registry');\n return {s,r};\n}\nfunction approvedClip(row,owner,id){\n const {s,r}=readLocked(row,owner),c=s.clips[id];\n check(r.clipIds.includes(id)&&c?.mode==='current-render-v1','Current-render managed review required');\n check(c.status==='Approved'&&!c.pendingRefresh&&c.final?.reviewGeneration&&c.approval?.reviewGeneration===c.final.reviewGeneration,'Current clip approval required');\n check(c.approval.projectId===c.projectId&&c.approval.clipId===c.final.clipId&&c.approval.actor,'Approval identity mismatch');\n return {s,r,c};\n}\nfunction approveCurrent({row,owner,recordId,expectedVersion,reviewGeneration,persistedAuthor,verifiedOwner}){\n const {s,r}=readLocked(row,owner),c=s.clips[recordId];\n check(persistedAuthor?.id===verifiedOwner?.id&&persistedAuthor?.email===verifiedOwner?.email&&verifiedOwner?.id,'Owner-authored persisted intent required');\n check(r.clipIds.includes(recordId)&&c?.mode==='current-render-v1'&&!c.pendingRefresh,'Current-render preview required');\n check(c.version===expectedVersion&&c.status==='Needs Review'&&c.final?.reviewGeneration===reviewGeneration&&reviewGeneration,'Displayed preview stale');\n check(c.final.renderReady===true&&c.final.transcript?.trim()&&/^https:\\/\\//.test(c.final.url),'Ready media and transcript required');\n check(!Object.values(s.receipts).some(x=>x.recordId===recordId&&x.state!=='completed'),'Unresolved review receipt');\n const next=copy(s);next.generation++;next.clips[recordId]={...c,version:c.version+1,status:'Approved',approval:{projectId:c.projectId,clipId:c.final.clipId,reviewGeneration,actor:persistedAuthor.id}};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(next)};\n}\nfunction draftSource({row,owner,recordId,parentId}){\n const {c}=approvedClip(row,owner,recordId);check(c.parentId===parentId,'Parent mismatch');\n return {recordId,parentId,projectId:c.projectId,clipId:c.final.clipId,url:c.final.url,transcript:c.final.transcript,reviewGeneration:c.final.reviewGeneration};\n}\nfunction draftBinding({source,post}){\n check(post.parentId===source.parentId&&post.clipRecordId===source.recordId,'Draft linkage mismatch');\n check(['Instagram','YouTube'].includes(post.platform)&&post.body?.trim(),'Invalid clip draft');\n return {...post,reviewGeneration:source.reviewGeneration,approved:false,publishingStatus:'Draft'};\n}\nfunction prepareSchedule({row,owner,post,provider,accounts,now}){\n const {s,c}=approvedClip(row,owner,post.clipRecordId);\n check(post.parentId===c.parentId,'Post parent mismatch');\n const key='schedule|'+post.id,old=s.receipts[key];\n if(old){check(old.postId===post.id,'Receipt mismatch');return {action:old.state==='confirmed'?'already-scheduled':'reconcile',receipt:old};}\n check(post.approved===true&&post.publishingStatus==='Draft'&&!post.externalPostId,'Post not eligible');\n check(post.reviewGeneration===c.final.reviewGeneration,'Draft review stale');\n check(provider.id===c.projectId+'.'+c.final.clipId&&provider.renderAsVideoFile?.pending===false,'Provider identity/render mismatch');\n check(['Instagram','YouTube'].includes(post.platform),'Unsupported automatic platform');\n check(['Alex Woung','Alex Woung Raw'].includes(post.channel),'Unknown content channel');\n check(Number.isFinite(Date.parse(post.publishAt))&&Date.parse(post.publishAt)>now,'Future time required');\n const account=accounts.find(a=>a.id===post.accountId&&a.platform===post.platform&&a.channel===post.channel);\n check(account,'Exact connected destination required');\n check(post.platform!=='Instagram'||account.subAccountId,'Instagram subaccount required');\n const body={projectId:c.projectId,clipId:c.final.clipId,postAccountId:account.id,...(account.subAccountId?{subAccountId:account.subAccountId}:{}),postDetail:{title:post.title||'',custom:{description:post.body,privacy:'public'},mediaType:'video'},publishAt:new Date(post.publishAt).toISOString()};\n return {action:'persist-intent-first',key,expectedGeneration:s.generation,postId:post.id,recordId:c.id,reviewGeneration:c.final.reviewGeneration,body};\n}\nfunction persistScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner);check(prepared.action==='persist-intent-first'&&s.generation===prepared.expectedGeneration&&!s.receipts[prepared.key],'Concurrent schedule intent');\n const n=copy(s);n.generation++;n.receipts[prepared.key]={state:'pending',postId:prepared.postId,recordId:prepared.recordId,reviewGeneration:prepared.reviewGeneration,body:prepared.body};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nfunction verifyScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner),r=s.receipts[prepared.key];check(r?.state==='pending'&&r.postId===prepared.postId&&same(r.body,prepared.body),'Durable intent readback required');return prepared.body;\n}\nfunction providerOutcome({row,owner,key,response}){\n const {s}=readLocked(row,owner),r=s.receipts[key];check(r?.state==='pending','Pending receipt required');\n const rawId=response?.data?.scheduleId??response?.scheduleId;\n const id=typeof rawId==='string'&&rawId.trim()?rawId.trim():null;\n const n=copy(s);n.generation++;n.receipts[key]={...r,state:typeof id==='string'&&id.trim()?'confirmed':'uncertain',...(typeof id==='string'&&id.trim()?{scheduleId:id}:{})};\n // Failure/timeout never resets to Draft. Reconcile the provider before any retry.\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n),fields:id?{'Publishing Status':'Scheduled','External Post ID':id}:{'Publishing Status':'Publishing','Last Error':'Provider result uncertain. Reconcile before retry.'}};\n}\n\n'use strict';\n// Pure plans only. Caller owns shared lock, authoritative parent read, durable CAS/readback.\nfunction canonicalSources({row,owner,parent,recordIds}) {\n check(parent?.id&&['Alex Woung','Alex Woung Raw'].includes(parent.fields?.['Content Channel']),'Unknown parent channel');\n const linked=parent.fields['Content Clips'];\n check(Array.isArray(linked)&&Array.isArray(recordIds)&&recordIds.length&&new Set(recordIds).size===recordIds.length,'Invalid clip selection');\n return recordIds.map(recordId=>{check(linked.includes(recordId),'Unlinked clip');return {...draftSource({row,owner,recordId,parentId:parent.id}),channel:parent.fields['Content Channel']};});\n}\nfunction bindCreatedDrafts({row,owner,parent,sources,records}) {\n const {s}=readLocked(row,owner); const n=JSON.parse(JSON.stringify(s));n.drafts??={};\n check(Array.isArray(records)&&records.length,'No created drafts');const seen=new Set();\n for(const post of records){\n  check(/^rec[A-Za-z0-9]+$/.test(post.id)&&!seen.has(post.id),'Invalid/duplicate post');seen.add(post.id);\n  const f=post.fields||{},ids=f['Content Clip'],parents=f['Parent Content'];\n  check(Array.isArray(ids)&&ids.length===1&&Array.isArray(parents)&&parents.length===1&&parents[0]===parent.id,'Draft linkage mismatch');\n  const source=sources.find(x=>x.recordId===ids[0]);check(source,'Missing generation source');\n  const [current]=canonicalSources({row,owner,parent,recordIds:ids});\n  check(current.reviewGeneration===source.reviewGeneration&&current.clipId===source.clipId&&current.projectId===source.projectId,'Source changed during generation');\n  check(['Instagram','YouTube'].includes(f.Platform)&&f['Content Channel']===current.channel,'Wrong draft destination');\n  check(f['Approval Status']==='Needs Review'&&f['Publishing Status']==='Draft'&&!f['External Post ID']&&!f['Scheduled At'],'Created draft is not review-only');\n  check(f['Media URL']===current.url&&typeof f['Draft Body']==='string'&&f['Draft Body'].trim(),'Wrong media or empty copy');\n  check(!Object.values(s.receipts).some(r=>r.postId===post.id),'Post already has schedule receipt');\n  const binding={reviewGeneration:current.reviewGeneration,content:JSON.stringify({clipRecordId:ids[0],parentId:parent.id,platform:f.Platform,channel:current.channel,title:f['Draft Title']||'',body:f['Draft Body']})};\n  check(!n.drafts[post.id]||JSON.stringify(n.drafts[post.id])===JSON.stringify(binding),'Existing binding differs; explicit regeneration required');\n  n.drafts[post.id]=binding;\n }\n n.generation++;\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nconst lock=$('Acquire Distribution Write Lock').first().json;const {s:ledger}=readLocked(lock,$execution.id);const parentId=$('Prepare Distribution Prompt').first().json.parentRecordId;\nconst pending=Object.entries(ledger.receipts).filter(([k,v])=>k.startsWith('distribution|')&&v.parentId===parentId&&v.state!=='completed');\nif(pending.length){if(pending.length!==1)throw Error('Multiple unresolved create receipts');const [receiptKey,r]=pending[0];const response=$input.first().json;if(response.offset)throw Error('Reconciliation paginated');const existing=response.records||[];const found=[];for(const desired of r.records){const key=desired.fields['Deduplication Key'];const matches=existing.filter(x=>x.fields?.['Deduplication Key']===key);if(matches.length!==1)throw Error('Partial/uncertain creation; hold without resubmission');const actual=matches[0];for(const [k,v] of Object.entries(desired.fields)){if(k==='Last Error'&&!v)continue;if(JSON.stringify(actual.fields?.[k])!==JSON.stringify(v))throw Error('Existing draft differs; reconcile manually');}found.push(actual);}return [{json:{reconcileRecords:found,receiptKey,sources:r.sources}}];}\nconst parsed=$('Parse Distribution Drafts').first().json;\nconst prepared=$('Prepare Distribution Prompt').first().json;\nif(parsed.parentRecordId!==prepared.parentRecordId)throw new Error('Distribution parent identity mismatch.');\nconst contentChannel=prepared.contentChannel;\nconst clips=Array.isArray(prepared.context?.clips)?prepared.context.clips:[];\nconst response=$input.first().json;\nif(response.offset)throw new Error('Existing distribution lookup is paginated; reconcile before generating.');\nconst existing=new Set((response.records??[]).map(r=>String(r.fields?.['Deduplication Key']??'')));\nconst allowed=new Map(prepared.specs.map(s=>[s.platform+'|'+s.outputType,s]));\nconst clipById=new Map(clips.map(c=>[String(c.recordId),c]));\nconst allowedMedia=new Set([prepared.context?.youtubeUrl,prepared.context?.videoUrl,...clips.map(c=>c.url)].filter(Boolean));\nconst expected=new Set();\nfor(const spec of prepared.specs){\n  const sources=spec.scope==='one per selected clip'?clips.map(c=>c.recordId):['long-form'];\n  for(const source of sources)expected.add([parsed.parentRecordId,source,spec.platform,spec.outputType].join('|'));\n}\nconst seen=new Set(),records=[];\nfor(const d of parsed.drafts){\n  const spec=allowed.get(d.platform+'|'+d.outputType);\n  if(!spec)throw new Error('AI returned an unselected platform/output type. Nothing will be written.');\n  if(!d.body?.trim())throw new Error('AI returned an empty draft body.');\n  const clipRecordId=String(d.clipRecordId??'').trim();\n  const clip=clipById.get(clipRecordId);\n  const scoped=spec.scope==='one per selected clip';\n  if(scoped&&!clip)throw new Error('Clip-scoped draft must reference the exact selected Airtable clip record ID.');\n  if(!scoped&&clipRecordId)throw new Error('Long-form draft unexpectedly references a clip.');\n  const key=[parsed.parentRecordId,scoped?clipRecordId:'long-form',d.platform,d.outputType].join('|');\n  if(!expected.has(key))throw new Error('Unexpected distribution identity.');\n  if(seen.has(key))continue;\n  seen.add(key);\n  if(existing.has(key))continue;\n  let mediaUrl=String(d.mediaUrl??'').trim();\n  if(scoped)mediaUrl=String(clip.url);\n  else if(mediaUrl&&!allowedMedia.has(mediaUrl))throw new Error('Draft contains a media URL not in the verified source context.');\n  const fields={\n    'Distribution Item':`${d.platform} - ${d.outputType} - ${d.title||'long-form'}`.slice(0,250),\n    'Parent Content':[parsed.parentRecordId],\n    'Content Channel':contentChannel,\n    'Deduplication Key':key,\n    'Platform':d.platform,\n    'Output Type':d.outputType,\n    'Draft Title':d.title,\n    'Draft Body':d.body,\n    'Media URL':mediaUrl,\n    'Approval Status':'Needs Review',\n    'Publishing Status':'Draft',\n    'Last Error':''\n  };\n  if(scoped)fields['Content Clip']=[clipRecordId];\n  records.push({fields});\n}\nfor(const key of expected)if(!seen.has(key)&&!existing.has(key))throw new Error('AI omitted a required selected output. Nothing will be written.');\nif(!records.length)throw new Error('No new distribution items were created. Existing deduplication keys already cover this pack.');\nconst out=[];\nfor(let i=0;i<records.length;i+=10)out.push({json:{parentRecordId:parsed.parentRecordId,records:records.slice(i,i+10),total:records.length}});\nreturn out;\n"
+   },
+   "id": "18abbbff-2b4b-43ba-885c-118372d50876",
+   "name": "Build Distribution Batches",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3552,
+    144
+   ],
+   "onError": "continueErrorOutput"
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tblDWJrmIcBJDykIP",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({records:$json.records,typecast:false}) }}",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "3180892f-326a-4480-8317-f8c939c1f3cf",
+   "name": "Create Distribution Items",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    3792,
+    144
+   ],
+   "onError": "continueErrorOutput"
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblcSzvicm3wivvhh/' + $('Prepare Distribution Prompt').first().json.parentRecordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "{\"fields\":{\"Distribution Status\":\"Drafts Ready\",\"Last Automation Message\":\"Distribution drafts created for approval.\",\"Automation Error\":\"\"}}",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "53f78e45-d863-4e3f-8e48-7a79bd8fb724",
+   "name": "Mark Distribution Ready",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    4032,
+    144
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "dataTableId": {
+     "__rl": true,
+     "value": "U36c3kBS8OtIjnyD",
+     "mode": "id"
+    },
+    "matchType": "allConditions",
+    "filters": {
+     "conditions": [
+      {
+       "keyValue": 1
+      },
+      {
+       "keyName": "owner",
+       "keyValue": "FREE"
+      }
+     ]
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "owner": "={{ $execution.id }}"
+     }
+    },
+    "options": {}
+   },
+   "id": "ad378652-8bf4-426f-a192-1ce6bd039ef6",
+   "name": "Acquire Distribution Source Lock",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1,
+   "position": [
+    2224,
+    880
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "dataTableId": {
+     "__rl": true,
+     "value": "U36c3kBS8OtIjnyD",
+     "mode": "id"
+    },
+    "matchType": "allConditions",
+    "filters": {
+     "conditions": [
+      {
+       "keyValue": 1
+      },
+      {
+       "keyName": "owner",
+       "keyValue": "={{ $execution.id }}"
+      }
+     ]
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "owner": "FREE"
+     }
+    },
+    "options": {}
+   },
+   "id": "07f5a141-a7e2-4191-a0ee-fac4cdf5590e",
+   "name": "Release Distribution Source Lock",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1,
+   "position": [
+    2416,
+    880
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "'use strict';\n// STAGED ONLY. Pure adapters: persistence and provider submission are deliberately injected elsewhere.\nconst check=(v,m)=>{if(!v)throw Error(m)};\nconst copy=x=>JSON.parse(JSON.stringify(x));\nconst same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);\nfunction readLocked(row,owner){\n check(row?.id===1&&row.owner===String(owner),'Shared lock not owned');\n const s=typeof row.reviewLedger==='string'?JSON.parse(row.reviewLedger):copy(row.reviewLedger);\n const r=typeof row.managedClips==='string'?JSON.parse(row.managedClips):copy(row.managedClips);\n check(s?.schemaVersion===1&&Number.isSafeInteger(s.generation)&&s.clips&&s.receipts,'Invalid ledger');\n check(r?.schemaVersion===1&&Array.isArray(r.clipIds)&&new Set(r.clipIds).size===r.clipIds.length,'Invalid registry');\n return {s,r};\n}\nfunction approvedClip(row,owner,id){\n const {s,r}=readLocked(row,owner),c=s.clips[id];\n check(r.clipIds.includes(id)&&c?.mode==='current-render-v1','Current-render managed review required');\n check(c.status==='Approved'&&!c.pendingRefresh&&c.final?.reviewGeneration&&c.approval?.reviewGeneration===c.final.reviewGeneration,'Current clip approval required');\n check(c.approval.projectId===c.projectId&&c.approval.clipId===c.final.clipId&&c.approval.actor,'Approval identity mismatch');\n return {s,r,c};\n}\nfunction approveCurrent({row,owner,recordId,expectedVersion,reviewGeneration,persistedAuthor,verifiedOwner}){\n const {s,r}=readLocked(row,owner),c=s.clips[recordId];\n check(persistedAuthor?.id===verifiedOwner?.id&&persistedAuthor?.email===verifiedOwner?.email&&verifiedOwner?.id,'Owner-authored persisted intent required');\n check(r.clipIds.includes(recordId)&&c?.mode==='current-render-v1'&&!c.pendingRefresh,'Current-render preview required');\n check(c.version===expectedVersion&&c.status==='Needs Review'&&c.final?.reviewGeneration===reviewGeneration&&reviewGeneration,'Displayed preview stale');\n check(c.final.renderReady===true&&c.final.transcript?.trim()&&/^https:\\/\\//.test(c.final.url),'Ready media and transcript required');\n check(!Object.values(s.receipts).some(x=>x.recordId===recordId&&x.state!=='completed'),'Unresolved review receipt');\n const next=copy(s);next.generation++;next.clips[recordId]={...c,version:c.version+1,status:'Approved',approval:{projectId:c.projectId,clipId:c.final.clipId,reviewGeneration,actor:persistedAuthor.id}};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(next)};\n}\nfunction draftSource({row,owner,recordId,parentId}){\n const {c}=approvedClip(row,owner,recordId);check(c.parentId===parentId,'Parent mismatch');\n return {recordId,parentId,projectId:c.projectId,clipId:c.final.clipId,url:c.final.url,transcript:c.final.transcript,reviewGeneration:c.final.reviewGeneration};\n}\nfunction draftBinding({source,post}){\n check(post.parentId===source.parentId&&post.clipRecordId===source.recordId,'Draft linkage mismatch');\n check(['Instagram','YouTube'].includes(post.platform)&&post.body?.trim(),'Invalid clip draft');\n return {...post,reviewGeneration:source.reviewGeneration,approved:false,publishingStatus:'Draft'};\n}\nfunction prepareSchedule({row,owner,post,provider,accounts,now}){\n const {s,c}=approvedClip(row,owner,post.clipRecordId);\n check(post.parentId===c.parentId,'Post parent mismatch');\n const key='schedule|'+post.id,old=s.receipts[key];\n if(old){check(old.postId===post.id,'Receipt mismatch');return {action:old.state==='confirmed'?'already-scheduled':'reconcile',receipt:old};}\n check(post.approved===true&&post.publishingStatus==='Draft'&&!post.externalPostId,'Post not eligible');\n check(post.reviewGeneration===c.final.reviewGeneration,'Draft review stale');\n check(provider.id===c.projectId+'.'+c.final.clipId&&provider.renderAsVideoFile?.pending===false,'Provider identity/render mismatch');\n check(['Instagram','YouTube'].includes(post.platform),'Unsupported automatic platform');\n check(['Alex Woung','Alex Woung Raw'].includes(post.channel),'Unknown content channel');\n check(Number.isFinite(Date.parse(post.publishAt))&&Date.parse(post.publishAt)>now,'Future time required');\n const account=accounts.find(a=>a.id===post.accountId&&a.platform===post.platform&&a.channel===post.channel);\n check(account,'Exact connected destination required');\n check(post.platform!=='Instagram'||account.subAccountId,'Instagram subaccount required');\n const body={projectId:c.projectId,clipId:c.final.clipId,postAccountId:account.id,...(account.subAccountId?{subAccountId:account.subAccountId}:{}),postDetail:{title:post.title||'',custom:{description:post.body,privacy:'public'},mediaType:'video'},publishAt:new Date(post.publishAt).toISOString()};\n return {action:'persist-intent-first',key,expectedGeneration:s.generation,postId:post.id,recordId:c.id,reviewGeneration:c.final.reviewGeneration,body};\n}\nfunction persistScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner);check(prepared.action==='persist-intent-first'&&s.generation===prepared.expectedGeneration&&!s.receipts[prepared.key],'Concurrent schedule intent');\n const n=copy(s);n.generation++;n.receipts[prepared.key]={state:'pending',postId:prepared.postId,recordId:prepared.recordId,reviewGeneration:prepared.reviewGeneration,body:prepared.body};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nfunction verifyScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner),r=s.receipts[prepared.key];check(r?.state==='pending'&&r.postId===prepared.postId&&same(r.body,prepared.body),'Durable intent readback required');return prepared.body;\n}\nfunction providerOutcome({row,owner,key,response}){\n const {s}=readLocked(row,owner),r=s.receipts[key];check(r?.state==='pending','Pending receipt required');\n const rawId=response?.data?.scheduleId??response?.scheduleId;\n const id=typeof rawId==='string'&&rawId.trim()?rawId.trim():null;\n const n=copy(s);n.generation++;n.receipts[key]={...r,state:typeof id==='string'&&id.trim()?'confirmed':'uncertain',...(typeof id==='string'&&id.trim()?{scheduleId:id}:{})};\n // Failure/timeout never resets to Draft. Reconcile the provider before any retry.\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n),fields:id?{'Publishing Status':'Scheduled','External Post ID':id}:{'Publishing Status':'Publishing','Last Error':'Provider result uncertain. Reconcile before retry.'}};\n}\n\n'use strict';\n// Pure plans only. Caller owns shared lock, authoritative parent read, durable CAS/readback.\nfunction canonicalSources({row,owner,parent,recordIds}) {\n check(parent?.id&&['Alex Woung','Alex Woung Raw'].includes(parent.fields?.['Content Channel']),'Unknown parent channel');\n const linked=parent.fields['Content Clips'];\n check(Array.isArray(linked)&&Array.isArray(recordIds)&&recordIds.length&&new Set(recordIds).size===recordIds.length,'Invalid clip selection');\n return recordIds.map(recordId=>{check(linked.includes(recordId),'Unlinked clip');return {...draftSource({row,owner,recordId,parentId:parent.id}),channel:parent.fields['Content Channel']};});\n}\nfunction bindCreatedDrafts({row,owner,parent,sources,records}) {\n const {s}=readLocked(row,owner); const n=JSON.parse(JSON.stringify(s));n.drafts??={};\n check(Array.isArray(records)&&records.length,'No created drafts');const seen=new Set();\n for(const post of records){\n  check(/^rec[A-Za-z0-9]+$/.test(post.id)&&!seen.has(post.id),'Invalid/duplicate post');seen.add(post.id);\n  const f=post.fields||{},ids=f['Content Clip'],parents=f['Parent Content'];\n  check(Array.isArray(ids)&&ids.length===1&&Array.isArray(parents)&&parents.length===1&&parents[0]===parent.id,'Draft linkage mismatch');\n  const source=sources.find(x=>x.recordId===ids[0]);check(source,'Missing generation source');\n  const [current]=canonicalSources({row,owner,parent,recordIds:ids});\n  check(current.reviewGeneration===source.reviewGeneration&&current.clipId===source.clipId&&current.projectId===source.projectId,'Source changed during generation');\n  check(['Instagram','YouTube'].includes(f.Platform)&&f['Content Channel']===current.channel,'Wrong draft destination');\n  check(f['Approval Status']==='Needs Review'&&f['Publishing Status']==='Draft'&&!f['External Post ID']&&!f['Scheduled At'],'Created draft is not review-only');\n  check(f['Media URL']===current.url&&typeof f['Draft Body']==='string'&&f['Draft Body'].trim(),'Wrong media or empty copy');\n  check(!Object.values(s.receipts).some(r=>r.postId===post.id),'Post already has schedule receipt');\n  const binding={reviewGeneration:current.reviewGeneration,content:JSON.stringify({clipRecordId:ids[0],parentId:parent.id,platform:f.Platform,channel:current.channel,title:f['Draft Title']||'',body:f['Draft Body']})};\n  check(!n.drafts[post.id]||JSON.stringify(n.drafts[post.id])===JSON.stringify(binding),'Existing binding differs; explicit regeneration required');\n  n.drafts[post.id]=binding;\n }\n n.generation++;\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nif($input.first().json.owner!=='FREE')throw Error('Source unlock failed');return [{json:$('Prepare Distribution Prompt').first().json}];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "name": "Restore Distribution Prompt",
+   "id": "915099ad-beba-4ae5-bbd9-ba32dad1bc20",
+   "position": [
+    2624,
+    880
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "dataTableId": {
+     "__rl": true,
+     "value": "U36c3kBS8OtIjnyD",
+     "mode": "id"
+    },
+    "matchType": "allConditions",
+    "filters": {
+     "conditions": [
+      {
+       "keyValue": 1
+      },
+      {
+       "keyName": "owner",
+       "keyValue": "FREE"
+      }
+     ]
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "owner": "={{ $execution.id }}"
+     }
+    },
+    "options": {}
+   },
+   "id": "9c776237-7687-4170-9268-4aa7300f60a0",
+   "name": "Acquire Distribution Write Lock",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1,
+   "position": [
+    2816,
+    880
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblcSzvicm3wivvhh/' + $('Validate Distribution Request').first().json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "caac873a-a8b3-428f-ad58-2e09069ef9bf",
+   "name": "Recheck Distribution Parent",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    3024,
+    880
+   ],
+   "onError": "continueErrorOutput"
+  },
+  {
+   "parameters": {
+    "jsCode": "'use strict';\n// STAGED ONLY. Pure adapters: persistence and provider submission are deliberately injected elsewhere.\nconst check=(v,m)=>{if(!v)throw Error(m)};\nconst copy=x=>JSON.parse(JSON.stringify(x));\nconst same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);\nfunction readLocked(row,owner){\n check(row?.id===1&&row.owner===String(owner),'Shared lock not owned');\n const s=typeof row.reviewLedger==='string'?JSON.parse(row.reviewLedger):copy(row.reviewLedger);\n const r=typeof row.managedClips==='string'?JSON.parse(row.managedClips):copy(row.managedClips);\n check(s?.schemaVersion===1&&Number.isSafeInteger(s.generation)&&s.clips&&s.receipts,'Invalid ledger');\n check(r?.schemaVersion===1&&Array.isArray(r.clipIds)&&new Set(r.clipIds).size===r.clipIds.length,'Invalid registry');\n return {s,r};\n}\nfunction approvedClip(row,owner,id){\n const {s,r}=readLocked(row,owner),c=s.clips[id];\n check(r.clipIds.includes(id)&&c?.mode==='current-render-v1','Current-render managed review required');\n check(c.status==='Approved'&&!c.pendingRefresh&&c.final?.reviewGeneration&&c.approval?.reviewGeneration===c.final.reviewGeneration,'Current clip approval required');\n check(c.approval.projectId===c.projectId&&c.approval.clipId===c.final.clipId&&c.approval.actor,'Approval identity mismatch');\n return {s,r,c};\n}\nfunction approveCurrent({row,owner,recordId,expectedVersion,reviewGeneration,persistedAuthor,verifiedOwner}){\n const {s,r}=readLocked(row,owner),c=s.clips[recordId];\n check(persistedAuthor?.id===verifiedOwner?.id&&persistedAuthor?.email===verifiedOwner?.email&&verifiedOwner?.id,'Owner-authored persisted intent required');\n check(r.clipIds.includes(recordId)&&c?.mode==='current-render-v1'&&!c.pendingRefresh,'Current-render preview required');\n check(c.version===expectedVersion&&c.status==='Needs Review'&&c.final?.reviewGeneration===reviewGeneration&&reviewGeneration,'Displayed preview stale');\n check(c.final.renderReady===true&&c.final.transcript?.trim()&&/^https:\\/\\//.test(c.final.url),'Ready media and transcript required');\n check(!Object.values(s.receipts).some(x=>x.recordId===recordId&&x.state!=='completed'),'Unresolved review receipt');\n const next=copy(s);next.generation++;next.clips[recordId]={...c,version:c.version+1,status:'Approved',approval:{projectId:c.projectId,clipId:c.final.clipId,reviewGeneration,actor:persistedAuthor.id}};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(next)};\n}\nfunction draftSource({row,owner,recordId,parentId}){\n const {c}=approvedClip(row,owner,recordId);check(c.parentId===parentId,'Parent mismatch');\n return {recordId,parentId,projectId:c.projectId,clipId:c.final.clipId,url:c.final.url,transcript:c.final.transcript,reviewGeneration:c.final.reviewGeneration};\n}\nfunction draftBinding({source,post}){\n check(post.parentId===source.parentId&&post.clipRecordId===source.recordId,'Draft linkage mismatch');\n check(['Instagram','YouTube'].includes(post.platform)&&post.body?.trim(),'Invalid clip draft');\n return {...post,reviewGeneration:source.reviewGeneration,approved:false,publishingStatus:'Draft'};\n}\nfunction prepareSchedule({row,owner,post,provider,accounts,now}){\n const {s,c}=approvedClip(row,owner,post.clipRecordId);\n check(post.parentId===c.parentId,'Post parent mismatch');\n const key='schedule|'+post.id,old=s.receipts[key];\n if(old){check(old.postId===post.id,'Receipt mismatch');return {action:old.state==='confirmed'?'already-scheduled':'reconcile',receipt:old};}\n check(post.approved===true&&post.publishingStatus==='Draft'&&!post.externalPostId,'Post not eligible');\n check(post.reviewGeneration===c.final.reviewGeneration,'Draft review stale');\n check(provider.id===c.projectId+'.'+c.final.clipId&&provider.renderAsVideoFile?.pending===false,'Provider identity/render mismatch');\n check(['Instagram','YouTube'].includes(post.platform),'Unsupported automatic platform');\n check(['Alex Woung','Alex Woung Raw'].includes(post.channel),'Unknown content channel');\n check(Number.isFinite(Date.parse(post.publishAt))&&Date.parse(post.publishAt)>now,'Future time required');\n const account=accounts.find(a=>a.id===post.accountId&&a.platform===post.platform&&a.channel===post.channel);\n check(account,'Exact connected destination required');\n check(post.platform!=='Instagram'||account.subAccountId,'Instagram subaccount required');\n const body={projectId:c.projectId,clipId:c.final.clipId,postAccountId:account.id,...(account.subAccountId?{subAccountId:account.subAccountId}:{}),postDetail:{title:post.title||'',custom:{description:post.body,privacy:'public'},mediaType:'video'},publishAt:new Date(post.publishAt).toISOString()};\n return {action:'persist-intent-first',key,expectedGeneration:s.generation,postId:post.id,recordId:c.id,reviewGeneration:c.final.reviewGeneration,body};\n}\nfunction persistScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner);check(prepared.action==='persist-intent-first'&&s.generation===prepared.expectedGeneration&&!s.receipts[prepared.key],'Concurrent schedule intent');\n const n=copy(s);n.generation++;n.receipts[prepared.key]={state:'pending',postId:prepared.postId,recordId:prepared.recordId,reviewGeneration:prepared.reviewGeneration,body:prepared.body};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nfunction verifyScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner),r=s.receipts[prepared.key];check(r?.state==='pending'&&r.postId===prepared.postId&&same(r.body,prepared.body),'Durable intent readback required');return prepared.body;\n}\nfunction providerOutcome({row,owner,key,response}){\n const {s}=readLocked(row,owner),r=s.receipts[key];check(r?.state==='pending','Pending receipt required');\n const rawId=response?.data?.scheduleId??response?.scheduleId;\n const id=typeof rawId==='string'&&rawId.trim()?rawId.trim():null;\n const n=copy(s);n.generation++;n.receipts[key]={...r,state:typeof id==='string'&&id.trim()?'confirmed':'uncertain',...(typeof id==='string'&&id.trim()?{scheduleId:id}:{})};\n // Failure/timeout never resets to Draft. Reconcile the provider before any retry.\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n),fields:id?{'Publishing Status':'Scheduled','External Post ID':id}:{'Publishing Status':'Publishing','Last Error':'Provider result uncertain. Reconcile before retry.'}};\n}\n\n'use strict';\n// Pure plans only. Caller owns shared lock, authoritative parent read, durable CAS/readback.\nfunction canonicalSources({row,owner,parent,recordIds}) {\n check(parent?.id&&['Alex Woung','Alex Woung Raw'].includes(parent.fields?.['Content Channel']),'Unknown parent channel');\n const linked=parent.fields['Content Clips'];\n check(Array.isArray(linked)&&Array.isArray(recordIds)&&recordIds.length&&new Set(recordIds).size===recordIds.length,'Invalid clip selection');\n return recordIds.map(recordId=>{check(linked.includes(recordId),'Unlinked clip');return {...draftSource({row,owner,recordId,parentId:parent.id}),channel:parent.fields['Content Channel']};});\n}\nfunction bindCreatedDrafts({row,owner,parent,sources,records}) {\n const {s}=readLocked(row,owner); const n=JSON.parse(JSON.stringify(s));n.drafts??={};\n check(Array.isArray(records)&&records.length,'No created drafts');const seen=new Set();\n for(const post of records){\n  check(/^rec[A-Za-z0-9]+$/.test(post.id)&&!seen.has(post.id),'Invalid/duplicate post');seen.add(post.id);\n  const f=post.fields||{},ids=f['Content Clip'],parents=f['Parent Content'];\n  check(Array.isArray(ids)&&ids.length===1&&Array.isArray(parents)&&parents.length===1&&parents[0]===parent.id,'Draft linkage mismatch');\n  const source=sources.find(x=>x.recordId===ids[0]);check(source,'Missing generation source');\n  const [current]=canonicalSources({row,owner,parent,recordIds:ids});\n  check(current.reviewGeneration===source.reviewGeneration&&current.clipId===source.clipId&&current.projectId===source.projectId,'Source changed during generation');\n  check(['Instagram','YouTube'].includes(f.Platform)&&f['Content Channel']===current.channel,'Wrong draft destination');\n  check(f['Approval Status']==='Needs Review'&&f['Publishing Status']==='Draft'&&!f['External Post ID']&&!f['Scheduled At'],'Created draft is not review-only');\n  check(f['Media URL']===current.url&&typeof f['Draft Body']==='string'&&f['Draft Body'].trim(),'Wrong media or empty copy');\n  check(!Object.values(s.receipts).some(r=>r.postId===post.id),'Post already has schedule receipt');\n  const binding={reviewGeneration:current.reviewGeneration,content:JSON.stringify({clipRecordId:ids[0],parentId:parent.id,platform:f.Platform,channel:current.channel,title:f['Draft Title']||'',body:f['Draft Body']})};\n  check(!n.drafts[post.id]||JSON.stringify(n.drafts[post.id])===JSON.stringify(binding),'Existing binding differs; explicit regeneration required');\n  n.drafts[post.id]=binding;\n }\n n.generation++;\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nconst parent=$input.first().json,p=$('Prepare Distribution Prompt').first().json,row=$('Acquire Distribution Write Lock').first().json;readLocked(row,$execution.id);if(parent.id!==p.parentRecordId||parent.fields?.['Content Channel']!==p.contentChannel)throw Error('Parent/channel changed');for(const old of p.managedSources||[]){const [now]=canonicalSources({row,owner:$execution.id,parent,recordIds:[old.recordId]});if(now.reviewGeneration!==old.reviewGeneration||now.clipId!==old.clipId||now.url!==old.url||now.transcript!==old.transcript)throw Error('Reviewed source changed while generating');}return [{json:{validated:true}}];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "name": "Validate Current Distribution Sources",
+   "id": "9615f6fd-065a-4ab2-a32b-c19b223f9d65",
+   "position": [
+    3216,
+    880
+   ],
+   "onError": "continueErrorOutput"
+  },
+  {
+   "parameters": {
+    "jsCode": "'use strict';\n// STAGED ONLY. Pure adapters: persistence and provider submission are deliberately injected elsewhere.\nconst check=(v,m)=>{if(!v)throw Error(m)};\nconst copy=x=>JSON.parse(JSON.stringify(x));\nconst same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);\nfunction readLocked(row,owner){\n check(row?.id===1&&row.owner===String(owner),'Shared lock not owned');\n const s=typeof row.reviewLedger==='string'?JSON.parse(row.reviewLedger):copy(row.reviewLedger);\n const r=typeof row.managedClips==='string'?JSON.parse(row.managedClips):copy(row.managedClips);\n check(s?.schemaVersion===1&&Number.isSafeInteger(s.generation)&&s.clips&&s.receipts,'Invalid ledger');\n check(r?.schemaVersion===1&&Array.isArray(r.clipIds)&&new Set(r.clipIds).size===r.clipIds.length,'Invalid registry');\n return {s,r};\n}\nfunction approvedClip(row,owner,id){\n const {s,r}=readLocked(row,owner),c=s.clips[id];\n check(r.clipIds.includes(id)&&c?.mode==='current-render-v1','Current-render managed review required');\n check(c.status==='Approved'&&!c.pendingRefresh&&c.final?.reviewGeneration&&c.approval?.reviewGeneration===c.final.reviewGeneration,'Current clip approval required');\n check(c.approval.projectId===c.projectId&&c.approval.clipId===c.final.clipId&&c.approval.actor,'Approval identity mismatch');\n return {s,r,c};\n}\nfunction approveCurrent({row,owner,recordId,expectedVersion,reviewGeneration,persistedAuthor,verifiedOwner}){\n const {s,r}=readLocked(row,owner),c=s.clips[recordId];\n check(persistedAuthor?.id===verifiedOwner?.id&&persistedAuthor?.email===verifiedOwner?.email&&verifiedOwner?.id,'Owner-authored persisted intent required');\n check(r.clipIds.includes(recordId)&&c?.mode==='current-render-v1'&&!c.pendingRefresh,'Current-render preview required');\n check(c.version===expectedVersion&&c.status==='Needs Review'&&c.final?.reviewGeneration===reviewGeneration&&reviewGeneration,'Displayed preview stale');\n check(c.final.renderReady===true&&c.final.transcript?.trim()&&/^https:\\/\\//.test(c.final.url),'Ready media and transcript required');\n check(!Object.values(s.receipts).some(x=>x.recordId===recordId&&x.state!=='completed'),'Unresolved review receipt');\n const next=copy(s);next.generation++;next.clips[recordId]={...c,version:c.version+1,status:'Approved',approval:{projectId:c.projectId,clipId:c.final.clipId,reviewGeneration,actor:persistedAuthor.id}};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(next)};\n}\nfunction draftSource({row,owner,recordId,parentId}){\n const {c}=approvedClip(row,owner,recordId);check(c.parentId===parentId,'Parent mismatch');\n return {recordId,parentId,projectId:c.projectId,clipId:c.final.clipId,url:c.final.url,transcript:c.final.transcript,reviewGeneration:c.final.reviewGeneration};\n}\nfunction draftBinding({source,post}){\n check(post.parentId===source.parentId&&post.clipRecordId===source.recordId,'Draft linkage mismatch');\n check(['Instagram','YouTube'].includes(post.platform)&&post.body?.trim(),'Invalid clip draft');\n return {...post,reviewGeneration:source.reviewGeneration,approved:false,publishingStatus:'Draft'};\n}\nfunction prepareSchedule({row,owner,post,provider,accounts,now}){\n const {s,c}=approvedClip(row,owner,post.clipRecordId);\n check(post.parentId===c.parentId,'Post parent mismatch');\n const key='schedule|'+post.id,old=s.receipts[key];\n if(old){check(old.postId===post.id,'Receipt mismatch');return {action:old.state==='confirmed'?'already-scheduled':'reconcile',receipt:old};}\n check(post.approved===true&&post.publishingStatus==='Draft'&&!post.externalPostId,'Post not eligible');\n check(post.reviewGeneration===c.final.reviewGeneration,'Draft review stale');\n check(provider.id===c.projectId+'.'+c.final.clipId&&provider.renderAsVideoFile?.pending===false,'Provider identity/render mismatch');\n check(['Instagram','YouTube'].includes(post.platform),'Unsupported automatic platform');\n check(['Alex Woung','Alex Woung Raw'].includes(post.channel),'Unknown content channel');\n check(Number.isFinite(Date.parse(post.publishAt))&&Date.parse(post.publishAt)>now,'Future time required');\n const account=accounts.find(a=>a.id===post.accountId&&a.platform===post.platform&&a.channel===post.channel);\n check(account,'Exact connected destination required');\n check(post.platform!=='Instagram'||account.subAccountId,'Instagram subaccount required');\n const body={projectId:c.projectId,clipId:c.final.clipId,postAccountId:account.id,...(account.subAccountId?{subAccountId:account.subAccountId}:{}),postDetail:{title:post.title||'',custom:{description:post.body,privacy:'public'},mediaType:'video'},publishAt:new Date(post.publishAt).toISOString()};\n return {action:'persist-intent-first',key,expectedGeneration:s.generation,postId:post.id,recordId:c.id,reviewGeneration:c.final.reviewGeneration,body};\n}\nfunction persistScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner);check(prepared.action==='persist-intent-first'&&s.generation===prepared.expectedGeneration&&!s.receipts[prepared.key],'Concurrent schedule intent');\n const n=copy(s);n.generation++;n.receipts[prepared.key]={state:'pending',postId:prepared.postId,recordId:prepared.recordId,reviewGeneration:prepared.reviewGeneration,body:prepared.body};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nfunction verifyScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner),r=s.receipts[prepared.key];check(r?.state==='pending'&&r.postId===prepared.postId&&same(r.body,prepared.body),'Durable intent readback required');return prepared.body;\n}\nfunction providerOutcome({row,owner,key,response}){\n const {s}=readLocked(row,owner),r=s.receipts[key];check(r?.state==='pending','Pending receipt required');\n const rawId=response?.data?.scheduleId??response?.scheduleId;\n const id=typeof rawId==='string'&&rawId.trim()?rawId.trim():null;\n const n=copy(s);n.generation++;n.receipts[key]={...r,state:typeof id==='string'&&id.trim()?'confirmed':'uncertain',...(typeof id==='string'&&id.trim()?{scheduleId:id}:{})};\n // Failure/timeout never resets to Draft. Reconcile the provider before any retry.\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n),fields:id?{'Publishing Status':'Scheduled','External Post ID':id}:{'Publishing Status':'Publishing','Last Error':'Provider result uncertain. Reconcile before retry.'}};\n}\n\n'use strict';\n// Pure plans only. Caller owns shared lock, authoritative parent read, durable CAS/readback.\nfunction canonicalSources({row,owner,parent,recordIds}) {\n check(parent?.id&&['Alex Woung','Alex Woung Raw'].includes(parent.fields?.['Content Channel']),'Unknown parent channel');\n const linked=parent.fields['Content Clips'];\n check(Array.isArray(linked)&&Array.isArray(recordIds)&&recordIds.length&&new Set(recordIds).size===recordIds.length,'Invalid clip selection');\n return recordIds.map(recordId=>{check(linked.includes(recordId),'Unlinked clip');return {...draftSource({row,owner,recordId,parentId:parent.id}),channel:parent.fields['Content Channel']};});\n}\nfunction bindCreatedDrafts({row,owner,parent,sources,records}) {\n const {s}=readLocked(row,owner); const n=JSON.parse(JSON.stringify(s));n.drafts??={};\n check(Array.isArray(records)&&records.length,'No created drafts');const seen=new Set();\n for(const post of records){\n  check(/^rec[A-Za-z0-9]+$/.test(post.id)&&!seen.has(post.id),'Invalid/duplicate post');seen.add(post.id);\n  const f=post.fields||{},ids=f['Content Clip'],parents=f['Parent Content'];\n  check(Array.isArray(ids)&&ids.length===1&&Array.isArray(parents)&&parents.length===1&&parents[0]===parent.id,'Draft linkage mismatch');\n  const source=sources.find(x=>x.recordId===ids[0]);check(source,'Missing generation source');\n  const [current]=canonicalSources({row,owner,parent,recordIds:ids});\n  check(current.reviewGeneration===source.reviewGeneration&&current.clipId===source.clipId&&current.projectId===source.projectId,'Source changed during generation');\n  check(['Instagram','YouTube'].includes(f.Platform)&&f['Content Channel']===current.channel,'Wrong draft destination');\n  check(f['Approval Status']==='Needs Review'&&f['Publishing Status']==='Draft'&&!f['External Post ID']&&!f['Scheduled At'],'Created draft is not review-only');\n  check(f['Media URL']===current.url&&typeof f['Draft Body']==='string'&&f['Draft Body'].trim(),'Wrong media or empty copy');\n  check(!Object.values(s.receipts).some(r=>r.postId===post.id),'Post already has schedule receipt');\n  const binding={reviewGeneration:current.reviewGeneration,content:JSON.stringify({clipRecordId:ids[0],parentId:parent.id,platform:f.Platform,channel:current.channel,title:f['Draft Title']||'',body:f['Draft Body']})};\n  check(!n.drafts[post.id]||JSON.stringify(n.drafts[post.id])===JSON.stringify(binding),'Existing binding differs; explicit regeneration required');\n  n.drafts[post.id]=binding;\n }\n n.generation++;\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nconst responses=$input.all().map(x=>x.json);if(responses.some(x=>x.error||!Array.isArray(x.records)))throw Error('Creation result uncertain; reconcile existing drafts before retry');const records=responses.flatMap(x=>x.records),p={...$('Prepare Distribution Prompt').first().json,managedSources:$('Plan Distribution Create Intent').first().json.sources};const ids=new Set((p.managedSources||[]).map(x=>x.recordId));const managed=records.filter(x=>(x.fields?.['Content Clip']||[]).some(id=>ids.has(id)));const row=$('Persist Distribution Create Intent').first().json;const {s}=readLocked(row,$execution.id);const plan=managed.length?bindCreatedDrafts({row,owner:$execution.id,parent:$('Recheck Distribution Parent').first().json,sources:p.managedSources,records:managed}):{expectedGeneration:s.generation,reviewLedger:JSON.stringify(s)};const next=JSON.parse(plan.reviewLedger);next.generation++;const key=$('Plan Distribution Create Intent').first().json.receiptKey;check(next.receipts[key]?.state==='pending','Create receipt missing');next.receipts[key]={...next.receipts[key],state:'completed',recordIds:records.map(r=>r.id)};plan.reviewLedger=JSON.stringify(next);return [{json:plan}];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "name": "Plan Distribution Bindings",
+   "id": "0548089c-9cb2-4b53-b432-32a7828b14ec",
+   "position": [
+    3424,
+    880
+   ],
+   "onError": "continueErrorOutput"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "dataTableId": {
+     "__rl": true,
+     "value": "U36c3kBS8OtIjnyD",
+     "mode": "id"
+    },
+    "matchType": "allConditions",
+    "filters": {
+     "conditions": [
+      {
+       "keyValue": 1
+      },
+      {
+       "keyName": "owner",
+       "keyValue": "={{ $execution.id }}"
+      }
+     ]
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "reviewLedger": "={{$json.reviewLedger}}"
+     }
+    },
+    "options": {}
+   },
+   "id": "3c9e5fb6-361c-4a7c-a680-93ec03ed6021",
+   "name": "Persist Distribution Bindings",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1,
+   "position": [
+    3616,
+    880
+   ],
+   "onError": "continueErrorOutput"
+  },
+  {
+   "parameters": {
+    "jsCode": "'use strict';\n// STAGED ONLY. Pure adapters: persistence and provider submission are deliberately injected elsewhere.\nconst check=(v,m)=>{if(!v)throw Error(m)};\nconst copy=x=>JSON.parse(JSON.stringify(x));\nconst same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);\nfunction readLocked(row,owner){\n check(row?.id===1&&row.owner===String(owner),'Shared lock not owned');\n const s=typeof row.reviewLedger==='string'?JSON.parse(row.reviewLedger):copy(row.reviewLedger);\n const r=typeof row.managedClips==='string'?JSON.parse(row.managedClips):copy(row.managedClips);\n check(s?.schemaVersion===1&&Number.isSafeInteger(s.generation)&&s.clips&&s.receipts,'Invalid ledger');\n check(r?.schemaVersion===1&&Array.isArray(r.clipIds)&&new Set(r.clipIds).size===r.clipIds.length,'Invalid registry');\n return {s,r};\n}\nfunction approvedClip(row,owner,id){\n const {s,r}=readLocked(row,owner),c=s.clips[id];\n check(r.clipIds.includes(id)&&c?.mode==='current-render-v1','Current-render managed review required');\n check(c.status==='Approved'&&!c.pendingRefresh&&c.final?.reviewGeneration&&c.approval?.reviewGeneration===c.final.reviewGeneration,'Current clip approval required');\n check(c.approval.projectId===c.projectId&&c.approval.clipId===c.final.clipId&&c.approval.actor,'Approval identity mismatch');\n return {s,r,c};\n}\nfunction approveCurrent({row,owner,recordId,expectedVersion,reviewGeneration,persistedAuthor,verifiedOwner}){\n const {s,r}=readLocked(row,owner),c=s.clips[recordId];\n check(persistedAuthor?.id===verifiedOwner?.id&&persistedAuthor?.email===verifiedOwner?.email&&verifiedOwner?.id,'Owner-authored persisted intent required');\n check(r.clipIds.includes(recordId)&&c?.mode==='current-render-v1'&&!c.pendingRefresh,'Current-render preview required');\n check(c.version===expectedVersion&&c.status==='Needs Review'&&c.final?.reviewGeneration===reviewGeneration&&reviewGeneration,'Displayed preview stale');\n check(c.final.renderReady===true&&c.final.transcript?.trim()&&/^https:\\/\\//.test(c.final.url),'Ready media and transcript required');\n check(!Object.values(s.receipts).some(x=>x.recordId===recordId&&x.state!=='completed'),'Unresolved review receipt');\n const next=copy(s);next.generation++;next.clips[recordId]={...c,version:c.version+1,status:'Approved',approval:{projectId:c.projectId,clipId:c.final.clipId,reviewGeneration,actor:persistedAuthor.id}};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(next)};\n}\nfunction draftSource({row,owner,recordId,parentId}){\n const {c}=approvedClip(row,owner,recordId);check(c.parentId===parentId,'Parent mismatch');\n return {recordId,parentId,projectId:c.projectId,clipId:c.final.clipId,url:c.final.url,transcript:c.final.transcript,reviewGeneration:c.final.reviewGeneration};\n}\nfunction draftBinding({source,post}){\n check(post.parentId===source.parentId&&post.clipRecordId===source.recordId,'Draft linkage mismatch');\n check(['Instagram','YouTube'].includes(post.platform)&&post.body?.trim(),'Invalid clip draft');\n return {...post,reviewGeneration:source.reviewGeneration,approved:false,publishingStatus:'Draft'};\n}\nfunction prepareSchedule({row,owner,post,provider,accounts,now}){\n const {s,c}=approvedClip(row,owner,post.clipRecordId);\n check(post.parentId===c.parentId,'Post parent mismatch');\n const key='schedule|'+post.id,old=s.receipts[key];\n if(old){check(old.postId===post.id,'Receipt mismatch');return {action:old.state==='confirmed'?'already-scheduled':'reconcile',receipt:old};}\n check(post.approved===true&&post.publishingStatus==='Draft'&&!post.externalPostId,'Post not eligible');\n check(post.reviewGeneration===c.final.reviewGeneration,'Draft review stale');\n check(provider.id===c.projectId+'.'+c.final.clipId&&provider.renderAsVideoFile?.pending===false,'Provider identity/render mismatch');\n check(['Instagram','YouTube'].includes(post.platform),'Unsupported automatic platform');\n check(['Alex Woung','Alex Woung Raw'].includes(post.channel),'Unknown content channel');\n check(Number.isFinite(Date.parse(post.publishAt))&&Date.parse(post.publishAt)>now,'Future time required');\n const account=accounts.find(a=>a.id===post.accountId&&a.platform===post.platform&&a.channel===post.channel);\n check(account,'Exact connected destination required');\n check(post.platform!=='Instagram'||account.subAccountId,'Instagram subaccount required');\n const body={projectId:c.projectId,clipId:c.final.clipId,postAccountId:account.id,...(account.subAccountId?{subAccountId:account.subAccountId}:{}),postDetail:{title:post.title||'',custom:{description:post.body,privacy:'public'},mediaType:'video'},publishAt:new Date(post.publishAt).toISOString()};\n return {action:'persist-intent-first',key,expectedGeneration:s.generation,postId:post.id,recordId:c.id,reviewGeneration:c.final.reviewGeneration,body};\n}\nfunction persistScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner);check(prepared.action==='persist-intent-first'&&s.generation===prepared.expectedGeneration&&!s.receipts[prepared.key],'Concurrent schedule intent');\n const n=copy(s);n.generation++;n.receipts[prepared.key]={state:'pending',postId:prepared.postId,recordId:prepared.recordId,reviewGeneration:prepared.reviewGeneration,body:prepared.body};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nfunction verifyScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner),r=s.receipts[prepared.key];check(r?.state==='pending'&&r.postId===prepared.postId&&same(r.body,prepared.body),'Durable intent readback required');return prepared.body;\n}\nfunction providerOutcome({row,owner,key,response}){\n const {s}=readLocked(row,owner),r=s.receipts[key];check(r?.state==='pending','Pending receipt required');\n const rawId=response?.data?.scheduleId??response?.scheduleId;\n const id=typeof rawId==='string'&&rawId.trim()?rawId.trim():null;\n const n=copy(s);n.generation++;n.receipts[key]={...r,state:typeof id==='string'&&id.trim()?'confirmed':'uncertain',...(typeof id==='string'&&id.trim()?{scheduleId:id}:{})};\n // Failure/timeout never resets to Draft. Reconcile the provider before any retry.\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n),fields:id?{'Publishing Status':'Scheduled','External Post ID':id}:{'Publishing Status':'Publishing','Last Error':'Provider result uncertain. Reconcile before retry.'}};\n}\n\n'use strict';\n// Pure plans only. Caller owns shared lock, authoritative parent read, durable CAS/readback.\nfunction canonicalSources({row,owner,parent,recordIds}) {\n check(parent?.id&&['Alex Woung','Alex Woung Raw'].includes(parent.fields?.['Content Channel']),'Unknown parent channel');\n const linked=parent.fields['Content Clips'];\n check(Array.isArray(linked)&&Array.isArray(recordIds)&&recordIds.length&&new Set(recordIds).size===recordIds.length,'Invalid clip selection');\n return recordIds.map(recordId=>{check(linked.includes(recordId),'Unlinked clip');return {...draftSource({row,owner,recordId,parentId:parent.id}),channel:parent.fields['Content Channel']};});\n}\nfunction bindCreatedDrafts({row,owner,parent,sources,records}) {\n const {s}=readLocked(row,owner); const n=JSON.parse(JSON.stringify(s));n.drafts??={};\n check(Array.isArray(records)&&records.length,'No created drafts');const seen=new Set();\n for(const post of records){\n  check(/^rec[A-Za-z0-9]+$/.test(post.id)&&!seen.has(post.id),'Invalid/duplicate post');seen.add(post.id);\n  const f=post.fields||{},ids=f['Content Clip'],parents=f['Parent Content'];\n  check(Array.isArray(ids)&&ids.length===1&&Array.isArray(parents)&&parents.length===1&&parents[0]===parent.id,'Draft linkage mismatch');\n  const source=sources.find(x=>x.recordId===ids[0]);check(source,'Missing generation source');\n  const [current]=canonicalSources({row,owner,parent,recordIds:ids});\n  check(current.reviewGeneration===source.reviewGeneration&&current.clipId===source.clipId&&current.projectId===source.projectId,'Source changed during generation');\n  check(['Instagram','YouTube'].includes(f.Platform)&&f['Content Channel']===current.channel,'Wrong draft destination');\n  check(f['Approval Status']==='Needs Review'&&f['Publishing Status']==='Draft'&&!f['External Post ID']&&!f['Scheduled At'],'Created draft is not review-only');\n  check(f['Media URL']===current.url&&typeof f['Draft Body']==='string'&&f['Draft Body'].trim(),'Wrong media or empty copy');\n  check(!Object.values(s.receipts).some(r=>r.postId===post.id),'Post already has schedule receipt');\n  const binding={reviewGeneration:current.reviewGeneration,content:JSON.stringify({clipRecordId:ids[0],parentId:parent.id,platform:f.Platform,channel:current.channel,title:f['Draft Title']||'',body:f['Draft Body']})};\n  check(!n.drafts[post.id]||JSON.stringify(n.drafts[post.id])===JSON.stringify(binding),'Existing binding differs; explicit regeneration required');\n  n.drafts[post.id]=binding;\n }\n n.generation++;\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nconst row=$input.first().json,plan=$('Plan Distribution Bindings').first().json;readLocked(row,$execution.id);if(row.reviewLedger!==plan.reviewLedger)throw Error('Draft bindings readback failed');return [{json:{bound:true}}];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "name": "Verify Distribution Bindings",
+   "id": "8001e97b-538a-4785-bacb-bba047f296fc",
+   "position": [
+    3824,
+    880
+   ],
+   "onError": "continueErrorOutput"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "dataTableId": {
+     "__rl": true,
+     "value": "U36c3kBS8OtIjnyD",
+     "mode": "id"
+    },
+    "matchType": "allConditions",
+    "filters": {
+     "conditions": [
+      {
+       "keyValue": 1
+      },
+      {
+       "keyName": "owner",
+       "keyValue": "={{ $execution.id }}"
+      }
+     ]
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "owner": "FREE"
+     }
+    },
+    "options": {}
+   },
+   "id": "26d4bded-4d9a-454a-9e8e-5acfdc35857b",
+   "name": "Release Distribution Write Lock",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1,
+   "position": [
+    4016,
+    880
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "'use strict';\n// STAGED ONLY. Pure adapters: persistence and provider submission are deliberately injected elsewhere.\nconst check=(v,m)=>{if(!v)throw Error(m)};\nconst copy=x=>JSON.parse(JSON.stringify(x));\nconst same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);\nfunction readLocked(row,owner){\n check(row?.id===1&&row.owner===String(owner),'Shared lock not owned');\n const s=typeof row.reviewLedger==='string'?JSON.parse(row.reviewLedger):copy(row.reviewLedger);\n const r=typeof row.managedClips==='string'?JSON.parse(row.managedClips):copy(row.managedClips);\n check(s?.schemaVersion===1&&Number.isSafeInteger(s.generation)&&s.clips&&s.receipts,'Invalid ledger');\n check(r?.schemaVersion===1&&Array.isArray(r.clipIds)&&new Set(r.clipIds).size===r.clipIds.length,'Invalid registry');\n return {s,r};\n}\nfunction approvedClip(row,owner,id){\n const {s,r}=readLocked(row,owner),c=s.clips[id];\n check(r.clipIds.includes(id)&&c?.mode==='current-render-v1','Current-render managed review required');\n check(c.status==='Approved'&&!c.pendingRefresh&&c.final?.reviewGeneration&&c.approval?.reviewGeneration===c.final.reviewGeneration,'Current clip approval required');\n check(c.approval.projectId===c.projectId&&c.approval.clipId===c.final.clipId&&c.approval.actor,'Approval identity mismatch');\n return {s,r,c};\n}\nfunction approveCurrent({row,owner,recordId,expectedVersion,reviewGeneration,persistedAuthor,verifiedOwner}){\n const {s,r}=readLocked(row,owner),c=s.clips[recordId];\n check(persistedAuthor?.id===verifiedOwner?.id&&persistedAuthor?.email===verifiedOwner?.email&&verifiedOwner?.id,'Owner-authored persisted intent required');\n check(r.clipIds.includes(recordId)&&c?.mode==='current-render-v1'&&!c.pendingRefresh,'Current-render preview required');\n check(c.version===expectedVersion&&c.status==='Needs Review'&&c.final?.reviewGeneration===reviewGeneration&&reviewGeneration,'Displayed preview stale');\n check(c.final.renderReady===true&&c.final.transcript?.trim()&&/^https:\\/\\//.test(c.final.url),'Ready media and transcript required');\n check(!Object.values(s.receipts).some(x=>x.recordId===recordId&&x.state!=='completed'),'Unresolved review receipt');\n const next=copy(s);next.generation++;next.clips[recordId]={...c,version:c.version+1,status:'Approved',approval:{projectId:c.projectId,clipId:c.final.clipId,reviewGeneration,actor:persistedAuthor.id}};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(next)};\n}\nfunction draftSource({row,owner,recordId,parentId}){\n const {c}=approvedClip(row,owner,recordId);check(c.parentId===parentId,'Parent mismatch');\n return {recordId,parentId,projectId:c.projectId,clipId:c.final.clipId,url:c.final.url,transcript:c.final.transcript,reviewGeneration:c.final.reviewGeneration};\n}\nfunction draftBinding({source,post}){\n check(post.parentId===source.parentId&&post.clipRecordId===source.recordId,'Draft linkage mismatch');\n check(['Instagram','YouTube'].includes(post.platform)&&post.body?.trim(),'Invalid clip draft');\n return {...post,reviewGeneration:source.reviewGeneration,approved:false,publishingStatus:'Draft'};\n}\nfunction prepareSchedule({row,owner,post,provider,accounts,now}){\n const {s,c}=approvedClip(row,owner,post.clipRecordId);\n check(post.parentId===c.parentId,'Post parent mismatch');\n const key='schedule|'+post.id,old=s.receipts[key];\n if(old){check(old.postId===post.id,'Receipt mismatch');return {action:old.state==='confirmed'?'already-scheduled':'reconcile',receipt:old};}\n check(post.approved===true&&post.publishingStatus==='Draft'&&!post.externalPostId,'Post not eligible');\n check(post.reviewGeneration===c.final.reviewGeneration,'Draft review stale');\n check(provider.id===c.projectId+'.'+c.final.clipId&&provider.renderAsVideoFile?.pending===false,'Provider identity/render mismatch');\n check(['Instagram','YouTube'].includes(post.platform),'Unsupported automatic platform');\n check(['Alex Woung','Alex Woung Raw'].includes(post.channel),'Unknown content channel');\n check(Number.isFinite(Date.parse(post.publishAt))&&Date.parse(post.publishAt)>now,'Future time required');\n const account=accounts.find(a=>a.id===post.accountId&&a.platform===post.platform&&a.channel===post.channel);\n check(account,'Exact connected destination required');\n check(post.platform!=='Instagram'||account.subAccountId,'Instagram subaccount required');\n const body={projectId:c.projectId,clipId:c.final.clipId,postAccountId:account.id,...(account.subAccountId?{subAccountId:account.subAccountId}:{}),postDetail:{title:post.title||'',custom:{description:post.body,privacy:'public'},mediaType:'video'},publishAt:new Date(post.publishAt).toISOString()};\n return {action:'persist-intent-first',key,expectedGeneration:s.generation,postId:post.id,recordId:c.id,reviewGeneration:c.final.reviewGeneration,body};\n}\nfunction persistScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner);check(prepared.action==='persist-intent-first'&&s.generation===prepared.expectedGeneration&&!s.receipts[prepared.key],'Concurrent schedule intent');\n const n=copy(s);n.generation++;n.receipts[prepared.key]={state:'pending',postId:prepared.postId,recordId:prepared.recordId,reviewGeneration:prepared.reviewGeneration,body:prepared.body};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nfunction verifyScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner),r=s.receipts[prepared.key];check(r?.state==='pending'&&r.postId===prepared.postId&&same(r.body,prepared.body),'Durable intent readback required');return prepared.body;\n}\nfunction providerOutcome({row,owner,key,response}){\n const {s}=readLocked(row,owner),r=s.receipts[key];check(r?.state==='pending','Pending receipt required');\n const rawId=response?.data?.scheduleId??response?.scheduleId;\n const id=typeof rawId==='string'&&rawId.trim()?rawId.trim():null;\n const n=copy(s);n.generation++;n.receipts[key]={...r,state:typeof id==='string'&&id.trim()?'confirmed':'uncertain',...(typeof id==='string'&&id.trim()?{scheduleId:id}:{})};\n // Failure/timeout never resets to Draft. Reconcile the provider before any retry.\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n),fields:id?{'Publishing Status':'Scheduled','External Post ID':id}:{'Publishing Status':'Publishing','Last Error':'Provider result uncertain. Reconcile before retry.'}};\n}\n\n'use strict';\n// Pure plans only. Caller owns shared lock, authoritative parent read, durable CAS/readback.\nfunction canonicalSources({row,owner,parent,recordIds}) {\n check(parent?.id&&['Alex Woung','Alex Woung Raw'].includes(parent.fields?.['Content Channel']),'Unknown parent channel');\n const linked=parent.fields['Content Clips'];\n check(Array.isArray(linked)&&Array.isArray(recordIds)&&recordIds.length&&new Set(recordIds).size===recordIds.length,'Invalid clip selection');\n return recordIds.map(recordId=>{check(linked.includes(recordId),'Unlinked clip');return {...draftSource({row,owner,recordId,parentId:parent.id}),channel:parent.fields['Content Channel']};});\n}\nfunction bindCreatedDrafts({row,owner,parent,sources,records}) {\n const {s}=readLocked(row,owner); const n=JSON.parse(JSON.stringify(s));n.drafts??={};\n check(Array.isArray(records)&&records.length,'No created drafts');const seen=new Set();\n for(const post of records){\n  check(/^rec[A-Za-z0-9]+$/.test(post.id)&&!seen.has(post.id),'Invalid/duplicate post');seen.add(post.id);\n  const f=post.fields||{},ids=f['Content Clip'],parents=f['Parent Content'];\n  check(Array.isArray(ids)&&ids.length===1&&Array.isArray(parents)&&parents.length===1&&parents[0]===parent.id,'Draft linkage mismatch');\n  const source=sources.find(x=>x.recordId===ids[0]);check(source,'Missing generation source');\n  const [current]=canonicalSources({row,owner,parent,recordIds:ids});\n  check(current.reviewGeneration===source.reviewGeneration&&current.clipId===source.clipId&&current.projectId===source.projectId,'Source changed during generation');\n  check(['Instagram','YouTube'].includes(f.Platform)&&f['Content Channel']===current.channel,'Wrong draft destination');\n  check(f['Approval Status']==='Needs Review'&&f['Publishing Status']==='Draft'&&!f['External Post ID']&&!f['Scheduled At'],'Created draft is not review-only');\n  check(f['Media URL']===current.url&&typeof f['Draft Body']==='string'&&f['Draft Body'].trim(),'Wrong media or empty copy');\n  check(!Object.values(s.receipts).some(r=>r.postId===post.id),'Post already has schedule receipt');\n  const binding={reviewGeneration:current.reviewGeneration,content:JSON.stringify({clipRecordId:ids[0],parentId:parent.id,platform:f.Platform,channel:current.channel,title:f['Draft Title']||'',body:f['Draft Body']})};\n  check(!n.drafts[post.id]||JSON.stringify(n.drafts[post.id])===JSON.stringify(binding),'Existing binding differs; explicit regeneration required');\n  n.drafts[post.id]=binding;\n }\n n.generation++;\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nif($input.first().json.owner!=='FREE')throw Error('Write unlock failed');return [{json:{ready:true}}];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "name": "Distribution Binding Complete",
+   "id": "867f6974-28f4-4177-8caf-80a4819b73b6",
+   "position": [
+    4224,
+    880
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "dataTableId": {
+     "__rl": true,
+     "value": "U36c3kBS8OtIjnyD",
+     "mode": "id"
+    },
+    "matchType": "allConditions",
+    "filters": {
+     "conditions": [
+      {
+       "keyValue": 1
+      },
+      {
+       "keyName": "owner",
+       "keyValue": "={{ $execution.id }}"
+      }
+     ]
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "owner": "FREE"
+     }
+    },
+    "options": {}
+   },
+   "id": "3341623f-a121-498d-bab2-45b2b990e3f2",
+   "name": "Release Distribution Error Lock",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1,
+   "position": [
+    4416,
+    880
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "'use strict';\n// STAGED ONLY. Pure adapters: persistence and provider submission are deliberately injected elsewhere.\nconst check=(v,m)=>{if(!v)throw Error(m)};\nconst copy=x=>JSON.parse(JSON.stringify(x));\nconst same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);\nfunction readLocked(row,owner){\n check(row?.id===1&&row.owner===String(owner),'Shared lock not owned');\n const s=typeof row.reviewLedger==='string'?JSON.parse(row.reviewLedger):copy(row.reviewLedger);\n const r=typeof row.managedClips==='string'?JSON.parse(row.managedClips):copy(row.managedClips);\n check(s?.schemaVersion===1&&Number.isSafeInteger(s.generation)&&s.clips&&s.receipts,'Invalid ledger');\n check(r?.schemaVersion===1&&Array.isArray(r.clipIds)&&new Set(r.clipIds).size===r.clipIds.length,'Invalid registry');\n return {s,r};\n}\nfunction approvedClip(row,owner,id){\n const {s,r}=readLocked(row,owner),c=s.clips[id];\n check(r.clipIds.includes(id)&&c?.mode==='current-render-v1','Current-render managed review required');\n check(c.status==='Approved'&&!c.pendingRefresh&&c.final?.reviewGeneration&&c.approval?.reviewGeneration===c.final.reviewGeneration,'Current clip approval required');\n check(c.approval.projectId===c.projectId&&c.approval.clipId===c.final.clipId&&c.approval.actor,'Approval identity mismatch');\n return {s,r,c};\n}\nfunction approveCurrent({row,owner,recordId,expectedVersion,reviewGeneration,persistedAuthor,verifiedOwner}){\n const {s,r}=readLocked(row,owner),c=s.clips[recordId];\n check(persistedAuthor?.id===verifiedOwner?.id&&persistedAuthor?.email===verifiedOwner?.email&&verifiedOwner?.id,'Owner-authored persisted intent required');\n check(r.clipIds.includes(recordId)&&c?.mode==='current-render-v1'&&!c.pendingRefresh,'Current-render preview required');\n check(c.version===expectedVersion&&c.status==='Needs Review'&&c.final?.reviewGeneration===reviewGeneration&&reviewGeneration,'Displayed preview stale');\n check(c.final.renderReady===true&&c.final.transcript?.trim()&&/^https:\\/\\//.test(c.final.url),'Ready media and transcript required');\n check(!Object.values(s.receipts).some(x=>x.recordId===recordId&&x.state!=='completed'),'Unresolved review receipt');\n const next=copy(s);next.generation++;next.clips[recordId]={...c,version:c.version+1,status:'Approved',approval:{projectId:c.projectId,clipId:c.final.clipId,reviewGeneration,actor:persistedAuthor.id}};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(next)};\n}\nfunction draftSource({row,owner,recordId,parentId}){\n const {c}=approvedClip(row,owner,recordId);check(c.parentId===parentId,'Parent mismatch');\n return {recordId,parentId,projectId:c.projectId,clipId:c.final.clipId,url:c.final.url,transcript:c.final.transcript,reviewGeneration:c.final.reviewGeneration};\n}\nfunction draftBinding({source,post}){\n check(post.parentId===source.parentId&&post.clipRecordId===source.recordId,'Draft linkage mismatch');\n check(['Instagram','YouTube'].includes(post.platform)&&post.body?.trim(),'Invalid clip draft');\n return {...post,reviewGeneration:source.reviewGeneration,approved:false,publishingStatus:'Draft'};\n}\nfunction prepareSchedule({row,owner,post,provider,accounts,now}){\n const {s,c}=approvedClip(row,owner,post.clipRecordId);\n check(post.parentId===c.parentId,'Post parent mismatch');\n const key='schedule|'+post.id,old=s.receipts[key];\n if(old){check(old.postId===post.id,'Receipt mismatch');return {action:old.state==='confirmed'?'already-scheduled':'reconcile',receipt:old};}\n check(post.approved===true&&post.publishingStatus==='Draft'&&!post.externalPostId,'Post not eligible');\n check(post.reviewGeneration===c.final.reviewGeneration,'Draft review stale');\n check(provider.id===c.projectId+'.'+c.final.clipId&&provider.renderAsVideoFile?.pending===false,'Provider identity/render mismatch');\n check(['Instagram','YouTube'].includes(post.platform),'Unsupported automatic platform');\n check(['Alex Woung','Alex Woung Raw'].includes(post.channel),'Unknown content channel');\n check(Number.isFinite(Date.parse(post.publishAt))&&Date.parse(post.publishAt)>now,'Future time required');\n const account=accounts.find(a=>a.id===post.accountId&&a.platform===post.platform&&a.channel===post.channel);\n check(account,'Exact connected destination required');\n check(post.platform!=='Instagram'||account.subAccountId,'Instagram subaccount required');\n const body={projectId:c.projectId,clipId:c.final.clipId,postAccountId:account.id,...(account.subAccountId?{subAccountId:account.subAccountId}:{}),postDetail:{title:post.title||'',custom:{description:post.body,privacy:'public'},mediaType:'video'},publishAt:new Date(post.publishAt).toISOString()};\n return {action:'persist-intent-first',key,expectedGeneration:s.generation,postId:post.id,recordId:c.id,reviewGeneration:c.final.reviewGeneration,body};\n}\nfunction persistScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner);check(prepared.action==='persist-intent-first'&&s.generation===prepared.expectedGeneration&&!s.receipts[prepared.key],'Concurrent schedule intent');\n const n=copy(s);n.generation++;n.receipts[prepared.key]={state:'pending',postId:prepared.postId,recordId:prepared.recordId,reviewGeneration:prepared.reviewGeneration,body:prepared.body};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nfunction verifyScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner),r=s.receipts[prepared.key];check(r?.state==='pending'&&r.postId===prepared.postId&&same(r.body,prepared.body),'Durable intent readback required');return prepared.body;\n}\nfunction providerOutcome({row,owner,key,response}){\n const {s}=readLocked(row,owner),r=s.receipts[key];check(r?.state==='pending','Pending receipt required');\n const rawId=response?.data?.scheduleId??response?.scheduleId;\n const id=typeof rawId==='string'&&rawId.trim()?rawId.trim():null;\n const n=copy(s);n.generation++;n.receipts[key]={...r,state:typeof id==='string'&&id.trim()?'confirmed':'uncertain',...(typeof id==='string'&&id.trim()?{scheduleId:id}:{})};\n // Failure/timeout never resets to Draft. Reconcile the provider before any retry.\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n),fields:id?{'Publishing Status':'Scheduled','External Post ID':id}:{'Publishing Status':'Publishing','Last Error':'Provider result uncertain. Reconcile before retry.'}};\n}\n\n'use strict';\n// Pure plans only. Caller owns shared lock, authoritative parent read, durable CAS/readback.\nfunction canonicalSources({row,owner,parent,recordIds}) {\n check(parent?.id&&['Alex Woung','Alex Woung Raw'].includes(parent.fields?.['Content Channel']),'Unknown parent channel');\n const linked=parent.fields['Content Clips'];\n check(Array.isArray(linked)&&Array.isArray(recordIds)&&recordIds.length&&new Set(recordIds).size===recordIds.length,'Invalid clip selection');\n return recordIds.map(recordId=>{check(linked.includes(recordId),'Unlinked clip');return {...draftSource({row,owner,recordId,parentId:parent.id}),channel:parent.fields['Content Channel']};});\n}\nfunction bindCreatedDrafts({row,owner,parent,sources,records}) {\n const {s}=readLocked(row,owner); const n=JSON.parse(JSON.stringify(s));n.drafts??={};\n check(Array.isArray(records)&&records.length,'No created drafts');const seen=new Set();\n for(const post of records){\n  check(/^rec[A-Za-z0-9]+$/.test(post.id)&&!seen.has(post.id),'Invalid/duplicate post');seen.add(post.id);\n  const f=post.fields||{},ids=f['Content Clip'],parents=f['Parent Content'];\n  check(Array.isArray(ids)&&ids.length===1&&Array.isArray(parents)&&parents.length===1&&parents[0]===parent.id,'Draft linkage mismatch');\n  const source=sources.find(x=>x.recordId===ids[0]);check(source,'Missing generation source');\n  const [current]=canonicalSources({row,owner,parent,recordIds:ids});\n  check(current.reviewGeneration===source.reviewGeneration&&current.clipId===source.clipId&&current.projectId===source.projectId,'Source changed during generation');\n  check(['Instagram','YouTube'].includes(f.Platform)&&f['Content Channel']===current.channel,'Wrong draft destination');\n  check(f['Approval Status']==='Needs Review'&&f['Publishing Status']==='Draft'&&!f['External Post ID']&&!f['Scheduled At'],'Created draft is not review-only');\n  check(f['Media URL']===current.url&&typeof f['Draft Body']==='string'&&f['Draft Body'].trim(),'Wrong media or empty copy');\n  check(!Object.values(s.receipts).some(r=>r.postId===post.id),'Post already has schedule receipt');\n  const binding={reviewGeneration:current.reviewGeneration,content:JSON.stringify({clipRecordId:ids[0],parentId:parent.id,platform:f.Platform,channel:current.channel,title:f['Draft Title']||'',body:f['Draft Body']})};\n  check(!n.drafts[post.id]||JSON.stringify(n.drafts[post.id])===JSON.stringify(binding),'Existing binding differs; explicit regeneration required');\n  n.drafts[post.id]=binding;\n }\n n.generation++;\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nif($input.first().json.owner!=='FREE')throw Error('Error unlock failed');return [{json:{held:true,message:'Draft generation held. Reconcile any created records and ledger bindings before retry; nothing was scheduled.'}}];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "name": "Distribution Reconciliation Required",
+   "id": "a9635b05-9690-4325-aa24-de8a9fa83056",
+   "position": [
+    4624,
+    880
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "'use strict';\n// STAGED ONLY. Pure adapters: persistence and provider submission are deliberately injected elsewhere.\nconst check=(v,m)=>{if(!v)throw Error(m)};\nconst copy=x=>JSON.parse(JSON.stringify(x));\nconst same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);\nfunction readLocked(row,owner){\n check(row?.id===1&&row.owner===String(owner),'Shared lock not owned');\n const s=typeof row.reviewLedger==='string'?JSON.parse(row.reviewLedger):copy(row.reviewLedger);\n const r=typeof row.managedClips==='string'?JSON.parse(row.managedClips):copy(row.managedClips);\n check(s?.schemaVersion===1&&Number.isSafeInteger(s.generation)&&s.clips&&s.receipts,'Invalid ledger');\n check(r?.schemaVersion===1&&Array.isArray(r.clipIds)&&new Set(r.clipIds).size===r.clipIds.length,'Invalid registry');\n return {s,r};\n}\nfunction approvedClip(row,owner,id){\n const {s,r}=readLocked(row,owner),c=s.clips[id];\n check(r.clipIds.includes(id)&&c?.mode==='current-render-v1','Current-render managed review required');\n check(c.status==='Approved'&&!c.pendingRefresh&&c.final?.reviewGeneration&&c.approval?.reviewGeneration===c.final.reviewGeneration,'Current clip approval required');\n check(c.approval.projectId===c.projectId&&c.approval.clipId===c.final.clipId&&c.approval.actor,'Approval identity mismatch');\n return {s,r,c};\n}\nfunction approveCurrent({row,owner,recordId,expectedVersion,reviewGeneration,persistedAuthor,verifiedOwner}){\n const {s,r}=readLocked(row,owner),c=s.clips[recordId];\n check(persistedAuthor?.id===verifiedOwner?.id&&persistedAuthor?.email===verifiedOwner?.email&&verifiedOwner?.id,'Owner-authored persisted intent required');\n check(r.clipIds.includes(recordId)&&c?.mode==='current-render-v1'&&!c.pendingRefresh,'Current-render preview required');\n check(c.version===expectedVersion&&c.status==='Needs Review'&&c.final?.reviewGeneration===reviewGeneration&&reviewGeneration,'Displayed preview stale');\n check(c.final.renderReady===true&&c.final.transcript?.trim()&&/^https:\\/\\//.test(c.final.url),'Ready media and transcript required');\n check(!Object.values(s.receipts).some(x=>x.recordId===recordId&&x.state!=='completed'),'Unresolved review receipt');\n const next=copy(s);next.generation++;next.clips[recordId]={...c,version:c.version+1,status:'Approved',approval:{projectId:c.projectId,clipId:c.final.clipId,reviewGeneration,actor:persistedAuthor.id}};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(next)};\n}\nfunction draftSource({row,owner,recordId,parentId}){\n const {c}=approvedClip(row,owner,recordId);check(c.parentId===parentId,'Parent mismatch');\n return {recordId,parentId,projectId:c.projectId,clipId:c.final.clipId,url:c.final.url,transcript:c.final.transcript,reviewGeneration:c.final.reviewGeneration};\n}\nfunction draftBinding({source,post}){\n check(post.parentId===source.parentId&&post.clipRecordId===source.recordId,'Draft linkage mismatch');\n check(['Instagram','YouTube'].includes(post.platform)&&post.body?.trim(),'Invalid clip draft');\n return {...post,reviewGeneration:source.reviewGeneration,approved:false,publishingStatus:'Draft'};\n}\nfunction prepareSchedule({row,owner,post,provider,accounts,now}){\n const {s,c}=approvedClip(row,owner,post.clipRecordId);\n check(post.parentId===c.parentId,'Post parent mismatch');\n const key='schedule|'+post.id,old=s.receipts[key];\n if(old){check(old.postId===post.id,'Receipt mismatch');return {action:old.state==='confirmed'?'already-scheduled':'reconcile',receipt:old};}\n check(post.approved===true&&post.publishingStatus==='Draft'&&!post.externalPostId,'Post not eligible');\n check(post.reviewGeneration===c.final.reviewGeneration,'Draft review stale');\n check(provider.id===c.projectId+'.'+c.final.clipId&&provider.renderAsVideoFile?.pending===false,'Provider identity/render mismatch');\n check(['Instagram','YouTube'].includes(post.platform),'Unsupported automatic platform');\n check(['Alex Woung','Alex Woung Raw'].includes(post.channel),'Unknown content channel');\n check(Number.isFinite(Date.parse(post.publishAt))&&Date.parse(post.publishAt)>now,'Future time required');\n const account=accounts.find(a=>a.id===post.accountId&&a.platform===post.platform&&a.channel===post.channel);\n check(account,'Exact connected destination required');\n check(post.platform!=='Instagram'||account.subAccountId,'Instagram subaccount required');\n const body={projectId:c.projectId,clipId:c.final.clipId,postAccountId:account.id,...(account.subAccountId?{subAccountId:account.subAccountId}:{}),postDetail:{title:post.title||'',custom:{description:post.body,privacy:'public'},mediaType:'video'},publishAt:new Date(post.publishAt).toISOString()};\n return {action:'persist-intent-first',key,expectedGeneration:s.generation,postId:post.id,recordId:c.id,reviewGeneration:c.final.reviewGeneration,body};\n}\nfunction persistScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner);check(prepared.action==='persist-intent-first'&&s.generation===prepared.expectedGeneration&&!s.receipts[prepared.key],'Concurrent schedule intent');\n const n=copy(s);n.generation++;n.receipts[prepared.key]={state:'pending',postId:prepared.postId,recordId:prepared.recordId,reviewGeneration:prepared.reviewGeneration,body:prepared.body};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nfunction verifyScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner),r=s.receipts[prepared.key];check(r?.state==='pending'&&r.postId===prepared.postId&&same(r.body,prepared.body),'Durable intent readback required');return prepared.body;\n}\nfunction providerOutcome({row,owner,key,response}){\n const {s}=readLocked(row,owner),r=s.receipts[key];check(r?.state==='pending','Pending receipt required');\n const rawId=response?.data?.scheduleId??response?.scheduleId;\n const id=typeof rawId==='string'&&rawId.trim()?rawId.trim():null;\n const n=copy(s);n.generation++;n.receipts[key]={...r,state:typeof id==='string'&&id.trim()?'confirmed':'uncertain',...(typeof id==='string'&&id.trim()?{scheduleId:id}:{})};\n // Failure/timeout never resets to Draft. Reconcile the provider before any retry.\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n),fields:id?{'Publishing Status':'Scheduled','External Post ID':id}:{'Publishing Status':'Publishing','Last Error':'Provider result uncertain. Reconcile before retry.'}};\n}\n\n'use strict';\n// Pure plans only. Caller owns shared lock, authoritative parent read, durable CAS/readback.\nfunction canonicalSources({row,owner,parent,recordIds}) {\n check(parent?.id&&['Alex Woung','Alex Woung Raw'].includes(parent.fields?.['Content Channel']),'Unknown parent channel');\n const linked=parent.fields['Content Clips'];\n check(Array.isArray(linked)&&Array.isArray(recordIds)&&recordIds.length&&new Set(recordIds).size===recordIds.length,'Invalid clip selection');\n return recordIds.map(recordId=>{check(linked.includes(recordId),'Unlinked clip');return {...draftSource({row,owner,recordId,parentId:parent.id}),channel:parent.fields['Content Channel']};});\n}\nfunction bindCreatedDrafts({row,owner,parent,sources,records}) {\n const {s}=readLocked(row,owner); const n=JSON.parse(JSON.stringify(s));n.drafts??={};\n check(Array.isArray(records)&&records.length,'No created drafts');const seen=new Set();\n for(const post of records){\n  check(/^rec[A-Za-z0-9]+$/.test(post.id)&&!seen.has(post.id),'Invalid/duplicate post');seen.add(post.id);\n  const f=post.fields||{},ids=f['Content Clip'],parents=f['Parent Content'];\n  check(Array.isArray(ids)&&ids.length===1&&Array.isArray(parents)&&parents.length===1&&parents[0]===parent.id,'Draft linkage mismatch');\n  const source=sources.find(x=>x.recordId===ids[0]);check(source,'Missing generation source');\n  const [current]=canonicalSources({row,owner,parent,recordIds:ids});\n  check(current.reviewGeneration===source.reviewGeneration&&current.clipId===source.clipId&&current.projectId===source.projectId,'Source changed during generation');\n  check(['Instagram','YouTube'].includes(f.Platform)&&f['Content Channel']===current.channel,'Wrong draft destination');\n  check(f['Approval Status']==='Needs Review'&&f['Publishing Status']==='Draft'&&!f['External Post ID']&&!f['Scheduled At'],'Created draft is not review-only');\n  check(f['Media URL']===current.url&&typeof f['Draft Body']==='string'&&f['Draft Body'].trim(),'Wrong media or empty copy');\n  check(!Object.values(s.receipts).some(r=>r.postId===post.id),'Post already has schedule receipt');\n  const binding={reviewGeneration:current.reviewGeneration,content:JSON.stringify({clipRecordId:ids[0],parentId:parent.id,platform:f.Platform,channel:current.channel,title:f['Draft Title']||'',body:f['Draft Body']})};\n  check(!n.drafts[post.id]||JSON.stringify(n.drafts[post.id])===JSON.stringify(binding),'Existing binding differs; explicit regeneration required');\n  n.drafts[post.id]=binding;\n }\n n.generation++;\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nconst items=$input.all().map(x=>x.json),row=$('Acquire Distribution Write Lock').first().json,{s}=readLocked(row,$execution.id),p=$('Prepare Distribution Prompt').first().json;const recovery=items[0].reconcileRecords;if(recovery)return [{json:{skipCreate:true,reconcileRecords:recovery,receiptKey:items[0].receiptKey,sources:items[0].sources,reviewLedger:JSON.stringify(s)}}];const records=items.flatMap(x=>x.records||[]);if(!records.length)throw Error('No draft writes planned');const receiptKey='distribution|'+p.parentRecordId+'|'+$execution.id;if(s.receipts[receiptKey])throw Error('Create receipt already exists');const n=JSON.parse(JSON.stringify(s));n.generation++;n.receipts[receiptKey]={state:'pending',parentId:p.parentRecordId,records,sources:p.managedSources||[]};return [{json:{skipCreate:false,receiptKey,records,sources:p.managedSources||[],reviewLedger:JSON.stringify(n)}}];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "name": "Plan Distribution Create Intent",
+   "id": "e7b562ff-8822-4b48-a499-22297236a1a4",
+   "position": [
+    4816,
+    880
+   ],
+   "onError": "continueErrorOutput"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "dataTableId": {
+     "__rl": true,
+     "value": "U36c3kBS8OtIjnyD",
+     "mode": "id"
+    },
+    "matchType": "allConditions",
+    "filters": {
+     "conditions": [
+      {
+       "keyValue": 1
+      },
+      {
+       "keyName": "owner",
+       "keyValue": "={{ $execution.id }}"
+      }
+     ]
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "reviewLedger": "={{$json.reviewLedger}}"
+     }
+    },
+    "options": {}
+   },
+   "id": "75f6c708-6bce-4ccc-8400-3de52341dca0",
+   "name": "Persist Distribution Create Intent",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1,
+   "position": [
+    5024,
+    880
+   ],
+   "onError": "continueErrorOutput"
+  },
+  {
+   "parameters": {
+    "jsCode": "'use strict';\n// STAGED ONLY. Pure adapters: persistence and provider submission are deliberately injected elsewhere.\nconst check=(v,m)=>{if(!v)throw Error(m)};\nconst copy=x=>JSON.parse(JSON.stringify(x));\nconst same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);\nfunction readLocked(row,owner){\n check(row?.id===1&&row.owner===String(owner),'Shared lock not owned');\n const s=typeof row.reviewLedger==='string'?JSON.parse(row.reviewLedger):copy(row.reviewLedger);\n const r=typeof row.managedClips==='string'?JSON.parse(row.managedClips):copy(row.managedClips);\n check(s?.schemaVersion===1&&Number.isSafeInteger(s.generation)&&s.clips&&s.receipts,'Invalid ledger');\n check(r?.schemaVersion===1&&Array.isArray(r.clipIds)&&new Set(r.clipIds).size===r.clipIds.length,'Invalid registry');\n return {s,r};\n}\nfunction approvedClip(row,owner,id){\n const {s,r}=readLocked(row,owner),c=s.clips[id];\n check(r.clipIds.includes(id)&&c?.mode==='current-render-v1','Current-render managed review required');\n check(c.status==='Approved'&&!c.pendingRefresh&&c.final?.reviewGeneration&&c.approval?.reviewGeneration===c.final.reviewGeneration,'Current clip approval required');\n check(c.approval.projectId===c.projectId&&c.approval.clipId===c.final.clipId&&c.approval.actor,'Approval identity mismatch');\n return {s,r,c};\n}\nfunction approveCurrent({row,owner,recordId,expectedVersion,reviewGeneration,persistedAuthor,verifiedOwner}){\n const {s,r}=readLocked(row,owner),c=s.clips[recordId];\n check(persistedAuthor?.id===verifiedOwner?.id&&persistedAuthor?.email===verifiedOwner?.email&&verifiedOwner?.id,'Owner-authored persisted intent required');\n check(r.clipIds.includes(recordId)&&c?.mode==='current-render-v1'&&!c.pendingRefresh,'Current-render preview required');\n check(c.version===expectedVersion&&c.status==='Needs Review'&&c.final?.reviewGeneration===reviewGeneration&&reviewGeneration,'Displayed preview stale');\n check(c.final.renderReady===true&&c.final.transcript?.trim()&&/^https:\\/\\//.test(c.final.url),'Ready media and transcript required');\n check(!Object.values(s.receipts).some(x=>x.recordId===recordId&&x.state!=='completed'),'Unresolved review receipt');\n const next=copy(s);next.generation++;next.clips[recordId]={...c,version:c.version+1,status:'Approved',approval:{projectId:c.projectId,clipId:c.final.clipId,reviewGeneration,actor:persistedAuthor.id}};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(next)};\n}\nfunction draftSource({row,owner,recordId,parentId}){\n const {c}=approvedClip(row,owner,recordId);check(c.parentId===parentId,'Parent mismatch');\n return {recordId,parentId,projectId:c.projectId,clipId:c.final.clipId,url:c.final.url,transcript:c.final.transcript,reviewGeneration:c.final.reviewGeneration};\n}\nfunction draftBinding({source,post}){\n check(post.parentId===source.parentId&&post.clipRecordId===source.recordId,'Draft linkage mismatch');\n check(['Instagram','YouTube'].includes(post.platform)&&post.body?.trim(),'Invalid clip draft');\n return {...post,reviewGeneration:source.reviewGeneration,approved:false,publishingStatus:'Draft'};\n}\nfunction prepareSchedule({row,owner,post,provider,accounts,now}){\n const {s,c}=approvedClip(row,owner,post.clipRecordId);\n check(post.parentId===c.parentId,'Post parent mismatch');\n const key='schedule|'+post.id,old=s.receipts[key];\n if(old){check(old.postId===post.id,'Receipt mismatch');return {action:old.state==='confirmed'?'already-scheduled':'reconcile',receipt:old};}\n check(post.approved===true&&post.publishingStatus==='Draft'&&!post.externalPostId,'Post not eligible');\n check(post.reviewGeneration===c.final.reviewGeneration,'Draft review stale');\n check(provider.id===c.projectId+'.'+c.final.clipId&&provider.renderAsVideoFile?.pending===false,'Provider identity/render mismatch');\n check(['Instagram','YouTube'].includes(post.platform),'Unsupported automatic platform');\n check(['Alex Woung','Alex Woung Raw'].includes(post.channel),'Unknown content channel');\n check(Number.isFinite(Date.parse(post.publishAt))&&Date.parse(post.publishAt)>now,'Future time required');\n const account=accounts.find(a=>a.id===post.accountId&&a.platform===post.platform&&a.channel===post.channel);\n check(account,'Exact connected destination required');\n check(post.platform!=='Instagram'||account.subAccountId,'Instagram subaccount required');\n const body={projectId:c.projectId,clipId:c.final.clipId,postAccountId:account.id,...(account.subAccountId?{subAccountId:account.subAccountId}:{}),postDetail:{title:post.title||'',custom:{description:post.body,privacy:'public'},mediaType:'video'},publishAt:new Date(post.publishAt).toISOString()};\n return {action:'persist-intent-first',key,expectedGeneration:s.generation,postId:post.id,recordId:c.id,reviewGeneration:c.final.reviewGeneration,body};\n}\nfunction persistScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner);check(prepared.action==='persist-intent-first'&&s.generation===prepared.expectedGeneration&&!s.receipts[prepared.key],'Concurrent schedule intent');\n const n=copy(s);n.generation++;n.receipts[prepared.key]={state:'pending',postId:prepared.postId,recordId:prepared.recordId,reviewGeneration:prepared.reviewGeneration,body:prepared.body};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nfunction verifyScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner),r=s.receipts[prepared.key];check(r?.state==='pending'&&r.postId===prepared.postId&&same(r.body,prepared.body),'Durable intent readback required');return prepared.body;\n}\nfunction providerOutcome({row,owner,key,response}){\n const {s}=readLocked(row,owner),r=s.receipts[key];check(r?.state==='pending','Pending receipt required');\n const rawId=response?.data?.scheduleId??response?.scheduleId;\n const id=typeof rawId==='string'&&rawId.trim()?rawId.trim():null;\n const n=copy(s);n.generation++;n.receipts[key]={...r,state:typeof id==='string'&&id.trim()?'confirmed':'uncertain',...(typeof id==='string'&&id.trim()?{scheduleId:id}:{})};\n // Failure/timeout never resets to Draft. Reconcile the provider before any retry.\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n),fields:id?{'Publishing Status':'Scheduled','External Post ID':id}:{'Publishing Status':'Publishing','Last Error':'Provider result uncertain. Reconcile before retry.'}};\n}\n\n'use strict';\n// Pure plans only. Caller owns shared lock, authoritative parent read, durable CAS/readback.\nfunction canonicalSources({row,owner,parent,recordIds}) {\n check(parent?.id&&['Alex Woung','Alex Woung Raw'].includes(parent.fields?.['Content Channel']),'Unknown parent channel');\n const linked=parent.fields['Content Clips'];\n check(Array.isArray(linked)&&Array.isArray(recordIds)&&recordIds.length&&new Set(recordIds).size===recordIds.length,'Invalid clip selection');\n return recordIds.map(recordId=>{check(linked.includes(recordId),'Unlinked clip');return {...draftSource({row,owner,recordId,parentId:parent.id}),channel:parent.fields['Content Channel']};});\n}\nfunction bindCreatedDrafts({row,owner,parent,sources,records}) {\n const {s}=readLocked(row,owner); const n=JSON.parse(JSON.stringify(s));n.drafts??={};\n check(Array.isArray(records)&&records.length,'No created drafts');const seen=new Set();\n for(const post of records){\n  check(/^rec[A-Za-z0-9]+$/.test(post.id)&&!seen.has(post.id),'Invalid/duplicate post');seen.add(post.id);\n  const f=post.fields||{},ids=f['Content Clip'],parents=f['Parent Content'];\n  check(Array.isArray(ids)&&ids.length===1&&Array.isArray(parents)&&parents.length===1&&parents[0]===parent.id,'Draft linkage mismatch');\n  const source=sources.find(x=>x.recordId===ids[0]);check(source,'Missing generation source');\n  const [current]=canonicalSources({row,owner,parent,recordIds:ids});\n  check(current.reviewGeneration===source.reviewGeneration&&current.clipId===source.clipId&&current.projectId===source.projectId,'Source changed during generation');\n  check(['Instagram','YouTube'].includes(f.Platform)&&f['Content Channel']===current.channel,'Wrong draft destination');\n  check(f['Approval Status']==='Needs Review'&&f['Publishing Status']==='Draft'&&!f['External Post ID']&&!f['Scheduled At'],'Created draft is not review-only');\n  check(f['Media URL']===current.url&&typeof f['Draft Body']==='string'&&f['Draft Body'].trim(),'Wrong media or empty copy');\n  check(!Object.values(s.receipts).some(r=>r.postId===post.id),'Post already has schedule receipt');\n  const binding={reviewGeneration:current.reviewGeneration,content:JSON.stringify({clipRecordId:ids[0],parentId:parent.id,platform:f.Platform,channel:current.channel,title:f['Draft Title']||'',body:f['Draft Body']})};\n  check(!n.drafts[post.id]||JSON.stringify(n.drafts[post.id])===JSON.stringify(binding),'Existing binding differs; explicit regeneration required');\n  n.drafts[post.id]=binding;\n }\n n.generation++;\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nconst row=$input.first().json,p=$('Plan Distribution Create Intent').first().json;readLocked(row,$execution.id);if(row.reviewLedger!==p.reviewLedger)throw Error('Create intent readback failed');return [{json:p}];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "name": "Verify Distribution Create Intent",
+   "id": "c82284a0-5338-4240-9f5b-b29b3815ea4b",
+   "position": [
+    5216,
+    880
+   ],
+   "onError": "continueErrorOutput"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "bbc42783-965c-4a73-bd37-10a1ca45bd63",
+       "leftValue": "={{$json.skipCreate}}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "name": "Recover Existing Distribution Drafts",
+   "id": "a0cd9ae8-7ca9-44e9-a453-aea281ef9751",
+   "position": [
+    5424,
+    880
+   ],
+   "onError": "continueErrorOutput"
+  },
+  {
+   "parameters": {
+    "jsCode": "'use strict';\n// STAGED ONLY. Pure adapters: persistence and provider submission are deliberately injected elsewhere.\nconst check=(v,m)=>{if(!v)throw Error(m)};\nconst copy=x=>JSON.parse(JSON.stringify(x));\nconst same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);\nfunction readLocked(row,owner){\n check(row?.id===1&&row.owner===String(owner),'Shared lock not owned');\n const s=typeof row.reviewLedger==='string'?JSON.parse(row.reviewLedger):copy(row.reviewLedger);\n const r=typeof row.managedClips==='string'?JSON.parse(row.managedClips):copy(row.managedClips);\n check(s?.schemaVersion===1&&Number.isSafeInteger(s.generation)&&s.clips&&s.receipts,'Invalid ledger');\n check(r?.schemaVersion===1&&Array.isArray(r.clipIds)&&new Set(r.clipIds).size===r.clipIds.length,'Invalid registry');\n return {s,r};\n}\nfunction approvedClip(row,owner,id){\n const {s,r}=readLocked(row,owner),c=s.clips[id];\n check(r.clipIds.includes(id)&&c?.mode==='current-render-v1','Current-render managed review required');\n check(c.status==='Approved'&&!c.pendingRefresh&&c.final?.reviewGeneration&&c.approval?.reviewGeneration===c.final.reviewGeneration,'Current clip approval required');\n check(c.approval.projectId===c.projectId&&c.approval.clipId===c.final.clipId&&c.approval.actor,'Approval identity mismatch');\n return {s,r,c};\n}\nfunction approveCurrent({row,owner,recordId,expectedVersion,reviewGeneration,persistedAuthor,verifiedOwner}){\n const {s,r}=readLocked(row,owner),c=s.clips[recordId];\n check(persistedAuthor?.id===verifiedOwner?.id&&persistedAuthor?.email===verifiedOwner?.email&&verifiedOwner?.id,'Owner-authored persisted intent required');\n check(r.clipIds.includes(recordId)&&c?.mode==='current-render-v1'&&!c.pendingRefresh,'Current-render preview required');\n check(c.version===expectedVersion&&c.status==='Needs Review'&&c.final?.reviewGeneration===reviewGeneration&&reviewGeneration,'Displayed preview stale');\n check(c.final.renderReady===true&&c.final.transcript?.trim()&&/^https:\\/\\//.test(c.final.url),'Ready media and transcript required');\n check(!Object.values(s.receipts).some(x=>x.recordId===recordId&&x.state!=='completed'),'Unresolved review receipt');\n const next=copy(s);next.generation++;next.clips[recordId]={...c,version:c.version+1,status:'Approved',approval:{projectId:c.projectId,clipId:c.final.clipId,reviewGeneration,actor:persistedAuthor.id}};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(next)};\n}\nfunction draftSource({row,owner,recordId,parentId}){\n const {c}=approvedClip(row,owner,recordId);check(c.parentId===parentId,'Parent mismatch');\n return {recordId,parentId,projectId:c.projectId,clipId:c.final.clipId,url:c.final.url,transcript:c.final.transcript,reviewGeneration:c.final.reviewGeneration};\n}\nfunction draftBinding({source,post}){\n check(post.parentId===source.parentId&&post.clipRecordId===source.recordId,'Draft linkage mismatch');\n check(['Instagram','YouTube'].includes(post.platform)&&post.body?.trim(),'Invalid clip draft');\n return {...post,reviewGeneration:source.reviewGeneration,approved:false,publishingStatus:'Draft'};\n}\nfunction prepareSchedule({row,owner,post,provider,accounts,now}){\n const {s,c}=approvedClip(row,owner,post.clipRecordId);\n check(post.parentId===c.parentId,'Post parent mismatch');\n const key='schedule|'+post.id,old=s.receipts[key];\n if(old){check(old.postId===post.id,'Receipt mismatch');return {action:old.state==='confirmed'?'already-scheduled':'reconcile',receipt:old};}\n check(post.approved===true&&post.publishingStatus==='Draft'&&!post.externalPostId,'Post not eligible');\n check(post.reviewGeneration===c.final.reviewGeneration,'Draft review stale');\n check(provider.id===c.projectId+'.'+c.final.clipId&&provider.renderAsVideoFile?.pending===false,'Provider identity/render mismatch');\n check(['Instagram','YouTube'].includes(post.platform),'Unsupported automatic platform');\n check(['Alex Woung','Alex Woung Raw'].includes(post.channel),'Unknown content channel');\n check(Number.isFinite(Date.parse(post.publishAt))&&Date.parse(post.publishAt)>now,'Future time required');\n const account=accounts.find(a=>a.id===post.accountId&&a.platform===post.platform&&a.channel===post.channel);\n check(account,'Exact connected destination required');\n check(post.platform!=='Instagram'||account.subAccountId,'Instagram subaccount required');\n const body={projectId:c.projectId,clipId:c.final.clipId,postAccountId:account.id,...(account.subAccountId?{subAccountId:account.subAccountId}:{}),postDetail:{title:post.title||'',custom:{description:post.body,privacy:'public'},mediaType:'video'},publishAt:new Date(post.publishAt).toISOString()};\n return {action:'persist-intent-first',key,expectedGeneration:s.generation,postId:post.id,recordId:c.id,reviewGeneration:c.final.reviewGeneration,body};\n}\nfunction persistScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner);check(prepared.action==='persist-intent-first'&&s.generation===prepared.expectedGeneration&&!s.receipts[prepared.key],'Concurrent schedule intent');\n const n=copy(s);n.generation++;n.receipts[prepared.key]={state:'pending',postId:prepared.postId,recordId:prepared.recordId,reviewGeneration:prepared.reviewGeneration,body:prepared.body};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nfunction verifyScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner),r=s.receipts[prepared.key];check(r?.state==='pending'&&r.postId===prepared.postId&&same(r.body,prepared.body),'Durable intent readback required');return prepared.body;\n}\nfunction providerOutcome({row,owner,key,response}){\n const {s}=readLocked(row,owner),r=s.receipts[key];check(r?.state==='pending','Pending receipt required');\n const rawId=response?.data?.scheduleId??response?.scheduleId;\n const id=typeof rawId==='string'&&rawId.trim()?rawId.trim():null;\n const n=copy(s);n.generation++;n.receipts[key]={...r,state:typeof id==='string'&&id.trim()?'confirmed':'uncertain',...(typeof id==='string'&&id.trim()?{scheduleId:id}:{})};\n // Failure/timeout never resets to Draft. Reconcile the provider before any retry.\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n),fields:id?{'Publishing Status':'Scheduled','External Post ID':id}:{'Publishing Status':'Publishing','Last Error':'Provider result uncertain. Reconcile before retry.'}};\n}\n\n'use strict';\n// Pure plans only. Caller owns shared lock, authoritative parent read, durable CAS/readback.\nfunction canonicalSources({row,owner,parent,recordIds}) {\n check(parent?.id&&['Alex Woung','Alex Woung Raw'].includes(parent.fields?.['Content Channel']),'Unknown parent channel');\n const linked=parent.fields['Content Clips'];\n check(Array.isArray(linked)&&Array.isArray(recordIds)&&recordIds.length&&new Set(recordIds).size===recordIds.length,'Invalid clip selection');\n return recordIds.map(recordId=>{check(linked.includes(recordId),'Unlinked clip');return {...draftSource({row,owner,recordId,parentId:parent.id}),channel:parent.fields['Content Channel']};});\n}\nfunction bindCreatedDrafts({row,owner,parent,sources,records}) {\n const {s}=readLocked(row,owner); const n=JSON.parse(JSON.stringify(s));n.drafts??={};\n check(Array.isArray(records)&&records.length,'No created drafts');const seen=new Set();\n for(const post of records){\n  check(/^rec[A-Za-z0-9]+$/.test(post.id)&&!seen.has(post.id),'Invalid/duplicate post');seen.add(post.id);\n  const f=post.fields||{},ids=f['Content Clip'],parents=f['Parent Content'];\n  check(Array.isArray(ids)&&ids.length===1&&Array.isArray(parents)&&parents.length===1&&parents[0]===parent.id,'Draft linkage mismatch');\n  const source=sources.find(x=>x.recordId===ids[0]);check(source,'Missing generation source');\n  const [current]=canonicalSources({row,owner,parent,recordIds:ids});\n  check(current.reviewGeneration===source.reviewGeneration&&current.clipId===source.clipId&&current.projectId===source.projectId,'Source changed during generation');\n  check(['Instagram','YouTube'].includes(f.Platform)&&f['Content Channel']===current.channel,'Wrong draft destination');\n  check(f['Approval Status']==='Needs Review'&&f['Publishing Status']==='Draft'&&!f['External Post ID']&&!f['Scheduled At'],'Created draft is not review-only');\n  check(f['Media URL']===current.url&&typeof f['Draft Body']==='string'&&f['Draft Body'].trim(),'Wrong media or empty copy');\n  check(!Object.values(s.receipts).some(r=>r.postId===post.id),'Post already has schedule receipt');\n  const binding={reviewGeneration:current.reviewGeneration,content:JSON.stringify({clipRecordId:ids[0],parentId:parent.id,platform:f.Platform,channel:current.channel,title:f['Draft Title']||'',body:f['Draft Body']})};\n  check(!n.drafts[post.id]||JSON.stringify(n.drafts[post.id])===JSON.stringify(binding),'Existing binding differs; explicit regeneration required');\n  n.drafts[post.id]=binding;\n }\n n.generation++;\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nreturn [{json:{records:$('Plan Distribution Create Intent').first().json.reconcileRecords}}];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "name": "Recovered Distribution Records",
+   "id": "918ae310-1dcf-4d4d-8c51-f5082b791a60",
+   "position": [
+    5616,
+    880
+   ],
+   "onError": "continueErrorOutput"
+  },
+  {
+   "parameters": {
+    "jsCode": "'use strict';\n// STAGED ONLY. Pure adapters: persistence and provider submission are deliberately injected elsewhere.\nconst check=(v,m)=>{if(!v)throw Error(m)};\nconst copy=x=>JSON.parse(JSON.stringify(x));\nconst same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);\nfunction readLocked(row,owner){\n check(row?.id===1&&row.owner===String(owner),'Shared lock not owned');\n const s=typeof row.reviewLedger==='string'?JSON.parse(row.reviewLedger):copy(row.reviewLedger);\n const r=typeof row.managedClips==='string'?JSON.parse(row.managedClips):copy(row.managedClips);\n check(s?.schemaVersion===1&&Number.isSafeInteger(s.generation)&&s.clips&&s.receipts,'Invalid ledger');\n check(r?.schemaVersion===1&&Array.isArray(r.clipIds)&&new Set(r.clipIds).size===r.clipIds.length,'Invalid registry');\n return {s,r};\n}\nfunction approvedClip(row,owner,id){\n const {s,r}=readLocked(row,owner),c=s.clips[id];\n check(r.clipIds.includes(id)&&c?.mode==='current-render-v1','Current-render managed review required');\n check(c.status==='Approved'&&!c.pendingRefresh&&c.final?.reviewGeneration&&c.approval?.reviewGeneration===c.final.reviewGeneration,'Current clip approval required');\n check(c.approval.projectId===c.projectId&&c.approval.clipId===c.final.clipId&&c.approval.actor,'Approval identity mismatch');\n return {s,r,c};\n}\nfunction approveCurrent({row,owner,recordId,expectedVersion,reviewGeneration,persistedAuthor,verifiedOwner}){\n const {s,r}=readLocked(row,owner),c=s.clips[recordId];\n check(persistedAuthor?.id===verifiedOwner?.id&&persistedAuthor?.email===verifiedOwner?.email&&verifiedOwner?.id,'Owner-authored persisted intent required');\n check(r.clipIds.includes(recordId)&&c?.mode==='current-render-v1'&&!c.pendingRefresh,'Current-render preview required');\n check(c.version===expectedVersion&&c.status==='Needs Review'&&c.final?.reviewGeneration===reviewGeneration&&reviewGeneration,'Displayed preview stale');\n check(c.final.renderReady===true&&c.final.transcript?.trim()&&/^https:\\/\\//.test(c.final.url),'Ready media and transcript required');\n check(!Object.values(s.receipts).some(x=>x.recordId===recordId&&x.state!=='completed'),'Unresolved review receipt');\n const next=copy(s);next.generation++;next.clips[recordId]={...c,version:c.version+1,status:'Approved',approval:{projectId:c.projectId,clipId:c.final.clipId,reviewGeneration,actor:persistedAuthor.id}};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(next)};\n}\nfunction draftSource({row,owner,recordId,parentId}){\n const {c}=approvedClip(row,owner,recordId);check(c.parentId===parentId,'Parent mismatch');\n return {recordId,parentId,projectId:c.projectId,clipId:c.final.clipId,url:c.final.url,transcript:c.final.transcript,reviewGeneration:c.final.reviewGeneration};\n}\nfunction draftBinding({source,post}){\n check(post.parentId===source.parentId&&post.clipRecordId===source.recordId,'Draft linkage mismatch');\n check(['Instagram','YouTube'].includes(post.platform)&&post.body?.trim(),'Invalid clip draft');\n return {...post,reviewGeneration:source.reviewGeneration,approved:false,publishingStatus:'Draft'};\n}\nfunction prepareSchedule({row,owner,post,provider,accounts,now}){\n const {s,c}=approvedClip(row,owner,post.clipRecordId);\n check(post.parentId===c.parentId,'Post parent mismatch');\n const key='schedule|'+post.id,old=s.receipts[key];\n if(old){check(old.postId===post.id,'Receipt mismatch');return {action:old.state==='confirmed'?'already-scheduled':'reconcile',receipt:old};}\n check(post.approved===true&&post.publishingStatus==='Draft'&&!post.externalPostId,'Post not eligible');\n check(post.reviewGeneration===c.final.reviewGeneration,'Draft review stale');\n check(provider.id===c.projectId+'.'+c.final.clipId&&provider.renderAsVideoFile?.pending===false,'Provider identity/render mismatch');\n check(['Instagram','YouTube'].includes(post.platform),'Unsupported automatic platform');\n check(['Alex Woung','Alex Woung Raw'].includes(post.channel),'Unknown content channel');\n check(Number.isFinite(Date.parse(post.publishAt))&&Date.parse(post.publishAt)>now,'Future time required');\n const account=accounts.find(a=>a.id===post.accountId&&a.platform===post.platform&&a.channel===post.channel);\n check(account,'Exact connected destination required');\n check(post.platform!=='Instagram'||account.subAccountId,'Instagram subaccount required');\n const body={projectId:c.projectId,clipId:c.final.clipId,postAccountId:account.id,...(account.subAccountId?{subAccountId:account.subAccountId}:{}),postDetail:{title:post.title||'',custom:{description:post.body,privacy:'public'},mediaType:'video'},publishAt:new Date(post.publishAt).toISOString()};\n return {action:'persist-intent-first',key,expectedGeneration:s.generation,postId:post.id,recordId:c.id,reviewGeneration:c.final.reviewGeneration,body};\n}\nfunction persistScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner);check(prepared.action==='persist-intent-first'&&s.generation===prepared.expectedGeneration&&!s.receipts[prepared.key],'Concurrent schedule intent');\n const n=copy(s);n.generation++;n.receipts[prepared.key]={state:'pending',postId:prepared.postId,recordId:prepared.recordId,reviewGeneration:prepared.reviewGeneration,body:prepared.body};\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nfunction verifyScheduleIntent({row,owner,prepared}){\n const {s}=readLocked(row,owner),r=s.receipts[prepared.key];check(r?.state==='pending'&&r.postId===prepared.postId&&same(r.body,prepared.body),'Durable intent readback required');return prepared.body;\n}\nfunction providerOutcome({row,owner,key,response}){\n const {s}=readLocked(row,owner),r=s.receipts[key];check(r?.state==='pending','Pending receipt required');\n const rawId=response?.data?.scheduleId??response?.scheduleId;\n const id=typeof rawId==='string'&&rawId.trim()?rawId.trim():null;\n const n=copy(s);n.generation++;n.receipts[key]={...r,state:typeof id==='string'&&id.trim()?'confirmed':'uncertain',...(typeof id==='string'&&id.trim()?{scheduleId:id}:{})};\n // Failure/timeout never resets to Draft. Reconcile the provider before any retry.\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n),fields:id?{'Publishing Status':'Scheduled','External Post ID':id}:{'Publishing Status':'Publishing','Last Error':'Provider result uncertain. Reconcile before retry.'}};\n}\n\n'use strict';\n// Pure plans only. Caller owns shared lock, authoritative parent read, durable CAS/readback.\nfunction canonicalSources({row,owner,parent,recordIds}) {\n check(parent?.id&&['Alex Woung','Alex Woung Raw'].includes(parent.fields?.['Content Channel']),'Unknown parent channel');\n const linked=parent.fields['Content Clips'];\n check(Array.isArray(linked)&&Array.isArray(recordIds)&&recordIds.length&&new Set(recordIds).size===recordIds.length,'Invalid clip selection');\n return recordIds.map(recordId=>{check(linked.includes(recordId),'Unlinked clip');return {...draftSource({row,owner,recordId,parentId:parent.id}),channel:parent.fields['Content Channel']};});\n}\nfunction bindCreatedDrafts({row,owner,parent,sources,records}) {\n const {s}=readLocked(row,owner); const n=JSON.parse(JSON.stringify(s));n.drafts??={};\n check(Array.isArray(records)&&records.length,'No created drafts');const seen=new Set();\n for(const post of records){\n  check(/^rec[A-Za-z0-9]+$/.test(post.id)&&!seen.has(post.id),'Invalid/duplicate post');seen.add(post.id);\n  const f=post.fields||{},ids=f['Content Clip'],parents=f['Parent Content'];\n  check(Array.isArray(ids)&&ids.length===1&&Array.isArray(parents)&&parents.length===1&&parents[0]===parent.id,'Draft linkage mismatch');\n  const source=sources.find(x=>x.recordId===ids[0]);check(source,'Missing generation source');\n  const [current]=canonicalSources({row,owner,parent,recordIds:ids});\n  check(current.reviewGeneration===source.reviewGeneration&&current.clipId===source.clipId&&current.projectId===source.projectId,'Source changed during generation');\n  check(['Instagram','YouTube'].includes(f.Platform)&&f['Content Channel']===current.channel,'Wrong draft destination');\n  check(f['Approval Status']==='Needs Review'&&f['Publishing Status']==='Draft'&&!f['External Post ID']&&!f['Scheduled At'],'Created draft is not review-only');\n  check(f['Media URL']===current.url&&typeof f['Draft Body']==='string'&&f['Draft Body'].trim(),'Wrong media or empty copy');\n  check(!Object.values(s.receipts).some(r=>r.postId===post.id),'Post already has schedule receipt');\n  const binding={reviewGeneration:current.reviewGeneration,content:JSON.stringify({clipRecordId:ids[0],parentId:parent.id,platform:f.Platform,channel:current.channel,title:f['Draft Title']||'',body:f['Draft Body']})};\n  check(!n.drafts[post.id]||JSON.stringify(n.drafts[post.id])===JSON.stringify(binding),'Existing binding differs; explicit regeneration required');\n  n.drafts[post.id]=binding;\n }\n n.generation++;\n return {expectedGeneration:s.generation,reviewLedger:JSON.stringify(n)};\n}\nconst records=$('Plan Distribution Create Intent').first().json.records,out=[];for(let i=0;i<records.length;i+=10)out.push({json:{records:records.slice(i,i+10)}});return out;"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "name": "Split Durable Distribution Create Batches",
+   "id": "651ec8d9-74af-498c-b2d7-0df66f313e75",
+   "position": [
+    5824,
+    880
+   ],
+   "onError": "continueErrorOutput"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

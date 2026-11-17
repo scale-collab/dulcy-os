@@ -1,0 +1,490 @@
+{
+ "id": "HqV9FqiIrqnJKbOZ",
+ "name": "GMB Scraper",
+ "active": true,
+ "isArchived": false,
+ "versionId": "cf50a1cb-f669-4c7a-b5f2-6fd7711cba91",
+ "triggerCount": 1,
+ "createdAt": "2025-11-12T13:57:02.593Z",
+ "updatedAt": "2026-11-17T16:39:50.173Z",
+ "settings": {
+  "executionOrder": "v1",
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Receive GMB Webhook": {
+   "main": [
+    [
+     {
+      "node": "RUN GMB Actor",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "RUN GMB Actor": {
+   "main": [
+    [
+     {
+      "node": "Update Data ID's",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    0,
+    -32
+   ],
+   "id": "18fe922a-1f60-405c-b25a-f891443ea985",
+   "name": "Receive GMB Webhook"
+  },
+  {
+   "parameters": {
+    "actorSource": "store",
+    "actorId": {
+     "__rl": true,
+     "value": "nwua9Gu5YrADL7ZDj",
+     "mode": "list",
+     "cachedResultName": "Google Maps Scraper (compass/crawler-google-places)",
+     "cachedResultUrl": "https://console.apify.com/actors/nwua9Gu5YrADL7ZDj/input"
+    },
+    "customBody": "={\n  \"language\": \"en\",\n  \"locationQuery\": \"{{ $json.body['Location Search'] }}\",\n  \"maxCrawledPlacesPerSearch\": {{ $json.body['How many leads?'] }},\n  \"scrapeContacts\": true,\n  \"searchStringsArray\": [\n    \"{{ $json.body['Job Search'].trim() }}\"\n  ],\n  \"skipClosedPlaces\": false,\n  \"website\": \"withWebsite\"\n}",
+    "waitForFinish": false
+   },
+   "type": "@apify/n8n-nodes-apify.apify",
+   "typeVersion": 1,
+   "position": [
+    224,
+    -32
+   ],
+   "id": "45a1d40a-9de8-4143-a79a-df8ec6e1d0f5",
+   "name": "RUN GMB Actor"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appJNoGcSkyIEPQ68",
+     "mode": "list",
+     "cachedResultName": "Scrapers",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblW2WSHn4bKLLM9Y",
+     "mode": "list",
+     "cachedResultName": "GMB Scraper",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68/tblW2WSHn4bKLLM9Y"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "id": "={{ $('Receive GMB Webhook').item.json.body.recordId }}",
+      "List_ID": "={{ $json.defaultDatasetId }}",
+      "N8N Automation Ran?": true
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": false
+      },
+      {
+       "id": "Run - ID",
+       "displayName": "Run - ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Job Search",
+       "displayName": "Job Search",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Location Search",
+       "displayName": "Location Search",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "List_ID",
+       "displayName": "List_ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "N8N Automation Ran?",
+       "displayName": "N8N Automation Ran?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "How many leads?",
+       "displayName": "How many leads?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Language",
+       "displayName": "Language",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "English",
+         "value": "English"
+        },
+        {
+         "name": "Spanish",
+         "value": "Spanish"
+        },
+        {
+         "name": "French",
+         "value": "French"
+        },
+        {
+         "name": "German",
+         "value": "German"
+        },
+        {
+         "name": "Chinese",
+         "value": "Chinese"
+        },
+        {
+         "name": "Japanese",
+         "value": "Japanese"
+        },
+        {
+         "name": "Russian",
+         "value": "Russian"
+        },
+        {
+         "name": "Portuguese",
+         "value": "Portuguese"
+        },
+        {
+         "name": "Italian",
+         "value": "Italian"
+        },
+        {
+         "name": "Arabic",
+         "value": "Arabic"
+        },
+        {
+         "name": "Korean",
+         "value": "Korean"
+        },
+        {
+         "name": "Hindi",
+         "value": "Hindi"
+        },
+        {
+         "name": "Turkish",
+         "value": "Turkish"
+        },
+        {
+         "name": "Dutch",
+         "value": "Dutch"
+        },
+        {
+         "name": "Polish",
+         "value": "Polish"
+        },
+        {
+         "name": "Swedish",
+         "value": "Swedish"
+        },
+        {
+         "name": "Greek",
+         "value": "Greek"
+        },
+        {
+         "name": "Czech",
+         "value": "Czech"
+        },
+        {
+         "name": "Danish",
+         "value": "Danish"
+        },
+        {
+         "name": "Finnish",
+         "value": "Finnish"
+        },
+        {
+         "name": "Norwegian",
+         "value": "Norwegian"
+        },
+        {
+         "name": "Hebrew",
+         "value": "Hebrew"
+        },
+        {
+         "name": "Thai",
+         "value": "Thai"
+        },
+        {
+         "name": "Vietnamese",
+         "value": "Vietnamese"
+        },
+        {
+         "name": "Hungarian",
+         "value": "Hungarian"
+        },
+        {
+         "name": "Romanian",
+         "value": "Romanian"
+        },
+        {
+         "name": "Bengali",
+         "value": "Bengali"
+        },
+        {
+         "name": "Indonesian",
+         "value": "Indonesian"
+        },
+        {
+         "name": "Malay",
+         "value": "Malay"
+        },
+        {
+         "name": "Ukrainian",
+         "value": "Ukrainian"
+        },
+        {
+         "name": "Serbian",
+         "value": "Serbian"
+        },
+        {
+         "name": "Croatian",
+         "value": "Croatian"
+        },
+        {
+         "name": "Bulgarian",
+         "value": "Bulgarian"
+        },
+        {
+         "name": "Slovak",
+         "value": "Slovak"
+        },
+        {
+         "name": "Lithuanian",
+         "value": "Lithuanian"
+        },
+        {
+         "name": "Slovenian",
+         "value": "Slovenian"
+        },
+        {
+         "name": "Estonian",
+         "value": "Estonian"
+        },
+        {
+         "name": "Latvian",
+         "value": "Latvian"
+        },
+        {
+         "name": "Filipino",
+         "value": "Filipino"
+        },
+        {
+         "name": "Swahili",
+         "value": "Swahili"
+        },
+        {
+         "name": "Persian",
+         "value": "Persian"
+        },
+        {
+         "name": "Afrikaans",
+         "value": "Afrikaans"
+        },
+        {
+         "name": "Icelandic",
+         "value": "Icelandic"
+        },
+        {
+         "name": "Irish",
+         "value": "Irish"
+        },
+        {
+         "name": "Galician",
+         "value": "Galician"
+        },
+        {
+         "name": "Catalan",
+         "value": "Catalan"
+        },
+        {
+         "name": "Basque",
+         "value": "Basque"
+        },
+        {
+         "name": "Urdu",
+         "value": "Urdu"
+        },
+        {
+         "name": "Punjabi",
+         "value": "Punjabi"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "User",
+       "displayName": "User",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Discord Status (from User)",
+       "displayName": "Discord Status (from User)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "User Name",
+       "displayName": "User Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Tag",
+       "displayName": "Tag",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "File Name",
+       "displayName": "File Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Google Drive Link",
+       "displayName": "Google Drive Link",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Discord Tags",
+       "displayName": "Discord Tags",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    448,
+    -32
+   ],
+   "id": "25bb70e4-c7a5-4f89-bd61-7b066bf3bb36",
+   "name": "Update Data ID's"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

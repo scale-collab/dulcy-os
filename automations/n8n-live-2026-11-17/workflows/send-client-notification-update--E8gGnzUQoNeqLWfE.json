@@ -1,0 +1,540 @@
+{
+ "id": "E8gGnzUQoNeqLWfE",
+ "name": "Send Client Notification Update",
+ "active": true,
+ "isArchived": false,
+ "versionId": "a10f77c9-0ee4-44d2-9d02-6a7536f970d7",
+ "triggerCount": 2,
+ "createdAt": "2026-02-05T20:06:05.242Z",
+ "updatedAt": "2026-11-17T16:41:08.009Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Filter": {
+   "main": [
+    [
+     {
+      "node": "Code in JavaScript",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Code in JavaScript": {
+   "main": [
+    [
+     {
+      "node": "Search records",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records": {
+   "main": [
+    [
+     {
+      "node": "Send a message",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records1": {
+   "main": [
+    [
+     {
+      "node": "Search records2",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Update record": {
+   "main": [
+    []
+   ]
+  },
+  "Wait": {
+   "main": [
+    [
+     {
+      "node": "Update record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Schedule Trigger": {
+   "main": [
+    [
+     {
+      "node": "Search records1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Schedule Trigger1": {
+   "main": [
+    [
+     {
+      "node": "Search records1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records2": {
+   "main": [
+    [
+     {
+      "node": "Wait",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Filter",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "6dcbd3c8-9403-4e87-8bfb-ce668dd36889",
+       "leftValue": "={{ $json.Client[0] }}",
+       "rightValue": "recJx0WwHsdsvcVIN",
+       "operator": {
+        "type": "string",
+        "operation": "notEquals"
+       }
+      },
+      {
+       "id": "1f4e3117-644d-4eca-a609-e1e8780b9e11",
+       "leftValue": "={{ $json.Client[0] }}",
+       "rightValue": "recaSYeQ1KbhUGeAW",
+       "operator": {
+        "type": "string",
+        "operation": "notEquals"
+       }
+      },
+      {
+       "id": "50e90946-1365-4485-bff1-86608892e2e8",
+       "leftValue": "={{ $json.Client[0] }}",
+       "rightValue": "recAz51KXdggxnb6c",
+       "operator": {
+        "type": "string",
+        "operation": "notEquals"
+       }
+      },
+      {
+       "id": "9e32ba03-7b02-479e-b2d1-25e7db52bd3d",
+       "leftValue": "={{ $json.Client[0] }}",
+       "rightValue": "recBIhDeET7NwHKHO",
+       "operator": {
+        "type": "string",
+        "operation": "notEquals"
+       }
+      },
+      {
+       "id": "2866884e-ef72-49d7-8163-6aa95963e895",
+       "leftValue": "={{ $json.Status }}",
+       "rightValue": "Active",
+       "operator": {
+        "type": "string",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.filter",
+   "typeVersion": 2.3,
+   "position": [
+    512,
+    -608
+   ],
+   "id": "a06392c7-40d5-4d1d-9062-5230f49180bb",
+   "name": "Filter"
+  },
+  {
+   "parameters": {
+    "select": "channel",
+    "channelId": {
+     "__rl": true,
+     "value": "={{ $json['Slack Channel'] }}",
+     "mode": "id"
+    },
+    "text": "=🚨*Portal Notification for {{ $json.Name }}*🚨\n\n🔔 You have {{ $('Code in JavaScript').item.json.count }} new updates in your client portal. Take a look when you get a moment.\n\nClick here to view notifications: <https://portal.dulcy.io|Open Client Portal>\n\n<!channel> ",
+    "otherOptions": {
+     "includeLinkToWorkflow": false,
+     "unfurl_links": false
+    }
+   },
+   "type": "n8n-nodes-base.slack",
+   "typeVersion": 2.4,
+   "position": [
+    1184,
+    -608
+   ],
+   "id": "9e6fcdac-92b2-47be-860b-79b60d6e563b",
+   "name": "Send a message",
+   "webhookId": "d9bb54ef-21d5-4bc4-942a-d2ba4c2b7f3e"
+  },
+  {
+   "parameters": {
+    "jsCode": "const grouped = {};\n\nfor (const item of items) {\n  const f = item.json;\n\n  const clientId =\n    Array.isArray(f.Client) && f.Client.length\n      ? f.Client[0]\n      : 'UNKNOWN_CLIENT';\n\n  grouped[clientId] = (grouped[clientId] || 0) + 1;\n}\n\nreturn Object.entries(grouped).map(([clientId, count]) => ({\n  json: { clientId, count }\n}));"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    736,
+    -608
+   ],
+   "id": "47b2a1a9-ce20-4b5c-9011-6dedd7d47cc7",
+   "name": "Code in JavaScript"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt"
+    },
+    "filterByFormula": "=RECORD_ID() = \"{{ $json.clientId }}\"",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    960,
+    -608
+   ],
+   "id": "1aa07d21-0cb7-4c10-ace6-b1189c443d79",
+   "name": "Search records"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "=tblwJK1VB7affamrz",
+     "mode": "id"
+    },
+    "filterByFormula": "=AND(\n  NOT({Dismissed}),\n  NOT({NotifiedSlack})\n)",
+    "returnAll": false,
+    "limit": 25,
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    64,
+    -512
+   ],
+   "id": "c085efa5-ac49-460a-9f41-77d699028228",
+   "name": "Search records1"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblwJK1VB7affamrz",
+     "mode": "list",
+     "cachedResultName": "Client Notifcations",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblwJK1VB7affamrz"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "NotifiedSlack": true,
+      "id": "={{ $('Search records1').item.json.id }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": false
+      },
+      {
+       "id": "Title",
+       "displayName": "Title",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Message",
+       "displayName": "Message",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Type",
+       "displayName": "Type",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Task",
+         "value": "Task"
+        },
+        {
+         "name": "Lead",
+         "value": "Lead"
+        },
+        {
+         "name": "Campaign",
+         "value": "Campaign"
+        },
+        {
+         "name": "Booked Meeting",
+         "value": "Booked Meeting"
+        },
+        {
+         "name": "Document",
+         "value": "Document"
+        },
+        {
+         "name": "Call Feedback",
+         "value": "Call Feedback"
+        },
+        {
+         "name": "System",
+         "value": "System"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Time Since Created",
+       "displayName": "Time Since Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Dismissed",
+       "displayName": "Dismissed",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "NotifiedSlack",
+       "displayName": "NotifiedSlack",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Created Time",
+       "displayName": "Created Time",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    736,
+    -416
+   ],
+   "id": "9fb4c242-6bad-4d86-ae2a-0541eea10a5e",
+   "name": "Update record"
+  },
+  {
+   "parameters": {
+    "amount": 1,
+    "unit": "minutes"
+   },
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    512,
+    -416
+   ],
+   "id": "cbc16c55-08d1-41cb-aa49-070529d9cee6",
+   "name": "Wait",
+   "webhookId": "a9f6f68d-2893-422c-8dcb-876de3884a83"
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "triggerAtHour": 9
+      }
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.3,
+   "position": [
+    -160,
+    -608
+   ],
+   "id": "8e34346f-350b-4738-9d6d-bcc6fa72c79b",
+   "name": "Schedule Trigger"
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "triggerAtHour": 15
+      }
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.3,
+   "position": [
+    -160,
+    -416
+   ],
+   "id": "0e81cf4d-b11b-4f3d-a8b4-0fc863dace9d",
+   "name": "Schedule Trigger1"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt"
+    },
+    "filterByFormula": "=RECORD_ID() = '{{ $json.Client[0] }}'",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    288,
+    -512
+   ],
+   "id": "10c99c75-ce4c-492c-8c96-0c98ef785996",
+   "name": "Search records2"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

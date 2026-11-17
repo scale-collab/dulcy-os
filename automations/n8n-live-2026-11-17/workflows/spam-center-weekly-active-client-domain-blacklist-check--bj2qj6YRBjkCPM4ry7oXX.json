@@ -1,0 +1,598 @@
+{
+ "id": "bj2qj6YRBjkCPM4ry7oXX",
+ "name": "[Spam Center] Weekly Active Client Domain Blacklist Check",
+ "active": true,
+ "isArchived": false,
+ "versionId": "18b76ae3-0612-4958-a7e9-2479a75ce63d",
+ "triggerCount": 1,
+ "createdAt": "2026-08-17T18:53:48.501Z",
+ "updatedAt": "2026-11-17T16:41:35.194Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Weekly With Inbox Placement Tests": {
+   "main": [
+    [
+     {
+      "node": "Find Active Clients",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Test Manually": {
+   "main": [
+    [
+     {
+      "node": "Find Active Clients",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Find Active Clients": {
+   "main": [
+    [
+     {
+      "node": "Expand Active Client Domains",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Expand Active Client Domains": {
+   "main": [
+    [
+     {
+      "node": "Get Domain",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Domain": {
+   "main": [
+    [
+     {
+      "node": "Keep Monitorable Domains",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Keep Monitorable Domains": {
+   "main": [
+    [
+     {
+      "node": "Ensure Domain Is In EmailGuard",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Ensure Domain Is In EmailGuard": {
+   "main": [
+    [
+     {
+      "node": "Start Blacklist Check",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Start Blacklist Check": {
+   "main": [
+    [
+     {
+      "node": "Wait For EmailGuard",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wait For EmailGuard": {
+   "main": [
+    [
+     {
+      "node": "Get Blacklist Result",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Blacklist Result": {
+   "main": [
+    [
+     {
+      "node": "Map Domain Blacklist Health",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Map Domain Blacklist Health": {
+   "main": [
+    [
+     {
+      "node": "Save Domain Result",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Expand Linked Email Accounts",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Expand Linked Email Accounts": {
+   "main": [
+    [
+     {
+      "node": "Get Linked Email Account",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Linked Email Account": {
+   "main": [
+    [
+     {
+      "node": "Merge Account Blacklist Health",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Merge Account Blacklist Health": {
+   "main": [
+    [
+     {
+      "node": "Update Spam Center Account",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "weeks",
+       "triggerAtDay": [
+        5
+       ],
+       "triggerAtHour": 14,
+       "triggerAtMinute": 30
+      }
+     ]
+    }
+   },
+   "id": "ec581897-529f-48da-822c-9444fb25b9b8",
+   "name": "Weekly With Inbox Placement Tests",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    3344,
+    -48
+   ]
+  },
+  {
+   "parameters": {},
+   "id": "8f83a46a-650c-4f9b-a80a-77f6a4cb6621",
+   "name": "Test Manually",
+   "type": "n8n-nodes-base.manualTrigger",
+   "typeVersion": 1,
+   "position": [
+    3344,
+    112
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs"
+    },
+    "filterByFormula": "={Status}='Active'",
+    "options": {}
+   },
+   "id": "55a6d9ba-5a89-4f81-b9bf-72b90007a4bb",
+   "name": "Find Active Clients",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    3584,
+    32
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const output=[];for(const item of $input.all()){const workspace=item.json;for(const link of (workspace.Domains||[])){const domainRecordId=link?.id||link;if(domainRecordId)output.push({json:{domainRecordId,workspaceId:workspace.id,workspaceName:workspace.Name||''}})}}return output;"
+   },
+   "id": "4fba2277-aef7-4234-8c16-bef71f5cd33b",
+   "name": "Expand Active Client Domains",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3824,
+    32
+   ]
+  },
+  {
+   "parameters": {
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblJHdcoT1x3vh3DN",
+     "mode": "list",
+     "cachedResultName": "Domains"
+    },
+    "id": "={{$json.domainRecordId}}",
+    "options": {}
+   },
+   "id": "6281b267-144f-49d0-86a5-c3e5f06f503c",
+   "name": "Get Domain",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    4064,
+    32
+   ]
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const domain=String($json.Domain||'').trim().toLowerCase();const monitoring=String($json['Monitoring Status']?.name||$json['Monitoring Status']||'');const health=String($json['Domain Health']?.name||$json['Domain Health']||'');if(!domain||monitoring==='Paused'||health==='Inactive')return null;return {json:{domainRecord:$json,domainRecordId:$json.id,domain,emailAccountLinks:$json['Email Accounts']||[]}};"
+   },
+   "id": "c220796b-6c52-4c62-93d8-7fe2f10a06b4",
+   "name": "Keep Monitorable Domains",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    4304,
+    32
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://app.emailguard.io/api/v1/domains",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{JSON.stringify({name:$json.domain})}}",
+    "options": {
+     "batching": {
+      "batch": {
+       "batchSize": 10,
+       "batchInterval": 2000
+      }
+     },
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "a0aba4a9-e68f-44ff-96f9-fc66a8f015d3",
+   "name": "Ensure Domain Is In EmailGuard",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    4544,
+    32
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://app.emailguard.io/api/v1/blacklist-checks/ad-hoc",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{JSON.stringify({domain_or_ip:$('Keep Monitorable Domains').item.json.domain})}}",
+    "options": {
+     "batching": {
+      "batch": {
+       "batchSize": 10,
+       "batchInterval": 3000
+      }
+     },
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "a5694e20-c34a-452e-a0d9-e24870485559",
+   "name": "Start Blacklist Check",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    4784,
+    32
+   ]
+  },
+  {
+   "parameters": {
+    "amount": 30
+   },
+   "id": "c44e8123-610e-409b-bdfb-b554efee13d2",
+   "name": "Wait For EmailGuard",
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    5024,
+    32
+   ],
+   "webhookId": "a5d52c8e-373f-4dba-8c68-3d3d270f88c0"
+  },
+  {
+   "parameters": {
+    "url": "={{'https://app.emailguard.io/api/v1/blacklist-checks/'+($json.data?.uuid||$json.data?.id||$json.uuid||$json.id)}}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Accept",
+       "value": "application/json"
+      }
+     ]
+    },
+    "options": {
+     "batching": {
+      "batch": {
+       "batchSize": 10,
+       "batchInterval": 2000
+      }
+     },
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "4ad5c5e9-662e-4574-8dde-3b6f585f535d",
+   "name": "Get Blacklist Result",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    5264,
+    32
+   ]
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const source=$('Keep Monitorable Domains').item.json;const start=$('Start Blacklist Check').item.json;const payload=$json.data!==undefined?$json.data:$json;const data=Array.isArray(payload)?(payload[0]||{}):payload;const lists=[data.blacklists,data.results,data.listings,data.blacklist_results,data.rbls].filter(Array.isArray).flat();const listedEntries=lists.filter(e=>{if(typeof e==='string')return true;const s=String(e.status||e.result||'').toLowerCase();return e.listed===true||e.is_listed===true||['listed','blacklisted','fail','failed'].includes(s)});const names=[...new Set(listedEntries.map(e=>typeof e==='string'?e:(e.name||e.blacklist||e.rbl||e.provider||e.host)).filter(Boolean))];const declared=Number(data.blacklists_count??data.blacklist_count??data.listed_count??data.total_listed);const count=Number.isFinite(declared)?declared:names.length;const statusText=String(data.status||data.result||'').toLowerCase();const pending=['pending','queued','processing','running'].includes(statusText);const failed=Boolean($json.error)||Boolean(data.error);const listed=!failed&&!pending&&(data.listed===true||data.is_listed===true||count>0||['listed','blacklisted'].includes(statusText));const checkId=start.data?.uuid||start.data?.id||start.uuid||start.id||'';const previous=source.domainRecord;const domainId=$('Ensure Domain Is In EmailGuard').item.json.data?.uuid||$('Ensure Domain Is In EmailGuard').item.json.data?.id||previous['EmailGuard Domain ID']||'';return {json:{id:source.domainRecordId,'EmailGuard Domain ID':domainId||null,'Monitoring Status':failed?'Error':'Active','Blacklist Status':failed?'Check Failed':pending?'Unknown':listed?'Listed':'Clean','Blacklist Count':failed||pending?Number(previous['Blacklist Count']||0):count,'Blacklists Found':failed||pending?String(previous['Blacklists Found']||''):names.join('\\n'),'Last Blacklist Check':new Date().toISOString(),'Last Blacklist Check ID':checkId||null,'Domain Health':failed?'At Risk':pending?String(previous['Domain Health']?.name||previous['Domain Health']||'Healthy'):listed?'Blacklisted':'Healthy',listed:failed||pending?null:listed,emailAccountLinks:source.emailAccountLinks,domain:source.domain}};"
+   },
+   "id": "7f114d8f-b2fe-4798-b673-7d384686353b",
+   "name": "Map Domain Blacklist Health",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    5504,
+    32
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblJHdcoT1x3vh3DN",
+     "mode": "list",
+     "cachedResultName": "Domains"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "id": "={{$json.id}}",
+      "EmailGuard Domain ID": "={{$json['EmailGuard Domain ID']}}",
+      "Monitoring Status": "={{$json['Monitoring Status']}}",
+      "Blacklist Status": "={{$json['Blacklist Status']}}",
+      "Blacklist Count": "={{$json['Blacklist Count']}}",
+      "Blacklists Found": "={{$json['Blacklists Found']}}",
+      "Last Blacklist Check": "={{$json['Last Blacklist Check']}}",
+      "Last Blacklist Check ID": "={{$json['Last Blacklist Check ID']}}",
+      "Domain Health": "={{$json['Domain Health']}}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": []
+    },
+    "options": {
+     "typecast": true
+    }
+   },
+   "id": "a9934194-2726-4f37-aad5-f493d66b6218",
+   "name": "Save Domain Result",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    5744,
+    -48
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const output=[];for(const item of $input.all()){if(item.json.listed===null)continue;for(const link of (item.json.emailAccountLinks||[])){const accountRecordId=link?.id||link;if(accountRecordId)output.push({json:{accountRecordId,listed:item.json.listed,domain:item.json.domain}})}}return output;"
+   },
+   "id": "e7b5b8a0-3673-43d8-94f7-ee5aa77095a8",
+   "name": "Expand Linked Email Accounts",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    5744,
+    112
+   ]
+  },
+  {
+   "parameters": {
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMSOBJ0wMgxSg4l",
+     "mode": "list",
+     "cachedResultName": "Email Accounts"
+    },
+    "id": "={{$json.accountRecordId}}",
+    "options": {}
+   },
+   "id": "4e5cac08-aabd-4076-948c-4263497a2b85",
+   "name": "Get Linked Email Account",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    5984,
+    112
+   ]
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const result=$('Expand Linked Email Accounts').item.json;const reasons=($json['Health Reason']||[]).map(x=>x?.name||x).filter(Boolean);const set=new Set(reasons);if(result.listed)set.add('Blacklist');else set.delete('Blacklist');const remaining=[...set];const current=String($json.Status?.name||$json.Status||'Healthy');let status=current;if(result.listed)status='At Risk';else if(current==='At Risk'&&remaining.length===0)status='Healthy';return {json:{id:$json.id,Status:status,'Health Reason':remaining}};"
+   },
+   "id": "e0613002-0d01-4a3c-80af-3907929bbd28",
+   "name": "Merge Account Blacklist Health",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    6224,
+    112
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMSOBJ0wMgxSg4l",
+     "mode": "list",
+     "cachedResultName": "Email Accounts"
+    },
+    "columns": {
+     "mappingMode": "autoMapInputData",
+     "value": {},
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": []
+    },
+    "options": {
+     "typecast": true
+    }
+   },
+   "id": "41b89e44-ab58-4aaf-b8d6-bd221629ffdd",
+   "name": "Update Spam Center Account",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    6464,
+    112
+   ]
+  },
+  {
+   "parameters": {
+    "content": "## Weekly blacklist monitoring\nRuns Friday at 2:30 PM with the inbox-placement test schedule. Only domains linked to active Workspace IDs are checked. Paused or inactive domains are skipped.\n\nResults update Domains and the linked Email Accounts that power Spam Center. The Blacklist health reason is added or removed without deleting other health reasons. EmailGuard requests use the existing Secret Relay credential. Failed or pending checks do not falsely clear a prior blacklist warning.",
+    "height": 260,
+    "width": 620,
+    "color": 5
+   },
+   "id": "23c5d8ca-c3e7-42de-9e8f-d7a6b24a03cf",
+   "name": "Instructions",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    3344,
+    304
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

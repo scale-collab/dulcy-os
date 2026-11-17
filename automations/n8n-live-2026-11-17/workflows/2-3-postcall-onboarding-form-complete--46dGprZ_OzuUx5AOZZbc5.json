@@ -1,0 +1,4191 @@
+{
+ "id": "46dGprZ_OzuUx5AOZZbc5",
+ "name": "[2.3 POSTCALL] Onboarding Form Complete",
+ "active": true,
+ "isArchived": false,
+ "versionId": "199a77cf-ca59-4567-9bdb-b718f4f23182",
+ "triggerCount": 1,
+ "createdAt": "2026-07-27T16:02:20.129Z",
+ "updatedAt": "2026-11-17T16:42:36.714Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Webhook": {
+   "main": [
+    [
+     {
+      "node": "Search records",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records": {
+   "main": [
+    [
+     {
+      "node": "Code in JavaScript",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Code in JavaScript": {
+   "main": [
+    [
+     {
+      "node": "Send a message",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Send a message": {
+   "main": [
+    [
+     {
+      "node": "task - set up inbox mger",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Message a model": {
+   "main": [
+    [
+     {
+      "node": "Create Inbox Manager (RevReply)",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "task - set up inbox mger": {
+   "main": [
+    [
+     {
+      "node": "task - create offer",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "task - create offer": {
+   "main": [
+    [
+     {
+      "node": "task - create html",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "task - create html": {
+   "main": [
+    [
+     {
+      "node": "task - create campaigns",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "task - create html1": {
+   "main": [
+    [
+     {
+      "node": "Update record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Update record": {
+   "main": [
+    [
+     {
+      "node": "Switch",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Switch": {
+   "main": [
+    [
+     {
+      "node": "Message a model1",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Create LinkedIn Manager (RevReply)",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Message a model1": {
+   "main": [
+    [
+     {
+      "node": "Update AI Employee (Synthflow)",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create Inbox Manager (RevReply)": {
+   "main": [
+    [
+     {
+      "node": "task - create html1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create LinkedIn Manager (RevReply)": {
+   "main": [
+    [
+     {
+      "node": "Update record1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Update AI Employee (Synthflow)": {
+   "main": [
+    [
+     {
+      "node": "task - create html2",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "task - create campaigns": {
+   "main": [
+    [
+     {
+      "node": "Message a model",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    -64,
+    -304
+   ],
+   "id": "2ce0ff38-1e12-4fbc-ba65-87a88e28dde1",
+   "name": "Webhook"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt"
+    },
+    "filterByFormula": "={Onboarding} = {{ $json.body.Id }}",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    160,
+    -304
+   ],
+   "id": "445f2ff8-c11a-4ec3-be6f-5feae49a935f",
+   "name": "Search records"
+  },
+  {
+   "parameters": {
+    "jsCode": "const fullName = $('Webhook').first().json.body['Full Name'].trim();\n\nconst parts = fullName.split(/\\s+/);\n\nconst first_name = parts.shift() || '';\nconst last_name = parts.join(' ');\n\nreturn [\n  {\n    json: {\n      first_name,\n      last_name,\n    },\n  },\n];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    384,
+    -304
+   ],
+   "id": "94d08d8c-14e1-436d-a48f-adc777508d04",
+   "name": "Code in JavaScript"
+  },
+  {
+   "parameters": {
+    "select": "channel",
+    "channelId": {
+     "__rl": true,
+     "value": "C075UR0HRRR",
+     "mode": "id"
+    },
+    "text": "=📝📝📝📝📝📝📝📝📝📝 \nOnboarding Form Complete!  \n\n{{ $('Webhook').item.json.body['Full Name'] }}\n{{ $('Search records').item.json.Name }}\n\nhttps://airtable.com/appxqINt5XKw7a76A/tbljhM1JmUwr99tu4/{{ $('Webhook').item.json.body.recordId }}\n📝📝📝📝📝📝📝📝📝📝",
+    "otherOptions": {}
+   },
+   "type": "n8n-nodes-base.slack",
+   "typeVersion": 2.4,
+   "position": [
+    608,
+    -304
+   ],
+   "id": "00fca68b-9336-425e-9357-7260958e64ca",
+   "name": "Send a message",
+   "webhookId": "2d0b232b-dc7d-4df7-b9d2-ac0b92312368"
+  },
+  {
+   "parameters": {
+    "modelId": {
+     "__rl": true,
+     "value": "claude-sonnet-5",
+     "mode": "list",
+     "cachedResultName": "claude-sonnet-5"
+    },
+    "messages": {
+     "values": [
+      {
+       "content": "=You are an AI assistant that builds inbox manager instruction documents for an AI email autoresponder product called {{ $('Search records').item.json.Name }}. When given information about a company, product, or campaign, your job is to produce a complete, ready-to-paste inbox manager that the autoresponder will follow when handling replies to outbound emails.\n\nEvery inbox manager you create must follow these rules:\n\nPURPOSE\nThe inbox manager is the knowledge base and behavioral guide for an AI autoresponder. It tells the AI what the company does, what it sells, who it sells to, how to talk about it, how to handle objections, and what the goal of every reply is. The autoresponder will use this document as its sole source of truth when responding to prospects.\n\nSTRUCTURE\nEvery inbox manager should include the following sections, in this order:\n\nObjective -- one or two sentences defining the goal of every reply (usually booking a call or demo).\n\nWhat the company/product is -- a clear, concise explanation the AI can reference when answering questions.\n\nThe problem it solves -- the pain points prospects are likely experiencing.\n\nKey offerings or product details -- enough for the AI to speak intelligently but not so much that it overwhelms.\n\nStats, proof points, and social proof -- customer names, results, and data the AI can drop into replies.\n\nWho it is for -- the ideal customer profile or target audience.\n\nPricing context -- if available. Enough for the AI to speak directionally without making up numbers.\n\nCompetitive landscape -- main competitors and how to position against them.\n\nTone and style rules -- how the AI should write.\n\nFirst reply flow -- step-by-step instructions for the first response.\n\nObjection handling -- common objections with specific guidance on how to respond to each.\n\nReminders -- final rules and priorities the AI should always follow.\n\nFORMATTING RULES\nOutput must be in plain text, easy to copy and paste into a text field. No markdown formatting, no headers with hashtags, no bold or italic syntax. Use ALL CAPS for section headers. Use line breaks to separate sections clearly.\n\nCHARACTER LIMIT\nKeep every inbox manager under 8,500 characters unless told otherwise.\n\nINPUT\n\nCompany Name: {{ $('Search records').item.json.Name }}\n\nVariables available:\n\nWhat EXACTLY do you sell?:\n{{ $('Webhook').item.json.body['What EXACTLY do you sell?'] }}\n\nWalk us through your fulfillment process from beginning to end.:\n{{ $('Webhook').item.json.body['Walk us through your fulfillment process from beginning to end.'] }}\n\nWhat problems typically cause someone to start looking for a solution like yours?:\n{{ $('Webhook').item.json.body['What problems typically cause someone to start looking for a solution like yours?'] }}\n\nWhat does success look like for your clients?:\n{{ $('Webhook').item.json.body['What does success look like for your clients?'] }}\n\nHow long does it typically take clients to see results?:\n{{ $('Webhook').item.json.body['How long does it typically take clients to see results?'] }}\n\nWhy do clients choose you instead of competitors?:\n{{ $('Webhook').item.json.body['Why do clients choose you instead of competitors?'] }}\n\nDo you currently have an ESTABLISHED cold traffic offer?:\n{{ $('Webhook').item.json.body['Do you currently have an ESTABLISHED cold traffic offer?'] }}\n\nWhat could you realistically give away for free?:\n{{ $('Webhook').item.json.body['What could you realistically give away for free?'] }}\n\nWhat is your risk reversal/guarantee?:\n{{ $('Webhook').item.json.body['What is your risk reversal/guarantee?'] }}\n\nHow does your pricing work?:\n{{ $('Webhook').item.json.body['How does your pricing work?'] }}\n\nClient Interviews/Testimonials/Case Studies:\n{{ $('Webhook').item.json.body['Client Interviews/Testimonials/Case Studies'] }}\n\nSales Call Recordings:\n{{ $('Webhook').item.json.body['Sales Call Recordings'] }}\n\nWho EXACTLY is your Target Market?:\n{{ $('Webhook').item.json.body['Who EXACTLY is your Target Market?'] }}\n\nDream Clients:\n{{ $('Webhook').item.json.body['Dream Clients'] }}\n\nLocation(s) of your ideal clients?:\n{{ $('Webhook').item.json.body['Location(s) of your ideal clients?'] }}\n\nJob Title(s) of your ideal clients:\n{{ $('Webhook').item.json.body['Job Title(s) of your ideal clients:'] }}\n\nCompany size of your ideal clients:\n{{ $('Webhook').item.json.body['Company size of your ideal clients:'] }}\n\nIndustry of your ideal clients:\n{{ $('Webhook').item.json.body['Industry of your ideal clients:'] }}\n\nAdditional Industry(s) of your ideal clients:\n{{ $('Webhook').item.json.body['Additional Industry(s) of your ideal clients:'] }}\n\nAre there any industry(s) we should exclude:\n{{ $('Webhook').item.json.body['Are there any industry(s) we should exclude:'] }}\n\nEstimated Annual Revenue of your ideal clients:\n{{ $('Webhook').item.json.body['Estimated Annual Revenue of your ideal clients:'] }}\n\nAre there specific technologies, software, platforms, certifications, or characteristics your ideal clients usually have?:\n{{ $('Webhook').item.json.body['Are there specific technologies, software, platforms, certifications, or characteristics your ideal clients usually have?'] }}\n\nIs there anything else we should know about your ideal client?:\n{{ $('Webhook').item.json.body['Is there anything else we should know about your ideal client?'] }}\n\nWhich CRM are you using?:\n{{ $('Webhook').item.json.body['Which CRM are you using?'] }}\n\nHave you successfully closed clients from outbound before?:\n{{ $('Webhook').item.json.body['Have you successfully closed clients from outbound before?'] }}\n\nDo you already have a cold funnel in place?:\n{{ $('Webhook').item.json.body['Do you already have a cold funnel in place?'] }}\n\nDo you have a sales framework for cold leads?:\n{{ $('Webhook').item.json.body['Do you have a sales framework for cold leads?'] }}\n\nWhat's your agency's CURRENT monthly revenue?:\n{{ $('Webhook').item.json.body[\"What's your agency's CURRENT monthly revenue?\"] }}\n\nWhat's your DESIRED monthly revenue? Target date? Why?:\n{{ $('Webhook').item.json.body[\"What's your DESIRED monthly revenue? Target date? Why?\"] }}\n\nOn average, how many sales appointment are you booking per month?:\n{{ $('Webhook').item.json.body['On average, how many sales appointment are you booking per month?'] }}\n\nHow many sales appointments would you like to book per month?:\n{{ $('Webhook').item.json.body['How many sales appointments would you like to book per month?'] }}\n\nLast question - Is there anything else that you would like to mention before we get started?:\n{{ $('Webhook').item.json.body['Last question - Is there anything else that you would like to mention before we get started?'] }}"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "@n8n/n8n-nodes-langchain.anthropic",
+   "typeVersion": 1,
+   "position": [
+    1728,
+    -304
+   ],
+   "id": "09f0345a-99af-4c83-a1fb-bb790982633d",
+   "name": "Message a model"
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblRBxm2N53331mIm",
+     "mode": "list",
+     "cachedResultName": "Tasks",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblRBxm2N53331mIm"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Client Facing": true,
+      "Client": "={{ [$('Search records').item.json.id] }}",
+      "Status": "Not Started",
+      "Stage": "Intake",
+      "Assignee": "=recMSulKeJUQ7phxW",
+      "Task Name": "Set Up Inbox Manager",
+      "Notes": "Optimize and configure your AI + human inbox management layer to monitor replies, classify intent, and trigger fast responses. This ensures interested prospects are handled within minutes of replying, not hours. Industry data shows prospects are up to 4× more likely to book when contacted within the first 5 minutes, with response effectiveness dropping sharply after 15 minutes.",
+      "Priority": "High",
+      "Due Date": "={{ DateTime.now().plus({ days: 3 }).toISODate() }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "Task Name",
+       "displayName": "Task Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Campaign",
+       "displayName": "Campaign",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Assignee",
+       "displayName": "Assignee",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Stage",
+       "displayName": "Stage",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Intake",
+         "value": "Intake"
+        },
+        {
+         "name": "Planning",
+         "value": "Planning"
+        },
+        {
+         "name": "Execution",
+         "value": "Execution"
+        },
+        {
+         "name": "Review",
+         "value": "Review"
+        },
+        {
+         "name": "QA",
+         "value": "QA"
+        },
+        {
+         "name": "Completed",
+         "value": "Completed"
+        },
+        {
+         "name": "Blocked",
+         "value": "Blocked"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Due Date",
+       "displayName": "Due Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Priority",
+       "displayName": "Priority",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Urgent",
+         "value": "Urgent"
+        },
+        {
+         "name": "High",
+         "value": "High"
+        },
+        {
+         "name": "Medium",
+         "value": "Medium"
+        },
+        {
+         "name": "Low",
+         "value": "Low"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Status",
+       "displayName": "Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Not Started",
+         "value": "Not Started"
+        },
+        {
+         "name": "In Progress",
+         "value": "In Progress"
+        },
+        {
+         "name": "Done",
+         "value": "Done"
+        },
+        {
+         "name": "Blocked",
+         "value": "Blocked"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Notes",
+       "displayName": "Notes",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Last Updated",
+       "displayName": "Last Updated",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Created",
+       "displayName": "Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Time Ago",
+       "displayName": "Time Ago",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Calculation",
+       "displayName": "Calculation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Client Facing",
+       "displayName": "Client Facing",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Project Health",
+       "displayName": "Project Health",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "On Track",
+         "value": "On Track"
+        },
+        {
+         "name": "At Risk",
+         "value": "At Risk"
+        },
+        {
+         "name": "Overdue",
+         "value": "Overdue"
+        },
+        {
+         "name": "On Hold",
+         "value": "On Hold"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Modified",
+       "displayName": "Last Modified",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    832,
+    -304
+   ],
+   "id": "a637babe-e8a4-4564-813d-085c46989294",
+   "name": "task - set up inbox mger"
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblRBxm2N53331mIm",
+     "mode": "list",
+     "cachedResultName": "Tasks",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblRBxm2N53331mIm"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Client Facing": true,
+      "Client": "={{ [$('Search records').item.json.id] }}",
+      "Status": "Not Started",
+      "Stage": "Intake",
+      "Assignee": "=rec0uiatKT3onVuwk",
+      "Task Name": "Create Outbound Offer",
+      "Notes": "Design and refine your core outreach offer so it’s clear, outcome-focused, and effective for cold prospects who don’t yet know or trust you. We position your service as a simple, low-friction path from the prospect’s current problem to a specific desired result within a defined timeframe, with risk mitigation built in. This includes crafting a concise 1–2 sentence value statement that makes your offer instantly understandable, then structuring front-end hooks and supporting back-end services (when applicable) so the message is compelling, concrete, and easy for cold traffic to say yes to.",
+      "Priority": "High",
+      "Due Date": "={{ DateTime.now().plus({ days: 3 }).toISODate() }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "Task Name",
+       "displayName": "Task Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Campaign",
+       "displayName": "Campaign",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Assignee",
+       "displayName": "Assignee",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Stage",
+       "displayName": "Stage",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Intake",
+         "value": "Intake"
+        },
+        {
+         "name": "Planning",
+         "value": "Planning"
+        },
+        {
+         "name": "Execution",
+         "value": "Execution"
+        },
+        {
+         "name": "Review",
+         "value": "Review"
+        },
+        {
+         "name": "QA",
+         "value": "QA"
+        },
+        {
+         "name": "Completed",
+         "value": "Completed"
+        },
+        {
+         "name": "Blocked",
+         "value": "Blocked"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Due Date",
+       "displayName": "Due Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Priority",
+       "displayName": "Priority",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Urgent",
+         "value": "Urgent"
+        },
+        {
+         "name": "High",
+         "value": "High"
+        },
+        {
+         "name": "Medium",
+         "value": "Medium"
+        },
+        {
+         "name": "Low",
+         "value": "Low"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Status",
+       "displayName": "Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Not Started",
+         "value": "Not Started"
+        },
+        {
+         "name": "In Progress",
+         "value": "In Progress"
+        },
+        {
+         "name": "Done",
+         "value": "Done"
+        },
+        {
+         "name": "Blocked",
+         "value": "Blocked"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Notes",
+       "displayName": "Notes",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Last Updated",
+       "displayName": "Last Updated",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Created",
+       "displayName": "Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Time Ago",
+       "displayName": "Time Ago",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Calculation",
+       "displayName": "Calculation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Client Facing",
+       "displayName": "Client Facing",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Project Health",
+       "displayName": "Project Health",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "On Track",
+         "value": "On Track"
+        },
+        {
+         "name": "At Risk",
+         "value": "At Risk"
+        },
+        {
+         "name": "Overdue",
+         "value": "Overdue"
+        },
+        {
+         "name": "On Hold",
+         "value": "On Hold"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Modified",
+       "displayName": "Last Modified",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1056,
+    -304
+   ],
+   "id": "bbb3b705-0d0c-463f-bccb-7a65d9311872",
+   "name": "task - create offer"
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblRBxm2N53331mIm",
+     "mode": "list",
+     "cachedResultName": "Tasks",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblRBxm2N53331mIm"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Client Facing": true,
+      "Client": "={{ [$('Search records').item.json.id] }}",
+      "Status": "Not Started",
+      "Stage": "Intake",
+      "Assignee": "=rec0uiatKT3onVuwk",
+      "Task Name": "Prep 90 Day Calendar",
+      "Notes": "Build your 90-day campaign execution schedule outlining how we will test, optimize, and launch your outbound campaigns. This plan maps key milestones, testing phases, targeting checkpoints, and launch windows so you can clearly see what is being worked on and when. The goal is to keep execution structured, transparent, and measurable, ensuring campaigns are rolled out consistently and improved based on performance data at each stage.",
+      "Priority": "Medium",
+      "Due Date": "={{ DateTime.now().plus({ days: 11 }).toISODate() }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "Task Name",
+       "displayName": "Task Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Campaign",
+       "displayName": "Campaign",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Assignee",
+       "displayName": "Assignee",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Stage",
+       "displayName": "Stage",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Intake",
+         "value": "Intake"
+        },
+        {
+         "name": "Planning",
+         "value": "Planning"
+        },
+        {
+         "name": "Execution",
+         "value": "Execution"
+        },
+        {
+         "name": "Review",
+         "value": "Review"
+        },
+        {
+         "name": "QA",
+         "value": "QA"
+        },
+        {
+         "name": "Completed",
+         "value": "Completed"
+        },
+        {
+         "name": "Blocked",
+         "value": "Blocked"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Due Date",
+       "displayName": "Due Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Priority",
+       "displayName": "Priority",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Urgent",
+         "value": "Urgent"
+        },
+        {
+         "name": "High",
+         "value": "High"
+        },
+        {
+         "name": "Medium",
+         "value": "Medium"
+        },
+        {
+         "name": "Low",
+         "value": "Low"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Status",
+       "displayName": "Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Not Started",
+         "value": "Not Started"
+        },
+        {
+         "name": "In Progress",
+         "value": "In Progress"
+        },
+        {
+         "name": "Done",
+         "value": "Done"
+        },
+        {
+         "name": "Blocked",
+         "value": "Blocked"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Notes",
+       "displayName": "Notes",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Last Updated",
+       "displayName": "Last Updated",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Created",
+       "displayName": "Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Time Ago",
+       "displayName": "Time Ago",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Calculation",
+       "displayName": "Calculation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Client Facing",
+       "displayName": "Client Facing",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Project Health",
+       "displayName": "Project Health",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "On Track",
+         "value": "On Track"
+        },
+        {
+         "name": "At Risk",
+         "value": "At Risk"
+        },
+        {
+         "name": "Overdue",
+         "value": "Overdue"
+        },
+        {
+         "name": "On Hold",
+         "value": "On Hold"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Modified",
+       "displayName": "Last Modified",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -64,
+    16
+   ],
+   "id": "d9429bd9-42a0-4cb3-999a-9e5ccf2987e0",
+   "name": "task - prep 90 day calendar"
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblRBxm2N53331mIm",
+     "mode": "list",
+     "cachedResultName": "Tasks",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblRBxm2N53331mIm"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Client Facing": true,
+      "Client": "={{ [$('Search records').item.json.id] }}",
+      "Status": "Not Started",
+      "Stage": "Intake",
+      "Assignee": "=recMSulKeJUQ7phxW",
+      "Task Name": "Create HTML Email Reminders + Automation",
+      "Notes": "Create your pre-call email reminder sequence to drive high show-up rates and properly warm prospects before their meeting. This sequence delivers timely reminders, key resources, and light social proof so prospects stay engaged between booking and the call. By reinforcing value, sharing case studies, and providing helpful context ahead of time, we keep intent high and reduce no-shows while improving overall close rates.",
+      "Priority": "Medium",
+      "Due Date": "={{ DateTime.now().plus({ days: 7 }).toISODate() }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "Task Name",
+       "displayName": "Task Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Campaign",
+       "displayName": "Campaign",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Assignee",
+       "displayName": "Assignee",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Stage",
+       "displayName": "Stage",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Intake",
+         "value": "Intake"
+        },
+        {
+         "name": "Planning",
+         "value": "Planning"
+        },
+        {
+         "name": "Execution",
+         "value": "Execution"
+        },
+        {
+         "name": "Review",
+         "value": "Review"
+        },
+        {
+         "name": "QA",
+         "value": "QA"
+        },
+        {
+         "name": "Completed",
+         "value": "Completed"
+        },
+        {
+         "name": "Blocked",
+         "value": "Blocked"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Due Date",
+       "displayName": "Due Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Priority",
+       "displayName": "Priority",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Urgent",
+         "value": "Urgent"
+        },
+        {
+         "name": "High",
+         "value": "High"
+        },
+        {
+         "name": "Medium",
+         "value": "Medium"
+        },
+        {
+         "name": "Low",
+         "value": "Low"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Status",
+       "displayName": "Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Not Started",
+         "value": "Not Started"
+        },
+        {
+         "name": "In Progress",
+         "value": "In Progress"
+        },
+        {
+         "name": "Done",
+         "value": "Done"
+        },
+        {
+         "name": "Blocked",
+         "value": "Blocked"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Notes",
+       "displayName": "Notes",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Last Updated",
+       "displayName": "Last Updated",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Created",
+       "displayName": "Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Time Ago",
+       "displayName": "Time Ago",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Calculation",
+       "displayName": "Calculation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Client Facing",
+       "displayName": "Client Facing",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Project Health",
+       "displayName": "Project Health",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "On Track",
+         "value": "On Track"
+        },
+        {
+         "name": "At Risk",
+         "value": "At Risk"
+        },
+        {
+         "name": "Overdue",
+         "value": "Overdue"
+        },
+        {
+         "name": "On Hold",
+         "value": "On Hold"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Modified",
+       "displayName": "Last Modified",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1280,
+    -304
+   ],
+   "id": "763a3cb0-e762-4a77-94c6-e0d33c55c6d2",
+   "name": "task - create html"
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblwo2vuDBBdOHFsz",
+     "mode": "list",
+     "cachedResultName": "Documents",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblwo2vuDBBdOHFsz"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Internal?": true,
+      "Title": "Inbox Manager Prompt",
+      "Description": "={{ $('Message a model').item.json.content[1].text }}",
+      "Workspace IDs": "={{ [$('Search records').item.json.id] }}",
+      "Uploaded By": "Dulcy"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "Title",
+       "displayName": "Title",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Description",
+       "displayName": "Description",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Attachments",
+       "displayName": "Attachments",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Workspace IDs",
+       "displayName": "Workspace IDs",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Record ID (from Workspace IDs)",
+       "displayName": "Record ID (from Workspace IDs)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Uploaded By",
+       "displayName": "Uploaded By",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Client",
+         "value": "Client"
+        },
+        {
+         "name": "Dulcy",
+         "value": "Dulcy"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Internal?",
+       "displayName": "Internal?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Last Modified",
+       "displayName": "Last Modified",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    2304,
+    -304
+   ],
+   "id": "9b6860da-9db6-4245-804d-5b5439182282",
+   "name": "task - create html1"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "id": "={{ $('Search records').item.json.id }}",
+      "RevReply Email ID": "={{ $('Create Inbox Manager (RevReply)').item.json.data.id }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": false
+      },
+      {
+       "id": "Name",
+       "displayName": "Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "ID",
+       "displayName": "ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Status",
+       "displayName": "Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Active",
+         "value": "Active"
+        },
+        {
+         "name": "Inactive",
+         "value": "Inactive"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "EmailBison API",
+       "displayName": "EmailBison API",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Slack Channel",
+       "displayName": "Slack Channel",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Logins",
+       "displayName": "Logins",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Campaigns",
+       "displayName": "Campaigns",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Email Accounts",
+       "displayName": "Email Accounts",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Portal Users",
+       "displayName": "Portal Users",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Record ID",
+       "displayName": "Record ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Onboarding",
+       "displayName": "Onboarding",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "onboarding_record_id (from Onboarding)",
+       "displayName": "onboarding_record_id (from Onboarding)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Onboarding_form_submitted",
+       "displayName": "Onboarding_form_submitted",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Documents",
+       "displayName": "Documents",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Email Analytics Overview",
+       "displayName": "Email Analytics Overview",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "PM",
+       "displayName": "PM",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Templates",
+       "displayName": "Templates",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Created",
+       "displayName": "Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "LinkedIn Analytics Overview",
+       "displayName": "LinkedIn Analytics Overview",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client Tasks",
+       "displayName": "Client Tasks",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Emails",
+       "displayName": "Emails",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Total Interested Leads",
+       "displayName": "Total Interested Leads",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Total Calls Booked",
+       "displayName": "Total Calls Booked",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Interested Conversion",
+       "displayName": "Interested Conversion",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Investment Per Call",
+       "displayName": "Investment Per Call",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Total Deals Closed",
+       "displayName": "Total Deals Closed",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Closed Deal Value",
+       "displayName": "Closed Deal Value",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Calls Booked KPI (Internal)",
+       "displayName": "Calls Booked KPI (Internal)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Calls Booked Status (Internal)",
+       "displayName": "Calls Booked Status (Internal)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Inbox Placement Testing",
+       "displayName": "Inbox Placement Testing",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Calls Booked KPI (from Onboarding)",
+       "displayName": "Calls Booked KPI (from Onboarding)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Calls Booked - Last 30 days",
+       "displayName": "Calls Booked - Last 30 days",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Calls Booked KPI (Client)",
+       "displayName": "Calls Booked KPI (Client)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Calls Booked Status (Client)",
+       "displayName": "Calls Booked Status (Client)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Total Investment",
+       "displayName": "Total Investment",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Calls Made",
+       "displayName": "Calls Made",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Completed Calls",
+       "displayName": "Completed Calls",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Answered Calls",
+       "displayName": "Answered Calls",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Interested Calls",
+       "displayName": "Interested Calls",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Answered Rate",
+       "displayName": "Answered Rate",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Interested Rate",
+       "displayName": "Interested Rate",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Apollo URL's",
+       "displayName": "Apollo URL's",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "HeyReach ID",
+       "displayName": "HeyReach ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "RevReply Email ID",
+       "displayName": "RevReply Email ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "RevReply LinkedIn ID",
+       "displayName": "RevReply LinkedIn ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Apollo ID",
+       "displayName": "Apollo ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "AI Model ID (PRE)",
+       "displayName": "AI Model ID (PRE)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Model ID (APTR)",
+       "displayName": "AI Model ID (APTR)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Email Signature",
+       "displayName": "Email Signature",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Cold Email",
+       "displayName": "Cold Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "LinkedIn",
+       "displayName": "LinkedIn",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Employee",
+       "displayName": "AI Employee",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Direct Mail",
+       "displayName": "Direct Mail",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Cold Traffic Offer",
+       "displayName": "Cold Traffic Offer",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Front End Offer(s)",
+       "displayName": "Front End Offer(s)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Back End Offer(s)",
+       "displayName": "Back End Offer(s)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "ICP",
+       "displayName": "ICP",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Outbound Risk Reversal",
+       "displayName": "Outbound Risk Reversal",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Projects",
+       "displayName": "Projects",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Executive Dashboard Data",
+       "displayName": "Executive Dashboard Data",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "EmailGuard API",
+       "displayName": "EmailGuard API",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "HeyReach Workspace API",
+       "displayName": "HeyReach Workspace API",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Documents copy",
+       "displayName": "Documents copy",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client Tasks copy",
+       "displayName": "Client Tasks copy",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client Notifcations",
+       "displayName": "Client Notifcations",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client Invoices",
+       "displayName": "Client Invoices",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "From field: Workspace IDs",
+       "displayName": "From field: Workspace IDs",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Tasks",
+       "displayName": "Tasks",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Initial Payment Received",
+       "displayName": "Initial Payment Received",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Modified",
+       "displayName": "Last Modified",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    2528,
+    -304
+   ],
+   "id": "85e504d5-7416-4812-9a28-93245c479481",
+   "name": "Update record"
+  },
+  {
+   "parameters": {
+    "rules": {
+     "values": [
+      {
+       "conditions": {
+        "options": {
+         "caseSensitive": true,
+         "leftValue": "",
+         "typeValidation": "strict",
+         "version": 3
+        },
+        "conditions": [
+         {
+          "leftValue": "={{ $('Search records').item.json['AI Employee'] }}",
+          "rightValue": "",
+          "operator": {
+           "type": "boolean",
+           "operation": "true",
+           "singleValue": true
+          },
+          "id": "f06e1300-4b73-42c4-a35f-20955ed1bf21"
+         }
+        ],
+        "combinator": "and"
+       },
+       "renameOutput": true,
+       "outputKey": "ai employee"
+      },
+      {
+       "conditions": {
+        "options": {
+         "caseSensitive": true,
+         "leftValue": "",
+         "typeValidation": "strict",
+         "version": 3
+        },
+        "conditions": [
+         {
+          "id": "15522963-d741-44d3-855e-238dd11c6580",
+          "leftValue": "={{ $('Search records').item.json.LinkedIn }}",
+          "rightValue": "",
+          "operator": {
+           "type": "boolean",
+           "operation": "true",
+           "singleValue": true
+          }
+         }
+        ],
+        "combinator": "and"
+       },
+       "renameOutput": true,
+       "outputKey": "linkedin"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.switch",
+   "typeVersion": 3.4,
+   "position": [
+    2752,
+    -304
+   ],
+   "id": "c420ae3f-508b-4138-a91f-a0802334004b",
+   "name": "Switch"
+  },
+  {
+   "parameters": {
+    "modelId": {
+     "__rl": true,
+     "value": "claude-sonnet-5",
+     "mode": "list",
+     "cachedResultName": "claude-sonnet-5"
+    },
+    "messages": {
+     "values": [
+      {
+       "content": "=You are an AI assistant that builds inbox manager instruction documents for an AI email autoresponder product called {{ $('Search records').item.json.Name }}. When given information about a company, product, or campaign, your job is to produce a complete, ready-to-paste inbox manager that the autoresponder will follow when handling replies to outbound emails.\n\nEvery inbox manager you create must follow these rules:\n\nPURPOSE\nThe inbox manager is the knowledge base and behavioral guide for an AI autoresponder. It tells the AI what the company does, what it sells, who it sells to, how to talk about it, how to handle objections, and what the goal of every reply is. The autoresponder will use this document as its sole source of truth when responding to prospects.\n\nSTRUCTURE\nEvery inbox manager should include the following sections, in this order:\n\nObjective -- one or two sentences defining the goal of every reply (usually booking a call or demo).\n\nWhat the company/product is -- a clear, concise explanation the AI can reference when answering questions.\n\nThe problem it solves -- the pain points prospects are likely experiencing.\n\nKey offerings or product details -- enough for the AI to speak intelligently but not so much that it overwhelms.\n\nStats, proof points, and social proof -- customer names, results, and data the AI can drop into replies.\n\nWho it is for -- the ideal customer profile or target audience.\n\nPricing context -- if available. Enough for the AI to speak directionally without making up numbers.\n\nCompetitive landscape -- main competitors and how to position against them.\n\nTone and style rules -- how the AI should write.\n\nFirst reply flow -- step-by-step instructions for the first response.\n\nObjection handling -- common objections with specific guidance on how to respond to each.\n\nReminders -- final rules and priorities the AI should always follow.\n\nFORMATTING RULES\nOutput must be in plain text, easy to copy and paste into a text field. No markdown formatting, no headers with hashtags, no bold or italic syntax. Use ALL CAPS for section headers. Use line breaks to separate sections clearly.\n\nCHARACTER LIMIT\nKeep every inbox manager under 8,500 characters unless told otherwise.\n\nINPUT\n\nCompany Name: {{ $('Search records').item.json.Name }}\n\nVariables available:\n\nWhat EXACTLY do you sell?:\n{{ $('Webhook').item.json.body['What EXACTLY do you sell?'] }}\n\nWalk us through your fulfillment process from beginning to end.:\n{{ $('Webhook').item.json.body['Walk us through your fulfillment process from beginning to end.'] }}\n\nWhat problems typically cause someone to start looking for a solution like yours?:\n{{ $('Webhook').item.json.body['What problems typically cause someone to start looking for a solution like yours?'] }}\n\nWhat does success look like for your clients?:\n{{ $('Webhook').item.json.body['What does success look like for your clients?'] }}\n\nHow long does it typically take clients to see results?:\n{{ $('Webhook').item.json.body['How long does it typically take clients to see results?'] }}\n\nWhy do clients choose you instead of competitors?:\n{{ $('Webhook').item.json.body['Why do clients choose you instead of competitors?'] }}\n\nDo you currently have an ESTABLISHED cold traffic offer?:\n{{ $('Webhook').item.json.body['Do you currently have an ESTABLISHED cold traffic offer?'] }}\n\nWhat could you realistically give away for free?:\n{{ $('Webhook').item.json.body['What could you realistically give away for free?'] }}\n\nWhat is your risk reversal/guarantee?:\n{{ $('Webhook').item.json.body['What is your risk reversal/guarantee?'] }}\n\nHow does your pricing work?:\n{{ $('Webhook').item.json.body['How does your pricing work?'] }}\n\nClient Interviews/Testimonials/Case Studies:\n{{ $('Webhook').item.json.body['Client Interviews/Testimonials/Case Studies'] }}\n\nSales Call Recordings:\n{{ $('Webhook').item.json.body['Sales Call Recordings'] }}\n\nWho EXACTLY is your Target Market?:\n{{ $('Webhook').item.json.body['Who EXACTLY is your Target Market?'] }}\n\nDream Clients:\n{{ $('Webhook').item.json.body['Dream Clients'] }}\n\nLocation(s) of your ideal clients?:\n{{ $('Webhook').item.json.body['Location(s) of your ideal clients?'] }}\n\nJob Title(s) of your ideal clients:\n{{ $('Webhook').item.json.body['Job Title(s) of your ideal clients:'] }}\n\nCompany size of your ideal clients:\n{{ $('Webhook').item.json.body['Company size of your ideal clients:'] }}\n\nIndustry of your ideal clients:\n{{ $('Webhook').item.json.body['Industry of your ideal clients:'] }}\n\nAdditional Industry(s) of your ideal clients:\n{{ $('Webhook').item.json.body['Additional Industry(s) of your ideal clients:'] }}\n\nAre there any industry(s) we should exclude:\n{{ $('Webhook').item.json.body['Are there any industry(s) we should exclude:'] }}\n\nEstimated Annual Revenue of your ideal clients:\n{{ $('Webhook').item.json.body['Estimated Annual Revenue of your ideal clients:'] }}\n\nAre there specific technologies, software, platforms, certifications, or characteristics your ideal clients usually have?:\n{{ $('Webhook').item.json.body['Are there specific technologies, software, platforms, certifications, or characteristics your ideal clients usually have?'] }}\n\nIs there anything else we should know about your ideal client?:\n{{ $('Webhook').item.json.body['Is there anything else we should know about your ideal client?'] }}\n\nWhich CRM are you using?:\n{{ $('Webhook').item.json.body['Which CRM are you using?'] }}\n\nHave you successfully closed clients from outbound before?:\n{{ $('Webhook').item.json.body['Have you successfully closed clients from outbound before?'] }}\n\nDo you already have a cold funnel in place?:\n{{ $('Webhook').item.json.body['Do you already have a cold funnel in place?'] }}\n\nDo you have a sales framework for cold leads?:\n{{ $('Webhook').item.json.body['Do you have a sales framework for cold leads?'] }}\n\nWhat's your agency's CURRENT monthly revenue?:\n{{ $('Webhook').item.json.body[\"What's your agency's CURRENT monthly revenue?\"] }}\n\nWhat's your DESIRED monthly revenue? Target date? Why?:\n{{ $('Webhook').item.json.body[\"What's your DESIRED monthly revenue? Target date? Why?\"] }}\n\nOn average, how many sales appointment are you booking per month?:\n{{ $('Webhook').item.json.body['On average, how many sales appointment are you booking per month?'] }}\n\nHow many sales appointments would you like to book per month?:\n{{ $('Webhook').item.json.body['How many sales appointments would you like to book per month?'] }}\n\nLast question - Is there anything else that you would like to mention before we get started?:\n{{ $('Webhook').item.json.body['Last question - Is there anything else that you would like to mention before we get started?'] }}"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "@n8n/n8n-nodes-langchain.anthropic",
+   "typeVersion": 1,
+   "position": [
+    2976,
+    -400
+   ],
+   "id": "0638ea1c-01a6-4bc9-a3ac-9f51709453f8",
+   "name": "Message a model1"
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.revreply.com/v1/agent",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "REDACTED"
+      },
+      {
+       "name": "Accept",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "bodyParameters": {
+     "parameters": [
+      {
+       "name": "agent_name",
+       "value": "={{ $('Search records').item.json.Name }} Email Manager"
+      },
+      {
+       "name": "first_name",
+       "value": "={{ $('Code in JavaScript').item.json.first_name }}"
+      },
+      {
+       "name": "last_name",
+       "value": "={{ $('Code in JavaScript').item.json.last_name }}"
+      },
+      {
+       "name": "company",
+       "value": "={{ $('Search records').item.json.Name }}"
+      },
+      {
+       "name": "company_website",
+       "value": "={{ $('Webhook').item.json.body['Website Link'] }}"
+      },
+      {
+       "name": "generate_profile",
+       "value": "0"
+      },
+      {
+       "name": "company_overview"
+      },
+      {
+       "name": "context"
+      },
+      {
+       "name": "meeting_link",
+       "value": "=https://{{ $('Webhook').item.json.body['Please provide link below'] }}"
+      },
+      {
+       "name": "calendar_link",
+       "value": "=https://{{ $('Webhook').item.json.body['Please provide link below'] }}"
+      },
+      {
+       "name": "concise_reply",
+       "value": "1"
+      },
+      {
+       "name": "soft_no",
+       "value": "1"
+      },
+      {
+       "name": "soft_no_response",
+       "value": "You are receiving this because the prospect has declined, said no thanks, or otherwise disengaged. Your job is to send one thoughtful, human reply that attempts to re-open the conversation."
+      },
+      {
+       "name": "tone",
+       "value": "1"
+      },
+      {
+       "name": "agent_objective",
+       "value": "1"
+      },
+      {
+       "name": "timezone",
+       "value": "America/New_York"
+      },
+      {
+       "name": "office_hours_from",
+       "value": "08:00"
+      },
+      {
+       "name": "office_hours_to",
+       "value": "18:00"
+      },
+      {
+       "name": "exclude_weekends",
+       "value": "1"
+      },
+      {
+       "name": "followup_intervals[0][followup_no]",
+       "value": "5"
+      },
+      {
+       "name": "followup_intervals[0][send_after_days]",
+       "value": "3"
+      },
+      {
+       "name": "followup_intervals[0][include_calendar_links]",
+       "value": "3"
+      },
+      {
+       "name": "followup_intervals[0][include_meeting_links]",
+       "value": "3"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.3,
+   "position": [
+    2080,
+    -304
+   ],
+   "id": "0e8f0a98-976d-41df-907d-a383543e0fa0",
+   "name": "Create Inbox Manager (RevReply)"
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.revreply.com/v1/agent",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "REDACTED"
+      },
+      {
+       "name": "Accept",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "bodyParameters": {
+     "parameters": [
+      {
+       "name": "agent_name",
+       "value": "={{ $('Search records').item.json.Name }} LinkedIn Manager"
+      },
+      {
+       "name": "first_name",
+       "value": "={{ $('Code in JavaScript').item.json.first_name }}"
+      },
+      {
+       "name": "last_name",
+       "value": "={{ $('Code in JavaScript').item.json.last_name }}"
+      },
+      {
+       "name": "company",
+       "value": "={{ $('Search records').item.json.Name }}"
+      },
+      {
+       "name": "company_website",
+       "value": "={{ $('Webhook').item.json.body['Website Link'] }}"
+      },
+      {
+       "name": "generate_profile",
+       "value": "0"
+      },
+      {
+       "name": "company_overview"
+      },
+      {
+       "name": "context"
+      },
+      {
+       "name": "meeting_link",
+       "value": "=https://{{ $('Webhook').item.json.body['Please provide link below'] }}"
+      },
+      {
+       "name": "calendar_link",
+       "value": "=https://{{ $('Webhook').item.json.body['Please provide link below'] }}"
+      },
+      {
+       "name": "concise_reply",
+       "value": "1"
+      },
+      {
+       "name": "soft_no",
+       "value": "1"
+      },
+      {
+       "name": "soft_no_response",
+       "value": "You are receiving this because the prospect has declined, said no thanks, or otherwise disengaged. Your job is to send one thoughtful, human reply that attempts to re-open the conversation."
+      },
+      {
+       "name": "tone",
+       "value": "1"
+      },
+      {
+       "name": "agent_objective",
+       "value": "1"
+      },
+      {
+       "name": "timezone",
+       "value": "America/New_York"
+      },
+      {
+       "name": "office_hours_from",
+       "value": "08:00"
+      },
+      {
+       "name": "office_hours_to",
+       "value": "18:00"
+      },
+      {
+       "name": "exclude_weekends",
+       "value": "1"
+      },
+      {
+       "name": "followup_intervals[0][followup_no]",
+       "value": "5"
+      },
+      {
+       "name": "followup_intervals[0][send_after_days]",
+       "value": "3"
+      },
+      {
+       "name": "followup_intervals[0][include_calendar_links]",
+       "value": "3"
+      },
+      {
+       "name": "followup_intervals[0][include_meeting_links]",
+       "value": "3"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.3,
+   "position": [
+    3040,
+    -208
+   ],
+   "id": "064b74f6-5843-42d4-88ad-bb32d2fb74c6",
+   "name": "Create LinkedIn Manager (RevReply)"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "id": "={{ $('Search records').item.json.id }}",
+      "RevReply LinkedIn ID": "={{ $('Create LinkedIn Manager (RevReply)').item.json.data.id }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": false
+      },
+      {
+       "id": "Name",
+       "displayName": "Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "ID",
+       "displayName": "ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Status",
+       "displayName": "Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Active",
+         "value": "Active"
+        },
+        {
+         "name": "Inactive",
+         "value": "Inactive"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "EmailBison API",
+       "displayName": "EmailBison API",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Slack Channel",
+       "displayName": "Slack Channel",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Logins",
+       "displayName": "Logins",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Campaigns",
+       "displayName": "Campaigns",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Email Accounts",
+       "displayName": "Email Accounts",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Portal Users",
+       "displayName": "Portal Users",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Record ID",
+       "displayName": "Record ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Onboarding",
+       "displayName": "Onboarding",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "onboarding_record_id (from Onboarding)",
+       "displayName": "onboarding_record_id (from Onboarding)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Onboarding_form_submitted",
+       "displayName": "Onboarding_form_submitted",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Documents",
+       "displayName": "Documents",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Email Analytics Overview",
+       "displayName": "Email Analytics Overview",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "PM",
+       "displayName": "PM",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Templates",
+       "displayName": "Templates",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Created",
+       "displayName": "Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "LinkedIn Analytics Overview",
+       "displayName": "LinkedIn Analytics Overview",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client Tasks",
+       "displayName": "Client Tasks",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Emails",
+       "displayName": "Emails",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Total Interested Leads",
+       "displayName": "Total Interested Leads",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Total Calls Booked",
+       "displayName": "Total Calls Booked",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Interested Conversion",
+       "displayName": "Interested Conversion",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Investment Per Call",
+       "displayName": "Investment Per Call",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Total Deals Closed",
+       "displayName": "Total Deals Closed",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Closed Deal Value",
+       "displayName": "Closed Deal Value",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Calls Booked KPI (Internal)",
+       "displayName": "Calls Booked KPI (Internal)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Calls Booked Status (Internal)",
+       "displayName": "Calls Booked Status (Internal)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Inbox Placement Testing",
+       "displayName": "Inbox Placement Testing",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Calls Booked KPI (from Onboarding)",
+       "displayName": "Calls Booked KPI (from Onboarding)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Calls Booked - Last 30 days",
+       "displayName": "Calls Booked - Last 30 days",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Calls Booked KPI (Client)",
+       "displayName": "Calls Booked KPI (Client)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Calls Booked Status (Client)",
+       "displayName": "Calls Booked Status (Client)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Total Investment",
+       "displayName": "Total Investment",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Calls Made",
+       "displayName": "Calls Made",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Completed Calls",
+       "displayName": "Completed Calls",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Answered Calls",
+       "displayName": "Answered Calls",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Interested Calls",
+       "displayName": "Interested Calls",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Answered Rate",
+       "displayName": "Answered Rate",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Interested Rate",
+       "displayName": "Interested Rate",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Apollo URL's",
+       "displayName": "Apollo URL's",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "HeyReach ID",
+       "displayName": "HeyReach ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "RevReply Email ID",
+       "displayName": "RevReply Email ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "RevReply LinkedIn ID",
+       "displayName": "RevReply LinkedIn ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Apollo ID",
+       "displayName": "Apollo ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "AI Model ID (PRE)",
+       "displayName": "AI Model ID (PRE)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Model ID (APTR)",
+       "displayName": "AI Model ID (APTR)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Email Signature",
+       "displayName": "Email Signature",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Cold Email",
+       "displayName": "Cold Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "LinkedIn",
+       "displayName": "LinkedIn",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Employee",
+       "displayName": "AI Employee",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Direct Mail",
+       "displayName": "Direct Mail",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Cold Traffic Offer",
+       "displayName": "Cold Traffic Offer",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Front End Offer(s)",
+       "displayName": "Front End Offer(s)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Back End Offer(s)",
+       "displayName": "Back End Offer(s)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "ICP",
+       "displayName": "ICP",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Outbound Risk Reversal",
+       "displayName": "Outbound Risk Reversal",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Projects",
+       "displayName": "Projects",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Executive Dashboard Data",
+       "displayName": "Executive Dashboard Data",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "EmailGuard API",
+       "displayName": "EmailGuard API",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "HeyReach Workspace API",
+       "displayName": "HeyReach Workspace API",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Documents copy",
+       "displayName": "Documents copy",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client Tasks copy",
+       "displayName": "Client Tasks copy",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client Notifcations",
+       "displayName": "Client Notifcations",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client Invoices",
+       "displayName": "Client Invoices",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "From field: Workspace IDs",
+       "displayName": "From field: Workspace IDs",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Tasks",
+       "displayName": "Tasks",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Initial Payment Received",
+       "displayName": "Initial Payment Received",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Modified",
+       "displayName": "Last Modified",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    3328,
+    -208
+   ],
+   "id": "3e67e3b3-ad63-4daf-a8b6-c214208202c0",
+   "name": "Update record1"
+  },
+  {
+   "parameters": {
+    "method": "PUT",
+    "url": "=https://api.synthflow.ai/v2/assistants/{{ $('Search records').item.json['AI Model ID (PRE)'] }}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      },
+      {
+       "name": "Authorization",
+       "value": "REDACTED"
+      }
+     ]
+    },
+    "sendBody": true,
+    "bodyParameters": {
+     "parameters": [
+      {
+       "name": "prompt",
+       "value": "={{ $('Message a model1').item.json.content[1].text }}"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.3,
+   "position": [
+    3328,
+    -400
+   ],
+   "id": "240c2acc-f886-4c8c-abb9-a2d0853cec81",
+   "name": "Update AI Employee (Synthflow)"
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblwo2vuDBBdOHFsz",
+     "mode": "list",
+     "cachedResultName": "Documents",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblwo2vuDBBdOHFsz"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Internal?": true,
+      "Title": "AI Employee Prompt",
+      "Description": "={{ $('Message a model1').item.json.content[1].text }}",
+      "Workspace IDs": "={{ [$('Search records').item.json.id] }}",
+      "Uploaded By": "Dulcy"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "Title",
+       "displayName": "Title",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Description",
+       "displayName": "Description",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Attachments",
+       "displayName": "Attachments",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Workspace IDs",
+       "displayName": "Workspace IDs",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Record ID (from Workspace IDs)",
+       "displayName": "Record ID (from Workspace IDs)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Uploaded By",
+       "displayName": "Uploaded By",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Client",
+         "value": "Client"
+        },
+        {
+         "name": "Dulcy",
+         "value": "Dulcy"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Internal?",
+       "displayName": "Internal?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Last Modified",
+       "displayName": "Last Modified",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    3552,
+    -400
+   ],
+   "id": "902b4246-7a1e-4286-8d04-57b406a94b58",
+   "name": "task - create html2"
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblRBxm2N53331mIm",
+     "mode": "list",
+     "cachedResultName": "Tasks",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblRBxm2N53331mIm"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Client Facing": true,
+      "Client": "={{ [$('Search records').item.json.id] }}",
+      "Status": "Not Started",
+      "Stage": "Intake",
+      "Assignee": "=recMSulKeJUQ7phxW",
+      "Task Name": "Create Offer Validation Campaigns",
+      "Priority": "High",
+      "Due Date": "={{ DateTime.now().plus({ days: 14 }).toISODate() }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "Task Name",
+       "displayName": "Task Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Campaign",
+       "displayName": "Campaign",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Assignee",
+       "displayName": "Assignee",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Stage",
+       "displayName": "Stage",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Intake",
+         "value": "Intake"
+        },
+        {
+         "name": "Planning",
+         "value": "Planning"
+        },
+        {
+         "name": "Execution",
+         "value": "Execution"
+        },
+        {
+         "name": "Review",
+         "value": "Review"
+        },
+        {
+         "name": "QA",
+         "value": "QA"
+        },
+        {
+         "name": "Completed",
+         "value": "Completed"
+        },
+        {
+         "name": "Blocked",
+         "value": "Blocked"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Due Date",
+       "displayName": "Due Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Priority",
+       "displayName": "Priority",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Urgent",
+         "value": "Urgent"
+        },
+        {
+         "name": "High",
+         "value": "High"
+        },
+        {
+         "name": "Medium",
+         "value": "Medium"
+        },
+        {
+         "name": "Low",
+         "value": "Low"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Status",
+       "displayName": "Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Not Started",
+         "value": "Not Started"
+        },
+        {
+         "name": "In Progress",
+         "value": "In Progress"
+        },
+        {
+         "name": "Done",
+         "value": "Done"
+        },
+        {
+         "name": "Blocked",
+         "value": "Blocked"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Notes",
+       "displayName": "Notes",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Last Updated",
+       "displayName": "Last Updated",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Created",
+       "displayName": "Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Time Ago",
+       "displayName": "Time Ago",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Calculation",
+       "displayName": "Calculation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Client Facing",
+       "displayName": "Client Facing",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Project Health",
+       "displayName": "Project Health",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "On Track",
+         "value": "On Track"
+        },
+        {
+         "name": "At Risk",
+         "value": "At Risk"
+        },
+        {
+         "name": "Overdue",
+         "value": "Overdue"
+        },
+        {
+         "name": "On Hold",
+         "value": "On Hold"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Modified",
+       "displayName": "Last Modified",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1504,
+    -304
+   ],
+   "id": "bf0d5cc6-659d-4186-b772-093d463f7739",
+   "name": "task - create campaigns"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

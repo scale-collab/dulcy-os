@@ -1,0 +1,650 @@
+{
+ "id": "lbaxFegzr48RoaiJ",
+ "name": "G2 Succeeded",
+ "active": true,
+ "isArchived": false,
+ "versionId": "93add633-7dbf-49c1-9877-6dbaef4a87b3",
+ "triggerCount": 1,
+ "createdAt": "2026-01-22T07:55:30.909Z",
+ "updatedAt": "2026-11-17T16:40:26.272Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Search Data ID": {
+   "main": [
+    [
+     {
+      "node": "Get dataset items",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get dataset items": {
+   "main": [
+    [
+     {
+      "node": "Convert to File",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Convert to File": {
+   "main": [
+    [
+     {
+      "node": "Upload to Agency CSV Folder",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Upload to Agency CSV Folder": {
+   "main": [
+    [
+     {
+      "node": "Share file1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Share file1": {
+   "main": [
+    [
+     {
+      "node": "Search Users",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Update g-drive link",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search Users": {
+   "main": [
+    [
+     {
+      "node": "Send a message",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "If error": {
+   "main": [
+    [
+     {
+      "node": "Create error message",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create error message": {
+   "main": [
+    [
+     {
+      "node": "Wait",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Send a message": {
+   "main": [
+    [
+     {
+      "node": "If error",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wait": {
+   "main": [
+    [
+     {
+      "node": "Send Error Message",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Receive g2 Webhook": {
+   "main": [
+    [
+     {
+      "node": "Search Data ID",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appJNoGcSkyIEPQ68",
+     "mode": "list",
+     "cachedResultName": "Scrapers",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMxURyjNitogIrF",
+     "mode": "list",
+     "cachedResultName": "g2 Scraper",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68/tblMxURyjNitogIrF"
+    },
+    "filterByFormula": "=List_ID = \"{{ $json.body.resource.defaultDatasetId }}\"",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    224,
+    96
+   ],
+   "id": "68a43629-9f0c-4edd-8227-11a9eabd10d7",
+   "name": "Search Data ID"
+  },
+  {
+   "parameters": {
+    "options": {
+     "fileName": "={{ $('Search Data ID').item.json['File Name'] + \".csv\" }}",
+     "headerRow": true
+    }
+   },
+   "type": "n8n-nodes-base.convertToFile",
+   "typeVersion": 1.1,
+   "position": [
+    672,
+    96
+   ],
+   "id": "4fc91db2-7c9d-44a5-a7f8-fabbf680bd74",
+   "name": "Convert to File"
+  },
+  {
+   "parameters": {
+    "resource": "Datasets",
+    "datasetId": "={{ $json.List_ID }}",
+    "offset": {},
+    "limit": {}
+   },
+   "type": "@apify/n8n-nodes-apify.apify",
+   "typeVersion": 1,
+   "position": [
+    448,
+    96
+   ],
+   "id": "ffbffc44-6621-4851-a04b-1b8204794ab2",
+   "name": "Get dataset items"
+  },
+  {
+   "parameters": {
+    "name": "={{ $('Search Data ID').item.json['File Name']+\".csv\" }}",
+    "driveId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "My Drive"
+    },
+    "folderId": {
+     "__rl": true,
+     "value": "1nASQd6-Xh9JX0V6vgrRinhwBEIfD3L48",
+     "mode": "list",
+     "cachedResultName": "Agency Ignition CSVs",
+     "cachedResultUrl": "https://drive.google.com/drive/folders/1nASQd6-Xh9JX0V6vgrRinhwBEIfD3L48"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.googleDrive",
+   "typeVersion": 3,
+   "position": [
+    896,
+    96
+   ],
+   "id": "d2840e1f-6b06-4244-be21-86188167e8ef",
+   "name": "Upload to Agency CSV Folder"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appJNoGcSkyIEPQ68",
+     "mode": "list",
+     "cachedResultName": "Scrapers",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMxURyjNitogIrF",
+     "mode": "list",
+     "cachedResultName": "g2 Scraper",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68/tblMxURyjNitogIrF"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "N8N Automation Ran?": true,
+      "id": "={{ $('Search Data ID').item.json.id }}",
+      "Google Drive Link": "={{ $('Upload to Agency CSV Folder').item.json.webViewLink }}",
+      "List_ID": "={{ $('Receive g2 Webhook').item.json.body.resource.defaultDatasetId }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true
+      },
+      {
+       "id": "Run - ID",
+       "displayName": "Run - ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "File Name",
+       "displayName": "File Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Storelead URL to scrape",
+       "displayName": "Storelead URL to scrape",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Total Pages",
+       "displayName": "Total Pages",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "List_ID",
+       "displayName": "List_ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "N8N Automation Ran?",
+       "displayName": "N8N Automation Ran?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "User",
+       "displayName": "User",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Discord Status (from User)",
+       "displayName": "Discord Status (from User)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "User Name",
+       "displayName": "User Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Source of Creation",
+       "displayName": "Source of Creation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Internal",
+         "value": "Internal"
+        },
+        {
+         "name": "Discord",
+         "value": "Discord"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Google Drive Link",
+       "displayName": "Google Drive Link",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Discord Tags",
+       "displayName": "Discord Tags",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Record Created at",
+       "displayName": "Record Created at",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "user_id",
+       "displayName": "user_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1344,
+    192
+   ],
+   "id": "04fb495b-bb15-42f9-a052-2f19ccb957da",
+   "name": "Update g-drive link"
+  },
+  {
+   "parameters": {
+    "operation": "share",
+    "fileId": {
+     "__rl": true,
+     "value": "={{ $json.id }}",
+     "mode": "id"
+    },
+    "permissionsUi": {
+     "permissionsValues": {
+      "role": "reader",
+      "type": "anyone"
+     }
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.googleDrive",
+   "typeVersion": 3,
+   "position": [
+    1120,
+    96
+   ],
+   "id": "b2e6bf55-6f6c-4817-8223-3298dba1ba76",
+   "name": "Share file1"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appJNoGcSkyIEPQ68",
+     "mode": "list",
+     "cachedResultName": "Ignition Dev Database",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tbl2MDaQIDFNJ7LR4",
+     "mode": "list",
+     "cachedResultName": "Discord User",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68/tbl2MDaQIDFNJ7LR4"
+    },
+    "filterByFormula": "={Record ID} = \"{{ $('Search Data ID').item.json.user_id }}\"",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1344,
+    0
+   ],
+   "id": "a1e652ef-3729-48a7-8144-808367523242",
+   "name": "Search Users"
+  },
+  {
+   "parameters": {
+    "authentication": "oAuth2",
+    "resource": "message",
+    "guildId": {
+     "__rl": true,
+     "value": "https://discord.com/channels/1349530994738466816",
+     "mode": "url"
+    },
+    "sendTo": "user",
+    "userId": {
+     "__rl": true,
+     "value": "={{ $json.Discord_Tag }}",
+     "mode": "id"
+    },
+    "content": "=Hi there, here is your G2 scraper results: \n\n{{ $('Upload to Agency CSV Folder').item.json.webViewLink }}\n\n",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.discord",
+   "typeVersion": 2,
+   "position": [
+    1568,
+    0
+   ],
+   "id": "1ac5e4a7-7a01-467e-b9fc-257fcea3ff47",
+   "name": "Send a message",
+   "webhookId": "6dc79620-c922-4058-a815-8132e53f2f3c",
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "d03dbf11-b51e-4c06-839e-fb5c62b821b7",
+       "leftValue": "={{ $json.error }}",
+       "rightValue": "",
+       "operator": {
+        "type": "string",
+        "operation": "exists",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.filter",
+   "typeVersion": 2.2,
+   "position": [
+    1792,
+    0
+   ],
+   "id": "98459c00-363f-4a0d-b476-b01f3ca44ff7",
+   "name": "If error"
+  },
+  {
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "9e8588ba-c2e6-4ede-ab35-64d281cc4cdc",
+       "name": "Error Message",
+       "value": "=We could not send {{ $('Search Users').item.json[\"Discord Name\"] }} their scraper because they havn't allowed us to send messages to them.   \n\nError: {{ $json.error }} \nTime: {{ $('Search Data ID').item.json.createdTime }}",
+       "type": "string"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    2016,
+    0
+   ],
+   "id": "516b7437-1d96-4292-85a8-87f60a153f77",
+   "name": "Create error message"
+  },
+  {
+   "parameters": {
+    "authentication": "oAuth2",
+    "resource": "message",
+    "guildId": {
+     "__rl": true,
+     "value": "1349530994738466816",
+     "mode": "id"
+    },
+    "channelId": {
+     "__rl": true,
+     "mode": "id",
+     "value": "1365362559234080892"
+    },
+    "content": "={{ $json['Error Message'] }}",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.discord",
+   "typeVersion": 2,
+   "position": [
+    2448,
+    0
+   ],
+   "id": "662ac08c-d78e-4ae1-b4e4-b0125a7a42aa",
+   "name": "Send Error Message",
+   "webhookId": "2951b7bf-2357-4cba-87ea-83017fbfe897"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    2224,
+    0
+   ],
+   "id": "c8251329-06c6-4471-ba9d-4c072f1692df",
+   "name": "Wait",
+   "webhookId": "64cf42ea-e8e8-4bd2-aea7-86de269d510c"
+  },
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    0,
+    96
+   ],
+   "id": "f211219a-2aa8-4b13-91ea-1eefa01e147d",
+   "name": "Receive g2 Webhook"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

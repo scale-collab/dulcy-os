@@ -1,0 +1,479 @@
+{
+ "id": "DulcyCalendarConnectionsV1",
+ "name": "[Dulcy Reply Agent] Calendar connections and status",
+ "active": true,
+ "isArchived": false,
+ "versionId": "751897f5-c922-43c1-b967-db9077de7853",
+ "triggerCount": 1,
+ "createdAt": "2026-10-13T23:24:14.354Z",
+ "updatedAt": "2026-11-17T16:43:17.469Z",
+ "settings": {
+  "executionOrder": "v1",
+  "saveDataSuccessExecution": "none",
+  "saveDataErrorExecution": "none",
+  "saveManualExecutions": false,
+  "availableInMCP": true
+ },
+ "connections": {
+  "Every Five Minutes": {
+   "main": [
+    [
+     {
+      "node": "Read Calendar Settings",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read Calendar Settings": {
+   "main": [
+    [
+     {
+      "node": "Select Scoped Records",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Select Scoped Records": {
+   "main": [
+    [
+     {
+      "node": "Verify Workspace",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Verify Workspace": {
+   "main": [
+    [
+     {
+      "node": "Require Workspace",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Require Workspace": {
+   "main": [
+    [
+     {
+      "node": "Read Connection Status",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read Connection Status": {
+   "main": [
+    [
+     {
+      "node": "Prepare Snapshot",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Snapshot": {
+   "main": [
+    [
+     {
+      "node": "Save Connection Snapshot",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Save Connection Snapshot": {
+   "main": [
+    [
+     {
+      "node": "Select Pending Invitation",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Select Pending Invitation": {
+   "main": [
+    [
+     {
+      "node": "Create Scoped Invitation",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create Scoped Invitation": {
+   "main": [
+    [
+     {
+      "node": "Recheck Latest Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Recheck Latest Request": {
+   "main": [
+    [
+     {
+      "node": "Protect Newer Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Protect Newer Request": {
+   "main": [
+    [
+     {
+      "node": "Save Connection Link",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Save Connection Link": {
+   "main": [
+    [
+     {
+      "node": "Confirm Saved Result",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Manual Test": {
+   "main": [
+    [
+     {
+      "node": "Read Calendar Settings",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "id": "a2073b6a-903f-4c14-a1eb-88a854711f1f",
+   "name": "Every Five Minutes",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1,
+   "position": [
+    0,
+    0
+   ],
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "minutes",
+       "minutesInterval": 5
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "9fb676c5-dda9-4686-bd4c-a28ba158b3ba",
+   "name": "Read Calendar Settings",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    220,
+    0
+   ],
+   "parameters": {
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tbl5nmzPUcNEBSWxH?pageSize=100",
+    "method": "GET",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     },
+     "timeout": 20000
+    }
+   },
+   "onError": "continueRegularOutput"
+  },
+  {
+   "id": "8e83343f-58e2-45a1-bd46-02142e513cc2",
+   "name": "Select Scoped Records",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    440,
+    0
+   ],
+   "parameters": {
+    "jsCode": "function queueRecord(record,all,now=Date.now()){\n const f=record?.fields||{},workspace=f['Workspace Record ID'];\n if(!/^rec[A-Za-z0-9]{14}$/.test(workspace||''))return null;\n if(all.filter(r=>r.fields?.['Workspace Record ID']===workspace).length!==1)return null;\n let request=null,result=null;try{request=JSON.parse(f['Calendar Connection Request JSON']||'null');result=JSON.parse(f['Calendar Connection Result JSON']||'null')}catch{}\n const at=Date.parse(request?.requestedAt||'');\n const eligible=request&&/^[A-Za-z0-9_-]{12,100}$/.test(request.requestId||'')&&request.provider==='google'&&/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(request.email||'')&&at<=now+10000&&at>now-86400000&&result?.requestId!==request.requestId;\n return {recordId:record.id,workspace,request:eligible?request:null};\n}\nfunction connectionResult(input,response,current,now=Date.now()){\n let request;try{request=JSON.parse(current?.fields?.['Calendar Connection Request JSON']||'{}')}catch{return null;}\n if(current?.id!==input.recordId||current.fields?.['Workspace Record ID']!==input.workspace||request.requestId!==input.request?.requestId||request.email!==input.request.email||request.provider!==input.request.provider)return null;\n const url=response?.url||'',valid=/^https:\\/\\/n8n\\.dulcy\\.io\\/calendar\\/connect\\?ticket=[A-Za-z0-9_-]{40,100}$/.test(url)&&response.workspaceId===input.workspace&&Date.parse(response.expiresAt)>now&&Date.parse(response.expiresAt)<=now+86410000;\n return {requestId:input.request.requestId,status:valid?'Ready':'Needs Attention',...(valid?{url,expiresAt:response.expiresAt}:{}),message:valid?'Open this one-time link and sign in as '+input.request.email+'.':'Connection link could not be created. Google is currently limited to enabled test accounts; ask your administrator to check access.',updatedAt:new Date(now).toISOString()};\n}\nfunction connectionSnapshot(input,response,now=Date.now()){\n if(response?.workspaceId!==input.workspace||!['Connected','Not Connected','Disconnected','Selection Required','Reconnect Required'].includes(response.status))return null;\n return {workspaceId:input.workspace,status:response.status,provider:response.provider||null,accountEmail:response.accountEmail||null,revision:response.revision||0,checkedAt:new Date(now).toISOString()};\n}\n\nif(!$json.records||$json.offset)throw Error('Complete settings page required');return $json.records.map(r=>queueRecord(r,$json.records)).filter(Boolean).map(json=>({json}));"
+   }
+  },
+  {
+   "id": "0e2507b7-ab82-4ac2-b80d-f808fc6958d1",
+   "name": "Verify Workspace",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    660,
+    0
+   ],
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/Workspace%20IDs/' + $json.workspace }}",
+    "method": "GET",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     },
+     "timeout": 20000
+    }
+   },
+   "onError": "continueRegularOutput"
+  },
+  {
+   "id": "55bb75b8-ed85-4580-9a44-1407544af46e",
+   "name": "Require Workspace",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    880,
+    0
+   ],
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "function queueRecord(record,all,now=Date.now()){\n const f=record?.fields||{},workspace=f['Workspace Record ID'];\n if(!/^rec[A-Za-z0-9]{14}$/.test(workspace||''))return null;\n if(all.filter(r=>r.fields?.['Workspace Record ID']===workspace).length!==1)return null;\n let request=null,result=null;try{request=JSON.parse(f['Calendar Connection Request JSON']||'null');result=JSON.parse(f['Calendar Connection Result JSON']||'null')}catch{}\n const at=Date.parse(request?.requestedAt||'');\n const eligible=request&&/^[A-Za-z0-9_-]{12,100}$/.test(request.requestId||'')&&request.provider==='google'&&/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(request.email||'')&&at<=now+10000&&at>now-86400000&&result?.requestId!==request.requestId;\n return {recordId:record.id,workspace,request:eligible?request:null};\n}\nfunction connectionResult(input,response,current,now=Date.now()){\n let request;try{request=JSON.parse(current?.fields?.['Calendar Connection Request JSON']||'{}')}catch{return null;}\n if(current?.id!==input.recordId||current.fields?.['Workspace Record ID']!==input.workspace||request.requestId!==input.request?.requestId||request.email!==input.request.email||request.provider!==input.request.provider)return null;\n const url=response?.url||'',valid=/^https:\\/\\/n8n\\.dulcy\\.io\\/calendar\\/connect\\?ticket=[A-Za-z0-9_-]{40,100}$/.test(url)&&response.workspaceId===input.workspace&&Date.parse(response.expiresAt)>now&&Date.parse(response.expiresAt)<=now+86410000;\n return {requestId:input.request.requestId,status:valid?'Ready':'Needs Attention',...(valid?{url,expiresAt:response.expiresAt}:{}),message:valid?'Open this one-time link and sign in as '+input.request.email+'.':'Connection link could not be created. Google is currently limited to enabled test accounts; ask your administrator to check access.',updatedAt:new Date(now).toISOString()};\n}\nfunction connectionSnapshot(input,response,now=Date.now()){\n if(response?.workspaceId!==input.workspace||!['Connected','Not Connected','Disconnected','Selection Required','Reconnect Required'].includes(response.status))return null;\n return {workspaceId:input.workspace,status:response.status,provider:response.provider||null,accountEmail:response.accountEmail||null,revision:response.revision||0,checkedAt:new Date(now).toISOString()};\n}\n\nconst i=$('Select Scoped Records').item.json;if($json.id!==i.workspace)return null;return {json:{...i,label:String($json.fields?.Name||'Your workspace')}};"
+   }
+  },
+  {
+   "id": "48827a2b-61d8-42b9-9523-3131f0314423",
+   "name": "Read Connection Status",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1100,
+    0
+   ],
+   "parameters": {
+    "url": "http://dulcy-calendar:8789/calendar/admin/status",
+    "method": "POST",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     },
+     "timeout": 20000
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({workspace:$('Require Workspace').item.json.workspace}) }}"
+   },
+   "onError": "continueRegularOutput"
+  },
+  {
+   "id": "a3e71b3e-665c-42e6-9f4a-7630cb685034",
+   "name": "Prepare Snapshot",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1320,
+    0
+   ],
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "function queueRecord(record,all,now=Date.now()){\n const f=record?.fields||{},workspace=f['Workspace Record ID'];\n if(!/^rec[A-Za-z0-9]{14}$/.test(workspace||''))return null;\n if(all.filter(r=>r.fields?.['Workspace Record ID']===workspace).length!==1)return null;\n let request=null,result=null;try{request=JSON.parse(f['Calendar Connection Request JSON']||'null');result=JSON.parse(f['Calendar Connection Result JSON']||'null')}catch{}\n const at=Date.parse(request?.requestedAt||'');\n const eligible=request&&/^[A-Za-z0-9_-]{12,100}$/.test(request.requestId||'')&&request.provider==='google'&&/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(request.email||'')&&at<=now+10000&&at>now-86400000&&result?.requestId!==request.requestId;\n return {recordId:record.id,workspace,request:eligible?request:null};\n}\nfunction connectionResult(input,response,current,now=Date.now()){\n let request;try{request=JSON.parse(current?.fields?.['Calendar Connection Request JSON']||'{}')}catch{return null;}\n if(current?.id!==input.recordId||current.fields?.['Workspace Record ID']!==input.workspace||request.requestId!==input.request?.requestId||request.email!==input.request.email||request.provider!==input.request.provider)return null;\n const url=response?.url||'',valid=/^https:\\/\\/n8n\\.dulcy\\.io\\/calendar\\/connect\\?ticket=[A-Za-z0-9_-]{40,100}$/.test(url)&&response.workspaceId===input.workspace&&Date.parse(response.expiresAt)>now&&Date.parse(response.expiresAt)<=now+86410000;\n return {requestId:input.request.requestId,status:valid?'Ready':'Needs Attention',...(valid?{url,expiresAt:response.expiresAt}:{}),message:valid?'Open this one-time link and sign in as '+input.request.email+'.':'Connection link could not be created. Google is currently limited to enabled test accounts; ask your administrator to check access.',updatedAt:new Date(now).toISOString()};\n}\nfunction connectionSnapshot(input,response,now=Date.now()){\n if(response?.workspaceId!==input.workspace||!['Connected','Not Connected','Disconnected','Selection Required','Reconnect Required'].includes(response.status))return null;\n return {workspaceId:input.workspace,status:response.status,provider:response.provider||null,accountEmail:response.accountEmail||null,revision:response.revision||0,checkedAt:new Date(now).toISOString()};\n}\n\nconst i=$('Require Workspace').item.json;const snapshot=connectionSnapshot(i,$json);if(!snapshot)return null;return {json:{...i,snapshot,patch:{fields:{'Calendar Connection Snapshot JSON':JSON.stringify(snapshot),'Calendar Connection Status':snapshot.status==='Connected'?'Connected':['Not Connected','Disconnected'].includes(snapshot.status)?'Not Connected':'Needs Attention',...(snapshot.provider?{'Calendar Provider':snapshot.provider==='google'?'Google Calendar':'Calendly'}:{})}}}};"
+   }
+  },
+  {
+   "id": "91a1aa9f-a6f3-42d9-a939-3e02bdd96b4f",
+   "name": "Save Connection Snapshot",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1540,
+    0
+   ],
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tbl5nmzPUcNEBSWxH/' + $json.recordId }}",
+    "method": "PATCH",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     },
+     "timeout": 20000
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json.patch) }}"
+   },
+   "onError": "continueRegularOutput"
+  },
+  {
+   "id": "98432c3e-4a6d-42da-b685-84b048901803",
+   "name": "Select Pending Invitation",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1760,
+    0
+   ],
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "function queueRecord(record,all,now=Date.now()){\n const f=record?.fields||{},workspace=f['Workspace Record ID'];\n if(!/^rec[A-Za-z0-9]{14}$/.test(workspace||''))return null;\n if(all.filter(r=>r.fields?.['Workspace Record ID']===workspace).length!==1)return null;\n let request=null,result=null;try{request=JSON.parse(f['Calendar Connection Request JSON']||'null');result=JSON.parse(f['Calendar Connection Result JSON']||'null')}catch{}\n const at=Date.parse(request?.requestedAt||'');\n const eligible=request&&/^[A-Za-z0-9_-]{12,100}$/.test(request.requestId||'')&&request.provider==='google'&&/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(request.email||'')&&at<=now+10000&&at>now-86400000&&result?.requestId!==request.requestId;\n return {recordId:record.id,workspace,request:eligible?request:null};\n}\nfunction connectionResult(input,response,current,now=Date.now()){\n let request;try{request=JSON.parse(current?.fields?.['Calendar Connection Request JSON']||'{}')}catch{return null;}\n if(current?.id!==input.recordId||current.fields?.['Workspace Record ID']!==input.workspace||request.requestId!==input.request?.requestId||request.email!==input.request.email||request.provider!==input.request.provider)return null;\n const url=response?.url||'',valid=/^https:\\/\\/n8n\\.dulcy\\.io\\/calendar\\/connect\\?ticket=[A-Za-z0-9_-]{40,100}$/.test(url)&&response.workspaceId===input.workspace&&Date.parse(response.expiresAt)>now&&Date.parse(response.expiresAt)<=now+86410000;\n return {requestId:input.request.requestId,status:valid?'Ready':'Needs Attention',...(valid?{url,expiresAt:response.expiresAt}:{}),message:valid?'Open this one-time link and sign in as '+input.request.email+'.':'Connection link could not be created. Google is currently limited to enabled test accounts; ask your administrator to check access.',updatedAt:new Date(now).toISOString()};\n}\nfunction connectionSnapshot(input,response,now=Date.now()){\n if(response?.workspaceId!==input.workspace||!['Connected','Not Connected','Disconnected','Selection Required','Reconnect Required'].includes(response.status))return null;\n return {workspaceId:input.workspace,status:response.status,provider:response.provider||null,accountEmail:response.accountEmail||null,revision:response.revision||0,checkedAt:new Date(now).toISOString()};\n}\n\nconst i=$('Prepare Snapshot').item.json;if($json.id!==i.recordId||!i.request)return null;return {json:i};"
+   }
+  },
+  {
+   "id": "8d299110-7669-4801-875d-02b52831fa52",
+   "name": "Create Scoped Invitation",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1980,
+    0
+   ],
+   "parameters": {
+    "url": "http://dulcy-calendar:8789/calendar/admin/request-invite",
+    "method": "POST",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     },
+     "timeout": 20000
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({workspace:$json.workspace,requestId:$json.request.requestId,provider:$json.request.provider,expectedEmail:$json.request.email,label:$json.label}) }}"
+   },
+   "onError": "continueRegularOutput"
+  },
+  {
+   "id": "2cfe161f-2c38-4f50-93c5-b340132577bb",
+   "name": "Recheck Latest Request",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2200,
+    0
+   ],
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tbl5nmzPUcNEBSWxH/' + $('Select Pending Invitation').item.json.recordId }}",
+    "method": "GET",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     },
+     "timeout": 20000
+    }
+   },
+   "onError": "continueRegularOutput"
+  },
+  {
+   "id": "c645f78c-a017-4450-bcb3-f6f2bbf995fc",
+   "name": "Protect Newer Request",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2420,
+    0
+   ],
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "function queueRecord(record,all,now=Date.now()){\n const f=record?.fields||{},workspace=f['Workspace Record ID'];\n if(!/^rec[A-Za-z0-9]{14}$/.test(workspace||''))return null;\n if(all.filter(r=>r.fields?.['Workspace Record ID']===workspace).length!==1)return null;\n let request=null,result=null;try{request=JSON.parse(f['Calendar Connection Request JSON']||'null');result=JSON.parse(f['Calendar Connection Result JSON']||'null')}catch{}\n const at=Date.parse(request?.requestedAt||'');\n const eligible=request&&/^[A-Za-z0-9_-]{12,100}$/.test(request.requestId||'')&&request.provider==='google'&&/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(request.email||'')&&at<=now+10000&&at>now-86400000&&result?.requestId!==request.requestId;\n return {recordId:record.id,workspace,request:eligible?request:null};\n}\nfunction connectionResult(input,response,current,now=Date.now()){\n let request;try{request=JSON.parse(current?.fields?.['Calendar Connection Request JSON']||'{}')}catch{return null;}\n if(current?.id!==input.recordId||current.fields?.['Workspace Record ID']!==input.workspace||request.requestId!==input.request?.requestId||request.email!==input.request.email||request.provider!==input.request.provider)return null;\n const url=response?.url||'',valid=/^https:\\/\\/n8n\\.dulcy\\.io\\/calendar\\/connect\\?ticket=[A-Za-z0-9_-]{40,100}$/.test(url)&&response.workspaceId===input.workspace&&Date.parse(response.expiresAt)>now&&Date.parse(response.expiresAt)<=now+86410000;\n return {requestId:input.request.requestId,status:valid?'Ready':'Needs Attention',...(valid?{url,expiresAt:response.expiresAt}:{}),message:valid?'Open this one-time link and sign in as '+input.request.email+'.':'Connection link could not be created. Google is currently limited to enabled test accounts; ask your administrator to check access.',updatedAt:new Date(now).toISOString()};\n}\nfunction connectionSnapshot(input,response,now=Date.now()){\n if(response?.workspaceId!==input.workspace||!['Connected','Not Connected','Disconnected','Selection Required','Reconnect Required'].includes(response.status))return null;\n return {workspaceId:input.workspace,status:response.status,provider:response.provider||null,accountEmail:response.accountEmail||null,revision:response.revision||0,checkedAt:new Date(now).toISOString()};\n}\n\nconst i=$('Select Pending Invitation').item.json;const result=connectionResult(i,$('Create Scoped Invitation').item.json,$json);if(!result)return null;return {json:{recordId:i.recordId,patch:{fields:{'Calendar Connection Result JSON':JSON.stringify(result)}}}};"
+   }
+  },
+  {
+   "id": "022887fd-4742-4659-bafb-83c1ecad2195",
+   "name": "Save Connection Link",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2640,
+    0
+   ],
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tbl5nmzPUcNEBSWxH/' + $json.recordId }}",
+    "method": "PATCH",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     },
+     "timeout": 20000
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json.patch) }}"
+   },
+   "onError": "continueRegularOutput"
+  },
+  {
+   "id": "06fd9380-13e5-458b-8980-53443800be6a",
+   "name": "Confirm Saved Result",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2860,
+    0
+   ],
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "function queueRecord(record,all,now=Date.now()){\n const f=record?.fields||{},workspace=f['Workspace Record ID'];\n if(!/^rec[A-Za-z0-9]{14}$/.test(workspace||''))return null;\n if(all.filter(r=>r.fields?.['Workspace Record ID']===workspace).length!==1)return null;\n let request=null,result=null;try{request=JSON.parse(f['Calendar Connection Request JSON']||'null');result=JSON.parse(f['Calendar Connection Result JSON']||'null')}catch{}\n const at=Date.parse(request?.requestedAt||'');\n const eligible=request&&/^[A-Za-z0-9_-]{12,100}$/.test(request.requestId||'')&&request.provider==='google'&&/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(request.email||'')&&at<=now+10000&&at>now-86400000&&result?.requestId!==request.requestId;\n return {recordId:record.id,workspace,request:eligible?request:null};\n}\nfunction connectionResult(input,response,current,now=Date.now()){\n let request;try{request=JSON.parse(current?.fields?.['Calendar Connection Request JSON']||'{}')}catch{return null;}\n if(current?.id!==input.recordId||current.fields?.['Workspace Record ID']!==input.workspace||request.requestId!==input.request?.requestId||request.email!==input.request.email||request.provider!==input.request.provider)return null;\n const url=response?.url||'',valid=/^https:\\/\\/n8n\\.dulcy\\.io\\/calendar\\/connect\\?ticket=[A-Za-z0-9_-]{40,100}$/.test(url)&&response.workspaceId===input.workspace&&Date.parse(response.expiresAt)>now&&Date.parse(response.expiresAt)<=now+86410000;\n return {requestId:input.request.requestId,status:valid?'Ready':'Needs Attention',...(valid?{url,expiresAt:response.expiresAt}:{}),message:valid?'Open this one-time link and sign in as '+input.request.email+'.':'Connection link could not be created. Google is currently limited to enabled test accounts; ask your administrator to check access.',updatedAt:new Date(now).toISOString()};\n}\nfunction connectionSnapshot(input,response,now=Date.now()){\n if(response?.workspaceId!==input.workspace||!['Connected','Not Connected','Disconnected','Selection Required','Reconnect Required'].includes(response.status))return null;\n return {workspaceId:input.workspace,status:response.status,provider:response.provider||null,accountEmail:response.accountEmail||null,revision:response.revision||0,checkedAt:new Date(now).toISOString()};\n}\n\nif(!$json.id||$json.error)throw Error('Calendar link result was not saved');return {json:{saved:true,recordId:$json.id,noSend:true}};"
+   }
+  },
+  {
+   "id": "af6ce163-787d-4506-bc0c-4520afc7dad0",
+   "name": "Manual Test",
+   "type": "n8n-nodes-base.manualTrigger",
+   "typeVersion": 1,
+   "parameters": {},
+   "position": [
+    0,
+    200
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

@@ -1,0 +1,445 @@
+{
+ "id": "33vwwyGmeHTxD-sioYboO",
+ "name": "Domain Expire Renewal PM Task",
+ "active": true,
+ "isArchived": false,
+ "versionId": "e2aba1d8-158b-4b04-81bc-3119a8685156",
+ "triggerCount": 1,
+ "createdAt": "2026-07-23T17:33:39.389Z",
+ "updatedAt": "2026-11-17T16:40:35.923Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Webhook": {
+   "main": [
+    [
+     {
+      "node": "Wait",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wait": {
+   "main": [
+    [
+     {
+      "node": "Search records1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Filter": {
+   "main": [
+    [
+     {
+      "node": "Create a record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records1": {
+   "main": [
+    [
+     {
+      "node": "Filter",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    0,
+    -144
+   ],
+   "id": "b42a405f-c0da-46fc-a821-ade0755228b7",
+   "name": "Webhook"
+  },
+  {
+   "parameters": {
+    "amount": 330,
+    "unit": "days"
+   },
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    224,
+    -144
+   ],
+   "id": "76a81837-7887-41f8-8d0e-bb9291fb16c3",
+   "name": "Wait",
+   "webhookId": "7b169528-087a-44e0-a5d9-ccff2b353b7b"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "d358890e-eecb-42e0-9cb6-6e3ab2f5ca43",
+       "leftValue": "={{ $('Search records1').item.json.Status }}",
+       "rightValue": "Active",
+       "operator": {
+        "type": "string",
+        "operation": "equals",
+        "name": "filter.operator.equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.filter",
+   "typeVersion": 2.3,
+   "position": [
+    672,
+    -144
+   ],
+   "id": "d325c2ad-7b35-4aea-8e7b-f849c5ff4b30",
+   "name": "Filter"
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblRBxm2N53331mIm",
+     "mode": "list",
+     "cachedResultName": "Tasks",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblRBxm2N53331mIm"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Task Name": "=Purchase New Domains - {{ $('Search records1').item.json.Name }}",
+      "Client": "={{ [ $('Search records1').item.json.id ] }}",
+      "Assignee": "=rec0uiatKT3onVuwk",
+      "Stage": "Planning",
+      "Due Date": "={{ DateTime.now().plus({ days: 30 }).toISODate() }}",
+      "Notes": "Domain should be expiring from original onboarding date. Confirm renewal.",
+      "Status": "Not Started",
+      "Priority": "Medium"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "Task Name",
+       "displayName": "Task Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Campaign",
+       "displayName": "Campaign",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Assignee",
+       "displayName": "Assignee",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Stage",
+       "displayName": "Stage",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Intake",
+         "value": "Intake"
+        },
+        {
+         "name": "Planning",
+         "value": "Planning"
+        },
+        {
+         "name": "Execution",
+         "value": "Execution"
+        },
+        {
+         "name": "Review",
+         "value": "Review"
+        },
+        {
+         "name": "QA",
+         "value": "QA"
+        },
+        {
+         "name": "Completed",
+         "value": "Completed"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Due Date",
+       "displayName": "Due Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Priority",
+       "displayName": "Priority",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Urgent",
+         "value": "Urgent"
+        },
+        {
+         "name": "High",
+         "value": "High"
+        },
+        {
+         "name": "Medium",
+         "value": "Medium"
+        },
+        {
+         "name": "Low",
+         "value": "Low"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Status",
+       "displayName": "Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Not Started",
+         "value": "Not Started"
+        },
+        {
+         "name": "In Progress",
+         "value": "In Progress"
+        },
+        {
+         "name": "Done",
+         "value": "Done"
+        },
+        {
+         "name": "Blocked",
+         "value": "Blocked"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Notes",
+       "displayName": "Notes",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Last Updated",
+       "displayName": "Last Updated",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Created",
+       "displayName": "Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Time Ago",
+       "displayName": "Time Ago",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Calculation",
+       "displayName": "Calculation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Project Health",
+       "displayName": "Project Health",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "On Track",
+         "value": "On Track"
+        },
+        {
+         "name": "At Risk",
+         "value": "At Risk"
+        },
+        {
+         "name": "Overdue",
+         "value": "Overdue"
+        },
+        {
+         "name": "On Hold",
+         "value": "On Hold"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {
+     "typecast": true
+    }
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    896,
+    -144
+   ],
+   "id": "d2dd194b-e9d7-475d-ba82-97f56b0a23c9",
+   "name": "Create a record"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt"
+    },
+    "filterByFormula": "={ID} =  {{ $json.body.ID }}",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    448,
+    -144
+   ],
+   "id": "4df1f2d6-4546-4542-83f8-6d8861fa1dcf",
+   "name": "Search records1"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

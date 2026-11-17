@@ -1,0 +1,732 @@
+{
+ "id": "TB0QoYYibXZGemcdeI8Ui",
+ "name": "[Email Accounts] Health Math Monitor",
+ "active": true,
+ "isArchived": false,
+ "versionId": "dcb7d1af-fc3d-4f89-9f1a-e5a7b7a47b7b",
+ "triggerCount": 1,
+ "createdAt": "2026-08-16T22:39:55.326Z",
+ "updatedAt": "2026-11-17T16:41:33.605Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Daily at 5 AM": {
+   "main": [
+    [
+     {
+      "node": "Get Active Email Accounts",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Active Email Accounts": {
+   "main": [
+    [
+     {
+      "node": "Calculate and Classify Health",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Calculate and Classify Health": {
+   "main": [
+    [
+     {
+      "node": "Build Multiple Health Reasons",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build Multiple Health Reasons": {
+   "main": [
+    [
+     {
+      "node": "Health Changed?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Health Changed?": {
+   "main": [
+    [
+     {
+      "node": "Update Health in Airtable",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "No Change",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "triggerAtHour": 5
+      }
+     ]
+    }
+   },
+   "id": "b4bbc23d-3380-40b6-bcd6-4a0e64f9eb20",
+   "name": "Daily at 5 AM",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    -2256,
+    128
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMSOBJ0wMgxSg4l",
+     "mode": "list",
+     "cachedResultName": "Email Accounts",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblMSOBJ0wMgxSg4l"
+    },
+    "filterByFormula": "AND({Email ID} != BLANK(), {Status (from Client)} = 'Active')",
+    "options": {}
+   },
+   "id": "7f3abb54-005e-40e6-a2eb-ced8099cc962",
+   "name": "Get Active Email Accounts",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -2016,
+    128
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "// Editable thresholds\nconst LOW_WARMUP_SCORE = 95;\nconst HIGH_BOUNCE_RATE = 3;\nconst LOW_REPLY_RATE = 1;\nconst MIN_SENT_FOR_BOUNCE = 100;\nconst MIN_CONTACTED_FOR_REPLY = 200;\n\nreturn items.map((item) => {\n  const row = item.json;\n  const sent = Number(row.emails_sent_count || 0);\n  const contacted = Number(row.total_leads_contacted_count || 0);\n  const bounced = Number(row.bounced_count || 0);\n  const replies = Number(row.unique_replied_count || 0);\n  const warmupScore = Number(row.warmup_score || 0);\n\n  const bounceRate = sent > 0\n    ? Number(((bounced / sent) * 100).toFixed(2))\n    : null;\n  const replyRate = contacted > 0\n    ? Number(((replies / contacted) * 100).toFixed(2))\n    : null;\n\n  const currentStatus = row.Status?.name || row.Status || null;\n  const currentReason = row['Health Reason']?.name || row['Health Reason'] || null;\n\n  // These reasons are owned by other health automations and must not be overwritten here.\n  const externallyOwnedReasons = [\n    'Poor Inbox Placement',\n    'Blacklist',\n    'Manual Review'\n  ];\n\n  let proposedStatus = 'Healthy';\n  let proposedReason = null;\n  let decision = 'Healthy: monitored metrics are within thresholds';\n  let shouldUpdate = false;\n\n  if (currentStatus === 'At Risk' && externallyOwnedReasons.includes(currentReason)) {\n    proposedStatus = currentStatus;\n    proposedReason = currentReason;\n    decision = `Preserved external health reason: ${currentReason}`;\n  } else if (row.warmup_enabled !== true) {\n    proposedStatus = 'At Risk';\n    proposedReason = 'Low Warmup Score';\n    decision = 'Warmup is disabled';\n  } else if (warmupScore > 0 && warmupScore < LOW_WARMUP_SCORE) {\n    proposedStatus = 'At Risk';\n    proposedReason = 'Low Warmup Score';\n    decision = `Warmup score ${warmupScore} is below ${LOW_WARMUP_SCORE}`;\n  } else if (sent >= MIN_SENT_FOR_BOUNCE && bounceRate >= HIGH_BOUNCE_RATE) {\n    proposedStatus = 'At Risk';\n    proposedReason = 'High Bounce Rate';\n    decision = `Bounce rate ${bounceRate}% is at or above ${HIGH_BOUNCE_RATE}%`;\n  } else if (contacted >= MIN_CONTACTED_FOR_REPLY && replyRate < LOW_REPLY_RATE) {\n    proposedStatus = 'At Risk';\n    proposedReason = 'Low Reply Rate';\n    decision = `Reply rate ${replyRate}% is below ${LOW_REPLY_RATE}%`;\n  }\n\n  if (!(currentStatus === 'At Risk' && externallyOwnedReasons.includes(currentReason))) {\n    shouldUpdate = currentStatus !== proposedStatus || currentReason !== proposedReason;\n  }\n\n  return {\n    json: {\n      ...row,\n      bounce_rate: bounceRate,\n      reply_rate: replyRate,\n      proposed_status: proposedStatus,\n      proposed_health_reason: proposedReason,\n      health_decision: decision,\n      should_update: shouldUpdate\n    }\n  };\n});"
+   },
+   "id": "00455089-93a7-463c-9b4c-4b20e6718836",
+   "name": "Calculate and Classify Health",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -1744,
+    128
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "// Rebuild Health Reason as a multiple-select array.\n// This node preserves reasons owned by other automations and recalculates only math-owned reasons.\nconst LOW_WARMUP_SCORE = 95;\nconst HIGH_BOUNCE_RATE = 3;\nconst LOW_REPLY_RATE = 1;\nconst MIN_SENT_FOR_BOUNCE = 100;\nconst MIN_CONTACTED_FOR_REPLY = 200;\n\nconst EXTERNAL_REASONS = [\n  'Poor Inbox Placement',\n  'Blacklist',\n  'Manual Review'\n];\n\nreturn items.map((item) => {\n  const row = item.json;\n  const rawReasons = row['Health Reason'];\n  const currentReasons = (Array.isArray(rawReasons) ? rawReasons : rawReasons ? [rawReasons] : [])\n    .map((reason) => reason?.name || reason)\n    .filter(Boolean);\n\n  const externalReasons = currentReasons.filter((reason) => EXTERNAL_REASONS.includes(reason));\n  const metricReasons = [];\n\n  const sent = Number(row.emails_sent_count || 0);\n  const contacted = Number(row.total_leads_contacted_count || 0);\n  const bounced = Number(row.bounced_count || 0);\n  const replies = Number(row.unique_replied_count || 0);\n  const warmupScore = Number(row.warmup_score || 0);\n  const bounceRate = sent > 0 ? Number(((bounced / sent) * 100).toFixed(2)) : null;\n  const replyRate = contacted > 0 ? Number(((replies / contacted) * 100).toFixed(2)) : null;\n\n  if (row.warmup_enabled !== true || (warmupScore > 0 && warmupScore < LOW_WARMUP_SCORE)) {\n    metricReasons.push('Low Warmup Score');\n  }\n  if (sent >= MIN_SENT_FOR_BOUNCE && bounceRate >= HIGH_BOUNCE_RATE) {\n    metricReasons.push('High Bounce Rate');\n  }\n  if (contacted >= MIN_CONTACTED_FOR_REPLY && replyRate < LOW_REPLY_RATE) {\n    metricReasons.push('Low Reply Rate');\n  }\n\n  const proposedReasons = [...new Set([...externalReasons, ...metricReasons])];\n  const currentStatus = row.Status?.name || row.Status || null;\n  const proposedStatus = externalReasons.length > 0\n    ? (currentStatus || 'At Risk')\n    : proposedReasons.length > 0\n      ? 'At Risk'\n      : 'Healthy';\n\n  const normalizedCurrent = [...new Set(currentReasons)].sort();\n  const normalizedProposed = [...proposedReasons].sort();\n  const reasonsChanged = JSON.stringify(normalizedCurrent) !== JSON.stringify(normalizedProposed);\n  const statusChanged = currentStatus !== proposedStatus;\n\n  return {\n    json: {\n      ...row,\n      bounce_rate: bounceRate,\n      reply_rate: replyRate,\n      proposed_status: proposedStatus,\n      proposed_health_reasons: proposedReasons,\n      health_decision: proposedReasons.length > 0\n        ? `Active reasons: ${proposedReasons.join(', ')}`\n        : 'Healthy: monitored metrics are within thresholds',\n      should_update: reasonsChanged || statusChanged\n    }\n  };\n});"
+   },
+   "id": "e7b4e177-db29-4679-9b74-53e61afd1595",
+   "name": "Build Multiple Health Reasons",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -1536,
+    128
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "bb456fe1-05f4-4d84-8bcb-1106add142ef",
+       "leftValue": "={{ $json.should_update }}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "e070969e-ca6b-4768-bcae-d19b88009e6a",
+   "name": "Health Changed?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.3,
+   "position": [
+    -1296,
+    128
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMSOBJ0wMgxSg4l",
+     "mode": "list",
+     "cachedResultName": "Email Accounts",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblMSOBJ0wMgxSg4l"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "id": "={{ $json.id }}",
+      "Status": "={{ $json.proposed_status }}",
+      "Health Reason": "={{ $json.proposed_health_reasons }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": false
+      },
+      {
+       "id": "Email Account",
+       "displayName": "Email Account",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Email ID",
+       "displayName": "Email ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Workspace ID",
+       "displayName": "Workspace ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Warmup Start Date",
+       "displayName": "Warmup Start Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Days Since Warmup Started",
+       "displayName": "Days Since Warmup Started",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Number of Disconnects",
+       "displayName": "Number of Disconnects",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Status (from Client)",
+       "displayName": "Status (from Client)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "EmailBison API (from Client)",
+       "displayName": "EmailBison API (from Client)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Created",
+       "displayName": "Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Last Warmup Check",
+       "displayName": "Last Warmup Check",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_enabled",
+       "displayName": "warmup_enabled",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_daily_limit",
+       "displayName": "warmup_daily_limit",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_emails_sent",
+       "displayName": "warmup_emails_sent",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_replies_received",
+       "displayName": "warmup_replies_received",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_emails_saved_from_spam",
+       "displayName": "warmup_emails_saved_from_spam",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_score",
+       "displayName": "warmup_score",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_bounces_received_count",
+       "displayName": "warmup_bounces_received_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_bounces_caused_count",
+       "displayName": "warmup_bounces_caused_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_disabled_for_bouncing_count",
+       "displayName": "warmup_disabled_for_bouncing_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "emails_sent_count",
+       "displayName": "emails_sent_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "total_replied_count",
+       "displayName": "total_replied_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "unsubscribed_count",
+       "displayName": "unsubscribed_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "bounced_count",
+       "displayName": "bounced_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "unique_replied_count",
+       "displayName": "unique_replied_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "total_leads_contacted_count",
+       "displayName": "total_leads_contacted_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "interested_leads_count",
+       "displayName": "interested_leads_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "email_status",
+       "displayName": "email_status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "email_type",
+       "displayName": "email_type",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "email_daily_limit",
+       "displayName": "email_daily_limit",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Time Disconnected",
+       "displayName": "Last Time Disconnected",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Actions",
+       "displayName": "Actions",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Update Daily Limit",
+         "value": "Update Daily Limit"
+        },
+        {
+         "name": "Update Warmup Limit",
+         "value": "Update Warmup Limit"
+        },
+        {
+         "name": "Turn Warmup On",
+         "value": "Turn Warmup On"
+        },
+        {
+         "name": "Turn Warmup Off",
+         "value": "Turn Warmup Off"
+        },
+        {
+         "name": "N/A",
+         "value": "N/A"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_disable_status",
+       "displayName": "warmup_disable_status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Warmup disabled for receiving bounces. You can enable after 24 hours.",
+         "value": "Warmup disabled for receiving bounces. You can enable after 24 hours."
+        },
+        {
+         "name": "Warmup disabled for causing bounces",
+         "value": "Warmup disabled for causing bounces"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Status",
+       "displayName": "Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Healthy",
+         "value": "Healthy"
+        },
+        {
+         "name": "At Risk",
+         "value": "At Risk"
+        },
+        {
+         "name": "Spam",
+         "value": "Spam"
+        },
+        {
+         "name": "Resting",
+         "value": "Resting"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Health Reason",
+       "displayName": "Health Reason",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "options": [
+        {
+         "name": "Poor Inbox Placement",
+         "value": "Poor Inbox Placement"
+        },
+        {
+         "name": "Low Warmup Score",
+         "value": "Low Warmup Score"
+        },
+        {
+         "name": "High Bounce Rate",
+         "value": "High Bounce Rate"
+        },
+        {
+         "name": "Low Reply Rate",
+         "value": "Low Reply Rate"
+        },
+        {
+         "name": "Blacklist",
+         "value": "Blacklist"
+        },
+        {
+         "name": "Manual Review",
+         "value": "Manual Review"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Campaigns",
+       "displayName": "Campaigns",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {
+     "typecast": false
+    }
+   },
+   "id": "63813d88-c1be-4629-86b8-e8fea09add07",
+   "name": "Update Health in Airtable",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -1008,
+    16
+   ]
+  },
+  {
+   "parameters": {},
+   "id": "c219a56a-7f53-4833-8ed8-96300155415b",
+   "name": "No Change",
+   "type": "n8n-nodes-base.noOp",
+   "typeVersion": 1,
+   "position": [
+    -1008,
+    224
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}
