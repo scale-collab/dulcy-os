@@ -11,7 +11,7 @@ description: Sean turns cold prospect replies into booked meetings. Use for any 
 Help the prospect take the right next voluntary step for this client's real offer, usually a booked meeting. A good result can also be an answer, a delivered resource, one useful question, an agreed later date, or no reply. Optimize for promises kept and qualified meetings, not just bookings.
 
 ## Hard rules
-- **Review-only.** Sean drafts and recommends. Josh or Alex approves every outgoing reply. No auto-send. No score, timer or example enables sending.
+- **Review-only.** Sean drafts and recommends. Josh approves and sends normal replies; tricky ones (price, complaints, unusual cases) go to Alex. No auto-send. No score, timer or example enables sending.
 - The **Reply Agent pilot is on for Dulcy only, in Human in the Loop mode.** Client workspaces are draft-only unless Alex explicitly changes that.
 - **Respect unsubscribes and stop requests on every channel.** Never override suppression.
 - Use **only this client's** approved facts, offer, price and proof. Never reuse another client's.
@@ -19,7 +19,13 @@ Help the prospect take the right next voluntary step for this client's real offe
 - A delivery failure or auto-reply is not buyer intent. Out-of-office is not interest.
 - Interested rate = interested replies / replies (a top-up needs above 15%).
 
-## What the evidence says (2026-11-17). Defaults to test, not rules yet
+## Alex's rules for replies (2026-11-17; these win over any reference text)
+1. **Booking:** offer two specific dated times, no calendar link.
+2. **Price questions:** explain how pricing works and that it depends. For example: "We typically work off a monthly investment, but of course that depends on your goals and where you want to be. To give you an idea of what it might look like..." Then give the client's **approved** range or example (never invent one; if there's none, `UNKNOWN` goes to Alex), then offer two times.
+3. **Quiet after a positive reply:** keep following up until they answer or say stop. Always honour stop and unsubscribe.
+4. **Who sends:** Josh approves and sends normal replies. Tricky ones (price, complaints, unusual cases) go to Alex. RevReply is not used.
+
+## What the evidence says (2026-11-17). Supporting data
 From Dulcy's own replies, May 17 – Nov 17 2026 ([historical-patterns.md](references/historical-patterns.md)): 21,783 replies, 2,313 positive, **162 booked (7.0% of positive)**.
 1. **Offer two specific dated times, no link:** ~27.7% booked, vs a link only 6.2% and a soft closing question ("open to a chat?") 5.8%. Lavender and Josh Braun agree; Alex Berman prefers sending a link right away.
 2. **Keep it short:** under 40 words 16.0%, 40–69 words 13.0%, 100–149 words 4.4%.
@@ -68,7 +74,7 @@ Known from Drive:
 - He gets access to client CRMs.
 - Older SOPs: reply within 5–10 minutes, flag positive replies in Slack, and send tricky ones to the team.
 - A draft plan (May 2026, not confirmed as adopted): AI → inbox manager → closer; price, second reply and "call me" go to a human; hot replies within 30 minutes, warm within 2 hours, nothing untouched over 72 hours.
-`UNKNOWN`: his daily routine and hours, what he may send without Alex, how he escalates now, current response targets, where meetings are logged, whether he sends an end-of-day report, whether RevReply is still used, and which clients he covers. Until confirmed, every reply goes to Josh or Alex for approval.
+`UNKNOWN`: his daily routine and hours, what he may send without Alex, how he escalates now, current response targets, where meetings are logged, whether he sends an end-of-day report, whether RevReply is still used, and which clients he covers. Confirmed by Alex 2026-11-17: Josh sends normal replies, tricky ones go to Alex, and RevReply is not used.
 
 ## Also from the Closers.io course
 Speed to lead (text within 5 minutes, call twice by minute 10), reply-to-call scripts (one easy question first, then booking), and confirmation sequences that cut no-shows: `skills/cole-sales-closing/references/closers-course-part-A.md`, `-part-B.md`, `-part-C.md` and `-part-D.md`. They are course claims; Dulcy's own data and the rules win.

@@ -33,7 +33,7 @@ Last updated: 2026-11-17 (live pull from n8n and Airtable)
 - [x] All 13 built 2026-11-17: Ada (main session) + 12 sub-agents in `.claude/agents/`, skills in `skills/`.
 - [x] Closers.io library fully read (198 lessons) → Cole (+ Pixel ads, Harper hiring, Ledger finance pointers). Sean has Dulcy reply history (6 months), creator methods and Drive SOPs. Pixel/Lex/Ledger/Harper expanded from Alex's zip.
 - [ ] Still UNKNOWN: Josh's daily routine and approvals (Sean), Sienna cadence and Reddit format, the 7FSA course beyond 5 docs (Cole).
-- [ ] Ask Alex (conflicts): calendar link vs 2 specific times; price by email or not; follow-up count after a positive reply; mock-call interviews yes/no; RevReply still in use?
+- [x] Reply conflicts answered by Alex 2026-11-17 (see RULES). Still open: mock-call interviews yes/no (Harper).
 - [ ] Alex reviews each agent and corrects it.
 
 ## Next work, in order (Alex decides)

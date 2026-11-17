@@ -32,6 +32,11 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-17] AI reply drafts are review-only. Josh or Alex approve every outgoing reply. Reply Agent pilot is on for Dulcy only, in Human in the Loop mode. (Reply Agent SOP, Oct 7)
 - [2026-11-17] Respect unsubscribes and stop requests. Never override suppression. (Reply Agent SOP)
 
+- [2026-11-17] Booking ask: when a prospect is interested, offer **two specific dated times, no calendar link** (Dulcy data: 27.7% booked vs 6.2% link). (Alex)
+- [2026-11-17] Price question by email: explain how pricing works and that it depends. Example: "we typically work off a monthly investment, but that depends on your goals and where you want to be; to give you an idea of what it might look like..." Then give the client's approved range or example only (never invent one), then offer two times. (Alex)
+- [2026-11-17] A positive reply that goes quiet: keep following up until they answer or say stop. Always honour stop, unsubscribe and suppression. (Alex)
+- [2026-11-17] Josh approves and sends normal replies himself. Tricky ones (price, complaints, unusual cases) go to Alex. RevReply is not used. (Alex)
+
 ## Content (Sienna)
 - [2026-11-17] Pillars: cold outbound, agency operations, proof and experiments, founder lessons, AI/modern GTM. Alex's account = first-person lessons and behind-the-scenes decisions; Dulcy's account = systems, frameworks, service education, approved client proof. Never invent results or stories. (Alex)
 - [2026-11-17] Alex Woung Raw clips are never split-screen. Regular Alex Woung clips may be split-screen when showing a screen or demonstrating something. (Alex)
