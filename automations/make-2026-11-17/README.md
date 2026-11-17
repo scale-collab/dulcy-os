@@ -35,7 +35,7 @@ Removed before commit: API keys (Slack bot token, EmailBison, HeyReach, Stripe w
 All 28 active scenarios have "Allow storing of incomplete executions" off (`dlq: false`). When a run fails, its data is lost and has to be redone by hand. **Fix (Alex decides):** turn it on, at least for Booked Meeting, Booked Meetings (client), New/Existing Lead and Schedule Reminders.
 
 ### 3. The old Make reply inbox is filling up
-The Make webhook "Receive replies from EmailBison" has **650 of 667** queue slots full, and its scenario `[INBOX MANAGER] Receive Replies from EmailBison` (3816555) is off. Something is still sending replies to Make. Replies now go to n8n (`bison-replies`). Results of the per-workspace EmailBison check are below.
+The Make webhook "Receive replies from EmailBison" has **650 of 667** queue slots full, and its scenario `[INBOX MANAGER] Receive Replies from EmailBison` (3816555) is off. Something is still sending replies to Make. Replies now go to n8n (`bison-replies`). EmailBison check 2026-11-17: the primary workspace (80, MJJ Brilliant) sends all 9 of its webhooks to n8n, none to Make. The other 34 workspaces were not checked: switching workspaces needs a POST call or each workspace's API key. UNKNOWN which workspace still sends to Make.
 
 ### 4. Other queues holding unprocessed items (scenario off)
 - 3 Close "Lead Status Changed" hooks (Real Estate OS, connection "millennium interstate realty"): 32 items each.
