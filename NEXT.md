@@ -26,6 +26,9 @@ Last updated: 2026-11-17 (live pull from n8n and Airtable)
 - Where the over-4% bounce auto-pause runs: not found in Airtable automations or by search in n8n. UNKNOWN.
 - All 158 n8n workflows show active and updated 16:30-16:44 UTC today. UNKNOWN what changed.
 
+## Parked (low priority)
+- EmailGuard in the Claude desktop app: config is in place, but the `emailguard-mcp` program is not installed on Alex's Mac. The install steps are on app.emailguard.io/integrations/emailguard-mcp (login needed). Not needed for cloud sessions; EmailGuard already works there. Parked 2026-11-17.
+
 ## Next work, in order (Alex decides)
 1. Finish the foundation as the missing items arrive.
 2. Top Up fix: reconcile-one-import action, then move CSV prep out of n8n.
