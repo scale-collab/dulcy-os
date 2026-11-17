@@ -1,0 +1,662 @@
+{
+ "id": "I1uwQYJRdXgNWv9a",
+ "name": "Twitter Succeeded",
+ "active": true,
+ "isArchived": false,
+ "versionId": "80b67f9c-deca-4211-a57a-63b28379fd3b",
+ "triggerCount": 1,
+ "createdAt": "2025-12-10T10:14:57.102Z",
+ "updatedAt": "2026-11-17T16:39:53.280Z",
+ "settings": {
+  "executionOrder": "v1",
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Search Data ID": {
+   "main": [
+    [
+     {
+      "node": "Get dataset items",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get dataset items": {
+   "main": [
+    [
+     {
+      "node": "Convert to File",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Convert to File": {
+   "main": [
+    [
+     {
+      "node": "Upload to Agency CSV Folder",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Upload to Agency CSV Folder": {
+   "main": [
+    [
+     {
+      "node": "Share file1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Share file1": {
+   "main": [
+    [
+     {
+      "node": "Search Users",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Update g-drive link",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search Users": {
+   "main": [
+    [
+     {
+      "node": "Send a message",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "If error": {
+   "main": [
+    [
+     {
+      "node": "Create error message",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create error message": {
+   "main": [
+    [
+     {
+      "node": "Wait",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Send a message": {
+   "main": [
+    [
+     {
+      "node": "If error",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Receive Twitter Actor Webhook": {
+   "main": [
+    [
+     {
+      "node": "Search Data ID",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wait": {
+   "main": [
+    [
+     {
+      "node": "Send Error Message",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appJNoGcSkyIEPQ68",
+     "mode": "list",
+     "cachedResultName": "Scrapers",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tbllFWCBkZ0MNBFHD",
+     "mode": "list",
+     "cachedResultName": "X(FKA Twitter) Scraper",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68/tbllFWCBkZ0MNBFHD"
+    },
+    "filterByFormula": "=List_ID = \"{{ $json.body.resource.defaultDatasetId }}\"",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    224,
+    96
+   ],
+   "id": "a9b1db41-93e4-426e-a474-d6c4d74f83f7",
+   "name": "Search Data ID"
+  },
+  {
+   "parameters": {
+    "options": {
+     "fileName": "={{ $('Search Data ID').item.json['File Name'] + \".csv\" }}",
+     "headerRow": true
+    }
+   },
+   "type": "n8n-nodes-base.convertToFile",
+   "typeVersion": 1.1,
+   "position": [
+    672,
+    96
+   ],
+   "id": "24cc012c-9ca0-40a9-a7d1-8bd6f2d73dee",
+   "name": "Convert to File"
+  },
+  {
+   "parameters": {
+    "resource": "Datasets",
+    "datasetId": "={{ $json.List_ID }}",
+    "offset": {},
+    "limit": {}
+   },
+   "type": "@apify/n8n-nodes-apify.apify",
+   "typeVersion": 1,
+   "position": [
+    448,
+    96
+   ],
+   "id": "b3a1a70a-d9fe-4679-8cae-83d5f0977ec9",
+   "name": "Get dataset items"
+  },
+  {
+   "parameters": {
+    "name": "={{ $('Search Data ID').item.json['File Name'] }}",
+    "driveId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "My Drive"
+    },
+    "folderId": {
+     "__rl": true,
+     "value": "1nASQd6-Xh9JX0V6vgrRinhwBEIfD3L48",
+     "mode": "list",
+     "cachedResultName": "Agency Ignition CSVs",
+     "cachedResultUrl": "https://drive.google.com/drive/folders/1nASQd6-Xh9JX0V6vgrRinhwBEIfD3L48"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.googleDrive",
+   "typeVersion": 3,
+   "position": [
+    896,
+    96
+   ],
+   "id": "25b4aff6-a4b9-4752-84f4-d0cbbac2c74d",
+   "name": "Upload to Agency CSV Folder"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appJNoGcSkyIEPQ68",
+     "mode": "list",
+     "cachedResultName": "Scrapers",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tbllFWCBkZ0MNBFHD",
+     "mode": "list",
+     "cachedResultName": "X(FKA Twitter) Scraper",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68/tbllFWCBkZ0MNBFHD"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "N8N Automation Ran?": true,
+      "id": "={{ $('Search Data ID').item.json.id }}",
+      "Google Drive Link": "={{ $('Upload to Agency CSV Folder').item.json.webViewLink }}",
+      "List_ID": "={{ $('Receive Twitter Actor Webhook').item.json.body.resource.defaultDatasetId }}",
+      "Source of Creation": "Discord"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true
+      },
+      {
+       "id": "Run - ID",
+       "displayName": "Run - ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Instagram Page URL",
+       "displayName": "Instagram Page URL",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "List_ID",
+       "displayName": "List_ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "N8N Automation Ran?",
+       "displayName": "N8N Automation Ran?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Type of Scraper",
+       "displayName": "Type of Scraper",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "posts",
+         "value": "posts"
+        },
+        {
+         "name": "comments",
+         "value": "comments"
+        },
+        {
+         "name": "details",
+         "value": "details"
+        },
+        {
+         "name": "mentions",
+         "value": "mentions"
+        },
+        {
+         "name": "reels",
+         "value": "reels"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Total Profiles to Scrape",
+       "displayName": "Total Profiles to Scrape",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "User",
+       "displayName": "User",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "User Name",
+       "displayName": "User Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "File Name",
+       "displayName": "File Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Source of Creation",
+       "displayName": "Source of Creation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Internal",
+         "value": "Internal"
+        },
+        {
+         "name": "Discord",
+         "value": "Discord"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Google Drive Link",
+       "displayName": "Google Drive Link",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Discord Tags",
+       "displayName": "Discord Tags",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Record Created at",
+       "displayName": "Record Created at",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1344,
+    192
+   ],
+   "id": "7c4c9e3f-c31e-42f0-b2b6-78bce5d0bd96",
+   "name": "Update g-drive link"
+  },
+  {
+   "parameters": {
+    "operation": "share",
+    "fileId": {
+     "__rl": true,
+     "value": "={{ $json.id }}",
+     "mode": "id"
+    },
+    "permissionsUi": {
+     "permissionsValues": {
+      "role": "reader",
+      "type": "anyone"
+     }
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.googleDrive",
+   "typeVersion": 3,
+   "position": [
+    1120,
+    96
+   ],
+   "id": "5d5ab5ce-7285-4bde-a54d-d83cb9077c48",
+   "name": "Share file1"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appJNoGcSkyIEPQ68",
+     "mode": "list",
+     "cachedResultName": "Ignition Dev Database",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tbl2MDaQIDFNJ7LR4",
+     "mode": "list",
+     "cachedResultName": "Discord User",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68/tbl2MDaQIDFNJ7LR4"
+    },
+    "filterByFormula": "={Record ID} = \"{{ $('Search Data ID').item.json.user_id }}\"",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1344,
+    0
+   ],
+   "id": "0cdbd553-2cd9-4481-9c45-30267068fc10",
+   "name": "Search Users"
+  },
+  {
+   "parameters": {
+    "authentication": "oAuth2",
+    "resource": "message",
+    "guildId": {
+     "__rl": true,
+     "value": "https://discord.com/channels/1349530994738466816",
+     "mode": "url"
+    },
+    "sendTo": "user",
+    "userId": {
+     "__rl": true,
+     "value": "={{ $json.Discord_Tag }}",
+     "mode": "id"
+    },
+    "content": "=Hi there, here is your X scraper results: \n\n{{ $('Upload to Agency CSV Folder').item.json.webViewLink }}\n\n",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.discord",
+   "typeVersion": 2,
+   "position": [
+    1568,
+    0
+   ],
+   "id": "2699b1c7-5f0a-4032-94c1-2641d5579999",
+   "name": "Send a message",
+   "webhookId": "42391171-ccde-49fd-ade6-3c7d57081d02",
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "d03dbf11-b51e-4c06-839e-fb5c62b821b7",
+       "leftValue": "={{ $json.error }}",
+       "rightValue": "",
+       "operator": {
+        "type": "string",
+        "operation": "exists",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.filter",
+   "typeVersion": 2.2,
+   "position": [
+    1792,
+    0
+   ],
+   "id": "42a02799-6a63-4f65-95f2-9ea4b1858a5b",
+   "name": "If error"
+  },
+  {
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "9e8588ba-c2e6-4ede-ab35-64d281cc4cdc",
+       "name": "Error Message",
+       "value": "=We could not send {{ $('Search Users').item.json[\"Discord Name\"] }} their scraper because they havn't allowed us to send messages to them.   \n\nError: {{ $json.error }} \nTime: {{ $('Search Data ID').item.json.createdTime }}",
+       "type": "string"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    2016,
+    0
+   ],
+   "id": "aec821ae-260a-45f5-8dd1-2325ed1fb80e",
+   "name": "Create error message"
+  },
+  {
+   "parameters": {
+    "authentication": "oAuth2",
+    "resource": "message",
+    "guildId": {
+     "__rl": true,
+     "value": "1349530994738466816",
+     "mode": "id"
+    },
+    "channelId": {
+     "__rl": true,
+     "mode": "id",
+     "value": "1365362559234080892"
+    },
+    "content": "={{ $json['Error Message'] }}",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.discord",
+   "typeVersion": 2,
+   "position": [
+    2448,
+    0
+   ],
+   "id": "2c91d48b-49f0-4526-a162-e250de2b3f0c",
+   "name": "Send Error Message",
+   "webhookId": "ee3db2a9-9f33-4f58-8854-22d6cfc03cb4"
+  },
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    0,
+    96
+   ],
+   "id": "b135aab2-4ef9-4c35-abce-225cfe7cf748",
+   "name": "Receive Twitter Actor Webhook"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    2224,
+    0
+   ],
+   "id": "18f8dec5-1d9a-4040-a4f8-4765b01d1a5a",
+   "name": "Wait",
+   "webhookId": "5d3ee246-08db-4d80-8c86-6cd2e70c029b"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

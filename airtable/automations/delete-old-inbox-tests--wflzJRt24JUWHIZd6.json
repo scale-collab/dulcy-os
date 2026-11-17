@@ -1,0 +1,56 @@
+{
+ "id": "wflzJRt24JUWHIZd6",
+ "name": "Delete Old Inbox Tests",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordMatchesConditions",
+  "inputs": {
+   "tableId": "tblGjv6A5r7md3kxX",
+   "filtersObj": {
+    "obj": {
+     "operator": "and",
+     "operands": {
+      "tuple": [
+       {
+        "obj": {
+         "operator": ">=",
+         "operands": {
+          "tuple": [
+           "fld3QBPM458RtbUXh",
+           3
+          ]
+         },
+         "operatorOptions": null
+        }
+       }
+      ]
+     }
+    }
+   }
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacZwiyk144VdGk8l",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "recordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     }
+    },
+    "script": "let table = base.getTable(\"Inbox Placement Testing\");\nlet record = await table.selectRecordAsync(input.config().recordId);\nlet webhook = \"https://n8n.dulcy.io/webhook/REDACTED_PATH\";\n\nlet payload = {};\nfor (let field of table.fields) {\n    payload[field.name] = record.getCellValue(field.name);\n}\n\n// Add the recordId to the payload:\npayload[\"recordId\"] = record.id;\n\nawait fetch(webhook, {\n    method: \"POST\",\n    headers: { \"Content-Type\": \"application/json\" },\n    body: JSON.stringify(payload)\n});"
+   },
+   "outputSchema": []
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

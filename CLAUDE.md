@@ -16,7 +16,23 @@ If Alex says something new in chat, the newest instruction wins, and you log it 
 ## Roles
 - **Claude = orchestrator** for campaign building, automation and code. Use sub-agents when a task needs them.
 - **ChatGPT = admin**: email drafting/sending support, reporting, personal tasks. It holds history that has not yet been moved here.
-- Specialist skills live in `skills/`: Atlas (strategy/offers/client health), Scout (ICP and lead lists), Scribe (copy and replies), Airtable (managed stages and operations), Jarvis (routing and business support). Old role names are retired.
+- **Ada runs first.** In Claude Code the main session is Ada (called Jarvis in ChatGPT). For every request, follow `skills/ada-router/SKILL.md`: pick one owner, write the hand-off brief, enforce the approval rules.
+- **Agent roster (set by Alex 2026-11-17).** Ada routes all work to one owner:
+  - Ada: orchestrator and router (was Jarvis)
+  - Atlas: leads every campaign and client account. Runs the campaign and list stages in Airtable's managed screens and directs Scout, Scribe and Forge
+  - Riley: fixes the systems only (n8n, Make, Airtable automations and scripts). Not campaign work
+  - Forge: offers (separate from campaign strategy)
+  - Scout: lead lists and targeting
+  - Scribe: copywriting only
+  - Sean: reply handling, from cold reply to booked meeting; owns the AI replier (Reply Agent) and Josh's inbox process
+  - Cole: sales and closing (Closers.io method)
+  - Sienna: social media and content (a full agent; includes Content OS)
+  - Pixel: paid ads
+  - Lex: legal and HR
+  - Ledger: business finance
+  - Harper: hiring and people operations
+  - Red Dog (trading) is personal and stays OUT of this repo.
+  - Skill files live in `skills/`; sub-agents in `.claude/agents/` (read-only: they look and draft, and Ada makes approved changes). Where knowledge is thin it is marked UNKNOWN.
 
 ## Stack
 Airtable (operating system: Campaign Center, Lead List Center, projects, CRM) · EmailBison (sending) · DiscoLike, LeadMagic, MillionVerifier, Clay (lists and verification) · EmailGuard (spam/placement) · Slack · Google Drive/Sheets · n8n/Make · Close · Apollo · Calendly · Xero.
@@ -43,7 +59,9 @@ Airtable (operating system: Campaign Center, Lead List Center, projects, CRM) ·
 | Why we decided things | `rules/decisions-log.md` |
 | Company facts, channel status, goals | `company/` |
 | One file per client | `clients/` |
-| Specialist skills | `skills/` |
+| Specialist skills (also linked at `.claude/skills/` so Claude Code loads them) | `skills/` |
+| Sub-agents (one per specialist, read-only) | `.claude/agents/` |
+| Shared client/promise contract | `rules/client-promise-contract.md` |
 | Source SOPs (history, not validated as current) | `sops/drive-export/` |
 | n8n and automation notes | `automations/` |
 | Old Jarvis project (history only) | `legacy/` |

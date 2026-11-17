@@ -1,0 +1,68 @@
+{
+ "id": "wflSwwFjkYfND9xnh",
+ "name": "Close a Deal Sync",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordCreated",
+  "inputs": {
+   "tableId": "tblObFlCC7BrdaruO"
+  }
+ },
+ "nodes": [
+  {
+   "key": "wackz1NsA0gnSd13Z",
+   "type": "updateRecord",
+   "inputs": {
+    "tableId": "tblObFlCC7BrdaruO",
+    "rowId": {
+     "template": [
+      {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     ]
+    },
+    "updateRecordMethod": "customFields",
+    "fields": {
+     "obj": {
+      "flde9Y79JLlFxKdEv": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldOiKKVLzBQ5UPMj"
+         ]
+        }
+       ]
+      }
+     }
+    }
+   }
+  },
+  {
+   "key": "wacZqXvHVE0piG5Ac",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "recordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     }
+    },
+    "script": "let table = base.getTable(\"Client Closed Deals\");\nlet record = await table.selectRecordAsync(input.config().recordId);\nlet webhook = \"https://hook.us1.make.com/REDACTED_PATH\"\n\nlet payload = {};\nfor (let field of table.fields) {\n    payload[field.name] = record.getCellValue(field.name);\n}\n\nawait fetch(webhook, {\n    method: \"POST\",\n    headers: { \"Content-Type\": \"application/json\" },\n    body: JSON.stringify(payload)\n});"
+   },
+   "outputSchema": []
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

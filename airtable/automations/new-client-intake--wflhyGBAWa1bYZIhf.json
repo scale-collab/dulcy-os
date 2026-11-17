@@ -1,0 +1,79 @@
+{
+ "id": "wflhyGBAWa1bYZIhf",
+ "name": "New Client Intake",
+ "description": null,
+ "deploymentStatus": "undeployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordMatchesConditions",
+  "inputs": {
+   "tableId": "tbljivFOoUW2nZ6FN",
+   "filtersObj": {
+    "obj": {
+     "operator": "or",
+     "operands": {
+      "tuple": [
+       {
+        "obj": {
+         "operator": "=",
+         "operands": {
+          "tuple": [
+           "fldzg3PLVRWRejceQ",
+           true
+          ]
+         },
+         "operatorOptions": null
+        }
+       },
+       {
+        "obj": {
+         "operator": "isEmpty",
+         "operands": {
+          "tuple": [
+           "fldx8DL2DOAXaZbop"
+          ]
+         },
+         "operatorOptions": null
+        }
+       },
+       {
+        "obj": {
+         "operator": "=",
+         "operands": {
+          "tuple": [
+           "fldTmiFVjSUNK5gLY",
+           true
+          ]
+         },
+         "operatorOptions": null
+        }
+       }
+      ]
+     }
+    }
+   }
+  }
+ },
+ "nodes": [
+  {
+   "key": "wac1OdiwZblpgc12Y",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "recordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     }
+    },
+    "script": "/**\n * New Client Intake -> SignWell action dispatcher.\n * Creates a draft for new intake records and sends an existing draft only\n * when Send SignWell Agreement is explicitly checked.\n */\nconst TABLE_NAME = \"New Client Intake\";\nconst DISPATCHER_URL =\n  \"https://n8n.dulcy.io/webhook/REDACTED_PATH\";\n\nconst { recordId } = input.config();\n\nif (!recordId || !String(recordId).startsWith(\"rec\")) {\n  throw new Error(\"A valid Airtable record ID is required.\");\n}\n\nconst table = base.getTable(TABLE_NAME);\nconst record = await table.selectRecordAsync(recordId);\n\nif (!record) {\n  throw new Error(\"The Airtable record could not be found.\");\n}\n\nconst documentId = record\n  .getCellValueAsString(\"SignWell Document ID\")\n  .trim();\nconst agreementStatus = record\n  .getCellValueAsString(\"Agreement Status\")\n  .trim();\nconst createRequested = Boolean(\n  record.getCellValue(\"Create SignWell Draft\")\n);\nconst sendRequested = Boolean(\n  record.getCellValue(\"Send SignWell Agreement\")\n);\n\nlet action;\n\nif (sendRequested) {\n  if (!documentId) {\n    throw new Error(\n      \"A SignWell draft must exist before Send SignWell Agreement can run.\"\n    );\n  }\n  action = \"Send SignWell Agreement\";\n} else if (!documentId && (createRequested || !agreementStatus)) {\n  action = \"Create SignWell Draft\";\n} else {\n  if (createRequested && documentId) {\n    await table.updateRecordAsync(recordId, {\n      \"Create SignWell Draft\": false,\n    });\n  }\n  output.set(\"skipped\", true);\n  output.set(\"reason\", \"No valid SignWell action is currently requested.\");\n  return;\n}\n\nif (action === \"Create SignWell Draft\") {\n  await table.updateRecordAsync(recordId, {\n    \"Create SignWell Draft\": true,\n    \"Send SignWell Agreement\": false,\n    \"Agreement Status\": { name: \"Pending Creation\" },\n    \"SignWell Error\": \"\",\n  });\n} else {\n  await table.updateRecordAsync(recordId, {\n    \"SignWell Error\": \"\",\n  });\n}\n\ntry {\n  const response = await fetch(DISPATCHER_URL, {\n    method: \"POST\",\n    headers: { \"Content-Type\": \"application/json\" },\n    body: JSON.stringify({ recordId, action }),\n  });\n\n  if (!response.ok) {\n    const detail = await response.text();\n    throw new Error(\n      \"SignWell dispatcher returned HTTP \" +\n        response.status +\n        \": \" +\n        (detail || \"No response body\")\n    );\n  }\n\n  output.set(\"dispatched\", true);\n  output.set(\"recordId\", recordId);\n  output.set(\"action\", action);\n} catch (error) {\n  const message = error instanceof Error ? error.message : String(error);\n\n  await table.updateRecordAsync(recordId, {\n    \"Agreement Status\": { name: \"Error\" },\n    \"SignWell Error\": message.slice(0, 9000),\n  });\n\n  throw error;\n}"
+   },
+   "outputSchema": []
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

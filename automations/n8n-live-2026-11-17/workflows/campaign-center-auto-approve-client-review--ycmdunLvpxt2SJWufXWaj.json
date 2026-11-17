@@ -1,0 +1,126 @@
+{
+ "id": "ycmdunLvpxt2SJWufXWaj",
+ "name": "[Campaign Center] Auto-Approve Client Review",
+ "active": true,
+ "isArchived": false,
+ "versionId": "273bfd43-2a97-4933-92b5-ab4a14e297ed",
+ "triggerCount": 1,
+ "createdAt": "2026-08-21T23:42:07.986Z",
+ "updatedAt": "2026-11-17T16:41:31.848Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Check Every Hour": {
+   "main": [
+    [
+     {
+      "node": "Get Campaigns In Client Review",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Campaigns In Client Review": {
+   "main": [
+    [
+     {
+      "node": "Start Timer Or Auto Approve",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Start Timer Or Auto Approve": {
+   "main": [
+    [
+     {
+      "node": "Save Review Timer Or Approval",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "hours"
+      }
+     ]
+    }
+   },
+   "id": "5e1ddb04-2a10-4ef3-859a-f6887df47369",
+   "name": "Check Every Hour",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    192,
+    32
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tblAVAA6uBPaMj28P?filterByFormula=AND(%7BWorkflow%20Stage%7D%3D'Client%20Review'%2CNOT(%7BCampaign%20Approval%20Source%7D))&pageSize=100",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {}
+   },
+   "id": "9eba170f-8cb8-4d1c-91f3-95c0c2459a90",
+   "name": "Get Campaigns In Client Review",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    432,
+    32
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const records = $input.first().json.records || [];\nconst now = new Date();\n\nfunction text(value) {\n  if (Array.isArray(value)) return value.map(v => typeof v === 'object' ? JSON.stringify(v) : String(v ?? '')).join(' ').trim();\n  return String(value ?? '').trim();\n}\n\nfunction addWeekdayHours(start, hours) {\n  const d = new Date(start);\n  let remaining = hours;\n  while (remaining > 0) {\n    d.setHours(d.getHours() + 1);\n    const day = d.getDay();\n    if (day !== 0 && day !== 6) remaining -= 1;\n  }\n  return d;\n}\n\nconst copyMap = [\n  ['Subject Line Email 1 (Review)', 'Campaign Subject 1 Version 1'],\n  ['Script Copy Email 1 (Review)', 'Campaign Body 1 Version 1'],\n  ['Subject Line Email 2 (Review)', 'Campaign Subject 2 Version 1'],\n  ['Script Copy Email 2 (Review)', 'Campaign Body 2 Version 1'],\n  ['Subject Line Email 3 (Review)', 'Campaign Subject 3 Version 1'],\n  ['Script Copy Email 3 (Review)', 'Campaign Body 3 Version 1'],\n  ['Subject Line Email 4 (Review)', 'Campaign Email 4 Subject'],\n  ['Script Copy Email 4 (Review)', 'Campaign Body 4 Version 1'],\n];\n\nconst output = [];\nfor (const record of records) {\n  const f = record.fields || {};\n  const feedback = text(f[\"Client's Feedback\"]);\n  const requestedChanges = text(f['Select Changes']);\n  if (feedback || requestedChanges) continue;\n\n  const submittedAt = f['Client Review Submitted At'];\n  const dueAt = f['Client Review Auto-Approve At'];\n\n  if (!submittedAt || !dueAt) {\n    const submitted = now.toISOString();\n    output.push({json:{id:record.id,action:'timer_started',fields:{\n      'Client Review Submitted At': submitted,\n      'Client Review Auto-Approve At': addWeekdayHours(now, 48).toISOString(),\n    }}});\n    continue;\n  }\n\n  if (new Date(dueAt).getTime() > now.getTime()) continue;\n\n  const updates = {\n    'Workflow Stage': 'Approved',\n    'Campaign Approval Source': 'Auto-approved after 48 business hours',\n  };\n  for (const [source, target] of copyMap) {\n    if (text(f[source])) updates[target] = f[source];\n  }\n  output.push({json:{id:record.id,action:'auto_approved',fields:updates}});\n}\nreturn output;"
+   },
+   "id": "c2642bc2-85d6-4e5c-b5b1-5c5fe31df8b1",
+   "name": "Start Timer Or Auto Approve",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    704,
+    32
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "=https://api.airtable.com/v0/appxqINt5XKw7a76A/tblAVAA6uBPaMj28P/{{$json.id}}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({ fields: $json.fields }) }}",
+    "options": {}
+   },
+   "id": "d5581a35-5de7-43ec-92f8-ab0f712f6fcb",
+   "name": "Save Review Timer Or Approval",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    976,
+    32
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

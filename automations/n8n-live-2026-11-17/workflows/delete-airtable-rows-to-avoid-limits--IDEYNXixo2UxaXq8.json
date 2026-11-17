@@ -1,0 +1,197 @@
+{
+ "id": "IDEYNXixo2UxaXq8",
+ "name": "Delete Airtable rows to avoid limits",
+ "active": true,
+ "isArchived": false,
+ "versionId": "e28f46ff-e01a-46e9-86c4-422862ebc91d",
+ "triggerCount": 1,
+ "createdAt": "2025-11-28T17:25:00.384Z",
+ "updatedAt": "2026-11-17T16:38:42.165Z",
+ "settings": {
+  "executionOrder": "v1",
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Schedule Trigger": {
+   "main": [
+    [
+     {
+      "node": "placement tests > 2 months",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "email accounts = inactive",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "placement tests > 2 months": {
+   "main": [
+    [
+     {
+      "node": "Delete a record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "email accounts = inactive": {
+   "main": [
+    [
+     {
+      "node": "Delete a record1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "weeks"
+      }
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.3,
+   "position": [
+    -64,
+    96
+   ],
+   "id": "6f444434-572c-43a7-9a68-fa0c198bf3d4",
+   "name": "Schedule Trigger"
+  },
+  {
+   "parameters": {
+    "operation": "deleteRecord",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblGjv6A5r7md3kxX",
+     "mode": "list",
+     "cachedResultName": "Inbox Placement Testing",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblGjv6A5r7md3kxX"
+    },
+    "id": "={{ $json.id }}"
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    384,
+    0
+   ],
+   "id": "82d1ba56-3a1e-420d-b365-c6263d645dca",
+   "name": "Delete a record"
+  },
+  {
+   "parameters": {
+    "operation": "deleteRecord",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMSOBJ0wMgxSg4l",
+     "mode": "list",
+     "cachedResultName": "Email Accounts",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblMSOBJ0wMgxSg4l"
+    },
+    "id": "={{ $json.id }}"
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    384,
+    192
+   ],
+   "id": "30ca68eb-2076-4a4e-96e1-36b94f4f389b",
+   "name": "Delete a record1"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblGjv6A5r7md3kxX",
+     "mode": "list",
+     "cachedResultName": "Inbox Placement Testing",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblGjv6A5r7md3kxX"
+    },
+    "filterByFormula": "{How many months ago was the test?} > 2",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    160,
+    0
+   ],
+   "id": "8908feec-cb9f-4b8b-a144-17452e88952e",
+   "name": "placement tests > 2 months"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMSOBJ0wMgxSg4l",
+     "mode": "list",
+     "cachedResultName": "Email Accounts",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblMSOBJ0wMgxSg4l"
+    },
+    "filterByFormula": "{Status (from Client)} = \"Inactive\"",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    160,
+    192
+   ],
+   "id": "b826fa35-bddb-48f6-b0c6-ef8e3404ee0d",
+   "name": "email accounts = inactive"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

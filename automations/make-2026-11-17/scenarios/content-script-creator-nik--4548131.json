@@ -1,0 +1,631 @@
+{
+ "id": 4548131,
+ "name": "Content Script Creator (Nik)",
+ "teamId": 629049,
+ "hookId": 2607189,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 199728,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": true,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "gateway",
+  "anthropic-claude",
+  "builtin",
+  "airtable",
+  "airtable"
+ ],
+ "lastEdit": "2026-02-08T19:53:24.212Z",
+ "scheduling": {
+  "type": "immediately",
+  "maximum_runs_per_minute": null
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2026-02-08T05:44:26.424Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": true,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 1,
+    "mapper": {},
+    "module": "gateway:CustomWebHook",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "hook": {
+        "data": {
+         "editable": "true"
+        },
+        "label": "Airtable Raw Content"
+       }
+      }
+     },
+     "designer": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "hook",
+       "type": "hook:gateway-webhook",
+       "label": "Webhook",
+       "required": true
+      },
+      {
+       "name": "maxResults",
+       "type": "number",
+       "label": "Maximum number of results"
+      }
+     ]
+    },
+    "parameters": {
+     "hook": 2607189,
+     "maxResults": 1
+    }
+   },
+   {
+    "id": 2,
+    "mapper": {
+     "model": "claude-opus-4-6",
+     "max_tokens": "10000",
+     "textPrompt": "Revised Prompt\nYou are a YouTube script writer creating 7-14 minute talking-head video scripts for Alexander's entrepreneurship and business channel. Alexander runs Dulcy, a Growth Partner agency that helps B2B service-based businesses (typically agencies and lead gen companies doing $10-50K/month with 3-50 person teams) average 20+ sales opportunities per month with AI omnichannel outreach.\nWrite in Alexander's authentic voice: raw, conversational, stream-of-consciousness style that feels like he's speaking directly to the viewer without heavy editing.\nVoice Characteristics:\n\nUse natural speech patterns with fillers like \"right?\", \"like\", \"you know what it is\", \"listen\"\nRepeat key phrases for emphasis (\"That's the thing. That's the actual solution, right?\")\nUse frequent rhetorical questions to engage viewers\nInclude casual profanity sparingly but authentically (\"fuck\", \"shit\")\nMix short punchy sentences with longer flowing thoughts\nUse \"you\" to speak directly to the viewer constantly\nReference personal experiences and client stories frequently\nSelf-correct mid-thought (\"It's like... no wait, let me explain this differently\")\nBuild anticipation (\"Now here's where it gets interesting...\", \"But listen to this...\")\n\nKey Phrases to Include (Use 2-4 per script):\n\n\"clarity\"\n\"leverage\"\n\"articulate\"\n\"advantage\"\n\nScript Structure (with timestamps for 7-14 min):\n\nHook (0:00-0:30):\n\nStart with a bold statement or personal story that grabs attention\nOften begins with a surprising claim or contrarian take\nExample pattern: \"I've never been this [emotion] in my life...\" or \"[Common belief] is one of the worst things you can do...\"\n[emphasis on opening line] [look directly at camera]\n\n\nProblem Setup (0:30-2:00):\n\nIdentify what most people get wrong, using \"you\" language\nPaint the picture of their current struggle\n\"You're doing X, but you're getting no results. So why the fuck are you listening to them?\"\n[slower, more contemplative]\n\n\nPersonal Story/Credibility (2:00-4:00):\n\nShare relevant experience that proves you understand the problem\nWeave in client transformation stories (Alexander will fill in specific results)\nReference specific moments of realization or breakthrough\n\"Let me tell you exactly what happened...\" or \"I was in the exact same situation...\"\nCan reference origin story when relevant: fine dining at 15 making $5-6K/month, starting web design agency at 16, walking door-to-door, discovering cold email, pivoting from fulfillment to helping agencies grow, evolving into omnichannel growth partner\n[natural hand gestures] [lean in slightly]\n\n\nFramework/Solution (4:00-10:00):\n\nBreak down 3-5 actionable steps with explanations\nUse numbered lists naturally (\"The first thing...\", \"Number two...\", \"The third step...\")\nInclude tangents that reinforce main points\nGo deep on why each step matters, not just what to do\nUse metaphors and analogies frequently\nExplain concepts clearly - assume audience needs education on AI omnichannel outreach\nWhen relevant, explain the omnichannel approach: multiple touchpoints (cold email, LinkedIn, voice AI, direct mail) working in unity to optimize conversion from cold prospect to booked meeting\n[pause between major points] [emphasis on key insights]\n\n\nRecap/CTA (10:00-14:00):\n\nTie it together with \"Now, here's what I want you to do...\"\nSoft CTA: \"I have a [framework/document/resource] that breaks this down even further. Send me a DM on Instagram and I'll send it over to you.\"\nEnd with encouragement or final insight\n[look directly at camera] [conversational close]\n\n\n\nFormatting:\n\nInclude [pause], [emphasis], [slower], [look directly at camera], [gesture with hands], [lean in] for delivery notes\nMark natural breath points with line breaks\nAdd rough timestamps every 2 minutes\nWrite word-for-word but in a way that feels improvised and natural\n\nContent Guidelines:\n\nReference Alexander's work with Dulcy and helping B2B service businesses (agencies, lead gen companies)\nTalk about AI omnichannel outreach - explain it as giving yourself more touchpoints and channels (cold email, LinkedIn, voice AI, direct mail) to optimize your system and give the best odds to convert cold prospects into booked meetings, all working in unity within one ecosystem\nMention the in-house tools Dulcy developed when relevant\nBalance accessible language with sophisticated growth/outreach concepts\nUse placeholder brackets for specific numbers: [X sales opportunities], [Y revenue], [Z conversion rate], [# of touchpoints], [conversion %] - Alexander will fill these in\nInclude client success stories (keep general/anonymized: \"One of my clients...\", \"We had a guy...\") - Alexander will add specific results\nPosition against common outreach methods (traditional cold calling, single-channel approaches, spray-and-pray tactics) but don't reference other agencies\nEmphasize systems, processes, and frameworks over hustle\nTalk about trust economy, relationship-based selling, modern sales approaches, and the power of multiple touchpoints\nFocus on leverage - doing more with less time and energy\n\nStylistic Elements from Examples:\n\nStart paragraphs with \"Now,\" or \"Right now,\" frequently\nUse \"And that is...\" or \"That's the reason why...\" to emphasize points\nInclude rhetorical self-questions: \"You know what the fun part is?\"\nBuild up to reveals: \"But here's the secret...\", \"Let me explain you why...\"\nUse comparative scenarios: \"If you do X, you get Y. But if you do Z, you get...\"\nInclude \"Does that make sense?\" after complex explanations\nUse \"Listen\" or \"Look\" to redirect attention\nEnd sections with summary statements that start with \"That is...\"\nDrop casual observations: \"It's like...\" followed by relatable comparison\nUse pattern interrupts: \"And here's where most people fuck it up...\"\n\nTopic Treatment:\n\nAlways bring topics back to practical application for agency owners/lead gen companies\nConnect abstract concepts to pipeline generation and sales opportunities\nUse real scenarios from running an outreach-based business\nAddress the specific pain points of scaling a service business (time, energy, inconsistent pipeline)\nPosition omnichannel as the solution to cold outreach limitations\n\nCreate a script about this title: {{1.title}}\n\nAnd this description: {{1.desc}}\n\nFinal Notes\nThis prompt is now calibrated to Alexander's business (Dulcy), his audience (agencies/lead gen doing $10-50K/month), his methodology (AI omnichannel outreach with cold email, LinkedIn, voice AI, direct mail), and his origin story. The voice matches the examples provided while being adaptable to Alexander's personal experiences rather than Nick's.\nReady to use - just input the topic/question and the script will generate in Alexander's voice with proper structure, timestamps, and delivery notes."
+    },
+    "module": "anthropic-claude:simpleTextPrompt",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "model",
+       "type": "select",
+       "label": "Model",
+       "required": true,
+       "validate": {
+        "enum": [
+         "claude-opus-4-6",
+         "claude-sonnet-4-5",
+         "claude-haiku-4-5",
+         "claude-opus-4-5"
+        ]
+       }
+      },
+      {
+       "name": "textPrompt",
+       "type": "text",
+       "label": "Text Prompt",
+       "required": true
+      },
+      {
+       "name": "max_tokens",
+       "type": "uinteger",
+       "label": "Max Tokens",
+       "required": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "model": {
+        "label": "Claude Opus 4.6Hybrid reasoning model that pushes the frontier for coding and AI agents, featuring a 1M context window"
+       }
+      }
+     },
+     "advanced": true,
+     "designer": {
+      "x": 300,
+      "y": 0
+     }
+    },
+    "parameters": {}
+   },
+   {
+    "id": 4,
+    "mapper": null,
+    "module": "builtin:BasicRouter",
+    "routes": [
+     {
+      "flow": [
+       {
+        "id": 3,
+        "filter": {
+         "name": "regular",
+         "conditions": [
+          [
+           {
+            "a": "{{1.table}}",
+            "b": "organic",
+            "o": "text:contain:ci"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "id": "{{1.id}}",
+         "base": "appxqINt5XKw7a76A",
+         "table": "tblcSzvicm3wivvhh",
+         "record": {
+          "fldFj3EasjFxxkwCn": "{{2.result}}"
+         },
+         "typecast": false,
+         "useColumnId": false
+        },
+        "module": "airtable:ActionUpdateRecords",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "base",
+           "type": "select",
+           "label": "Base",
+           "required": true
+          },
+          {
+           "name": "typecast",
+           "type": "boolean",
+           "label": "Smart links",
+           "required": true
+          },
+          {
+           "name": "useColumnId",
+           "type": "boolean",
+           "label": "Use Column ID",
+           "required": true
+          },
+          {
+           "name": "table",
+           "type": "select",
+           "label": "Table",
+           "required": true
+          },
+          {
+           "name": "id",
+           "type": "text",
+           "label": "Record ID",
+           "required": true
+          },
+          {
+           "name": "record",
+           "spec": [
+            {
+             "name": "fldaLQaUuJz0Afu6h",
+             "time": false,
+             "type": "date",
+             "label": "Date"
+            },
+            {
+             "name": "fld0dz5F0ROLEE4Wy",
+             "type": "text",
+             "label": "Title"
+            },
+            {
+             "name": "fld3Dynj1W5bNh5O7",
+             "type": "text",
+             "label": "Description"
+            },
+            {
+             "name": "fldFj3EasjFxxkwCn",
+             "type": "text",
+             "label": "Script"
+            },
+            {
+             "name": "fld5Imj57Jokq4tri",
+             "spec": {
+              "mode": "edit",
+              "name": "value",
+              "type": "select",
+              "label": "Value",
+              "dynamic": true,
+              "options": [
+               {
+                "label": "YouTube",
+                "value": "YouTube"
+               },
+               {
+                "label": "Instagram",
+                "value": "Instagram"
+               },
+               {
+                "label": "Twitter",
+                "value": "Twitter"
+               },
+               {
+                "label": "LinkedIn",
+                "value": "LinkedIn"
+               },
+               {
+                "label": "TikTok",
+                "value": "TikTok"
+               },
+               {
+                "label": "Reddit",
+                "value": "Reddit"
+               },
+               {
+                "label": "Facebook",
+                "value": "Facebook"
+               }
+              ],
+              "validate": false
+             },
+             "type": "array",
+             "label": "Platform"
+            },
+            {
+             "mode": "edit",
+             "name": "fld6SJanf19cAlQTt",
+             "type": "select",
+             "label": "Style"
+            },
+            {
+             "mode": "edit",
+             "name": "fldHg1dEikmbBG7JZ",
+             "type": "select",
+             "label": "Type"
+            },
+            {
+             "mode": "edit",
+             "name": "fldWcMXU2M3xAwYjF",
+             "type": "select",
+             "label": "Status"
+            },
+            {
+             "name": "fldk8CAhJUAsDWdLl",
+             "type": "text",
+             "label": "Link"
+            },
+            {
+             "name": "fldd38VZyWwchpGjI",
+             "type": "text",
+             "label": "Notes"
+            },
+            {
+             "name": "fldFVUyh10N8sjujk",
+             "type": "boolean",
+             "label": "Trigger"
+            }
+           ],
+           "type": "collection",
+           "label": "Record"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "base": {
+            "label": "Alex"
+           },
+           "table": {
+            "label": "Content Channels (Alex Woung)"
+           },
+           "record": {
+            "nested": {
+             "fld5Imj57Jokq4tri": {
+              "mode": "chose"
+             },
+             "fld6SJanf19cAlQTt": {
+              "mode": "edit"
+             },
+             "fldFVUyh10N8sjujk": {
+              "mode": "chose"
+             },
+             "fldHg1dEikmbBG7JZ": {
+              "mode": "edit"
+             },
+             "fldWcMXU2M3xAwYjF": {
+              "mode": "edit"
+             }
+            }
+           },
+           "typecast": {
+            "mode": "chose"
+           },
+           "useColumnId": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "airtable3"
+            },
+            "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+           }
+          }
+         },
+         "designer": {
+          "x": 892,
+          "y": -133
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:airtable3,airtable2",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3589602
+        }
+       }
+      ]
+     },
+     {
+      "flow": [
+       {
+        "id": 5,
+        "filter": {
+         "name": "raw",
+         "conditions": [
+          [
+           {
+            "a": "{{1.table}}",
+            "b": "raw",
+            "o": "text:contain:ci"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "id": "{{1.id}}",
+         "base": "appxqINt5XKw7a76A",
+         "table": "tblLTZLyf8wp0CNGm",
+         "record": {
+          "fldotAApboIawezoJ": "{{2.result}}"
+         },
+         "typecast": false,
+         "useColumnId": false
+        },
+        "module": "airtable:ActionUpdateRecords",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "base",
+           "type": "select",
+           "label": "Base",
+           "required": true
+          },
+          {
+           "name": "typecast",
+           "type": "boolean",
+           "label": "Smart links",
+           "required": true
+          },
+          {
+           "name": "useColumnId",
+           "type": "boolean",
+           "label": "Use Column ID",
+           "required": true
+          },
+          {
+           "name": "table",
+           "type": "select",
+           "label": "Table",
+           "required": true
+          },
+          {
+           "name": "id",
+           "type": "text",
+           "label": "Record ID",
+           "required": true
+          },
+          {
+           "name": "record",
+           "spec": [
+            {
+             "name": "fldJMgqaxv2TimMvm",
+             "time": false,
+             "type": "date",
+             "label": "Date"
+            },
+            {
+             "name": "fldzeZlV3DhEmLmlD",
+             "type": "text",
+             "label": "Title"
+            },
+            {
+             "name": "fldCEYDz4Iy4vondc",
+             "type": "text",
+             "label": "Description"
+            },
+            {
+             "name": "fldotAApboIawezoJ",
+             "type": "text",
+             "label": "Script"
+            },
+            {
+             "name": "fldEJMzlavRd8bLQn",
+             "spec": {
+              "mode": "edit",
+              "name": "value",
+              "type": "select",
+              "label": "Value",
+              "dynamic": true,
+              "options": [
+               {
+                "label": "YouTube",
+                "value": "YouTube"
+               },
+               {
+                "label": "Instagram",
+                "value": "Instagram"
+               },
+               {
+                "label": "Twitter",
+                "value": "Twitter"
+               },
+               {
+                "label": "LinkedIn",
+                "value": "LinkedIn"
+               },
+               {
+                "label": "TikTok",
+                "value": "TikTok"
+               },
+               {
+                "label": "Facebook",
+                "value": "Facebook"
+               }
+              ],
+              "validate": false
+             },
+             "type": "array",
+             "label": "Platform"
+            },
+            {
+             "mode": "edit",
+             "name": "fldFT9qDiNC5is8iy",
+             "type": "select",
+             "label": "Style"
+            },
+            {
+             "mode": "edit",
+             "name": "fldghrtUl6P4jNp84",
+             "type": "select",
+             "label": "Type"
+            },
+            {
+             "mode": "edit",
+             "name": "fldyLHQUQqpmteGUE",
+             "type": "select",
+             "label": "Status"
+            },
+            {
+             "name": "fldT92QxMG3ll3vaq",
+             "type": "text",
+             "label": "Link"
+            },
+            {
+             "name": "fldM4ybfBIZ5ZwYIN",
+             "type": "text",
+             "label": "Notes"
+            },
+            {
+             "name": "fldFpZ7sbNFCA4wE6",
+             "type": "boolean",
+             "label": "Trigger"
+            }
+           ],
+           "type": "collection",
+           "label": "Record"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "base": {
+            "label": "Alex"
+           },
+           "table": {
+            "label": "Content Channels (Raw)"
+           },
+           "record": {
+            "nested": {
+             "fldEJMzlavRd8bLQn": {
+              "mode": "chose"
+             },
+             "fldFT9qDiNC5is8iy": {
+              "mode": "edit"
+             },
+             "fldFpZ7sbNFCA4wE6": {
+              "mode": "chose"
+             },
+             "fldghrtUl6P4jNp84": {
+              "mode": "edit"
+             },
+             "fldyLHQUQqpmteGUE": {
+              "mode": "edit"
+             }
+            }
+           },
+           "typecast": {
+            "mode": "chose"
+           },
+           "useColumnId": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "airtable3"
+            },
+            "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+           }
+          }
+         },
+         "designer": {
+          "x": 902,
+          "y": 148
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:airtable3,airtable2",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3589602
+        }
+       }
+      ]
+     }
+    ],
+    "version": 1,
+    "metadata": {
+     "designer": {
+      "x": 600,
+      "y": 0
+     }
+    }
+   }
+  ],
+  "name": "Content Script Creator (Nik)",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": []
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately",
+   "maximum_runs_per_minute": null
+  }
+ }
+}

@@ -1,0 +1,791 @@
+{
+ "id": "wflVhGbUEolHEGuk6",
+ "name": "Send Email (SL and EB)",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "inputReceivedFromConnection",
+  "inputs": {
+   "tableId": "tblADFhWhTcLrl1UY"
+  }
+ },
+ "nodes": [
+  {
+   "key": "wdePN0atN6kQcU2dk",
+   "type": "conditionalGroup",
+   "branches": [
+    {
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldBNI5MPeDfMELjd"
+         ]
+        },
+        "operator": "=",
+        "right": "Bison",
+        "valueType": "text",
+        "dataType": "literal"
+       },
+       {
+        "left": {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldEv7oM5BJPKJpiR"
+         ]
+        },
+        "operator": "=",
+        "right": "Untracked Reply",
+        "valueType": "text",
+        "dataType": "literal"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wacr2HJOfmuOakQgN",
+       "type": "findRecords",
+       "inputs": {
+        "limit": 1,
+        "tableId": "tblcjRBGJEWh5KgOt",
+        "queryType": "filtersObj",
+        "filtersObj": {
+         "obj": {
+          "operator": "and",
+          "operands": {
+           "tuple": [
+            {
+             "obj": {
+              "operands": {
+               "tuple": [
+                "fldO0DrfcpgxtpBw5",
+                {
+                 "$ref": "trigger",
+                 "path": [
+                  "cellValuesByFieldId",
+                  "fldRvg1dY1KULcNcK"
+                 ]
+                }
+               ]
+              },
+              "operator": "=",
+              "operatorOptions": null
+             }
+            }
+           ]
+          }
+         }
+        }
+       }
+      },
+      {
+       "key": "waciUzQyAeAcqOqdO",
+       "type": "customScript",
+       "inputs": {
+        "script": "function resolveCurrentCopyType(record, expected) {\n  if (!record || record.id !== expected.recordId) throw Error('Current inbox record unavailable for CC/BCC selection');\n  const value = name => record.getCellValue(name);\n  const scalar = x => String(x?.name ?? x ?? '').trim();\n  if (scalar(value('Workspace ID (Bison)')) !== expected.workspaceId || scalar(value('reply_message_id')) !== expected.replyId) {\n    throw Error('Inbox identity changed; refresh the conversation before sending');\n  }\n  const links = (value('Clients Table') || []).map(x => typeof x === 'string' ? x : x.id);\n  if (links.length !== 1 || links[0] !== expected.workspaceRecordId) throw Error('Inbox client differs from CC/BCC settings');\n  const event = scalar(value('Dulcy Reply Agent Event ID'));\n  const intent = scalar(value('Dulcy Reply Agent Intent'));\n  const currentEvent = `bison:${expected.workspaceRecordId}:${expected.replyId}`;\n  // A stale classification from a previous incoming message must not choose recipients.\n  return event === currentEvent && intent ? intent : scalar(value('Lead Status'));\n}\n\n// Shared EmailBison reply sender v4.\n// CC/BCC are resolved from the current workspace and exact incoming message.\n// Conversation history is written only by the canonical event pipeline.\nconst inputData = input.config();\nconst replyId = String(inputData.replyId || '');\nconst message = String(inputData.customReply || '');\nconst senderEmailId = String(inputData.sender_email_id || '');\nconst workspaceID = String(inputData.workspaceID || '');\nconst leadId = String(inputData.lead_id || '');\nconst campaignId = String(inputData.campaign_id || '');\nconst airtableRecordId = String(inputData.airtable_record || '');\nconst apiKey = String((Array.isArray(inputData.api) ? inputData.api.find(Boolean) : inputData.api) || '');\nconst API_ROOT = 'https://send.dulcy.io/api';\n\nfunction address(value) {\n  if (value && typeof value === 'object') return address(value.address || value.email_address || value.email || '');\n  const text = String(value || '').trim().toLowerCase();\n  const angle = text.match(/<([^<>]+)>/);\n  return (angle ? angle[1] : text).trim();\n}\n\nfunction validEmail(value) {\n  return /^[^\\s<>@]+@[^\\s<>@]+\\.[^\\s<>@]+$/.test(value);\n}\n\nfunction addressList(value) {\n  const values = Array.isArray(value) ? value : [value];\n  const result = [];\n  for (const item of values.flat(Infinity)) {\n    if (item && typeof item === 'object') {\n      const email = address(item);\n      if (email) result.push({ name: String(item.name || '').trim(), email_address: email });\n      continue;\n    }\n    for (const part of String(item || '').split(/[;,\\n]+/)) {\n      const email = address(part);\n      if (email) result.push({ name: '', email_address: email });\n    }\n  }\n  return result;\n}\n\nasync function requestJson(url, options = {}) {\n  const response = await fetch(url, {\n    ...options,\n    headers: {\n      Authorization: `Bearer ${apiKey}`,\n      'Content-Type': 'application/json',\n      ...(options.headers || {}),\n    },\n  });\n  const raw = await response.text();\n  let payload = {};\n  if (raw) {\n    try { payload = JSON.parse(raw); }\n    catch { throw new Error(`EmailBison returned non-JSON HTTP ${response.status}`); }\n  }\n  if (!response.ok || payload?.error || payload?.success === false) {\n    throw new Error(`EmailBison request failed with HTTP ${response.status}`);\n  }\n  return payload;\n}\n\nfunction rowsFrom(payload) {\n  if (Array.isArray(payload?.data)) return payload.data;\n  if (Array.isArray(payload?.data?.data)) return payload.data.data;\n  if (Array.isArray(payload?.records)) return payload.records;\n  return [];\n}\n\nasync function authoritativeAccounts() {\n  const accounts = [];\n  for (let page = 1; page <= 100; page += 1) {\n    const payload = await requestJson(`${API_ROOT}/sender-emails?per_page=100&page=${page}`);\n    accounts.push(...rowsFrom(payload));\n    const meta = payload?.meta || payload?.data?.meta || {};\n    const current = Number(meta.current_page || page);\n    const last = Number(meta.last_page || current);\n    const next = payload?.next_page_url || payload?.links?.next || meta.next_page_url;\n    if (!next && current >= last) return accounts;\n    if (!next && !Number.isFinite(last)) throw new Error('Sender account pagination is ambiguous');\n  }\n  throw new Error('Sender account pagination exceeded the safety limit');\n}\n\nfunction explicitTime(raw) {\n  if (typeof raw !== 'string' || !/(?:Z|[+-]\\d{2}:?\\d{2}|\\b(?:UT|UTC|GMT))\\s*(?:\\([^)]*\\))?$/i.test(raw.trim())) return null;\n  const millis = Date.parse(raw);\n  return Number.isFinite(millis) ? new Date(millis).toISOString() : null;\n}\n\nfunction confirmedSend(payload) {\n  const reply = payload?.data?.reply || payload?.data || {};\n  const id = String(reply.id || reply.uuid || '');\n  const status = String(reply.folder || reply.status || '').toLowerCase();\n  const sentAt = explicitTime(reply.sent_at)\n    || explicitTime(reply.date_sent)\n    || (String(reply.type || '').toLowerCase() === 'outgoing email' ? explicitTime(reply.date_received) : null);\n  if (!id || !['sent', 'delivered'].includes(status) || !sentAt || Date.parse(sentAt) > Date.now() + 60000) {\n    throw new Error('Submission is unconfirmed or queued. Do not clear the draft, advance sent status, or retry automatically; reconcile using the provider response.');\n  }\n  return { id, sentAt };\n}\n\nfunction copyReplyType(value) {\n  const key = String(value?.name || value || '').trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\\s+/g, ' ');\n  const aliases = {\n    'positive reply': 'interested', positive: 'interested',\n    'meeting requested': 'meeting request', 'meeting booked': 'meeting request',\n    ooo: 'out of office', 'information request': 'info request',\n    referral: 'referred', 'follow up later': 'check back later',\n  };\n  return aliases[key] || key;\n}\n\nfunction includeWorkspaceCopy(config, kind, type) {\n  const scope = config[`${kind}Scope`] || 'all';\n  if (scope === 'all') return true;\n  if (scope !== 'selected') throw new Error(`Invalid ${kind.toUpperCase()} reply-type setting`);\n  const types = config[`${kind}Types`];\n  if (!Array.isArray(types) || !types.length || types.some((entry) => typeof entry !== 'string' || !entry.trim())) {\n    throw new Error(`Choose at least one ${kind.toUpperCase()} reply type`);\n  }\n  return types.map(copyReplyType).includes(copyReplyType(type));\n}\n\nasync function workspaceCopyRecipients() {\n  if (!/^\\d+$/.test(workspaceID)) throw new Error('Missing EmailBison workspace identity');\n  const workspaceQuery = await base.getTable('Workspace IDs').selectRecordsAsync({ fields: ['ID'] });\n  const workspaces = workspaceQuery.records.filter((record) => String(record.getCellValue('ID')).trim() === workspaceID);\n  if (workspaces.length !== 1) throw new Error('Unique workspace required for CC/BCC settings');\n  const settingsQuery = await base.getTable('tbl5nmzPUcNEBSWxH').selectRecordsAsync({ fields: ['Workspace Record ID', 'CC BCC Settings JSON'] });\n  const settings = settingsQuery.records.filter((record) => record.getCellValue('Workspace Record ID') === workspaces[0].id);\n  if (settings.length > 1) throw new Error('Multiple workspace reply settings; reconcile before sending');\n  const raw = settings[0]?.getCellValue('CC BCC Settings JSON');\n  let config = {};\n  if (raw) {\n    try { config = JSON.parse(raw); }\n    catch { throw new Error('Invalid workspace CC/BCC settings JSON'); }\n    if (!config || Array.isArray(config) || typeof config !== 'object') throw new Error('Invalid workspace CC/BCC settings');\n  }\n  const currentInbox = await base.getTable('Emails').selectRecordAsync(airtableRecordId);\n  const type = resolveCurrentCopyType(currentInbox, {recordId:airtableRecordId, workspaceId:workspaceID, replyId, workspaceRecordId:workspaces[0].id});\n  const cc = config.ccEnabled === true && includeWorkspaceCopy(config, 'cc', type) ? addressList(config.cc) : [];\n  const bcc = config.bccEnabled === true && includeWorkspaceCopy(config, 'bcc', type) ? addressList(config.bcc) : [];\n  if (config.ccEnabled === true && includeWorkspaceCopy(config, 'cc', type) && !cc.length) throw new Error('Auto CC is enabled without recipients');\n  if (config.bccEnabled === true && includeWorkspaceCopy(config, 'bcc', type) && !bcc.length) throw new Error('Auto BCC is enabled without recipients');\n  return { cc, bcc };\n}\n\nif (!replyId || !senderEmailId || !workspaceID || !apiKey || !airtableRecordId || !message.trim()) {\n  throw new Error('Missing workspace, thread, sender, API, Airtable record, or reply body');\n}\n\nconst senderPayload = await requestJson(`${API_ROOT}/sender-emails/${encodeURIComponent(senderEmailId)}`);\nconst sender = senderPayload?.data;\nconst senderAddress = address(sender);\nif (!sender || String(sender.id) !== senderEmailId || !validEmail(senderAddress)) {\n  throw new Error('Authoritative sender account unavailable or mismatched');\n}\nconst senderWorkspace = String(sender.workspace_id || sender.team_id || sender.workspace?.id || '');\nif (senderWorkspace && senderWorkspace !== workspaceID) throw new Error('Authoritative sender belongs to a different workspace');\n\nconst threadPayload = await requestJson(`${API_ROOT}/replies/${encodeURIComponent(replyId)}/conversation-thread`);\nconst current = threadPayload?.data?.current_reply;\nif (!current || String(current.id) !== replyId) throw new Error('Authoritative conversation does not match the requested reply');\nif (leadId && current.lead_id && String(current.lead_id) !== leadId) throw new Error('Authoritative conversation lead mismatch');\nif (campaignId && current.campaign_id && String(current.campaign_id) !== campaignId) throw new Error('Authoritative conversation campaign mismatch');\nif (current.sender_email_id && String(current.sender_email_id) !== senderEmailId) throw new Error('Authoritative conversation sender mismatch');\n\nconst authoritativeLead = address(current.from_email_address);\nconst requestedLead = address(inputData.leadEmail);\nif (!validEmail(authoritativeLead) || authoritativeLead !== requestedLead) {\n  throw new Error('To must be the one authoritative external reply author');\n}\nconst originalInbox = address(current.primary_to_email_address);\nif (originalInbox && originalInbox !== senderAddress) throw new Error('Original thread recipient differs from the authoritative sender');\n\nconst accounts = await authoritativeAccounts();\nconst internal = new Set(accounts.map(address).filter(validEmail));\ninternal.add(senderAddress);\nif (internal.has(authoritativeLead)) throw new Error('External recipient is the sender or a known sender alias');\n\nconst workspaceCopies = await workspaceCopyRecipients();\nconst seen = new Set([authoritativeLead]);\nconst cc = [];\nfor (const entry of [...addressList(inputData.ccEmails ?? inputData.cc), ...workspaceCopies.cc]) {\n  if (!validEmail(entry.email_address)) throw new Error('Invalid CC address');\n  if (internal.has(entry.email_address)) throw new Error('CC contains the sender or a known sender alias');\n  if (!seen.has(entry.email_address)) {\n    seen.add(entry.email_address);\n    cc.push(entry);\n  }\n}\nconst bcc = [];\nfor (const entry of workspaceCopies.bcc) {\n  if (!validEmail(entry.email_address)) throw new Error('Invalid BCC address');\n  if (internal.has(entry.email_address)) throw new Error('BCC contains the sender or a known sender alias');\n  if (!seen.has(entry.email_address)) {\n    seen.add(entry.email_address);\n    bcc.push(entry);\n  }\n}\n\nconst result = await requestJson(`${API_ROOT}/replies/${encodeURIComponent(replyId)}/reply`, {\n  method: 'POST',\n  body: JSON.stringify({\n    inject_previous_email_body: true,\n    message,\n    sender_email_id: Number(senderEmailId),\n    content_type: 'html',\n    to_emails: [{ name: String(inputData.leadName || current.from_name || ''), email_address: authoritativeLead }],\n    cc_emails: cc,\n    bcc_emails: bcc,\n    reply_all: false,\n  }),\n});\n\nconst confirmation = confirmedSend(result);\n// EmailBison's confirmed MANUAL_EMAIL_SENT event is admitted to canonical history.\n// Preserve the existing output contract without writing a history snapshot.\nconst unchangedHistory = String(inputData['Conversation History'] || '');\noutput.set('sendConfirmed', true);\noutput.set('providerMessageId', confirmation.id);\noutput.set('sentAt', confirmation.sentAt);\noutput.set('convoHistory', unchangedHistory);\n",
+        "inputObj": {
+         "obj": {
+          "replyId": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldvARFWnr4H2wC8V"
+           ]
+          },
+          "sender_email_id": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "flds1ZqBq2ZW6dVBr"
+           ]
+          },
+          "customReply": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldCfgm35ZqyVe9xm"
+           ]
+          },
+          "campaign_id": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldv0o5rhmd7jXDrt"
+           ]
+          },
+          "api": {
+           "fn": "map",
+           "args": [
+            {
+             "fn": "map",
+             "args": [
+              {
+               "$ref": "wacr2HJOfmuOakQgN",
+               "path": [
+                "records"
+               ]
+              },
+              {
+               "fn": "propertyGetter",
+               "args": [
+                "cellValuesByFieldId"
+               ]
+              }
+             ]
+            },
+            {
+             "fn": "propertyGetter",
+             "args": [
+              "fld6bFQolVFg4Ub3N"
+             ]
+            }
+           ]
+          },
+          "cc": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldGkiO630UgVCnv5"
+           ]
+          },
+          "lead_id": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldv66oGZQQ9Qscmb"
+           ]
+          },
+          "Conversation History": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldYocEhrAzRUw9sA"
+           ]
+          },
+          "airtable_record": {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          },
+          "leadName": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldQAcnN9PrbL7R81"
+           ]
+          },
+          " Last Reply Since": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fld6piNCeEc0lAOHf"
+           ]
+          },
+          "Lead Status": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldr2uNiscZfeCNiT",
+            "name"
+           ]
+          },
+          "Opportunity Status": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldfPPfvAoXw04LVs",
+            "name"
+           ]
+          },
+          "Last Email Sent": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldE9bxKtmeRsvG9f",
+            "name"
+           ]
+          },
+          "workspaceID": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldCjo0mB0snziNZQ"
+           ]
+          },
+          "leadEmail": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldVkWkLFCGP9O1Aw"
+           ]
+          },
+          "ccEmails": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldGkiO630UgVCnv5"
+           ]
+          },
+          "leadInitialMessage": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldjG76LvUTv60Pzj"
+           ]
+          }
+         }
+        }
+       },
+       "outputSchema": []
+      },
+      {
+       "key": "wackseeZTI8QVVInp",
+       "type": "updateRecord",
+       "inputs": {
+        "updateRecordMethod": "customFields",
+        "tableId": "tblADFhWhTcLrl1UY",
+        "rowId": {
+         "template": [
+          {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          }
+         ]
+        },
+        "fields": {
+         "obj": {
+          "fldE9bxKtmeRsvG9f": {
+           "obj": {
+            "id": "selnCU29VWYfblbZR"
+           }
+          },
+          "fldCfgm35ZqyVe9xm": {
+           "template": [
+            ""
+           ]
+          },
+          "fldSuQyvPM3IlS5oD": {
+           "obj": {
+            "id": "selCdMaB9L7eykuvt"
+           }
+          }
+         }
+        }
+       }
+      }
+     ]
+    },
+    {
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldBNI5MPeDfMELjd"
+         ]
+        },
+        "operator": "=",
+        "right": "Bison",
+        "valueType": "text",
+        "dataType": "literal"
+       },
+       {
+        "left": {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldEv7oM5BJPKJpiR"
+         ]
+        },
+        "operator": "!=",
+        "right": "Untracked Reply",
+        "valueType": "text",
+        "dataType": "literal"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wacfwhlyFP6IxcMbu",
+       "type": "findRecords",
+       "inputs": {
+        "limit": 1,
+        "tableId": "tblcjRBGJEWh5KgOt",
+        "queryType": "filtersObj",
+        "filtersObj": {
+         "obj": {
+          "operator": "and",
+          "operands": {
+           "tuple": [
+            {
+             "obj": {
+              "operands": {
+               "tuple": [
+                "fldO0DrfcpgxtpBw5",
+                {
+                 "$ref": "trigger",
+                 "path": [
+                  "cellValuesByFieldId",
+                  "fldRvg1dY1KULcNcK"
+                 ]
+                }
+               ]
+              },
+              "operator": "=",
+              "operatorOptions": null
+             }
+            }
+           ]
+          }
+         }
+        }
+       }
+      },
+      {
+       "key": "wacBawbncerub44k8",
+       "type": "customScript",
+       "inputs": {
+        "script": "function resolveCurrentCopyType(record, expected) {\n  if (!record || record.id !== expected.recordId) throw Error('Current inbox record unavailable for CC/BCC selection');\n  const value = name => record.getCellValue(name);\n  const scalar = x => String(x?.name ?? x ?? '').trim();\n  if (scalar(value('Workspace ID (Bison)')) !== expected.workspaceId || scalar(value('reply_message_id')) !== expected.replyId) {\n    throw Error('Inbox identity changed; refresh the conversation before sending');\n  }\n  const links = (value('Clients Table') || []).map(x => typeof x === 'string' ? x : x.id);\n  if (links.length !== 1 || links[0] !== expected.workspaceRecordId) throw Error('Inbox client differs from CC/BCC settings');\n  const event = scalar(value('Dulcy Reply Agent Event ID'));\n  const intent = scalar(value('Dulcy Reply Agent Intent'));\n  const currentEvent = `bison:${expected.workspaceRecordId}:${expected.replyId}`;\n  // A stale classification from a previous incoming message must not choose recipients.\n  return event === currentEvent && intent ? intent : scalar(value('Lead Status'));\n}\n\n// Shared EmailBison reply sender v4.\n// CC/BCC are resolved from the current workspace and exact incoming message.\n// Conversation history is written only by the canonical event pipeline.\nconst inputData = input.config();\nconst replyId = String(inputData.replyId || '');\nconst message = String(inputData.customReply || '');\nconst senderEmailId = String(inputData.sender_email_id || '');\nconst workspaceID = String(inputData.workspaceID || '');\nconst leadId = String(inputData.lead_id || '');\nconst campaignId = String(inputData.campaign_id || '');\nconst airtableRecordId = String(inputData.airtable_record || '');\nconst apiKey = String((Array.isArray(inputData.api) ? inputData.api.find(Boolean) : inputData.api) || '');\nconst API_ROOT = 'https://send.dulcy.io/api';\n\nfunction address(value) {\n  if (value && typeof value === 'object') return address(value.address || value.email_address || value.email || '');\n  const text = String(value || '').trim().toLowerCase();\n  const angle = text.match(/<([^<>]+)>/);\n  return (angle ? angle[1] : text).trim();\n}\n\nfunction validEmail(value) {\n  return /^[^\\s<>@]+@[^\\s<>@]+\\.[^\\s<>@]+$/.test(value);\n}\n\nfunction addressList(value) {\n  const values = Array.isArray(value) ? value : [value];\n  const result = [];\n  for (const item of values.flat(Infinity)) {\n    if (item && typeof item === 'object') {\n      const email = address(item);\n      if (email) result.push({ name: String(item.name || '').trim(), email_address: email });\n      continue;\n    }\n    for (const part of String(item || '').split(/[;,\\n]+/)) {\n      const email = address(part);\n      if (email) result.push({ name: '', email_address: email });\n    }\n  }\n  return result;\n}\n\nasync function requestJson(url, options = {}) {\n  const response = await fetch(url, {\n    ...options,\n    headers: {\n      Authorization: `Bearer ${apiKey}`,\n      'Content-Type': 'application/json',\n      ...(options.headers || {}),\n    },\n  });\n  const raw = await response.text();\n  let payload = {};\n  if (raw) {\n    try { payload = JSON.parse(raw); }\n    catch { throw new Error(`EmailBison returned non-JSON HTTP ${response.status}`); }\n  }\n  if (!response.ok || payload?.error || payload?.success === false) {\n    throw new Error(`EmailBison request failed with HTTP ${response.status}`);\n  }\n  return payload;\n}\n\nfunction rowsFrom(payload) {\n  if (Array.isArray(payload?.data)) return payload.data;\n  if (Array.isArray(payload?.data?.data)) return payload.data.data;\n  if (Array.isArray(payload?.records)) return payload.records;\n  return [];\n}\n\nasync function authoritativeAccounts() {\n  const accounts = [];\n  for (let page = 1; page <= 100; page += 1) {\n    const payload = await requestJson(`${API_ROOT}/sender-emails?per_page=100&page=${page}`);\n    accounts.push(...rowsFrom(payload));\n    const meta = payload?.meta || payload?.data?.meta || {};\n    const current = Number(meta.current_page || page);\n    const last = Number(meta.last_page || current);\n    const next = payload?.next_page_url || payload?.links?.next || meta.next_page_url;\n    if (!next && current >= last) return accounts;\n    if (!next && !Number.isFinite(last)) throw new Error('Sender account pagination is ambiguous');\n  }\n  throw new Error('Sender account pagination exceeded the safety limit');\n}\n\nfunction explicitTime(raw) {\n  if (typeof raw !== 'string' || !/(?:Z|[+-]\\d{2}:?\\d{2}|\\b(?:UT|UTC|GMT))\\s*(?:\\([^)]*\\))?$/i.test(raw.trim())) return null;\n  const millis = Date.parse(raw);\n  return Number.isFinite(millis) ? new Date(millis).toISOString() : null;\n}\n\nfunction confirmedSend(payload) {\n  const reply = payload?.data?.reply || payload?.data || {};\n  const id = String(reply.id || reply.uuid || '');\n  const status = String(reply.folder || reply.status || '').toLowerCase();\n  const sentAt = explicitTime(reply.sent_at)\n    || explicitTime(reply.date_sent)\n    || (String(reply.type || '').toLowerCase() === 'outgoing email' ? explicitTime(reply.date_received) : null);\n  if (!id || !['sent', 'delivered'].includes(status) || !sentAt || Date.parse(sentAt) > Date.now() + 60000) {\n    throw new Error('Submission is unconfirmed or queued. Do not clear the draft, advance sent status, or retry automatically; reconcile using the provider response.');\n  }\n  return { id, sentAt };\n}\n\nfunction copyReplyType(value) {\n  const key = String(value?.name || value || '').trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\\s+/g, ' ');\n  const aliases = {\n    'positive reply': 'interested', positive: 'interested',\n    'meeting requested': 'meeting request', 'meeting booked': 'meeting request',\n    ooo: 'out of office', 'information request': 'info request',\n    referral: 'referred', 'follow up later': 'check back later',\n  };\n  return aliases[key] || key;\n}\n\nfunction includeWorkspaceCopy(config, kind, type) {\n  const scope = config[`${kind}Scope`] || 'all';\n  if (scope === 'all') return true;\n  if (scope !== 'selected') throw new Error(`Invalid ${kind.toUpperCase()} reply-type setting`);\n  const types = config[`${kind}Types`];\n  if (!Array.isArray(types) || !types.length || types.some((entry) => typeof entry !== 'string' || !entry.trim())) {\n    throw new Error(`Choose at least one ${kind.toUpperCase()} reply type`);\n  }\n  return types.map(copyReplyType).includes(copyReplyType(type));\n}\n\nasync function workspaceCopyRecipients() {\n  if (!/^\\d+$/.test(workspaceID)) throw new Error('Missing EmailBison workspace identity');\n  const workspaceQuery = await base.getTable('Workspace IDs').selectRecordsAsync({ fields: ['ID'] });\n  const workspaces = workspaceQuery.records.filter((record) => String(record.getCellValue('ID')).trim() === workspaceID);\n  if (workspaces.length !== 1) throw new Error('Unique workspace required for CC/BCC settings');\n  const settingsQuery = await base.getTable('tbl5nmzPUcNEBSWxH').selectRecordsAsync({ fields: ['Workspace Record ID', 'CC BCC Settings JSON'] });\n  const settings = settingsQuery.records.filter((record) => record.getCellValue('Workspace Record ID') === workspaces[0].id);\n  if (settings.length > 1) throw new Error('Multiple workspace reply settings; reconcile before sending');\n  const raw = settings[0]?.getCellValue('CC BCC Settings JSON');\n  let config = {};\n  if (raw) {\n    try { config = JSON.parse(raw); }\n    catch { throw new Error('Invalid workspace CC/BCC settings JSON'); }\n    if (!config || Array.isArray(config) || typeof config !== 'object') throw new Error('Invalid workspace CC/BCC settings');\n  }\n  const currentInbox = await base.getTable('Emails').selectRecordAsync(airtableRecordId);\n  const type = resolveCurrentCopyType(currentInbox, {recordId:airtableRecordId, workspaceId:workspaceID, replyId, workspaceRecordId:workspaces[0].id});\n  const cc = config.ccEnabled === true && includeWorkspaceCopy(config, 'cc', type) ? addressList(config.cc) : [];\n  const bcc = config.bccEnabled === true && includeWorkspaceCopy(config, 'bcc', type) ? addressList(config.bcc) : [];\n  if (config.ccEnabled === true && includeWorkspaceCopy(config, 'cc', type) && !cc.length) throw new Error('Auto CC is enabled without recipients');\n  if (config.bccEnabled === true && includeWorkspaceCopy(config, 'bcc', type) && !bcc.length) throw new Error('Auto BCC is enabled without recipients');\n  return { cc, bcc };\n}\n\nif (!replyId || !senderEmailId || !workspaceID || !apiKey || !airtableRecordId || !message.trim()) {\n  throw new Error('Missing workspace, thread, sender, API, Airtable record, or reply body');\n}\n\nconst senderPayload = await requestJson(`${API_ROOT}/sender-emails/${encodeURIComponent(senderEmailId)}`);\nconst sender = senderPayload?.data;\nconst senderAddress = address(sender);\nif (!sender || String(sender.id) !== senderEmailId || !validEmail(senderAddress)) {\n  throw new Error('Authoritative sender account unavailable or mismatched');\n}\nconst senderWorkspace = String(sender.workspace_id || sender.team_id || sender.workspace?.id || '');\nif (senderWorkspace && senderWorkspace !== workspaceID) throw new Error('Authoritative sender belongs to a different workspace');\n\nconst threadPayload = await requestJson(`${API_ROOT}/replies/${encodeURIComponent(replyId)}/conversation-thread`);\nconst current = threadPayload?.data?.current_reply;\nif (!current || String(current.id) !== replyId) throw new Error('Authoritative conversation does not match the requested reply');\nif (leadId && current.lead_id && String(current.lead_id) !== leadId) throw new Error('Authoritative conversation lead mismatch');\nif (campaignId && current.campaign_id && String(current.campaign_id) !== campaignId) throw new Error('Authoritative conversation campaign mismatch');\nif (current.sender_email_id && String(current.sender_email_id) !== senderEmailId) throw new Error('Authoritative conversation sender mismatch');\n\nconst authoritativeLead = address(current.from_email_address);\nconst requestedLead = address(inputData.leadEmail);\nif (!validEmail(authoritativeLead) || authoritativeLead !== requestedLead) {\n  throw new Error('To must be the one authoritative external reply author');\n}\nconst originalInbox = address(current.primary_to_email_address);\nif (originalInbox && originalInbox !== senderAddress) throw new Error('Original thread recipient differs from the authoritative sender');\n\nconst accounts = await authoritativeAccounts();\nconst internal = new Set(accounts.map(address).filter(validEmail));\ninternal.add(senderAddress);\nif (internal.has(authoritativeLead)) throw new Error('External recipient is the sender or a known sender alias');\n\nconst workspaceCopies = await workspaceCopyRecipients();\nconst seen = new Set([authoritativeLead]);\nconst cc = [];\nfor (const entry of [...addressList(inputData.ccEmails ?? inputData.cc), ...workspaceCopies.cc]) {\n  if (!validEmail(entry.email_address)) throw new Error('Invalid CC address');\n  if (internal.has(entry.email_address)) throw new Error('CC contains the sender or a known sender alias');\n  if (!seen.has(entry.email_address)) {\n    seen.add(entry.email_address);\n    cc.push(entry);\n  }\n}\nconst bcc = [];\nfor (const entry of workspaceCopies.bcc) {\n  if (!validEmail(entry.email_address)) throw new Error('Invalid BCC address');\n  if (internal.has(entry.email_address)) throw new Error('BCC contains the sender or a known sender alias');\n  if (!seen.has(entry.email_address)) {\n    seen.add(entry.email_address);\n    bcc.push(entry);\n  }\n}\n\nconst result = await requestJson(`${API_ROOT}/replies/${encodeURIComponent(replyId)}/reply`, {\n  method: 'POST',\n  body: JSON.stringify({\n    inject_previous_email_body: true,\n    message,\n    sender_email_id: Number(senderEmailId),\n    content_type: 'html',\n    to_emails: [{ name: String(inputData.leadName || current.from_name || ''), email_address: authoritativeLead }],\n    cc_emails: cc,\n    bcc_emails: bcc,\n    reply_all: false,\n  }),\n});\n\nconst confirmation = confirmedSend(result);\n// EmailBison's confirmed MANUAL_EMAIL_SENT event is admitted to canonical history.\n// Preserve the existing output contract without writing a history snapshot.\nconst unchangedHistory = String(inputData['Conversation History'] || '');\noutput.set('sendConfirmed', true);\noutput.set('providerMessageId', confirmation.id);\noutput.set('sentAt', confirmation.sentAt);\noutput.set('convoHistory', unchangedHistory);\n",
+        "inputObj": {
+         "obj": {
+          "replyId": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldvARFWnr4H2wC8V"
+           ]
+          },
+          "sender_email_id": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "flds1ZqBq2ZW6dVBr"
+           ]
+          },
+          "customReply": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldCfgm35ZqyVe9xm"
+           ]
+          },
+          "campaign_id": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldv0o5rhmd7jXDrt"
+           ]
+          },
+          "api": {
+           "fn": "map",
+           "args": [
+            {
+             "fn": "map",
+             "args": [
+              {
+               "$ref": "wacfwhlyFP6IxcMbu",
+               "path": [
+                "records"
+               ]
+              },
+              {
+               "fn": "propertyGetter",
+               "args": [
+                "cellValuesByFieldId"
+               ]
+              }
+             ]
+            },
+            {
+             "fn": "propertyGetter",
+             "args": [
+              "fld6bFQolVFg4Ub3N"
+             ]
+            }
+           ]
+          },
+          "cc": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldGkiO630UgVCnv5"
+           ]
+          },
+          "lead_id": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldv66oGZQQ9Qscmb"
+           ]
+          },
+          "Conversation History": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldYocEhrAzRUw9sA"
+           ]
+          },
+          "airtable_record": {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          },
+          "leadName": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldQAcnN9PrbL7R81"
+           ]
+          },
+          " Last Reply Since": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fld6piNCeEc0lAOHf"
+           ]
+          },
+          "Lead Status": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldr2uNiscZfeCNiT",
+            "name"
+           ]
+          },
+          "Opportunity Status": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldfPPfvAoXw04LVs",
+            "name"
+           ]
+          },
+          "Last Email Sent": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldE9bxKtmeRsvG9f",
+            "name"
+           ]
+          },
+          "workspaceID": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldCjo0mB0snziNZQ"
+           ]
+          },
+          "leadEmail": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldVkWkLFCGP9O1Aw"
+           ]
+          },
+          "ccEmails": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldGkiO630UgVCnv5"
+           ]
+          },
+          "leadInitialMessage": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldjG76LvUTv60Pzj"
+           ]
+          }
+         }
+        }
+       },
+       "outputSchema": [
+        {
+         "name": "convoHistory",
+         "type": "string"
+        }
+       ]
+      },
+      {
+       "key": "wac4EciQ2qd630rpP",
+       "type": "updateRecord",
+       "inputs": {
+        "updateRecordMethod": "customFields",
+        "tableId": "tblADFhWhTcLrl1UY",
+        "rowId": {
+         "template": [
+          {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          }
+         ]
+        },
+        "fields": {
+         "obj": {
+          "fldE9bxKtmeRsvG9f": {
+           "obj": {
+            "id": "selnCU29VWYfblbZR"
+           }
+          },
+          "fldCfgm35ZqyVe9xm": {
+           "template": [
+            ""
+           ]
+          }
+         }
+        }
+       }
+      }
+     ]
+    },
+    {
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldBNI5MPeDfMELjd"
+         ]
+        },
+        "operator": "contains",
+        "right": "Smartlead",
+        "valueType": "text",
+        "dataType": "literal"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wacGHFLG0dOEflbzR",
+       "type": "findRecords",
+       "inputs": {
+        "limit": 100,
+        "tableId": "tblqFTOGyT6OjuY8i",
+        "queryType": "filtersObj",
+        "filtersObj": {
+         "obj": {
+          "operator": "and",
+          "operands": {
+           "tuple": [
+            {
+             "obj": {
+              "operator": "contains",
+              "operands": {
+               "tuple": [
+                "fldJCOTWBPljdGdLh",
+                "SmartLead"
+               ]
+              },
+              "operatorOptions": null
+             }
+            }
+           ]
+          }
+         }
+        }
+       }
+      },
+      {
+       "key": "wacIStN4gUTjW4Hc5",
+       "type": "customScript",
+       "inputs": {
+        "inputObj": {
+         "obj": {
+          "rMsgId": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldvARFWnr4H2wC8V"
+           ]
+          },
+          "stateID": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "flds1ZqBq2ZW6dVBr"
+           ]
+          },
+          "body": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldCfgm35ZqyVe9xm"
+           ]
+          },
+          "campId": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldv0o5rhmd7jXDrt"
+           ]
+          },
+          "api": {
+           "fn": "map",
+           "args": [
+            {
+             "fn": "map",
+             "args": [
+              {
+               "$ref": "wacGHFLG0dOEflbzR",
+               "path": [
+                "records"
+               ]
+              },
+              {
+               "fn": "propertyGetter",
+               "args": [
+                "cellValuesByFieldId"
+               ]
+              }
+             ]
+            },
+            {
+             "fn": "propertyGetter",
+             "args": [
+              "fldgLpFMZmYPMIReL"
+             ]
+            }
+           ]
+          },
+          "cc": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldGkiO630UgVCnv5"
+           ]
+          },
+          "leadId": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldv66oGZQQ9Qscmb"
+           ]
+          },
+          "campaignId": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldv0o5rhmd7jXDrt"
+           ]
+          },
+          "convoHistory": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldYocEhrAzRUw9sA"
+           ]
+          },
+          "customReply": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldCfgm35ZqyVe9xm"
+           ]
+          },
+          "airtable_record": {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          },
+          "leadName": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldQAcnN9PrbL7R81"
+           ]
+          },
+          "minutesBeforeResponding": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fld6piNCeEc0lAOHf"
+           ]
+          },
+          "leadStatus": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldr2uNiscZfeCNiT",
+            "name"
+           ]
+          },
+          "opportunityStatus": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldfPPfvAoXw04LVs",
+            "name"
+           ]
+          },
+          "lastEmailSent": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldE9bxKtmeRsvG9f",
+            "name"
+           ]
+          }
+         }
+        },
+        "script": "// Smartlead reply sender v3. Confirm the provider message before Airtable clears/advances.\nconst cfg = input.config();\nconst apiKey = String(cfg.api || '');\nconst campaignId = String(cfg.campId || cfg.campaignId || '');\nconst leadId = String(cfg.leadId || '');\nconst emailStatsId = String(cfg.stateID || '');\nconst replyMessageId = String(cfg.rMsgId || '');\nconst body = String(cfg.body || cfg.customReply || '');\nconst API_ROOT = 'https://server.smartlead.ai/api/v1';\n\nfunction address(value) {\n  if (value && typeof value === 'object') return address(value.address || value.email_address || value.email || '');\n  const text = String(value || '').trim().toLowerCase();\n  const angle = text.match(/<([^<>]+)>/);\n  return (angle ? angle[1] : text).trim();\n}\n\nfunction validEmail(value) {\n  return /^[^\\s<>@]+@[^\\s<>@]+\\.[^\\s<>@]+$/.test(value);\n}\n\nfunction addressList(value) {\n  const values = Array.isArray(value) ? value : [value];\n  const result = [];\n  for (const item of values.flat(Infinity)) {\n    for (const part of String(item || '').split(/[;,\\n]+/)) {\n      const email = address(part);\n      if (email) result.push(email);\n    }\n  }\n  return result;\n}\n\nfunction messageId(message) {\n  return String(message?.message_id || message?.id || message?.email_message_id || '').trim();\n}\n\nfunction messageFrom(message) {\n  return address(message?.from_email || message?.from || message?.sender_email || message?.email_from);\n}\n\nfunction messageTo(message) {\n  return address(message?.to_email || message?.to || message?.recipient_email || message?.email_to);\n}\n\nfunction explicitTime(raw) {\n  if (typeof raw !== 'string' || !/(?:Z|[+-]\\d{2}:?\\d{2}|\\b(?:UT|UTC|GMT))\\s*(?:\\([^)]*\\))?$/i.test(raw.trim())) return null;\n  const millis = Date.parse(raw);\n  return Number.isFinite(millis) ? new Date(millis).toISOString() : null;\n}\n\nfunction sentTime(message) {\n  return explicitTime(message?.sent_at)\n    || explicitTime(message?.date_sent)\n    || explicitTime(message?.event_time)\n    || explicitTime(message?.time)\n    || explicitTime(message?.timestamp);\n}\n\nasync function requestJson(url, options = {}) {\n  const response = await fetch(url, {\n    ...options,\n    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },\n  });\n  const raw = await response.text();\n  let payload = {};\n  if (raw) {\n    try { payload = JSON.parse(raw); }\n    catch { throw new Error(`Smartlead returned non-JSON HTTP ${response.status}`); }\n  }\n  if (!response.ok || payload?.error || payload?.success === false || payload?.ok === false) {\n    throw new Error(`Smartlead request failed with HTTP ${response.status}`);\n  }\n  return payload;\n}\n\nasync function history() {\n  const payload = await requestJson(`${API_ROOT}/campaigns/${encodeURIComponent(campaignId)}/leads/${encodeURIComponent(leadId)}/message-history?api_key=REDACTED`);\n  if (!Array.isArray(payload?.history)) throw new Error('Smartlead message history is unavailable');\n  return payload.history;\n}\n\nif (!apiKey || !campaignId || !leadId || !emailStatsId || !replyMessageId || !body.trim()) {\n  throw new Error('Missing Smartlead campaign, lead, thread, message, or reply body');\n}\n\nconst before = await history();\nconst parent = before.find((message) => messageId(message) === replyMessageId)\n  || before.filter((message) => String(message?.type || '').toUpperCase() === 'REPLY').at(-1);\nif (!parent || (messageId(parent) && messageId(parent) !== replyMessageId)) {\n  throw new Error('Authoritative Smartlead parent message does not match the requested reply');\n}\nconst prospect = messageFrom(parent);\nconst sender = messageTo(parent);\nif (!validEmail(prospect) || !validEmail(sender) || prospect === sender) {\n  throw new Error('Smartlead external prospect and sending inbox must be distinct verified emails');\n}\n\nconst knownSenders = new Set(before\n  .filter((message) => String(message?.type || '').toUpperCase() === 'SENT')\n  .map(messageFrom)\n  .filter(validEmail));\nknownSenders.add(sender);\nconst cc = [];\nconst seen = new Set([prospect]);\nfor (const email of addressList(cfg.cc)) {\n  if (!validEmail(email)) throw new Error('Invalid Smartlead CC address');\n  if (knownSenders.has(email)) throw new Error('Smartlead CC contains the sender or a known sender alias');\n  if (!seen.has(email)) {\n    seen.add(email);\n    cc.push(email);\n  }\n}\n\nconst requestBody = {\n  email_stats_id: emailStatsId,\n  email_body: body.replace(/\\r\\n?/g, '\\n').replace(/\\n/g, '<br/>'),\n  reply_message_id: replyMessageId,\n};\nif (cc.length) requestBody.cc = cc;\n\nconst accepted = await requestJson(`${API_ROOT}/campaigns/${encodeURIComponent(campaignId)}/reply-email-thread?api_key=REDACTED`, {\n  method: 'POST',\n  body: JSON.stringify(requestBody),\n});\nif (accepted?.success !== true) throw new Error('Smartlead did not explicitly accept the reply');\n\nlet providerMessageId = String(accepted?.data?.message_id || accepted?.message_id || '').trim();\nlet confirmedAt = null;\nif (providerMessageId) {\n  const status = await requestJson(`${API_ROOT}/master-inbox/reply-status?api_key=REDACTED&message_id=${encodeURIComponent(providerMessageId)}`);\n  if (status?.ok === true && String(status?.data?.status || '').toUpperCase() === 'COMPLETED') {\n    confirmedAt = explicitTime(status?.data?.event_time);\n  }\n} else {\n  const known = new Set(before.map(messageId).filter(Boolean));\n  const after = await history();\n  const candidates = after.filter((message) => {\n    const id = messageId(message);\n    return id && !known.has(id)\n      && String(message?.type || '').toUpperCase() === 'SENT'\n      && messageFrom(message) === sender\n      && messageTo(message) === prospect;\n  });\n  if (candidates.length === 1) {\n    providerMessageId = messageId(candidates[0]);\n    confirmedAt = sentTime(candidates[0]);\n  }\n}\n\nif (!providerMessageId || !confirmedAt || Date.parse(confirmedAt) > Date.now() + 60000) {\n  throw new Error('Smartlead accepted the reply but has not confirmed a unique completed message. Do not clear the draft, advance sent status, or retry automatically.');\n}\n\noutput.set('sendConfirmed', true);\noutput.set('providerMessageId', providerMessageId);\noutput.set('sentAt', confirmedAt);\n"
+       }
+      },
+      {
+       "key": "wac1MP8iUqlJvCQzM",
+       "type": "updateRecord",
+       "inputs": {
+        "updateRecordMethod": "customFields",
+        "tableId": "tblADFhWhTcLrl1UY",
+        "rowId": {
+         "template": [
+          {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          }
+         ]
+        },
+        "fields": {
+         "obj": {
+          "fldE9bxKtmeRsvG9f": {
+           "obj": {
+            "id": "selnCU29VWYfblbZR"
+           }
+          },
+          "fldCfgm35ZqyVe9xm": {
+           "template": [
+            ""
+           ]
+          }
+         }
+        }
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

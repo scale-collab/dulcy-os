@@ -1,0 +1,22 @@
+{
+  "type": "module",
+  "comment": "These are the allowed dependencies for AI generated blocks. Please re-run `npm install` after changing to update package-lock.json.",
+  "dependencies": {
+    "@airtable/blocks": "interface-alpha",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tailwindcss": "^3.4.17",
+    "@phosphor-icons/react": "^2.1.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "globals": "^16.0.0",
+    "tailwindcss": "^3.4.17",
+    "typescript-eslint": "^8.69.0"
+  },
+  "scripts": {
+    "tailwindcss": "tailwindcss"
+  }
+}

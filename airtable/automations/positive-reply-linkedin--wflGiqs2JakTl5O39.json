@@ -1,0 +1,67 @@
+{
+ "id": "wflGiqs2JakTl5O39",
+ "name": "Positive Reply -> LinkedIn",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordMatchesConditions",
+  "inputs": {
+   "tableId": "tblADFhWhTcLrl1UY",
+   "filtersObj": {
+    "obj": {
+     "operator": "and",
+     "operands": {
+      "tuple": [
+       {
+        "obj": {
+         "operator": "isNotEmpty",
+         "operands": {
+          "tuple": [
+           "fldlC9uaoYyYwFvDz"
+          ]
+         },
+         "operatorOptions": null
+        }
+       },
+       {
+        "obj": {
+         "operator": "=",
+         "operands": {
+          "tuple": [
+           "fldr2uNiscZfeCNiT",
+           "selQCbbV7tZdoENia"
+          ]
+         },
+         "operatorOptions": null
+        }
+       }
+      ]
+     }
+    }
+   }
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacr9k7ApVQ4QoPLy",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "recordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     }
+    },
+    "script": "let table = base.getTable(\"Emails\");\nlet record = await table.selectRecordAsync(input.config().recordId);\nlet webhook = \"https://hook.us1.make.com/REDACTED_PATH\";\n\n// Create payload from record fields\nlet payload = Object.fromEntries(table.fields.map(f => [f.name, record.getCellValue(f.name)]));\n\n// Send data to webhook\nawait fetch(webhook, {\n    method: \"POST\",\n    headers: { \"Content-Type\": \"application/json\" },\n    body: JSON.stringify(payload)\n});"
+   },
+   "outputSchema": []
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

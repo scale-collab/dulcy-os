@@ -1,0 +1,525 @@
+{
+ "id": "DulcyReplyRecoveryV4",
+ "name": "[Dulcy Reply Agent] Reconcile delivery - NEVER SEND",
+ "active": true,
+ "isArchived": false,
+ "versionId": "9d4f8ec5-35f5-43d0-ad5f-2b3c72b7083f",
+ "triggerCount": 1,
+ "createdAt": "2026-10-07T16:43:05.797Z",
+ "updatedAt": "2026-11-17T16:42:41.783Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Every 2 Minutes": {
+   "main": [
+    [
+     {
+      "node": "Read Pending Delivery",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read Pending Delivery": {
+   "main": [
+    [
+     {
+      "node": "Validate Recovery Job",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate Recovery Job": {
+   "main": [
+    [
+     {
+      "node": "Read Recovery Workspace",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read Recovery Workspace": {
+   "main": [
+    [
+     {
+      "node": "Read Recovery Settings",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read Recovery Settings": {
+   "main": [
+    [
+     {
+      "node": "Validate Recovery Context",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate Recovery Context": {
+   "main": [
+    [
+     {
+      "node": "Read Delivery Thread",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read Delivery Thread": {
+   "main": [
+    [
+     {
+      "node": "Read Recovery Inbox",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read Recovery Inbox": {
+   "main": [
+    [
+     {
+      "node": "Decide Recovery Without Sending",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Decide Recovery Without Sending": {
+   "main": [
+    [
+     {
+      "node": "Save Recovery Ledger",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Save Recovery Ledger": {
+   "main": [
+    [
+     {
+      "node": "Only Project Confirmed Delivery",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Only Project Confirmed Delivery": {
+   "main": [
+    [
+     {
+      "node": "Reread Before Recovery Write",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Reread Before Recovery Write": {
+   "main": [
+    [
+     {
+      "node": "Preserve Concurrent Inbox Work",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Preserve Concurrent Inbox Work": {
+   "main": [
+    [
+     {
+      "node": "Apply Confirmed Delivery",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Apply Confirmed Delivery": {
+   "main": [
+    [
+     {
+      "node": "Verify Recovery Saved",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Verify Recovery Saved": {
+   "main": [
+    [
+     {
+      "node": "Complete Recovery",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "id": "81beeaca-3046-4504-949e-1497a4046bf2",
+   "name": "Every 2 Minutes",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    0
+   ],
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "minutes",
+       "minutesInterval": 2
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "78bc8e9b-6ca6-4470-8a4a-ea330dc730a4",
+   "name": "Read Pending Delivery",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    240,
+    0
+   ],
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "WITH picked AS (SELECT job_key FROM dulcy_reply_agent.send_jobs WHERE workspace_record_id='recJx0WwHsdsvcVIN' AND reconciled_at IS NULL AND state IN ('claimed','unknown','submitted','sent') AND created_at < now()-interval '2 minutes' AND (last_checked_at IS NULL OR last_checked_at < now()-interval '5 minutes') ORDER BY last_checked_at NULLS FIRST,created_at LIMIT 1 FOR UPDATE SKIP LOCKED) UPDATE dulcy_reply_agent.send_jobs j SET last_checked_at=now() FROM picked WHERE j.job_key=picked.job_key RETURNING j.*;",
+    "options": {}
+   }
+  },
+  {
+   "id": "c0c624cd-d547-47b3-aae1-0af2e8612941",
+   "name": "Validate Recovery Job",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    480,
+    0
+   ],
+   "parameters": {
+    "jsCode": "const j=$json;if(!j.job_key)return [];if(j.workspace_record_id!=='recJx0WwHsdsvcVIN'||!/^rec[a-zA-Z0-9]{14}$/.test(j.airtable_record_id))throw Error('Recovery identity invalid');return [{json:j}];"
+   }
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/Workspace%20IDs/'+$('Validate Recovery Job').first().json.workspace_record_id }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "7f79ace4-6c31-43e4-8891-c161f5c03f30",
+   "name": "Read Recovery Workspace",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    720,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tbl5nmzPUcNEBSWxH",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "filterByFormula",
+       "value": "{Workspace Record ID}='recJx0WwHsdsvcVIN'"
+      },
+      {
+       "name": "maxRecords",
+       "value": "2"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "6055d5ce-f9a8-453b-9982-022d181a8948",
+   "name": "Read Recovery Settings",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    960,
+    0
+   ]
+  },
+  {
+   "id": "4ac5e5f1-2b11-48a1-bc5b-09265bbea809",
+   "name": "Validate Recovery Context",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1200,
+    0
+   ],
+   "parameters": {
+    "jsCode": "const j=$('Validate Recovery Job').first().json,ws=$('Read Recovery Workspace').first().json;if(ws.error||ws.id!==j.workspace_record_id||String(ws.fields?.ID)!=='2'||!ws.fields['EmailBison API'])throw Error('Recovery workspace unavailable');if($json.error||$json.records?.length!==1||$json.records[0].fields['Workspace Record ID']!==j.workspace_record_id)throw Error('Recovery settings unavailable');if(!j.approved_snapshot?.fields?.reply_message_id)throw Error('Recovery snapshot missing; manual reconciliation required');return [{json:j}];"
+   }
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://send.dulcy.io/api/replies/'+encodeURIComponent($json.approved_snapshot.fields.reply_message_id)+'/conversation-thread' }}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "={{ 'Bearer ' + $json.fields['EmailBison API'] }}"
+      },
+      {
+       "name": "Accept",
+       "value": "application/json"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "18bf96d6-a4ef-4a4f-9388-21adefedd54e",
+   "name": "Read Delivery Thread",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1440,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "method": "GET",
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY/'+$('Validate Recovery Job').first().json.airtable_record_id }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "6a5f2565-f1d7-43d6-b00d-be2e02859629",
+   "name": "Read Recovery Inbox",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1680,
+    0
+   ]
+  },
+  {
+   "id": "cd629f58-f643-479e-96bc-dd89811cd716",
+   "name": "Decide Recovery Without Sending",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1920,
+    0
+   ],
+   "parameters": {
+    "jsCode": "function sendWindow(settings,at){\n const date=new Date(at);if(!Number.isFinite(date.getTime()))return {allowed:false,reason:'Invalid clock'};\n const zone=settings.Timezone||'America/New_York';let p;try{p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',weekday:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(date).map(x=>[x.type,x.value]));}catch{return {allowed:false,reason:'Invalid timezone'};}\n if(settings['Exclude Weekends']&&['Sat','Sun'].includes(p.weekday))return {allowed:false,reason:'Weekend'};\n const y=+p.year,m=+p.month,d=+p.day,key=`${y}-${p.month}-${p.day}`;\n if(settings['Exclude US Holidays']){\n  const holidays=new Set();const add=(yy,mm,dd)=>{const dt=new Date(Date.UTC(yy,mm-1,dd));if(dt.getUTCDay()===6)dt.setUTCDate(dt.getUTCDate()-1);if(dt.getUTCDay()===0)dt.setUTCDate(dt.getUTCDate()+1);holidays.add(dt.toISOString().slice(0,10));};\n  const nth=(mm,dow,n)=>{const dt=new Date(Date.UTC(y,mm-1,1));dt.setUTCDate(1+(dow-dt.getUTCDay()+7)%7+7*(n-1));holidays.add(dt.toISOString().slice(0,10));};\n  for(const yy of [y,y+1])add(yy,1,1);for(const [mm,dd] of [[6,19],[7,4],[11,11],[12,25]])add(y,mm,dd);\n  nth(1,1,3);nth(2,1,3);nth(9,1,1);nth(10,1,2);nth(11,4,4);\n  const memorial=new Date(Date.UTC(y,5,0));memorial.setUTCDate(memorial.getUTCDate()-(memorial.getUTCDay()+6)%7);holidays.add(memorial.toISOString().slice(0,10));\n  if(holidays.has(key))return {allowed:false,reason:'Observed US federal holiday'};\n }\n const time=v=>{if(!/^\\d{2}:\\d{2}$/.test(String(v)))return NaN;const [h,m]=v.split(':').map(Number);return h<24&&m<60?h*60+m:NaN};const start=time(settings['Office Start']),end=time(settings['Office End']),now=(+p.hour)*60+(+p.minute);\n if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start)return {allowed:false,reason:'Missing or unsupported office hours'};\n return {allowed:now>=start&&now<end,reason:now>=start&&now<end?'Within office hours':'Outside office hours'};\n}\n\nfunction confirmedSendProjection({record,settings,provider,now=Date.now()}){\n const f=record?.fields||{},stop=reason=>({apply:false,reason,fields:{}}),id=String(provider?.id||provider?.uuid||'');\n if(!record?.id||!id||!['sent','delivered'].includes(String(provider.folder||provider.status||'').toLowerCase()))return stop('Provider has not confirmed sending');\n if(!settings['Workspace Record ID']||settings['Workspace Record ID']!==f['Dulcy Reply Agent Workspace Record ID'])return stop('Client identity mismatch');\n let prior;try{prior=JSON.parse(f['Dulcy Reply Agent Policy Decision']||'{}');}catch{return stop('Invalid policy record');}\n if(prior.lastConfirmedProviderMessageId===id)return {apply:false,alreadyApplied:true,reason:'Already projected',fields:{}};\n const at=Date.parse(provider.sent_at||provider.date_sent||(['sent','delivered'].includes(String(provider.folder||provider.status||'').toLowerCase())&&String(provider.type||'').toLowerCase()==='outgoing email'?provider.date_received:'')||'');if(!Number.isFinite(at)||at>now+60000)return stop('Missing or invalid provider send timestamp');\n const count=Number(f['Follow Up Counter']||0);if(!Number.isInteger(count)||count<0)return stop('Invalid follow-up count');\n const isFollowup=Number.isInteger(prior.followupStep);if(isFollowup&&prior.followupStep!==count+1)return stop('Follow-up count changed');\n const nextCount=count+(isFollowup?1:0),policy={...prior,lastConfirmedProviderMessageId:id,followupAnchorMessageId:id,followupStep:null,autoSend:false};\n const fields={'Dulcy Reply Agent State':'Sent','Dulcy Reply Agent Human Action':'None','Dulcy Reply Agent Draft':'','Dulcy Reply Agent Sent At':new Date(at).toISOString(),'Dulcy Reply Agent Due At':null,'Follow Up Counter':nextCount,'Dulcy Reply Agent Policy Decision':JSON.stringify(policy),'Dulcy Reply Agent Last Error':''};\n const noFollow=f.DNC||f['Client Handling']||f['Reply Ownership']==='Handoff'||['WON','LOST'].includes(f['Opportunity Status'])||['Booked Meeting','Completed Meeting','Closed Deal'].includes(f['Pipeline Stage'])||settings.Enabled!==true||settings['Reply Handoff Mode']==='All Replies'||settings['Reply Handoff Mode']==='After First Agent Reply'||['Not Interested','Do Not Contact','Automatic Reply','Referred','Wrong Person'].includes(f['Dulcy Reply Agent Intent']);\n if(noFollow)return {apply:true,fields,scheduled:false};\n let plan;try{plan=JSON.parse(settings['Follow-up Plan JSON']||'{}');}catch{fields['Dulcy Reply Agent Last Error']='Sent, but follow-up plan is invalid.';return {apply:true,fields,scheduled:false};}\n if(plan.enabled!==true||!Array.isArray(plan.steps)||nextCount>=plan.steps.length)return {apply:true,fields,scheduled:false};\n const step=plan.steps[nextCount],delay=Number(step.delay),unit=String(step.unit||'');if(!Number.isFinite(delay)||delay<=0||delay>90||!['days','hours'].includes(unit)){fields['Dulcy Reply Agent Last Error']='Sent, but the next follow-up delay is invalid.';return {apply:true,fields,scheduled:false};}\n if(!settings.Timezone||!settings['Office Start']||!settings['Office End']){fields['Dulcy Reply Agent Last Error']='Sent; configure client timezone and office hours before scheduling follow-ups.';return {apply:true,fields,scheduled:false};}\n const earliest=at+delay*(unit==='days'?86400000:3600000);let due=Math.max(earliest,now);due=Math.ceil(due/60000)*60000;\n const windowSettings={...settings,'Exclude Weekends':plan.skipWeekends===true,'Exclude US Holidays':plan.skipHolidays===true};\n let checks=0;while(!sendWindow(windowSettings,due).allowed&&checks++<60*24*14)due+=60000;\n if(!sendWindow(windowSettings,due).allowed){fields['Dulcy Reply Agent Last Error']='Sent; no valid follow-up sending window found.';return {apply:true,fields,scheduled:false};}\n fields['Dulcy Reply Agent State']='Scheduled';fields['Dulcy Reply Agent Due At']=new Date(due).toISOString();fields['Dulcy Reply Agent Follow-up Type']='No Response';return {apply:true,fields,scheduled:true,step:nextCount+1};\n}\n\n\n// Pure recovery decision. The adapter must use a workspace-scoped provider GET,\n// retain the durable job, and re-read Airtable before applying any projection.\n// This module never submits or retries an email.\nfunction reconcileSend({job,approvedRecord,currentRecord,settings,provider,providerWorkspaceId,threadComplete=false,newerMessage=false,now=Date.now()}) {\n const hold=reason=>({action:'review',reason,send:false,fields:{}});\n if(!job?.job_key||!job.provider_message_id)return hold('No provider message identity; never retry an uncertain submission automatically');\n if(!['submitted','sent'].includes(job.state))return hold('Submission requires manual reconciliation');\n if(job.workspace_record_id!==settings?.['Workspace Record ID']||providerWorkspaceId!==job.workspace_record_id)return hold('Provider or settings workspace mismatch');\n if(job.airtable_record_id!==approvedRecord?.id||currentRecord?.id!==approvedRecord?.id)return hold('Inbox record mismatch');\n if(String(provider?.id||provider?.uuid||'')!==String(job.provider_message_id))return hold('Provider message mismatch');\n const status=String(provider.folder||provider.status||'').toLowerCase();\n if(['outbox','queued','pending'].includes(status))return {action:'wait',reason:'Provider has not confirmed sending',send:false,fields:{}};\n if(!['sent','delivered'].includes(status))return hold('Provider status requires review: '+status);\n const at=Date.parse(provider.sent_at||provider.date_sent||(['sent','delivered'].includes(String(provider.folder||provider.status||'').toLowerCase())&&String(provider.type||'').toLowerCase()==='outgoing email'?provider.date_received:'')||'');\n if(!Number.isFinite(at)||at>now+60000)return hold('Provider send timestamp missing or invalid');\n const base={send:false,confirmed:true,providerMessageId:String(job.provider_message_id),sentAt:new Date(at).toISOString()};\n const f=currentRecord.fields||{},before=approvedRecord.fields||{};\n if(f['Dulcy Reply Agent Workspace Record ID']!==job.workspace_record_id||before['Dulcy Reply Agent Workspace Record ID']!==job.workspace_record_id)return hold('Inbox workspace mismatch');\n let policy;try{policy=JSON.parse(f['Dulcy Reply Agent Policy Decision']||'{}');}catch{return {...base,...hold('Invalid current policy')};}\n if(policy.lastConfirmedProviderMessageId===String(job.provider_message_id))return {...base,action:'already-applied',fields:{}};\n // Preserve new inbound decisions and human edits; record delivery in the ledger\n // independently, without clearing a newer draft or restoring an old state.\n if(!threadComplete||newerMessage)return {...base,action:'ledger-only',reason:'Current conversation changed or is incomplete',fields:{}};\n const protectedKeys=['Dulcy Reply Agent Event ID','Dulcy Reply Agent Due At','Dulcy Reply Agent Draft','Custom Reply','Follow Up Counter','Dulcy Reply Agent Policy Decision','DNC','Client Handling','Reply Ownership','Opportunity Status','Pipeline Stage','reply_message_id','reply_uuid','Leads Email','Dulcy Reply Agent Sender Email ID'];\n if(protectedKeys.some(k=>JSON.stringify(f[k]??null)!==JSON.stringify(before[k]??null))||f['Dulcy Reply Agent State']!=='Sending'||f['Dulcy Reply Agent Human Action']!=='None')return {...base,action:'ledger-only',reason:'Inbox changed since approved submission',fields:{}};\n const projection=confirmedSendProjection({record:currentRecord,settings,provider,now});\n if(!projection.apply)return {...base,action:'review',reason:projection.reason,fields:{}};\n return {...base,action:'project',fields:projection.fields,scheduled:projection.scheduled};\n}\n\nconst job=$('Validate Recovery Job').first().json,current=$json,thread=$('Read Delivery Thread').first().json,root=thread.data||thread,settings=$('Read Recovery Settings').first().json.records[0].fields;const rows=[];function walk(x){if(!x||typeof x!=='object')return;if(Array.isArray(x)){x.forEach(walk);return;}if(x.id)rows.push(x);for(const k of ['current_reply','older_messages','newer_messages','previous_messages','messages','thread','replies'])walk(x[k]);}walk(root);const provider=rows.find(r=>String(r.id)===String(job.provider_message_id));const before=job.approved_snapshot,original=rows.find(r=>String(r.id)===String(before.fields.reply_message_id));const sender=String(before.fields['Dulcy Reply Agent Sender Email ID']),email=String(before.fields['Leads Email']).toLowerCase();const complete=!thread.error&&!root.error&&!thread.meta?.next_page_url&&!root.next_page_url&&!thread.links?.next&&Boolean(original);const identity=provider&&String(provider.sender_email_id)===sender&&String(provider.primary_to_email_address||'').toLowerCase()===email;const newerMessage=rows.some(r=>!['sent','outbox'].includes(String(r.folder).toLowerCase())&&Date.parse(r.date_received||r.created_at)>Date.parse(original?.date_received||original?.created_at));let result;if(current.error||current.id!==job.airtable_record_id)throw Error('Recovery inbox read failed');if(provider&&!identity)result={action:'review',reason:'Provider sender or recipient mismatch',send:false,fields:{}};else result=reconcileSend({job,approvedRecord:before,currentRecord:current,settings,provider,providerWorkspaceId:job.workspace_record_id,threadComplete:complete,newerMessage});return [{json:{...result,job,current,provider,recordId:current.id}}];"
+   }
+  },
+  {
+   "id": "e6e0d3f7-5470-41f8-ab2c-3f05eb20ff42",
+   "name": "Save Recovery Ledger",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    2160,
+    0
+   ],
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "UPDATE dulcy_reply_agent.send_jobs SET state=CASE WHEN $2::boolean THEN 'sent' ELSE state END,last_checked_at=now(),reason=$3,updated_at=now(),reconciled_at=CASE WHEN $4::boolean THEN now() ELSE reconciled_at END WHERE job_key=$1 RETURNING job_key;",
+    "options": {
+     "queryReplacement": "={{ [$json.job.job_key,Boolean($json.confirmed),$json.reason||$json.action,['already-applied','ledger-only'].includes($json.action)] }}"
+    }
+   }
+  },
+  {
+   "id": "721602e3-d7fb-436f-9c7d-e3e042617ca3",
+   "name": "Only Project Confirmed Delivery",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2400,
+    0
+   ],
+   "parameters": {
+    "jsCode": "const d=$('Decide Recovery Without Sending').first().json;if(d.action!=='project')return [];return [{json:d}];"
+   }
+  },
+  {
+   "parameters": {
+    "method": "GET",
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY/'+$json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "de6b8685-7dcb-471e-9997-db9fa012a48a",
+   "name": "Reread Before Recovery Write",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2640,
+    0
+   ]
+  },
+  {
+   "id": "187d0d2e-ff74-4f03-b38a-1c7bafd186be",
+   "name": "Preserve Concurrent Inbox Work",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2880,
+    0
+   ],
+   "parameters": {
+    "jsCode": "const d=$('Only Project Confirmed Delivery').first().json;if($json.error||$json.id!==d.recordId)throw Error('Recovery reread unavailable');const stable=v=>JSON.stringify(Object.entries(v||{}).sort(([a],[b])=>a.localeCompare(b)));if(stable($json.fields)!==stable(d.current.fields))throw Error('Inbox changed during recovery; preserve it');return [{json:{...d,updateBody:{fields:d.fields,typecast:false}}}];"
+   }
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY/' + $json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json.updateBody) }}",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "6a64b4d1-5899-4754-aeb0-580d2ac54321",
+   "name": "Apply Confirmed Delivery",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    3120,
+    0
+   ]
+  },
+  {
+   "id": "e4e48d65-7faa-4628-a5da-1dc85922125c",
+   "name": "Verify Recovery Saved",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3360,
+    0
+   ],
+   "parameters": {
+    "jsCode": "const d=$('Preserve Concurrent Inbox Work').first().json;if($json.error||$json.id!==d.recordId)throw Error('Recovery write failed');const p=JSON.parse($json.fields?.['Dulcy Reply Agent Policy Decision']||'{}');if(p.lastConfirmedProviderMessageId!==String(d.job.provider_message_id))throw Error('Recovery receipt mismatch');return [{json:d}];"
+   }
+  },
+  {
+   "id": "fcb5a886-6f50-45e4-a524-52bb32a0b457",
+   "name": "Complete Recovery",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    3600,
+    0
+   ],
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "UPDATE dulcy_reply_agent.send_jobs SET reconciled_at=now(),last_checked_at=now(),reason='Confirmed delivery projected',updated_at=now() WHERE job_key=$1 AND state='sent' RETURNING job_key;",
+    "options": {
+     "queryReplacement": "={{ [$json.job.job_key] }}"
+    }
+   }
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

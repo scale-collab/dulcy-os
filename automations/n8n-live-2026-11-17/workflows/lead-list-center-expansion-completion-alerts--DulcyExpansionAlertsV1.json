@@ -1,0 +1,554 @@
+{
+ "id": "DulcyExpansionAlertsV1",
+ "name": "[Lead List Center] Expansion Completion Alerts",
+ "active": true,
+ "isArchived": false,
+ "versionId": "ed793b1a-5995-4e33-b090-a6f75b045e0f",
+ "triggerCount": 1,
+ "createdAt": "2026-11-12T18:37:55.865Z",
+ "updatedAt": "2026-11-17T16:43:49.596Z",
+ "settings": {
+  "executionOrder": "v1",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9",
+  "saveManualExecutions": true,
+  "saveDataSuccessExecution": "all",
+  "saveDataErrorExecution": "all",
+  "executionTimeout": 90,
+  "availableInMCP": true
+ },
+ "connections": {
+  "Every minute": {
+   "main": [
+    [
+     {
+      "node": "Set delivery mode",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "No-send saved completion test": {
+   "main": [
+    [
+     {
+      "node": "Set delivery mode",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Set delivery mode": {
+   "main": [
+    [
+     {
+      "node": "Read verified completions",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read verified completions": {
+   "main": [
+    [
+     {
+      "node": "Unpack completion",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Unpack completion": {
+   "main": [
+    [
+     {
+      "node": "Read final Airtable record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read final Airtable record": {
+   "main": [
+    [
+     {
+      "node": "Check and format completion",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Check and format completion": {
+   "main": [
+    [
+     {
+      "node": "No-send test mode",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "No-send test mode": {
+   "main": [
+    [
+     {
+      "node": "Verify Slack connection without posting",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Final completion is current",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Verify Slack connection without posting": {
+   "main": [
+    [
+     {
+      "node": "No-send test result",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Final completion is current": {
+   "main": [
+    [
+     {
+      "node": "Reserve one Slack delivery",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Hold outdated completion",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Reserve one Slack delivery": {
+   "main": [
+    [
+     {
+      "node": "Delivery reserved",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Delivery reserved": {
+   "main": [
+    [
+     {
+      "node": "Post completion to campaign-alerts",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Post completion to campaign-alerts": {
+   "main": [
+    [
+     {
+      "node": "Prepare Slack receipt",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Slack receipt": {
+   "main": [
+    [
+     {
+      "node": "Save Slack delivery receipt",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Save Slack delivery receipt": {
+   "main": [
+    [
+     {
+      "node": "Verify delivery result",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "id": "593cb46f-50f0-4dcc-b314-b1c15c849f1d",
+   "name": "Every minute",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    0
+   ],
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "minutes",
+       "minutesInterval": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "d8f5b028-a892-4b80-bf33-915a95012e32",
+   "name": "No-send saved completion test",
+   "type": "n8n-nodes-base.manualTrigger",
+   "typeVersion": 1,
+   "position": [
+    0,
+    180
+   ],
+   "parameters": {}
+  },
+  {
+   "id": "ffc18ca3-b517-4ab3-a50b-7115584eb0a5",
+   "name": "Set delivery mode",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    220,
+    0
+   ],
+   "parameters": {
+    "jsCode": "const scheduled=$execution.mode==='production' && $('Every minute').isExecuted;return [{json:{op:scheduled?'next':'preview',executionId:String($execution.id),mode:String($execution.mode)}}];"
+   }
+  },
+  {
+   "id": "00d5af97-9093-403b-b2c9-deb6ab569209",
+   "name": "Read verified completions",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    440,
+    0
+   ],
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "SELECT original_batch_api.expansion_alerts_v1($1::jsonb) AS result",
+    "options": {
+     "queryReplacement": "={{ [JSON.stringify($json)] }}"
+    }
+   }
+  },
+  {
+   "id": "5ea546d8-4535-4ad2-83ec-e5c85009338c",
+   "name": "Unpack completion",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    660,
+    0
+   ],
+   "parameters": {
+    "jsCode": "const r=$input.first().json.result;return (r.events??[]).map(event=>({json:{event,dryRun:r.dryRun!==false}}));"
+   }
+  },
+  {
+   "id": "8e436394-415f-410a-8ab1-492dee0afc24",
+   "name": "Read final Airtable record",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    880,
+    0
+   ],
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblVOg9BkPOMmnitt?returnFieldsByFieldId=true&maxRecords=1&fields%5B%5D=fldbg5PAnKyFHc3uy&fields%5B%5D=fldf9wpMGWg0SebHV&fields%5B%5D=fld4kyzDwnHq5V4Iy&fields%5B%5D=fldMSv3547BOvfdmH&fields%5B%5D=fld1QphpklpYJqP0I&fields%5B%5D=fldRLtvugIxH9qun1&fields%5B%5D=fldYzvqGmQZxXL9AP&fields%5B%5D=fldE2XBsGSES6fT6X&fields%5B%5D=fldkWL67N8ZaBIaDi&fields%5B%5D=fld1pgvOtgJL80iaK&fields%5B%5D=fldiRqsZug1W0Otvs&fields%5B%5D=fldUZOY2Ubs58DQ3V&filterByFormula=' + encodeURIComponent(\"RECORD_ID()='\"+$json.event.recordId+\"'\") }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "timeout": 30000
+    }
+   },
+   "retryOnFail": true,
+   "maxTries": 3,
+   "waitBetweenTries": 5000
+  },
+  {
+   "id": "7209597b-4c6b-4dfc-898b-2429039c0d67",
+   "name": "Check and format completion",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1100,
+    0
+   ],
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "function prepareExpansionAlert(event, row, dryRun=false) {\n const f=row?.fields??{};\n const field=(id)=>f[id];\n const text=(v)=>typeof v==='string'?v:String(v??'');\n const escape=(v)=>text(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n const num=(v)=>v===undefined||v===null?0:Number(v);\n const reject=(reason)=>({ready:false,reason,dryRun,event});\n if(!event||!/^rec[A-Za-z0-9]+$/.test(event.recordId)||!/^\\d+$/.test(event.owner)||event.key!==`${event.kind}:${event.recordId}:${event.owner}`) return reject('Invalid completion identity');\n if(row?.id!==event.recordId) return reject('Airtable record does not match the completion');\n if(text(field('fld4kyzDwnHq5V4Iy'))!==event.owner) return reject('The list has moved to another run or stage');\n if(field('fldf9wpMGWg0SebHV')!=='Completed') return reject('The list is not in its final Completed state');\n const finished=Date.parse(field('fldMSv3547BOvfdmH')), receiptAt=Date.parse(event.completedAt);\n if(!Number.isFinite(finished)||!Number.isFinite(receiptAt)||finished<receiptAt-1000) return reject('The final completion timestamp is not saved');\n let timing=null;try{timing=JSON.parse(field('fld1QphpklpYJqP0I')??'null');}catch{}\n const name=text(field('fldbg5PAnKyFHc3uy')).trim();\n if(!name) return reject('Missing lead-list name');\n let detail='',heading='';\n if(event.kind==='company'){\n  if(timing?.kind!=='company-expansion'||text(timing.runId)!==event.owner||(timing.recordId&&timing.recordId!==event.recordId)) return reject('This completion is not the final company expansion');\n  const count=num(field('fldRLtvugIxH9qun1')), expected=num(event.companyCount),target=num(field('fldYzvqGmQZxXL9AP'));\n  if(!Number.isInteger(count)||count<0||!Number.isInteger(expected)||count!==expected) return reject('Saved company count does not match the final completion');\n  heading='Company expansion finished';detail=`${count.toLocaleString('en-US')} saved companies.`;\n  if(Number.isFinite(target)&&target>count) detail+=` Below the ${target.toLocaleString('en-US')} target; review the saved results before continuing.`;\n }else if(event.kind==='contact'){\n  if(field('fldiRqsZug1W0Otvs')!=='Completed') return reject('The contact queue has not finished');\n  if(Math.abs(finished-receiptAt)>1000) return reject('The saved contact completion belongs to a later stage');\n  const ids=['fldE2XBsGSES6fT6X','fldkWL67N8ZaBIaDi','fld1pgvOtgJL80iaK'];\n  for(const id of ids){const a=num(field(id)),b=num(event.expectedFields?.[id]);if(!Number.isInteger(a)||a<0||a!==b) return reject('Saved contact counts do not match the verified completion');}\n  heading='Contact expansion finished';detail=`${num(field(ids[0])).toLocaleString('en-US')} contacts reviewed · ${num(field(ids[1])).toLocaleString('en-US')} retained · ${num(field(ids[2])).toLocaleString('en-US')} eligible for verification.`;\n  detail+=' Review the results in Contact Review; these are not yet verified leads.';\n }else return reject('Unsupported completion type');\n const durationStart=Date.parse(timing?.totalStartedAt??field('fldUZOY2Ubs58DQ3V'));\n if(Number.isFinite(durationStart)&&finished>=durationStart){const minutes=Math.round((finished-durationStart)/60000);detail+=`\\nRuntime: ${minutes<60?minutes+' min':Math.floor(minutes/60)+'h '+minutes%60+'m'}.`;}\n const link='https://airtable.com/appxqINt5XKw7a76A/pag1PZd6cHL42uBwg';\n const payload={channel:'C08FDE9K18E',text:`${heading} for ${escape(name).slice(0,1400)}.\\n\\n<${link}|Open lead list>\\n\\n<!channel>`,unfurl_links:false,unfurl_media:false};\n return {ready:true,dryRun,event,payload,kind:event.kind,recordId:event.recordId};\n}\nif(typeof module!=='undefined')module.exports={prepareExpansionAlert};\n\nconst source=$('Unpack completion').item.json;return {json:prepareExpansionAlert(source.event,$json.records?.[0],source.dryRun)};"
+   }
+  },
+  {
+   "id": "d9aa2d20-0186-48d0-8b2e-82ad44a63494",
+   "name": "No-send test mode",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    1320,
+    0
+   ],
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "25686ac2-eff3-4c24-9d4a-e682e77825c0",
+       "leftValue": "={{ $json.dryRun }}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   }
+  },
+  {
+   "id": "b6a61e99-1297-482a-8d93-c4abe8a90d0c",
+   "name": "Verify Slack connection without posting",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1540,
+    -220
+   ],
+   "parameters": {
+    "url": "https://slack.com/api/auth.test",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "slackApi",
+    "options": {
+     "timeout": 15000
+    }
+   },
+   "retryOnFail": true,
+   "maxTries": 3,
+   "waitBetweenTries": 5000
+  },
+  {
+   "id": "22d04862-78a6-4f06-beff-ce8b009f200c",
+   "name": "No-send test result",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1760,
+    -220
+   ],
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const preview=$('Check and format completion').item.json;if($json.ok!==true||$json.user_id!=='U08T5HSD5HP')throw new Error('Slack connection identity not confirmed');return {json:{...preview,slackConnectionConfirmed:true,slackUserId:$json.user_id,slackMessagesSent:0,queueWrites:0}};"
+   }
+  },
+  {
+   "id": "74aa9134-450c-43d4-9301-3c9fc38cf3e6",
+   "name": "Final completion is current",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    1540,
+    80
+   ],
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "c03bc674-f203-4726-a4d3-d89267d27c04",
+       "leftValue": "={{ $json.ready }}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   }
+  },
+  {
+   "id": "9574101a-8019-4a00-ba47-c73e80a8baa6",
+   "name": "Hold outdated completion",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    1760,
+    300
+   ],
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "SELECT original_batch_api.expansion_alerts_v1($1::jsonb) AS result",
+    "options": {
+     "queryReplacement": "={{ [JSON.stringify({op:'suppress',...$json.event,reason:$json.reason})] }}"
+    }
+   }
+  },
+  {
+   "id": "207d6d73-69d3-4e10-8c8a-6ce27bffbbe1",
+   "name": "Reserve one Slack delivery",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    1760,
+    80
+   ],
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "SELECT original_batch_api.expansion_alerts_v1($1::jsonb) AS result",
+    "options": {
+     "queryReplacement": "={{ [JSON.stringify({op:'reserve',...$json.event,payload:$json.payload})] }}"
+    }
+   }
+  },
+  {
+   "id": "410a0368-9321-4004-851d-93e64bb4050e",
+   "name": "Delivery reserved",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    1980,
+    80
+   ],
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "bb0a1f95-b3f2-49cc-a42f-f3b7c3b228c8",
+       "leftValue": "={{ $json.result.post === true }}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   }
+  },
+  {
+   "id": "3f195c66-6e28-4d61-bcc8-2a1ce6facac4",
+   "name": "Post completion to campaign-alerts",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2200,
+    80
+   ],
+   "parameters": {
+    "method": "POST",
+    "url": "https://slack.com/api/chat.postMessage",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "slackApi",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ $json.result.payload }}",
+    "options": {
+     "timeout": 20000
+    }
+   },
+   "onError": "continueRegularOutput",
+   "retryOnFail": false
+  },
+  {
+   "id": "a51f8a29-771c-43b5-a315-b41a96230fa8",
+   "name": "Prepare Slack receipt",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2420,
+    80
+   ],
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const original=$('Check and format completion').item.json;return {json:{op:'finish',...original.event,response:$json}};"
+   }
+  },
+  {
+   "id": "30ecbcf0-2504-4a87-9638-105dcfc9a2ff",
+   "name": "Save Slack delivery receipt",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    2640,
+    80
+   ],
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "SELECT original_batch_api.expansion_alerts_v1($1::jsonb) AS result",
+    "options": {
+     "queryReplacement": "={{ [JSON.stringify($json)] }}"
+    }
+   }
+  },
+  {
+   "id": "5aa3bec2-adef-4b60-a665-5b5e5a793686",
+   "name": "Verify delivery result",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2860,
+    80
+   ],
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "if($json.result.state!=='sent')throw new Error('Completion alert delivery requires review; held without retry to prevent duplicates');return {json:$json.result};"
+   }
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

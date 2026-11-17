@@ -1,0 +1,544 @@
+{
+ "id": "vCnhCZxbgXdlpzvhs03gD",
+ "name": "Campaign Fail -> Task -> Restart",
+ "active": true,
+ "isArchived": false,
+ "versionId": "783c581c-fa15-4960-a851-72d8aaa3261d",
+ "triggerCount": 1,
+ "createdAt": "2026-07-23T14:22:28.133Z",
+ "updatedAt": "2026-11-17T16:40:56.493Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Webhook": {
+   "main": [
+    [
+     {
+      "node": "Search records",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create a record": {
+   "main": [
+    [
+     {
+      "node": "HTTP Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records": {
+   "main": [
+    [
+     {
+      "node": "HTTP Request1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "HTTP Request1": {
+   "main": [
+    [
+     {
+      "node": "Split Out",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Filter": {
+   "main": [
+    [
+     {
+      "node": "Create a record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Split Out": {
+   "main": [
+    [
+     {
+      "node": "Filter",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "HTTP Request": {
+   "main": [
+    []
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    -336,
+    -192
+   ],
+   "id": "2fe9266a-3fb8-4b50-ae8d-bcc4b49606dd",
+   "name": "Webhook"
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblRBxm2N53331mIm",
+     "mode": "list",
+     "cachedResultName": "Tasks",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblRBxm2N53331mIm"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Client": "={{ $('Search records').item.json.id }}",
+      "Campaign": "={{ $('Webhook').item.json.body.data.campaign.name }}",
+      "Assignee": "=rec0uiatKT3onVuwk",
+      "Stage": "Execution",
+      "Due Date": "={{ $now }}",
+      "Priority": "Urgent",
+      "Status": "In Progress",
+      "Task Name": "=URGENT: Campaign Failed - {{ $('Webhook').item.json.body.data.campaign.name }}",
+      "Notes": "=RESUME IN PROGRESS, please confirm.\n\nDetails:\n{{ $('Webhook').item.json.body.event.type }}\n \nLead:{{$('Webhook').item.json.body.data.lead.email }}\n\nSender Email: {{$('Webhook').item.json.body.data.sender_email.email }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "Task Name",
+       "displayName": "Task Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Campaign",
+       "displayName": "Campaign",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Assignee",
+       "displayName": "Assignee",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Stage",
+       "displayName": "Stage",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Intake",
+         "value": "Intake"
+        },
+        {
+         "name": "Planning",
+         "value": "Planning"
+        },
+        {
+         "name": "Execution",
+         "value": "Execution"
+        },
+        {
+         "name": "Review",
+         "value": "Review"
+        },
+        {
+         "name": "QA",
+         "value": "QA"
+        },
+        {
+         "name": "Completed",
+         "value": "Completed"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Due Date",
+       "displayName": "Due Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Priority",
+       "displayName": "Priority",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Urgent",
+         "value": "Urgent"
+        },
+        {
+         "name": "High",
+         "value": "High"
+        },
+        {
+         "name": "Medium",
+         "value": "Medium"
+        },
+        {
+         "name": "Low",
+         "value": "Low"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Status",
+       "displayName": "Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Not Started",
+         "value": "Not Started"
+        },
+        {
+         "name": "In Progress",
+         "value": "In Progress"
+        },
+        {
+         "name": "Done",
+         "value": "Done"
+        },
+        {
+         "name": "Blocked",
+         "value": "Blocked"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Notes",
+       "displayName": "Notes",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Last Updated",
+       "displayName": "Last Updated",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Created",
+       "displayName": "Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Time Ago",
+       "displayName": "Time Ago",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Calculation",
+       "displayName": "Calculation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Project Health",
+       "displayName": "Project Health",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "On Track",
+         "value": "On Track"
+        },
+        {
+         "name": "At Risk",
+         "value": "At Risk"
+        },
+        {
+         "name": "Overdue",
+         "value": "Overdue"
+        },
+        {
+         "name": "On Hold",
+         "value": "On Hold"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {
+     "typecast": true
+    }
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    784,
+    -192
+   ],
+   "id": "e0c4d1cc-93e0-45ac-a50b-1847e1a59287",
+   "name": "Create a record"
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "=https://send.dulcy.io/api/campaigns/{{ $('Webhook').item.json.body.data.campaign.id }}/resume",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Search records').item.json['EmailBison API'] }}"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.3,
+   "position": [
+    1008,
+    -192
+   ],
+   "id": "84736f30-0d0a-4cbb-adbe-fef4d898d271",
+   "name": "HTTP Request"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt"
+    },
+    "filterByFormula": "={ID} = {{ $json.body.event.workspace_id }}",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -112,
+    -192
+   ],
+   "id": "c88e510a-b784-4f8a-bfd5-3c6078879bc9",
+   "name": "Search records"
+  },
+  {
+   "parameters": {
+    "url": "=https://send.dulcy.io/api/campaigns",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Search records').item.json['EmailBison API'] }}"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.3,
+   "position": [
+    112,
+    -192
+   ],
+   "id": "79af0c81-cc79-439e-ae52-d94386a2c044",
+   "name": "HTTP Request1"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "d699e004-6430-414b-b7d5-c9c451362abe",
+       "leftValue": "={{ $json.status }}",
+       "rightValue": "failed",
+       "operator": {
+        "type": "string",
+        "operation": "contains"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.filter",
+   "typeVersion": 2.3,
+   "position": [
+    560,
+    -192
+   ],
+   "id": "f992cc64-ed87-44b5-ad6f-c3aef2786133",
+   "name": "Filter"
+  },
+  {
+   "parameters": {
+    "fieldToSplitOut": "data",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.splitOut",
+   "typeVersion": 1,
+   "position": [
+    336,
+    -192
+   ],
+   "id": "16123504-534f-4ff7-8fc1-24d0759c6086",
+   "name": "Split Out"
+  },
+  {
+   "parameters": {
+    "select": "channel",
+    "channelId": {
+     "__rl": true,
+     "value": "C08FDE9K18E",
+     "mode": "list",
+     "cachedResultName": "campaign-alerts"
+    },
+    "text": "=URGENT: Campaign Failed - {{ $('Webhook').item.json.body.data.campaign.name}}\n\n<!channel>",
+    "otherOptions": {
+     "includeLinkToWorkflow": false
+    }
+   },
+   "type": "n8n-nodes-base.slack",
+   "typeVersion": 2.4,
+   "position": [
+    1216,
+    -192
+   ],
+   "id": "af6b3744-584c-441d-9dcd-e2406c049844",
+   "name": "Send a message",
+   "webhookId": "f84112c1-d085-4c93-b4a2-f9fa798dab1e"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

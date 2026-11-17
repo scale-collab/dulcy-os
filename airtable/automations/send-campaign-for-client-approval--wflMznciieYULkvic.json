@@ -1,0 +1,596 @@
+{
+ "id": "wflMznciieYULkvic",
+ "name": "Send Campaign for Client Approval",
+ "description": "On each change to Client Review Submitted At, sends the existing Slack and email notices for the current Client Review submission. A per-submission audit suppresses completed reruns and blocks uncertain retries. Does not change the 48-hour review deadline. Existing pending records are not backfilled by publishing.",
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordUpdated",
+  "inputs": {
+   "tableId": "tblAVAA6uBPaMj28P",
+   "watchFields": [
+    "fldTwdx8HHei9LeQp"
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacpNdZbeEB3u3qwn",
+   "type": "customScript",
+   "description": "Checks the campaign still matches the captured submission timestamp and is in Client Review without an approval exception. Skips completed duplicate submissions, blocks uncertain prior attempts, and records a new claim before allowing the existing Slack/email actions. No messages are sent by this step and review timing is unchanged.",
+   "inputs": {
+    "script": "// No external communications are sent by this guard.\nconst { campaignRecordId, submittedAt: capturedSubmittedAt } = input.config();\nconst campaigns = base.getTable(\"tblAVAA6uBPaMj28P\");\nconst STATE = \"fldD8UHFW69VTr1y6\";\nconst SUBMITTED = \"fldTwdx8HHei9LeQp\";\nconst STAGE = \"fldOVJmlGWxW1dveo\";\nconst EXCEPTION = \"fld1vE0Exqlw7MMvq\";\nconst normalize = (value) => {\n  if (!value) return \"\";\n  const time = Date.parse(String(value));\n  return Number.isFinite(time) ? new Date(time).toISOString() : \"\";\n};\nconst readLedger = (raw) => {\n  if (!raw) return { version: 1, attempts: {} };\n  let ledger;\n  try { ledger = JSON.parse(raw); } catch { throw new Error(\"Notification audit is invalid JSON. Check it before sending any client notices.\"); }\n  if (ledger.version !== 1 || !ledger.attempts || typeof ledger.attempts !== \"object\" || Array.isArray(ledger.attempts)) {\n    throw new Error(\"Notification audit has an unsupported format. Check it before sending any client notices.\");\n  }\n  return ledger;\n};\noutput.set(\"shouldSend\", false);\noutput.set(\"submissionKey\", \"\");\noutput.set(\"claimToken\", \"\");\nconst run = async () => {\n  const record = await campaigns.selectRecordAsync(campaignRecordId);\n  if (!record) return;\n  const submittedAt = normalize(capturedSubmittedAt);\n  if (!submittedAt || submittedAt !== normalize(record.getCellValue(SUBMITTED))) return;\n  if (record.getCellValue(STAGE)?.name !== \"Client Review\" || record.getCellValue(EXCEPTION)) return;\n  const key = campaignRecordId + \":\" + submittedAt;\n  const ledger = readLedger(record.getCellValueAsString(STATE));\n  const prior = ledger.attempts[key];\n  if (prior?.phase === \"completed\") {\n    console.log(\"Skipped duplicate completed submission: \" + key);\n    return;\n  }\n  if (prior) {\n    throw new Error(\"This submission already has a notification attempt (\" + prior.phase + \"). Check run history and Slack/email delivery before retrying; no duplicate will be sent automatically.\");\n  }\n  const claimToken = Date.now().toString(36) + \"-\" + Math.random().toString(36).slice(2);\n  ledger.attempts[key] = { submittedAt, phase: \"claimed\", claimToken, claimedAt: new Date().toISOString() };\n  await campaigns.updateRecordAsync(campaignRecordId, { [STATE]: JSON.stringify(ledger) });\n  const confirmed = await campaigns.selectRecordAsync(campaignRecordId);\n  const confirmedLedger = readLedger(confirmed?.getCellValueAsString(STATE));\n  if (confirmedLedger.attempts[key]?.claimToken !== claimToken) {\n    throw new Error(\"Notification claim changed before sending. Check concurrent runs.\");\n  }\n  if (normalize(confirmed.getCellValue(SUBMITTED)) !== submittedAt || confirmed.getCellValue(STAGE)?.name !== \"Client Review\" || confirmed.getCellValue(EXCEPTION)) {\n    throw new Error(\"Submission changed after notification was claimed. No client notice was sent by this run.\");\n  }\n  output.set(\"submissionKey\", key);\n  output.set(\"claimToken\", claimToken);\n  output.set(\"shouldSend\", true);\n};\nawait run();",
+    "inputObj": {
+     "obj": {
+      "campaignRecordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      },
+      "submittedAt": {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldTwdx8HHei9LeQp"
+       ]
+      }
+     }
+    }
+   },
+   "outputSchema": [
+    {
+     "name": "shouldSend",
+     "type": "boolean"
+    },
+    {
+     "name": "submissionKey",
+     "type": "string"
+    },
+    {
+     "name": "claimToken",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "key": "wdeKlG5r8tHgmDLeT",
+   "type": "conditionalGroup",
+   "branches": [
+    {
+     "name": "Current unnotified client submission",
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "$ref": "wacpNdZbeEB3u3qwn",
+         "path": [
+          "shouldSend"
+         ]
+        },
+        "operator": "=",
+        "right": true,
+        "valueType": "checkbox",
+        "dataType": "literal"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wac8I1BgMA6nIxLtw",
+       "type": "updateRecord",
+       "inputs": {
+        "updateRecordMethod": "customFields",
+        "tableId": "tblAVAA6uBPaMj28P",
+        "rowId": {
+         "template": [
+          {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          }
+         ]
+        },
+        "fields": {
+         "obj": {
+          "fldZABZwE9SmnwMv3": {
+           "obj": {
+            "id": "seljO53job5vfGouv"
+           }
+          }
+         }
+        }
+       }
+      },
+      {
+       "key": "wac0QjIRe6DO5v3vU",
+       "type": "sendToSlack",
+       "externalAccountId": "eaclf9jwTHIrMIi0j",
+       "inputs": {
+        "slackConversationId": {
+         "template": [
+          {
+           "fn": "map",
+           "args": [
+            {
+             "$ref": "trigger",
+             "path": [
+              "cellValuesByFieldId",
+              "fldSmLxrMuzTaSF4Y"
+             ]
+            },
+            {
+             "fn": "propertyGetter",
+             "args": [
+              "value"
+             ]
+            }
+           ]
+          }
+         ]
+        },
+        "notificationText": {
+         "template": [
+          ":rocket: New Campaign Ready for Review\n\nHi ",
+          {
+           "fn": "map",
+           "args": [
+            {
+             "$ref": "wac8I1BgMA6nIxLtw",
+             "path": [
+              "cellValuesByFieldId",
+              "fldl5bZ644djPsBmN"
+             ]
+            },
+            {
+             "fn": "propertyGetter",
+             "args": [
+              "name"
+             ]
+            }
+           ]
+          },
+          " Team,\n\nWe’ve just submitted a new campaign for your review in the client portal.\n\nPlease take a few minutes to review the targeting, messaging, and overall strategy, then click Approve or Deny. If you’d like any changes, simply leave your feedback in the portal and we’ll make the revisions before launch.\n\nNote: If no feedback is received, the campaign will automatically be approved after 48 hours so we can keep everything moving.\n\nReview your campaign here:\nhttps://portal.dulcy.io/campaign-calendar?modal=%2Fcampaign-overview%3FrecordId%3D",
+          {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          },
+          "&modalSize=L&modalPlacement=center\n\n\nThanks! Looking forward to getting this one live. 🚀\n\n@channel"
+         ]
+        },
+        "username": {
+         "template": [
+          "Dulcy Assistant"
+         ]
+        },
+        "icon": {
+         "template": [
+          "https://media.licdn.com/dms/image/v2/D4E0BAQG1_d8O_Itx1A/company-logo_200_200/company-logo_200_200/0/1728673352545/dulcy_media_logo?e=2147483647&v=beta&t=Q-RWTT0BS7_I_1c3U_qeVm_YBdvP60GWeY8fgDl-HiQ"
+         ]
+        },
+        "unfurlLinks": true
+       }
+      },
+      {
+       "key": "wacprVvGEq4DG5EVb",
+       "type": "customScript",
+       "description": "Records that the preceding slack action succeeded for this submission. Preserves the submission audit and refuses a mismatched claim. After Slack, rechecks the current submission and review stage before email. Does not send messages or change review timing.",
+       "inputs": {
+        "script": "// Records successful action completion, not end-recipient delivery.\nconst { campaignRecordId, submissionKey, claimToken, channel } = input.config();\nconst campaigns = base.getTable(\"tblAVAA6uBPaMj28P\");\nconst STATE = \"fldD8UHFW69VTr1y6\";\nconst record = await campaigns.selectRecordAsync(campaignRecordId);\nif (!record) throw new Error(\"Campaign no longer exists; notification receipt could not be saved.\");\nlet ledger;\ntry { ledger = JSON.parse(record.getCellValueAsString(STATE)); } catch { throw new Error(\"Notification audit cannot be read. Do not repeat a possibly completed send.\"); }\nconst attempt = ledger.attempts?.[submissionKey];\nif (!attempt || attempt.claimToken !== claimToken) throw new Error(\"Notification claim changed. Check run history before any retry.\");\nif (channel === \"slack\") {\n  attempt.slackSentAt = new Date().toISOString();\n  attempt.phase = \"slack_sent\";\n} else if (channel === \"email\") {\n  attempt.emailSentAt = new Date().toISOString();\n  attempt.phase = \"completed\";\n} else {\n  throw new Error(\"Unknown notification receipt channel.\");\n}\nawait campaigns.updateRecordAsync(campaignRecordId, { [STATE]: JSON.stringify(ledger) });\nif (channel === \"slack\") {\n  const current = await campaigns.selectRecordAsync(campaignRecordId);\n  const currentTime = Date.parse(String(current?.getCellValue(\"fldTwdx8HHei9LeQp\") || \"\"));\n  if (currentTime !== Date.parse(attempt.submittedAt) || current?.getCellValue(\"fldOVJmlGWxW1dveo\")?.name !== \"Client Review\" || current?.getCellValue(\"fld1vE0Exqlw7MMvq\")) {\n    throw new Error(\"Submission changed after Slack completed. Email was not sent. Review the recorded Slack result before retrying.\");\n  }\n}",
+        "inputObj": {
+         "obj": {
+          "campaignRecordId": {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          },
+          "submissionKey": {
+           "$ref": "wacpNdZbeEB3u3qwn",
+           "path": [
+            "submissionKey"
+           ]
+          },
+          "claimToken": {
+           "$ref": "wacpNdZbeEB3u3qwn",
+           "path": [
+            "claimToken"
+           ]
+          },
+          "channel": "slack"
+         }
+        }
+       },
+       "outputSchema": []
+      },
+      {
+       "key": "wacwkkMK3l0jowblJ",
+       "type": "findRecords",
+       "inputs": {
+        "limit": 5,
+        "tableId": "tbl8VWzIsWJYJfLUA",
+        "queryType": "filtersObj",
+        "filtersObj": {
+         "obj": {
+          "operator": "and",
+          "operands": {
+           "tuple": [
+            {
+             "obj": {
+              "operands": {
+               "tuple": [
+                "fldoeEJikSmNTW3Zl",
+                {
+                 "fn": "map",
+                 "args": [
+                  {
+                   "$ref": "trigger",
+                   "path": [
+                    "cellValuesByFieldId",
+                    "fldl5bZ644djPsBmN"
+                   ]
+                  },
+                  {
+                   "fn": "propertyGetter",
+                   "args": [
+                    "id"
+                   ]
+                  }
+                 ]
+                }
+               ]
+              },
+              "operator": "=",
+              "operatorOptions": null
+             }
+            }
+           ]
+          }
+         }
+        }
+       }
+      },
+      {
+       "key": "wacpVLmIuQrbGRf0D",
+       "type": "customScript",
+       "description": "Reads the campaign's linked lead list and formats its targeting fields for the existing client review email. Does not change records or send messages.",
+       "inputs": {
+        "script": "const { campaignRecordId } = input.config();\n\nconst campaigns = base.getTable(\"Campaigns\");\nconst leadLists = base.getTable(\"Lead Lists\");\nconst campaign = await campaigns.selectRecordAsync(campaignRecordId);\n\nlet summary = \"## Target Audience Breakdown\\n\\nLead-list targeting details are not yet linked.\";\n\nconst parseJson = (text) => {\n  try { return JSON.parse(text || \"{}\"); } catch { return {}; }\n};\n\nconst arrayText = (value) =>\n  Array.isArray(value) ? value.filter(Boolean).join(\", \") : \"\";\n\nconst labelize = (value) =>\n  String(value || \"\")\n    .toLowerCase()\n    .split(\"_\")\n    .map((part) => part ? part[0].toUpperCase() + part.slice(1) : \"\")\n    .join(\" \");\n\nconst money = (value) => {\n  const number = Number(value);\n  if (!Number.isFinite(number)) return String(value || \"\");\n  if (number >= 1000000000) return \"$\" + (number / 1000000000) + \"B\";\n  if (number >= 1000000) return \"$\" + (number / 1000000) + \"M\";\n  if (number >= 1000) return \"$\" + (number / 1000) + \"K\";\n  return \"$\" + number;\n};\n\nconst formatRange = (raw, type) => {\n  const parts = String(raw || \"\").split(\",\").map((v) => Number(v.trim()));\n  if (parts.length !== 2 || parts.some((v) => !Number.isFinite(v))) {\n    return raw || \"Not specified\";\n  }\n  const [min, max] = parts;\n  if (type === \"employees\") {\n    const maxText = max >= 10001 ? \"10,000+\" : max.toLocaleString(\"en-US\");\n    return min.toLocaleString(\"en-US\") + \"–\" + maxText + \" employees\";\n  }\n  return money(min) + \"–\" + money(max);\n};\n\nif (campaign) {\n  const linkedLists = campaign.getCellValue(\"Lead List\") || [];\n  if (linkedLists.length) {\n    const leadList = await leadLists.selectRecordAsync(linkedLists[0].id);\n\n    const fieldText = (name) => {\n      try { return (leadList.getCellValueAsString(name) || \"\").trim(); }\n      catch { return \"\"; }\n    };\n\n    const companyFilters = parseJson(fieldText(\"DiscoLike Company Filters JSON\"));\n    const contactFilters = parseJson(fieldText(\"Contact Filters JSON\"));\n\n    const industries =\n      arrayText(companyFilters.category?.map(labelize)) ||\n      fieldText(\"Industry Filters\") ||\n      fieldText(\"Included Industries\") ||\n      \"Not specified\";\n\n    const companyGeography =\n      arrayText(companyFilters.country) ||\n      fieldText(\"Country Filters\") ||\n      fieldText(\"Included Countries\") ||\n      \"Worldwide\";\n\n    const contactGeography =\n      [arrayText(contactFilters.person_country), arrayText(contactFilters.person_state)]\n        .filter(Boolean)\n        .join(\" — \") ||\n      \"No separate contact-location restriction\";\n\n    const companySize = formatRange(fieldText(\"Employee Range\"), \"employees\");\n    const revenue = formatRange(companyFilters.revenue_range, \"revenue\");\n    const technology = arrayText(companyFilters.tech_stack) || \"Not specified\";\n\n    const personaText = fieldText(\"Target Personas\");\n    const titles =\n      (personaText.split(/\\.\\s+(?:Prioritize|Do not|Exclude)/i)[0] || \"\").trim() ||\n      arrayText(contactFilters.titles) ||\n      arrayText(contactFilters.job_titles) ||\n      \"Not specified\";\n\n    summary = [\n      \"## Target Audience Breakdown\",\n      \"\",\n      `• **Target Industries:** ${industries}`,\n      `• **Company Geography:** ${companyGeography}`,\n      `• **Contact Geography:** ${contactGeography}`,\n      `• **Company Size:** ${companySize}`,\n      `• **Revenue Range:** ${revenue}`,\n      `• **Technology:** ${technology}`,\n      `• **Target Titles:** ${titles}`,\n    ].join(\"\\n\");\n  }\n}\n\noutput.set(\"targetAudienceBreakdown\", summary);",
+        "inputObj": {
+         "obj": {
+          "campaignRecordId": {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          }
+         }
+        }
+       },
+       "outputSchema": [
+        {
+         "name": "targetAudienceBreakdown",
+         "type": "string"
+        }
+       ]
+      },
+      {
+       "key": "wacFRToiaCVilN3US",
+       "type": "customScript",
+       "description": "Immediately before email, checks that the same claimed submission is still current, still in Client Review, is not exempt, and has a successful Slack action recorded. This check is read-only and sends nothing.",
+       "inputs": {
+        "script": "// Read-only check immediately before the existing email action.\nconst { campaignRecordId, submissionKey, claimToken } = input.config();\nconst record = await base.getTable(\"tblAVAA6uBPaMj28P\").selectRecordAsync(campaignRecordId);\nif (!record) throw new Error(\"Campaign no longer exists. Email was not sent.\");\nlet ledger;\ntry { ledger = JSON.parse(record.getCellValueAsString(\"fldD8UHFW69VTr1y6\")); } catch { throw new Error(\"Notification audit cannot be read. Email was not sent.\"); }\nconst attempt = ledger.attempts?.[submissionKey];\nif (!attempt || attempt.claimToken !== claimToken || attempt.phase !== \"slack_sent\") throw new Error(\"Notification claim is not ready for email. Check run history before retrying.\");\nconst currentTime = Date.parse(String(record.getCellValue(\"fldTwdx8HHei9LeQp\") || \"\"));\nif (currentTime !== Date.parse(attempt.submittedAt) || record.getCellValue(\"fldOVJmlGWxW1dveo\")?.name !== \"Client Review\" || record.getCellValue(\"fld1vE0Exqlw7MMvq\")) {\n  throw new Error(\"Submission changed before email. Email was not sent; do not replay Slack.\");\n}",
+        "inputObj": {
+         "obj": {
+          "campaignRecordId": {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          },
+          "submissionKey": {
+           "$ref": "wacpNdZbeEB3u3qwn",
+           "path": [
+            "submissionKey"
+           ]
+          },
+          "claimToken": {
+           "$ref": "wacpNdZbeEB3u3qwn",
+           "path": [
+            "claimToken"
+           ]
+          }
+         }
+        }
+       },
+       "outputSchema": []
+      },
+      {
+       "key": "wacbjt8eR6A0dzDxt",
+       "type": "sendEmail",
+       "inputs": {
+        "to": [
+         {
+          "template": [
+           {
+            "fn": "map",
+            "args": [
+             {
+              "fn": "map",
+              "args": [
+               {
+                "$ref": "wacwkkMK3l0jowblJ",
+                "path": [
+                 "records"
+                ]
+               },
+               {
+                "fn": "propertyGetter",
+                "args": [
+                 "cellValuesByFieldId"
+                ]
+               }
+              ]
+             },
+             {
+              "fn": "propertyGetter",
+              "args": [
+               "fldE01Huu5atFdpmX"
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ],
+        "subject": {
+         "template": [
+          "Dulcy - New Campaign Ready for Review"
+         ]
+        },
+        "message": {
+         "template": [
+          "# New Campaign Ready for Review\n\n**Campaign:** ",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldSsb4QjS9UyvKhj"
+           ]
+          },
+          "\n\n**Estimated Launch Date:** ",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldhyq0anpSO1r0bV"
+           ]
+          },
+          "\n\nHi ",
+          {
+           "fn": "map",
+           "args": [
+            {
+             "$ref": "wac8I1BgMA6nIxLtw",
+             "path": [
+              "cellValuesByFieldId",
+              "fldl5bZ644djPsBmN"
+             ]
+            },
+            {
+             "fn": "propertyGetter",
+             "args": [
+              "name"
+             ]
+            }
+           ]
+          },
+          " Team,\n\nWe've submitted a new campaign named **",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldSsb4QjS9UyvKhj"
+           ]
+          },
+          "** for your review inside your client portal.\n\n> 👋 Please log in and click **Approve** or **Deny**. If no feedback is given, the campaign will auto-approve within 48 hours.\n\n---\n\n# Review & Approve Campaign\n\nhttps://portal.dulcy.io/campaign-calendar?modal=%2Fcampaign-overview%3FrecordId%3D",
+          {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          },
+          "&modalSize=L&modalPlacement=center\n\n---\n\n# Campaign Preview\n\n**Campaign Type:** ",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldclFGDzjg4nvfxL",
+            "name"
+           ]
+          },
+          "\n\n**Why we're running this campaign:**\n\n",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldlixHfhzrd7nuSc"
+           ]
+          },
+          "\n\n---\n\n# Lead List Details\n\n• **Lead List Name:** ",
+          {
+           "fn": "map",
+           "args": [
+            {
+             "$ref": "trigger",
+             "path": [
+              "cellValuesByFieldId",
+              "fld5weZ6ED31dBlaz"
+             ]
+            },
+            {
+             "fn": "propertyGetter",
+             "args": [
+              "name"
+             ]
+            }
+           ]
+          },
+          "\n\n• **Number of Leads:**  ",
+          {
+           "fn": "map",
+           "args": [
+            {
+             "$ref": "trigger",
+             "path": [
+              "cellValuesByFieldId",
+              "fldJpLsGPwKlap4qV"
+             ]
+            },
+            {
+             "fn": "propertyGetter",
+             "args": [
+              "value"
+             ]
+            }
+           ]
+          },
+          "\n\n• **Lead List:** ",
+          {
+           "fn": "map",
+           "args": [
+            {
+             "$ref": "trigger",
+             "path": [
+              "cellValuesByFieldId",
+              "fld1a09cUfErXPqIh"
+             ]
+            },
+            {
+             "fn": "propertyGetter",
+             "args": [
+              "value"
+             ]
+            }
+           ]
+          },
+          "\n\n",
+          {
+           "$ref": "wacpVLmIuQrbGRf0D",
+           "path": [
+            "targetAudienceBreakdown"
+           ]
+          },
+          "\n---\n\n# Email 1 Subject Line\n\n",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldZTtdvwRV53voZE"
+           ]
+          },
+          "\n\n## Email 1 Copy\n\n",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldjnYRokcvObXphA"
+           ]
+          },
+          "\n\n---\n\n# Email 2 Subject Line\n\n",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldAikx1V83MsK3Ql"
+           ]
+          },
+          "\n\n## Email 2 Copy\n\n",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldw7AQWalsiisKrM"
+           ]
+          },
+          "\n\n---\n\n# Email 3 Subject Line\n\n",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldu2xpTQFuuyU71Q"
+           ]
+          },
+          "\n\n## Email 3 Copy\n\n",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fld6U4bB1335Ac5vM"
+           ]
+          },
+          "\n\n---\n\n# Email 4 Subject Line\n\n",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldFrZUqdTeydSTUV"
+           ]
+          },
+          "\n\n## Email 4 Copy\n\n",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldJ8gNIksLd8WZ8t"
+           ]
+          },
+          "\n\n---\n\nThanks,\n\n**Dulcy Team**"
+         ]
+        }
+       }
+      },
+      {
+       "key": "wac0uOa3P2UQWyt6p",
+       "type": "customScript",
+       "description": "Records that the preceding email action succeeded for this submission. Preserves the submission audit and refuses a mismatched claim. After Slack, rechecks the current submission and review stage before email. Does not send messages or change review timing.",
+       "inputs": {
+        "script": "// Records successful action completion, not end-recipient delivery.\nconst { campaignRecordId, submissionKey, claimToken, channel } = input.config();\nconst campaigns = base.getTable(\"tblAVAA6uBPaMj28P\");\nconst STATE = \"fldD8UHFW69VTr1y6\";\nconst record = await campaigns.selectRecordAsync(campaignRecordId);\nif (!record) throw new Error(\"Campaign no longer exists; notification receipt could not be saved.\");\nlet ledger;\ntry { ledger = JSON.parse(record.getCellValueAsString(STATE)); } catch { throw new Error(\"Notification audit cannot be read. Do not repeat a possibly completed send.\"); }\nconst attempt = ledger.attempts?.[submissionKey];\nif (!attempt || attempt.claimToken !== claimToken) throw new Error(\"Notification claim changed. Check run history before any retry.\");\nif (channel === \"slack\") {\n  attempt.slackSentAt = new Date().toISOString();\n  attempt.phase = \"slack_sent\";\n} else if (channel === \"email\") {\n  attempt.emailSentAt = new Date().toISOString();\n  attempt.phase = \"completed\";\n} else {\n  throw new Error(\"Unknown notification receipt channel.\");\n}\nawait campaigns.updateRecordAsync(campaignRecordId, { [STATE]: JSON.stringify(ledger) });\nif (channel === \"slack\") {\n  const current = await campaigns.selectRecordAsync(campaignRecordId);\n  const currentTime = Date.parse(String(current?.getCellValue(\"fldTwdx8HHei9LeQp\") || \"\"));\n  if (currentTime !== Date.parse(attempt.submittedAt) || current?.getCellValue(\"fldOVJmlGWxW1dveo\")?.name !== \"Client Review\" || current?.getCellValue(\"fld1vE0Exqlw7MMvq\")) {\n    throw new Error(\"Submission changed after Slack completed. Email was not sent. Review the recorded Slack result before retrying.\");\n  }\n}",
+        "inputObj": {
+         "obj": {
+          "campaignRecordId": {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          },
+          "submissionKey": {
+           "$ref": "wacpNdZbeEB3u3qwn",
+           "path": [
+            "submissionKey"
+           ]
+          },
+          "claimToken": {
+           "$ref": "wacpNdZbeEB3u3qwn",
+           "path": [
+            "claimToken"
+           ]
+          },
+          "channel": "email"
+         }
+        }
+       },
+       "outputSchema": []
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

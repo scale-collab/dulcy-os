@@ -1,0 +1,554 @@
+{
+ "id": "gMPw1uq28qwMERs7fnUyw",
+ "name": "Airtable Monthly Goals Auto",
+ "active": true,
+ "isArchived": false,
+ "versionId": "26a4f479-e939-4ec7-be0a-14925576a685",
+ "triggerCount": 1,
+ "createdAt": "2026-08-05T15:42:38.683Z",
+ "updatedAt": "2026-11-17T16:41:26.359Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Schedule Trigger": {
+   "main": [
+    [
+     {
+      "node": "get months",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "get months": {
+   "main": [
+    [
+     {
+      "node": "search previous results",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "search previous results": {
+   "main": [
+    [
+     {
+      "node": "new targets suggestions",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "new targets suggestions": {
+   "main": [
+    [
+     {
+      "node": "validate suggestions",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "validate suggestions": {
+   "main": [
+    [
+     {
+      "node": "verify suggestions into output",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "verify suggestions into output": {
+   "main": [
+    [
+     {
+      "node": "Create a record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "months"
+      }
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.3,
+   "position": [
+    0,
+    0
+   ],
+   "id": "6dcad121-1c59-448e-9258-42b7cadb4d67",
+   "name": "Schedule Trigger"
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tbl9RIrdbapavGdI0",
+     "mode": "list",
+     "cachedResultName": "Sales Goals",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tbl9RIrdbapavGdI0"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Revenue Goal": "={{ $json.revenueGoal }}",
+      "Calls Goal": "={{ $json.callsGoal }}",
+      "Deals Goal": "={{ $json.dealsGoal }}",
+      "Month": "={{ $json.month }}",
+      "Estimated Growth Rate For Month": "={{ $json.projectedGrowthRate }}",
+      "Confidence": "={{ $json.confidence }}",
+      "Reasoning": "={{ $json.reason }}",
+      "Cash Collected Goal": "={{ $json.cashGoal }}",
+      "Date": "={{ new Date().toISOString().slice(0, 7) + '-01' }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "Month",
+       "displayName": "Month",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Date",
+       "displayName": "Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Revenue Goal",
+       "displayName": "Revenue Goal",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Cash Collected Goal",
+       "displayName": "Cash Collected Goal",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Calls Goal",
+       "displayName": "Calls Goal",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Deals Goal",
+       "displayName": "Deals Goal",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Estimated Growth Rate For Month",
+       "displayName": "Estimated Growth Rate For Month",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Confidence",
+       "displayName": "Confidence",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Reasoning",
+       "displayName": "Reasoning",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Booked Month",
+       "displayName": "Booked Month",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Closed Month",
+       "displayName": "Closed Month",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Total Calls Booked",
+       "displayName": "Total Calls Booked",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Total Eligible Calls",
+       "displayName": "Total Eligible Calls",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Total Calls Held",
+       "displayName": "Total Calls Held",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Total Offers Made",
+       "displayName": "Total Offers Made",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Total Deals Closed",
+       "displayName": "Total Deals Closed",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Revenue Closed",
+       "displayName": "Revenue Closed",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Cash Collected",
+       "displayName": "Cash Collected",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Avg Days to Close",
+       "displayName": "Avg Days to Close",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Booking → Show Rate",
+       "displayName": "Booking → Show Rate",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Show → Offer Rate",
+       "displayName": "Show → Offer Rate",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Offer → Close Rate",
+       "displayName": "Offer → Close Rate",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Booking → Close Ratio",
+       "displayName": "Booking → Close Ratio",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Revenue to Goal",
+       "displayName": "Revenue to Goal",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Cash Collected / Monthly Goal",
+       "displayName": "Cash Collected / Monthly Goal",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Calls to Goal",
+       "displayName": "Calls to Goal",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Deals to Goal",
+       "displayName": "Deals to Goal",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {
+     "typecast": true
+    }
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1408,
+    0
+   ],
+   "id": "20929801-654b-47e6-8327-b54108315727",
+   "name": "Create a record"
+  },
+  {
+   "parameters": {
+    "jsCode": "const timeZone = 'America/New_York';\n\n// Use the trigger timestamp instead of the server clock\nconst now = new Date($input.first().json.timestamp);\n\nconst currentDate = new Date(\n  now.getFullYear(),\n  now.getMonth(),\n  1,\n  12\n);\n\nconst previousDate = new Date(\n  now.getFullYear(),\n  now.getMonth() - 1,\n  1,\n  12\n);\n\nconst currentMonth = new Intl.DateTimeFormat('en-US', {\n  timeZone,\n  month: 'long',\n  year: 'numeric',\n}).format(currentDate);\n\nconst previousMonth = new Intl.DateTimeFormat('en-US', {\n  timeZone,\n  month: 'long',\n  year: 'numeric',\n}).format(previousDate);\n\nreturn [\n  {\n    json: {\n      currentMonth,\n      previousMonth,\n    },\n  },\n];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    208,
+    0
+   ],
+   "id": "6cfc8f10-c7da-43f6-a474-dff82cec41d4",
+   "name": "get months"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tbl9RIrdbapavGdI0",
+     "mode": "list",
+     "cachedResultName": "Sales Goals",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tbl9RIrdbapavGdI0"
+    },
+    "filterByFormula": "={Month} = '{{ $json.previousMonth }}'",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    416,
+    0
+   ],
+   "id": "7b7080de-3d7c-4251-a248-cc3c964c6d1e",
+   "name": "search previous results"
+  },
+  {
+   "parameters": {
+    "jsCode": "/**\n * n8n Code node\n *\n * Input: Previous month's Sales Goals record from Airtable\n * Output: Recommended goals for the current month\n */\n\nconst input = $input.first().json;\n\n// Airtable may return fields directly or inside a `fields` object.\nconst data = input.fields ?? input;\n\nfunction toNumber(value, fallback = 0) {\n  const parsed = Number(value);\n  return Number.isFinite(parsed) ? parsed : fallback;\n}\n\nfunction roundTo(value, increment) {\n  if (!Number.isFinite(value) || increment <= 0) return 0;\n  return Math.round(value / increment) * increment;\n}\n\nfunction clamp(value, minimum, maximum) {\n  return Math.min(Math.max(value, minimum), maximum);\n}\n\n// -----------------------------------------------------\n// Month names\n// -----------------------------------------------------\n\nconst now = new Date();\n\nconst currentMonth = new Intl.DateTimeFormat(\"en-US\", {\n  timeZone: \"America/New_York\",\n  month: \"long\",\n  year: \"numeric\",\n}).format(now);\n\nconst previousMonthDate = new Date(\n  now.getFullYear(),\n  now.getMonth() - 1,\n  1\n);\n\nconst previousMonth = new Intl.DateTimeFormat(\"en-US\", {\n  timeZone: \"America/New_York\",\n  month: \"long\",\n  year: \"numeric\",\n}).format(previousMonthDate);\n\n// -----------------------------------------------------\n// Previous goals\n// -----------------------------------------------------\n\nconst previousRevenueGoal = toNumber(data[\"Revenue Goal\"]);\nconst previousCallsGoal = toNumber(data[\"Calls Goal\"]);\nconst previousDealsGoal = toNumber(data[\"Deals Goal\"]);\nconst previousCashGoal = toNumber(data[\"Cash Collected Goal\"]);\n\n// -----------------------------------------------------\n// Previous actual performance\n// -----------------------------------------------------\n\nconst revenueClosed = toNumber(data[\"Revenue Closed\"]);\nconst cashCollected = toNumber(data[\"Cash Collected\"]);\n\nconst totalCallsBooked = toNumber(data[\"Total Calls Booked\"]);\nconst totalCallsHeld = toNumber(data[\"Total Calls Held\"]);\nconst totalOffersMade = toNumber(data[\"Total Offers Made\"]);\nconst totalDealsClosed = toNumber(data[\"Total Deals Closed\"]);\n\nconst bookingToShowRate =\n  totalCallsBooked > 0\n    ? totalCallsHeld / totalCallsBooked\n    : toNumber(data[\"Booking → Show Rate\"]);\n\nconst bookingToCloseRate =\n  totalCallsBooked > 0\n    ? totalDealsClosed / totalCallsBooked\n    : toNumber(data[\"Booking → Close Rate\"]);\n\nconst showToOfferRate =\n  totalCallsHeld > 0\n    ? totalOffersMade / totalCallsHeld\n    : 0;\n\nconst offerToCloseRate =\n  totalOffersMade > 0\n    ? totalDealsClosed / totalOffersMade\n    : 0;\n\nconst averageDealSize =\n  totalDealsClosed > 0\n    ? revenueClosed / totalDealsClosed\n    : 0;\n\nconst callsPerClose =\n  totalDealsClosed > 0\n    ? totalCallsBooked / totalDealsClosed\n    : null;\n\nconst rawAverageDaysToClose = toNumber(data[\"Avg Days to Close\"]);\n\nconst averageDaysToClose =\n  rawAverageDaysToClose >= 0\n    ? rawAverageDaysToClose\n    : null;\n\n// -----------------------------------------------------\n// Goal attainment\n// -----------------------------------------------------\n\nconst revenueAttainment =\n  previousRevenueGoal > 0\n    ? revenueClosed / previousRevenueGoal\n    : 0;\n\nconst callsAttainment =\n  previousCallsGoal > 0\n    ? totalCallsBooked / previousCallsGoal\n    : 0;\n\nconst dealsAttainment =\n  previousDealsGoal > 0\n    ? totalDealsClosed / previousDealsGoal\n    : 0;\n\n/**\n * Revenue and closed deals matter more than booked-call volume.\n */\nconst weightedAttainment =\n  revenueAttainment * 0.45 +\n  dealsAttainment * 0.35 +\n  callsAttainment * 0.20;\n\n// -----------------------------------------------------\n// Sample-size confidence\n// -----------------------------------------------------\n\nlet confidence = \"low\";\n\nif (totalCallsBooked >= 25 && totalDealsClosed >= 3) {\n  confidence = \"high\";\n} else if (totalCallsBooked >= 10 || totalDealsClosed >= 2) {\n  confidence = \"medium\";\n}\n\n// -----------------------------------------------------\n// Base growth recommendation\n// -----------------------------------------------------\n\nlet growthRate;\n\nif (weightedAttainment >= 1.25) {\n  growthRate = 0.20;\n} else if (weightedAttainment >= 1.05) {\n  growthRate = 0.12;\n} else if (weightedAttainment >= 0.90) {\n  growthRate = 0.05;\n} else if (weightedAttainment >= 0.70) {\n  growthRate = 0;\n} else if (weightedAttainment >= 0.50) {\n  growthRate = -0.05;\n} else {\n  growthRate = -0.10;\n}\n\n/**\n * Avoid aggressive increases based on a very small sample.\n */\nif (confidence === \"low\") {\n  growthRate = clamp(growthRate, -0.05, 0.05);\n} else if (confidence === \"medium\") {\n  growthRate = clamp(growthRate, -0.10, 0.12);\n} else {\n  growthRate = clamp(growthRate, -0.10, 0.20);\n}\n\n// -----------------------------------------------------\n// New calls goal\n// -----------------------------------------------------\n\nlet recommendedCallsGoal = Math.round(\n  previousCallsGoal * (1 + growthRate)\n);\n\nrecommendedCallsGoal = Math.max(\n  1,\n  recommendedCallsGoal\n);\n\n// Keep calls goals in clean increments of five.\nrecommendedCallsGoal = Math.max(\n  5,\n  roundTo(recommendedCallsGoal, 5)\n);\n\n// -----------------------------------------------------\n// New deals goal\n// -----------------------------------------------------\n\nlet recommendedDealsGoal;\n\n/**\n * When enough conversion data exists, calculate deals from the\n * recommended call volume. Otherwise, grow the previous goal.\n */\nif (totalCallsBooked >= 10 && bookingToCloseRate > 0) {\n  recommendedDealsGoal = Math.round(\n    recommendedCallsGoal * bookingToCloseRate\n  );\n} else {\n  recommendedDealsGoal = Math.round(\n    previousDealsGoal * (1 + growthRate)\n  );\n}\n\nrecommendedDealsGoal = Math.max(\n  1,\n  recommendedDealsGoal\n);\n\n// Prevent deals goal from changing too dramatically.\nconst minimumDealsGoal = Math.max(\n  1,\n  Math.floor(previousDealsGoal * 0.8)\n);\n\nconst maximumDealsGoal = Math.max(\n  previousDealsGoal + 1,\n  Math.ceil(previousDealsGoal * 1.25)\n);\n\nrecommendedDealsGoal = clamp(\n  recommendedDealsGoal,\n  minimumDealsGoal,\n  maximumDealsGoal\n);\n\n// -----------------------------------------------------\n// New revenue goal\n// -----------------------------------------------------\n\nlet recommendedRevenueGoal;\n\nif (averageDealSize > 0) {\n  recommendedRevenueGoal =\n    recommendedDealsGoal * averageDealSize;\n} else {\n  recommendedRevenueGoal =\n    previousRevenueGoal * (1 + growthRate);\n}\n\n/**\n * Keep the calculated revenue goal within reasonable bounds compared\n * with the previous goal.\n */\nconst minimumRevenueGoal =\n  previousRevenueGoal > 0\n    ? previousRevenueGoal * 0.90\n    : 0;\n\nconst maximumRevenueGoal =\n  previousRevenueGoal > 0\n    ? previousRevenueGoal * 1.25\n    : recommendedRevenueGoal;\n\nrecommendedRevenueGoal = clamp(\n  recommendedRevenueGoal,\n  minimumRevenueGoal,\n  maximumRevenueGoal\n);\n\n// Use clean $1,000 increments.\nrecommendedRevenueGoal = roundTo(\n  recommendedRevenueGoal,\n  1000\n);\n\n// -----------------------------------------------------\n// New cash goal\n// -----------------------------------------------------\n\nlet recommendedCashGoal;\n\nif (previousCashGoal > 0) {\n  recommendedCashGoal = previousCashGoal * (1 + growthRate);\n} else {\n  // First month: default to actual cash collected,\n  // otherwise fall back to the revenue goal.\n  recommendedCashGoal =\n    cashCollected > 0\n      ? cashCollected\n      : recommendedRevenueGoal;\n}\n\nconst minimumCashGoal =\n  previousCashGoal > 0\n    ? previousCashGoal * 0.90\n    : 0;\n\nconst maximumCashGoal =\n  previousCashGoal > 0\n    ? previousCashGoal * 1.25\n    : recommendedCashGoal;\n\nrecommendedCashGoal = clamp(\n  recommendedCashGoal,\n  minimumCashGoal,\n  maximumCashGoal\n);\n\nrecommendedCashGoal = roundTo(\n  recommendedCashGoal,\n  1000\n);\n\n// -----------------------------------------------------\n// Explanation\n// -----------------------------------------------------\n\nlet reason;\n\nif (weightedAttainment >= 1.25) {\n  reason =\n    \"The previous month materially exceeded the weighted goals, so the targets were increased while remaining capped for sustainability.\";\n} else if (weightedAttainment >= 1.05) {\n  reason =\n    \"The previous month exceeded its weighted goals, supporting a moderate increase in targets.\";\n} else if (weightedAttainment >= 0.90) {\n  reason =\n    \"Performance was close to goal, so the targets were increased only slightly.\";\n} else if (weightedAttainment >= 0.70) {\n  reason =\n    \"Performance was below goal but reasonably close, so the targets were kept approximately stable.\";\n} else {\n  reason =\n    \"Performance was materially below goal, so the targets were reduced modestly rather than reset aggressively.\";\n}\n\n// -----------------------------------------------------\n// Return structured data for the AI reviewer and Airtable\n// -----------------------------------------------------\n\nreturn [\n  {\n    json: {\n      previousMonth,\n      currentMonth,\n\npreviousGoals: {\n  revenueGoal: previousRevenueGoal,\n  cashGoal: previousCashGoal,\n  callsGoal: previousCallsGoal,\n  dealsGoal: previousDealsGoal,\n},\n\n      actualPerformance: {\n        revenueClosed,\n        cashCollected,\n        totalCallsBooked,\n        totalCallsHeld,\n        totalOffersMade,\n        totalDealsClosed,\n        averageDealSize,\n        callsPerClose,\n        averageDaysToClose,\n      },\n\n      conversionMetrics: {\n        bookingToShowRate,\n        showToOfferRate,\n        offerToCloseRate,\n        bookingToCloseRate,\n      },\n\n      attainment: {\n        revenueAttainment,\n        callsAttainment,\n        dealsAttainment,\n        weightedAttainment,\n      },\n\njavascriptRecommendation: {\n  month: currentMonth,\n  revenueGoal: recommendedRevenueGoal,\n  callsGoal: recommendedCallsGoal,\n  dealsGoal: recommendedDealsGoal,\n  cashGoal: recommendedCashGoal,\n\n  projectedGrowthRate:\n    previousRevenueGoal > 0\n      ? Number(\n          (\n            (recommendedRevenueGoal - previousRevenueGoal) /\n            previousRevenueGoal\n          ).toFixed(4)\n        )\n      : 0,\n\n  confidence,\n  reason,\n},\n    },\n  },\n];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    624,
+    0
+   ],
+   "id": "8f7aabb9-d239-4398-b4ee-fdc86e11c261",
+   "name": "new targets suggestions"
+  },
+  {
+   "parameters": {
+    "modelId": {
+     "__rl": true,
+     "value": "gpt-5.4-mini",
+     "mode": "list",
+     "cachedResultName": "GPT-5.4-MINI"
+    },
+    "responses": {
+     "values": [
+      {
+       "content": "=You are reviewing monthly sales goals for Dulcy, a B2B lead generation agency.\n\nA deterministic JavaScript model has already calculated the baseline goals. Your role is to review the recommendation for realism and make only small, justified adjustments.\n\nDo not independently invent a new strategy.\n\nRules:\n1. Do not adjust any JavaScript-recommended goal by more than 10% up or down.\n2. Do not reduce a goal merely because of one weak month unless performance was materially below goal.\n3. Do not increase goals aggressively when the sample size is small.\n4. Give more weight to revenue closed and deals closed than calls booked.\n5. Consider average deal size, calls per close, booking-to-show rate, booking-to-close rate, and average days to close.\n6. A single unusually large deal should not justify a major revenue-goal increase. Cash goals should generally track expected cash collections rather than total contract value. Do not assume cash goals should always equal revenue goals.\n7. Keep calls and deals goals as whole numbers.\n8. Round both revenue goals and cash goals to the nearest $1,000.\n9. If the JavaScript recommendation is already reasonable, leave all goals unchanged.\n10. Return valid JSON only. Do not include markdown.\n\nPrevious month:\n{{ $json.previousMonth }}\n\nCurrent month:\n{{ $json.currentMonth }}\n\nPrevious goals:\n{{ JSON.stringify($json.previousGoals) }}\n\nActual performance:\n{{ JSON.stringify($json.actualPerformance) }}\n\nConversion metrics:\n{{ JSON.stringify($json.conversionMetrics) }}\n\nGoal attainment:\n{{ JSON.stringify($json.attainment) }}\n\nJavaScript recommendation:\n{{ JSON.stringify($json.javascriptRecommendation) }}\n\nReturn exactly this structure:\n\n{\n  \"month\": \"Month YYYY\",\n  \"revenueGoal\": 0,\n  \"cashGoal\": 0,\n  \"callsGoal\": 0,\n  \"dealsGoal\": 0,\n  \"confidence\": \"low\",\n  \"approvedWithoutChanges\": true,\n  \"reason\": \"One concise sentence explaining the recommendation.\"\n}"
+      }
+     ]
+    },
+    "builtInTools": {},
+    "options": {}
+   },
+   "type": "@n8n/n8n-nodes-langchain.openAi",
+   "typeVersion": 2.1,
+   "position": [
+    832,
+    0
+   ],
+   "id": "f6d0a797-6792-4d2e-9f29-ae5f57de2c9b",
+   "name": "validate suggestions"
+  },
+  {
+   "parameters": {
+    "jsCode": "const response = $input.first().json;\n\nconst aiText =\n  response.output?.[0]?.content?.[0]?.text;\n\nif (!aiText) {\n  throw new Error(\"Could not find AI JSON text in output[0].content[0].text\");\n}\n\nconst ai = JSON.parse(aiText);\n\nconst baseline =\n  $(\"new targets suggestions\").first().json.javascriptRecommendation;\n\nconst toNumber = (value, fallback) => {\n  const parsed = Number(value);\n  return Number.isFinite(parsed) ? parsed : fallback;\n};\n\nconst clamp = (value, min, max) =>\n  Math.min(Math.max(value, min), max);\n\nconst revenueBaseline = toNumber(baseline.revenueGoal, 0);\nconst cashBaseline = toNumber(baseline.cashGoal, 0);\nconst callsBaseline = toNumber(baseline.callsGoal, 1);\nconst dealsBaseline = toNumber(baseline.dealsGoal, 1);\n\nlet revenueGoal = toNumber(ai.revenueGoal, revenueBaseline);\nlet cashGoal = toNumber(ai.cashGoal, cashBaseline);\nlet callsGoal = toNumber(ai.callsGoal, callsBaseline);\nlet dealsGoal = toNumber(ai.dealsGoal, dealsBaseline);\n\n// Limit AI adjustments to ±10%\nrevenueGoal = clamp(\n  revenueGoal,\n  revenueBaseline * 0.9,\n  revenueBaseline * 1.1\n);\n\ncashGoal = clamp(\n  cashGoal,\n  cashBaseline * 0.9,\n  cashBaseline * 1.1\n);\n\ncallsGoal = clamp(\n  callsGoal,\n  callsBaseline * 0.9,\n  callsBaseline * 1.1\n);\n\ndealsGoal = clamp(\n  dealsGoal,\n  dealsBaseline * 0.9,\n  dealsBaseline * 1.1\n);\n\n// Clean final values\nrevenueGoal = Math.round(revenueGoal / 1000) * 1000;\ncashGoal = Math.round(cashGoal / 1000) * 1000;\ncallsGoal = Math.max(1, Math.round(callsGoal));\ndealsGoal = Math.max(1, Math.round(dealsGoal));\n\n// Preserve the growth rate calculated by the first JavaScript node\nconst projectedGrowthRate =\n  baseline.growthRate ??\n  baseline.projectedGrowthRate ??\n  baseline.estimatedGrowthRate ??\n  ai.growthRate ??\n  ai.projectedGrowthRate ??\n  ai.estimatedGrowthRate ??\n  0;\n\nreturn [\n  {\n    json: {\n      month: baseline.month,\n\n      revenueGoal,\n      cashGoal,\n      callsGoal,\n      dealsGoal,\n\n      projectedGrowthRate,\n\n      confidence: ai.confidence ?? baseline.confidence,\n\n      approvedWithoutChanges:\n  revenueGoal === revenueBaseline &&\n  cashGoal === cashBaseline &&\n  callsGoal === callsBaseline &&\n  dealsGoal === dealsBaseline,\n\n      reason: ai.reason ?? baseline.reason,\n    },\n  },\n];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1184,
+    0
+   ],
+   "id": "c769ac39-8ae2-4c15-a088-89569a6e31b9",
+   "name": "verify suggestions into output"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

@@ -1,0 +1,614 @@
+{
+ "id": "AFPqjEesgCtbunQu69Twt",
+ "name": "[Content OS] OpusClip Submit and Refresh",
+ "active": true,
+ "isArchived": false,
+ "versionId": "2852b26e-c961-469e-8f6f-c286825aaa59",
+ "triggerCount": 1,
+ "createdAt": "2026-08-17T05:17:59.974Z",
+ "updatedAt": "2026-11-17T16:43:52.880Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Content OS Webhook": {
+   "main": [
+    [
+     {
+      "node": "Validate Content Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate Content Request": {
+   "main": [
+    [
+     {
+      "node": "Return Accepted",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Get Airtable Content",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Airtable Content": {
+   "main": [
+    [
+     {
+      "node": "Resolve Frame.io Account",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Resolve Frame.io Account": {
+   "main": [
+    [
+     {
+      "node": "Select Frame.io Account",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Select Frame.io Account": {
+   "main": [
+    [
+     {
+      "node": "List Raw Video Files",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "List Raw Video Files": {
+   "main": [
+    [
+     {
+      "node": "Select Raw Video File",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Select Raw Video File": {
+   "main": [
+    [
+     {
+      "node": "Create Frame.io Link Access",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create Frame.io Link Access": {
+   "main": [
+    [
+     {
+      "node": "Prepare Opus Action",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Opus Action": {
+   "main": [
+    [
+     {
+      "node": "Submit Action?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Submit Action?": {
+   "main": [
+    [
+     {
+      "node": "Mark Opus Processing",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Get OpusClip Clips",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Mark Opus Processing": {
+   "main": [
+    [
+     {
+      "node": "Create OpusClip Project",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create OpusClip Project": {
+   "main": [
+    [
+     {
+      "node": "Prepare OpusClip Project Save",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare OpusClip Project Save": {
+   "main": [
+    [
+     {
+      "node": "Save OpusClip Project ID",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get OpusClip Clips": {
+   "main": [
+    [
+     {
+      "node": "Build Airtable Clip Batches",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build Airtable Clip Batches": {
+   "main": [
+    [
+     {
+      "node": "Create Content Clips",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create Content Clips": {
+   "main": [
+    [
+     {
+      "node": "Mark Clips Ready",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "responseMode": "responseNode",
+    "options": {}
+   },
+   "id": "48635493-7334-4fa3-954c-51999f0b0bda",
+   "name": "Content OS Webhook",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    432,
+    464
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const body=$input.first().json.body??$input.first().json;const recordId=String(body.recordId??body.record_id??'').trim();const action=String(body.action??'').trim();if(!/^rec[A-Za-z0-9]+$/.test(recordId))throw new Error('A valid Airtable content recordId is required.');const allowed=['Submit to OpusClip','Refresh Opus Clips'];if(!allowed.includes(action))throw new Error('This workflow handles OpusClip actions only. Received: '+action);return [{json:{recordId,action,isSubmit:action==='Submit to OpusClip',isRefresh:action==='Refresh Opus Clips'}}];"
+   },
+   "id": "d36ecce9-8ff0-47ce-ac4e-a50e0630cc3d",
+   "name": "Validate Content Request",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    656,
+    464
+   ]
+  },
+  {
+   "parameters": {
+    "respondWith": "json",
+    "responseBody": "={{ JSON.stringify({success:true,accepted:true,action:$('Validate Content Request').first().json.action,message:'Content OS request accepted.'}) }}",
+    "options": {}
+   },
+   "id": "8329447d-8ab8-4c2e-9228-88837cbfafe0",
+   "name": "Return Accepted",
+   "type": "n8n-nodes-base.respondToWebhook",
+   "typeVersion": 1.4,
+   "position": [
+    880,
+    368
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblcSzvicm3wivvhh/' + $('Validate Content Request').first().json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "b5c13bf9-b720-469d-b707-bd4188d526da",
+   "name": "Get Airtable Content",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    880,
+    560
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const selected=$('Select Raw Video File').first().json;const rec=selected.record;const f=rec.fields??{};const req=$('Validate Content Request').first().json;const response=$input.first().json;const isHttp=v=>typeof v==='string'&&/^https?:\\/\\//i.test(v.trim());const share=response.data??response;const frameShareUrl=String(share.short_url??share.shortUrl??'').trim();const sourceKind=selected.sourceKind??'raw';const isLongForm=sourceKind==='raw';const shortId=String(f['OpusClip Short Project ID']??'').trim();const shortSource=String(f['OpusClip Short Source Asset ID']??'').trim();const shortState=String(f['OpusClip Short Job State']??'').trim();const legacyId=String(f['OpusClip Project ID']??'').trim();const projectId=isLongForm?legacyId:shortId;const sourceAssetId=String(selected.sourceVideoId??'');if(!isLongForm&&req.isSubmit&&(shortId||shortState))throw new Error('A short-clipping job is already recorded. Refresh the existing job; do not resubmit. If submission was interrupted, reconcile provider jobs first.');if(!isLongForm&&req.isSubmit&&legacyId&&/short.clips? project|short.form clipping pass/i.test(String(f['Last Automation Message']??'')))throw new Error('Legacy short-clipping identity needs reconciliation before a new submission.');if(!isLongForm&&req.isRefresh&&shortSource!==sourceAssetId)throw new Error('The short job source does not match the current final asset. Reconcile before importing.');if(isLongForm&&req.isSubmit&&legacyId)throw new Error('A long-form project already exists. Reuse it instead of submitting again.');const title=String(f['YouTube Title']??f.Title??f['Content Title']??f.Name??'').trim();const jobTitle=title+(isLongForm?' - Long-form Edit':' - Short Clips');const videoUrl=frameShareUrl;if(req.isSubmit&&!title)throw new Error('Add a content title in Airtable before sending this video to OpusClip.');if(req.isSubmit&&!isHttp(videoUrl))throw new Error('Frame.io Link Access was created but no public f.io URL was returned.');if(req.isRefresh&&!projectId)throw new Error('OpusClip Project ID is required before refreshing clips.');const webhook={type:'WEBHOOK',notifyFailure:true,url:'https://n8n.dulcy.io/webhook/REDACTED_PATH'};const submitBody=isLongForm?{videoUrl,uploadedVideoAttr:{title:jobTitle},curationPref:{skipCurate:true}}:{videoUrl,uploadedVideoAttr:{title:jobTitle},curationPref:{model:'ClipBasic',genre:'Auto',enableAutoHook:true},renderPref:{layoutAspectRatio:'portrait',quickstartConfig:{enableRemoveFillerWords:true}},conclusionActions:[webhook]};const message=isLongForm?'Long-form editing pass submitted to OpusClip as '+jobTitle+'.':'Short-form clipping pass submitted to OpusClip as '+jobTitle+'; waiting for clips.';const processingBody=JSON.stringify({fields:{'OpusClip Status':'Processing','Last Automation Message':message,'Automation Error':'',...(!isLongForm?{'OpusClip Short Job State':'Submitting','OpusClip Short Source Asset ID':sourceAssetId}:{})}});return [{json:{recordId:rec.id,title:jobTitle,sourceKind,sourceAssetId,videoUrl,videoSource:'frame-share',frameShareId:String(share.id??''),projectId,isSubmit:req.isSubmit,isRefresh:req.isRefresh,submitBody,submitBodyJson:JSON.stringify(submitBody),processingBody}}];"
+   },
+   "id": "881aa6b1-b06d-40cf-b45a-369220f375e9",
+   "name": "Prepare Opus Action",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2224,
+    560
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.frame.io/v4/accounts",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "oAuth2Api",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "page_size",
+       "value": "100"
+      },
+      {
+       "name": "include_total_count",
+       "value": "true"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "5fa6c019-c4eb-46c8-bffc-346e46e6ca64",
+   "name": "Resolve Frame.io Account",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1104,
+    560
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const rec=$('Get Airtable Content').first().json;const req=$('Validate Content Request').first().json;const raw=$input.first().json;const accounts=Array.isArray(raw)?raw:(raw.data??raw.items??raw.accounts??[]);if(!accounts.length)throw new Error('The connected Frame.io credential returned no accessible accounts.');const preferred=accounts.find(x=>String(x.name??x.data?.name??'').trim().toLowerCase().includes('alexander'))??accounts[0];const accountId=preferred.id??preferred.data?.id??'';const f=rec.fields??{};const editingPath=String(f['Editing Path']?.name??f['Editing Path']??'OpusClip').trim();const pathKey=editingPath.toLowerCase();const usesDaVinci=pathKey==='manual editor'||pathKey.includes('davinci');const finalReady=Boolean(String(f['Frame.io Final Asset URL']??'').trim());if(req.isSubmit&&usesDaVinci&&!finalReady)throw new Error('DaVinci Resolve is selected. Download the raw recording, edit it in DaVinci Resolve, upload the finished video to the Frame.io Final folder, then run Sync Frame.io before creating short clips.');const sourceKind=finalReady?'final':'raw';const sourceFolderUrl=String(f[sourceKind==='final'?'Frame.io Final Folder URL':'Frame.io Raw Folder URL']??'').trim();const ids=sourceFolderUrl.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi)??[];const projectId=ids[0]??'';const sourceFolderId=ids.at(-1)??'';if(!accountId)throw new Error('Frame.io returned an account without an ID.');if(!projectId||!sourceFolderId)throw new Error((sourceKind==='final'?'Frame.io Final':'Frame.io Raw')+' Folder URL is missing or invalid. Run Sync Frame.io first.');return [{json:{record:rec,accountId,projectId,sourceKind,sourceFolderId,editingPath,usesDaVinci}}];"
+   },
+   "id": "516ba833-d56d-4fdc-b900-615250cc58ac",
+   "name": "Select Frame.io Account",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1328,
+    560
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.frame.io/v4/accounts/' + $json.accountId + '/folders/' + $json.sourceFolderId + '/children' }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "oAuth2Api",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "page_size",
+       "value": "100"
+      },
+      {
+       "name": "include_total_count",
+       "value": "true"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "72e1426b-36f5-4cb6-b4a7-6fe94aa423ee",
+   "name": "List Raw Video Files",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1552,
+    560
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const cfg=$('Select Frame.io Account').first().json;const raw=$input.first().json;const list=x=>Array.isArray(x)?x:(x.data??x.items??x.children??[]);const files=list(raw).filter(x=>String(x.type??x.data?.type??'').toLowerCase()==='file');const ready=files.filter(x=>!['uploading','processing','transcoding'].includes(String(x.status??x.data?.status??'').toLowerCase()));const candidates=ready.length?ready:files;const expectedFinal=String(cfg.record?.fields?.['Frame.io Final Asset ID']??'').trim();if(cfg.sourceKind==='final'&&!expectedFinal)throw new Error('Sync Frame.io to register the exact final asset before clipping.');const video=cfg.sourceKind==='final'?candidates.find(x=>String(x.id??x.data?.id??'')===expectedFinal):candidates.find(x=>String(x.media_type??x.data?.media_type??x.media_type_name??x.data?.media_type_name??'').toLowerCase().startsWith('video/'))??candidates[0];if(cfg.sourceKind==='final'&&String(video?.id??video?.data?.id??'')!==expectedFinal)throw new Error('Registered final asset was not found in the final folder; sync and reconcile before clipping.');if(['uploading','processing','transcoding'].includes(String(video?.status??video?.data?.status??'').toLowerCase()))throw new Error('Source video is still processing in Frame.io.');const sourceVideoId=video?.id??video?.data?.id??'';const sourceVideoName=String(video?.name??video?.data?.name??'video');const f=cfg.record?.fields??{};const contentTitle=String(f.Title??f['Content Title']??f.Name??'').trim();const passName=cfg.sourceKind==='final'?'Short Clips':'Long-form Edit';if(!sourceVideoId)throw new Error('No video file was found inside the Frame.io '+(cfg.sourceKind==='final'?'Final':'Raw')+' folder. Upload the video and wait for Frame.io processing to finish.');if(!contentTitle)throw new Error('Add a content title in Airtable before sending this video to OpusClip.');const shareBody=JSON.stringify({data:{type:'asset',enabled:true,access:'public',asset_ids:[sourceVideoId],downloading_enabled:true,name:'OpusClip - '+contentTitle+' - '+passName}});return [{json:{...cfg,contentTitle,sourceVideoId,sourceVideoName,passName,shareBody}}];"
+   },
+   "id": "a3726fa1-0f8a-4a4d-96ec-30a988163847",
+   "name": "Select Raw Video File",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1776,
+    560
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ 'https://api.frame.io/v4/accounts/' + $json.accountId + '/projects/' + $json.projectId + '/shares' }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "oAuth2Api",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ $json.shareBody }}",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "9541cf60-4b64-4c12-823f-918aeb415c0c",
+   "name": "Create Frame.io Link Access",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2000,
+    560
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "is-submit",
+       "leftValue": "={{ $json.isSubmit }}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "a130e49e-174d-4c54-aade-08a654bc0c34",
+   "name": "Submit Action?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    2448,
+    560
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblcSzvicm3wivvhh/' + $json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ $json.processingBody }}",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "8e2c8ecb-efe3-4873-8edc-96a8068f1387",
+   "name": "Mark Opus Processing",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2672,
+    464
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.opus.pro/api/clip-projects",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ $('Prepare Opus Action').first().json.submitBodyJson }}",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "4eefee77-e02e-41cd-b636-240486eaec3d",
+   "name": "Create OpusClip Project",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2896,
+    464
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const raw=$input.first().json;const action=$('Prepare Opus Action').first().json;const projectId=String(raw.projectId??raw.id??raw.data?.projectId??raw.data?.id??'').trim();if(!projectId)throw new Error('OpusClip accepted the request but returned no project ID.');const isLongForm=action.sourceKind==='raw';const message=isLongForm?'Long-form edit project created in OpusClip. Complete the full edit, export it, upload it to the Frame.io Final folder, then Sync Frame.io.':'Short-clips project created in OpusClip. Waiting for clips.';const saveProjectBody=JSON.stringify({fields:{...(isLongForm?{'OpusClip Project ID':projectId}:{'OpusClip Short Project ID':projectId,'OpusClip Short Source Asset ID':action.sourceAssetId,'OpusClip Short Job State':'Processing'}),'OpusClip Status':'Processing','Last Automation Message':message,'Automation Error':''}});return [{json:{...raw,projectId,saveProjectBody,sourceKind:action.sourceKind}}];"
+   },
+   "id": "60b07821-908a-444f-b37b-4b514f26f84a",
+   "name": "Prepare OpusClip Project Save",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3120,
+    464
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblcSzvicm3wivvhh/' + $('Prepare Opus Action').first().json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ $json.saveProjectBody }}",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "66332835-4bb2-49ae-b4ee-5f6c6ddc5fe0",
+   "name": "Save OpusClip Project ID",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    3344,
+    464
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.opus.pro/api/exportable-clips",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "q",
+       "value": "findByProjectId"
+      },
+      {
+       "name": "projectId",
+       "value": "={{ $('Prepare Opus Action').first().json.projectId }}"
+      },
+      {
+       "name": "pageNum",
+       "value": "1"
+      },
+      {
+       "name": "pageSize",
+       "value": "100"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "68cdd1d7-1008-4c24-87e7-023f484ef4f5",
+   "name": "Get OpusClip Clips",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2672,
+    656
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const raw=$('Get OpusClip Clips').first().json;\nconst clips=Array.isArray(raw)?raw:(raw.data??raw.items??raw.clips??[]);\nconst prepared=$('Prepare Opus Action').first().json;\nif(prepared.sourceKind!=='final')throw new Error('Only a registered short-clipping project may be imported as Content Clips.');\nconst projectId=prepared.projectId,parentId=prepared.recordId;\nconst token=/^[A-Za-z0-9_-]+$/;\nfor(const c of clips){\n const id=String(c.id??''),pid=String(c.projectId??''),curation=String(c.curationId??'');\n const plain=token.test(id);\n const composite=token.test(pid)&&token.test(curation)&&id===pid+'.'+curation;\n if(!plain&&!composite)throw new Error('Unexpected provider clip ID format; reconcile before importing.');\n if(pid!==String(projectId))throw new Error('Provider clip project does not match the registered short project.');\n}\n\nconst airtable=$('Get Airtable Content').first().json.fields??{};\nconst requested=Math.max(1,Math.min(50,Math.round(Number(airtable['Requested Clip Count']??5))));\nconst minimum=Number(airtable['Minimum Clip Score']??85);\nif(!Number.isFinite(minimum))throw new Error('Minimum clip score must be numeric.');\nif((airtable['Content Clips']??[]).length)throw new Error('This content already has imported clips. Review the existing clips; do not re-import. Reconcile any partial previous import first.');const existingIds=new Set();\nconst ranked=clips.filter(c=>String(c.projectId??'')===String(projectId)&&Number(c.viralityScore??c.score??0)>=minimum).sort((a,b)=>Number(b.viralityScore??b.score??0)-Number(a.viralityScore??a.score??0));\nconst seen=new Set();const matches=ranked.filter(c=>{const k=String(c.id??'');if(!k||seen.has(k))return false;seen.add(k);return true;}).slice(0,requested);\nif(!matches.length)throw new Error('No exportable clips meet the minimum score '+minimum+' yet. Keep the existing project; do not resubmit.');\nconst records=matches.filter(c=>!existingIds.has(String(c.id))).map(c=>({fields:{'Clip Name':String(c.title??c.id),'OpusClip Clip ID':String(c.id),'Frame.io Clip URL':String(c.uriForExport??c.uriForPreview??''),'Virality Score':Number(c.viralityScore??c.score??0),'Hook':String(c.text??c.promptName??''),'Clip Transcript':String(c.text??''),'Caption':[c.description,c.hashtags].filter(Boolean).join('\\n\\n'),'Clip Status':'Needs Review','Parent Content':[parentId]}}));\nconst markReadyBody=JSON.stringify({fields:{'OpusClip Status':'Clips Ready','OpusClip Short Job State':'Clips Ready','Production Stage':'Ready for Clips','Last Automation Message':matches.length+' qualifying OpusClip clips available for review; '+records.length+' newly imported.','Automation Error':''}});\nif(!records.length)return [{json:{records:[],parentId,count:matches.length,hasNewClips:false,markReadyBody}}];\nconst out=[];for(let i=0;i<records.length;i+=10){const batch=records.slice(i,i+10);out.push({json:{records:batch,parentId,count:matches.length,hasNewClips:true,createClipsBody:JSON.stringify({records:batch,typecast:false}),markReadyBody}});}return out;\n"
+   },
+   "id": "feedc527-1376-4bef-a58d-8da9c93ee7d4",
+   "name": "Build Airtable Clip Batches",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2896,
+    656
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tblg1Tj9atyxN0piT",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ $json.createClipsBody }}",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "0ce94bad-e4fc-4498-bf68-b40d1374ca80",
+   "name": "Create Content Clips",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    3120,
+    656
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblcSzvicm3wivvhh/' + $('Prepare Opus Action').first().json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ $('Build Airtable Clip Batches').first().json.markReadyBody }}",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "653a9cd6-4ad4-49a1-83c6-97e1f7f5a5a2",
+   "name": "Mark Clips Ready",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    3344,
+    656
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

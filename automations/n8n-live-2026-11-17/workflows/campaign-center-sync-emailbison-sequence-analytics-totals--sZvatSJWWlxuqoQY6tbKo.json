@@ -1,0 +1,452 @@
+{
+ "id": "sZvatSJWWlxuqoQY6tbKo",
+ "name": "[Campaign Center] Sync EmailBison Sequence Analytics Totals",
+ "active": true,
+ "isArchived": false,
+ "versionId": "41b84202-baf8-4977-b351-af3a9abaeca1",
+ "triggerCount": 1,
+ "createdAt": "2026-08-09T01:42:10.283Z",
+ "updatedAt": "2026-11-17T16:42:24.877Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Run Manually": {
+   "main": [
+    [
+     {
+      "node": "Find Active Airtable Campaigns",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Every Hour": {
+   "main": [
+    [
+     {
+      "node": "Find Active Airtable Campaigns",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Find Active Airtable Campaigns": {
+   "main": [
+    [
+     {
+      "node": "Normalize Campaign",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Normalize Campaign": {
+   "main": [
+    [
+     {
+      "node": "Get Sequence Steps",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Sequence Steps": {
+   "main": [
+    [
+     {
+      "node": "Get Campaign Reporting Data",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Campaign Reporting Data": {
+   "main": [
+    [
+     {
+      "node": "Build Verified Sequence Analytics Rows",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build Verified Sequence Analytics Rows": {
+   "main": [
+    [
+     {
+      "node": "Upsert Sequence Analytics",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {},
+   "id": "cedfb319-3bd1-4fc7-9251-c87d437fbdbe",
+   "name": "Run Manually",
+   "type": "n8n-nodes-base.manualTrigger",
+   "typeVersion": 1,
+   "position": [
+    576,
+    2816
+   ]
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "hours"
+      }
+     ]
+    }
+   },
+   "id": "36c3a7e0-a12c-4657-b148-749cced05664",
+   "name": "Every Hour",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    576,
+    2656
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblAVAA6uBPaMj28P",
+     "mode": "list",
+     "cachedResultName": "Campaigns"
+    },
+    "filterByFormula": "=AND({ID}>0,OR({Campaign Status}='Active',AND(OR({Campaign Status}='Paused',{Campaign Status}='Completed'),DATETIME_DIFF(TODAY(),IF({end_date},{end_date},{Status Last Modified}),'days')<=14)))",
+    "options": {
+     "fields": [
+      "Name",
+      "Campaign Status",
+      "ID",
+      "EmailBison API (from Client)"
+     ]
+    }
+   },
+   "id": "a40c6444-130d-49e6-8b59-9641b5c21d1f",
+   "name": "Find Active Airtable Campaigns",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    816,
+    2736
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const unwrap = value => {\n  if (Array.isArray(value)) value = value[0];\n  if (value && typeof value === 'object') value = value.value ?? value.name ?? value.id;\n  return value === undefined || value === null ? '' : String(value).trim();\n};\nreturn $input.all().map((item, index) => {\n  const row = item.json;\n  const recordId = unwrap(row.id ?? row.recordId);\n  const campaignId = Number(unwrap(row.ID ?? row['EmailBison Campaign ID']));\n  const campaignName = unwrap(row.Name ?? row['Campaign Name']);\n  const apiKey = unwrap(row['EmailBison API (from Client)'] ?? row['EmailBison API']);\n  if (!recordId.startsWith('rec')) throw new Error('Airtable Campaign record ID is missing.');\n  if (!Number.isFinite(campaignId) || campaignId <= 0) throw new Error('Campaign ' + campaignName + ' has no numeric EmailBison campaign ID.');\n  if (!apiKey) throw new Error('Campaign ' + campaignName + ' has no EmailBison API key lookup value.');\n  return {json: {recordId, campaignId, campaignName, apiKey, baseUrl: 'https://send.dulcy.io'}, pairedItem: {item: index}};\n});"
+   },
+   "id": "4d5c368e-05c9-4a0c-ac36-09e1f25521b9",
+   "name": "Normalize Campaign",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1056,
+    2736
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ $('Normalize Campaign').item.json.baseUrl + '/api/campaigns/v1.1/' + $('Normalize Campaign').item.json.campaignId + '/sequence-steps' }}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Accept",
+       "value": "application/json"
+      },
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Normalize Campaign').item.json.apiKey }}"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 90000
+    }
+   },
+   "id": "8dd3ceae-44fe-4b89-9e41-9f7ac34cf7f5",
+   "name": "Get Sequence Steps",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1296,
+    2736
+   ],
+   "retryOnFail": true,
+   "waitBetweenTries": 3000
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $('Normalize Campaign').item.json.baseUrl + '/api/campaigns/' + $('Normalize Campaign').item.json.campaignId + '/stats' }}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Accept",
+       "value": "application/json"
+      },
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      },
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Normalize Campaign').item.json.apiKey }}"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ { start_date: '2000-01-01', end_date: $now.setZone('America/New_York').toFormat('yyyy-MM-dd') } }}",
+    "options": {
+     "timeout": 90000
+    }
+   },
+   "id": "d7a07ed6-9c5b-4dae-b69f-a349b789638e",
+   "name": "Get Campaign Reporting Data",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1536,
+    2736
+   ],
+   "retryOnFail": true,
+   "waitBetweenTries": 3000
+  },
+  {
+   "parameters": {
+    "jsCode": "const buildCampaignRows = (campaign, sequenceResponse, reportingResponse) => {\n\nconst firstArray = value => {\n  if (Array.isArray(value)) return value;\n  if (!value || typeof value !== 'object') return [];\n  for (const key of ['sequence_steps', 'steps', 'items', 'results']) {\n    if (Array.isArray(value[key])) return value[key];\n  }\n  if (value.data !== undefined) return firstArray(value.data);\n  return [];\n};\nconst steps = firstArray(sequenceResponse);\nif (!steps.length) throw new Error('EmailBison returned no sequence steps for campaign ' + campaign.campaignId + '. No Airtable rows were written.');\n\nconst numberFrom = (object, aliases) => {\n  for (const key of aliases) {\n    if (object && object[key] !== undefined && object[key] !== null && object[key] !== '') {\n      const value = Number(object[key]);\n      if (Number.isFinite(value)) return value;\n    }\n  }\n  return undefined;\n};\nconst aliases = {\n  sent: ['emails_sent', 'sent_emails', 'sent_count', 'total_sent', 'sent'],\n  delivered: ['emails_delivered', 'delivered_count', 'total_delivered', 'delivered'],\n  replies: ['unique_replies', 'reply_count', 'total_replies', 'replies'],\n  interested: ['interested_replies', 'positive_replies', 'interested_count', 'interested'],\n  meetings: ['meetings_booked', 'meeting_count', 'meetings'],\n  bounces: ['bounced', 'bounce_count', 'total_bounces', 'bounces']\n};\nconst metricObjects = [];\nconst walk = (value, path = '') => {\n  if (Array.isArray(value)) {\n    value.forEach((item, index) => walk(item, path + '[' + index + ']'));\n    return;\n  }\n  if (!value || typeof value !== 'object') return;\n  const metrics = {};\n  for (const [name, keys] of Object.entries(aliases)) metrics[name] = numberFrom(value, keys);\n  if (Object.values(metrics).some(item => item !== undefined)) metricObjects.push({value, metrics, path});\n  for (const [key, item] of Object.entries(value)) walk(item, path ? path + '.' + key : key);\n};\nwalk(reportingResponse);\n\nconst stepIdOf = object => numberFrom(object, ['sequence_step_id', 'sequenceStepId', 'step_id', 'stepId']);\nconst orderOf = object => numberFrom(object, ['step_number', 'stepNumber', 'step_order', 'stepOrder', 'order', 'step']);\nconst variantText = object => {\n  const raw = object?.variant_label ?? object?.variantLabel ?? object?.variant_name ?? object?.variantName;\n  return raw === undefined || raw === null ? '' : String(raw).trim().toUpperCase();\n};\nconst stepById = new Map(steps.map(step => [Number(step.id ?? step.sequence_step_id), step]));\nconst effectiveOrder = step => {\n  const direct = Number(step.order ?? step.step ?? step.step_number);\n  if (Number.isFinite(direct) && direct > 0) return direct;\n  const parentId = Number(step.variant_from_step_id ?? step.variantFromStepId ?? step.variant_from_step ?? step.variantFromStep ?? step.parent_step_id ?? step.parentStepId);\n  const parent = stepById.get(parentId);\n  const inherited = Number(parent?.order ?? parent?.step ?? parent?.step_number);\n  return Number.isFinite(inherited) && inherited > 0 ? inherited : 0;\n};\nconst labelByStepId = new Map();\nconst orders = [...new Set(steps.map(effectiveOrder))];\nfor (const order of orders) {\n  const group = steps.filter(step => effectiveOrder(step) === order);\n  const referencedIds = new Set(group.map(step => Number(step.variant_from_step_id ?? step.variantFromStepId ?? step.variant_from_step ?? step.variantFromStep ?? step.parent_step_id ?? step.parentStepId)).filter(Number.isFinite));\n  const primary = group.find(step => referencedIds.has(Number(step.id ?? step.sequence_step_id)))\n    ?? group.find(step => !step.variant && !Number(step.variant_from_step_id ?? step.variantFromStepId ?? step.variant_from_step ?? step.variantFromStep ?? step.parent_step_id ?? step.parentStepId))\n    ?? [...group].sort((a, b) => Number(a.id ?? a.sequence_step_id) - Number(b.id ?? b.sequence_step_id))[0];\n  const ordered = [primary, ...group.filter(step => step !== primary).sort((a, b) => Number(a.id ?? a.sequence_step_id) - Number(b.id ?? b.sequence_step_id))].filter(Boolean);\n  ordered.forEach((step, index) => labelByStepId.set(Number(step.id ?? step.sequence_step_id), String.fromCharCode(65 + Math.min(index, 9))));\n}\nconst plainText = value => String(value ?? '')\n  .replace(/<br\\s*\\/?>/gi, '\\n')\n  .replace(/<\\/p\\s*>/gi, '\\n\\n')\n  .replace(/<\\/div\\s*>/gi, '\\n')\n  .replace(/<li[^>]*>/gi, '- ')\n  .replace(/<[^>]+>/g, '')\n  .replace(/&nbsp;/gi, ' ')\n  .replace(/&amp;/gi, '&')\n  .replace(/&lt;/gi, '<')\n  .replace(/&gt;/gi, '>')\n  .replace(/&quot;/gi, '\"')\n  .replace(/&#39;|&apos;/gi, \"'\")\n  .replace(/[ \\t]+\\n/g, '\\n')\n  .replace(/\\n{3,}/g, '\\n\\n')\n  .trim();\nconst date = new Date().toLocaleDateString('en-CA', {timeZone: 'America/New_York'});\nconst now = new Date().toISOString();\nconst rows = [];\nconst unmatched = [];\nfor (const step of steps) {\n  const stepId = Number(step.id ?? step.sequence_step_id);\n  const stepNumber = effectiveOrder(step);\n  const variant = labelByStepId.get(stepId) ?? 'A';\n  const matches = metricObjects.filter(entry => {\n    const metricStepId = stepIdOf(entry.value);\n    const metricOrder = orderOf(entry.value);\n    const metricVariant = variantText(entry.value);\n    if (metricStepId !== undefined) return metricStepId === stepId;\n    if (metricOrder !== undefined && metricOrder !== stepNumber) return false;\n    if (metricVariant) return metricVariant === variant;\n    return metricOrder !== undefined;\n  });\n  if (!matches.length) { unmatched.push('Step ' + stepNumber + ' Variant ' + variant + ' (ID ' + stepId + ')'); continue; }\n  const totals = {sent: 0, delivered: 0, replies: 0, interested: 0, meetings: 0, bounces: 0};\n  for (const match of matches) {\n    for (const key of Object.keys(totals)) if (match.metrics[key] !== undefined) totals[key] += match.metrics[key];\n  }\n  rows.push({json: {\n    'Sequence Metric Key': campaign.campaignId + '-total-' + stepId,\n    'Campaign': [campaign.recordId],\n    'Campaign ID': campaign.campaignId,\n    'Date': date,\n    'Sequence Step ID': stepId,\n    'Step Number': stepNumber,\n    'Variant': variant,\n    'Subject': plainText(step.email_subject ?? step.subject ?? ''),\n    'Email Copy Snapshot': plainText(step.email_body ?? step.body ?? ''),\n    'Emails Sent': totals.sent,\n    'Replies': totals.replies,\n    'Interested Replies': totals.interested,\n    'Bounces': totals.bounces,\n    'Last Synced': now\n  }});\n}\nif (!rows.length) {\n  const paths = metricObjects.slice(0, 10).map(item => item.path || '(root)').join(', ') || 'none';\n  throw new Error('EmailBison reporting returned no metrics attributable to a sequence step or variant for campaign ' + campaign.campaignId + '. Metric-bearing response paths: ' + paths + '. No Airtable rows were written. Inspect this node input and map the returned step identifier before enabling the schedule.');\n}\nif (unmatched.length) throw new Error('EmailBison returned incomplete step attribution for campaign ' + campaign.campaignId + ': ' + unmatched.join(', ') + '. No partial Airtable data was written.');\nreturn rows;\n};\n\nconst campaigns = $('Normalize Campaign').all();\nconst sequenceResponses = $('Get Sequence Steps').all();\nconst reportingResponses = $input.all();\nif (campaigns.length !== reportingResponses.length || sequenceResponses.length !== reportingResponses.length) {\n  throw new Error('Campaign, sequence, and reporting item counts do not match. Campaigns: ' + campaigns.length + ', sequences: ' + sequenceResponses.length + ', reports: ' + reportingResponses.length + '.');\n}\nconst outputRows = [];\nconst failures = [];\nfor (let index = 0; index < reportingResponses.length; index++) {\n  try {\n    outputRows.push(...buildCampaignRows(campaigns[index].json, sequenceResponses[index].json, reportingResponses[index].json));\n  } catch (error) {\n    const campaignName = campaigns[index]?.json?.campaignName ?? ('item ' + index);\n    failures.push(campaignName + ': ' + (error?.message ?? String(error)));\n  }\n}\nif (failures.length) console.log('Sequence analytics skipped campaigns: ' + failures.join(' | '));\nif (!outputRows.length) throw new Error('No sequence analytics rows were produced. ' + failures.join(' | '));\nreturn outputRows;"
+   },
+   "id": "ad1dfa83-c6b1-4401-a8db-f796f8702572",
+   "name": "Build Verified Sequence Analytics Rows",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1776,
+    2736
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "upsert",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblmHKxDLELPkj5xk",
+     "mode": "list",
+     "cachedResultName": "Sequence Analytics"
+    },
+    "columns": {
+     "mappingMode": "autoMapInputData",
+     "value": {},
+     "matchingColumns": [
+      "Sequence Metric Key"
+     ],
+     "schema": [
+      {
+       "id": "Sequence Metric Key",
+       "displayName": "Sequence Metric Key",
+       "required": false,
+       "defaultMatch": true,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Campaign",
+       "displayName": "Campaign",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Campaign ID",
+       "displayName": "Campaign ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Date",
+       "displayName": "Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Sequence Step ID",
+       "displayName": "Sequence Step ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Step Number",
+       "displayName": "Step Number",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Variant",
+       "displayName": "Variant",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Subject",
+       "displayName": "Subject",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Email Copy Snapshot",
+       "displayName": "Email Copy Snapshot",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": false,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Emails Sent",
+       "displayName": "Emails Sent",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Replies",
+       "displayName": "Replies",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Interested Replies",
+       "displayName": "Interested Replies",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Bounces",
+       "displayName": "Bounces",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Last Synced",
+       "displayName": "Last Synced",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "id": "7f94f2da-ad2d-415f-8b7b-3fd6fa759ede",
+   "name": "Upsert Sequence Analytics",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    2016,
+    2736
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

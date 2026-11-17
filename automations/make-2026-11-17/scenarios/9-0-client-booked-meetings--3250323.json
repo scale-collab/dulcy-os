@@ -1,0 +1,5142 @@
+{
+ "id": 3250323,
+ "name": "[9.0 CLIENT] Booked Meetings",
+ "teamId": 629049,
+ "hookId": 1848051,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 199728,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": true,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "gateway",
+  "http",
+  "google-docs",
+  "google-drive",
+  "google-sheets",
+  "airtable",
+  "builtin",
+  "slack",
+  "slack",
+  "airtable",
+  "http"
+ ],
+ "lastEdit": "2026-06-26T19:18:10.729Z",
+ "scheduling": {
+  "type": "immediately",
+  "maximum_runs_per_minute": 100
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": "2026-11-12T18:13:52.631Z",
+ "created": "2024-10-21T20:31:54.055Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": true,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 8,
+    "mapper": {},
+    "module": "gateway:CustomWebHook",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "hook": {
+        "data": {
+         "editable": "true"
+        },
+        "label": "OppWonAirtable"
+       }
+      }
+     },
+     "designer": {
+      "x": 0,
+      "y": 150
+     },
+     "parameters": [
+      {
+       "name": "hook",
+       "type": "hook:gateway-webhook",
+       "label": "Webhook",
+       "required": true
+      },
+      {
+       "name": "maxResults",
+       "type": "number",
+       "label": "Maximum number of results"
+      }
+     ]
+    },
+    "parameters": {
+     "hook": 1848051,
+     "maxResults": 1
+    }
+   },
+   {
+    "id": 36,
+    "mapper": {
+     "url": "https://n8n.dulcy.io/webhook/REDACTED_PATH",
+     "method": "post",
+     "shareCookies": false,
+     "parseResponse": true,
+     "allowRedirects": true,
+     "queryParameters": [
+      {
+       "name": "email",
+       "value": "{{8.`Leads Email`}}"
+      },
+      {
+       "name": "workspace id",
+       "value": "{{8.`Workspace ID`}}"
+      },
+      {
+       "name": "status",
+       "value": "{{8.Status}}"
+      }
+     ],
+     "stopOnHttpError": true,
+     "requestCompressedContent": true
+    },
+    "module": "http:MakeRequest",
+    "version": 4,
+    "metadata": {
+     "expect": [
+      {
+       "name": "url",
+       "type": "url",
+       "label": "URL",
+       "required": true
+      },
+      {
+       "name": "method",
+       "type": "select",
+       "label": "Method",
+       "required": true,
+       "validate": {
+        "enum": [
+         "get",
+         "head",
+         "post",
+         "put",
+         "patch",
+         "delete",
+         "options"
+        ]
+       }
+      },
+      {
+       "name": "headers",
+       "spec": {
+        "name": "value",
+        "spec": [
+         {
+          "name": "name",
+          "type": "text",
+          "label": "Name",
+          "required": true,
+          "validate": {
+           "pattern": "^[-!#$%&'*+.^_`|~0-9A-Za-z]+$"
+          }
+         },
+         {
+          "name": "value",
+          "type": "text",
+          "label": "Value"
+         }
+        ],
+        "type": "collection",
+        "label": "Header"
+       },
+       "type": "array",
+       "label": "Headers"
+      },
+      {
+       "name": "queryParameters",
+       "spec": {
+        "name": "value",
+        "spec": [
+         {
+          "name": "name",
+          "type": "text",
+          "label": "Name",
+          "required": true
+         },
+         {
+          "name": "value",
+          "type": "text",
+          "label": "Value"
+         }
+        ],
+        "type": "collection",
+        "label": "Parameter"
+       },
+       "type": "array",
+       "label": "Query parameters"
+      },
+      {
+       "name": "contentType",
+       "type": "select",
+       "label": "Body content type",
+       "validate": {
+        "enum": [
+         "json",
+         "multipart",
+         "urlEncoded",
+         "custom"
+        ]
+       }
+      },
+      {
+       "name": "parseResponse",
+       "type": "boolean",
+       "label": "Parse response",
+       "required": true
+      },
+      {
+       "name": "stopOnHttpError",
+       "type": "boolean",
+       "label": "Return error if HTTP request fails",
+       "required": true
+      },
+      {
+       "name": "timeout",
+       "type": "uinteger",
+       "label": "Timeout",
+       "validate": {
+        "max": 300,
+        "min": 1
+       }
+      },
+      {
+       "name": "allowRedirects",
+       "type": "boolean",
+       "label": "Allow redirects",
+       "required": true
+      },
+      {
+       "name": "shareCookies",
+       "type": "boolean",
+       "label": "Share cookies with other HTTP modules",
+       "required": true
+      },
+      {
+       "name": "requestCompressedContent",
+       "type": "boolean",
+       "label": "Request compressed content",
+       "required": true
+      },
+      {
+       "name": "paginationType",
+       "type": "select",
+       "label": "Pagination type",
+       "validate": {
+        "enum": [
+         "offsetBased",
+         "pageBased",
+         "urlBased",
+         "tokenBased"
+        ]
+       }
+      }
+     ],
+     "restore": {
+      "expect": {
+       "method": {
+        "mode": "chose",
+        "label": "POST"
+       },
+       "headers": {
+        "mode": "chose"
+       },
+       "contentType": {
+        "label": "Empty"
+       },
+       "shareCookies": {
+        "mode": "chose"
+       },
+       "parseResponse": {
+        "mode": "chose"
+       },
+       "allowRedirects": {
+        "mode": "chose"
+       },
+       "paginationType": {
+        "label": "Empty"
+       },
+       "queryParameters": {
+        "mode": "chose",
+        "items": [
+         null,
+         null,
+         null
+        ]
+       },
+       "stopOnHttpError": {
+        "mode": "chose"
+       },
+       "requestCompressedContent": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "tlsType": {
+        "label": "Empty"
+       },
+       "proxyKeychain": {
+        "label": "Choose a key"
+       },
+       "authenticationType": {
+        "label": "No authenticationUse when no credentials are required for the request."
+       }
+      }
+     },
+     "designer": {
+      "x": 300,
+      "y": 150,
+      "name": "UNITY"
+     },
+     "parameters": [
+      {
+       "name": "authenticationType",
+       "type": "select",
+       "label": "Authentication type",
+       "required": true,
+       "validate": {
+        "enum": [
+         "noAuth",
+         "apiKey",
+         "basicAuth",
+         "oAuth"
+        ]
+       }
+      },
+      {
+       "name": "tlsType",
+       "type": "select",
+       "label": "Transport layer security (TLS)",
+       "validate": {
+        "enum": [
+         "mTls",
+         "tls"
+        ]
+       }
+      },
+      {
+       "name": "proxyKeychain",
+       "type": "keychain:proxy",
+       "label": "Proxy"
+      }
+     ]
+    },
+    "parameters": {
+     "tlsType": "",
+     "proxyKeychain": "",
+     "authenticationType": "noAuth"
+    }
+   },
+   {
+    "id": 4,
+    "filter": {
+     "name": "",
+     "conditions": [
+      [
+       {
+        "a": "{{8.Status}}",
+        "b": "Won",
+        "o": "text:contain:ci"
+       }
+      ]
+     ]
+    },
+    "mapper": {
+     "name": "Call Booked with {{8.`Leads Name`}} - {{8.`Campaign Name`}}",
+     "footer": false,
+     "header": false,
+     "content": "{{8.`Conversation History`}}",
+     "folderId": "/1QVICpyhbs9qW7ihOCd7szg8ECWciysz8",
+     "destination": "drive"
+    },
+    "module": "google-docs:createADocument",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "name",
+       "type": "text",
+       "label": "Name",
+       "required": true
+      },
+      {
+       "name": "content",
+       "type": "text",
+       "label": "Content",
+       "required": true
+      },
+      {
+       "name": "destination",
+       "type": "select",
+       "label": "Choose a Drive",
+       "required": true,
+       "validate": {
+        "enum": [
+         "drive",
+         "share",
+         "team"
+        ]
+       }
+      },
+      {
+       "name": "header",
+       "type": "boolean",
+       "label": "Insert a Header",
+       "required": true
+      },
+      {
+       "name": "footer",
+       "type": "boolean",
+       "label": "Insert a Footer",
+       "required": true
+      },
+      {
+       "name": "folderId",
+       "type": "folder",
+       "label": "New Document's Location",
+       "required": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "folderId": {
+        "mode": "chose",
+        "path": [
+         "Booked Call Transcripts"
+        ]
+       },
+       "destination": {
+        "label": "My Drive"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "google"
+        },
+        "label": "My Google connection (info@dulcymedia.com)"
+       }
+      }
+     },
+     "designer": {
+      "x": 600,
+      "y": 150
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:google",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3593093
+    }
+   },
+   {
+    "id": 5,
+    "mapper": {
+     "file": "{{4.id}}",
+     "role": "reader",
+     "type": "anyone",
+     "select": "file",
+     "destination": "drive",
+     "allowFileDiscovery": false
+    },
+    "module": "google-drive:shareAFileFolder",
+    "version": 4,
+    "metadata": {
+     "expect": [
+      {
+       "type": "hidden"
+      },
+      {
+       "name": "destination",
+       "type": "select",
+       "label": "Choose a Drive",
+       "required": true,
+       "validate": {
+        "enum": [
+         "drive",
+         "share",
+         "team"
+        ]
+       }
+      },
+      {
+       "name": "select",
+       "type": "select",
+       "label": "Select",
+       "required": true,
+       "validate": {
+        "enum": [
+         "file",
+         "folder"
+        ]
+       }
+      },
+      {
+       "name": "role",
+       "type": "select",
+       "label": "Role",
+       "required": true,
+       "validate": {
+        "enum": [
+         "owner",
+         "writer",
+         "commenter",
+         "reader"
+        ]
+       }
+      },
+      {
+       "name": "type",
+       "type": "select",
+       "label": "Type",
+       "required": true,
+       "validate": {
+        "enum": [
+         "user",
+         "group",
+         "domain",
+         "anyone"
+        ]
+       }
+      },
+      {
+       "mode": "edit",
+       "name": "file",
+       "type": "file",
+       "label": "File ID",
+       "required": true
+      },
+      {
+       "name": "allowFileDiscovery",
+       "type": "boolean",
+       "label": "Allow File Discovery",
+       "required": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "file": {
+        "mode": "edit",
+        "path": []
+       },
+       "role": {
+        "mode": "chose",
+        "label": "Reader"
+       },
+       "type": {
+        "mode": "chose",
+        "label": "Anyone"
+       },
+       "select": {
+        "label": "File"
+       },
+       "destination": {
+        "label": "My Drive"
+       },
+       "allowFileDiscovery": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "google-restricted"
+        },
+        "label": "My Google Restricted connection (info@dulcymedia.com)"
+       }
+      }
+     },
+     "designer": {
+      "x": 900,
+      "y": 150
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:google-restricted",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 2764904
+    }
+   },
+   {
+    "id": 14,
+    "mapper": {
+     "mode": "fromAll",
+     "values": {
+      "0": "{{8.`Campaign Name`}}",
+      "1": "{{8.`Leads Name`}}",
+      "3": "{{formatDate(4.createdTime; \"M/D/YYYY h:mm A [EST]\")}}",
+      "4": "$0.00"
+     },
+     "sheetId": "Client Bookings",
+     "spreadsheetId": "1KyYOOdXCp65wGZ-c5yuXwzggtjEuCuAps2cNvNDZNTQ",
+     "includesHeaders": true,
+     "insertDataOption": "INSERT_ROWS",
+     "valueInputOption": "USER_ENTERED",
+     "insertUnformatted": true
+    },
+    "module": "google-sheets:addRow",
+    "version": 2,
+    "metadata": {
+     "expect": [
+      {
+       "name": "mode",
+       "type": "select",
+       "label": "Search Method",
+       "required": true,
+       "validate": {
+        "enum": [
+         "select",
+         "fromAll",
+         "map"
+        ]
+       }
+      },
+      {
+       "name": "insertUnformatted",
+       "type": "boolean",
+       "label": "Unformatted",
+       "required": true
+      },
+      {
+       "name": "valueInputOption",
+       "type": "select",
+       "label": "Value input option",
+       "validate": {
+        "enum": [
+         "USER_ENTERED",
+         "RAW"
+        ]
+       }
+      },
+      {
+       "name": "insertDataOption",
+       "type": "select",
+       "label": "Insert data option",
+       "validate": {
+        "enum": [
+         "INSERT_ROWS",
+         "OVERWRITE"
+        ]
+       }
+      },
+      {
+       "name": "spreadsheetId",
+       "type": "text",
+       "label": "Spreadsheet ID",
+       "required": true
+      },
+      {
+       "name": "sheetId",
+       "type": "select",
+       "label": "Sheet Name",
+       "required": true
+      },
+      {
+       "name": "includesHeaders",
+       "type": "select",
+       "label": "Table contains headers",
+       "required": true,
+       "validate": {
+        "enum": [
+         true,
+         false
+        ]
+       }
+      },
+      {
+       "name": "values",
+       "spec": [
+        {
+         "name": "0",
+         "type": "text",
+         "label": "Client (A)"
+        },
+        {
+         "name": "1",
+         "type": "text",
+         "label": "Name (B)"
+        },
+        {
+         "name": "2",
+         "type": "text",
+         "label": "Status (C)"
+        },
+        {
+         "name": "3",
+         "type": "text",
+         "label": "Time/Date (D)"
+        },
+        {
+         "name": "4",
+         "type": "text",
+         "label": "Value  (E)"
+        }
+       ],
+       "type": "collection",
+       "label": "Values"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "mode": {
+        "label": "Select from all"
+       },
+       "sheetId": {
+        "mode": "chose",
+        "label": "Client Bookings"
+       },
+       "includesHeaders": {
+        "label": "Yes",
+        "nested": [
+         {
+          "name": "values",
+          "spec": [
+           {
+            "name": "0",
+            "type": "text",
+            "label": "Client (A)"
+           },
+           {
+            "name": "1",
+            "type": "text",
+            "label": "Name (B)"
+           },
+           {
+            "name": "2",
+            "type": "text",
+            "label": "Status (C)"
+           },
+           {
+            "name": "3",
+            "type": "text",
+            "label": "Time/Date (D)"
+           },
+           {
+            "name": "4",
+            "type": "text",
+            "label": "Value  (E)"
+           }
+          ],
+          "type": "collection",
+          "label": "Values"
+         }
+        ]
+       },
+       "insertDataOption": {
+        "mode": "chose",
+        "label": "Insert rows"
+       },
+       "valueInputOption": {
+        "mode": "chose",
+        "label": "User entered"
+       },
+       "insertUnformatted": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "google"
+        },
+        "label": "My Google connection (scale@dulcy.io)"
+       }
+      }
+     },
+     "designer": {
+      "x": 1200,
+      "y": 150
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:google",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3589648
+    }
+   },
+   {
+    "id": 31,
+    "mapper": {
+     "base": "appxqINt5XKw7a76A",
+     "table": "tblcjRBGJEWh5KgOt",
+     "formula": "{ID} = '{{8.`Workspace ID`}}'",
+     "maxRecords": "1",
+     "useColumnId": false
+    },
+    "module": "airtable:ActionSearchRecords",
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "base",
+       "type": "select",
+       "label": "Base",
+       "required": true
+      },
+      {
+       "name": "useColumnId",
+       "type": "boolean",
+       "label": "Use Column ID",
+       "required": true
+      },
+      {
+       "name": "table",
+       "type": "select",
+       "label": "Table",
+       "required": true
+      },
+      {
+       "name": "formula",
+       "type": "text",
+       "label": "Formula"
+      },
+      {
+       "name": "maxRecords",
+       "type": "integer",
+       "label": "Limit"
+      },
+      {
+       "name": "sort",
+       "spec": [
+        {
+         "name": "field",
+         "type": "select",
+         "label": "Field",
+         "dynamic": true,
+         "options": []
+        },
+        {
+         "name": "direction",
+         "type": "select",
+         "label": "Direction",
+         "options": [
+          {
+           "label": "Descending",
+           "value": "desc"
+          },
+          {
+           "label": "Ascending",
+           "value": "asc"
+          }
+         ]
+        }
+       ],
+       "type": "array",
+       "label": "Sort"
+      },
+      {
+       "name": "view",
+       "type": "select",
+       "label": "View"
+      },
+      {
+       "name": "fields",
+       "type": "select",
+       "label": "Output Fields",
+       "multiple": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "base": {
+        "mode": "chose",
+        "label": "Alex"
+       },
+       "sort": {
+        "mode": "chose"
+       },
+       "view": {
+        "mode": "chose",
+        "label": "Empty"
+       },
+       "table": {
+        "mode": "chose",
+        "label": "Workspace IDs"
+       },
+       "fields": {
+        "mode": "chose"
+       },
+       "useColumnId": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "airtable3"
+        },
+        "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+       }
+      }
+     },
+     "designer": {
+      "x": 1500,
+      "y": 150
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:airtable3,airtable2",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3589602
+    }
+   },
+   {
+    "id": 32,
+    "filter": {
+     "name": "If slack channel exists",
+     "conditions": [
+      [
+       {
+        "a": "{{31.`Slack Channel`}}",
+        "o": "exist"
+       }
+      ]
+     ]
+    },
+    "mapper": null,
+    "module": "builtin:BasicRouter",
+    "routes": [
+     {
+      "flow": [
+       {
+        "id": 33,
+        "filter": {
+         "name": "Dulcy channel",
+         "conditions": [
+          [
+           {
+            "a": "{{31.Name}}",
+            "b": "Dulcy",
+            "o": "text:equal"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "text": "🟢🟢🟢New Meeting Booked🟢🟢🟢\n\nCampaign Name: {{8.`Campaign Name`}}\n\nName: {{8.`Leads Name`}}\n\nEmail: {{8.`Leads Email`}}\n\n<{{5.shareLink}}|CLICK TO SEE CONVO HISTORY> \n\n<!channel>\n🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢",
+         "parse": false,
+         "mrkdwn": true,
+         "channel": "C08DMJWM413",
+         "channelType": "private",
+         "channelWType": "list"
+        },
+        "module": "slack:CreateMessage",
+        "version": 4,
+        "metadata": {
+         "expect": [
+          {
+           "name": "channelWType",
+           "type": "select",
+           "label": "Enter a channel ID or name",
+           "required": true,
+           "validate": {
+            "enum": [
+             "manualy",
+             "list"
+            ]
+           }
+          },
+          {
+           "name": "text",
+           "type": "text",
+           "label": "Text"
+          },
+          {
+           "name": "blocks",
+           "type": "text",
+           "label": "Blocks"
+          },
+          {
+           "name": "thread_ts",
+           "type": "text",
+           "label": "Thread message ID (time stamp)"
+          },
+          {
+           "name": "reply_broadcast",
+           "type": "boolean",
+           "label": "Reply broadcast"
+          },
+          {
+           "name": "link_names",
+           "type": "boolean",
+           "label": "Link names"
+          },
+          {
+           "name": "parse",
+           "type": "boolean",
+           "label": "Parse message text"
+          },
+          {
+           "name": "mrkdwn",
+           "type": "boolean",
+           "label": "Use markdown"
+          },
+          {
+           "name": "unfurl_links",
+           "type": "boolean",
+           "label": "Unfurl primarily text-based content"
+          },
+          {
+           "name": "unfurl_media",
+           "type": "boolean",
+           "label": "Unfurl media content"
+          },
+          {
+           "name": "icon_emoji",
+           "type": "text",
+           "label": "Icon emoji"
+          },
+          {
+           "name": "icon_url",
+           "type": "url",
+           "label": "Icon url"
+          },
+          {
+           "name": "username",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "channelType",
+           "type": "select",
+           "label": "Channel type",
+           "required": true,
+           "validate": {
+            "enum": [
+             "public",
+             "private",
+             "im",
+             "mpim"
+            ]
+           }
+          },
+          {
+           "name": "channel",
+           "type": "select",
+           "label": "Private channel",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "parse": {
+            "mode": "chose"
+           },
+           "mrkdwn": {
+            "mode": "chose"
+           },
+           "channel": {
+            "mode": "chose",
+            "label": "booked-call-history"
+           },
+           "link_names": {
+            "mode": "chose"
+           },
+           "channelType": {
+            "label": "Private channel"
+           },
+           "channelWType": {
+            "label": "Select from the list"
+           },
+           "unfurl_links": {
+            "mode": "chose"
+           },
+           "unfurl_media": {
+            "mode": "chose"
+           },
+           "reply_broadcast": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "slack3"
+            },
+            "label": "My Slack (bot) connectionfix (make)"
+           }
+          }
+         },
+         "designer": {
+          "x": 2100,
+          "y": 0
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:slack2,slack3",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3736690
+        }
+       }
+      ]
+     },
+     {
+      "flow": [
+       {
+        "id": 34,
+        "filter": {
+         "name": "Client channels",
+         "conditions": [
+          [
+           {
+            "a": "{{31.Name}}",
+            "b": "Dulcy",
+            "o": "text:notequal"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "text": "🟢🟢🟢New Meeting Booked🟢🟢🟢\n\nCampaign Name: {{8.`Campaign Name`}}\n\nName: {{8.`Leads Name`}}\n\nEmail: {{8.`Leads Email`}}\n\n<{{5.shareLink}}|CLICK TO SEE CONVO HISTORY> \n\n<!channel>\n🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢",
+         "parse": false,
+         "mrkdwn": true,
+         "channel": "{{31.`Slack Channel`}}",
+         "channelType": "private",
+         "channelWType": "list"
+        },
+        "module": "slack:CreateMessage",
+        "version": 4,
+        "metadata": {
+         "expect": [
+          {
+           "name": "channelWType",
+           "type": "select",
+           "label": "Enter a channel ID or name",
+           "required": true,
+           "validate": {
+            "enum": [
+             "manualy",
+             "list"
+            ]
+           }
+          },
+          {
+           "name": "text",
+           "type": "text",
+           "label": "Text"
+          },
+          {
+           "name": "blocks",
+           "type": "text",
+           "label": "Blocks"
+          },
+          {
+           "name": "thread_ts",
+           "type": "text",
+           "label": "Thread message ID (time stamp)"
+          },
+          {
+           "name": "reply_broadcast",
+           "type": "boolean",
+           "label": "Reply broadcast"
+          },
+          {
+           "name": "link_names",
+           "type": "boolean",
+           "label": "Link names"
+          },
+          {
+           "name": "parse",
+           "type": "boolean",
+           "label": "Parse message text"
+          },
+          {
+           "name": "mrkdwn",
+           "type": "boolean",
+           "label": "Use markdown"
+          },
+          {
+           "name": "unfurl_links",
+           "type": "boolean",
+           "label": "Unfurl primarily text-based content"
+          },
+          {
+           "name": "unfurl_media",
+           "type": "boolean",
+           "label": "Unfurl media content"
+          },
+          {
+           "name": "icon_emoji",
+           "type": "text",
+           "label": "Icon emoji"
+          },
+          {
+           "name": "icon_url",
+           "type": "url",
+           "label": "Icon url"
+          },
+          {
+           "name": "username",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "channelType",
+           "type": "select",
+           "label": "Channel type",
+           "required": true,
+           "validate": {
+            "enum": [
+             "public",
+             "private",
+             "im",
+             "mpim"
+            ]
+           }
+          },
+          {
+           "name": "channel",
+           "type": "select",
+           "label": "Private channel",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "parse": {
+            "mode": "chose"
+           },
+           "mrkdwn": {
+            "mode": "chose"
+           },
+           "channel": {
+            "mode": "edit"
+           },
+           "link_names": {
+            "mode": "chose"
+           },
+           "channelType": {
+            "label": "Private channel"
+           },
+           "channelWType": {
+            "label": "Select from the list"
+           },
+           "unfurl_links": {
+            "mode": "chose"
+           },
+           "unfurl_media": {
+            "mode": "chose"
+           },
+           "reply_broadcast": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "slack3"
+            },
+            "label": "My Slack (bot) connectionfix (make)"
+           }
+          }
+         },
+         "designer": {
+          "x": 2100,
+          "y": 300
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:slack2,slack3",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3736690
+        }
+       },
+       {
+        "id": 37,
+        "mapper": {
+         "base": "appxqINt5XKw7a76A",
+         "table": "tblwJK1VB7affamrz",
+         "record": {
+          "fld42VOgZrdKqcVM8": [
+           "{{31.id}}"
+          ],
+          "fldByGNugWy5XO0Br": "Booked Meeting",
+          "fldiwUMk8RoJFV4wJ": "Meeting Booked - {{8.`Leads Name`}} ({{8.`Campaign Name`}})",
+          "fldqpuxQEANRIdb4C": "A new meeting has been booked from your campaign. You can view the appointment details in your calendar. The conversation history is attached in slack and within your portal under the campaign."
+         },
+         "typecast": false,
+         "useColumnId": false
+        },
+        "module": "airtable:ActionCreateRecord",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "base",
+           "type": "select",
+           "label": "Base",
+           "required": true
+          },
+          {
+           "name": "typecast",
+           "type": "boolean",
+           "label": "Smart links",
+           "required": true
+          },
+          {
+           "name": "useColumnId",
+           "type": "boolean",
+           "label": "Use Column ID",
+           "required": true
+          },
+          {
+           "name": "table",
+           "type": "select",
+           "label": "Table",
+           "required": true
+          },
+          {
+           "name": "record",
+           "spec": [
+            {
+             "name": "fldiwUMk8RoJFV4wJ",
+             "type": "text",
+             "label": "Title"
+            },
+            {
+             "name": "fldqpuxQEANRIdb4C",
+             "type": "text",
+             "label": "Message"
+            },
+            {
+             "name": "fld42VOgZrdKqcVM8",
+             "spec": {
+              "name": "value",
+              "label": "Record ID"
+             },
+             "type": "array",
+             "label": "Client"
+            },
+            {
+             "mode": "edit",
+             "name": "fldByGNugWy5XO0Br",
+             "type": "select",
+             "label": "Type"
+            },
+            {
+             "name": "flduntfLy4DDoIlDL",
+             "type": "boolean",
+             "label": "Dismissed"
+            }
+           ],
+           "type": "collection",
+           "label": "Record"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "base": {
+            "label": "Alex"
+           },
+           "table": {
+            "label": "Client Notifcations",
+            "nested": [
+             {
+              "name": "record",
+              "spec": [
+               {
+                "name": "fldiwUMk8RoJFV4wJ",
+                "type": "text",
+                "label": "Title"
+               },
+               {
+                "name": "fldqpuxQEANRIdb4C",
+                "type": "text",
+                "label": "Message",
+                "multiline": true
+               },
+               {
+                "name": "fld42VOgZrdKqcVM8",
+                "spec": {
+                 "label": "Record ID"
+                },
+                "type": "array",
+                "label": "Client"
+               },
+               {
+                "mode": "edit",
+                "name": "fldByGNugWy5XO0Br",
+                "type": "select",
+                "label": "Type",
+                "dynamic": true,
+                "options": [
+                 {
+                  "label": "Task",
+                  "value": "Task"
+                 },
+                 {
+                  "label": "Lead",
+                  "value": "Lead"
+                 },
+                 {
+                  "label": "Campaign",
+                  "value": "Campaign"
+                 },
+                 {
+                  "label": "Booked Meeting",
+                  "value": "Booked Meeting"
+                 },
+                 {
+                  "label": "Document",
+                  "value": "Document"
+                 },
+                 {
+                  "label": "Call Feedback",
+                  "value": "Call Feedback"
+                 },
+                 {
+                  "label": "System",
+                  "value": "System"
+                 }
+                ],
+                "validate": false
+               },
+               {
+                "name": "flduntfLy4DDoIlDL",
+                "type": "boolean",
+                "label": "Dismissed"
+               }
+              ],
+              "type": "collection",
+              "label": "Record"
+             }
+            ]
+           },
+           "record": {
+            "nested": {
+             "fld42VOgZrdKqcVM8": {
+              "mode": "chose",
+              "items": [
+               null
+              ]
+             },
+             "fldByGNugWy5XO0Br": {
+              "mode": "chose",
+              "label": "Booked Meeting"
+             },
+             "flduntfLy4DDoIlDL": {
+              "mode": "chose"
+             }
+            }
+           },
+           "typecast": {
+            "mode": "chose"
+           },
+           "useColumnId": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "airtable3"
+            },
+            "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+           }
+          }
+         },
+         "designer": {
+          "x": 2400,
+          "y": 300
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:airtable3,airtable2",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3589602
+        }
+       },
+       {
+        "id": 35,
+        "filter": {
+         "name": "scroll stop",
+         "conditions": [
+          [
+           {
+            "a": "{{8.`Campaign Name`}}",
+            "b": "scroll stop",
+            "o": "text:contain:ci"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "ca": "",
+         "qs": [
+          {
+           "name": "Name",
+           "value": "{{8.`Leads Name`}}"
+          },
+          {
+           "name": "Email",
+           "value": "{{8.`Leads Email`}}"
+          }
+         ],
+         "url": "https://n8n.dulcy.io/webhook/REDACTED_PATH",
+         "data": "",
+         "gzip": true,
+         "method": "post",
+         "headers": [],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "raw",
+         "contentType": "",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": false,
+         "followRedirect": true,
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "contentType",
+           "type": "select",
+           "label": "Content type",
+           "validate": {
+            "enum": [
+             "text/plain",
+             "application/json",
+             "application/xml",
+             "text/xml",
+             "text/html",
+             "custom"
+            ]
+           }
+          },
+          {
+           "name": "data",
+           "type": "buffer",
+           "label": "Request content"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose",
+            "items": [
+             null,
+             null
+            ]
+           },
+           "method": {
+            "mode": "chose",
+            "label": "POST"
+           },
+           "headers": {
+            "mode": "chose"
+           },
+           "bodyType": {
+            "label": "Raw"
+           },
+           "contentType": {
+            "label": "Empty"
+           }
+          }
+         },
+         "designer": {
+          "x": 2700,
+          "y": 300,
+          "name": "scroll stop update"
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": true,
+         "useNewZLibDeCompress": true
+        }
+       }
+      ]
+     }
+    ],
+    "version": 1,
+    "metadata": {
+     "designer": {
+      "x": 1800,
+      "y": 150
+     }
+    }
+   }
+  ],
+  "name": "[9.0 CLIENT] Booked Meetings",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": [
+     [
+      {
+       "id": 6,
+       "mapper": null,
+       "module": "builtin:BasicRouter",
+       "routes": [
+        {
+         "flow": [
+          {
+           "id": 7,
+           "filter": {
+            "name": "Leadodo",
+            "conditions": [
+             [
+              {
+               "a": "{{8.`Campaign Name`}}",
+               "b": "Leadodo",
+               "o": "text:contain:ci"
+              }
+             ]
+            ]
+           },
+           "mapper": {
+            "text": "🟢🟢🟢New Meeting Booked🟢🟢🟢\n\nCampaign Name: {{8.`Campaign Name`}}\n\nName: {{8.`Leads Name`}}\n\nEmail: {{8.`Leads Email`}}\n\n<{{5.shareLink}}|CLICK TO SEE CONVO HISTORY> \n\n<!channel>\n🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢",
+            "parse": false,
+            "mrkdwn": true,
+            "channel": "C07MP6Q8ZLL",
+            "channelType": "private",
+            "channelWType": "list"
+           },
+           "module": "slack:CreateMessage",
+           "version": 4,
+           "metadata": {
+            "expect": [
+             {
+              "name": "channelWType",
+              "type": "select",
+              "label": "Enter a channel ID or name",
+              "required": true,
+              "validate": {
+               "enum": [
+                "manualy",
+                "list"
+               ]
+              }
+             },
+             {
+              "name": "text",
+              "type": "text",
+              "label": "Text"
+             },
+             {
+              "name": "blocks",
+              "type": "text",
+              "label": "Blocks"
+             },
+             {
+              "name": "thread_ts",
+              "type": "text",
+              "label": "Thread message ID (time stamp)"
+             },
+             {
+              "name": "reply_broadcast",
+              "type": "boolean",
+              "label": "Reply broadcast"
+             },
+             {
+              "name": "link_names",
+              "type": "boolean",
+              "label": "Link names"
+             },
+             {
+              "name": "parse",
+              "type": "boolean",
+              "label": "Parse message text"
+             },
+             {
+              "name": "mrkdwn",
+              "type": "boolean",
+              "label": "Use markdown"
+             },
+             {
+              "name": "unfurl_links",
+              "type": "boolean",
+              "label": "Unfurl primarily text-based content"
+             },
+             {
+              "name": "unfurl_media",
+              "type": "boolean",
+              "label": "Unfurl media content"
+             },
+             {
+              "name": "icon_emoji",
+              "type": "text",
+              "label": "Icon emoji"
+             },
+             {
+              "name": "icon_url",
+              "type": "url",
+              "label": "Icon url"
+             },
+             {
+              "name": "username",
+              "type": "text",
+              "label": "User name"
+             },
+             {
+              "name": "channelType",
+              "type": "select",
+              "label": "Channel type",
+              "required": true,
+              "validate": {
+               "enum": [
+                "public",
+                "private",
+                "im",
+                "mpim"
+               ]
+              }
+             },
+             {
+              "name": "channel",
+              "type": "select",
+              "label": "Private channel",
+              "required": true
+             },
+             {
+              "name": "channelWType",
+              "type": "select",
+              "label": "Enter a channel ID or name",
+              "required": true,
+              "validate": {
+               "enum": [
+                "manualy",
+                "list"
+               ]
+              }
+             },
+             {
+              "name": "text",
+              "type": "text",
+              "label": "Text"
+             },
+             {
+              "name": "blocks",
+              "type": "text",
+              "label": "Blocks"
+             },
+             {
+              "name": "thread_ts",
+              "type": "text",
+              "label": "Thread message ID (time stamp)"
+             },
+             {
+              "name": "reply_broadcast",
+              "type": "boolean",
+              "label": "Reply broadcast"
+             },
+             {
+              "name": "link_names",
+              "type": "boolean",
+              "label": "Link names"
+             },
+             {
+              "name": "parse",
+              "type": "boolean",
+              "label": "Parse message text"
+             },
+             {
+              "name": "mrkdwn",
+              "type": "boolean",
+              "label": "Use markdown"
+             },
+             {
+              "name": "unfurl_links",
+              "type": "boolean",
+              "label": "Unfurl primarily text-based content"
+             },
+             {
+              "name": "unfurl_media",
+              "type": "boolean",
+              "label": "Unfurl media content"
+             },
+             {
+              "name": "icon_emoji",
+              "type": "text",
+              "label": "Icon emoji"
+             },
+             {
+              "name": "icon_url",
+              "type": "url",
+              "label": "Icon url"
+             },
+             {
+              "name": "username",
+              "type": "text",
+              "label": "User name"
+             },
+             {
+              "name": "channelType",
+              "type": "select",
+              "label": "Channel type",
+              "required": true,
+              "validate": {
+               "enum": [
+                "public",
+                "private",
+                "im",
+                "mpim"
+               ]
+              }
+             },
+             {
+              "name": "channel",
+              "type": "select",
+              "label": "Private channel",
+              "required": true
+             }
+            ],
+            "restore": {
+             "expect": {
+              "parse": {
+               "mode": "chose"
+              },
+              "mrkdwn": {
+               "mode": "chose"
+              },
+              "channel": {
+               "mode": "chose",
+               "label": "thijs-dulcy"
+              },
+              "link_names": {
+               "mode": "chose"
+              },
+              "channelType": {
+               "label": "Private channel"
+              },
+              "channelWType": {
+               "label": "Select from the list"
+              },
+              "unfurl_links": {
+               "mode": "chose"
+              },
+              "unfurl_media": {
+               "mode": "chose"
+              },
+              "reply_broadcast": {
+               "mode": "chose"
+              }
+             },
+             "parameters": {
+              "__IMTCONN__": {
+               "data": {
+                "scoped": "true",
+                "connection": "slack3"
+               },
+               "label": "My Slack (bot) connectionfix (make)"
+              }
+             }
+            },
+            "designer": {
+             "x": 300,
+             "y": 600,
+             "messages": [
+              {
+               "message": "'Slack - Send a Message' [module ID 7] references inaccessible module 'Google Drive - Get a Share Link' [module ID 5].",
+               "category": "reference",
+               "severity": "error"
+              },
+              {
+               "message": "'Slack - Send a Message' [module ID 7] references inaccessible module 'Webhooks - Custom webhook' [module ID 8].",
+               "category": "reference",
+               "severity": "error"
+              }
+             ]
+            },
+            "parameters": [
+             {
+              "name": "__IMTCONN__",
+              "type": "account:slack2,slack3",
+              "label": "Connection",
+              "required": true
+             }
+            ]
+           },
+           "parameters": {
+            "__IMTCONN__": 3736690
+           }
+          }
+         ]
+        },
+        {
+         "flow": [
+          {
+           "id": 9,
+           "filter": {
+            "name": "TwoTreesPPC",
+            "conditions": [
+             [
+              {
+               "a": "{{8.`Campaign Name`}}",
+               "b": "TwoTreesPPC",
+               "o": "text:contain:ci"
+              }
+             ]
+            ]
+           },
+           "mapper": {
+            "text": "🟢🟢🟢New Meeting Booked🟢🟢🟢\n\nCampaign Name: {{8.`Campaign Name`}}\n\nName: {{8.`Leads Name`}}\n\nEmail: {{8.`Leads Email`}}\n\n<{{5.shareLink}}|CLICK TO SEE CONVO HISTORY> \n\n<!channel>\n🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢",
+            "parse": false,
+            "mrkdwn": true,
+            "channel": "C0801DAH0AC",
+            "channelType": "private",
+            "channelWType": "list"
+           },
+           "module": "slack:CreateMessage",
+           "version": 4,
+           "metadata": {
+            "expect": [
+             {
+              "name": "channelWType",
+              "type": "select",
+              "label": "Enter a channel ID or name",
+              "required": true,
+              "validate": {
+               "enum": [
+                "manualy",
+                "list"
+               ]
+              }
+             },
+             {
+              "name": "text",
+              "type": "text",
+              "label": "Text"
+             },
+             {
+              "name": "blocks",
+              "type": "text",
+              "label": "Blocks"
+             },
+             {
+              "name": "thread_ts",
+              "type": "text",
+              "label": "Thread message ID (time stamp)"
+             },
+             {
+              "name": "reply_broadcast",
+              "type": "boolean",
+              "label": "Reply broadcast"
+             },
+             {
+              "name": "link_names",
+              "type": "boolean",
+              "label": "Link names"
+             },
+             {
+              "name": "parse",
+              "type": "boolean",
+              "label": "Parse message text"
+             },
+             {
+              "name": "mrkdwn",
+              "type": "boolean",
+              "label": "Use markdown"
+             },
+             {
+              "name": "unfurl_links",
+              "type": "boolean",
+              "label": "Unfurl primarily text-based content"
+             },
+             {
+              "name": "unfurl_media",
+              "type": "boolean",
+              "label": "Unfurl media content"
+             },
+             {
+              "name": "icon_emoji",
+              "type": "text",
+              "label": "Icon emoji"
+             },
+             {
+              "name": "icon_url",
+              "type": "url",
+              "label": "Icon url"
+             },
+             {
+              "name": "username",
+              "type": "text",
+              "label": "User name"
+             },
+             {
+              "name": "channelType",
+              "type": "select",
+              "label": "Channel type",
+              "required": true,
+              "validate": {
+               "enum": [
+                "public",
+                "private",
+                "im",
+                "mpim"
+               ]
+              }
+             },
+             {
+              "name": "channel",
+              "type": "select",
+              "label": "Private channel",
+              "required": true
+             },
+             {
+              "name": "channelWType",
+              "type": "select",
+              "label": "Enter a channel ID or name",
+              "required": true,
+              "validate": {
+               "enum": [
+                "manualy",
+                "list"
+               ]
+              }
+             },
+             {
+              "name": "text",
+              "type": "text",
+              "label": "Text"
+             },
+             {
+              "name": "blocks",
+              "type": "text",
+              "label": "Blocks"
+             },
+             {
+              "name": "thread_ts",
+              "type": "text",
+              "label": "Thread message ID (time stamp)"
+             },
+             {
+              "name": "reply_broadcast",
+              "type": "boolean",
+              "label": "Reply broadcast"
+             },
+             {
+              "name": "link_names",
+              "type": "boolean",
+              "label": "Link names"
+             },
+             {
+              "name": "parse",
+              "type": "boolean",
+              "label": "Parse message text"
+             },
+             {
+              "name": "mrkdwn",
+              "type": "boolean",
+              "label": "Use markdown"
+             },
+             {
+              "name": "unfurl_links",
+              "type": "boolean",
+              "label": "Unfurl primarily text-based content"
+             },
+             {
+              "name": "unfurl_media",
+              "type": "boolean",
+              "label": "Unfurl media content"
+             },
+             {
+              "name": "icon_emoji",
+              "type": "text",
+              "label": "Icon emoji"
+             },
+             {
+              "name": "icon_url",
+              "type": "url",
+              "label": "Icon url"
+             },
+             {
+              "name": "username",
+              "type": "text",
+              "label": "User name"
+             },
+             {
+              "name": "channelType",
+              "type": "select",
+              "label": "Channel type",
+              "required": true,
+              "validate": {
+               "enum": [
+                "public",
+                "private",
+                "im",
+                "mpim"
+               ]
+              }
+             },
+             {
+              "name": "channel",
+              "type": "select",
+              "label": "Private channel",
+              "required": true
+             }
+            ],
+            "restore": {
+             "expect": {
+              "parse": {
+               "mode": "chose"
+              },
+              "mrkdwn": {
+               "mode": "chose"
+              },
+              "channel": {
+               "mode": "chose",
+               "label": "mike-dulcy"
+              },
+              "link_names": {
+               "mode": "chose"
+              },
+              "channelType": {
+               "label": "Private channel"
+              },
+              "channelWType": {
+               "label": "Select from the list"
+              },
+              "unfurl_links": {
+               "mode": "chose"
+              },
+              "unfurl_media": {
+               "mode": "chose"
+              },
+              "reply_broadcast": {
+               "mode": "chose"
+              }
+             },
+             "parameters": {
+              "__IMTCONN__": {
+               "data": {
+                "scoped": "true",
+                "connection": "slack3"
+               },
+               "label": "My Slack (bot) connectionfix (make)"
+              }
+             }
+            },
+            "designer": {
+             "x": 300,
+             "y": 900,
+             "messages": [
+              {
+               "message": "'Slack - Send a Message' [module ID 9] references inaccessible module 'Google Drive - Get a Share Link' [module ID 5].",
+               "category": "reference",
+               "severity": "error"
+              },
+              {
+               "message": "'Slack - Send a Message' [module ID 9] references inaccessible module 'Webhooks - Custom webhook' [module ID 8].",
+               "category": "reference",
+               "severity": "error"
+              }
+             ]
+            },
+            "parameters": [
+             {
+              "name": "__IMTCONN__",
+              "type": "account:slack2,slack3",
+              "label": "Connection",
+              "required": true
+             }
+            ]
+           },
+           "parameters": {
+            "__IMTCONN__": 3736690
+           }
+          }
+         ]
+        },
+        {
+         "flow": [
+          {
+           "id": 10,
+           "filter": {
+            "name": "VisionairAI",
+            "conditions": [
+             [
+              {
+               "a": "{{8.`Campaign Name`}}",
+               "b": "VisionairAI",
+               "o": "text:contain:ci"
+              }
+             ]
+            ]
+           },
+           "mapper": {
+            "text": "🟢🟢🟢New Meeting Booked🟢🟢🟢\n\nCampaign Name: {{8.`Campaign Name`}}\n\nName: {{8.`Leads Name`}}\n\nEmail: {{8.`Leads Email`}}\n\n<{{5.shareLink}}|CLICK TO SEE CONVO HISTORY> \n\n<!channel>\n🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢",
+            "parse": false,
+            "mrkdwn": true,
+            "channel": "C0805EQ32VC",
+            "channelType": "private",
+            "channelWType": "list"
+           },
+           "module": "slack:CreateMessage",
+           "version": 4,
+           "metadata": {
+            "expect": [
+             {
+              "name": "channelWType",
+              "type": "select",
+              "label": "Enter a channel ID or name",
+              "required": true,
+              "validate": {
+               "enum": [
+                "manualy",
+                "list"
+               ]
+              }
+             },
+             {
+              "name": "text",
+              "type": "text",
+              "label": "Text"
+             },
+             {
+              "name": "blocks",
+              "type": "text",
+              "label": "Blocks"
+             },
+             {
+              "name": "thread_ts",
+              "type": "text",
+              "label": "Thread message ID (time stamp)"
+             },
+             {
+              "name": "reply_broadcast",
+              "type": "boolean",
+              "label": "Reply broadcast"
+             },
+             {
+              "name": "link_names",
+              "type": "boolean",
+              "label": "Link names"
+             },
+             {
+              "name": "parse",
+              "type": "boolean",
+              "label": "Parse message text"
+             },
+             {
+              "name": "mrkdwn",
+              "type": "boolean",
+              "label": "Use markdown"
+             },
+             {
+              "name": "unfurl_links",
+              "type": "boolean",
+              "label": "Unfurl primarily text-based content"
+             },
+             {
+              "name": "unfurl_media",
+              "type": "boolean",
+              "label": "Unfurl media content"
+             },
+             {
+              "name": "icon_emoji",
+              "type": "text",
+              "label": "Icon emoji"
+             },
+             {
+              "name": "icon_url",
+              "type": "url",
+              "label": "Icon url"
+             },
+             {
+              "name": "username",
+              "type": "text",
+              "label": "User name"
+             },
+             {
+              "name": "channelType",
+              "type": "select",
+              "label": "Channel type",
+              "required": true,
+              "validate": {
+               "enum": [
+                "public",
+                "private",
+                "im",
+                "mpim"
+               ]
+              }
+             },
+             {
+              "name": "channel",
+              "type": "select",
+              "label": "Private channel",
+              "required": true
+             },
+             {
+              "name": "channelWType",
+              "type": "select",
+              "label": "Enter a channel ID or name",
+              "required": true,
+              "validate": {
+               "enum": [
+                "manualy",
+                "list"
+               ]
+              }
+             },
+             {
+              "name": "text",
+              "type": "text",
+              "label": "Text"
+             },
+             {
+              "name": "blocks",
+              "type": "text",
+              "label": "Blocks"
+             },
+             {
+              "name": "thread_ts",
+              "type": "text",
+              "label": "Thread message ID (time stamp)"
+             },
+             {
+              "name": "reply_broadcast",
+              "type": "boolean",
+              "label": "Reply broadcast"
+             },
+             {
+              "name": "link_names",
+              "type": "boolean",
+              "label": "Link names"
+             },
+             {
+              "name": "parse",
+              "type": "boolean",
+              "label": "Parse message text"
+             },
+             {
+              "name": "mrkdwn",
+              "type": "boolean",
+              "label": "Use markdown"
+             },
+             {
+              "name": "unfurl_links",
+              "type": "boolean",
+              "label": "Unfurl primarily text-based content"
+             },
+             {
+              "name": "unfurl_media",
+              "type": "boolean",
+              "label": "Unfurl media content"
+             },
+             {
+              "name": "icon_emoji",
+              "type": "text",
+              "label": "Icon emoji"
+             },
+             {
+              "name": "icon_url",
+              "type": "url",
+              "label": "Icon url"
+             },
+             {
+              "name": "username",
+              "type": "text",
+              "label": "User name"
+             },
+             {
+              "name": "channelType",
+              "type": "select",
+              "label": "Channel type",
+              "required": true,
+              "validate": {
+               "enum": [
+                "public",
+                "private",
+                "im",
+                "mpim"
+               ]
+              }
+             },
+             {
+              "name": "channel",
+              "type": "select",
+              "label": "Private channel",
+              "required": true
+             }
+            ],
+            "restore": {
+             "expect": {
+              "parse": {
+               "mode": "chose"
+              },
+              "mrkdwn": {
+               "mode": "chose"
+              },
+              "channel": {
+               "mode": "chose",
+               "label": "kevin-dulcy"
+              },
+              "link_names": {
+               "mode": "chose"
+              },
+              "channelType": {
+               "label": "Private channel"
+              },
+              "channelWType": {
+               "label": "Select from the list"
+              },
+              "unfurl_links": {
+               "mode": "chose"
+              },
+              "unfurl_media": {
+               "mode": "chose"
+              },
+              "reply_broadcast": {
+               "mode": "chose"
+              }
+             },
+             "parameters": {
+              "__IMTCONN__": {
+               "data": {
+                "scoped": "true",
+                "connection": "slack3"
+               },
+               "label": "My Slack (bot) connectionfix (make)"
+              }
+             }
+            },
+            "designer": {
+             "x": 300,
+             "y": 1200,
+             "messages": [
+              {
+               "message": "'Slack - Send a Message' [module ID 10] references inaccessible module 'Google Drive - Get a Share Link' [module ID 5].",
+               "category": "reference",
+               "severity": "error"
+              },
+              {
+               "message": "'Slack - Send a Message' [module ID 10] references inaccessible module 'Webhooks - Custom webhook' [module ID 8].",
+               "category": "reference",
+               "severity": "error"
+              }
+             ]
+            },
+            "parameters": [
+             {
+              "name": "__IMTCONN__",
+              "type": "account:slack2,slack3",
+              "label": "Connection",
+              "required": true
+             }
+            ]
+           },
+           "parameters": {
+            "__IMTCONN__": 3736690
+           }
+          }
+         ]
+        },
+        {
+         "flow": [
+          {
+           "id": 11,
+           "filter": {
+            "name": "Inlight Insight",
+            "conditions": [
+             [
+              {
+               "a": "{{8.`Campaign Name`}}",
+               "b": "Inlight Insight",
+               "o": "text:contain:ci"
+              }
+             ]
+            ]
+           },
+           "mapper": {
+            "text": "🟢🟢🟢New Meeting Booked🟢🟢🟢\n\nCampaign Name: {{8.`Campaign Name`}}\n\nName: {{8.`Leads Name`}}\n\nEmail: {{8.`Leads Email`}}\n\n<{{5.shareLink}}|CLICK TO SEE CONVO HISTORY> \n\n<!channel>\n🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢",
+            "parse": false,
+            "mrkdwn": true,
+            "channel": "C0802JGNCJ1",
+            "channelType": "private",
+            "channelWType": "list"
+           },
+           "module": "slack:CreateMessage",
+           "version": 4,
+           "metadata": {
+            "expect": [
+             {
+              "name": "channelWType",
+              "type": "select",
+              "label": "Enter a channel ID or name",
+              "required": true,
+              "validate": {
+               "enum": [
+                "manualy",
+                "list"
+               ]
+              }
+             },
+             {
+              "name": "text",
+              "type": "text",
+              "label": "Text"
+             },
+             {
+              "name": "blocks",
+              "type": "text",
+              "label": "Blocks"
+             },
+             {
+              "name": "thread_ts",
+              "type": "text",
+              "label": "Thread message ID (time stamp)"
+             },
+             {
+              "name": "reply_broadcast",
+              "type": "boolean",
+              "label": "Reply broadcast"
+             },
+             {
+              "name": "link_names",
+              "type": "boolean",
+              "label": "Link names"
+             },
+             {
+              "name": "parse",
+              "type": "boolean",
+              "label": "Parse message text"
+             },
+             {
+              "name": "mrkdwn",
+              "type": "boolean",
+              "label": "Use markdown"
+             },
+             {
+              "name": "unfurl_links",
+              "type": "boolean",
+              "label": "Unfurl primarily text-based content"
+             },
+             {
+              "name": "unfurl_media",
+              "type": "boolean",
+              "label": "Unfurl media content"
+             },
+             {
+              "name": "icon_emoji",
+              "type": "text",
+              "label": "Icon emoji"
+             },
+             {
+              "name": "icon_url",
+              "type": "url",
+              "label": "Icon url"
+             },
+             {
+              "name": "username",
+              "type": "text",
+              "label": "User name"
+             },
+             {
+              "name": "channelType",
+              "type": "select",
+              "label": "Channel type",
+              "required": true,
+              "validate": {
+               "enum": [
+                "public",
+                "private",
+                "im",
+                "mpim"
+               ]
+              }
+             },
+             {
+              "name": "channel",
+              "type": "select",
+              "label": "Private channel",
+              "required": true
+             },
+             {
+              "name": "channelWType",
+              "type": "select",
+              "label": "Enter a channel ID or name",
+              "required": true,
+              "validate": {
+               "enum": [
+                "manualy",
+                "list"
+               ]
+              }
+             },
+             {
+              "name": "text",
+              "type": "text",
+              "label": "Text"
+             },
+             {
+              "name": "blocks",
+              "type": "text",
+              "label": "Blocks"
+             },
+             {
+              "name": "thread_ts",
+              "type": "text",
+              "label": "Thread message ID (time stamp)"
+             },
+             {
+              "name": "reply_broadcast",
+              "type": "boolean",
+              "label": "Reply broadcast"
+             },
+             {
+              "name": "link_names",
+              "type": "boolean",
+              "label": "Link names"
+             },
+             {
+              "name": "parse",
+              "type": "boolean",
+              "label": "Parse message text"
+             },
+             {
+              "name": "mrkdwn",
+              "type": "boolean",
+              "label": "Use markdown"
+             },
+             {
+              "name": "unfurl_links",
+              "type": "boolean",
+              "label": "Unfurl primarily text-based content"
+             },
+             {
+              "name": "unfurl_media",
+              "type": "boolean",
+              "label": "Unfurl media content"
+             },
+             {
+              "name": "icon_emoji",
+              "type": "text",
+              "label": "Icon emoji"
+             },
+             {
+              "name": "icon_url",
+              "type": "url",
+              "label": "Icon url"
+             },
+             {
+              "name": "username",
+              "type": "text",
+              "label": "User name"
+             },
+             {
+              "name": "channelType",
+              "type": "select",
+              "label": "Channel type",
+              "required": true,
+              "validate": {
+               "enum": [
+                "public",
+                "private",
+                "im",
+                "mpim"
+               ]
+              }
+             },
+             {
+              "name": "channel",
+              "type": "select",
+              "label": "Private channel",
+              "required": true
+             }
+            ],
+            "restore": {
+             "expect": {
+              "parse": {
+               "mode": "chose"
+              },
+              "mrkdwn": {
+               "mode": "chose"
+              },
+              "channel": {
+               "mode": "chose",
+               "label": "jenna-dulcy"
+              },
+              "link_names": {
+               "mode": "chose"
+              },
+              "channelType": {
+               "label": "Private channel"
+              },
+              "channelWType": {
+               "label": "Select from the list"
+              },
+              "unfurl_links": {
+               "mode": "chose"
+              },
+              "unfurl_media": {
+               "mode": "chose"
+              },
+              "reply_broadcast": {
+               "mode": "chose"
+              }
+             },
+             "parameters": {
+              "__IMTCONN__": {
+               "data": {
+                "scoped": "true",
+                "connection": "slack3"
+               },
+               "label": "My Slack (bot) connectionfix (make)"
+              }
+             }
+            },
+            "designer": {
+             "x": 300,
+             "y": 1500,
+             "messages": [
+              {
+               "message": "'Slack - Send a Message' [module ID 11] references inaccessible module 'Google Drive - Get a Share Link' [module ID 5].",
+               "category": "reference",
+               "severity": "error"
+              },
+              {
+               "message": "'Slack - Send a Message' [module ID 11] references inaccessible module 'Webhooks - Custom webhook' [module ID 8].",
+               "category": "reference",
+               "severity": "error"
+              }
+             ]
+            },
+            "parameters": [
+             {
+              "name": "__IMTCONN__",
+              "type": "account:slack2,slack3",
+              "label": "Connection",
+              "required": true
+             }
+            ]
+           },
+           "parameters": {
+            "__IMTCONN__": 3736690
+           }
+          }
+         ]
+        },
+        {
+         "flow": [
+          {
+           "id": 12,
+           "filter": {
+            "name": "TargetonStar",
+            "conditions": [
+             [
+              {
+               "a": "{{8.`Campaign Name`}}",
+               "b": "TargetonStar",
+               "o": "text:contain:ci"
+              }
+             ]
+            ]
+           },
+           "mapper": {
+            "text": "🟢🟢🟢New Meeting Booked🟢🟢🟢\n\nCampaign Name: {{8.`Campaign Name`}}\n\nName: {{8.`Leads Name`}}\n\nEmail: {{8.`Leads Email`}}\n\n<{{5.shareLink}}|CLICK TO SEE CONVO HISTORY> \n\n<!channel>\n🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢",
+            "parse": false,
+            "mrkdwn": true,
+            "channel": "C07NM5SBCHZ",
+            "channelType": "private",
+            "channelWType": "list"
+           },
+           "module": "slack:CreateMessage",
+           "version": 4,
+           "metadata": {
+            "expect": [
+             {
+              "name": "channelWType",
+              "type": "select",
+              "label": "Enter a channel ID or name",
+              "required": true,
+              "validate": {
+               "enum": [
+                "manualy",
+                "list"
+               ]
+              }
+             },
+             {
+              "name": "text",
+              "type": "text",
+              "label": "Text"
+             },
+             {
+              "name": "blocks",
+              "type": "text",
+              "label": "Blocks"
+             },
+             {
+              "name": "thread_ts",
+              "type": "text",
+              "label": "Thread message ID (time stamp)"
+             },
+             {
+              "name": "reply_broadcast",
+              "type": "boolean",
+              "label": "Reply broadcast"
+             },
+             {
+              "name": "link_names",
+              "type": "boolean",
+              "label": "Link names"
+             },
+             {
+              "name": "parse",
+              "type": "boolean",
+              "label": "Parse message text"
+             },
+             {
+              "name": "mrkdwn",
+              "type": "boolean",
+              "label": "Use markdown"
+             },
+             {
+              "name": "unfurl_links",
+              "type": "boolean",
+              "label": "Unfurl primarily text-based content"
+             },
+             {
+              "name": "unfurl_media",
+              "type": "boolean",
+              "label": "Unfurl media content"
+             },
+             {
+              "name": "icon_emoji",
+              "type": "text",
+              "label": "Icon emoji"
+             },
+             {
+              "name": "icon_url",
+              "type": "url",
+              "label": "Icon url"
+             },
+             {
+              "name": "username",
+              "type": "text",
+              "label": "User name"
+             },
+             {
+              "name": "channelType",
+              "type": "select",
+              "label": "Channel type",
+              "required": true,
+              "validate": {
+               "enum": [
+                "public",
+                "private",
+                "im",
+                "mpim"
+               ]
+              }
+             },
+             {
+              "name": "channel",
+              "type": "select",
+              "label": "Private channel",
+              "required": true
+             },
+             {
+              "name": "channelWType",
+              "type": "select",
+              "label": "Enter a channel ID or name",
+              "required": true,
+              "validate": {
+               "enum": [
+                "manualy",
+                "list"
+               ]
+              }
+             },
+             {
+              "name": "text",
+              "type": "text",
+              "label": "Text"
+             },
+             {
+              "name": "blocks",
+              "type": "text",
+              "label": "Blocks"
+             },
+             {
+              "name": "thread_ts",
+              "type": "text",
+              "label": "Thread message ID (time stamp)"
+             },
+             {
+              "name": "reply_broadcast",
+              "type": "boolean",
+              "label": "Reply broadcast"
+             },
+             {
+              "name": "link_names",
+              "type": "boolean",
+              "label": "Link names"
+             },
+             {
+              "name": "parse",
+              "type": "boolean",
+              "label": "Parse message text"
+             },
+             {
+              "name": "mrkdwn",
+              "type": "boolean",
+              "label": "Use markdown"
+             },
+             {
+              "name": "unfurl_links",
+              "type": "boolean",
+              "label": "Unfurl primarily text-based content"
+             },
+             {
+              "name": "unfurl_media",
+              "type": "boolean",
+              "label": "Unfurl media content"
+             },
+             {
+              "name": "icon_emoji",
+              "type": "text",
+              "label": "Icon emoji"
+             },
+             {
+              "name": "icon_url",
+              "type": "url",
+              "label": "Icon url"
+             },
+             {
+              "name": "username",
+              "type": "text",
+              "label": "User name"
+             },
+             {
+              "name": "channelType",
+              "type": "select",
+              "label": "Channel type",
+              "required": true,
+              "validate": {
+               "enum": [
+                "public",
+                "private",
+                "im",
+                "mpim"
+               ]
+              }
+             },
+             {
+              "name": "channel",
+              "type": "select",
+              "label": "Private channel",
+              "required": true
+             }
+            ],
+            "restore": {
+             "expect": {
+              "parse": {
+               "mode": "chose"
+              },
+              "mrkdwn": {
+               "mode": "chose"
+              },
+              "channel": {
+               "mode": "chose",
+               "label": "greg-dulcy"
+              },
+              "link_names": {
+               "mode": "chose"
+              },
+              "channelType": {
+               "label": "Private channel"
+              },
+              "channelWType": {
+               "label": "Select from the list"
+              },
+              "unfurl_links": {
+               "mode": "chose"
+              },
+              "unfurl_media": {
+               "mode": "chose"
+              },
+              "reply_broadcast": {
+               "mode": "chose"
+              }
+             },
+             "parameters": {
+              "__IMTCONN__": {
+               "data": {
+                "scoped": "true",
+                "connection": "slack3"
+               },
+               "label": "My Slack (bot) connectionfix (make)"
+              }
+             }
+            },
+            "designer": {
+             "x": 300,
+             "y": 1800,
+             "messages": [
+              {
+               "message": "'Slack - Send a Message' [module ID 12] references inaccessible module 'Google Drive - Get a Share Link' [module ID 5].",
+               "category": "reference",
+               "severity": "error"
+              },
+              {
+               "message": "'Slack - Send a Message' [module ID 12] references inaccessible module 'Webhooks - Custom webhook' [module ID 8].",
+               "category": "reference",
+               "severity": "error"
+              }
+             ]
+            },
+            "parameters": [
+             {
+              "name": "__IMTCONN__",
+              "type": "account:slack2,slack3",
+              "label": "Connection",
+              "required": true
+             }
+            ]
+           },
+           "parameters": {
+            "__IMTCONN__": 3736690
+           }
+          }
+         ]
+        },
+        {
+         "flow": [
+          {
+           "id": 13,
+           "filter": {
+            "name": "Amazon Consultancy ",
+            "conditions": [
+             [
+              {
+               "a": "{{8.`Campaign Name`}}",
+               "b": "Amazon Consultancy",
+               "o": "text:contain:ci"
+              }
+             ]
+            ]
+           },
+           "mapper": {
+            "text": "🟢🟢🟢New Meeting Booked🟢🟢🟢\n\nCampaign Name: {{8.`Campaign Name`}}\n\nName: {{8.`Leads Name`}}\n\nEmail: {{8.`Leads Email`}}\n\n<{{5.shareLink}}|CLICK TO SEE CONVO HISTORY> \n\n<!channel>\n🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢",
+            "parse": false,
+            "mrkdwn": true,
+            "channel": "C08325D7Q22",
+            "channelType": "private",
+            "channelWType": "list"
+           },
+           "module": "slack:CreateMessage",
+           "version": 4,
+           "metadata": {
+            "expect": [
+             {
+              "name": "channelWType",
+              "type": "select",
+              "label": "Enter a channel ID or name",
+              "required": true,
+              "validate": {
+               "enum": [
+                "manualy",
+                "list"
+               ]
+              }
+             },
+             {
+              "name": "text",
+              "type": "text",
+              "label": "Text"
+             },
+             {
+              "name": "blocks",
+              "type": "text",
+              "label": "Blocks"
+             },
+             {
+              "name": "thread_ts",
+              "type": "text",
+              "label": "Thread message ID (time stamp)"
+             },
+             {
+              "name": "reply_broadcast",
+              "type": "boolean",
+              "label": "Reply broadcast"
+             },
+             {
+              "name": "link_names",
+              "type": "boolean",
+              "label": "Link names"
+             },
+             {
+              "name": "parse",
+              "type": "boolean",
+              "label": "Parse message text"
+             },
+             {
+              "name": "mrkdwn",
+              "type": "boolean",
+              "label": "Use markdown"
+             },
+             {
+              "name": "unfurl_links",
+              "type": "boolean",
+              "label": "Unfurl primarily text-based content"
+             },
+             {
+              "name": "unfurl_media",
+              "type": "boolean",
+              "label": "Unfurl media content"
+             },
+             {
+              "name": "icon_emoji",
+              "type": "text",
+              "label": "Icon emoji"
+             },
+             {
+              "name": "icon_url",
+              "type": "url",
+              "label": "Icon url"
+             },
+             {
+              "name": "username",
+              "type": "text",
+              "label": "User name"
+             },
+             {
+              "name": "channelType",
+              "type": "select",
+              "label": "Channel type",
+              "required": true,
+              "validate": {
+               "enum": [
+                "public",
+                "private",
+                "im",
+                "mpim"
+               ]
+              }
+             },
+             {
+              "name": "channel",
+              "type": "select",
+              "label": "Private channel",
+              "required": true
+             },
+             {
+              "name": "channelWType",
+              "type": "select",
+              "label": "Enter a channel ID or name",
+              "required": true,
+              "validate": {
+               "enum": [
+                "manualy",
+                "list"
+               ]
+              }
+             },
+             {
+              "name": "text",
+              "type": "text",
+              "label": "Text"
+             },
+             {
+              "name": "blocks",
+              "type": "text",
+              "label": "Blocks"
+             },
+             {
+              "name": "thread_ts",
+              "type": "text",
+              "label": "Thread message ID (time stamp)"
+             },
+             {
+              "name": "reply_broadcast",
+              "type": "boolean",
+              "label": "Reply broadcast"
+             },
+             {
+              "name": "link_names",
+              "type": "boolean",
+              "label": "Link names"
+             },
+             {
+              "name": "parse",
+              "type": "boolean",
+              "label": "Parse message text"
+             },
+             {
+              "name": "mrkdwn",
+              "type": "boolean",
+              "label": "Use markdown"
+             },
+             {
+              "name": "unfurl_links",
+              "type": "boolean",
+              "label": "Unfurl primarily text-based content"
+             },
+             {
+              "name": "unfurl_media",
+              "type": "boolean",
+              "label": "Unfurl media content"
+             },
+             {
+              "name": "icon_emoji",
+              "type": "text",
+              "label": "Icon emoji"
+             },
+             {
+              "name": "icon_url",
+              "type": "url",
+              "label": "Icon url"
+             },
+             {
+              "name": "username",
+              "type": "text",
+              "label": "User name"
+             },
+             {
+              "name": "channelType",
+              "type": "select",
+              "label": "Channel type",
+              "required": true,
+              "validate": {
+               "enum": [
+                "public",
+                "private",
+                "im",
+                "mpim"
+               ]
+              }
+             },
+             {
+              "name": "channel",
+              "type": "select",
+              "label": "Private channel",
+              "required": true
+             }
+            ],
+            "restore": {
+             "expect": {
+              "parse": {
+               "mode": "chose"
+              },
+              "mrkdwn": {
+               "mode": "chose"
+              },
+              "channel": {
+               "mode": "chose",
+               "label": "ian-dulcy"
+              },
+              "link_names": {
+               "mode": "chose"
+              },
+              "channelType": {
+               "label": "Private channel"
+              },
+              "channelWType": {
+               "label": "Select from the list"
+              },
+              "unfurl_links": {
+               "mode": "chose"
+              },
+              "unfurl_media": {
+               "mode": "chose"
+              },
+              "reply_broadcast": {
+               "mode": "chose"
+              }
+             },
+             "parameters": {
+              "__IMTCONN__": {
+               "data": {
+                "scoped": "true",
+                "connection": "slack3"
+               },
+               "label": "My Slack (bot) connectionfix (make)"
+              }
+             }
+            },
+            "designer": {
+             "x": 300,
+             "y": 2100,
+             "messages": [
+              {
+               "message": "'Slack - Send a Message' [module ID 13] references inaccessible module 'Google Drive - Get a Share Link' [module ID 5].",
+               "category": "reference",
+               "severity": "error"
+              },
+              {
+               "message": "'Slack - Send a Message' [module ID 13] references inaccessible module 'Webhooks - Custom webhook' [module ID 8].",
+               "category": "reference",
+               "severity": "error"
+              }
+             ]
+            },
+            "parameters": [
+             {
+              "name": "__IMTCONN__",
+              "type": "account:slack2,slack3",
+              "label": "Connection",
+              "required": true
+             }
+            ]
+           },
+           "parameters": {
+            "__IMTCONN__": 3736690
+           }
+          }
+         ]
+        },
+        {
+         "flow": [
+          {
+           "id": 15,
+           "filter": {
+            "name": "Sharp Archive",
+            "conditions": [
+             [
+              {
+               "a": "{{8.`Campaign Name`}}",
+               "b": "Sharp Archive",
+               "o": "text:contain:ci"
+              }
+             ]
+            ]
+           },
+           "mapper": {
+            "text": "🟢🟢🟢New Meeting Booked🟢🟢🟢\n\nCampaign Name: {{8.`Campaign Name`}}\n\nName: {{8.`Leads Name`}}\n\nEmail: {{8.`Leads Email`}}\n\n<{{5.shareLink}}|CLICK TO SEE CONVO HISTORY> \n\n<!channel>\n🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢",
+            "parse": false,
+            "mrkdwn": true,
+            "channel": "C088JAWPXRD",
+            "channelType": "private",
+            "channelWType": "list"
+           },
+           "module": "slack:CreateMessage",
+           "version": 4,
+           "metadata": {
+            "expect": [
+             {
+              "name": "channelWType",
+              "type": "select",
+              "label": "Enter a channel ID or name",
+              "required": true,
+              "validate": {
+               "enum": [
+                "manualy",
+                "list"
+               ]
+              }
+             },
+             {
+              "name": "text",
+              "type": "text",
+              "label": "Text"
+             },
+             {
+              "name": "blocks",
+              "type": "text",
+              "label": "Blocks"
+             },
+             {
+              "name": "thread_ts",
+              "type": "text",
+              "label": "Thread message ID (time stamp)"
+             },
+             {
+              "name": "reply_broadcast",
+              "type": "boolean",
+              "label": "Reply broadcast"
+             },
+             {
+              "name": "link_names",
+              "type": "boolean",
+              "label": "Link names"
+             },
+             {
+              "name": "parse",
+              "type": "boolean",
+              "label": "Parse message text"
+             },
+             {
+              "name": "mrkdwn",
+              "type": "boolean",
+              "label": "Use markdown"
+             },
+             {
+              "name": "unfurl_links",
+              "type": "boolean",
+              "label": "Unfurl primarily text-based content"
+             },
+             {
+              "name": "unfurl_media",
+              "type": "boolean",
+              "label": "Unfurl media content"
+             },
+             {
+              "name": "icon_emoji",
+              "type": "text",
+              "label": "Icon emoji"
+             },
+             {
+              "name": "icon_url",
+              "type": "url",
+              "label": "Icon url"
+             },
+             {
+              "name": "username",
+              "type": "text",
+              "label": "User name"
+             },
+             {
+              "name": "channelType",
+              "type": "select",
+              "label": "Channel type",
+              "required": true,
+              "validate": {
+               "enum": [
+                "public",
+                "private",
+                "im",
+                "mpim"
+               ]
+              }
+             },
+             {
+              "name": "channel",
+              "type": "select",
+              "label": "Private channel",
+              "required": true
+             }
+            ],
+            "restore": {
+             "expect": {
+              "parse": {
+               "mode": "chose"
+              },
+              "mrkdwn": {
+               "mode": "chose"
+              },
+              "channel": {
+               "mode": "chose",
+               "label": "chad-dulcy"
+              },
+              "link_names": {
+               "mode": "chose"
+              },
+              "channelType": {
+               "label": "Private channel"
+              },
+              "channelWType": {
+               "label": "Select from the list"
+              },
+              "unfurl_links": {
+               "mode": "chose"
+              },
+              "unfurl_media": {
+               "mode": "chose"
+              },
+              "reply_broadcast": {
+               "mode": "chose"
+              }
+             },
+             "parameters": {
+              "__IMTCONN__": {
+               "data": {
+                "scoped": "true",
+                "connection": "slack3"
+               },
+               "label": "My Slack (bot) connectionfix (make)"
+              }
+             }
+            },
+            "designer": {
+             "x": 300,
+             "y": 2400,
+             "messages": [
+              {
+               "message": "'Slack - Send a Message' [module ID 15] references inaccessible module 'Google Drive - Get a Share Link' [module ID 5].",
+               "category": "reference",
+               "severity": "error"
+              },
+              {
+               "message": "'Slack - Send a Message' [module ID 15] references inaccessible module 'Webhooks - Custom webhook' [module ID 8].",
+               "category": "reference",
+               "severity": "error"
+              }
+             ]
+            },
+            "parameters": [
+             {
+              "name": "__IMTCONN__",
+              "type": "account:slack2,slack3",
+              "label": "Connection",
+              "required": true
+             }
+            ]
+           },
+           "parameters": {
+            "__IMTCONN__": 3736690
+           }
+          }
+         ]
+        },
+        {
+         "flow": [
+          {
+           "id": 16,
+           "filter": {
+            "name": "Dulcy",
+            "conditions": [
+             [
+              {
+               "a": "{{8.`Campaign Name`}}",
+               "b": "Dulcy",
+               "o": "text:contain:ci"
+              }
+             ]
+            ]
+           },
+           "mapper": {
+            "text": "🟢🟢🟢New Meeting Booked🟢🟢🟢\n\nCampaign Name: {{8.`Campaign Name`}}\n\nName: {{8.`Leads Name`}}\n\nEmail: {{8.`Leads Email`}}\n\n<{{5.shareLink}}|CLICK TO SEE CONVO HISTORY> \n\n<!channel>\n🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢",
+            "parse": false,
+            "mrkdwn": true,
+            "channel": "C08DMJWM413",
+            "channelType": "private",
+            "channelWType": "list"
+           },
+           "module": "slack:CreateMessage",
+           "version": 4,
+           "metadata": {
+            "expect": [
+             {
+              "name": "channelWType",
+              "type": "select",
+              "label": "Enter a channel ID or name",
+              "required": true,
+              "validate": {
+               "enum": [
+                "manualy",
+                "list"
+               ]
+              }
+             },
+             {
+              "name": "text",
+              "type": "text",
+              "label": "Text"
+             },
+             {
+              "name": "blocks",
+              "type": "text",
+              "label": "Blocks"
+             },
+             {
+              "name": "thread_ts",
+              "type": "text",
+              "label": "Thread message ID (time stamp)"
+             },
+             {
+              "name": "reply_broadcast",
+              "type": "boolean",
+              "label": "Reply broadcast"
+             },
+             {
+              "name": "link_names",
+              "type": "boolean",
+              "label": "Link names"
+             },
+             {
+              "name": "parse",
+              "type": "boolean",
+              "label": "Parse message text"
+             },
+             {
+              "name": "mrkdwn",
+              "type": "boolean",
+              "label": "Use markdown"
+             },
+             {
+              "name": "unfurl_links",
+              "type": "boolean",
+              "label": "Unfurl primarily text-based content"
+             },
+             {
+              "name": "unfurl_media",
+              "type": "boolean",
+              "label": "Unfurl media content"
+             },
+             {
+              "name": "icon_emoji",
+              "type": "text",
+              "label": "Icon emoji"
+             },
+             {
+              "name": "icon_url",
+              "type": "url",
+              "label": "Icon url"
+             },
+             {
+              "name": "username",
+              "type": "text",
+              "label": "User name"
+             },
+             {
+              "name": "channelType",
+              "type": "select",
+              "label": "Channel type",
+              "required": true,
+              "validate": {
+               "enum": [
+                "public",
+                "private",
+                "im",
+                "mpim"
+               ]
+              }
+             },
+             {
+              "name": "channel",
+              "type": "select",
+              "label": "Private channel",
+              "required": true
+             }
+            ],
+            "restore": {
+             "expect": {
+              "parse": {
+               "mode": "chose"
+              },
+              "mrkdwn": {
+               "mode": "chose"
+              },
+              "channel": {
+               "mode": "chose",
+               "label": "booked-call-history"
+              },
+              "link_names": {
+               "mode": "chose"
+              },
+              "channelType": {
+               "label": "Private channel"
+              },
+              "channelWType": {
+               "label": "Select from the list"
+              },
+              "unfurl_links": {
+               "mode": "chose"
+              },
+              "unfurl_media": {
+               "mode": "chose"
+              },
+              "reply_broadcast": {
+               "mode": "chose"
+              }
+             },
+             "parameters": {
+              "__IMTCONN__": {
+               "data": {
+                "scoped": "true",
+                "connection": "slack3"
+               },
+               "label": "My Slack (bot) connectionfix (make)"
+              }
+             }
+            },
+            "designer": {
+             "x": 300,
+             "y": 2700,
+             "messages": [
+              {
+               "message": "'Slack - Send a Message' [module ID 16] references inaccessible module 'Google Drive - Get a Share Link' [module ID 5].",
+               "category": "reference",
+               "severity": "error"
+              },
+              {
+               "message": "'Slack - Send a Message' [module ID 16] references inaccessible module 'Webhooks - Custom webhook' [module ID 8].",
+               "category": "reference",
+               "severity": "error"
+              }
+             ]
+            },
+            "parameters": [
+             {
+              "name": "__IMTCONN__",
+              "type": "account:slack2,slack3",
+              "label": "Connection",
+              "required": true
+             }
+            ]
+           },
+           "parameters": {
+            "__IMTCONN__": 3736690
+           }
+          }
+         ]
+        },
+        {
+         "flow": [
+          {
+           "id": 17,
+           "filter": {
+            "name": "KNR Paris",
+            "conditions": [
+             [
+              {
+               "a": "{{8.`Campaign Name`}}",
+               "b": "KNR Paris",
+               "o": "text:contain:ci"
+              }
+             ]
+            ]
+           },
+           "mapper": {
+            "text": "🟢🟢🟢New Meeting Booked🟢🟢🟢\n\nCampaign Name: {{8.`Campaign Name`}}\n\nName: {{8.`Leads Name`}}\n\nEmail: {{8.`Leads Email`}}\n\n<{{5.shareLink}}|CLICK TO SEE CONVO HISTORY> \n\n<!channel>\n🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢",
+            "parse": false,
+            "mrkdwn": true,
+            "channel": "C08CMRY2WR3",
+            "channelType": "private",
+            "channelWType": "list"
+           },
+           "module": "slack:CreateMessage",
+           "version": 4,
+           "metadata": {
+            "expect": [
+             {
+              "name": "channelWType",
+              "type": "select",
+              "label": "Enter a channel ID or name",
+              "required": true,
+              "validate": {
+               "enum": [
+                "manualy",
+                "list"
+               ]
+              }
+             },
+             {
+              "name": "text",
+              "type": "text",
+              "label": "Text"
+             },
+             {
+              "name": "blocks",
+              "type": "text",
+              "label": "Blocks"
+             },
+             {
+              "name": "thread_ts",
+              "type": "text",
+              "label": "Thread message ID (time stamp)"
+             },
+             {
+              "name": "reply_broadcast",
+              "type": "boolean",
+              "label": "Reply broadcast"
+             },
+             {
+              "name": "link_names",
+              "type": "boolean",
+              "label": "Link names"
+             },
+             {
+              "name": "parse",
+              "type": "boolean",
+              "label": "Parse message text"
+             },
+             {
+              "name": "mrkdwn",
+              "type": "boolean",
+              "label": "Use markdown"
+             },
+             {
+              "name": "unfurl_links",
+              "type": "boolean",
+              "label": "Unfurl primarily text-based content"
+             },
+             {
+              "name": "unfurl_media",
+              "type": "boolean",
+              "label": "Unfurl media content"
+             },
+             {
+              "name": "icon_emoji",
+              "type": "text",
+              "label": "Icon emoji"
+             },
+             {
+              "name": "icon_url",
+              "type": "url",
+              "label": "Icon url"
+             },
+             {
+              "name": "username",
+              "type": "text",
+              "label": "User name"
+             },
+             {
+              "name": "channelType",
+              "type": "select",
+              "label": "Channel type",
+              "required": true,
+              "validate": {
+               "enum": [
+                "public",
+                "private",
+                "im",
+                "mpim"
+               ]
+              }
+             },
+             {
+              "name": "channel",
+              "type": "select",
+              "label": "Private channel",
+              "required": true
+             }
+            ],
+            "restore": {
+             "expect": {
+              "parse": {
+               "mode": "chose"
+              },
+              "mrkdwn": {
+               "mode": "chose"
+              },
+              "channel": {
+               "mode": "chose",
+               "label": "gabriel-dulcy"
+              },
+              "link_names": {
+               "mode": "chose"
+              },
+              "channelType": {
+               "label": "Private channel"
+              },
+              "channelWType": {
+               "label": "Select from the list"
+              },
+              "unfurl_links": {
+               "mode": "chose"
+              },
+              "unfurl_media": {
+               "mode": "chose"
+              },
+              "reply_broadcast": {
+               "mode": "chose"
+              }
+             },
+             "parameters": {
+              "__IMTCONN__": {
+               "data": {
+                "scoped": "true",
+                "connection": "slack3"
+               },
+               "label": "My Slack (bot) connectionfix (make)"
+              }
+             }
+            },
+            "designer": {
+             "x": 300,
+             "y": 3000,
+             "messages": [
+              {
+               "message": "'Slack - Send a Message' [module ID 17] references inaccessible module 'Google Drive - Get a Share Link' [module ID 5].",
+               "category": "reference",
+               "severity": "error"
+              },
+              {
+               "message": "'Slack - Send a Message' [module ID 17] references inaccessible module 'Webhooks - Custom webhook' [module ID 8].",
+               "category": "reference",
+               "severity": "error"
+              }
+             ]
+            },
+            "parameters": [
+             {
+              "name": "__IMTCONN__",
+              "type": "account:slack2,slack3",
+              "label": "Connection",
+              "required": true
+             }
+            ]
+           },
+           "parameters": {
+            "__IMTCONN__": 3736690
+           }
+          }
+         ]
+        },
+        {
+         "flow": [
+          {
+           "id": 18,
+           "filter": {
+            "name": "Fivenson Studios",
+            "conditions": [
+             [
+              {
+               "a": "{{8.`Campaign Name`}}",
+               "b": "Fivenson Studios",
+               "o": "text:contain:ci"
+              }
+             ]
+            ]
+           },
+           "mapper": {
+            "text": "🟢🟢🟢New Meeting Booked🟢🟢🟢\n\nCampaign Name: {{8.`Campaign Name`}}\n\nName: {{8.`Leads Name`}}\n\nEmail: {{8.`Leads Email`}}\n\n<{{5.shareLink}}|CLICK TO SEE CONVO HISTORY> \n\n<!channel>\n🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢",
+            "parse": false,
+            "mrkdwn": true,
+            "channel": "C08C5QLBJBU",
+            "channelType": "private",
+            "channelWType": "list"
+           },
+           "module": "slack:CreateMessage",
+           "version": 4,
+           "metadata": {
+            "expect": [
+             {
+              "name": "channelWType",
+              "type": "select",
+              "label": "Enter a channel ID or name",
+              "required": true,
+              "validate": {
+               "enum": [
+                "manualy",
+                "list"
+               ]
+              }
+             },
+             {
+              "name": "text",
+              "type": "text",
+              "label": "Text"
+             },
+             {
+              "name": "blocks",
+              "type": "text",
+              "label": "Blocks"
+             },
+             {
+              "name": "thread_ts",
+              "type": "text",
+              "label": "Thread message ID (time stamp)"
+             },
+             {
+              "name": "reply_broadcast",
+              "type": "boolean",
+              "label": "Reply broadcast"
+             },
+             {
+              "name": "link_names",
+              "type": "boolean",
+              "label": "Link names"
+             },
+             {
+              "name": "parse",
+              "type": "boolean",
+              "label": "Parse message text"
+             },
+             {
+              "name": "mrkdwn",
+              "type": "boolean",
+              "label": "Use markdown"
+             },
+             {
+              "name": "unfurl_links",
+              "type": "boolean",
+              "label": "Unfurl primarily text-based content"
+             },
+             {
+              "name": "unfurl_media",
+              "type": "boolean",
+              "label": "Unfurl media content"
+             },
+             {
+              "name": "icon_emoji",
+              "type": "text",
+              "label": "Icon emoji"
+             },
+             {
+              "name": "icon_url",
+              "type": "url",
+              "label": "Icon url"
+             },
+             {
+              "name": "username",
+              "type": "text",
+              "label": "User name"
+             },
+             {
+              "name": "channelType",
+              "type": "select",
+              "label": "Channel type",
+              "required": true,
+              "validate": {
+               "enum": [
+                "public",
+                "private",
+                "im",
+                "mpim"
+               ]
+              }
+             },
+             {
+              "name": "channel",
+              "type": "select",
+              "label": "Private channel",
+              "required": true
+             }
+            ],
+            "restore": {
+             "expect": {
+              "parse": {
+               "mode": "chose"
+              },
+              "mrkdwn": {
+               "mode": "chose"
+              },
+              "channel": {
+               "mode": "chose",
+               "label": "christopher-dulcy"
+              },
+              "link_names": {
+               "mode": "chose"
+              },
+              "channelType": {
+               "label": "Private channel"
+              },
+              "channelWType": {
+               "label": "Select from the list"
+              },
+              "unfurl_links": {
+               "mode": "chose"
+              },
+              "unfurl_media": {
+               "mode": "chose"
+              },
+              "reply_broadcast": {
+               "mode": "chose"
+              }
+             },
+             "parameters": {
+              "__IMTCONN__": {
+               "data": {
+                "scoped": "true",
+                "connection": "slack3"
+               },
+               "label": "My Slack (bot) connectionfix (make)"
+              }
+             }
+            },
+            "designer": {
+             "x": 300,
+             "y": 3300,
+             "messages": [
+              {
+               "message": "'Slack - Send a Message' [module ID 18] references inaccessible module 'Google Drive - Get a Share Link' [module ID 5].",
+               "category": "reference",
+               "severity": "error"
+              },
+              {
+               "message": "'Slack - Send a Message' [module ID 18] references inaccessible module 'Webhooks - Custom webhook' [module ID 8].",
+               "category": "reference",
+               "severity": "error"
+              }
+             ]
+            },
+            "parameters": [
+             {
+              "name": "__IMTCONN__",
+              "type": "account:slack2,slack3",
+              "label": "Connection",
+              "required": true
+             }
+            ]
+           },
+           "parameters": {
+            "__IMTCONN__": 3736690
+           }
+          }
+         ]
+        },
+        {
+         "flow": [
+          {
+           "id": 19,
+           "filter": {
+            "name": "Digital Neighbor",
+            "conditions": [
+             [
+              {
+               "a": "{{8.`Campaign Name`}}",
+               "b": "Digital Neighbor",
+               "o": "text:contain:ci"
+              }
+             ]
+            ]
+           },
+           "mapper": {
+            "text": "🟢🟢🟢New Meeting Booked🟢🟢🟢\n\nCampaign Name: {{8.`Campaign Name`}}\n\nName: {{8.`Leads Name`}}\n\nEmail: {{8.`Leads Email`}}\n\n<{{5.shareLink}}|CLICK TO SEE CONVO HISTORY> \n\n<!channel>\n🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢",
+            "parse": false,
+            "mrkdwn": true,
+            "channel": "C08FA2JSFCL",
+            "channelType": "private",
+            "channelWType": "list"
+           },
+           "module": "slack:CreateMessage",
+           "version": 4,
+           "metadata": {
+            "expect": [
+             {
+              "name": "channelWType",
+              "type": "select",
+              "label": "Enter a channel ID or name",
+              "required": true,
+              "validate": {
+               "enum": [
+                "manualy",
+                "list"
+               ]
+              }
+             },
+             {
+              "name": "text",
+              "type": "text",
+              "label": "Text"
+             },
+             {
+              "name": "blocks",
+              "type": "text",
+              "label": "Blocks"
+             },
+             {
+              "name": "thread_ts",
+              "type": "text",
+              "label": "Thread message ID (time stamp)"
+             },
+             {
+              "name": "reply_broadcast",
+              "type": "boolean",
+              "label": "Reply broadcast"
+             },
+             {
+              "name": "link_names",
+              "type": "boolean",
+              "label": "Link names"
+             },
+             {
+              "name": "parse",
+              "type": "boolean",
+              "label": "Parse message text"
+             },
+             {
+              "name": "mrkdwn",
+              "type": "boolean",
+              "label": "Use markdown"
+             },
+             {
+              "name": "unfurl_links",
+              "type": "boolean",
+              "label": "Unfurl primarily text-based content"
+             },
+             {
+              "name": "unfurl_media",
+              "type": "boolean",
+              "label": "Unfurl media content"
+             },
+             {
+              "name": "icon_emoji",
+              "type": "text",
+              "label": "Icon emoji"
+             },
+             {
+              "name": "icon_url",
+              "type": "url",
+              "label": "Icon url"
+             },
+             {
+              "name": "username",
+              "type": "text",
+              "label": "User name"
+             },
+             {
+              "name": "channelType",
+              "type": "select",
+              "label": "Channel type",
+              "required": true,
+              "validate": {
+               "enum": [
+                "public",
+                "private",
+                "im",
+                "mpim"
+               ]
+              }
+             },
+             {
+              "name": "channel",
+              "type": "select",
+              "label": "Private channel",
+              "required": true
+             }
+            ],
+            "restore": {
+             "expect": {
+              "parse": {
+               "mode": "chose"
+              },
+              "mrkdwn": {
+               "mode": "chose"
+              },
+              "channel": {
+               "mode": "chose",
+               "label": "eric-dulcy"
+              },
+              "link_names": {
+               "mode": "chose"
+              },
+              "channelType": {
+               "label": "Private channel"
+              },
+              "channelWType": {
+               "label": "Select from the list"
+              },
+              "unfurl_links": {
+               "mode": "chose"
+              },
+              "unfurl_media": {
+               "mode": "chose"
+              },
+              "reply_broadcast": {
+               "mode": "chose"
+              }
+             },
+             "parameters": {
+              "__IMTCONN__": {
+               "data": {
+                "scoped": "true",
+                "connection": "slack3"
+               },
+               "label": "My Slack (bot) connectionfix (make)"
+              }
+             }
+            },
+            "designer": {
+             "x": 300,
+             "y": 3600,
+             "messages": [
+              {
+               "message": "'Slack - Send a Message' [module ID 19] references inaccessible module 'Google Drive - Get a Share Link' [module ID 5].",
+               "category": "reference",
+               "severity": "error"
+              },
+              {
+               "message": "'Slack - Send a Message' [module ID 19] references inaccessible module 'Webhooks - Custom webhook' [module ID 8].",
+               "category": "reference",
+               "severity": "error"
+              }
+             ]
+            },
+            "parameters": [
+             {
+              "name": "__IMTCONN__",
+              "type": "account:slack2,slack3",
+              "label": "Connection",
+              "required": true
+             }
+            ]
+           },
+           "parameters": {
+            "__IMTCONN__": 3736690
+           }
+          }
+         ]
+        },
+        {
+         "flow": [
+          {
+           "id": 20,
+           "filter": {
+            "name": "Adverio",
+            "conditions": [
+             [
+              {
+               "a": "{{8.`Campaign Name`}}",
+               "b": "Adverio",
+               "o": "text:contain:ci"
+              }
+             ]
+            ]
+           },
+           "mapper": {
+            "text": "🟢🟢🟢New Meeting Booked🟢🟢🟢\n\nCampaign Name: {{8.`Campaign Name`}}\n\nName: {{8.`Leads Name`}}\n\nEmail: {{8.`Leads Email`}}\n\n<{{5.shareLink}}|CLICK TO SEE CONVO HISTORY> \n\n<!channel>\n🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢",
+            "parse": false,
+            "mrkdwn": true,
+            "channel": "C08GHN5S1A5",
+            "channelType": "private",
+            "channelWType": "list"
+           },
+           "module": "slack:CreateMessage",
+           "version": 4,
+           "metadata": {
+            "expect": [
+             {
+              "name": "channelWType",
+              "type": "select",
+              "label": "Enter a channel ID or name",
+              "required": true,
+              "validate": {
+               "enum": [
+                "manualy",
+                "list"
+               ]
+              }
+             },
+             {
+              "name": "text",
+              "type": "text",
+              "label": "Text"
+             },
+             {
+              "name": "blocks",
+              "type": "text",
+              "label": "Blocks"
+             },
+             {
+              "name": "thread_ts",
+              "type": "text",
+              "label": "Thread message ID (time stamp)"
+             },
+             {
+              "name": "reply_broadcast",
+              "type": "boolean",
+              "label": "Reply broadcast"
+             },
+             {
+              "name": "link_names",
+              "type": "boolean",
+              "label": "Link names"
+             },
+             {
+              "name": "parse",
+              "type": "boolean",
+              "label": "Parse message text"
+             },
+             {
+              "name": "mrkdwn",
+              "type": "boolean",
+              "label": "Use markdown"
+             },
+             {
+              "name": "unfurl_links",
+              "type": "boolean",
+              "label": "Unfurl primarily text-based content"
+             },
+             {
+              "name": "unfurl_media",
+              "type": "boolean",
+              "label": "Unfurl media content"
+             },
+             {
+              "name": "icon_emoji",
+              "type": "text",
+              "label": "Icon emoji"
+             },
+             {
+              "name": "icon_url",
+              "type": "url",
+              "label": "Icon url"
+             },
+             {
+              "name": "username",
+              "type": "text",
+              "label": "User name"
+             },
+             {
+              "name": "channelType",
+              "type": "select",
+              "label": "Channel type",
+              "required": true,
+              "validate": {
+               "enum": [
+                "public",
+                "private",
+                "im",
+                "mpim"
+               ]
+              }
+             },
+             {
+              "name": "channel",
+              "type": "select",
+              "label": "Private channel",
+              "required": true
+             }
+            ],
+            "restore": {
+             "expect": {
+              "parse": {
+               "mode": "chose"
+              },
+              "mrkdwn": {
+               "mode": "chose"
+              },
+              "channel": {
+               "mode": "chose",
+               "label": "adverio-dulcy"
+              },
+              "link_names": {
+               "mode": "chose"
+              },
+              "channelType": {
+               "label": "Private channel"
+              },
+              "channelWType": {
+               "label": "Select from the list"
+              },
+              "unfurl_links": {
+               "mode": "chose"
+              },
+              "unfurl_media": {
+               "mode": "chose"
+              },
+              "reply_broadcast": {
+               "mode": "chose"
+              }
+             },
+             "parameters": {
+              "__IMTCONN__": {
+               "data": {
+                "scoped": "true",
+                "connection": "slack3"
+               },
+               "label": "My Slack (bot) connectionfix (make)"
+              }
+             }
+            },
+            "designer": {
+             "x": 300,
+             "y": 3900,
+             "messages": [
+              {
+               "message": "'Slack - Send a Message' [module ID 20] references inaccessible module 'Google Drive - Get a Share Link' [module ID 5].",
+               "category": "reference",
+               "severity": "error"
+              },
+              {
+               "message": "'Slack - Send a Message' [module ID 20] references inaccessible module 'Webhooks - Custom webhook' [module ID 8].",
+               "category": "reference",
+               "severity": "error"
+              }
+             ]
+            },
+            "parameters": [
+             {
+              "name": "__IMTCONN__",
+              "type": "account:slack2,slack3",
+              "label": "Connection",
+              "required": true
+             }
+            ]
+           },
+           "parameters": {
+            "__IMTCONN__": 3736690
+           }
+          },
+          {
+           "id": 22,
+           "mapper": {
+            "limit": "1",
+            "search": "{{8.`Leads Name`}}"
+           },
+           "module": "highlevel:searchContacts",
+           "version": 1,
+           "metadata": {
+            "expect": [
+             {
+              "name": "search",
+              "type": "text",
+              "label": "Query"
+             },
+             {
+              "name": "limit",
+              "type": "uinteger",
+              "label": "Limit"
+             }
+            ],
+            "restore": {
+             "parameters": {
+              "__IMTCONN__": {
+               "data": {
+                "scoped": "true",
+                "connection": "highlevel"
+               },
+               "label": "Alden's GHL"
+              }
+             }
+            },
+            "designer": {
+             "x": 600,
+             "y": 3900,
+             "messages": [
+              {
+               "message": "'GoHighLevel - Search Contacts' [module ID 22] references inaccessible module 'Webhooks - Custom webhook' [module ID 8].",
+               "category": "reference",
+               "severity": "error"
+              }
+             ]
+            },
+            "parameters": [
+             {
+              "name": "__IMTCONN__",
+              "type": "account:highlevel,highlevel3",
+              "label": "Connection",
+              "required": true
+             }
+            ]
+           },
+           "parameters": {
+            "__IMTCONN__": 4183955
+           }
+          }
+         ]
+        },
+        {
+         "flow": [
+          {
+           "id": 26,
+           "filter": {
+            "name": "Slogan Social",
+            "conditions": [
+             [
+              {
+               "a": "{{8.`Campaign Name`}}",
+               "b": "Slogan Social",
+               "o": "text:contain:ci"
+              }
+             ]
+            ]
+           },
+           "mapper": {
+            "text": "🟢🟢🟢New Meeting Booked🟢🟢🟢\n\nCampaign Name: {{8.`Campaign Name`}}\n\nName: {{8.`Leads Name`}}\n\nEmail: {{8.`Leads Email`}}\n\n<{{5.shareLink}}|CLICK TO SEE CONVO HISTORY> \n\n<!channel>\n🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢",
+            "parse": false,
+            "mrkdwn": true,
+            "channel": "C08QG23HALD",
+            "channelType": "private",
+            "channelWType": "list"
+           },
+           "module": "slack:CreateMessage",
+           "version": 4,
+           "metadata": {
+            "expect": [
+             {
+              "name": "channelWType",
+              "type": "select",
+              "label": "Enter a channel ID or name",
+              "required": true,
+              "validate": {
+               "enum": [
+                "manualy",
+                "list"
+               ]
+              }
+             },
+             {
+              "name": "text",
+              "type": "text",
+              "label": "Text"
+             },
+             {
+              "name": "blocks",
+              "type": "text",
+              "label": "Blocks"
+             },
+             {
+              "name": "thread_ts",
+              "type": "text",
+              "label": "Thread message ID (time stamp)"
+             },
+             {
+              "name": "reply_broadcast",
+              "type": "boolean",
+              "label": "Reply broadcast"
+             },
+             {
+              "name": "link_names",
+              "type": "boolean",
+              "label": "Link names"
+             },
+             {
+              "name": "parse",
+              "type": "boolean",
+              "label": "Parse message text"
+             },
+             {
+              "name": "mrkdwn",
+              "type": "boolean",
+              "label": "Use markdown"
+             },
+             {
+              "name": "unfurl_links",
+              "type": "boolean",
+              "label": "Unfurl primarily text-based content"
+             },
+             {
+              "name": "unfurl_media",
+              "type": "boolean",
+              "label": "Unfurl media content"
+             },
+             {
+              "name": "icon_emoji",
+              "type": "text",
+              "label": "Icon emoji"
+             },
+             {
+              "name": "icon_url",
+              "type": "url",
+              "label": "Icon url"
+             },
+             {
+              "name": "username",
+              "type": "text",
+              "label": "User name"
+             },
+             {
+              "name": "channelType",
+              "type": "select",
+              "label": "Channel type",
+              "required": true,
+              "validate": {
+               "enum": [
+                "public",
+                "private",
+                "im",
+                "mpim"
+               ]
+              }
+             },
+             {
+              "name": "channel",
+              "type": "select",
+              "label": "Private channel",
+              "required": true
+             }
+            ],
+            "restore": {
+             "expect": {
+              "parse": {
+               "mode": "chose"
+              },
+              "mrkdwn": {
+               "mode": "chose"
+              },
+              "channel": {
+               "mode": "chose",
+               "label": "zachary-dulcy"
+              },
+              "link_names": {
+               "mode": "chose"
+              },
+              "channelType": {
+               "label": "Private channel"
+              },
+              "channelWType": {
+               "label": "Select from the list"
+              },
+              "unfurl_links": {
+               "mode": "chose"
+              },
+              "unfurl_media": {
+               "mode": "chose"
+              },
+              "reply_broadcast": {
+               "mode": "chose"
+              }
+             },
+             "parameters": {
+              "__IMTCONN__": {
+               "data": {
+                "scoped": "true",
+                "connection": "slack3"
+               },
+               "label": "My Slack (bot) connectionfix (make)"
+              }
+             }
+            },
+            "designer": {
+             "x": 300,
+             "y": 4200,
+             "messages": [
+              {
+               "message": "'Slack - Send a Message' [module ID 26] references inaccessible module 'Google Drive - Get a Share Link' [module ID 5].",
+               "category": "reference",
+               "severity": "error"
+              },
+              {
+               "message": "'Slack - Send a Message' [module ID 26] references inaccessible module 'Webhooks - Custom webhook' [module ID 8].",
+               "category": "reference",
+               "severity": "error"
+              }
+             ]
+            },
+            "parameters": [
+             {
+              "name": "__IMTCONN__",
+              "type": "account:slack2,slack3",
+              "label": "Connection",
+              "required": true
+             }
+            ]
+           },
+           "parameters": {
+            "__IMTCONN__": 3736690
+           }
+          }
+         ]
+        }
+       ],
+       "version": 1,
+       "metadata": {
+        "designer": {
+         "x": 0,
+         "y": 2400,
+         "messages": [
+          {
+           "message": "This module is not connected to the flow. This module and everything after it will be skipped during execution. <autoconnect>Link it to your scenario to include them.</autoconnect>",
+           "category": "link",
+           "severity": "warning"
+          }
+         ]
+        }
+       }
+      }
+     ],
+     [
+      {
+       "id": 25,
+       "mapper": {
+        "select": "existing",
+        "stageId": "93e77d30-7c83-4ac8-a0fb-5a2b52f6d701",
+        "pipeline": "fTHMYWJXzoElZTzYbB2H",
+        "opportunity": "{{22.customField.wz390RyfxMkUcQLHhuzD}}"
+       },
+       "module": "highlevel:updateAnOpportunity",
+       "version": 1,
+       "metadata": {
+        "expect": [
+         {
+          "mode": "edit",
+          "name": "pipeline",
+          "type": "select",
+          "label": "Pipeline ID",
+          "required": true
+         },
+         {
+          "name": "title",
+          "type": "text",
+          "label": "Name"
+         },
+         {
+          "name": "status",
+          "type": "select",
+          "label": "Status",
+          "validate": {
+           "enum": [
+            "open",
+            "won",
+            "lost",
+            "abandoned"
+           ]
+          }
+         },
+         {
+          "name": "assignedTo",
+          "type": "select",
+          "label": "Assigned To"
+         },
+         {
+          "name": "monetaryValue",
+          "type": "number",
+          "label": "Monetary Value"
+         },
+         {
+          "name": "select",
+          "type": "select",
+          "label": "Select a Method (Deprecated)",
+          "required": true,
+          "validate": {
+           "enum": [
+            "existing",
+            "create"
+           ]
+          }
+         },
+         {
+          "name": "source",
+          "type": "text",
+          "label": "Source (Deprecated)"
+         },
+         {
+          "name": "tags",
+          "type": "select",
+          "label": "Tags (Deprecated)",
+          "multiple": true
+         },
+         {
+          "name": "opportunity",
+          "type": "select",
+          "label": "Opportunity ID",
+          "required": true
+         },
+         {
+          "name": "stageId",
+          "type": "select",
+          "label": "Stage ID",
+          "validate": {
+           "enum": [
+            "96e4679f-a742-4962-a6a0-15b663098577",
+            "93e77d30-7c83-4ac8-a0fb-5a2b52f6d701",
+            "d0e8298a-d811-4005-8c16-2dff6020d590",
+            "d54f66ea-fd62-4379-859a-2a742de2e657",
+            "cf680efb-3bde-4f3e-8471-9741e8bfd904",
+            "08863b15-d6f3-41f1-b740-1e29092ff42b",
+            "d8e43945-78fb-42a3-9827-356aed6cc93a",
+            "669c42f5-f74c-4b60-b312-8d1bb92ec530",
+            "7093718b-0d00-4575-b9a2-cd897cb8ceb5",
+            "c4fa51e2-ffb7-4845-9aa2-6c38a0a6fe67",
+            "eef68881-9235-402b-88f8-931e03ca37e5",
+            "34c66da0-fb4f-4250-b59c-85be56ea6ab0"
+           ]
+          }
+         },
+         {
+          "name": "contact",
+          "type": "select",
+          "label": "Contact ID (Deprecated)"
+         }
+        ],
+        "restore": {
+         "expect": {
+          "tags": {
+           "mode": "chose"
+          },
+          "select": {
+           "label": "Use an existing contact"
+          },
+          "status": {
+           "mode": "chose",
+           "label": "Empty"
+          },
+          "contact": {
+           "mode": "chose",
+           "label": "Empty"
+          },
+          "stageId": {
+           "mode": "chose",
+           "label": "Interested (Booked Appointment)"
+          },
+          "pipeline": {
+           "mode": "chose",
+           "label": "DULCY Outbound"
+          },
+          "assignedTo": {
+           "mode": "chose",
+           "label": "Empty"
+          },
+          "opportunity": {
+           "mode": "edit"
+          }
+         },
+         "parameters": {
+          "__IMTCONN__": {
+           "data": {
+            "scoped": "true",
+            "connection": "highlevel"
+           },
+           "label": "Alden's GHL"
+          }
+         }
+        },
+        "designer": {
+         "x": 0,
+         "y": 4500,
+         "messages": [
+          {
+           "message": "This module is not connected to the flow. This module and everything after it will be skipped during execution. <autoconnect>Link it to your scenario to include them.</autoconnect>",
+           "category": "link",
+           "severity": "warning"
+          },
+          {
+           "message": "Referenced module 'GoHighLevel LeadConnector - Search Contacts' [22] is not accessible.",
+           "category": "reference",
+           "severity": "warning"
+          }
+         ]
+        },
+        "parameters": [
+         {
+          "name": "__IMTCONN__",
+          "type": "account:highlevel,highlevel3",
+          "label": "Connection",
+          "required": true
+         }
+        ]
+       },
+       "parameters": {
+        "__IMTCONN__": 4183955
+       }
+      }
+     ]
+    ]
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately",
+   "maximum_runs_per_minute": 100
+  }
+ }
+}

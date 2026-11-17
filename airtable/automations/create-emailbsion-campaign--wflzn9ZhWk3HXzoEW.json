@@ -1,0 +1,56 @@
+{
+ "id": "wflzn9ZhWk3HXzoEW",
+ "name": "Create Emailbsion Campaign",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordUpdated",
+  "inputs": {
+   "tableId": "tblAVAA6uBPaMj28P",
+   "viewId": "viwILydMklJJvuYE9",
+   "watchFields": [
+    "fldtLN2riGj4DNoOp"
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacYrnx5XloE4mEvl",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "record_id": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     }
+    },
+    "script": "// Replace with your actual table name\nlet table = base.getTable(\"Campaigns\");\n\n// Get the record ID from the input variable\nlet recordId = input.config().record_id;\n\n// Fetch the specific record\nlet record = await table.selectRecordAsync(recordId);\n\n// Generate a random time between 08:00 and 09:00\nlet morningTime = new Date();\nlet randomMinutesMorning = Math.floor(Math.random() * 60);\nmorningTime.setHours(8);\nmorningTime.setMinutes(randomMinutesMorning);\nmorningTime.setSeconds(0);\nmorningTime.setMilliseconds(0);\n\n// Format to HH:mm\nlet formattedMorning = morningTime.toTimeString().slice(0, 5); // e.g., \"08:42\"\n\n// Generate a random time between 18:00 and 19:00\nlet eveningTime = new Date();\nlet randomMinutesEvening = Math.floor(Math.random() * 60);\neveningTime.setHours(18);\neveningTime.setMinutes(randomMinutesEvening);\neveningTime.setSeconds(0);\neveningTime.setMilliseconds(0);\n\nlet formattedEvening = eveningTime.toTimeString().slice(0, 5); // e.g., \"18:39\"\n\n// Update the specific record\nawait table.updateRecordAsync(recordId, {\n    \"start_time\": formattedMorning,\n    \"end_time\": formattedEvening\n});\n\nconsole.log(`Updated record ${recordId} with:\n- Morning time: ${formattedMorning}\n- Evening time: ${formattedEvening}`);\n"
+   },
+   "outputSchema": []
+  },
+  {
+   "key": "wacfDwpPMKtNKTuCo",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "recordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     }
+    },
+    "script": "// Airtable Automation setup\n// Trigger: Campaigns record matches conditions\n// Condition: Trigger Automation is checked\n// Input variable: recordId = Airtable record ID from the trigger\n\nconst configuredInput = input.config();\nconst recordId = configuredInput.recordId || configuredInput.record_id;\nconst WEBHOOK_URL = 'https://n8n.dulcy.io/webhook/REDACTED_PATH';\nconst TABLE_NAME = 'Campaigns';\nconst TRIGGER_FIELD_NAMES = [\n    'Trigger Automation',\n    'Upload to EmailBison',\n    'Create EmailBison Campaign',\n];\n\nif (!recordId || !String(recordId).startsWith('rec')) {\n    throw new Error('A valid Campaign recordId is required.');\n}\n\nconst table = base.getTable(TABLE_NAME);\nconst record = await table.selectRecordAsync(recordId);\nif (!record) throw new Error(`Campaign ${recordId} was not found.`);\nconst findField = (sourceTable, names) => {\n    for (const name of names) {\n        const field = sourceTable.fields.find(candidate => candidate.name === name);\n        if (field) return field;\n    }\n    return null;\n};\n\nconst triggerField = table.fields.find(field => TRIGGER_FIELD_NAMES.includes(field.name));\nif (!triggerField) {\n    throw new Error('The Campaigns table is missing the Trigger Automation field.');\n}\n\n// This automation uses \"When a record is updated\", so clearing the checkbox\n// creates another update event. Ignore that reset event instead of calling n8n\n// a second time.\nconst triggerValue = record.getCellValue(triggerField);\nconst isTriggered = triggerValue === true\n    || (triggerValue && typeof triggerValue === 'object'\n        && ['upload', 'create draft', 'requested', 'true'].includes(\n            String(triggerValue.name ?? triggerValue.value ?? '').trim().toLowerCase()\n        ));\nif (!isTriggered) {\n    output.set('started', false);\n    output.set('ignored', true);\n    output.set('message', 'Trigger Automation is not checked; no webhook was called.');\n    return;\n}\n\nconst payload = {recordId};\nfor (const field of table.fields) {\n    payload[field.name] = record.getCellValue(field);\n}\n\n// Include the linked client's package and HeyReach settings. This avoids\n// relying on Airtable lookup timing when a new campaign is created and launched\n// immediately.\nconst clientLinkField = findField(table, ['Client / Workspace', 'Workspace', 'Workspace ID', 'Client', 'Clients', 'Client Record']);\nconst linkedClient = clientLinkField ? record.getCellValue(clientLinkField)?.[0] : null;\nconst clientsTable = base.tables.find(candidate =>\n    ['Workspace IDs', 'Workspaces', 'Clients', 'Clients Table', 'Client'].includes(candidate.name)\n);\nif (linkedClient?.id && clientsTable) {\n    const clientRecord = await clientsTable.selectRecordAsync(linkedClient.id);\n    if (clientRecord) {\n        payload.clientRecordId = clientRecord.id;\n        payload.clientFields = {};\n        for (const field of clientsTable.fields) {\n            const value = clientRecord.getCellValue(field);\n            payload.clientFields[field.name] = value;\n            // Direct aliases let the n8n workflow use the same field names as\n            // ordinary Campaign lookups, even before those lookups refresh.\n            // Never alias a linked client's generic `ID`: Campaigns.ID is the\n            // EmailBison campaign ID, while a client ID may be a workspace ID.\n            if (value !== null && value !== undefined && field.name !== 'ID') {\n                payload[field.name] ??= value;\n                payload[`${field.name} (from Client)`] ??= value;\n            }\n\n            if (\n                value !== null &&\n                value !== undefined &&\n                field.name.toLowerCase() === 'campaign_workspace_id'\n            ) {\n                payload.workspaceId = value;\n            }\n        }\n    }\n}\n\n// Preserve the old uploader's explicit Lead List lookup. This makes the split\n// workflow reliable even when a Campaign lookup field has not refreshed yet.\nconst leadListsTable = base.getTable('Lead Lists');\nconst linkedLeadListField = findField(table, ['Lead List', 'Campaign Lead List']);\nconst linkedLeadList = linkedLeadListField\n    ? record.getCellValue(linkedLeadListField)?.[0]\n    : null;\n\nif (linkedLeadList?.id) {\n    const leadListRecord = await leadListsTable.selectRecordAsync(linkedLeadList.id);\n    if (leadListRecord) {\n        payload.leadListRecordId = leadListRecord.id;\n        payload.leadListName = leadListRecord.name;\n\n        const projectSheetField = findField(leadListsTable, [\n            'Project Google Sheet Link',\n            'Lead List Link',\n        ]);\n        if (projectSheetField) {\n            payload['Project Google Sheet Link (from Lead List)'] =\n                leadListRecord.getCellValue(projectSheetField);\n        }\n\n        const csvField = findField(leadListsTable, ['CSV Attachment']);\n        const csvAttachment = csvField ? leadListRecord.getCellValue(csvField)?.[0] : null;\n        if (csvAttachment?.url) {\n            payload.leadListCsvUrl = csvAttachment.url;\n            payload.leadListCsvName =\n                csvAttachment.filename || `${leadListRecord.name}.csv`;\n        }\n\n        const existingBisonIdField = findField(leadListsTable, [\n            'EmailBison Lead List ID',\n            'Bison Lead List ID',\n            'Lead List ID',\n        ]);\n        if (existingBisonIdField) {\n            payload.emailBisonLeadListId =\n                leadListRecord.getCellValue(existingBisonIdField);\n        }\n    }\n}\n\nconst response = await fetch(WEBHOOK_URL, {\n    method: 'POST',\n    headers: {'Content-Type': 'application/json'},\n    body: JSON.stringify(payload),\n});\n\nconst responseText = await response.text();\nif (!response.ok) {\n    throw new Error(`Split EmailBison upload returned HTTP ${response.status}: ${responseText || 'No response body'}`);\n}\n\n// Reset the trigger only after n8n accepts the request. This creates a clean\n// false -> true transition if the operator deliberately retries later.\nawait table.updateRecordAsync(recordId, {\n    [triggerField.id]: typeof triggerValue === 'boolean' ? false : null,\n});\n\noutput.set('started', true);\noutput.set('recordId', recordId);\noutput.set('campaignName', record.name);\noutput.set('n8nResponse', responseText || 'Accepted');\n"
+   }
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

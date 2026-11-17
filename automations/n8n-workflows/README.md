@@ -1,4 +1,6 @@
-# n8n workflow snapshots
+# n8n workflow snapshots (history)
+
+> **Superseded 2026-11-17:** the full live export is in `../n8n-live-2026-11-17/`. Use that. This folder is kept for history.
 
 Source: ChatGPT/Codex local files, handed over 2026-11-17. See `provenance.json` for original paths and saved dates.
 

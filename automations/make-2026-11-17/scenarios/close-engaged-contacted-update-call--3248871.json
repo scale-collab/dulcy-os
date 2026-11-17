@@ -1,0 +1,949 @@
+{
+ "id": 3248871,
+ "name": "[CLOSE} Engaged/Contacted Update (Call)",
+ "teamId": 629049,
+ "hookId": 1846814,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 208970,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": false,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "close-crm",
+  "builtin",
+  "close-crm",
+  "close-crm"
+ ],
+ "lastEdit": "2024-10-21T16:10:58.986Z",
+ "scheduling": {
+  "type": "immediately"
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2024-10-21T16:10:58.986Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": false,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 1,
+    "mapper": {},
+    "module": "close-crm:TriggerNewCall",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "__IMTHOOK__": {
+        "data": {
+         "editable": "false"
+        },
+        "label": "My New Call Activity webhook"
+       }
+      }
+     },
+     "designer": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTHOOK__",
+       "type": "hook:close-crm",
+       "label": "Webhook",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTHOOK__": 1846814
+    }
+   },
+   {
+    "id": 3,
+    "filter": {
+     "name": "",
+     "conditions": [
+      [
+       {
+        "a": "{{1.event.data.status}}",
+        "b": "Lead",
+        "o": "text:equal"
+       }
+      ],
+      [
+       {
+        "a": "{{1.event.data.status}}",
+        "b": "Unqualified",
+        "o": "text:equal"
+       }
+      ],
+      [
+       {
+        "a": "{{1.event.data.status}}",
+        "b": "Contacted",
+        "o": "text:equal"
+       }
+      ]
+     ]
+    },
+    "mapper": null,
+    "module": "builtin:BasicRouter",
+    "routes": [
+     {
+      "flow": [
+       {
+        "id": 4,
+        "filter": {
+         "name": "Phone Call Held",
+         "conditions": [
+          [
+           {
+            "a": "{{1.event.data.duration}}",
+            "b": "75",
+            "o": "number:greater"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "id": "{{1.event.data.lead_id}}",
+         "custom": {},
+         "status_id": "stat_9LXKESOcTIkEVcyIhCR0mggLwu4rVfpEJR8ZSkPWo1p"
+        },
+        "module": "close-crm:ActionUpdateLead",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "mode": "edit",
+           "name": "id",
+           "type": "select",
+           "label": "Lead ID",
+           "required": true
+          },
+          {
+           "name": "name",
+           "type": "text",
+           "label": "Name"
+          },
+          {
+           "name": "description",
+           "type": "text",
+           "label": "Description"
+          },
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL"
+          },
+          {
+           "mode": "edit",
+           "name": "status_id",
+           "type": "select",
+           "label": "Status ID"
+          },
+          {
+           "name": "contacts",
+           "spec": {
+            "name": "value",
+            "spec": [
+             {
+              "name": "name",
+              "type": "text",
+              "label": "Name"
+             },
+             {
+              "name": "title",
+              "type": "text",
+              "label": "Title"
+             },
+             {
+              "name": "emails",
+              "spec": {
+               "spec": [
+                {
+                 "name": "type",
+                 "type": "select",
+                 "label": "Type",
+                 "options": [
+                  {
+                   "label": "Office",
+                   "value": "office"
+                  },
+                  {
+                   "label": "Home",
+                   "value": "home"
+                  },
+                  {
+                   "label": "Direct",
+                   "value": "direct"
+                  },
+                  {
+                   "label": "Other",
+                   "value": "other"
+                  }
+                 ]
+                },
+                {
+                 "name": "email",
+                 "type": "email",
+                 "label": "Email"
+                }
+               ],
+               "type": "collection"
+              },
+              "type": "array",
+              "label": "Emails"
+             },
+             {
+              "name": "phones",
+              "spec": {
+               "spec": [
+                {
+                 "name": "type",
+                 "type": "select",
+                 "label": "Type",
+                 "options": [
+                  {
+                   "label": "Office",
+                   "value": "office"
+                  },
+                  {
+                   "label": "Mobile",
+                   "value": "mobile"
+                  },
+                  {
+                   "label": "Home",
+                   "value": "home"
+                  },
+                  {
+                   "label": "Direct",
+                   "value": "direct"
+                  },
+                  {
+                   "label": "Fax",
+                   "value": "fax"
+                  },
+                  {
+                   "label": "Other",
+                   "value": "other"
+                  }
+                 ]
+                },
+                {
+                 "name": "phone",
+                 "type": "text",
+                 "label": "Phone Number"
+                }
+               ],
+               "type": "collection",
+               "label": "Phone"
+              },
+              "type": "array",
+              "label": "Phones"
+             }
+            ],
+            "type": "collection"
+           },
+           "type": "array",
+           "label": "Contacts"
+          },
+          {
+           "name": "addresses",
+           "spec": {
+            "name": "value",
+            "spec": [
+             {
+              "name": "label",
+              "type": "text",
+              "label": "Label"
+             },
+             {
+              "name": "address_1",
+              "type": "text",
+              "label": "Address 1"
+             },
+             {
+              "name": "address_2",
+              "type": "text",
+              "label": "Address 2"
+             },
+             {
+              "name": "city",
+              "type": "text",
+              "label": "City"
+             },
+             {
+              "name": "state",
+              "type": "text",
+              "label": "State"
+             },
+             {
+              "name": "zipcode",
+              "type": "text",
+              "label": "ZIP code"
+             },
+             {
+              "name": "country",
+              "type": "text",
+              "label": "Country"
+             }
+            ],
+            "type": "collection"
+           },
+           "type": "array",
+           "label": "Addresses"
+          },
+          {
+           "name": "custom",
+           "spec": [
+            {
+             "name": "cf_dAkCa0KhIjLQ3ETND3SjMjs7OC6pSPpNCuJyYKspUzG",
+             "type": "select",
+             "label": "Lead Status",
+             "multiple": true
+            },
+            {
+             "name": "cf_BxOS14N2DR4Mo5VLrTzQ13ztVcwMBMQ5VL91hgjCFPA",
+             "type": "select",
+             "label": "Property Type",
+             "multiple": true
+            },
+            {
+             "name": "cf_J4GEru16m9UlAcAhvP1mSbllgh4j8MMdO4Xed9fdb6U",
+             "type": "text",
+             "label": "City"
+            },
+            {
+             "name": "cf_v4YQRlAbUHFAuIZ7DipF77l5lB2TAjIFMKi1JiEwohU",
+             "type": "number",
+             "label": "Budget"
+            },
+            {
+             "name": "cf_6Jf4NWDlBhmJgda2KnncRk3Nb2gz8StyC8Pl80YDVOF",
+             "type": "text",
+             "label": "Notes"
+            },
+            {
+             "name": "cf_Ziol55z0ZeDDtDUA1jggIHe1zEMpKeBfdWG9V32w3wc",
+             "type": "text",
+             "label": "Home Comp"
+            },
+            {
+             "name": "cf_JPVeQfmaGKD8UW9sFEKrV81AMschVbFPEM5bVnTImMz",
+             "type": "text",
+             "label": "AI Outbound"
+            },
+            {
+             "name": "cf_s4JdSPPm7IKhww8R9JNbyS0QIQq347781omkd8yhkFj",
+             "type": "text",
+             "label": "AI Inbound"
+            },
+            {
+             "name": "cf_P68dpBSUDAmR4BZ5nKZv1nDdbrsGCAvQi7wsA07Wfq6",
+             "type": "select",
+             "label": "How soon are you looking to purchase?",
+             "multiple": true
+            },
+            {
+             "name": "cf_r7V444DIz49h1TQHUXhi5RxotezEGGNrK7CXBSmc6EU",
+             "type": "select",
+             "label": "Do you need to sell your current home before you can buy?"
+            },
+            {
+             "name": "cf_f6tjscZ9x2OWkU0CQyLl1IYl6vcd2TAhvXseKnbllk1",
+             "type": "select",
+             "label": "Are you working with another agent?"
+            },
+            {
+             "name": "cf_7kxiX40vVVPw9IEdCbuJU11XtfsM4kPpbi6NrvcBLZQ",
+             "type": "select",
+             "label": "Do you have a pre-approval?",
+             "multiple": true
+            },
+            {
+             "name": "cf_Ls90dTc9b2wG061ENdWK9YsIkWyInBZI5feW2vq8krD",
+             "type": "text",
+             "label": "Why are you selling?"
+            },
+            {
+             "name": "cf_P1pBztDL72X3bKLiU5rsA9qN09iL17bzV9pQqq4k8sY",
+             "type": "select",
+             "label": "How soon do you want to sell?"
+            },
+            {
+             "name": "cf_jiQLSot0p0afxCNRQ0L4DO4I1bVO7wenHVevP2fn6j6",
+             "type": "number",
+             "label": "How much do you want to list your home for?"
+            },
+            {
+             "name": "cf_IfxSoQGczqRxbJtd2WdPtuqRTBYhzwVFYG6w62mX9QV",
+             "type": "number",
+             "label": "How much do you owe on the property?"
+            },
+            {
+             "name": "cf_B4gSSS3fvgShfi8wycQvQgxEibGx9NG9SojaN3DZ39i",
+             "type": "text",
+             "label": "What is the most important criteria for selecting an agent?"
+            },
+            {
+             "name": "cf_Yhw2dGyGUF41CcIljpZ39QePLiq7GhXmiWw1jPIRLiS",
+             "type": "select",
+             "label": "Wants home evaluation"
+            },
+            {
+             "name": "cf_IlQS8m30tbNw74PHqPHgG4HH4wTeUPYCicRb42tOpcV",
+             "type": "select",
+             "label": "Weekly Newsletter"
+            },
+            {
+             "name": "cf_FDLNuhk2OVgnCJ84mc1e1YaC3nlJ6n4aO3vANdEVozf",
+             "type": "text",
+             "label": "Met at Open House"
+            },
+            {
+             "name": "cf_LsAbaz13ylMQt752xCL5r85gZ27xa3G7qgXxTjbJkoP",
+             "type": "text",
+             "label": "Open House Area"
+            }
+           ],
+           "type": "collection",
+           "label": "Custom Fields"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "id": {
+            "mode": "edit"
+           },
+           "custom": {
+            "nested": {
+             "cf_7kxiX40vVVPw9IEdCbuJU11XtfsM4kPpbi6NrvcBLZQ": {
+              "mode": "chose"
+             },
+             "cf_BxOS14N2DR4Mo5VLrTzQ13ztVcwMBMQ5VL91hgjCFPA": {
+              "mode": "chose"
+             },
+             "cf_IlQS8m30tbNw74PHqPHgG4HH4wTeUPYCicRb42tOpcV": {
+              "mode": "chose",
+              "label": "Empty"
+             },
+             "cf_P1pBztDL72X3bKLiU5rsA9qN09iL17bzV9pQqq4k8sY": {
+              "mode": "chose",
+              "label": "Empty"
+             },
+             "cf_P68dpBSUDAmR4BZ5nKZv1nDdbrsGCAvQi7wsA07Wfq6": {
+              "mode": "chose"
+             },
+             "cf_Yhw2dGyGUF41CcIljpZ39QePLiq7GhXmiWw1jPIRLiS": {
+              "mode": "chose",
+              "label": "Empty"
+             },
+             "cf_dAkCa0KhIjLQ3ETND3SjMjs7OC6pSPpNCuJyYKspUzG": {
+              "mode": "chose"
+             },
+             "cf_f6tjscZ9x2OWkU0CQyLl1IYl6vcd2TAhvXseKnbllk1": {
+              "mode": "chose",
+              "label": "Empty"
+             },
+             "cf_r7V444DIz49h1TQHUXhi5RxotezEGGNrK7CXBSmc6EU": {
+              "mode": "chose",
+              "label": "Empty"
+             }
+            }
+           },
+           "contacts": {
+            "mode": "chose"
+           },
+           "addresses": {
+            "mode": "chose"
+           },
+           "status_id": {
+            "mode": "chose",
+            "label": "Engaged"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "close-crm"
+            },
+            "label": "millennium interstate realty (alexander@dulcymedia.com)"
+           }
+          }
+         },
+         "designer": {
+          "x": 600,
+          "y": -150
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:close-crm",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3568922
+        }
+       }
+      ]
+     },
+     {
+      "flow": [
+       {
+        "id": 5,
+        "filter": {
+         "name": "Phone Call Held",
+         "conditions": [
+          [
+           {
+            "a": "{{1.event.data.duration}}",
+            "b": "75",
+            "o": "number:lessorequal"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "id": "{{1.event.lead_id}}",
+         "custom": {},
+         "status_id": "stat_5A3jGTjWrGdo7fb3ueOHhvImOAL3Z4R5DkV5d1wQHrE"
+        },
+        "module": "close-crm:ActionUpdateLead",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "mode": "edit",
+           "name": "id",
+           "type": "select",
+           "label": "Lead ID",
+           "required": true
+          },
+          {
+           "name": "name",
+           "type": "text",
+           "label": "Name"
+          },
+          {
+           "name": "description",
+           "type": "text",
+           "label": "Description"
+          },
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL"
+          },
+          {
+           "mode": "edit",
+           "name": "status_id",
+           "type": "select",
+           "label": "Status ID"
+          },
+          {
+           "name": "contacts",
+           "spec": {
+            "name": "value",
+            "spec": [
+             {
+              "name": "name",
+              "type": "text",
+              "label": "Name"
+             },
+             {
+              "name": "title",
+              "type": "text",
+              "label": "Title"
+             },
+             {
+              "name": "emails",
+              "spec": {
+               "spec": [
+                {
+                 "name": "type",
+                 "type": "select",
+                 "label": "Type",
+                 "options": [
+                  {
+                   "label": "Office",
+                   "value": "office"
+                  },
+                  {
+                   "label": "Home",
+                   "value": "home"
+                  },
+                  {
+                   "label": "Direct",
+                   "value": "direct"
+                  },
+                  {
+                   "label": "Other",
+                   "value": "other"
+                  }
+                 ]
+                },
+                {
+                 "name": "email",
+                 "type": "email",
+                 "label": "Email"
+                }
+               ],
+               "type": "collection"
+              },
+              "type": "array",
+              "label": "Emails"
+             },
+             {
+              "name": "phones",
+              "spec": {
+               "spec": [
+                {
+                 "name": "type",
+                 "type": "select",
+                 "label": "Type",
+                 "options": [
+                  {
+                   "label": "Office",
+                   "value": "office"
+                  },
+                  {
+                   "label": "Mobile",
+                   "value": "mobile"
+                  },
+                  {
+                   "label": "Home",
+                   "value": "home"
+                  },
+                  {
+                   "label": "Direct",
+                   "value": "direct"
+                  },
+                  {
+                   "label": "Fax",
+                   "value": "fax"
+                  },
+                  {
+                   "label": "Other",
+                   "value": "other"
+                  }
+                 ]
+                },
+                {
+                 "name": "phone",
+                 "type": "text",
+                 "label": "Phone Number"
+                }
+               ],
+               "type": "collection",
+               "label": "Phone"
+              },
+              "type": "array",
+              "label": "Phones"
+             }
+            ],
+            "type": "collection"
+           },
+           "type": "array",
+           "label": "Contacts"
+          },
+          {
+           "name": "addresses",
+           "spec": {
+            "name": "value",
+            "spec": [
+             {
+              "name": "label",
+              "type": "text",
+              "label": "Label"
+             },
+             {
+              "name": "address_1",
+              "type": "text",
+              "label": "Address 1"
+             },
+             {
+              "name": "address_2",
+              "type": "text",
+              "label": "Address 2"
+             },
+             {
+              "name": "city",
+              "type": "text",
+              "label": "City"
+             },
+             {
+              "name": "state",
+              "type": "text",
+              "label": "State"
+             },
+             {
+              "name": "zipcode",
+              "type": "text",
+              "label": "ZIP code"
+             },
+             {
+              "name": "country",
+              "type": "text",
+              "label": "Country"
+             }
+            ],
+            "type": "collection"
+           },
+           "type": "array",
+           "label": "Addresses"
+          },
+          {
+           "name": "custom",
+           "spec": [
+            {
+             "name": "cf_dAkCa0KhIjLQ3ETND3SjMjs7OC6pSPpNCuJyYKspUzG",
+             "type": "select",
+             "label": "Lead Status",
+             "multiple": true
+            },
+            {
+             "name": "cf_BxOS14N2DR4Mo5VLrTzQ13ztVcwMBMQ5VL91hgjCFPA",
+             "type": "select",
+             "label": "Property Type",
+             "multiple": true
+            },
+            {
+             "name": "cf_J4GEru16m9UlAcAhvP1mSbllgh4j8MMdO4Xed9fdb6U",
+             "type": "text",
+             "label": "City"
+            },
+            {
+             "name": "cf_v4YQRlAbUHFAuIZ7DipF77l5lB2TAjIFMKi1JiEwohU",
+             "type": "number",
+             "label": "Budget"
+            },
+            {
+             "name": "cf_6Jf4NWDlBhmJgda2KnncRk3Nb2gz8StyC8Pl80YDVOF",
+             "type": "text",
+             "label": "Notes"
+            },
+            {
+             "name": "cf_Ziol55z0ZeDDtDUA1jggIHe1zEMpKeBfdWG9V32w3wc",
+             "type": "text",
+             "label": "Home Comp"
+            },
+            {
+             "name": "cf_JPVeQfmaGKD8UW9sFEKrV81AMschVbFPEM5bVnTImMz",
+             "type": "text",
+             "label": "AI Outbound"
+            },
+            {
+             "name": "cf_s4JdSPPm7IKhww8R9JNbyS0QIQq347781omkd8yhkFj",
+             "type": "text",
+             "label": "AI Inbound"
+            },
+            {
+             "name": "cf_P68dpBSUDAmR4BZ5nKZv1nDdbrsGCAvQi7wsA07Wfq6",
+             "type": "select",
+             "label": "How soon are you looking to purchase?",
+             "multiple": true
+            },
+            {
+             "name": "cf_r7V444DIz49h1TQHUXhi5RxotezEGGNrK7CXBSmc6EU",
+             "type": "select",
+             "label": "Do you need to sell your current home before you can buy?"
+            },
+            {
+             "name": "cf_f6tjscZ9x2OWkU0CQyLl1IYl6vcd2TAhvXseKnbllk1",
+             "type": "select",
+             "label": "Are you working with another agent?"
+            },
+            {
+             "name": "cf_7kxiX40vVVPw9IEdCbuJU11XtfsM4kPpbi6NrvcBLZQ",
+             "type": "select",
+             "label": "Do you have a pre-approval?",
+             "multiple": true
+            },
+            {
+             "name": "cf_Ls90dTc9b2wG061ENdWK9YsIkWyInBZI5feW2vq8krD",
+             "type": "text",
+             "label": "Why are you selling?"
+            },
+            {
+             "name": "cf_P1pBztDL72X3bKLiU5rsA9qN09iL17bzV9pQqq4k8sY",
+             "type": "select",
+             "label": "How soon do you want to sell?"
+            },
+            {
+             "name": "cf_jiQLSot0p0afxCNRQ0L4DO4I1bVO7wenHVevP2fn6j6",
+             "type": "number",
+             "label": "How much do you want to list your home for?"
+            },
+            {
+             "name": "cf_IfxSoQGczqRxbJtd2WdPtuqRTBYhzwVFYG6w62mX9QV",
+             "type": "number",
+             "label": "How much do you owe on the property?"
+            },
+            {
+             "name": "cf_B4gSSS3fvgShfi8wycQvQgxEibGx9NG9SojaN3DZ39i",
+             "type": "text",
+             "label": "What is the most important criteria for selecting an agent?"
+            },
+            {
+             "name": "cf_Yhw2dGyGUF41CcIljpZ39QePLiq7GhXmiWw1jPIRLiS",
+             "type": "select",
+             "label": "Wants home evaluation"
+            },
+            {
+             "name": "cf_IlQS8m30tbNw74PHqPHgG4HH4wTeUPYCicRb42tOpcV",
+             "type": "select",
+             "label": "Weekly Newsletter"
+            },
+            {
+             "name": "cf_FDLNuhk2OVgnCJ84mc1e1YaC3nlJ6n4aO3vANdEVozf",
+             "type": "text",
+             "label": "Met at Open House"
+            },
+            {
+             "name": "cf_LsAbaz13ylMQt752xCL5r85gZ27xa3G7qgXxTjbJkoP",
+             "type": "text",
+             "label": "Open House Area"
+            }
+           ],
+           "type": "collection",
+           "label": "Custom Fields"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "id": {
+            "mode": "edit"
+           },
+           "custom": {
+            "nested": {
+             "cf_7kxiX40vVVPw9IEdCbuJU11XtfsM4kPpbi6NrvcBLZQ": {
+              "mode": "chose"
+             },
+             "cf_BxOS14N2DR4Mo5VLrTzQ13ztVcwMBMQ5VL91hgjCFPA": {
+              "mode": "chose"
+             },
+             "cf_IlQS8m30tbNw74PHqPHgG4HH4wTeUPYCicRb42tOpcV": {
+              "mode": "chose",
+              "label": "Empty"
+             },
+             "cf_P1pBztDL72X3bKLiU5rsA9qN09iL17bzV9pQqq4k8sY": {
+              "mode": "chose",
+              "label": "Empty"
+             },
+             "cf_P68dpBSUDAmR4BZ5nKZv1nDdbrsGCAvQi7wsA07Wfq6": {
+              "mode": "chose"
+             },
+             "cf_Yhw2dGyGUF41CcIljpZ39QePLiq7GhXmiWw1jPIRLiS": {
+              "mode": "chose",
+              "label": "Empty"
+             },
+             "cf_dAkCa0KhIjLQ3ETND3SjMjs7OC6pSPpNCuJyYKspUzG": {
+              "mode": "chose"
+             },
+             "cf_f6tjscZ9x2OWkU0CQyLl1IYl6vcd2TAhvXseKnbllk1": {
+              "mode": "chose",
+              "label": "Empty"
+             },
+             "cf_r7V444DIz49h1TQHUXhi5RxotezEGGNrK7CXBSmc6EU": {
+              "mode": "chose",
+              "label": "Empty"
+             }
+            }
+           },
+           "contacts": {
+            "mode": "chose"
+           },
+           "addresses": {
+            "mode": "chose"
+           },
+           "status_id": {
+            "mode": "chose",
+            "label": "Contacted"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "close-crm"
+            },
+            "label": "millennium interstate realty (alexander@dulcymedia.com)"
+           }
+          }
+         },
+         "designer": {
+          "x": 600,
+          "y": 150
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:close-crm",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3568922
+        }
+       }
+      ]
+     }
+    ],
+    "version": 1,
+    "metadata": {
+     "designer": {
+      "x": 300,
+      "y": 0
+     }
+    }
+   }
+  ],
+  "name": "[CLOSE} Engaged/Contacted Update (Call)",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": []
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately"
+  }
+ }
+}

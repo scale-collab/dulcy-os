@@ -1,0 +1,677 @@
+{
+ "id": "5_rghJCEgbnhdO_qHIlVv",
+ "name": "[Lead List Center] Refresh Client Domain Exclusions",
+ "active": true,
+ "isArchived": false,
+ "versionId": "769531f1-ea29-47b3-b2ae-5a3086cad3d7",
+ "triggerCount": 1,
+ "createdAt": "2026-08-10T15:53:49.401Z",
+ "updatedAt": "2026-11-17T16:42:29.765Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Refresh Client Exclusions Webhook": {
+   "main": [
+    [
+     {
+      "node": "Validate Refresh Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate Refresh Request": {
+   "main": [
+    [
+     {
+      "node": "Get Client Workspace",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Client Workspace": {
+   "main": [
+    [
+     {
+      "node": "Build Client Email Query",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build Client Email Query": {
+   "main": [
+    [
+     {
+      "node": "Get Client Domain Exclusions",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Client Domain Exclusions": {
+   "main": [
+    [
+     {
+      "node": "Get Client Onboarding",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Collect Unique Domains": {
+   "main": [
+    [
+     {
+      "node": "Has Eligible Exclusion Domains",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create DiscoLike Exclusion Cache": {
+   "main": [
+    [
+     {
+      "node": "Prepare Client Cache Update",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Client Cache Update": {
+   "main": [
+    [
+     {
+      "node": "Save Cached Query ID",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Save Cached Query ID": {
+   "main": [
+    [
+     {
+      "node": "Return Refresh Result",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Client Onboarding": {
+   "main": [
+    [
+     {
+      "node": "Prepare Onboarding Exclusion Source",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Onboarding Exclusion Source": {
+   "main": [
+    [
+     {
+      "node": "Has Readable Onboarding Sheet",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Has Readable Onboarding Sheet": {
+   "main": [
+    [
+     {
+      "node": "Fetch Onboarding Exclusion Sheet",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Continue Without Onboarding Sheet",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Fetch Onboarding Exclusion Sheet": {
+   "main": [
+    [
+     {
+      "node": "Collect Unique Domains",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Continue Without Onboarding Sheet": {
+   "main": [
+    [
+     {
+      "node": "Collect Unique Domains",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Has Eligible Exclusion Domains": {
+   "main": [
+    [
+     {
+      "node": "Create DiscoLike Exclusion Cache",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Prepare Zero Exclusion Update",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Zero Exclusion Update": {
+   "main": [
+    [
+     {
+      "node": "Save Zero Exclusion State",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Save Zero Exclusion State": {
+   "main": [
+    [
+     {
+      "node": "Return Zero Exclusion Result",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "responseMode": "responseNode",
+    "options": {}
+   },
+   "id": "f201d674-e208-44b9-821e-2716bd85906f",
+   "name": "Refresh Client Exclusions Webhook",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    7584,
+    -1088
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const input=$input.first().json;const body=input.body??input;const recordId=String(body.recordId??body.clientRecordId??body.record_id??'').trim();if(!/^rec[A-Za-z0-9]+$/.test(recordId))throw new Error('A valid Workspace IDs recordId is required.');return [{json:{recordId}}];"
+   },
+   "id": "9c44e42d-746e-4196-acc3-8e764c5755fe",
+   "name": "Validate Refresh Request",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    7792,
+    -1088
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/Workspace%20IDs/' + $('Validate Refresh Request').first().json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Accept",
+       "value": "application/json"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 60000
+    }
+   },
+   "id": "639d59df-c9b4-4855-920c-9ff95fc4a3e9",
+   "name": "Get Client Workspace",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    8016,
+    -1088
+   ],
+   "retryOnFail": true,
+   "maxTries": 3,
+   "waitBetweenTries": 2000
+  },
+  {
+   "parameters": {
+    "jsCode": "const record=$input.first().json?.body??$input.first().json;\nconst fields=record?.fields??{};\nconst preferred=['Client Name','Name','Client','Company Name','Workspace Name'];\nlet clientName='';\nfor(const name of preferred){const value=fields[name];if(typeof value==='string'&&value.trim()){clientName=value.trim();break;}}\nif(!clientName){const value=Object.values(fields).find(item=>typeof item==='string'&&item.trim());clientName=String(value??'').trim();}\nif(!clientName)throw new Error('The Workspace IDs record has no readable client name.');\nconst recordId=$('Validate Refresh Request').first().json.recordId;\nconst escaped=clientName.replace(/\"/g,'\\\\\"');\n// Explicit same-client workspace group; ordinary workspace histories remain isolated.\nconst groups={'reczzwlJfHOwdUNzc':['Twenty West Media','Twenty West Media (Internal)'],'recynyHPighsOPpjd':['Twenty West Media','Twenty West Media (Internal)']};\nconst names=groups[recordId]||[clientName];\nconst workspaceIds=['reczzwlJfHOwdUNzc','recynyHPighsOPpjd'].includes(recordId)?['65','66']:[String(fields.ID??'')].filter(Boolean);\nconst clientRecordIds=['reczzwlJfHOwdUNzc','recynyHPighsOPpjd'].includes(recordId)?['reczzwlJfHOwdUNzc','recynyHPighsOPpjd']:[recordId];\nconst clientFormula='OR('+[...names.map(name=>'{Clients Table}='+JSON.stringify(name)),...workspaceIds.map(id=>'{Workspace ID (Bison)}='+JSON.stringify(id))].join(',')+')';\nconst eligibleFormula='OR({Date of Call Booked}!=BLANK(),{Opportunity Status}=\"WON\",{Pipeline Stage}=\"Booked Meeting\",{Pipeline Stage}=\"Completed Meeting\",{Pipeline Stage}=\"Closed Deal\",{Client Closed Deals}!=BLANK(),AND(OR({Lead Status}=\"Interested\",{Lead Status}=\"Meeting Request\"),{Status timestamp}!=BLANK(),DATETIME_DIFF(NOW(),{Status timestamp},\"seconds\")<=2592000))';\nconst formula='AND('+clientFormula+','+eligibleFormula+')';\nconst wantedFields=['domain exclusion','Date of Call Booked','Last Lead Interaction','Lead Created','Lead Status','Pipeline Stage','Opportunity Status','Status timestamp','Client Closed Deals','Clients Table','Workspace ID (Bison)'];\nconst fieldsQuery=wantedFields.map(name=>'&fields%5B%5D='+encodeURIComponent(name)).join('');\nconst url='https://api.airtable.com/v0/appxqINt5XKw7a76A/Emails?pageSize=100'+fieldsQuery+'&filterByFormula='+encodeURIComponent(formula);\nconst onboardingIds=Array.isArray(fields['Onboarding'])?fields['Onboarding']:[];\nconst onboardingRecordId=String(onboardingIds[0]??'').trim();\nconst onboardingField='Do you have a list of contacts who we SHOULD NOT CONTACT? If so, please upload it here (make sure to include company website URLs):';\nconst onboardingUrl=onboardingRecordId\n  ? 'https://api.airtable.com/v0/appxqINt5XKw7a76A/Onboarding/'+encodeURIComponent(onboardingRecordId)\n  : 'https://api.airtable.com/v0/appxqINt5XKw7a76A/Onboarding?pageSize=1&filterByFormula='+encodeURIComponent('FIND(\"'+recordId+'\",ARRAYJOIN({Record ID (from Workspace IDs)}))');\nreturn [{json:{recordId,clientName,clientRecordIds,workspaceIds,url,onboardingUrl,onboardingField,suppressionDays:30}}];"
+   },
+   "id": "589a2418-7d67-441a-bc7b-aa07422ae855",
+   "name": "Build Client Email Query",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    8240,
+    -1088
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ $('Build Client Email Query').first().json.url }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Accept",
+       "value": "application/json"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "responseFormat": "json"
+      }
+     },
+     "pagination": {
+      "pagination": {
+       "paginationMode": "responseContainsNextURL",
+       "nextURL": "={{ $('Build Client Email Query').first().json.url + ($response.body.offset ? '&offset=' + encodeURIComponent($response.body.offset) : '') }}",
+       "paginationCompleteWhen": "other",
+       "completeExpression": "={{ !$response.body.offset }}",
+       "limitPagesFetched": true,
+       "maxRequests": 120,
+       "requestInterval": 250
+      }
+     },
+     "timeout": 60000
+    }
+   },
+   "id": "165175e4-7412-46eb-8931-63a61adae34b",
+   "name": "Get Client Domain Exclusions",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    8464,
+    -1088
+   ],
+   "retryOnFail": true,
+   "waitBetweenTries": 2000,
+   "maxTries": 3
+  },
+  {
+   "parameters": {
+    "jsCode": "const parse = value => {\n  if (typeof value !== 'string') return value;\n  try { return JSON.parse(value); } catch { return value; }\n};\n\nconst emailResponses = $('Get Client Domain Exclusions').all().map(item => parse(item.json?.body ?? item.json));\nconst records = emailResponses.flatMap(value => Array.isArray(value?.records) ? value.records : (value?.fields ? [value] : []));\nif (emailResponses.at(-1)?.offset) throw new Error('Client exclusions were not refreshed because Airtable pagination did not finish.');\n\nconst blockedHosts = new Set([\n  'docs.google.com',\n  'drive.google.com',\n  'sheets.google.com',\n  'airtable.com',\n  'airtableusercontent.com',\n  'dropbox.com','gmail.com','googlemail.com','outlook.com','hotmail.com','live.com','yahoo.com','yahoo.co.uk','aol.com','icloud.com','me.com','msn.com','proton.me','protonmail.com',\n]);\nconst hostnamePattern = '(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\\\.)+[a-z]{2,63}';\nconst emailPattern = new RegExp('[a-z0-9._%+-]+@(' + hostnamePattern + ')', 'i');\nconst hostPattern = new RegExp('(?:https?:\\\\/\\\\/)?(?:www\\\\.)?(' + hostnamePattern + ')(?=[:\\\\/?#\\\\s,;\\\\\"\\\\\\'<>()[\\\\]]|$)', 'i');\nconst tokenPattern = new RegExp('[a-z0-9._%+-]+@' + hostnamePattern + '|(?:https?:\\\\/\\\\/)?(?:www\\\\.)?' + hostnamePattern + '(?=[:\\\\/?#\\\\s,;\\\\\"\\\\\\'<>()[\\\\]]|$)', 'gi');\n\nconst clean = value => {\n  const text = String(value ?? '').trim().toLowerCase();\n  if (!text) return '';\n  const email = text.match(emailPattern);\n  if (email) return email[1].replace(/^www\\./, '');\n  const host = text.match(hostPattern);\n  return host ? host[1].replace(/^www\\./, '') : '';\n};\nconst valid = domain => {\n  if (!domain || domain.length > 253 || blockedHosts.has(domain)) return false;\n  const labels = domain.split('.');\n  return labels.length > 1\n    && /^[a-z]{2,63}$/.test(labels.at(-1))\n    && labels.every(label => label.length > 0 && label.length <= 63 && /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label));\n};\nconst addTokens = (target, value) => {\n  if (value === undefined || value === null) return;\n  const text = typeof value === 'object' ? String(value.name ?? value.url ?? value.value ?? '') : String(value);\n  const tokens = text.match(tokenPattern) ?? [];\n  for (const token of tokens) {\n    const domain = clean(token);\n    if (valid(domain)) target.add(domain);\n  }\n};\nconst dateValue = value => {\n  if (!value) return 0;\n  const timestamp = Date.parse(Array.isArray(value) ? value[0] : value);\n  return Number.isFinite(timestamp) ? timestamp : 0;\n};\n\nconst cutoff = new Date();\ncutoff.setTime(cutoff.getTime() - 30 * 86400000);\nconst cutoffMs = cutoff.getTime();\nconst rolling = new Set();\nconst booked = new Set();\nconst explicitDnc = new Set();\nlet expiredCount = 0;\n\nfor (const record of records) {\n  const fields = record?.fields ?? {};\n  const scope=$('Build Client Email Query').first().json;\n  const links=fields['Clients Table']??[];\n  if(!links.some(id=>(scope.clientRecordIds??[]).includes(id)) && !(scope.workspaceIds??[]).includes(String(fields['Workspace ID (Bison)']??'')))continue;\n  const raw = fields['domain exclusion'];\n  const domains = new Set();\n  for (const value of (Array.isArray(raw) ? raw : [raw])) addTokens(domains, value);\n  if (!domains.size) continue;\n  const hasBookedMeeting = Boolean(fields['Date of Call Booked']) || ['Booked Meeting','Completed Meeting','Closed Deal'].includes(fields['Pipeline Stage']) || fields['Opportunity Status']==='WON' || (Array.isArray(fields['Client Closed Deals']) && fields['Client Closed Deals'].length>0);\n  const isInterested = ['Interested','Meeting Request'].includes(fields['Lead Status']);\n  const activityMs = dateValue(fields['Status timestamp']);\n  if (hasBookedMeeting) {\n    for (const domain of domains) booked.add(domain);\n    continue;\n  }\n  if (isInterested && activityMs >= cutoffMs) {\n    for (const domain of domains) rolling.add(domain);\n  } else {\n    expiredCount += domains.size;\n  }\n}\n\nconst onboardingResponse = parse($('Get Client Onboarding').first().json?.body ?? $('Get Client Onboarding').first().json);\nconst onboardingRecord = Array.isArray(onboardingResponse?.records) ? onboardingResponse.records[0] : onboardingResponse;\nconst onboardingText = String(onboardingRecord?.fields?.[$('Build Client Email Query').first().json.onboardingField] ?? '');\nconst onboarding = new Set();\naddTokens(onboarding, onboardingText);\n\nconst sheetResponse = $input.first().json;\nconst sheetText = String(sheetResponse?.body ?? sheetResponse?.data ?? '');\nconst sheetDomains = new Set();\naddTokens(sheetDomains, sheetText);\n\nconst workspace=$('Get Client Workspace').first().json;\nconst workspaceFields=(workspace.body??workspace).fields??{};\naddTokens(booked,workspaceFields['Booked Meeting Exclusion Domains']);\nconst overrides=new Set();addTokens(overrides,workspaceFields['Booked Meeting Exclusion Overrides']);\nfor(const domain of overrides)booked.delete(domain);\nconst domains = [...new Set([...rolling, ...booked, ...explicitDnc, ...onboarding, ...sheetDomains])].sort();\nconst client = $('Build Client Email Query').first().json;\nconst stamp = new Date().toISOString().replace(/[:.]/g, '-');\nreturn [{\n  json: {\n    recordId: client.recordId,\n    clientName: client.clientName,\n    query_name: client.clientName + ' Lead List Suppression ' + stamp,\n    domains,\n    tags: ['lead-list-center', 'client-suppression', 'interested-30-days', 'onboarding-permanent'],\n    count: domains.length,\n    hasDomains: domains.length > 0,\n    recordsScanned: records.length,\n    pagesScanned: emailResponses.length,\n    suppressionDays: 30,\n    rollingDomainCount: rolling.size,\n    bookedPermanentCount: booked.size,\n    bookedDomainLedger: [...booked].sort().join('\\n'),\n    dncPermanentCount: explicitDnc.size,\n    onboardingPermanentCount: onboarding.size,\n    sheetDomainCount: sheetDomains.size,\n    expiredDomainCount: expiredCount,\n  },\n}];\n"
+   },
+   "id": "9018d737-b226-4e8d-9bf5-611185671ee8",
+   "name": "Collect Unique Domains",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    9568,
+    -1088
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.discolike.com/v1/queries/exclusion-list",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Accept",
+       "value": "application/json"
+      },
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({query_name:$json.query_name,domains:[...($json.domains||[]),...Array.from({length:Math.max(0,20-($json.domains||[]).length)},(_,i)=>'dulcy-exclusion-padding-'+(i+1)+'.invalid')],tags:$json.tags}) }}",
+    "options": {
+     "response": {
+      "response": {
+       "responseFormat": "json"
+      }
+     },
+     "timeout": 300000
+    }
+   },
+   "id": "5b684dbf-cf84-40b6-9d57-69abc1f7c71b",
+   "name": "Create DiscoLike Exclusion Cache",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    10016,
+    -1088
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const source=$('Collect Unique Domains').first().json;const response=$input.first().json;let body=response?.body??response?.data??response;const parse=value=>{if(typeof value!=='string')return value;try{return JSON.parse(value);}catch{return value;}};body=parse(body);if(!body?.query_id&&Array.isArray(response?._readableState?.buffer)){const bytes=response._readableState.buffer.flatMap(entry=>Array.isArray(entry?.data)?entry.data:[]);if(bytes.length){body=parse(String.fromCharCode(...bytes));}}const queryId=String(body?.query_id??body?.data?.query_id??body?.id??body?.data?.id??'').trim();if(!queryId)throw new Error('DiscoLike did not return an exclusion query ID. Response: '+JSON.stringify(body).slice(0,1500));const count=Number(source.count??body?.domain_count??0);const refreshedAt=new Date().toISOString();const airtableBody=JSON.stringify({fields:{'DiscoLike Exclusion Query ID':queryId,'Domain Exclusion Count':count,'Domain Exclusions Refreshed At':refreshedAt,'Refresh Domain Exclusions':false,'Booked Meeting Exclusion Domains':source.bookedDomainLedger??''}});return [{json:{recordId:source.recordId,queryId,count,refreshedAt,clientName:source.clientName,airtableBody}}];"
+   },
+   "id": "304ca44f-31cc-465b-b1e3-41d70dc819b5",
+   "name": "Prepare Client Cache Update",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    10240,
+    -1088
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/Workspace%20IDs/' + $json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ $json.airtableBody }}",
+    "options": {
+     "timeout": 60000
+    }
+   },
+   "id": "9652980c-dc25-4ab9-8ca3-72a07cd0b1aa",
+   "name": "Save Cached Query ID",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    10464,
+    -1088
+   ],
+   "retryOnFail": true,
+   "maxTries": 3,
+   "waitBetweenTries": 2000
+  },
+  {
+   "parameters": {
+    "respondWith": "json",
+    "responseBody": "={{ {success:true,clientRecordId:$('Prepare Client Cache Update').first().json.recordId,clientName:$('Prepare Client Cache Update').first().json.clientName,exclusionQueryId:$('Prepare Client Cache Update').first().json.queryId,domainCount:$('Prepare Client Cache Update').first().json.count,suppressionDays:30,rollingDomainCount:$('Collect Unique Domains').first().json.rollingDomainCount,bookedPermanentCount:$('Collect Unique Domains').first().json.bookedPermanentCount,dncPermanentCount:$('Collect Unique Domains').first().json.dncPermanentCount,onboardingPermanentCount:$('Collect Unique Domains').first().json.onboardingPermanentCount,sheetDomainCount:$('Collect Unique Domains').first().json.sheetDomainCount,expiredDomainCount:$('Collect Unique Domains').first().json.expiredDomainCount,message:'Client exclusions refreshed: interested leads are excluded for 30 days; booked meetings and onboarding exclusion domains remain excluded.'} }}",
+    "options": {}
+   },
+   "id": "18b86774-6247-4b3c-b81c-db5f20d6ee71",
+   "name": "Return Refresh Result",
+   "type": "n8n-nodes-base.respondToWebhook",
+   "typeVersion": 1.4,
+   "position": [
+    10688,
+    -1088
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ $('Build Client Email Query').first().json.onboardingUrl }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Accept",
+       "value": "application/json"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "responseFormat": "json"
+      }
+     },
+     "timeout": 60000
+    }
+   },
+   "id": "1b5104d4-eff1-4388-b6da-2f8fdf14bf71",
+   "name": "Get Client Onboarding",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    8672,
+    -1088
+   ],
+   "executeOnce": true,
+   "onError": "continueRegularOutput",
+   "retryOnFail": true,
+   "maxTries": 3,
+   "waitBetweenTries": 2000
+  },
+  {
+   "parameters": {
+    "jsCode": "const response=$input.first().json;const parsed=typeof response?.body==='string'?(()=>{try{return JSON.parse(response.body);}catch{return response.body;}})():response?.body??response;const record=Array.isArray(parsed?.records)?parsed.records[0]:parsed;const field=$('Build Client Email Query').first().json.onboardingField;const text=String(record?.fields?.[field]??'');const sheet=text.match(/https?:\\/\\/(?:docs|sheets)\\.google\\.com\\/spreadsheets\\/d\\/([A-Za-z0-9_-]+)[^\\s]*/i);let sheetFetchUrl='';if(sheet){const gid=(sheet[0].match(/[?&#]gid=(\\d+)/i)||[])[1]||'0';sheetFetchUrl='https://docs.google.com/spreadsheets/d/'+sheet[1]+'/export?format=csv&gid='+gid;}else{const csv=text.match(/https?:\\/\\/[^\\s]+\\.csv(?:\\?[^\\s]*)?/i);if(csv)sheetFetchUrl=csv[0];}return [{json:{onboardingText:text,sheetFetchUrl,hasSheet:Boolean(sheetFetchUrl)}}];"
+   },
+   "id": "62d087a7-782e-43dc-aa76-72c00e2989e1",
+   "name": "Prepare Onboarding Exclusion Source",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    8896,
+    -1088
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "0bfba8c4-c74c-4378-952f-436c738c8f2a",
+       "leftValue": "={{ $json.sheetFetchUrl }}",
+       "rightValue": "",
+       "operator": {
+        "type": "string",
+        "operation": "notEmpty",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "495d032b-80dc-420f-8eb4-31f9f4c4e622",
+   "name": "Has Readable Onboarding Sheet",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    9120,
+    -1088
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ $json.sheetFetchUrl }}",
+    "options": {
+     "response": {
+      "response": {
+       "responseFormat": "text"
+      }
+     },
+     "timeout": 60000
+    }
+   },
+   "id": "e32bad75-b0ba-4bd7-ae83-34f5aea74d55",
+   "name": "Fetch Onboarding Exclusion Sheet",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    9344,
+    -1088
+   ],
+   "onError": "continueRegularOutput",
+   "retryOnFail": true,
+   "maxTries": 3,
+   "waitBetweenTries": 2000
+  },
+  {
+   "parameters": {
+    "jsCode": "return [{json:{body:'',sheetSkipped:true}}];"
+   },
+   "id": "a30b0e0c-e359-4b10-9f92-f7f234cb2c09",
+   "name": "Continue Without Onboarding Sheet",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    9344,
+    -1088
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "43bdc135-5937-4b7c-83b0-61f37dd35191",
+       "leftValue": "={{ $json.hasDomains }}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "e82b011a-6465-4264-9d0f-f0665de61d4c",
+   "name": "Has Eligible Exclusion Domains",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    9792,
+    -1088
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const source=$('Collect Unique Domains').first().json;const refreshedAt=new Date().toISOString();const airtableBody=JSON.stringify({fields:{'DiscoLike Exclusion Query ID':null,'Domain Exclusion Count':0,'Domain Exclusions Refreshed At':refreshedAt,'Refresh Domain Exclusions':false,'Booked Meeting Exclusion Domains':source.bookedDomainLedger??''}});return [{json:{recordId:source.recordId,queryId:'',count:0,refreshedAt,clientName:source.clientName,airtableBody}}];"
+   },
+   "id": "a1ea6585-7188-4271-9407-8a38dacd026f",
+   "name": "Prepare Zero Exclusion Update",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    10016,
+    -1088
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/Workspace%20IDs/' + $json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ $json.airtableBody }}",
+    "options": {
+     "timeout": 60000
+    }
+   },
+   "id": "adf809f5-eef3-4b73-a8d3-032898311824",
+   "name": "Save Zero Exclusion State",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    10240,
+    -1088
+   ],
+   "retryOnFail": true,
+   "maxTries": 3,
+   "waitBetweenTries": 2000
+  },
+  {
+   "parameters": {
+    "respondWith": "json",
+    "responseBody": "={{ {success:true,clientRecordId:$('Prepare Zero Exclusion Update').first().json.recordId,clientName:$('Prepare Zero Exclusion Update').first().json.clientName,exclusionQueryId:'',domainCount:0,suppressionDays:30,message:'No eligible exclusions were found. The previous cached query was cleared and sourcing may continue.'} }}",
+    "options": {}
+   },
+   "id": "6deadbe6-9d40-4cde-a984-9baaac719607",
+   "name": "Return Zero Exclusion Result",
+   "type": "n8n-nodes-base.respondToWebhook",
+   "typeVersion": 1.4,
+   "position": [
+    10464,
+    -1088
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

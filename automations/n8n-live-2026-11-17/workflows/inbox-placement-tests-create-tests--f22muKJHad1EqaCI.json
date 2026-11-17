@@ -1,0 +1,767 @@
+{
+ "id": "f22muKJHad1EqaCI",
+ "name": "[Inbox Placement Tests] Create Tests",
+ "active": true,
+ "isArchived": false,
+ "versionId": "45a2b78c-d59a-4798-b511-0d06c4b36f4d",
+ "triggerCount": 1,
+ "createdAt": "2025-06-13T14:13:53.776Z",
+ "updatedAt": "2026-11-17T16:43:30.301Z",
+ "settings": {
+  "executionOrder": "v1",
+  "callerPolicy": "workflowsFromSameOwner",
+  "executionTimeout": 21600,
+  "timeSavedMode": "fixed",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9",
+  "saveExecutionProgress": true
+ },
+ "connections": {
+  "Get Email Accounts": {
+   "main": [
+    [
+     {
+      "node": "Prepare placement batches",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Set Workspace ID": {
+   "main": [
+    [
+     {
+      "node": "Acquire exclusive client lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Webhook": {
+   "main": [
+    [
+     {
+      "node": "Set Workspace ID",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Workspace ID Rec#": {
+   "main": [
+    [
+     {
+      "node": "Get Campaign Copy",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Campaign Copy": {
+   "main": [
+    [
+     {
+      "node": "If",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "If": {
+   "main": [
+    [
+     {
+      "node": "Get Email Accounts",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Get Campaign Copy1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Campaign Copy1": {
+   "main": [
+    [
+     {
+      "node": "If1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "If1": {
+   "main": [
+    [
+     {
+      "node": "Get Email Accounts",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Get Campaign Copy2",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Campaign Copy2": {
+   "main": [
+    [
+     {
+      "node": "Get Email Accounts",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare placement batches": {
+   "main": [
+    [
+     {
+      "node": "Loop Over Placement Batches",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Queued client input": {
+   "main": [
+    [
+     {
+      "node": "Set Workspace ID",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Acquire exclusive client lock": {
+   "main": [
+    [
+     {
+      "node": "Client lock acquired?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Client lock acquired?": {
+   "main": [
+    [
+     {
+      "node": "Get Workspace ID Rec#",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Wait for active client",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wait for active client": {
+   "main": [
+    [
+     {
+      "node": "Acquire exclusive client lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Start placement batch": {
+   "main": [
+    [
+     {
+      "node": "0.25s between placement batches",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    []
+   ]
+  },
+  "Mark placement batch success for cleanup": {
+   "main": [
+    [
+     {
+      "node": "Release exclusive client lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Mark placement batch failure for cleanup": {
+   "main": [
+    [
+     {
+      "node": "Release exclusive client lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Release exclusive client lock": {
+   "main": [
+    [
+     {
+      "node": "Finish placement batch after cleanup",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Finish placement batch after cleanup": {
+   "main": []
+  },
+  "Loop Over Placement Batches": {
+   "main": [
+    [
+     {
+      "node": "Mark placement batch success for cleanup",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Start placement batch",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "0.25s between placement batches": {
+   "main": [
+    [
+     {
+      "node": "Loop Over Placement Batches",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMSOBJ0wMgxSg4l",
+     "mode": "list",
+     "cachedResultName": "Email Accounts",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblMSOBJ0wMgxSg4l"
+    },
+    "filterByFormula": "=AND({Status (from Client)} = 'Active', {Workspace ID} = {{ $('Set Workspace ID').item.json.workspace_id }}, {email_status} = 'Connected')",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -48,
+    -96
+   ],
+   "id": "0eae51d3-fbc3-4594-b4c3-e1aaf0c14f3d",
+   "name": "Get Email Accounts"
+  },
+  {
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "ecead5ea-fed4-48c9-ae61-0eff11d19ed1",
+       "name": "workspace_id",
+       "value": "={{ $json.body?.workspace_id ?? $json.workspace_id ?? $json.ID }}",
+       "type": "string"
+      },
+      {
+       "id": "9df37812-ec5f-4f76-b8f4-44d36fe6d39e",
+       "name": "client_name",
+       "value": "={{ $json.body?.client_name ?? $json.client_name ?? $json.Name }}",
+       "type": "string"
+      },
+      {
+       "id": "f331cff3-f266-4c23-b74c-fd0c2601418d",
+       "name": "placement_request_id",
+       "value": "={{ String($execution.id) }}",
+       "type": "string"
+      },
+      {
+       "id": "6fd05844-6bf0-4f23-852c-6af469779933",
+       "name": "placement_cycle_key",
+       "value": "={{ String($json.body?.placement_cycle_key ?? $json.placement_cycle_key ?? $now.startOf('week').toISODate()) }}",
+       "type": "string"
+      },
+      {
+       "id": "placement-manifest-id-20261028",
+       "name": "placement_manifest_id",
+       "value": "={{ String($json.body?.placement_manifest_id ?? $json.placement_manifest_id ?? '') }}",
+       "type": "string"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    -1616,
+    -80
+   ],
+   "id": "9fc7217b-7380-4a4d-a993-4ba4629b5766",
+   "name": "Set Workspace ID"
+  },
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    -1840,
+    -80
+   ],
+   "id": "a5631e39-f603-4a4d-8703-3ad1426d7093",
+   "name": "Webhook"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt"
+    },
+    "filterByFormula": "={{ '{ID} = ' + Number($('Set Workspace ID').first().json.workspace_id) }}",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -1392,
+    -80
+   ],
+   "id": "50d3f381-e721-4985-88c8-17b9fe119d48",
+   "name": "Get Workspace ID Rec#"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblAVAA6uBPaMj28P",
+     "mode": "list",
+     "cachedResultName": "Campaigns",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblAVAA6uBPaMj28P"
+    },
+    "filterByFormula": "=AND(\n  {Client} = \"{{ $json.Name }}\",\n  OR(\n    {Campaign Status} = \"Active\"\n  )\n)",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -1168,
+    -80
+   ],
+   "id": "c1a95fc2-99e1-4ea2-a705-42bc21475051",
+   "name": "Get Campaign Copy",
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "80b10f76-8ea9-4ff5-99a9-4b73e61188ea",
+       "leftValue": "={{ $json['Script Copy Email 1 (Review)'] }}",
+       "rightValue": "",
+       "operator": {
+        "type": "string",
+        "operation": "notEmpty",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.3,
+   "position": [
+    -944,
+    -80
+   ],
+   "id": "bc6e39eb-7b03-47e3-a95f-c7a6f089f92f",
+   "name": "If"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblAVAA6uBPaMj28P",
+     "mode": "list",
+     "cachedResultName": "Campaigns",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblAVAA6uBPaMj28P"
+    },
+    "filterByFormula": "=AND(\n  {Client} = \"{{ $json.Name }}\",\n  OR(\n    {Campaign Status} = \"Completed\"\n  )\n)",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -720,
+    -144
+   ],
+   "id": "a6695bb5-ba5f-405a-889d-fd1551e14b06",
+   "name": "Get Campaign Copy1",
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "80b10f76-8ea9-4ff5-99a9-4b73e61188ea",
+       "leftValue": "={{ $json['Script Copy Email 1 (Review)'] }}",
+       "rightValue": "",
+       "operator": {
+        "type": "string",
+        "operation": "notEmpty",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.3,
+   "position": [
+    -496,
+    -144
+   ],
+   "id": "b4424481-b8f7-4047-9673-eca592709c9a",
+   "name": "If1"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblAVAA6uBPaMj28P",
+     "mode": "list",
+     "cachedResultName": "Campaigns",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblAVAA6uBPaMj28P"
+    },
+    "filterByFormula": "=AND(\n  {Client} = \"{{ $json.Name }}\",\n  OR(\n    {Campaign Status} = \"Inactive\"\n  )\n)",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -272,
+    -272
+   ],
+   "id": "92a665f1-7e85-4f1c-bc53-057dd4602e07",
+   "name": "Get Campaign Copy2",
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "jsCode": "let accounts=$input.all().map(i=>i.json);\nconst control=$('Set Workspace ID').first().json;\nconst workspace_id=String(control.workspace_id);\nconst cycle_key=String(control.placement_cycle_key||'').trim();if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(cycle_key))throw new Error('Invalid placement cycle key');\nconst manifest_id=String(control.placement_manifest_id||'').trim();\nconst approved_manifest_id='ipt-2026-10-28-207-v4';\nconst approved_manifest_sha256='f7164febae8bb9b526e0e05fd2468c124aba80beddf03c04dc062c27e08da9b5';\nconst approvedByWorkspace={\"2\":[[\"recz1pefrmbrDU2b4\",\"4455\"],[\"reczHNEHRjpAbcLME\",\"4479\"],[\"recybik4OJtqflqHr\",\"4491\"],[\"recz5B9yToL7iDvCd\",\"4536\"],[\"recysxdcqzuT87ypH\",\"6485\"],[\"recyjQbMBiqzqhGpW\",\"6495\"],[\"reczJqyZRTOHsBXPF\",\"6665\"],[\"recyTZxDnK8Vnnhnh\",\"6667\"],[\"reczgDwLMlSWuhRCg\",\"6735\"],[\"reczfMGPJGZMUIG3b\",\"6737\"],[\"reczKC5ezVzlNmFHU\",\"6739\"],[\"recysnclc15Al1lye\",\"6743\"],[\"recyuamWKsco4e2qZ\",\"6767\"]],\"66\":[[\"recZM7Ax8QS4yy8Xm\",\"5820\"],[\"recUHI5kS1NiRVpPo\",\"5821\"],[\"recZuR6rsXaDquqPL\",\"5824\"],[\"rechZzruEObZkI8vl\",\"5827\"],[\"recOAZNEBeS1x0qao\",\"5829\"],[\"recnzQYyHU8JC3HKx\",\"5831\"],[\"recRdIn3wo922OKbQ\",\"5832\"],[\"recOi0976FPQ4wvhE\",\"5834\"],[\"rectVXgn9nkTW0TZH\",\"5835\"],[\"reclLc0YnPhsXOsgk\",\"5837\"],[\"recYPs3u6xDwFWlvd\",\"5839\"],[\"recgJOKAB7y1IYNb3\",\"5840\"],[\"recQLCXsDczQy7svN\",\"5842\"],[\"recjvwVkLTUhJ4GAa\",\"5843\"],[\"rectNR3F5vphGst2y\",\"5844\"],[\"rectT5Ty73frXNGTI\",\"5846\"],[\"recSD8sKhGeMB7iPO\",\"5847\"],[\"reck68l0kazGuiOhv\",\"5849\"],[\"rechRgt9jNOp5jEUc\",\"5852\"],[\"recOCNg0HCgeaM3IG\",\"5853\"],[\"recxpFFMkFH3AcTH3\",\"5855\"],[\"recjIiR3JdovjABnX\",\"5856\"],[\"recxtxEz0QVhJ7yOL\",\"5857\"],[\"recuLnwwbRkAy3dll\",\"5860\"],[\"recVVQJfiioMH2uHK\",\"5862\"],[\"recmplf3XJ04KXeZg\",\"5867\"],[\"rectI3k5OvstDc7Lp\",\"5868\"],[\"recTCyB1VZfTus0y4\",\"5869\"],[\"recccxe1Sq0fdzEyB\",\"5870\"],[\"recnUyMZ4lwgbwCqT\",\"5871\"],[\"rechoHhA6PB22pNxB\",\"5873\"],[\"recyeL42d0UPxg96A\",\"5874\"],[\"rece1PWDk4mkja8gs\",\"5876\"],[\"reccNEwjUhKxSIExl\",\"5877\"],[\"recwnA1hK9WwXDd4g\",\"5879\"],[\"recdExfwCwwbuQnnt\",\"5880\"],[\"recNnVdng4xvMIl7U\",\"5882\"],[\"recheL83oCqUL2bca\",\"5883\"],[\"reczUq5orkQXChMtx\",\"5885\"],[\"recnz3rK5jjtv9TIe\",\"5888\"],[\"recYBvZ34YIAletTs\",\"5890\"],[\"recOgdO0KLRxllLFo\",\"5891\"],[\"recP1vvlhnaX8WFbG\",\"5892\"],[\"recjL3lKtqthf94bG\",\"5893\"],[\"recs9QEj7FAN4P1h0\",\"5895\"],[\"recPdfnhEagEQW5o7\",\"5896\"],[\"recpC5nQf2ucsaqkP\",\"5897\"],[\"recQIzxW0RgAltGJ6\",\"5899\"],[\"reczPwJbrKWCqrjIM\",\"5900\"],[\"recyvK8Hb3mAR5wP2\",\"5903\"],[\"reckn9zogWX5kPoJn\",\"5905\"],[\"recZvByOrVEoIs9FN\",\"5906\"],[\"recs9fLOewCh0j1hv\",\"5908\"],[\"recPDj8s0rIrVSYYp\",\"5909\"],[\"rece80LLiXfBZpJ9M\",\"5912\"],[\"reczSdBY0mSy6OdgI\",\"5913\"],[\"reccFN60c1OqrjtyI\",\"5914\"],[\"recNfSfDuW23qU97X\",\"5915\"],[\"recikOKld3GuZ26r4\",\"5916\"],[\"recjFMNt0XDypcjtt\",\"5917\"],[\"rechg9LnAhDjOHmON\",\"5918\"],[\"recUmi9ibb1UUIqfg\",\"5921\"],[\"recwuKhxtNI6CbHXy\",\"5922\"],[\"recTNSDTj7KIgVCdF\",\"5924\"],[\"recvFIKeXk1BkARzQ\",\"5927\"],[\"recrxp7eHsmyo6Ypn\",\"5928\"],[\"recSPdxiNWcH3sR5D\",\"5932\"],[\"recQ6V0drXkqlty50\",\"5933\"],[\"recO0M50825GMzMVv\",\"5934\"],[\"reccbMndEZ7IHxWAO\",\"5935\"],[\"recTf93pVqQjuJ5uY\",\"5936\"],[\"recP5kiR9ciSpb1ho\",\"5937\"],[\"reccJ2mMqUzLhNqE1\",\"5940\"],[\"recfDe2iNhm5gm304\",\"5941\"],[\"recNGeX1sGmFjLZm8\",\"5942\"],[\"recV4fYKg9zGioDU1\",\"5944\"],[\"recVfjFXvapPAzUe7\",\"5945\"],[\"recXlz5I3pbdl0BYC\",\"5947\"],[\"recwai1VX7OlEUOgy\",\"5948\"],[\"recSX33dMRaDgCGVS\",\"5949\"],[\"recoih9nDMHOJQbcm\",\"5950\"],[\"recNE5nLnxCDNoK8b\",\"5953\"],[\"recgyDqu14jtGTEei\",\"5955\"],[\"recbspXEOKPXWXmYg\",\"5957\"],[\"reczJo3NBBl9KsKZe\",\"5958\"],[\"reci5HeEwRTDb2J7O\",\"5959\"],[\"recfRnXnsU9T9m9tZ\",\"5961\"],[\"recVS3l2RvdtPdS2J\",\"5962\"],[\"recR3myLlROqiLvGE\",\"5963\"],[\"recsT2FS8U1ueS8aU\",\"5964\"],[\"recuyF4vSPgTYdgS9\",\"5965\"],[\"reclNEaa808KKLL3d\",\"5966\"],[\"recNtbz7I5nzPA5DT\",\"5968\"],[\"recxiQKHhr0LdFm6j\",\"5969\"],[\"recifZuxsboxXILBs\",\"5971\"],[\"recP1gB2VedbpsLHP\",\"5973\"],[\"recvrMEeawQOPr9Ov\",\"5976\"],[\"reccEfIxh2i0XbfpZ\",\"5977\"],[\"recoOsL0Xb7FQFZPZ\",\"5978\"],[\"recTwZEaWfnXCLfV5\",\"5980\"],[\"recsdgq1w7n6JUqor\",\"5981\"],[\"recfJao5JwuHTCESw\",\"5983\"],[\"reclDpaciG8ekZOR2\",\"5987\"],[\"recOnvPsNmqpQ5tpr\",\"5989\"],[\"recVdp4vTppTFgHUF\",\"5990\"],[\"recMtczMYWLrLdXnb\",\"5992\"],[\"recuXnXfgTQGxrV7y\",\"5994\"],[\"rechgmmaQN7nwOjbh\",\"5995\"],[\"recwvmKRvKEVOEcXo\",\"5997\"],[\"recf5tHCgNpeqChKe\",\"5998\"],[\"recWvxtCYefJ5KGBm\",\"5999\"],[\"recqF5AnxwYBFX2v1\",\"6000\"],[\"recsUAVJv6Xlvbaqv\",\"6004\"],[\"recOqTNZq5gUFxmAa\",\"6006\"],[\"recOCEZWU8LFwBcp8\",\"6007\"],[\"recmPKnjee65e7lqo\",\"6008\"],[\"recm5WPHX3e6H4sR6\",\"6009\"],[\"reckLA4ZwoUCaSOTr\",\"6010\"],[\"recpiebBdboP0aXBK\",\"6011\"],[\"recszxAlupSAr8oh9\",\"6012\"],[\"recz8sw8RlZl3NG7y\",\"6013\"],[\"rectFwsAXE8jkPuTw\",\"6014\"],[\"recgrbGLtmTNF0OQi\",\"6015\"],[\"reccKDieskTF0eaKu\",\"6017\"],[\"recR4t0c8vkQgBnhk\",\"6018\"],[\"recW14mzI3gGp0nr5\",\"6019\"],[\"recqHZEhZrenoK1VK\",\"6021\"],[\"recwlquGIyacn9mPL\",\"6022\"],[\"recrY2DbhCyiNi31a\",\"6024\"],[\"recVfIDUxycc0VwSS\",\"6025\"],[\"recxOcZ4WHlp46kNw\",\"6027\"],[\"recuvUziwVBywy7KP\",\"6028\"],[\"reccE8QhsFxsxGozG\",\"6029\"],[\"recMRZmIScifjmHdn\",\"6030\"],[\"recOqSNXhSDhgBAQD\",\"6031\"],[\"recpBVLEPZiMC3kIe\",\"6032\"],[\"reclt8faJIg5MCjzM\",\"6035\"],[\"recjECrRPte2NfezH\",\"6038\"],[\"recgivgVcGQAEmUHw\",\"6039\"],[\"recxghLowdlRZWdhO\",\"6040\"],[\"recVGCguQkHOEUQOW\",\"6041\"],[\"recmSWhZe3VAtTQDo\",\"6042\"],[\"recunZn5twbhejY86\",\"6043\"],[\"recd5hsVMkqTgoWQh\",\"6045\"],[\"recRm7yRtgofk51ni\",\"6046\"],[\"rectl2PPjpKPIeOJN\",\"6047\"],[\"reccN7NAa8bTfc4tM\",\"6048\"],[\"reccKFHsCjGsQuF44\",\"6049\"],[\"rectHhxlCtilx1oFJ\",\"6051\"],[\"recRXQ71rdWAsGhTM\",\"6052\"],[\"recp9vUhGZeKHZd59\",\"6054\"],[\"recb5Ohk9DAFxE94U\",\"6056\"],[\"reclRpiyt8UqM9F5q\",\"6057\"],[\"recTVh08PHfWZUqb8\",\"6058\"],[\"recz5epoGfHVuQleO\",\"6061\"],[\"recMI5rQX5JARphVI\",\"6063\"],[\"recQstJ8GSINz06bi\",\"6064\"],[\"recabp9AENhblgSn4\",\"6066\"],[\"recRrc17tDOvehi0N\",\"6068\"],[\"recb2MBPxC9rSbhC7\",\"6069\"],[\"recqazJUhBaX199b4\",\"6070\"],[\"recmOwVZnqfnkIRCY\",\"6071\"],[\"recZmoFyGaRSQkMpY\",\"6072\"],[\"recnCA8Te93yeLT7L\",\"6074\"],[\"recl4SA0Wvaj6Tksc\",\"6075\"],[\"reccEDA6OQbOskS2e\",\"6076\"],[\"recnVDlJYOVjKhs8a\",\"6077\"],[\"recrO6xwl0EZjde0V\",\"6078\"],[\"recYe9rFy5vUtcYmh\",\"6081\"],[\"recYyRDc0KAwuf3gS\",\"6083\"],[\"reczH0eWhaBmqqeui\",\"6084\"],[\"recd0yiBNlRLpLFsp\",\"6087\"],[\"recWLGgiK1v69A8Ap\",\"6088\"],[\"reco8p9buBQp7MZLT\",\"6089\"],[\"recr0s4EwEf5MA1WT\",\"6090\"],[\"recMQ4AZgCXQ8E7FH\",\"6093\"],[\"recR2iOQlndlRDJWc\",\"6094\"],[\"reczaJGaIUkmU3yg5\",\"6098\"],[\"recni2sffrXme1yyN\",\"6100\"],[\"rechsuOkOYu8ndrjy\",\"6102\"],[\"recPwLYigzUJINHyg\",\"6104\"],[\"reccewvJMHvjhUfxs\",\"6105\"],[\"recmMWhkPOGWWxmOr\",\"6106\"],[\"recP5ExYXr18lQ7A1\",\"6107\"],[\"recmuwOiEbSKSWcOQ\",\"6109\"],[\"recvdpAzEkRUzAjm6\",\"6110\"],[\"recw5oQcPhV0v7WlI\",\"6111\"],[\"recyMZgeIr3KS1oqD\",\"6112\"],[\"recZnjJt9cQFj4CKM\",\"6113\"],[\"recbCyipfSaLW1CoW\",\"6114\"],[\"recyjDsnyJs7lMCPn\",\"6116\"],[\"recVUbD3i2HKDs2OJ\",\"6117\"],[\"recboyBLRPiZ4Oo8Z\",\"6118\"],[\"recOYrkXBblJkNMgo\",\"6119\"]]};\nlet manifest_meta=null;\nif(manifest_id){  \nif(manifest_id!==approved_manifest_id)throw new Error('Unknown placement manifest; no tests dispatched');  \nconst approvedRows=approvedByWorkspace[workspace_id];  \nif(!approvedRows)throw new Error('Workspace is outside approved manifest; no tests dispatched');  \nconst approvedByEmail=new Map(approvedRows.map(([record_id,email_id])=>[String(email_id),String(record_id)]));  \nconst selected=[];  \nfor(const account of accounts){    \nconst email_id=String(account['Email ID']||'');    \nif(!approvedByEmail.has(email_id))continue;    \nif(String(account.id)!==approvedByEmail.get(email_id))throw new Error('Manifest account identity mismatch; no tests dispatched');    \nselected.push(account);  \n}  \nconst selectedIds=new Set(selected.map(a=>String(a['Email ID']||'')));  \nconst missing_email_ids=approvedRows.map(([,email_id])=>String(email_id)).filter(id=>!selectedIds.has(id));  \naccounts=selected;  \nmanifest_meta={manifest_id,manifest_sha256:approved_manifest_sha256,approved_ceiling:approvedRows.length,selected_count:accounts.length,missing_count:missing_email_ids.length,missing_email_ids};\n}\nconst held_email_ids=new Set(['4333','6485','5989']);\naccounts=accounts.filter(a=>!held_email_ids.has(String(a['Email ID']||'')));\nif(accounts.some(a=>held_email_ids.has(String(a['Email ID']||''))))throw new Error('Held account is forbidden from dispatch');\nif(manifest_meta)manifest_meta={...manifest_meta,held_email_ids:[...held_email_ids],selected_count:accounts.length};\nif(!accounts.length)return [];\nif(accounts.some(a=>String(a['Workspace ID'])!==workspace_id))throw new Error('Mixed workspace accounts; no tests dispatched');\nconst seen=new Set();for(const a of accounts){const id=String(a['Email ID']||'');if(!id||seen.has(id))throw new Error('Missing or duplicate sender ID; no tests dispatched');seen.add(id);}\nif([...seen].some(id=>held_email_ids.has(id)))throw new Error('Held account is forbidden from dispatch');\nlet copy={};for(const name of ['Get Campaign Copy','Get Campaign Copy1','Get Campaign Copy2']){if($(name).isExecuted){const candidate=$(name).first().json;if(candidate['Script Copy Email 1 (Review)']){copy=candidate;break;}}}\nconst request_id=String($execution.id);\nconst subject=copy['Subject Line Email 1 (Review)']??'See you tomorrow!';\nconst body=copy['Script Copy Email 1 (Review)']??'Hey, I just wanted to make sure we are still on for our meeting tomorrow in the afternoon. We still good?';\nconst batches=[];\nfor(let start=0;start<accounts.length;start+=5){  \nconst batch_accounts=accounts.slice(start,start+5);  \nconst batch_index=Math.floor(start/5);  \nbatches.push({json:{request_id,cycle_key,workspace_id,accounts:batch_accounts,offset:0,batch_index,batch_key:[manifest_id,workspace_id,batch_index].join(':'),manifest:manifest_meta,subject,body}});\n}\nreturn batches;"
+   },
+   "id": "a03005e2-78d1-45fa-80ff-ecbbfab282f2",
+   "name": "Prepare placement batches",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1312,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "workflowId": {
+     "__rl": true,
+     "mode": "id",
+     "value": "PlacementBatchWorkerOct16"
+    },
+    "workflowInputs": {
+     "mappingMode": "defineBelow",
+     "value": {},
+     "matchingColumns": [],
+     "schema": [],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": true
+    },
+    "options": {
+     "waitForSubWorkflow": true
+    }
+   },
+   "id": "6531f1d1-612e-4bea-9bba-19830bcad6ce",
+   "name": "Start placement batch",
+   "type": "n8n-nodes-base.executeWorkflow",
+   "typeVersion": 1.3,
+   "position": [
+    1552,
+    0
+   ],
+   "alwaysOutputData": false
+  },
+  {
+   "parameters": {
+    "inputSource": "passthrough"
+   },
+   "id": "5c0c3068-243a-4cfb-a139-7a6280ddf2a4",
+   "name": "Queued client input",
+   "type": "n8n-nodes-base.executeWorkflowTrigger",
+   "typeVersion": 1.1,
+   "position": [
+    -1840,
+    80
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "SELECT * FROM dulcy_inbox_placement_runtime.acquire_lease($1,$2,$3,$4,$5)",
+    "options": {
+     "queryReplacement": "={{ ['client:global', String($execution.id), String($('Set Workspace ID').first().json.placement_request_id), 'client', 1800] }}"
+    }
+   },
+   "id": "6f0febce-39df-4a7e-a4f2-cbf7df469a2b",
+   "name": "Acquire exclusive client lock",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    -1392,
+    112
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "c2eb009d-09cb-43c1-814d-733fc38db89a",
+       "leftValue": "={{ Boolean($json.acquired) }}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "2be1eef2-a738-4ed4-b258-d380debaec9e",
+   "name": "Client lock acquired?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    -1168,
+    112
+   ]
+  },
+  {
+   "parameters": {
+    "amount": 30
+   },
+   "id": "70e73a49-8991-40d0-b9e4-25a98bec362a",
+   "name": "Wait for active client",
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    -944,
+    208
+   ],
+   "webhookId": "0a944abe-e111-41f6-8024-fb3cb4f342a8"
+  },
+  {
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "SELECT * FROM dulcy_inbox_placement_runtime.release_lease($1,$2)",
+    "options": {
+     "queryReplacement": "={{ ['client:global', String($execution.id)] }}"
+    }
+   },
+   "id": "6eeea09a-ecfa-492e-aeba-533494c4f150",
+   "name": "Release exclusive client lock",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    1776,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "return [{json:{cleanup_failed:false}}];"
+   },
+   "id": "f83fd286-0cdd-45da-95ad-7ae36cd0d284",
+   "name": "Mark placement batch success for cleanup",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1680,
+    -80
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const message=String($json?.error?.message||$json?.message||'Placement batch failed'); return [{json:{cleanup_failed:true,cleanup_error:message}}];"
+   },
+   "id": "1f871783-578e-4d31-a11f-0e5bc3b45d6f",
+   "name": "Mark placement batch failure for cleanup",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1680,
+    80
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "if($('Mark placement batch failure for cleanup').isExecuted){const message=String($('Mark placement batch failure for cleanup').first().json.cleanup_error||'Placement batch failed');throw new Error('Placement batch failed after client lock release: '+message);} return $input.all();"
+   },
+   "id": "5f0845d0-8c67-4977-ac9f-55b9cc17df6b",
+   "name": "Finish placement batch after cleanup",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2016,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "options": {}
+   },
+   "id": "d72ef658-7d0f-43ac-83a4-9a6bd9f175cb",
+   "name": "Loop Over Placement Batches",
+   "type": "n8n-nodes-base.splitInBatches",
+   "typeVersion": 3,
+   "position": [
+    1488,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "amount": 0.25
+   },
+   "id": "d5c25318-a334-47af-b973-0b08722ba77d",
+   "name": "0.25s between placement batches",
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    1744,
+    -160
+   ],
+   "webhookId": "9ab59858-acde-4b32-9ea5-b2ed6a278d37"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

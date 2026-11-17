@@ -1,0 +1,233 @@
+{
+ "id": "C6eWSJ80DyNIORpxz_c5a",
+ "name": "[Spam Protocol] Approve Domain Replacement",
+ "active": true,
+ "isArchived": false,
+ "versionId": "a691fe51-1240-49c6-bc53-3189d543f2c9",
+ "triggerCount": 1,
+ "createdAt": "2026-08-17T21:28:05.168Z",
+ "updatedAt": "2026-11-17T16:41:48.984Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Every Minute": {
+   "main": [
+    [
+     {
+      "node": "Find Approved Replacements",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Test Manually": {
+   "main": [
+    [
+     {
+      "node": "Find Approved Replacements",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Find Approved Replacements": {
+   "main": [
+    [
+     {
+      "node": "Create Domain Purchase Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create Domain Purchase Request": {
+   "main": [
+    [
+     {
+      "node": "Link Purchase Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "hours",
+       "hoursInterval": 6
+      }
+     ]
+    }
+   },
+   "id": "6ffa4036-9e18-4c81-a865-53bb08ea3d3e",
+   "name": "Every Minute",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    0
+   ]
+  },
+  {
+   "parameters": {},
+   "id": "3a073651-1cb7-4da5-93d7-c49e6ad8b21c",
+   "name": "Test Manually",
+   "type": "n8n-nodes-base.manualTrigger",
+   "typeVersion": 1,
+   "position": [
+    0,
+    160
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblaJZ3ru2TOiHOOM",
+     "mode": "list",
+     "cachedResultName": "Spam Remediation Queue"
+    },
+    "filterByFormula": "=AND({Approve Purchase}=1,{Status}='Pending Review',{Recommended Action}='Replace Domain',{Domain Purchase Request}=BLANK())",
+    "returnAll": false,
+    "limit": 10,
+    "options": {}
+   },
+   "id": "34de4c82-9ead-4fa5-b536-92bd3d3aa797",
+   "name": "Find Approved Replacements",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    240,
+    80
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblU6OstDVWeuYBxL",
+     "mode": "list",
+     "cachedResultName": "Domain Purchase Requests"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Request": "={{ 'Spam replacement — ' + ($json.Remediation || $json.id) }}",
+      "Client / Workspace": "={{ $json.Client }}",
+      "Domain Count": 1,
+      "Preferred TLDs": [
+       ".com"
+      ],
+      "Inbox Provider": "Google",
+      "Status": "Generate Domains",
+      "Approve Purchase": false,
+      "Promo Code": "agencyignition$",
+      "Batch Size": 10,
+      "Minutes Between Batches": 10,
+      "Spam Remediation Queue": "={{ [$json.id] }}"
+     },
+     "matchingColumns": [],
+     "schema": []
+    },
+    "options": {
+     "typecast": true
+    }
+   },
+   "id": "46e3d91e-44ee-4c19-9ef4-ae139dbbda3c",
+   "name": "Create Domain Purchase Request",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    512,
+    80
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblaJZ3ru2TOiHOOM",
+     "mode": "list",
+     "cachedResultName": "Spam Remediation Queue"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "id": "={{ $('Find Approved Replacements').item.json.id }}",
+      "Status": "In Progress",
+      "Domain Purchase Request": "={{ [$json.id] }}",
+      "Error": ""
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": []
+    },
+    "options": {
+     "typecast": true
+    }
+   },
+   "id": "3f84e3b4-34e7-45ad-9f1d-1a2d1054aab2",
+   "name": "Link Purchase Request",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    768,
+    80
+   ]
+  },
+  {
+   "parameters": {
+    "content": "## Two-step approval\n1. Spam Remediation Queue → check **Approve Purchase**. This workflow creates a one-domain request and starts domain generation/quoting.\n2. Buy Domains & Inboxes → review the selected domain and quote, then check its **Approve Purchase** field to authorize the actual charge.\n\nDefaults: 1 .com domain, Google, two inboxes, promo `agencyignition$`. No card is charged by this bridge.",
+    "height": 300,
+    "width": 520,
+    "color": 5
+   },
+   "id": "3263c70e-47ee-478c-9526-d68a7b7b86c8",
+   "name": "Approval Safety",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    0,
+    352
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

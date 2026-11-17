@@ -1,0 +1,444 @@
+{
+ "id": "X8o_bx_MBS0h0mmrGKas-",
+ "name": "[Dulcy Reply Agent] 04 Provision Client",
+ "active": true,
+ "isArchived": false,
+ "versionId": "f41e6205-69ad-4c43-b5e8-035b2269e204",
+ "triggerCount": 1,
+ "createdAt": "2026-08-24T03:28:07.189Z",
+ "updatedAt": "2026-11-17T16:42:18.222Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Provision Client Webhook": {
+   "main": [
+    [
+     {
+      "node": "Validate Provision Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate Provision Request": {
+   "main": [
+    [
+     {
+      "node": "Get Provision Workspace",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Provision Workspace": {
+   "main": [
+    [
+     {
+      "node": "Get Provision Onboarding",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Provision Onboarding": {
+   "main": [
+    [
+     {
+      "node": "Find Existing Agent Settings",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Find Existing Agent Settings": {
+   "main": [
+    [
+     {
+      "node": "Prepare Client Provisioning",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Client Provisioning": {
+   "main": [
+    [
+     {
+      "node": "Upsert Agent Settings",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Upsert Agent Settings": {
+   "main": [
+    [
+     {
+      "node": "List EmailBison Webhooks",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "List EmailBison Webhooks": {
+   "main": [
+    [
+     {
+      "node": "Check Intake Webhook",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Check Intake Webhook": {
+   "main": [
+    [
+     {
+      "node": "Intake Webhook Exists?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Intake Webhook Exists?": {
+   "main": [
+    [
+     {
+      "node": "Already Provisioned",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Register EmailBison Webhook",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "content": "# Dulcy Reply Agent V1 - Provision Client\n\nCreates or updates one disabled, approval-first settings record for a Workspace IDs record.\n\nIt also checks the workspace's EmailBison webhooks and registers the shared lead_replied intake URL only when it is missing.\n\nConnect the onboarding-complete workflow to this webhook after the Dulcy pilot passes.",
+    "height": 330,
+    "width": 540
+   },
+   "id": "99ee5523-aa9d-433e-8136-5dd287e3f559",
+   "name": "READ BEFORE ACTIVATING",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    0,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "id": "1c666706-cf90-4b78-9aaf-99f197229dd5",
+   "name": "Provision Client Webhook",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    48,
+    448
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "\nconst envelope = $json.body ?? $json;\nconst workspaceRecordId = String(envelope.workspaceRecordId ?? envelope.recordId ?? $json.query?.workspaceRecordId ?? '').trim();\nif (!/^rec[a-zA-Z0-9]{14}$/.test(workspaceRecordId)) {\n  throw new Error('Missing valid Workspace IDs record ID. Send {\"workspaceRecordId\":\"rec...\"}.');\n}\nreturn [{json:{workspaceRecordId,requestedAt:new Date().toISOString()}}];"
+   },
+   "id": "6ece58e2-5e0f-4b59-8bf6-1949c00796d4",
+   "name": "Validate Provision Request",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    240,
+    448
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/Workspace%20IDs/' + $json.workspaceRecordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "350d65e8-7ca8-4f60-a570-f18af980976b",
+   "name": "Get Provision Workspace",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    448,
+    448
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/Onboarding/' + (($('Get Provision Workspace').first().json.fields?.Onboarding || [])[0] || 'rec00000000000') }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "04322ce3-56c8-4ede-b9fb-91a5a0ee6553",
+   "name": "Get Provision Onboarding",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    640,
+    448
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tbl5nmzPUcNEBSWxH",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "filterByFormula",
+       "value": "={{ \"{Workspace Record ID}='\" + $('Validate Provision Request').first().json.workspaceRecordId + \"'\" }}"
+      },
+      {
+       "name": "maxRecords",
+       "value": "1"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "6e95ab42-eda2-4177-a82a-9890f6513299",
+   "name": "Find Existing Agent Settings",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    848,
+    448
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "\nconst request = $('Validate Provision Request').first().json;\nconst workspaceResponse = $('Get Provision Workspace').first().json;\nif (!workspaceResponse?.fields) throw new Error('Workspace record could not be loaded.');\nconst workspace = workspaceResponse.fields;\nconst onboarding = $('Get Provision Onboarding').first().json?.fields || {};\nconst existing = ($('Find Existing Agent Settings').first().json.records || [])[0];\nconst current = existing?.fields || {};\nconst pick = (object,names) => names.map(name=>object?.[name]).find(value=>value!==undefined&&value!==null&&String(value).trim()) || '';\nconst workspaceName = String(workspace.Name || pick(onboarding,['Company Name','What is the name of your company?']) || request.workspaceRecordId);\nconst calendarLink = String(current['Calendar Link'] || pick(onboarding,['Calendar Link','What is your calendar link?','Booking Link']) || '');\nconst timezone = String(current.Timezone || pick(onboarding,['Timezone','Time Zone']) || 'America/New_York');\nconst fields = {\n  ...current,\n  'Workspace Key':String(current['Workspace Key'] || workspace['Workspace ID'] || workspace['EmailBison Workspace ID'] || request.workspaceRecordId),\n  'Workspace Name':workspaceName,\n  'Workspace Record ID':request.workspaceRecordId,\n  'Enabled':current.Enabled === true,\n  'Default Mode':String(current['Default Mode'] || 'Approval Required'),\n  'Reply Handoff Mode':String(current['Reply Handoff Mode'] || 'Disabled'),\n  'OOO Mode':String(current['OOO Mode'] || 'Approval Required'),\n  'Not Interested Nudge':current['Not Interested Nudge'] === true,\n  'Minimum Auto Confidence':Number(current['Minimum Auto Confidence'] ?? 0.9),\n  'Max Automatic Replies':Number(current['Max Automatic Replies'] ?? 0),\n  'Response Tone':String(current['Response Tone'] || 'Warm'),\n  'Response Length':String(current['Response Length'] || 'Brief'),\n  'Timezone':timezone,\n  'Office Start':String(current['Office Start'] || '09:00'),\n  'Office End':String(current['Office End'] || '17:00'),\n  'Exclude Weekends':current['Exclude Weekends'] !== false,\n  'Exclude US Holidays':current['Exclude US Holidays'] !== false,\n  'Calendar Link':calendarLink || undefined,\n  'Follow-up Instructions':String(current['Follow-up Instructions'] || ''),\n  'Company Context Override':String(current['Company Context Override'] || ''),\n  'Last Updated':new Date().toISOString()\n};\nfor (const key of Object.keys(fields)) if (fields[key] === undefined) delete fields[key];\nconst settingsBody = {performUpsert:{fieldsToMergeOn:['Workspace Record ID']},records:[{fields}],typecast:true};\nconst intakeUrl='https://n8n.dulcy.io/webhook/REDACTED_PATH?workspaceRecordId='+request.workspaceRecordId;\nreturn [{json:{...request,workspace,onboarding,existingSettingsId:existing?.id||'',settingsBody,intakeUrl,webhookName:'Dulcy Reply Agent - '+workspaceName}}];"
+   },
+   "id": "e625fcde-d078-4cfb-aac2-0346d8bd5174",
+   "name": "Prepare Client Provisioning",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1040,
+    448
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tbl5nmzPUcNEBSWxH",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json.settingsBody) }}",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "2dd0ee8e-b082-47ec-810b-1ce3ddb9fcb7",
+   "name": "Upsert Agent Settings",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1248,
+    448
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://send.dulcy.io/api/webhook-url",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "={{ 'Bearer ' + $('Get Provision Workspace').first().json.fields['EmailBison API'] }}"
+      },
+      {
+       "name": "Accept",
+       "value": "application/json"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "60d47fac-c410-4be0-8c49-f69f298d3bf9",
+   "name": "List EmailBison Webhooks",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1440,
+    448
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "if($json.error||$json.success===false||$json.data?.success===false)throw new Error('Webhook lookup failed; registration stopped.');\n\nconst provision=$('Prepare Client Provisioning').first().json;\nconst response=$json?.data ?? $json;\nconst rows=Array.isArray(response)?response:(Array.isArray(response?.data)?response.data:(Array.isArray(response?.webhooks)?response.webhooks:[]));\nconst existing=rows.find(row=>String(row?.url||row?.webhook_url||'')===provision.intakeUrl);\nreturn [{json:{...provision,webhookExists:Boolean(existing),existingWebhook:existing||null}}];"
+   },
+   "id": "247c1d78-7107-428c-b48a-f82bb5bf530d",
+   "name": "Check Intake Webhook",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1648,
+    448
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "68d7840a-73e5-4a90-b3cc-c3c6716782c7",
+       "leftValue": "={{ $json.webhookExists }}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "7cb4bffd-4b73-4c2c-bb5b-a82f5f0a21a5",
+   "name": "Intake Webhook Exists?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    1840,
+    448
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "return [{json:{status:'ready',workspaceRecordId:$json.workspaceRecordId,settings:'upserted',webhook:'already registered',url:$json.intakeUrl}}];"
+   },
+   "id": "b6fcc92d-dfc3-4c8a-83c9-a08a8504a7ff",
+   "name": "Already Provisioned",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2048,
+    320
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://send.dulcy.io/api/webhook-url",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "={{ 'Bearer ' + $('Get Provision Workspace').first().json.fields['EmailBison API'] }}"
+      },
+      {
+       "name": "Accept",
+       "value": "application/json"
+      },
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({name:$json.webhookName,url:$json.intakeUrl,events:['lead_replied']}) }}",
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "2cd64089-c20e-4d68-9608-5076e738ce80",
+   "name": "Register EmailBison Webhook",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2048,
+    560
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

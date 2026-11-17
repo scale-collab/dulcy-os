@@ -1,0 +1,62 @@
+{
+ "id": "wflRDIdrpmADyu8RP",
+ "name": "Push To Client Reply",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "inputReceivedFromConnection",
+  "inputs": {
+   "tableId": "tblADFhWhTcLrl1UY"
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacRJIq8hnH4MvKhR",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "recordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     }
+    },
+    "script": "let table = base.getTable(\"Emails\");\nlet recordId = input.config().recordId;\nlet record = await table.selectRecordAsync(recordId);\n\nif (!record) {\n    throw new Error(\"No record found\");\n}\n\n// Helper to sanitize for Slack\nfunction sanitizeForSlack(text) {\n    if (!text) return \"\";\n    return text\n        .replace(/\\\\/g, \"\")\n        .replace(/&/g, \"&amp;\")\n        .replace(/</g, \"&lt;\")\n        .replace(/>/g, \"&gt;\")\n        .replace(/\\r?\\n/g, \"\\n\");\n}\n\nlet payload = { recordId };\n\nfor (let field of table.fields) {\n    let value = record.getCellValue(field.name);\n\n    if (\n        (field.name === \"Latest Reply\" || field.name === \"Conversation History\") &&\n        typeof value === \"string\"\n    ) {\n        payload[field.name] = sanitizeForSlack(value);\n    } else {\n        payload[field.name] = value;\n    }\n}\n\nlet webhook = \"https://hook.us1.make.com/REDACTED_PATH\";\nawait fetch(webhook, {\n    method: \"POST\",\n    headers: { \"Content-Type\": \"application/json; charset=utf-8\" },\n    body: JSON.stringify(payload)\n});"
+   },
+   "outputSchema": []
+  },
+  {
+   "key": "wachf4oJ553sJYJ36",
+   "type": "updateRecord",
+   "inputs": {
+    "tableId": "tblADFhWhTcLrl1UY",
+    "rowId": {
+     "template": [
+      {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     ]
+    },
+    "updateRecordMethod": "customFields",
+    "fields": {
+     "obj": {
+      "fldzd2bHc5XMGidFk": {
+       "obj": {
+        "id": "selNMdUTeUpRe5Ii0"
+       }
+      }
+     }
+    }
+   }
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

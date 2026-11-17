@@ -1,0 +1,139 @@
+{
+ "id": "wflBid7eZpAgmMLq6",
+ "name": "Search HeyReach for Email Campaigns",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordUpdated",
+  "inputs": {
+   "tableId": "tblAVAA6uBPaMj28P",
+   "watchFields": [
+    "fldcKcLrYdjEi5af7"
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacROzWXVHfACvQIV",
+   "type": "findRecords",
+   "inputs": {
+    "tableId": "tbl7s4Q7ccNy5aSSW",
+    "queryType": "filtersObj",
+    "filtersObj": {
+     "obj": {
+      "operator": "and",
+      "operands": {
+       "tuple": [
+        {
+         "obj": {
+          "operands": {
+           "tuple": [
+            "fldYGv71lVkH6HmgR",
+            {
+             "$ref": "trigger",
+             "path": [
+              "cellValuesByFieldId",
+              "fldxSETE3D66RyWRH"
+             ]
+            }
+           ]
+          },
+          "operator": "=",
+          "operatorOptions": null
+         }
+        },
+        {
+         "obj": {
+          "operands": {
+           "tuple": [
+            "fldxPaBfJWZqUTIyD",
+            [
+             {
+              "$ref": "trigger",
+              "path": [
+               "id"
+              ]
+             }
+            ]
+           ]
+          },
+          "operator": "hasAnyOf",
+          "operatorOptions": null
+         }
+        }
+       ]
+      }
+     }
+    },
+    "limit": 1000
+   }
+  },
+  {
+   "key": "wdesj5BDqRHfLPxIG",
+   "type": "conditionalGroup",
+   "branches": [
+    {
+     "description": "No LinkedIn Campaign for this Email Campaign",
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "fn": "length",
+         "args": [
+          {
+           "$ref": "wacROzWXVHfACvQIV",
+           "path": [
+            "records"
+           ]
+          }
+         ]
+        },
+        "operator": "=",
+        "right": 0,
+        "valueType": "number",
+        "dataType": "literal"
+       },
+       {
+        "left": {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldZABZwE9SmnwMv3"
+         ]
+        },
+        "operator": "=",
+        "right": "selWmPUNJFlI0KFpT",
+        "valueType": "select",
+        "dataType": "literal"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wacf3zEqiPWf9LITm",
+       "type": "customScript",
+       "inputs": {
+        "inputObj": {
+         "obj": {
+          "recordId": {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          }
+         }
+        },
+        "script": "let table = base.getTable(\"Campaigns\");\nlet record = await table.selectRecordAsync(input.config().recordId);\nlet webhook = \"https://hook.us1.make.com/REDACTED_PATH\";\n\n// Create payload from record fields + add recordId\nlet payload = {\n    recordId: record.id,\n    ...Object.fromEntries(\n        table.fields.map(f => [f.name, record.getCellValue(f.name)])\n    )\n};\n\n// Send data to webhook\nawait fetch(webhook, {\n    method: \"POST\",\n    headers: {\n        \"Content-Type\": \"application/json\"\n    },\n    body: JSON.stringify(payload)\n});"
+       },
+       "outputSchema": []
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

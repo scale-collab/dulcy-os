@@ -1,0 +1,80 @@
+{
+ "id": "wflwZWjWo6WMk00y6",
+ "name": "Fetch Campaign Data Auto",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "cron",
+  "inputs": {
+   "type": "weeklyV2",
+   "config": {
+    "obj": {
+     "weekdays": {
+      "tuple": [
+       1,
+       2,
+       3,
+       4,
+       5
+      ]
+     },
+     "triggerTimes": {
+      "tuple": [
+       {
+        "obj": {
+         "hour": 21,
+         "minute": 0,
+         "second": 0
+        }
+       }
+      ]
+     },
+     "width": 1
+    }
+   },
+   "start": "2025-01-20T05:00:00.000Z"
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacrTHBZxnNu6YaOZ",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "apikey": "REDACTED_EMAILBISON_TOKEN"
+     }
+    },
+    "script": "// Access input variables using input.config()\nconst inputData = input.config(); // This will fetch all your input variables (apikey)\nconst apikey = inputData.apikey; // API key from your inputs\nconst workspaceTable = base.getTable(\"Workspace IDs\"); // Replace with your actual table name\n\nlet combinedCampaigns = []; // Initialize an array to store campaigns from all workspaces\n\n// Main function to process each workspace\n(async function main() {\n  try {\n    // Fetch all workspace IDs from the \"Workspace IDs\" table\n    const workspaceRecords = await workspaceTable.selectRecordsAsync();\n    const workspaceIDs = workspaceRecords.records.map(record => record.getCellValue(\"ID\")); // Replace \"ID\" with the correct field name in your table\n\n    // Log all workspace IDs\n    console.log(\"Workspace IDs:\", workspaceIDs);\n\n    // Loop through each workspace ID\n    for (const workspaceID of workspaceIDs) {\n      console.log(`Switching to workspace ID: ${workspaceID}`);\n\n      // Fetch request to switch workspace\n      try {\n        const switchResponse = await fetch('https://send.dulcy.io/api/workspaces/v1.1/switch-workspace', {\n          method: 'POST',\n          headers: {\n            Authorization: `Bearer ${apikey}`,\n            'Content-Type': 'application/json'\n          },\n          body: JSON.stringify({\n            team_id: workspaceID\n          })\n        });\n\n        if (!switchResponse.ok) {\n          const errorText = await switchResponse.text();\n          throw new Error(`HTTP error! Status: ${switchResponse.status}, Error: ${errorText}`);\n        }\n\n        const switchData = await switchResponse.json();\n        console.log(`Successfully switched to workspace: ${workspaceID}`, switchData);\n\n        // Fetch active campaigns for the current workspace\n        console.log(`Fetching campaign data for workspace ID: ${workspaceID}`);\n        const campaignResponse = await fetch('https://send.dulcy.io/api/campaigns?status=active', {\n          method: 'GET',\n          headers: {\n            Authorization: `Bearer ${apikey}`,\n            'Content-Type': 'application/json'\n          }\n        });\n\n        if (!campaignResponse.ok) {\n          const errorText = await campaignResponse.text();\n          throw new Error(`HTTP error! Status: ${campaignResponse.status}, Error: ${errorText}`);\n        }\n\n        const campaignData = await campaignResponse.json();\n        console.log(`Campaign data for workspace ${workspaceID}:`, campaignData);\n\n        // Combine campaign data into the main array\n        if (Array.isArray(campaignData.data)) {\n          combinedCampaigns = combinedCampaigns.concat(campaignData.data);\n        }\n\n      } catch (error) {\n        console.error(`Error processing workspace ${workspaceID}:`, error.message || error);\n      }\n    }\n\n    // Log the combined campaign data\n    console.log(\"Combined Campaign Data:\", combinedCampaigns);\n\n    // Set combined campaign data as the output\n    output.set(\"campaignDetails\", JSON.stringify(combinedCampaigns)); // Output combined campaign details\n    console.log(\"Output campaignDetails set successfully.\");\n\n  } catch (error) {\n    console.error(\"Error fetching workspace IDs or processing workspaces:\", error.message || error);\n  }\n})();"
+   },
+   "outputSchema": [
+    {
+     "name": "campaignDetails",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "key": "wacj6NG021nSBGcs6",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "apikey": "REDACTED_EMAILBISON_TOKEN",
+      "campaignDetails": {
+       "$ref": "wacrTHBZxnNu6YaOZ",
+       "path": [
+        "campaignDetails"
+       ]
+      }
+     }
+    },
+    "script": "const inputData = input.config(); // Fetch input data\nconst apiKey = inputData.apikey; // API key passed in as an input\nlet campaignDetails = inputData.campaignDetails; // Array of campaign details from the script output\nconst table = base.getTable(\"Campaigns\"); // Replace \"Campaigns\" with your Airtable table name\n\nconsole.log(\"Input Data:\", inputData); // Log input data for debugging\n\n// Ensure campaignDetails is an array by parsing it if necessary\nif (typeof campaignDetails === \"string\") {\n    try {\n        campaignDetails = JSON.parse(campaignDetails); // Parse the string into a JSON array\n    } catch (error) {\n        console.error(\"Error parsing campaignDetails:\", error);\n        throw new Error(\"campaignDetails is not a valid JSON array.\");\n    }\n}\n\n// Check if campaignDetails is a valid array\nif (!Array.isArray(campaignDetails) || campaignDetails.length === 0) {\n    console.error(\"Campaign Details is empty or not in the correct format.\");\n    throw new Error(\"Campaign Details is empty or invalid.\");\n}\n\n(async function main() {\n    try {\n        // Fetch all existing records in the table\n        const existingRecords = await table.selectRecordsAsync();\n\n        for (const campaign of campaignDetails) {\n            try {\n                // Reformat created_at and updated_at to ensure proper ISO 8601 format\n                campaign.created_at = new Date(campaign.created_at).toISOString();\n                campaign.updated_at = new Date(campaign.updated_at).toISOString();\n\n                // Check if the campaign already exists in the table\n                const existingRecord = existingRecords.records.find(\n                    record => record.getCellValue(\"ID\") === campaign.id\n                );\n\n                if (existingRecord) {\n                    // Update the existing record\n                    await table.updateRecordAsync(existingRecord.id, {\n                        \"Name\": campaign.name,\n                        \"Emails Sent\": campaign.emails_sent,\n                        \"Unique Replies\": campaign.unique_replies,\n                        \"Bounced\": campaign.bounced,\n                        \"Progress\": campaign.completion_percentage/100,\n                        \"Interested\": campaign.interested,\n                        \"Total Leads Contacted\": campaign.total_leads_contacted,\n                        \"Created At\": campaign.created_at,\n                        \"Updated At\": campaign.updated_at,\n                    });\n                    console.log(`Updated record for campaign: ${campaign.name}`);\n                } else {\n                    // Create a new record\n                    await table.createRecordAsync({\n                        \"ID\": campaign.id,\n                        \"Name\": campaign.name,\n                        \"Emails Sent\": campaign.emails_sent,\n                        \"Unique Replies\": campaign.unique_replies,\n                        \"Bounced\": campaign.bounced,\n                        \"Progress\": campaign.completion_percentage/100,\n                        \"Interested\": campaign.interested,\n                        \"Total Leads Contacted\": campaign.total_leads_contacted,\n                        \"Created At\": campaign.created_at,\n                        \"Updated At\": campaign.updated_at,\n                    });\n                    console.log(`Created record for campaign: ${campaign.name}`);\n                }\n            } catch (error) {\n                console.error(`Error processing campaign ${campaign.name}:`, error.message || error);\n            }\n        }\n    } catch (error) {\n        console.error(\"Error fetching existing records or processing campaigns:\", error.message || error);\n    }\n})();"
+   },
+   "outputSchema": []
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

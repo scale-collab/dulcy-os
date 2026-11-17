@@ -1,0 +1,561 @@
+{
+ "id": "z3xaHn_cPc9PUibljgcp4",
+ "name": "Dulcy Sign — Slack, Close and Verified Onboarding",
+ "active": true,
+ "isArchived": false,
+ "versionId": "ec5914dc-2204-4fb7-b2c2-79c59b081b9a",
+ "triggerCount": 1,
+ "createdAt": "2026-11-15T18:25:51.346Z",
+ "updatedAt": "2026-11-17T16:44:24.610Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true
+ },
+ "connections": {
+  "Receive Dulcy Sign Event": {
+   "main": [
+    [
+     {
+      "node": "Validate Envelope",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate Envelope": {
+   "main": [
+    [
+     {
+      "node": "Claim Verified Event",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Claim Verified Event": {
+   "main": [
+    [
+     {
+      "node": "Execute Only Fresh Claim",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Execute Only Fresh Claim": {
+   "main": [
+    [
+     {
+      "node": "Route Slack",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Route CRM Sent",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Route Onboarding",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Route Slack": {
+   "main": [
+    [
+     {
+      "node": "Send Contract Slack Notification",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Send Contract Slack Notification": {
+   "main": [
+    [
+     {
+      "node": "Validate Slack Receipt",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Route CRM Sent": {
+   "main": [
+    [
+     {
+      "node": "Find Close Lead — CRM Sent",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Find Close Lead — CRM Sent": {
+   "main": [
+    [
+     {
+      "node": "Verify Close Match — CRM Sent",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Route Onboarding": {
+   "main": [
+    [
+     {
+      "node": "Find Close Lead — Onboarding",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Find Close Lead — Onboarding": {
+   "main": [
+    [
+     {
+      "node": "Verify Close Match — Onboarding",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Verify Close Match — CRM Sent": {
+   "main": [
+    [
+     {
+      "node": "Save Dulcy Contract Link",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Save Dulcy Contract Link": {
+   "main": [
+    [
+     {
+      "node": "Mark Close Contract Sent",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Mark Close Contract Sent": {
+   "main": [
+    [
+     {
+      "node": "CRM Sent Receipt",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Verify Close Match — Onboarding": {
+   "main": [
+    [
+     {
+      "node": "Start Existing Client Onboarding",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Start Existing Client Onboarding": {
+   "main": [
+    [
+     {
+      "node": "Onboarding Accepted Receipt",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate Slack Receipt": {
+   "main": [
+    [
+     {
+      "node": "Acknowledge Slack",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "CRM Sent Receipt": {
+   "main": [
+    [
+     {
+      "node": "Acknowledge CRM Sent",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Onboarding Accepted Receipt": {
+   "main": [
+    [
+     {
+      "node": "Acknowledge Onboarding",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "id": "8bafd228-f3ce-43e8-89ae-f319fab66676",
+   "name": "Receive Dulcy Sign Event",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    0,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const b=$json.body; if(!b||!/^bridge-[a-f0-9]{64}$/.test(b.deliveryId)||typeof b.capability!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(b.capability))throw new Error('Invalid delivery envelope'); return [{json:{deliveryId:b.deliveryId,capability:b.capability}}];"
+   },
+   "id": "a2bd606f-331f-4ffd-84da-6ce0522b8679",
+   "name": "Validate Envelope",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    224,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://sign.dulcy.io/api/integrations/events/claim",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify($json) }}",
+    "options": {}
+   },
+   "id": "3295346c-b07c-4d4d-bb39-557390d2e6b0",
+   "name": "Claim Verified Event",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    448,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "if($json.execute!==true)return [];if(!['slack','crm_sent','onboarding'].includes($json.kind))throw new Error('Unsupported verified kind');return [{json:$json}];"
+   },
+   "id": "a618c899-71e6-454b-9e54-e3d5be0cd138",
+   "name": "Execute Only Fresh Claim",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    672,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "return $json.kind==='slack'?[{json:$json}]:[];"
+   },
+   "id": "07cb5a97-6eb8-435a-9ab3-5b2558cccb70",
+   "name": "Route Slack",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    912,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "return $json.kind==='crm_sent'?[{json:$json}]:[];"
+   },
+   "id": "86063997-ee7f-48f9-ac87-943ea6ee4951",
+   "name": "Route CRM Sent",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    912,
+    352
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "return $json.kind==='onboarding'?[{json:$json}]:[];"
+   },
+   "id": "b0a9b9ff-18aa-4395-a32f-6cb32324f5cf",
+   "name": "Route Onboarding",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    912,
+    688
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://slack.com/api/chat.postMessage",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "slackApi",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify($json.payload) }}",
+    "options": {}
+   },
+   "id": "366a9125-714a-4163-b53e-7d3aacbb9ded",
+   "name": "Send Contract Slack Notification",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1120,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "if($json.ok!==true||typeof $json.ts!=='string'||$json.channel!=='C075UR0HRRR')throw new Error('Slack did not confirm the message');return [{json:{ok:true,ts:$json.ts,channel:$json.channel}}];"
+   },
+   "id": "2a62a1ea-b514-4bef-9854-97f5049923bb",
+   "name": "Validate Slack Receipt",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1344,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "leadId": "={{ $json.payload.leadId }}"
+   },
+   "id": "41108602-77b4-4857-90c0-7236cf7195d2",
+   "name": "Find Close Lead — CRM Sent",
+   "type": "n8n-nodes-close-crm.close",
+   "typeVersion": 1,
+   "position": [
+    1120,
+    352
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const event=$('Execute Only Fresh Claim').first().json,p=event.payload,lead=$json;\nif(lead.id!==p.leadId)throw new Error('Close lead identity does not match');\nconst emails=(lead.contacts||[]).flatMap(c=>(c.emails||[]).map(e=>String(e.email||'').toLowerCase()));\nif(!emails.includes(String(p.clientEmail).toLowerCase()))throw new Error('Close contact email does not match the verified signer');\nconst opportunities=lead.opportunities||[];\nconst bindings={\n 'Dd6Q8Q9tA6bOxHCyiTrWDhRxYmS11n41_2Tgl-JEl9o':'oppo_nOgRxxX1AObqgZAd76wEce0psy9Ya3uL7syDjzsoduv'\n};\nconst active=opportunities.filter(o=>(o.status_type||o.status?.type)==='active');\nconst pinned=p.opportunityId||bindings[p.contractId];\nif(pinned&&!/^oppo_[A-Za-z0-9]+$/.test(pinned))throw new Error('Invalid verified Close opportunity ID');\nconst selected=pinned?active.find(o=>o.id===pinned):(active.length===1?active[0]:null);\nif(!selected)throw new Error('Close opportunity requires review: no unique active or explicitly bound opportunity');\nreturn [{json:{...p,opportunityId:selected.id}}];\n"
+   },
+   "id": "77dd3f32-54fe-4ae5-ba90-36f419c6ee98",
+   "name": "Verify Close Match — CRM Sent",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1344,
+    352
+   ]
+  },
+  {
+   "parameters": {
+    "leadId": "={{ $json.payload.leadId }}"
+   },
+   "id": "99b13c8a-1094-4ef6-aaab-d1302a8ab688",
+   "name": "Find Close Lead — Onboarding",
+   "type": "n8n-nodes-close-crm.close",
+   "typeVersion": 1,
+   "position": [
+    1120,
+    688
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const event=$('Execute Only Fresh Claim').first().json,p=event.payload,lead=$json;\nif(lead.id!==p.leadId)throw new Error('Close lead identity does not match');\nconst emails=(lead.contacts||[]).flatMap(c=>(c.emails||[]).map(e=>String(e.email||'').toLowerCase()));\nif(!emails.includes(String(p.clientEmail).toLowerCase()))throw new Error('Close contact email does not match the verified signer');\nconst opportunities=lead.opportunities||[];\nconst bindings={\n 'Dd6Q8Q9tA6bOxHCyiTrWDhRxYmS11n41_2Tgl-JEl9o':'oppo_nOgRxxX1AObqgZAd76wEce0psy9Ya3uL7syDjzsoduv'\n};\nconst active=opportunities.filter(o=>(o.status_type||o.status?.type)==='active');\nconst pinned=p.opportunityId||bindings[p.contractId];\nif(pinned&&!/^oppo_[A-Za-z0-9]+$/.test(pinned))throw new Error('Invalid verified Close opportunity ID');\nconst selected=pinned?active.find(o=>o.id===pinned):(active.length===1?active[0]:null);\nif(!selected)throw new Error('Close opportunity requires review: no unique active or explicitly bound opportunity');\nreturn [{json:{...p,opportunityId:selected.id}}];\n"
+   },
+   "id": "f06b771c-a630-49e2-88db-047b99e0aa29",
+   "name": "Verify Close Match — Onboarding",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1344,
+    688
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "leadId": "={{ $json.leadId }}",
+    "updateFields": {},
+    "addressUi": {},
+    "customFields": {
+     "textField": {
+      "textFields": [
+       {
+        "fieldId": "cf_pdFQlR5IaMeYvZamaxZ20JEoUlkY6Oc5YV7aNo8F7Qe",
+        "fieldValue": "={{ $json.contractUrl }}"
+       }
+      ]
+     }
+    }
+   },
+   "id": "5e49bb7e-ffd4-4f43-a44d-370aceaad526",
+   "name": "Save Dulcy Contract Link",
+   "type": "n8n-nodes-close-crm.close",
+   "typeVersion": 1,
+   "position": [
+    1568,
+    352
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "opportunity",
+    "operation": "update",
+    "opportunityId": "={{ $('Verify Close Match — CRM Sent').first().json.opportunityId }}",
+    "updateFields": {
+     "statusId": "stat_pQPaE8gYxCL8YnN3BfR8nX3Gup4mRztvNNHwABOkzOs"
+    },
+    "customFields": {}
+   },
+   "id": "12125df7-8a5c-4359-8317-1bf6ad868a32",
+   "name": "Mark Close Contract Sent",
+   "type": "n8n-nodes-close-crm.close",
+   "typeVersion": 1,
+   "position": [
+    1792,
+    352
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "return [{json:{ok:true,opportunityId:$('Verify Close Match — CRM Sent').first().json.opportunityId}}];"
+   },
+   "id": "994f5c84-ec45-4882-9894-e9ab3575cc69",
+   "name": "CRM Sent Receipt",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2000,
+    352
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://n8n.dulcy.io/webhook/REDACTED_PATH",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({leadId:$json.leadId,company:$json.company,name:$json.name,additional:$json.additional,dulcyDeliveryId:$json.dulcyDeliveryId,dulcyContractId:$json.contractId,opportunityId:$json.opportunityId,clientEmail:$json.clientEmail}) }}",
+    "options": {}
+   },
+   "id": "0a32c99f-6827-4057-9756-4791e6b685eb",
+   "name": "Start Existing Client Onboarding",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1568,
+    688
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "return [{json:{ok:true,accepted:true,executionId:String($execution.id)}}];"
+   },
+   "id": "2e33431c-72a5-4aa0-8b32-4b5076c98097",
+   "name": "Onboarding Accepted Receipt",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1792,
+    688
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://sign.dulcy.io/api/integrations/events/ack",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({deliveryId:$('Validate Envelope').first().json.deliveryId,capability:$('Validate Envelope').first().json.capability,receipt:$json}) }}",
+    "options": {}
+   },
+   "id": "1d9c0d1f-35de-469a-9d6f-bfea92b016d3",
+   "name": "Acknowledge Slack",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2240,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://sign.dulcy.io/api/integrations/events/ack",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({deliveryId:$('Validate Envelope').first().json.deliveryId,capability:$('Validate Envelope').first().json.capability,receipt:$json}) }}",
+    "options": {}
+   },
+   "id": "c2bdf59b-b9b0-430f-a5c9-297b7b1e6951",
+   "name": "Acknowledge CRM Sent",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2240,
+    352
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://sign.dulcy.io/api/integrations/events/ack",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({deliveryId:$('Validate Envelope').first().json.deliveryId,capability:$('Validate Envelope').first().json.capability,receipt:$json}) }}",
+    "options": {}
+   },
+   "id": "d27eb1db-964a-4a97-b45a-0da7093cac20",
+   "name": "Acknowledge Onboarding",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2240,
+    688
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

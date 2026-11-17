@@ -1,0 +1,1573 @@
+{
+ "id": "QV167zefD1Lqq6EK",
+ "name": "[Email Accounts] Get Warmup Stats - All Emails",
+ "active": true,
+ "isArchived": false,
+ "versionId": "4bfd4637-6d75-4c5a-9c6d-9a9d5aab9c98",
+ "triggerCount": 1,
+ "createdAt": "2025-08-14T17:56:11.049Z",
+ "updatedAt": "2026-11-17T16:43:12.357Z",
+ "settings": {
+  "executionOrder": "v1",
+  "timezone": "America/New_York",
+  "callerPolicy": "workflowsFromSameOwner",
+  "timeSavedMode": "fixed",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "0.25s wait": {
+   "main": [
+    [
+     {
+      "node": "Loop Over Items1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Email Accounts": {
+   "main": [
+    [
+     {
+      "node": "Loop Over Items1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Loop Over Items1": {
+   "main": [
+    [],
+    [
+     {
+      "node": "Edit Fields",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Edit Fields": {
+   "main": [
+    [
+     {
+      "node": "Check if account still exists",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Check if account still exists": {
+   "main": [
+    [
+     {
+      "node": "Get warmup stats",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Update record1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Schedule Trigger": {
+   "main": [
+    [
+     {
+      "node": "Get Email Accounts",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get warmup stats": {
+   "main": [
+    [
+     {
+      "node": "Update record",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Loop Over Items1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Update record": {
+   "main": [
+    [
+     {
+      "node": "0.25s wait",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Update record1": {
+   "main": [
+    [
+     {
+      "node": "Loop Over Items1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.manualTrigger",
+   "typeVersion": 1,
+   "position": [
+    256,
+    112
+   ],
+   "id": "49bc33d8-ac74-480d-8a48-2f4dbd19f09c",
+   "name": "When clicking ‘Execute workflow’"
+  },
+  {
+   "parameters": {
+    "amount": 0.25
+   },
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    2080,
+    -16
+   ],
+   "id": "ffed52cd-35e1-4894-bcd8-b3ea0526be77",
+   "name": "0.25s wait",
+   "webhookId": "96aee7f2-7ec0-4cc3-b763-dd029534df0f"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMSOBJ0wMgxSg4l",
+     "mode": "list",
+     "cachedResultName": "Email Accounts",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblMSOBJ0wMgxSg4l"
+    },
+    "filterByFormula": "=AND(\n  {Status (from Client)} = 'Active',\n  OR(\n    {Last Warmup Check} = BLANK(),\n    IS_BEFORE({Last Warmup Check}, DATEADD(TODAY(), -6, 'days'))\n  )\n)",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    480,
+    -144
+   ],
+   "id": "aedf5a6e-ac5b-4020-adc4-d5d2325ed147",
+   "name": "Get Email Accounts"
+  },
+  {
+   "parameters": {
+    "options": {}
+   },
+   "type": "n8n-nodes-base.splitInBatches",
+   "typeVersion": 3,
+   "position": [
+    720,
+    -144
+   ],
+   "id": "e663665f-6742-4595-88b3-d406cd3a2475",
+   "name": "Loop Over Items1"
+  },
+  {
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "21ba307c-6513-4444-b932-b64c05a4d0b7",
+       "name": "bison_api",
+       "value": "={{ $json['EmailBison API (from Client)'][0] }}",
+       "type": "string"
+      },
+      {
+       "id": "afd5b53b-34f3-4d5d-b262-b0d66efc60a8",
+       "name": "email_account",
+       "value": "={{ $json['Email Account'] }}",
+       "type": "string"
+      },
+      {
+       "id": "fb436c24-8caa-4534-8b09-e143b83e6d19",
+       "name": "email_id",
+       "value": "={{ $json['Email ID'] }}",
+       "type": "string"
+      },
+      {
+       "id": "67dcfe9b-0d83-441e-928a-6cfcc2865614",
+       "name": "record_id",
+       "value": "={{ $json.id }}",
+       "type": "string"
+      },
+      {
+       "id": "01567050-634b-4e97-baec-7952399179d1",
+       "name": "workspace_id",
+       "value": "={{ $json['Workspace ID'] }}",
+       "type": "string"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    1104,
+    16
+   ],
+   "id": "3f307917-61d7-4ac3-a2ff-6c12669d069f",
+   "name": "Edit Fields"
+  },
+  {
+   "parameters": {
+    "url": "=https://send.dulcy.io/api/sender-emails/{{ $json.email_id }}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Edit Fields').item.json.bison_api }}"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1312,
+    16
+   ],
+   "id": "cb7f5408-5791-4fe4-ab7d-eabbbae2716c",
+   "name": "Check if account still exists",
+   "retryOnFail": true,
+   "waitBetweenTries": 1500,
+   "onError": "continueErrorOutput"
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "hours",
+       "hoursInterval": 12
+      }
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    240,
+    -144
+   ],
+   "id": "c4e07184-a440-4aa7-8281-d4554b70b5d2",
+   "name": "Schedule Trigger"
+  },
+  {
+   "parameters": {
+    "url": "=https://send.dulcy.io/api/warmup/sender-emails/{{ $('Edit Fields').item.json.email_id }}",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "start_date",
+       "value": "2023-01-01"
+      },
+      {
+       "name": "end_date",
+       "value": "={{ $now.format('yyyy-MM-dd') }}"
+      }
+     ]
+    },
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Edit Fields').item.json.bison_api }}"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1632,
+    0
+   ],
+   "id": "74fc39eb-0ac8-4fb7-8607-c36a475237fd",
+   "name": "Get warmup stats",
+   "retryOnFail": true,
+   "waitBetweenTries": 1500,
+   "onError": "continueErrorOutput"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMSOBJ0wMgxSg4l",
+     "mode": "list",
+     "cachedResultName": "Email Accounts",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblMSOBJ0wMgxSg4l"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Email ID": "={{ $('Edit Fields').item.json.email_id }}",
+      "warmup_replies_received": "={{ $json.data.warmup_replies_received }}",
+      "warmup_emails_saved_from_spam": "={{ $json.data.warmup_emails_saved_from_spam }}",
+      "warmup_score": "={{ $json.data.warmup_score }}",
+      "warmup_bounces_received_count": "={{ $json.data.warmup_bounces_received_count }}",
+      "warmup_bounces_caused_count": "={{ $json.data.warmup_bounces_caused_count }}",
+      "warmup_disabled_for_bouncing_count": "={{ $json.data.warmup_disabled_for_bouncing_count }}",
+      "emails_sent_count": "={{ $('Check if account still exists').item.json.data.emails_sent_count }}",
+      "total_replied_count": "={{ $('Check if account still exists').item.json.data.total_replied_count }}",
+      "unsubscribed_count": "={{ $('Check if account still exists').item.json.data.unsubscribed_count }}",
+      "bounced_count": "={{ $('Check if account still exists').item.json.data.bounced_count }}",
+      "unique_replied_count": "={{ $('Check if account still exists').item.json.data.unique_replied_count }}",
+      "total_leads_contacted_count": "={{ $('Check if account still exists').item.json.data.total_leads_contacted_count }}",
+      "interested_leads_count": "={{ $('Check if account still exists').item.json.data.interested_leads_count }}",
+      "email_daily_limit": "={{ $('Check if account still exists').item.json.data.daily_limit }}",
+      "warmup_enabled": "={{ $json.data.warmup_enabled }}",
+      "warmup_daily_limit": "={{ $json.data.warmup_daily_limit }}",
+      "warmup_emails_sent": "={{ $json.data.warmup_emails_sent }}",
+      "email_status": "={{ $('Check if account still exists').item.json.data.status }}",
+      "email_type": "={{ $('Check if account still exists').item.json.data.type }}",
+      "Last Warmup Check": "={{ $now.toISO() }}"
+     },
+     "matchingColumns": [
+      "Email ID"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Email Account",
+       "displayName": "Email Account",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Email ID",
+       "displayName": "Email ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Workspace ID",
+       "displayName": "Workspace ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Warmup Start Date",
+       "displayName": "Warmup Start Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Days Since Warmup Started",
+       "displayName": "Days Since Warmup Started",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Number of Disconnects",
+       "displayName": "Number of Disconnects",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Status (from Client)",
+       "displayName": "Status (from Client)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "EmailBison API (from Client)",
+       "displayName": "EmailBison API (from Client)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Created",
+       "displayName": "Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Last Warmup Check",
+       "displayName": "Last Warmup Check",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "warmup_enabled",
+       "displayName": "warmup_enabled",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "warmup_daily_limit",
+       "displayName": "warmup_daily_limit",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "warmup_emails_sent",
+       "displayName": "warmup_emails_sent",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "warmup_replies_received",
+       "displayName": "warmup_replies_received",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "warmup_emails_saved_from_spam",
+       "displayName": "warmup_emails_saved_from_spam",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "warmup_score",
+       "displayName": "warmup_score",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "warmup_bounces_received_count",
+       "displayName": "warmup_bounces_received_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "warmup_bounces_caused_count",
+       "displayName": "warmup_bounces_caused_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "warmup_disabled_for_bouncing_count",
+       "displayName": "warmup_disabled_for_bouncing_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "emails_sent_count",
+       "displayName": "emails_sent_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "total_replied_count",
+       "displayName": "total_replied_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "unsubscribed_count",
+       "displayName": "unsubscribed_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "bounced_count",
+       "displayName": "bounced_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "unique_replied_count",
+       "displayName": "unique_replied_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "total_leads_contacted_count",
+       "displayName": "total_leads_contacted_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "interested_leads_count",
+       "displayName": "interested_leads_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "email_status",
+       "displayName": "email_status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "email_type",
+       "displayName": "email_type",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "email_daily_limit",
+       "displayName": "email_daily_limit",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1872,
+    -16
+   ],
+   "id": "c477a688-f39c-42cc-9532-b3ea2aa187b6",
+   "name": "Update record"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMSOBJ0wMgxSg4l",
+     "mode": "list",
+     "cachedResultName": "Email Accounts",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblMSOBJ0wMgxSg4l"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Status": "At Risk",
+      "Control Sync Status": "Failed",
+      "Control Sync Error": "Warmup stats sync: provider account not found by configured ID or exact email. Manual review required before remapping.",
+      "Email ID": "=  {{ $('Edit Fields').item.json.email_id }}"
+     },
+     "matchingColumns": [
+      "Email ID"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Email Account",
+       "displayName": "Email Account",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Email ID",
+       "displayName": "Email ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Workspace ID",
+       "displayName": "Workspace ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Warmup Start Date",
+       "displayName": "Warmup Start Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Days Since Warmup Started",
+       "displayName": "Days Since Warmup Started",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Number of Disconnects",
+       "displayName": "Number of Disconnects",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Status (from Client)",
+       "displayName": "Status (from Client)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "EmailBison API (from Client)",
+       "displayName": "EmailBison API (from Client)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Created",
+       "displayName": "Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Last Warmup Check",
+       "displayName": "Last Warmup Check",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_enabled",
+       "displayName": "warmup_enabled",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_daily_limit",
+       "displayName": "warmup_daily_limit",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_emails_sent",
+       "displayName": "warmup_emails_sent",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_replies_received",
+       "displayName": "warmup_replies_received",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_emails_saved_from_spam",
+       "displayName": "warmup_emails_saved_from_spam",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_score",
+       "displayName": "warmup_score",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_bounces_received_count",
+       "displayName": "warmup_bounces_received_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_bounces_caused_count",
+       "displayName": "warmup_bounces_caused_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_disabled_for_bouncing_count",
+       "displayName": "warmup_disabled_for_bouncing_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "emails_sent_count",
+       "displayName": "emails_sent_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "total_replied_count",
+       "displayName": "total_replied_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "unsubscribed_count",
+       "displayName": "unsubscribed_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "bounced_count",
+       "displayName": "bounced_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "unique_replied_count",
+       "displayName": "unique_replied_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "total_leads_contacted_count",
+       "displayName": "total_leads_contacted_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "interested_leads_count",
+       "displayName": "interested_leads_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "email_status",
+       "displayName": "email_status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "email_type",
+       "displayName": "email_type",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "email_daily_limit",
+       "displayName": "email_daily_limit",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Time Disconnected",
+       "displayName": "Last Time Disconnected",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Actions",
+       "displayName": "Actions",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Update Daily Limit",
+         "value": "Update Daily Limit"
+        },
+        {
+         "name": "Update Warmup Limit",
+         "value": "Update Warmup Limit"
+        },
+        {
+         "name": "Turn Warmup On",
+         "value": "Turn Warmup On"
+        },
+        {
+         "name": "Turn Warmup Off",
+         "value": "Turn Warmup Off"
+        },
+        {
+         "name": "N/A",
+         "value": "N/A"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_disable_status",
+       "displayName": "warmup_disable_status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Warmup disabled for receiving bounces. You can enable after 24 hours.",
+         "value": "Warmup disabled for receiving bounces. You can enable after 24 hours."
+        },
+        {
+         "name": "Warmup disabled for causing bounces",
+         "value": "Warmup disabled for causing bounces"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Status",
+       "displayName": "Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Healthy",
+         "value": "Healthy"
+        },
+        {
+         "name": "At Risk",
+         "value": "At Risk"
+        },
+        {
+         "name": "Spam",
+         "value": "Spam"
+        },
+        {
+         "name": "Resting",
+         "value": "Resting"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Health Reason",
+       "displayName": "Health Reason",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "options": [
+        {
+         "name": "Poor Inbox Placement",
+         "value": "Poor Inbox Placement"
+        },
+        {
+         "name": "Low Warmup Score",
+         "value": "Low Warmup Score"
+        },
+        {
+         "name": "High Bounce Rate",
+         "value": "High Bounce Rate"
+        },
+        {
+         "name": "Low Reply Rate",
+         "value": "Low Reply Rate"
+        },
+        {
+         "name": "Blacklist",
+         "value": "Blacklist"
+        },
+        {
+         "name": "Manual Review",
+         "value": "Manual Review"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Campaigns",
+       "displayName": "Campaigns",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Domains",
+       "displayName": "Domains",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Login Password",
+       "displayName": "Login Password",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Login URL",
+       "displayName": "Login URL",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client Visible",
+       "displayName": "Client Visible",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Control Sync Status",
+       "displayName": "Control Sync Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Pending",
+         "value": "Pending"
+        },
+        {
+         "name": "Processing",
+         "value": "Processing"
+        },
+        {
+         "name": "Synced",
+         "value": "Synced"
+        },
+        {
+         "name": "Failed",
+         "value": "Failed"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Control Sync Error",
+       "displayName": "Control Sync Error",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Last Control Sync",
+       "displayName": "Last Control Sync",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Email Account Bulk Controls",
+       "displayName": "Email Account Bulk Controls",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "KPI Warmup Disabled",
+       "displayName": "KPI Warmup Disabled",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "KPI Active Account",
+       "displayName": "KPI Active Account",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "KPI Disconnected",
+       "displayName": "KPI Disconnected",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "KPI Warmup 75-100",
+       "displayName": "KPI Warmup 75-100",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "KPI Warmup 50-74",
+       "displayName": "KPI Warmup 50-74",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "KPI Warmup Under 50",
+       "displayName": "KPI Warmup Under 50",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Spam Protocol Stage",
+       "displayName": "Spam Protocol Stage",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Monitoring",
+         "value": "Monitoring"
+        },
+        {
+         "name": "Resting 7 Days",
+         "value": "Resting 7 Days"
+        },
+        {
+         "name": "Recovered",
+         "value": "Recovered"
+        },
+        {
+         "name": "Replace Inbox",
+         "value": "Replace Inbox"
+        },
+        {
+         "name": "Replace Domain",
+         "value": "Replace Domain"
+        },
+        {
+         "name": "Manual Review",
+         "value": "Manual Review"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Spam Rest Started",
+       "displayName": "Spam Rest Started",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Spam Retest Due",
+       "displayName": "Spam Retest Due",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Inbox Placement Score",
+       "displayName": "Last Inbox Placement Score",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Previous Daily Limit",
+       "displayName": "Previous Daily Limit",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Spam Failed Tests",
+       "displayName": "Spam Failed Tests",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Spam Protocol Action",
+       "displayName": "Last Spam Protocol Action",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Spam Protocol Error",
+       "displayName": "Spam Protocol Error",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Spam Protocol Test ID",
+       "displayName": "Last Spam Protocol Test ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Spam Remediation Queue",
+       "displayName": "Spam Remediation Queue",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1520,
+    224
+   ],
+   "id": "10fed6d9-8c2b-459c-a98c-f4ba4e7e4198",
+   "name": "Update record1"
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

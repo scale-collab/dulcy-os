@@ -1,0 +1,97 @@
+{
+ "id": "wflv6Rf37XANupi6m",
+ "name": "Attach Booked Meetings to Client",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordEntersView",
+  "inputs": {
+   "tableId": "tblADFhWhTcLrl1UY",
+   "viewId": "viwnUjp62RvUmmW0K"
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacamG5rupdtMULqh",
+   "type": "findRecords",
+   "inputs": {
+    "tableId": "tblcjRBGJEWh5KgOt",
+    "queryType": "filtersObj",
+    "filtersObj": {
+     "obj": {
+      "operator": "and",
+      "operands": {
+       "tuple": [
+        {
+         "obj": {
+          "operands": {
+           "tuple": [
+            "fldO0DrfcpgxtpBw5",
+            {
+             "$ref": "trigger",
+             "path": [
+              "cellValuesByFieldId",
+              "fldRvg1dY1KULcNcK"
+             ]
+            }
+           ]
+          },
+          "operator": "=",
+          "operatorOptions": null
+         }
+        }
+       ]
+      }
+     }
+    },
+    "limit": 1
+   }
+  },
+  {
+   "key": "wacTw4BWahrTTGYe4",
+   "type": "updateRecord",
+   "inputs": {
+    "tableId": "tblADFhWhTcLrl1UY",
+    "rowId": {
+     "template": [
+      {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     ]
+    },
+    "updateRecordMethod": "customFields",
+    "fields": {
+     "obj": {
+      "fldtPAlC0MDPHTWcl": {
+       "template": [
+        {
+         "fn": "map",
+         "args": [
+          {
+           "$ref": "wacamG5rupdtMULqh",
+           "path": [
+            "records"
+           ]
+          },
+          {
+           "fn": "propertyGetter",
+           "args": [
+            "id"
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    }
+   }
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

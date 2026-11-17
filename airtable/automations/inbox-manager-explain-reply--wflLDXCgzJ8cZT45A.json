@@ -1,0 +1,35 @@
+{
+ "id": "wflLDXCgzJ8cZT45A",
+ "name": "Inbox Manager - Explain Reply",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "inputReceivedFromConnection",
+  "inputs": {
+   "tableId": "tblADFhWhTcLrl1UY"
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacASWxDs1NMmdprK",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "recordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     }
+    },
+    "script": "let table = base.getTable(\"Emails\");\nlet record = await table.selectRecordAsync(input.config().recordId);\nlet webhook = \"https://hook.us1.make.com/REDACTED_PATH\";\n\nlet payload = { recordId: record.id };\nfor (let field of table.fields) {\n    payload[field.name] = record.getCellValue(field.name);\n}\n\nawait fetch(webhook, {\n    method: \"POST\",\n    headers: { \"Content-Type\": \"application/json\" },\n    body: JSON.stringify(payload)\n});"
+   },
+   "outputSchema": []
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

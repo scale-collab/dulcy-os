@@ -1,0 +1,1072 @@
+{
+ "id": 4023773,
+ "name": "[Adverio] Job Postings",
+ "teamId": 629049,
+ "hookId": null,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 252236,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": false,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "google-sheets",
+  "util",
+  "util",
+  "http",
+  "http",
+  "http"
+ ],
+ "lastEdit": "2025-06-05T06:34:38.449Z",
+ "scheduling": {
+  "days": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "time": "09:00",
+  "type": "weekly"
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2025-06-03T06:57:16.613Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": false,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 30,
+    "mapper": {},
+    "module": "google-sheets:watchRows",
+    "version": 2,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "from": {
+        "label": "My Drive"
+       },
+       "mode": {
+        "label": "Search by path"
+       },
+       "sheetId": {
+        "label": "Sheet1"
+       },
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "google"
+        },
+        "label": "My Google connection (info@dulcymedia.com)"
+       },
+       "spreadsheetId": {
+        "path": [
+         "[Adverio] Alden Job Leads"
+        ]
+       },
+       "includesHeaders": {
+        "label": "Yes"
+       },
+       "valueRenderOption": {
+        "mode": "chose",
+        "label": "Formatted value"
+       },
+       "dateTimeRenderOption": {
+        "mode": "chose",
+        "label": "Formatted string"
+       }
+      }
+     },
+     "designer": {
+      "x": -284,
+      "y": -5
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:google",
+       "label": "Connection",
+       "required": true
+      },
+      {
+       "name": "mode",
+       "type": "select",
+       "label": "Search Method",
+       "required": true,
+       "validate": {
+        "enum": [
+         "select",
+         "fromAll",
+         "map"
+        ]
+       }
+      },
+      {
+       "name": "includesHeaders",
+       "type": "select",
+       "label": "Table contains headers",
+       "required": true,
+       "validate": {
+        "enum": [
+         true,
+         false
+        ]
+       }
+      },
+      {
+       "name": "limit",
+       "type": "uinteger",
+       "label": "Limit",
+       "required": true
+      },
+      {
+       "name": "valueRenderOption",
+       "type": "select",
+       "label": "Value render option",
+       "validate": {
+        "enum": [
+         "FORMATTED_VALUE",
+         "UNFORMATTED_VALUE",
+         "FORMULA"
+        ]
+       }
+      },
+      {
+       "name": "dateTimeRenderOption",
+       "type": "select",
+       "label": "Date and time render option",
+       "validate": {
+        "enum": [
+         "SERIAL_NUMBER",
+         "FORMATTED_STRING"
+        ]
+       }
+      },
+      {
+       "name": "from",
+       "type": "select",
+       "label": "Drive",
+       "required": true,
+       "validate": {
+        "enum": [
+         "drive",
+         "share",
+         "team"
+        ]
+       }
+      },
+      {
+       "name": "spreadsheetId",
+       "type": "file",
+       "label": "Spreadsheet ID",
+       "required": true
+      },
+      {
+       "name": "sheetId",
+       "type": "select",
+       "label": "Sheet Name",
+       "required": true
+      },
+      {
+       "name": "tableFirstRow",
+       "type": "text",
+       "label": "Row with headers",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "from": "drive",
+     "mode": "select",
+     "limit": 1,
+     "sheetId": "Sheet1",
+     "__IMTCONN__": 3593093,
+     "spreadsheetId": "/1m4gftQZQm6FDerslJjzTHVAzQElQBqCBgB3Sh7sES38",
+     "tableFirstRow": "A1:Z1",
+     "includesHeaders": true,
+     "valueRenderOption": "FORMATTED_VALUE",
+     "dateTimeRenderOption": "FORMATTED_STRING"
+    }
+   },
+   {
+    "id": 33,
+    "mapper": {
+     "duration": "3"
+    },
+    "module": "util:FunctionSleep",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "duration",
+       "type": "uinteger",
+       "label": "Delay",
+       "required": true,
+       "validate": {
+        "max": 300,
+        "min": 1
+       }
+      }
+     ],
+     "restore": {},
+     "designer": {
+      "x": 34,
+      "y": -3
+     }
+    },
+    "parameters": {}
+   },
+   {
+    "id": 12,
+    "mapper": {
+     "scope": "roundtrip",
+     "variables": [
+      {
+       "name": "api",
+       "value": "REDACTED_EMAILBISON_TOKEN"
+      },
+      {
+       "name": "campaign id",
+       "value": "145"
+      }
+     ]
+    },
+    "module": "util:SetVariables",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "variables",
+       "spec": [
+        {
+         "name": "name",
+         "type": "text",
+         "label": "Variable name",
+         "required": true
+        },
+        {
+         "name": "value",
+         "type": "any",
+         "label": "Variable value"
+        }
+       ],
+       "type": "array",
+       "label": "Variables"
+      },
+      {
+       "name": "scope",
+       "type": "select",
+       "label": "Variable lifetime",
+       "required": true,
+       "validate": {
+        "enum": [
+         "roundtrip",
+         "execution"
+        ]
+       }
+      }
+     ],
+     "restore": {
+      "expect": {
+       "scope": {
+        "label": "One cycle"
+       },
+       "variables": {
+        "items": [
+         null,
+         null
+        ]
+       }
+      }
+     },
+     "designer": {
+      "x": 334,
+      "y": -3,
+      "name": "Set Variables"
+     }
+    },
+    "parameters": {}
+   },
+   {
+    "id": 9,
+    "mapper": {
+     "ca": "",
+     "qs": [],
+     "url": "https://send.dulcy.io/api/leads/create-or-update/{{30.`3`}}",
+     "data": "{\n  \"first_name\": \"{{30.`0`}}\",\n  \"last_name\": \"NA\",\n  \"email\": \"{{30.`3`}}\",\n  \"title\": \"{{30.`2`}}\",\n  \"company\": \"{{30.`1`}}\",\n  \"custom_variables\": [\n    {\n      \"name\": \"jobsforhire\",\n      \"value\": \"{{30.`5`}}\"\n    },\n    {\n      \"name\": \"linkedinurl\",\n      \"value\": \"{{30.`4`}}\"\n    }\n  ]\n}",
+     "gzip": true,
+     "method": "post",
+     "headers": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      },
+      {
+       "name": "Authorization",
+       "value": "Bearer {{12.api}}"
+      }
+     ],
+     "timeout": "",
+     "useMtls": false,
+     "authPass": "",
+     "authUser": "",
+     "bodyType": "raw",
+     "contentType": "application/json",
+     "serializeUrl": false,
+     "shareCookies": false,
+     "parseResponse": true,
+     "followRedirect": true,
+     "useQuerystring": false,
+     "followAllRedirects": false,
+     "rejectUnauthorized": true
+    },
+    "module": "http:ActionSendData",
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "url",
+       "type": "url",
+       "label": "URL",
+       "required": true
+      },
+      {
+       "name": "serializeUrl",
+       "type": "boolean",
+       "label": "Serialize URL",
+       "required": true
+      },
+      {
+       "name": "method",
+       "type": "select",
+       "label": "Method",
+       "required": true,
+       "validate": {
+        "enum": [
+         "get",
+         "head",
+         "post",
+         "put",
+         "patch",
+         "delete",
+         "options"
+        ]
+       }
+      },
+      {
+       "name": "headers",
+       "spec": [
+        {
+         "name": "name",
+         "type": "text",
+         "label": "Name",
+         "required": true
+        },
+        {
+         "name": "value",
+         "type": "text",
+         "label": "Value"
+        }
+       ],
+       "type": "array",
+       "label": "Headers"
+      },
+      {
+       "name": "qs",
+       "spec": [
+        {
+         "name": "name",
+         "type": "text",
+         "label": "Name",
+         "required": true
+        },
+        {
+         "name": "value",
+         "type": "text",
+         "label": "Value"
+        }
+       ],
+       "type": "array",
+       "label": "Query String"
+      },
+      {
+       "name": "bodyType",
+       "type": "select",
+       "label": "Body type",
+       "validate": {
+        "enum": [
+         "raw",
+         "x_www_form_urlencoded",
+         "multipart_form_data"
+        ]
+       }
+      },
+      {
+       "name": "parseResponse",
+       "type": "boolean",
+       "label": "Parse response",
+       "required": true
+      },
+      {
+       "name": "authUser",
+       "type": "text",
+       "label": "User name"
+      },
+      {
+       "name": "authPass",
+       "type": "password",
+       "label": "Password"
+      },
+      {
+       "name": "timeout",
+       "type": "uinteger",
+       "label": "Timeout",
+       "validate": {
+        "max": 300,
+        "min": 1
+       }
+      },
+      {
+       "name": "shareCookies",
+       "type": "boolean",
+       "label": "Share cookies with other HTTP modules",
+       "required": true
+      },
+      {
+       "name": "ca",
+       "type": "cert",
+       "label": "Self-signed certificate"
+      },
+      {
+       "name": "rejectUnauthorized",
+       "type": "boolean",
+       "label": "Reject connections that are using unverified (self-signed) certificates",
+       "required": true
+      },
+      {
+       "name": "followRedirect",
+       "type": "boolean",
+       "label": "Follow redirect",
+       "required": true
+      },
+      {
+       "name": "useQuerystring",
+       "type": "boolean",
+       "label": "Disable serialization of multiple same query string keys as arrays",
+       "required": true
+      },
+      {
+       "name": "gzip",
+       "type": "boolean",
+       "label": "Request compressed content",
+       "required": true
+      },
+      {
+       "name": "useMtls",
+       "type": "boolean",
+       "label": "Use Mutual TLS",
+       "required": true
+      },
+      {
+       "name": "contentType",
+       "type": "select",
+       "label": "Content type",
+       "validate": {
+        "enum": [
+         "text/plain",
+         "application/json",
+         "application/xml",
+         "text/xml",
+         "text/html",
+         "custom"
+        ]
+       }
+      },
+      {
+       "name": "data",
+       "type": "buffer",
+       "label": "Request content"
+      },
+      {
+       "name": "followAllRedirects",
+       "type": "boolean",
+       "label": "Follow all redirect",
+       "required": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "qs": {
+        "mode": "chose"
+       },
+       "method": {
+        "mode": "chose",
+        "label": "POST"
+       },
+       "headers": {
+        "mode": "chose",
+        "items": [
+         null,
+         null
+        ]
+       },
+       "bodyType": {
+        "label": "Raw"
+       },
+       "contentType": {
+        "label": "JSON (application/json)"
+       }
+      }
+     },
+     "designer": {
+      "x": 600,
+      "y": 0,
+      "name": "Create lead with video"
+     },
+     "parameters": [
+      {
+       "name": "handleErrors",
+       "type": "boolean",
+       "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+       "required": true
+      },
+      {
+       "name": "useNewZLibDeCompress",
+       "type": "hidden"
+      }
+     ]
+    },
+    "parameters": {
+     "handleErrors": true,
+     "useNewZLibDeCompress": true
+    }
+   },
+   {
+    "id": 13,
+    "mapper": {
+     "ca": "",
+     "qs": [],
+     "url": "https://send.dulcy.io/api/campaigns/{{12.`campaign id`}}/leads/attach-leads",
+     "data": "{\n  \"lead_ids\": [\n    {{9.data.data.id}}\n  ]\n}",
+     "gzip": true,
+     "method": "post",
+     "headers": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      },
+      {
+       "name": "Authorization",
+       "value": "Bearer {{12.api}}"
+      }
+     ],
+     "timeout": "",
+     "useMtls": false,
+     "authPass": "",
+     "authUser": "",
+     "bodyType": "raw",
+     "contentType": "application/json",
+     "serializeUrl": false,
+     "shareCookies": false,
+     "parseResponse": true,
+     "followRedirect": true,
+     "useQuerystring": false,
+     "followAllRedirects": false,
+     "rejectUnauthorized": true
+    },
+    "module": "http:ActionSendData",
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "url",
+       "type": "url",
+       "label": "URL",
+       "required": true
+      },
+      {
+       "name": "serializeUrl",
+       "type": "boolean",
+       "label": "Serialize URL",
+       "required": true
+      },
+      {
+       "name": "method",
+       "type": "select",
+       "label": "Method",
+       "required": true,
+       "validate": {
+        "enum": [
+         "get",
+         "head",
+         "post",
+         "put",
+         "patch",
+         "delete",
+         "options"
+        ]
+       }
+      },
+      {
+       "name": "headers",
+       "spec": [
+        {
+         "name": "name",
+         "type": "text",
+         "label": "Name",
+         "required": true
+        },
+        {
+         "name": "value",
+         "type": "text",
+         "label": "Value"
+        }
+       ],
+       "type": "array",
+       "label": "Headers"
+      },
+      {
+       "name": "qs",
+       "spec": [
+        {
+         "name": "name",
+         "type": "text",
+         "label": "Name",
+         "required": true
+        },
+        {
+         "name": "value",
+         "type": "text",
+         "label": "Value"
+        }
+       ],
+       "type": "array",
+       "label": "Query String"
+      },
+      {
+       "name": "bodyType",
+       "type": "select",
+       "label": "Body type",
+       "validate": {
+        "enum": [
+         "raw",
+         "x_www_form_urlencoded",
+         "multipart_form_data"
+        ]
+       }
+      },
+      {
+       "name": "parseResponse",
+       "type": "boolean",
+       "label": "Parse response",
+       "required": true
+      },
+      {
+       "name": "authUser",
+       "type": "text",
+       "label": "User name"
+      },
+      {
+       "name": "authPass",
+       "type": "password",
+       "label": "Password"
+      },
+      {
+       "name": "timeout",
+       "type": "uinteger",
+       "label": "Timeout",
+       "validate": {
+        "max": 300,
+        "min": 1
+       }
+      },
+      {
+       "name": "shareCookies",
+       "type": "boolean",
+       "label": "Share cookies with other HTTP modules",
+       "required": true
+      },
+      {
+       "name": "ca",
+       "type": "cert",
+       "label": "Self-signed certificate"
+      },
+      {
+       "name": "rejectUnauthorized",
+       "type": "boolean",
+       "label": "Reject connections that are using unverified (self-signed) certificates",
+       "required": true
+      },
+      {
+       "name": "followRedirect",
+       "type": "boolean",
+       "label": "Follow redirect",
+       "required": true
+      },
+      {
+       "name": "useQuerystring",
+       "type": "boolean",
+       "label": "Disable serialization of multiple same query string keys as arrays",
+       "required": true
+      },
+      {
+       "name": "gzip",
+       "type": "boolean",
+       "label": "Request compressed content",
+       "required": true
+      },
+      {
+       "name": "useMtls",
+       "type": "boolean",
+       "label": "Use Mutual TLS",
+       "required": true
+      },
+      {
+       "name": "contentType",
+       "type": "select",
+       "label": "Content type",
+       "validate": {
+        "enum": [
+         "text/plain",
+         "application/json",
+         "application/xml",
+         "text/xml",
+         "text/html",
+         "custom"
+        ]
+       }
+      },
+      {
+       "name": "data",
+       "type": "buffer",
+       "label": "Request content"
+      },
+      {
+       "name": "followAllRedirects",
+       "type": "boolean",
+       "label": "Follow all redirect",
+       "required": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "qs": {
+        "mode": "chose"
+       },
+       "method": {
+        "mode": "chose",
+        "label": "POST"
+       },
+       "headers": {
+        "mode": "chose",
+        "items": [
+         null,
+         null
+        ]
+       },
+       "bodyType": {
+        "label": "Raw"
+       },
+       "contentType": {
+        "label": "JSON (application/json)"
+       }
+      }
+     },
+     "designer": {
+      "x": 900,
+      "y": 0,
+      "name": "Add lead to campaign"
+     },
+     "parameters": [
+      {
+       "name": "handleErrors",
+       "type": "boolean",
+       "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+       "required": true
+      },
+      {
+       "name": "useNewZLibDeCompress",
+       "type": "hidden"
+      }
+     ]
+    },
+    "parameters": {
+     "handleErrors": true,
+     "useNewZLibDeCompress": true
+    }
+   },
+   {
+    "id": 20,
+    "mapper": {
+     "ca": "",
+     "qs": [],
+     "url": "https://send.dulcy.io/api/campaigns/{{12.`campaign id`}}/resume",
+     "gzip": true,
+     "method": "patch",
+     "headers": [
+      {
+       "name": "Authorization",
+       "value": "Bearer {{12.api}}"
+      }
+     ],
+     "timeout": "",
+     "useMtls": false,
+     "authPass": "",
+     "authUser": "",
+     "bodyType": "",
+     "serializeUrl": false,
+     "shareCookies": false,
+     "parseResponse": true,
+     "followRedirect": true,
+     "useQuerystring": false,
+     "followAllRedirects": false,
+     "rejectUnauthorized": true
+    },
+    "module": "http:ActionSendData",
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "url",
+       "type": "url",
+       "label": "URL",
+       "required": true
+      },
+      {
+       "name": "serializeUrl",
+       "type": "boolean",
+       "label": "Serialize URL",
+       "required": true
+      },
+      {
+       "name": "method",
+       "type": "select",
+       "label": "Method",
+       "required": true,
+       "validate": {
+        "enum": [
+         "get",
+         "head",
+         "post",
+         "put",
+         "patch",
+         "delete",
+         "options"
+        ]
+       }
+      },
+      {
+       "name": "headers",
+       "spec": [
+        {
+         "name": "name",
+         "type": "text",
+         "label": "Name",
+         "required": true
+        },
+        {
+         "name": "value",
+         "type": "text",
+         "label": "Value"
+        }
+       ],
+       "type": "array",
+       "label": "Headers"
+      },
+      {
+       "name": "qs",
+       "spec": [
+        {
+         "name": "name",
+         "type": "text",
+         "label": "Name",
+         "required": true
+        },
+        {
+         "name": "value",
+         "type": "text",
+         "label": "Value"
+        }
+       ],
+       "type": "array",
+       "label": "Query String"
+      },
+      {
+       "name": "bodyType",
+       "type": "select",
+       "label": "Body type",
+       "validate": {
+        "enum": [
+         "raw",
+         "x_www_form_urlencoded",
+         "multipart_form_data"
+        ]
+       }
+      },
+      {
+       "name": "parseResponse",
+       "type": "boolean",
+       "label": "Parse response",
+       "required": true
+      },
+      {
+       "name": "authUser",
+       "type": "text",
+       "label": "User name"
+      },
+      {
+       "name": "authPass",
+       "type": "password",
+       "label": "Password"
+      },
+      {
+       "name": "timeout",
+       "type": "uinteger",
+       "label": "Timeout",
+       "validate": {
+        "max": 300,
+        "min": 1
+       }
+      },
+      {
+       "name": "shareCookies",
+       "type": "boolean",
+       "label": "Share cookies with other HTTP modules",
+       "required": true
+      },
+      {
+       "name": "ca",
+       "type": "cert",
+       "label": "Self-signed certificate"
+      },
+      {
+       "name": "rejectUnauthorized",
+       "type": "boolean",
+       "label": "Reject connections that are using unverified (self-signed) certificates",
+       "required": true
+      },
+      {
+       "name": "followRedirect",
+       "type": "boolean",
+       "label": "Follow redirect",
+       "required": true
+      },
+      {
+       "name": "useQuerystring",
+       "type": "boolean",
+       "label": "Disable serialization of multiple same query string keys as arrays",
+       "required": true
+      },
+      {
+       "name": "gzip",
+       "type": "boolean",
+       "label": "Request compressed content",
+       "required": true
+      },
+      {
+       "name": "useMtls",
+       "type": "boolean",
+       "label": "Use Mutual TLS",
+       "required": true
+      },
+      {
+       "name": "followAllRedirects",
+       "type": "boolean",
+       "label": "Follow all redirect",
+       "required": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "qs": {
+        "mode": "chose"
+       },
+       "method": {
+        "mode": "chose",
+        "label": "PATCH"
+       },
+       "headers": {
+        "mode": "chose",
+        "items": [
+         null
+        ]
+       },
+       "bodyType": {
+        "label": "Empty"
+       }
+      }
+     },
+     "designer": {
+      "x": 1200,
+      "y": 0,
+      "name": "Resume campaign"
+     },
+     "parameters": [
+      {
+       "name": "handleErrors",
+       "type": "boolean",
+       "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+       "required": true
+      },
+      {
+       "name": "useNewZLibDeCompress",
+       "type": "hidden"
+      }
+     ]
+    },
+    "parameters": {
+     "handleErrors": true,
+     "useNewZLibDeCompress": true
+    }
+   }
+  ],
+  "name": "[Adverio] Job Postings",
+  "metadata": {
+   "instant": false,
+   "version": 1,
+   "designer": {
+    "orphans": []
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "days": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "time": "09:00",
+   "type": "weekly"
+  }
+ }
+}

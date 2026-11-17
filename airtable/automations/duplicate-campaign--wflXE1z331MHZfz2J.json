@@ -1,0 +1,436 @@
+{
+ "id": "wflXE1z331MHZfz2J",
+ "name": "Duplicate Campaign",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "inputReceivedFromConnection",
+  "inputs": {
+   "tableId": "tblAVAA6uBPaMj28P"
+  }
+ },
+ "nodes": [
+  {
+   "key": "wac1yMW7q5fEsRD9I",
+   "type": "createRecord",
+   "inputs": {
+    "tableId": "tblAVAA6uBPaMj28P",
+    "createRecordMethod": "customFields",
+    "fields": {
+     "obj": {
+      "fldSsb4QjS9UyvKhj": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldSsb4QjS9UyvKhj"
+         ]
+        },
+        " - COPY"
+       ]
+      },
+      "fldZABZwE9SmnwMv3": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldZABZwE9SmnwMv3",
+          "name"
+         ]
+        }
+       ]
+      },
+      "fldl5bZ644djPsBmN": {
+       "template": [
+        {
+         "fn": "map",
+         "args": [
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldl5bZ644djPsBmN"
+           ]
+          },
+          {
+           "fn": "propertyGetter",
+           "args": [
+            "name"
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      "fldlixHfhzrd7nuSc": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldlixHfhzrd7nuSc"
+         ]
+        }
+       ]
+      },
+      "fldZTtdvwRV53voZE": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldZTtdvwRV53voZE"
+         ]
+        }
+       ]
+      },
+      "fldjnYRokcvObXphA": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldjnYRokcvObXphA"
+         ]
+        }
+       ]
+      },
+      "fldAikx1V83MsK3Ql": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldAikx1V83MsK3Ql"
+         ]
+        }
+       ]
+      },
+      "fldw7AQWalsiisKrM": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldw7AQWalsiisKrM"
+         ]
+        }
+       ]
+      },
+      "fldu2xpTQFuuyU71Q": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldu2xpTQFuuyU71Q"
+         ]
+        }
+       ]
+      },
+      "fld6U4bB1335Ac5vM": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fld6U4bB1335Ac5vM"
+         ]
+        }
+       ]
+      },
+      "fldFrZUqdTeydSTUV": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldFrZUqdTeydSTUV"
+         ]
+        }
+       ]
+      },
+      "fldJ8gNIksLd8WZ8t": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldJ8gNIksLd8WZ8t"
+         ]
+        }
+       ]
+      },
+      "fld9uXm3prQKN7utY": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fld9uXm3prQKN7utY",
+          "name"
+         ]
+        }
+       ]
+      },
+      "fld5weZ6ED31dBlaz": {
+       "template": [
+        {
+         "fn": "map",
+         "args": [
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fld5weZ6ED31dBlaz"
+           ]
+          },
+          {
+           "fn": "propertyGetter",
+           "args": [
+            "name"
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      "fldbX8yCSVIhfJ6v7": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldbX8yCSVIhfJ6v7",
+          "name"
+         ]
+        }
+       ]
+      },
+      "fldNIQxQkubt8LAT0": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldNIQxQkubt8LAT0",
+          "name"
+         ]
+        }
+       ]
+      },
+      "fld8zzSiQMwejvoZ4": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fld8zzSiQMwejvoZ4",
+          "name"
+         ]
+        }
+       ]
+      },
+      "fldpnrrUrJ8NPtxPC": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldpnrrUrJ8NPtxPC",
+          "name"
+         ]
+        }
+       ]
+      },
+      "fldzztWeFYjHX65ck": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldzztWeFYjHX65ck",
+          "name"
+         ]
+        }
+       ]
+      },
+      "fldd9fU7wNFTNQB0j": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldd9fU7wNFTNQB0j",
+          "name"
+         ]
+        }
+       ]
+      },
+      "fldEX5XHj8lIkkp4g": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldEX5XHj8lIkkp4g"
+         ]
+        }
+       ]
+      },
+      "fldLoKQBjHmvA0sVd": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldLoKQBjHmvA0sVd"
+         ]
+        }
+       ]
+      },
+      "fldWdOeNb5mc95BZp": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldWdOeNb5mc95BZp"
+         ]
+        }
+       ]
+      },
+      "fldnJtB1br2i2zkLx": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldnJtB1br2i2zkLx"
+         ]
+        }
+       ]
+      },
+      "fldsOIQHZfuILVYyx": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldsOIQHZfuILVYyx"
+         ]
+        }
+       ]
+      },
+      "fld9ybdYVtipVAQ7g": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fld9ybdYVtipVAQ7g"
+         ]
+        }
+       ]
+      },
+      "fldhasNVsPOKuTQSC": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldhasNVsPOKuTQSC"
+         ]
+        }
+       ]
+      },
+      "fldZGNVkmKEzcq4yj": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldZGNVkmKEzcq4yj"
+         ]
+        }
+       ]
+      },
+      "fldxkH2X1VdDOj54B": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldxkH2X1VdDOj54B"
+         ]
+        }
+       ]
+      },
+      "fldg8Be3TXKtI30j5": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldg8Be3TXKtI30j5",
+          "name"
+         ]
+        }
+       ]
+      },
+      "fld0PxY90RaShLgvw": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fld0PxY90RaShLgvw"
+         ]
+        }
+       ]
+      },
+      "fldPRrn97ehpYGomi": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldPRrn97ehpYGomi"
+         ]
+        }
+       ]
+      },
+      "fld2VaGjw0nYFJvIy": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fld2VaGjw0nYFJvIy"
+         ]
+        }
+       ]
+      },
+      "fldclFGDzjg4nvfxL": {
+       "template": [
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldclFGDzjg4nvfxL",
+          "name"
+         ]
+        }
+       ]
+      }
+     }
+    }
+   }
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

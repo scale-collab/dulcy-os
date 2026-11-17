@@ -1,0 +1,106 @@
+{
+ "id": "wflHT7Ot1zGeNB68y",
+ "name": "Generate AI Spintax",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordMatchesConditions",
+  "inputs": {
+   "tableId": "tblAVAA6uBPaMj28P",
+   "filtersObj": {
+    "obj": {
+     "operator": "and",
+     "operands": {
+      "tuple": [
+       {
+        "obj": {
+         "operator": "=",
+         "operands": {
+          "tuple": [
+           "fldsvgKf6U5zDOygf",
+           true
+          ]
+         },
+         "operatorOptions": null
+        }
+       }
+      ]
+     }
+    }
+   }
+  }
+ },
+ "nodes": [
+  {
+   "key": "wac90gkdlY5XwQnTq",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "recordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     }
+    },
+    "script": "let table = base.getTable(\"Campaigns\");\nlet record = await table.selectRecordAsync(input.config().recordId);\nlet webhook = \"https://n8n.dulcy.io/webhook/REDACTED_PATH\";\n\n// Create payload from record fields\nlet payload = Object.fromEntries(\n    table.fields.map(f => [f.name, record.getCellValue(f.name)])\n);\n\n// Add the record ID\npayload.recordId = record.id;\n\n// Send data to webhook\nawait fetch(webhook, {\n    method: \"POST\",\n    headers: { \"Content-Type\": \"application/json\" },\n    body: JSON.stringify(payload)\n});"
+   }
+  },
+  {
+   "key": "wdesZFrfvlaotGk51",
+   "type": "conditionalGroup",
+   "branches": [
+    {
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldZABZwE9SmnwMv3"
+         ]
+        },
+        "operator": "=",
+        "right": "selu8BzG7BVZNEuei",
+        "valueType": "select",
+        "dataType": "literal"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wacDcDpuHdxZcyLEu",
+       "type": "updateRecord",
+       "inputs": {
+        "tableId": "tblAVAA6uBPaMj28P",
+        "rowId": {
+         "template": [
+          {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          }
+         ]
+        },
+        "updateRecordMethod": "customFields",
+        "fields": {
+         "obj": {
+          "fldsvgKf6U5zDOygf": null
+         }
+        }
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

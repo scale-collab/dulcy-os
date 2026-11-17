@@ -1,0 +1,73 @@
+{
+ "id": "kGurcf8z35qqLHBmNppBJ",
+ "name": "[GHL SMS] Send Reply",
+ "active": true,
+ "isArchived": false,
+ "versionId": "aaad91b2-72b2-4b10-925d-c167501baf5f",
+ "triggerCount": 1,
+ "createdAt": "2026-02-03T02:14:08.015Z",
+ "updatedAt": "2026-11-17T16:30:24.526Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Webhook": {
+   "main": [
+    [
+     {
+      "node": "Send an SMS/MMS/WhatsApp message",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Send an SMS/MMS/WhatsApp message": {
+   "main": [
+    []
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    0,
+    0
+   ],
+   "id": "630c144c-6f58-4ed3-ad8e-4c7c498fa293",
+   "name": "Webhook"
+  },
+  {
+   "parameters": {
+    "from": "={{ $json.body.sentFromNumber }}",
+    "to": "={{ $json.body.phoneNumber }}",
+    "message": "={{ $json.body.customReply }}",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.twilio",
+   "typeVersion": 1,
+   "position": [
+    224,
+    0
+   ],
+   "id": "a2585f17-67f5-40da-8334-58f7acb2c93a",
+   "name": "Send an SMS/MMS/WhatsApp message"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

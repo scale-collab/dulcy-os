@@ -1,0 +1,203 @@
+{
+ "id": "oBtBDGl7uZ6FR2yUM9qWL",
+ "name": "[Content OS] Prepare Newsletter Preview",
+ "active": true,
+ "isArchived": false,
+ "versionId": "1b0df942-cf30-485f-a764-f23c81b36af2",
+ "triggerCount": 1,
+ "createdAt": "2026-08-19T06:12:17.929Z",
+ "updatedAt": "2026-11-17T16:41:18.016Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Newsletter Webhook": {
+   "main": [
+    [
+     {
+      "node": "Validate Newsletter Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate Newsletter Request": {
+   "main": [
+    [
+     {
+      "node": "Get Newsletter Draft",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Newsletter Draft": {
+   "main": [
+    [
+     {
+      "node": "Build Newsletter Preview",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build Newsletter Preview": {
+   "main": [
+    [
+     {
+      "node": "Find Close Subscribers",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Find Close Subscribers": {
+   "main": [
+    [
+     {
+      "node": "Prepare Newsletter Response",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Newsletter Response": {
+   "main": [
+    [
+     {
+      "node": "Return Newsletter Preview",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "responseMode": "responseNode",
+    "options": {}
+   },
+   "id": "64d3f5f5-acf3-4d7f-9a94-99dd0050bf6d",
+   "name": "Newsletter Webhook",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    0,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const body=$input.first().json.body??$input.first().json;const recordId=String(body.recordId??body.distributionRecordId??'').trim();if(!/^rec[A-Za-z0-9]+$/.test(recordId))throw new Error('A valid Content Distribution recordId is required.');return [{json:{recordId}}];"
+   },
+   "id": "2c229073-7bd1-4d7c-9dfc-a5a98b1436b1",
+   "name": "Validate Newsletter Request",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    224,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "url": "=https://api.airtable.com/v0/appxqINt5XKw7a76A/tblDWJrmIcBJDykIP/{{$json.recordId}}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "timeout": 60000
+    }
+   },
+   "id": "cabfc3db-7581-4f87-be49-9b809a89ab8c",
+   "name": "Get Newsletter Draft",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    448,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const rec=$input.first().json;const f=rec.fields??{};const pick=v=>typeof v==='object'&&v?v.name??v.value??String(v):String(v??'');const platform=pick(f.Platform);const outputType=pick(f['Output Type']);if(!/newsletter/i.test(platform)&&!/newsletter/i.test(outputType))throw new Error('This distribution item is not a newsletter draft.');const approval=pick(f['Approval Status']);if(!/approved/i.test(approval))throw new Error('Approve the newsletter draft before preparing its audience.');const title=String(f['Draft Title']??'').trim();const body=String(f['Draft Body']??'').trim();if(!title||!body)throw new Error('Draft Title and Draft Body are required.');const esc=s=>String(s).replace(/[&<>\\\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\\\"':'&quot;',\"'\":'&#039;'}[c]||c));const paragraphs=body.split(/\\n{2,}/).map(s=>s.trim()).filter(Boolean).map((p,i)=>`<p style=\\\"margin:0 0 ${i?20:22}px;font-size:${i?16:19}px;line-height:${i?1.75:1.65};color:${i?'#334155':'#1e293b'};font-weight:${i?400:600}\\\">${esc(p).replace(/\\n/g,'<br/>')}</p>`).join('');const html=`<!doctype html><html><head><meta charset=\\\"utf-8\\\"><meta name=\\\"viewport\\\" content=\\\"width=device-width,initial-scale=1\\\"></head><body style=\\\"margin:0;background:#f4f1ff;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif\\\"><div style=\\\"display:none;max-height:0;overflow:hidden\\\">A practical breakdown from Alexander Woung.</div><table role=\\\"presentation\\\" width=\\\"100%\\\" cellspacing=\\\"0\\\" cellpadding=\\\"0\\\" style=\\\"background:#f4f1ff;padding:34px 14px\\\"><tr><td align=\\\"center\\\"><table role=\\\"presentation\\\" width=\\\"100%\\\" cellspacing=\\\"0\\\" cellpadding=\\\"0\\\" style=\\\"max-width:640px;background:#fff;border-radius:24px;overflow:hidden\\\"><tr><td style=\\\"padding:30px 38px;background:#7c3aed;color:#fff\\\"><div style=\\\"font-size:13px;letter-spacing:2px;text-transform:uppercase;font-weight:800;opacity:.85\\\">Alexander Woung</div><h1 style=\\\"margin:14px 0 0;font-size:34px;line-height:1.18\\\">${esc(title)}</h1></td></tr><tr><td style=\\\"padding:38px\\\">${paragraphs}<table role=\\\"presentation\\\" cellspacing=\\\"0\\\" cellpadding=\\\"0\\\" style=\\\"margin:30px 0\\\"><tr><td style=\\\"border-radius:12px;background:#7c3aed\\\"><a href=\\\"https://dulcy.io\\\" style=\\\"display:inline-block;padding:15px 22px;color:#fff;text-decoration:none;font-weight:800\\\">Build a predictable outbound system →</a></td></tr></table><p style=\\\"font-size:15px;line-height:1.7;color:#475569\\\">Talk soon,<br><strong>Alex</strong></p></td></tr><tr><td style=\\\"padding:24px 38px;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:12px;line-height:1.6;color:#64748b\\\">You received this because you subscribed to the Dulcy newsletter.<br><a href=\\\"{{unsubscribe_url}}\\\" style=\\\"color:#6d28d9\\\">Unsubscribe</a> · Dulcy Media LLC</td></tr></table></td></tr></table></body></html>`;const closeSearchBody={query:{type:'and',queries:[{type:'object_type',object_type:'lead'},{type:'field_condition',field:{type:'custom_field',custom_field_id:'cf_UjdFxwiVsUkh33P8UbQqfXNATOJQgDb49CP0dLObvMG'},condition:{type:'term',values:['Yes']},negate:false}]},_fields:{lead:['id','display_name','contacts']},include_counts:true,_limit:100};return [{json:{distributionRecordId:rec.id,title,body,html,closeSearchBody}}];"
+   },
+   "id": "c1a436a9-af71-47bc-9a9a-41dde0d954a6",
+   "name": "Build Newsletter Preview",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    688,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.close.com/api/v1/data/search/",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "closeApi",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify($json.closeSearchBody) }}",
+    "options": {
+     "timeout": 60000
+    }
+   },
+   "id": "42232dab-0eb9-4e49-b69e-4b32774ea00b",
+   "name": "Find Close Subscribers",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    928,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const close=$input.first().json;const preview=$('Build Newsletter Preview').first().json;const leads=Array.isArray(close.data)?close.data:[];const recipients=[];for(const lead of leads){for(const contact of (lead.contacts??[])){for(const item of (contact.emails??[])){const email=String(item.email??'').trim().toLowerCase();if(email)recipients.push({email,name:String(contact.name??'').trim(),leadId:lead.id});}}}const unique=[...new Map(recipients.map(r=>[r.email,r])).values()];return [{json:{ok:true,distributionRecordId:preview.distributionRecordId,title:preview.title,html:preview.html,subscriberCount:unique.length,matchedLeadCount:Number(close.count?.total??leads.length),audienceFilter:'Subscribed to Newsletter? = Yes',sending:false,message:`Newsletter prepared for review. ${unique.length} unique subscribed email${unique.length===1?'':'s'} found in Close. Nothing was sent.`}}];"
+   },
+   "id": "26d23163-e4d7-4f33-b732-c86c7d7f99da",
+   "name": "Prepare Newsletter Response",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1168,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "respondWith": "json",
+    "responseBody": "={{ $json }}",
+    "options": {
+     "responseCode": 200
+    }
+   },
+   "id": "ae1e7d25-ac9f-4147-8570-d5207c0bebba",
+   "name": "Return Newsletter Preview",
+   "type": "n8n-nodes-base.respondToWebhook",
+   "typeVersion": 1.4,
+   "position": [
+    1408,
+    0
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

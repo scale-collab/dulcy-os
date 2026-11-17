@@ -1,0 +1,3880 @@
+{
+ "id": 3770063,
+ "name": "[1.0 PRECALL] Booked Meeting GHL",
+ "teamId": 629049,
+ "hookId": 2137197,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 162901,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": true,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "gateway",
+  "openai-gpt-3",
+  "airtable",
+  "util",
+  "util",
+  "close-crm",
+  "builtin",
+  "close-crm",
+  "close-crm",
+  "slack",
+  "http",
+  "http",
+  "close-crm",
+  "http"
+ ],
+ "lastEdit": "2026-10-13T19:15:01.231Z",
+ "scheduling": {
+  "type": "immediately",
+  "maximum_runs_per_minute": 100
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2025-03-15T15:14:03.741Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": true,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 25,
+    "mapper": {},
+    "module": "gateway:CustomWebHook",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "hook": {
+        "data": {
+         "editable": "true"
+        },
+        "label": "Sofia GHL"
+       }
+      }
+     },
+     "designer": {
+      "x": 0,
+      "y": 150
+     },
+     "parameters": [
+      {
+       "name": "hook",
+       "type": "hook:gateway-webhook",
+       "label": "Webhook",
+       "required": true
+      },
+      {
+       "name": "maxResults",
+       "type": "number",
+       "label": "Maximum number of results"
+      }
+     ]
+    },
+    "parameters": {
+     "hook": 2137197,
+     "maxResults": 1
+    }
+   },
+   {
+    "id": 32,
+    "mapper": {
+     "input": "Take the phone number here: {{25.phone}}\n\nand output it in a full phone format depending on how many digits and the country it is coming from.\n\nFor example:\n\nInput: (917) 502-1912\nOutput: +19175021912",
+     "model": "gpt-5.6-luna",
+     "store": true,
+     "format": {},
+     "reasoning": {},
+     "background": false,
+     "truncation": "auto",
+     "inputContentType": "text",
+     "createConversation": true,
+     "parallel_tool_calls": true
+    },
+    "module": "openai-gpt-3:createModelResponse",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "model",
+       "type": "select",
+       "label": "Model",
+       "required": true
+      },
+      {
+       "name": "inputContentType",
+       "type": "select",
+       "label": "Prompt Type",
+       "required": true,
+       "validate": {
+        "enum": [
+         "text",
+         "image",
+         "file",
+         "prompt",
+         "items"
+        ]
+       }
+      },
+      {
+       "name": "max_output_tokens",
+       "type": "integer",
+       "label": "Max Output Tokens"
+      },
+      {
+       "name": "tools",
+       "spec": {
+        "name": "value",
+        "spec": [
+         {
+          "name": "type",
+          "type": "select",
+          "label": "Type",
+          "options": [
+           {
+            "label": "Skills",
+            "value": "skills",
+            "nested": [
+             {
+              "name": "skills",
+              "spec": {
+               "spec": [
+                {
+                 "name": "skill_source",
+                 "type": "select",
+                 "label": "Skill source",
+                 "options": [
+                  {
+                   "label": "Upload inline",
+                   "value": "inline",
+                   "nested": [
+                    {
+                     "name": "name",
+                     "type": "text",
+                     "label": "Name",
+                     "required": true
+                    },
+                    {
+                     "name": "description",
+                     "type": "text",
+                     "label": "Description",
+                     "required": true
+                    },
+                    {
+                     "help": "Skill archive data to upload. All files must be in the same top-level directory and must include a `SKILL.md` file at the root of that directory. For details about Skill structure, see [OpenAI Skills overview](https://developers.openai.com/api/docs/guides/tools-skills/).",
+                     "name": "data",
+                     "type": "buffer",
+                     "label": "Data",
+                     "required": true,
+                     "semantic": "file:data"
+                    }
+                   ]
+                  },
+                  {
+                   "label": "Skill reference",
+                   "value": "skill_reference",
+                   "nested": [
+                    {
+                     "mode": "edit",
+                     "name": "skill_id",
+                     "type": "select",
+                     "label": "Skill ID",
+                     "options": {
+                      "store": "rpc://openai-gpt-3/1/getSkills",
+                      "nested": [
+                       {
+                        "mode": "edit",
+                        "name": "version",
+                        "type": "select",
+                        "label": "Version",
+                        "options": "rpc://openai-gpt-3/1/getSkillVersions",
+                        "required": true
+                       }
+                      ]
+                     },
+                     "required": true
+                    }
+                   ]
+                  }
+                 ],
+                 "required": true
+                }
+               ],
+               "type": "collection",
+               "label": "Skill"
+              },
+              "type": "array",
+              "label": "Skills",
+              "labels": {
+               "add": "Add skill"
+              },
+              "required": true
+             }
+            ]
+           },
+           {
+            "label": "File search",
+            "value": "file_search",
+            "nested": [
+             {
+              "help": "The IDs of the vector stores to search.",
+              "name": "vector_store_ids",
+              "type": "select",
+              "label": "Vector Store IDs",
+              "options": "rpc://openai-gpt-3/1/getVectorStores",
+              "multiple": true,
+              "required": true,
+              "validate": {
+               "maxItems": 2
+              }
+             },
+             {
+              "help": "A filter to apply based on file attributes.",
+              "name": "filters",
+              "spec": [
+               {
+                "name": "type",
+                "type": "select",
+                "label": "Type",
+                "options": [
+                 {
+                  "label": "Equals",
+                  "value": "eq",
+                  "nested": [
+                   {
+                    "help": "The key to compare against the value.",
+                    "name": "key",
+                    "type": "text",
+                    "label": "Key",
+                    "required": true
+                   },
+                   {
+                    "help": "The value to compare against the attribute key",
+                    "name": "value",
+                    "type": "any",
+                    "label": "Value",
+                    "required": true
+                   }
+                  ]
+                 },
+                 {
+                  "label": "Not equal",
+                  "value": "ne",
+                  "nested": [
+                   {
+                    "help": "The key to compare against the value.",
+                    "name": "key",
+                    "type": "text",
+                    "label": "Key",
+                    "required": true
+                   },
+                   {
+                    "help": "The value to compare against the attribute key",
+                    "name": "value",
+                    "type": "any",
+                    "label": "Value",
+                    "required": true
+                   }
+                  ]
+                 },
+                 {
+                  "label": "Greater than",
+                  "value": "gt",
+                  "nested": [
+                   {
+                    "help": "The key to compare against the value.",
+                    "name": "key",
+                    "type": "text",
+                    "label": "Key",
+                    "required": true
+                   },
+                   {
+                    "help": "The value to compare against the attribute key",
+                    "name": "value",
+                    "type": "any",
+                    "label": "Value",
+                    "required": true
+                   }
+                  ]
+                 },
+                 {
+                  "label": "Greater than or equal",
+                  "value": "gte",
+                  "nested": [
+                   {
+                    "help": "The key to compare against the value.",
+                    "name": "key",
+                    "type": "text",
+                    "label": "Key",
+                    "required": true
+                   },
+                   {
+                    "help": "The value to compare against the attribute key",
+                    "name": "value",
+                    "type": "any",
+                    "label": "Value",
+                    "required": true
+                   }
+                  ]
+                 },
+                 {
+                  "label": "Less than",
+                  "value": "lt",
+                  "nested": [
+                   {
+                    "help": "The key to compare against the value.",
+                    "name": "key",
+                    "type": "text",
+                    "label": "Key",
+                    "required": true
+                   },
+                   {
+                    "help": "The value to compare against the attribute key",
+                    "name": "value",
+                    "type": "any",
+                    "label": "Value",
+                    "required": true
+                   }
+                  ]
+                 },
+                 {
+                  "label": "Less than or equal",
+                  "value": "lte",
+                  "nested": [
+                   {
+                    "help": "The key to compare against the value.",
+                    "name": "key",
+                    "type": "text",
+                    "label": "Key",
+                    "required": true
+                   },
+                   {
+                    "help": "The value to compare against the attribute key",
+                    "name": "value",
+                    "type": "any",
+                    "label": "Value",
+                    "required": true
+                   }
+                  ]
+                 },
+                 {
+                  "label": "Compound filter [and]",
+                  "value": "and",
+                  "nested": [
+                   {
+                    "name": "filters",
+                    "spec": {
+                     "spec": [
+                      {
+                       "name": "type",
+                       "type": "select",
+                       "label": "Type",
+                       "options": [
+                        {
+                         "label": "Equals",
+                         "value": "eq"
+                        },
+                        {
+                         "label": "Not equal",
+                         "value": "ne"
+                        },
+                        {
+                         "label": "Greater than",
+                         "value": "gt"
+                        },
+                        {
+                         "label": "Greater than or equal",
+                         "value": "gte"
+                        },
+                        {
+                         "label": "Less than",
+                         "value": "lt"
+                        },
+                        {
+                         "label": "Less than or equal",
+                         "value": "lte"
+                        }
+                       ],
+                       "required": true
+                      },
+                      {
+                       "help": "The key to compare against the value.",
+                       "name": "key",
+                       "type": "text",
+                       "label": "Key",
+                       "required": true
+                      },
+                      {
+                       "help": "The value to compare against the attribute key",
+                       "name": "value",
+                       "type": "any",
+                       "label": "Value",
+                       "required": true
+                      }
+                     ],
+                     "type": "collection",
+                     "label": "Filter"
+                    },
+                    "type": "array",
+                    "label": "Filters",
+                    "labels": {
+                     "add": "Add filter"
+                    },
+                    "required": true
+                   }
+                  ]
+                 },
+                 {
+                  "label": "Compound filter [or]",
+                  "value": "or",
+                  "nested": [
+                   {
+                    "name": "filters",
+                    "spec": {
+                     "spec": [
+                      {
+                       "name": "type",
+                       "type": "select",
+                       "label": "Type",
+                       "options": [
+                        {
+                         "label": "Equals",
+                         "value": "eq"
+                        },
+                        {
+                         "label": "Not equal",
+                         "value": "ne"
+                        },
+                        {
+                         "label": "Greater than",
+                         "value": "gt"
+                        },
+                        {
+                         "label": "Greater than or equal",
+                         "value": "gte"
+                        },
+                        {
+                         "label": "Less than",
+                         "value": "lt"
+                        },
+                        {
+                         "label": "Less than or equal",
+                         "value": "lte"
+                        }
+                       ],
+                       "required": true
+                      },
+                      {
+                       "help": "The key to compare against the value.",
+                       "name": "key",
+                       "type": "text",
+                       "label": "Key",
+                       "required": true
+                      },
+                      {
+                       "help": "The value to compare against the attribute key",
+                       "name": "value",
+                       "type": "any",
+                       "label": "Value",
+                       "required": true
+                      }
+                     ],
+                     "type": "collection",
+                     "label": "Filter"
+                    },
+                    "type": "array",
+                    "label": "Filters",
+                    "labels": {
+                     "add": "Add filter"
+                    },
+                    "required": true
+                   }
+                  ]
+                 }
+                ]
+               }
+              ],
+              "type": "collection",
+              "label": "Filters"
+             },
+             {
+              "name": "max_num_results",
+              "type": "integer",
+              "label": "Max Results Number",
+              "validate": {
+               "max": 50,
+               "min": 1
+              }
+             },
+             {
+              "help": "Ranking options for search.",
+              "name": "ranking_options",
+              "spec": [
+               {
+                "help": "The ranker to use for the file search.",
+                "name": "ranker",
+                "type": "select",
+                "label": "Ranker",
+                "options": [
+                 {
+                  "label": "auto",
+                  "value": "auto"
+                 },
+                 {
+                  "label": "default-2024-08-21",
+                  "value": "default-2024-08-21"
+                 },
+                 {
+                  "label": "default-2024-11-15",
+                  "value": "default-2024-11-15"
+                 }
+                ]
+               },
+               {
+                "help": "The score threshold for the file search. Numbers closer to `1` will attempt to return only the most relevant results, but may return fewer results.",
+                "name": "score_threshold",
+                "type": "number",
+                "label": "Score Threshold",
+                "validate": {
+                 "max": 1,
+                 "min": 0
+                }
+               }
+              ],
+              "type": "collection",
+              "label": "Ranking Options"
+             }
+            ]
+           },
+           {
+            "label": "Function",
+            "value": "function",
+            "nested": [
+             {
+              "help": "The name of the function to call.",
+              "name": "name",
+              "type": "text",
+              "label": "Name",
+              "required": true
+             },
+             {
+              "help": "A JSON schema object describing the parameters of the function.",
+              "name": "parameters",
+              "type": "json",
+              "label": "Parameters",
+              "required": true
+             },
+             {
+              "help": "Whether to enforce strict parameter validation.",
+              "name": "strict",
+              "type": "boolean",
+              "label": "Strict",
+              "default": true,
+              "required": true
+             },
+             {
+              "help": "A description of the function.",
+              "name": "description",
+              "type": "text",
+              "label": "Description"
+             }
+            ]
+           },
+           {
+            "label": "Computer use preview",
+            "value": "computer_use_preview",
+            "nested": [
+             {
+              "help": "The height of the computer display.",
+              "name": "display_height",
+              "type": "number",
+              "label": "Display Height",
+              "required": true
+             },
+             {
+              "help": "The width of the computer display.",
+              "name": "display_width",
+              "type": "number",
+              "label": "Display Width",
+              "required": true
+             },
+             {
+              "help": "The type of computer environment to control.",
+              "name": "environment",
+              "type": "select",
+              "label": "Environment",
+              "options": [
+               {
+                "label": "Windows",
+                "value": "windows"
+               },
+               {
+                "label": "Mac",
+                "value": "mac"
+               },
+               {
+                "label": "Linux",
+                "value": "linux"
+               },
+               {
+                "label": "Browser",
+                "value": "browser"
+               }
+              ],
+              "required": true
+             }
+            ]
+           },
+           {
+            "label": "Web search preview",
+            "value": "web_search_preview",
+            "nested": [
+             {
+              "help": "High level guidance for the amount of context window space to use for the search. Medium is the default value.",
+              "name": "search_context_size",
+              "type": "select",
+              "label": "Search Context Size",
+              "options": [
+               {
+                "label": "Low",
+                "value": "low"
+               },
+               {
+                "label": "Medium",
+                "value": "medium"
+               },
+               {
+                "label": "High",
+                "value": "high"
+               }
+              ]
+             },
+             {
+              "help": "Approximate location parameters for the search.",
+              "name": "user_location",
+              "spec": [
+               {
+                "help": "The type of location approximation.",
+                "name": "type",
+                "type": "select",
+                "label": "Type",
+                "options": [
+                 {
+                  "label": "Approximate",
+                  "value": "approximate"
+                 }
+                ]
+               },
+               {
+                "help": "The city of the user, e.g. `San Francisco`.",
+                "name": "city",
+                "type": "text",
+                "label": "City"
+               },
+               {
+                "help": "The two-letter ISO country code of the user, e.g. `US`.",
+                "name": "country",
+                "type": "select",
+                "label": "Country",
+                "options": "rpc://openai-gpt-3/1/getCountryCodes"
+               },
+               {
+                "help": "The region of the user, e.g. `California`.",
+                "name": "region",
+                "type": "text",
+                "label": "Region"
+               },
+               {
+                "help": "The timezone of the user, e.g. `America/Los_Angeles`.",
+                "name": "timezone",
+                "type": "timezone",
+                "label": "Timezone"
+               }
+              ],
+              "type": "collection",
+              "label": "User Location"
+             }
+            ]
+           },
+           {
+            "label": "Web search preview (2025_03_11)",
+            "value": "web_search_preview_2025_03_11",
+            "nested": [
+             {
+              "help": "High level guidance for the amount of context window space to use for the search. Medium is the default value.",
+              "name": "search_context_size",
+              "type": "select",
+              "label": "Search Context Size",
+              "options": [
+               {
+                "label": "Low",
+                "value": "low"
+               },
+               {
+                "label": "Medium",
+                "value": "medium"
+               },
+               {
+                "label": "High",
+                "value": "high"
+               }
+              ]
+             },
+             {
+              "help": "Approximate location parameters for the search.",
+              "name": "user_location",
+              "spec": [
+               {
+                "help": "The type of location approximation.",
+                "name": "type",
+                "type": "select",
+                "label": "Type",
+                "options": [
+                 {
+                  "label": "Approximate",
+                  "value": "approximate"
+                 }
+                ]
+               },
+               {
+                "help": "The city of the user, e.g. `San Francisco`.",
+                "name": "city",
+                "type": "text",
+                "label": "City"
+               },
+               {
+                "help": "The two-letter ISO country code of the user, e.g. `US`.",
+                "name": "country",
+                "type": "select",
+                "label": "Country",
+                "options": "rpc://openai-gpt-3/1/getCountryCodes"
+               },
+               {
+                "help": "The region of the user, e.g. `California`.",
+                "name": "region",
+                "type": "text",
+                "label": "Region"
+               },
+               {
+                "help": "The timezone of the user, e.g. `America/Los_Angeles`.",
+                "name": "timezone",
+                "type": "timezone",
+                "label": "Timezone"
+               }
+              ],
+              "type": "collection",
+              "label": "User Location"
+             }
+            ]
+           },
+           {
+            "label": "MCP",
+            "value": "mcp",
+            "nested": [
+             {
+              "text": "MCP requests will automatically be approved.",
+              "type": "banner",
+              "theme": "info"
+             },
+             {
+              "name": "require_approval",
+              "type": "hidden",
+              "label": "Require Approval",
+              "default": "never"
+             },
+             {
+              "help": "A label for this MCP server, used to identify it in tool calls.",
+              "name": "server_label",
+              "type": "text",
+              "label": "Server Label",
+              "required": true
+             },
+             {
+              "help": "The URL for the MCP server.",
+              "name": "server_url",
+              "type": "url",
+              "label": "Server URL",
+              "required": true
+             },
+             {
+              "help": "List of allowed tool names.",
+              "name": "allowed_tools",
+              "spec": {
+               "type": "text",
+               "label": "Tool"
+              },
+              "type": "array",
+              "label": "Allowed Tools",
+              "labels": {
+               "add": "Add allowed tool"
+              }
+             },
+             {
+              "help": "Optional HTTP headers to send to the MCP server. Use for authentication or other purposes.",
+              "name": "headers",
+              "spec": {
+               "spec": [
+                {
+                 "name": "key",
+                 "type": "text",
+                 "label": "Key"
+                },
+                {
+                 "name": "value",
+                 "type": "text",
+                 "label": "Value"
+                }
+               ],
+               "type": "collection",
+               "label": "Header"
+              },
+              "type": "array",
+              "label": "Headers",
+              "labels": {
+               "add": "Add header"
+              }
+             }
+            ]
+           },
+           {
+            "label": "Code interpreter",
+            "value": "code_interpreter",
+            "nested": [
+             {
+              "help": "**Container**\nA container is a fully sandboxed virtual machine where the model runs Python code.\n\n**Expiration Time**\nContainers expire if unused for 20 minutes. The expiration timer is reset after any operation on the container.",
+              "name": "container_type",
+              "type": "select",
+              "label": "Container type",
+              "options": [
+               {
+                "label": "Use existing container",
+                "value": "existing_container",
+                "nested": [
+                 {
+                  "name": "container",
+                  "type": "select",
+                  "label": "Container",
+                  "options": {
+                   "store": "rpc://openai-gpt-3/1/getContainers"
+                  },
+                  "mappable": {
+                   "help": "Map the container ID. For example: `cntr_6878d51b5ffc8191b7c32c11c747cf4e`."
+                  },
+                  "required": true
+                 }
+                ]
+               },
+               {
+                "label": "Create new container",
+                "value": "new_container",
+                "nested": [
+                 {
+                  "name": "container",
+                  "spec": [
+                   {
+                    "help": "An optional list of uploaded files to make available to your code.",
+                    "name": "file_ids",
+                    "spec": {
+                     "type": "select",
+                     "label": "File ID",
+                     "options": "rpc://openai-gpt-3/1/getFiles"
+                    },
+                    "type": "array",
+                    "label": "File IDs",
+                    "labels": {
+                     "add": "Add file ID"
+                    }
+                   }
+                  ],
+                  "type": "collection",
+                  "label": "Container"
+                 }
+                ]
+               }
+              ],
+              "required": true
+             }
+            ]
+           },
+           {
+            "label": "Image generation",
+            "value": "image_generation",
+            "nested": [
+             {
+              "help": "Background type for the generated image.",
+              "name": "background",
+              "type": "select",
+              "label": "Background",
+              "options": [
+               {
+                "label": "Auto",
+                "value": "auto"
+               },
+               {
+                "label": "Transparent",
+                "value": "transparent"
+               },
+               {
+                "label": "Opaque",
+                "value": "opaque"
+               }
+              ]
+             },
+             {
+              "help": "Controls how much effort the model will exert to match the style and features of input images, especially facial features.",
+              "name": "input_fidelity",
+              "type": "select",
+              "label": "Input Fidelity",
+              "options": [
+               {
+                "label": "Low",
+                "value": "low"
+               },
+               {
+                "label": "High",
+                "value": "high"
+               }
+              ]
+             },
+             {
+              "help": "Optional mask for inpainting.",
+              "name": "input_image_mask",
+              "spec": [
+               {
+                "name": "mask_input_type",
+                "type": "select",
+                "label": "Mask Input Type",
+                "options": [
+                 {
+                  "label": "File ID",
+                  "value": "id",
+                  "nested": [
+                   {
+                    "help": "The ID of the file to be sent to the model.",
+                    "name": "file_id",
+                    "type": "select",
+                    "label": "File ID",
+                    "options": "rpc://openai-gpt-3/1/getFiles",
+                    "required": true
+                   }
+                  ]
+                 },
+                 {
+                  "label": "Image URL",
+                  "value": "url",
+                  "nested": [
+                   {
+                    "help": "The URL of the image to be sent to the model.",
+                    "name": "image_url",
+                    "type": "url",
+                    "label": "Image URL",
+                    "required": true
+                   }
+                  ]
+                 }
+                ]
+               }
+              ],
+              "type": "collection",
+              "label": "Input Image Mask"
+             },
+             {
+              "help": "Moderation level for the generated image.",
+              "name": "moderation",
+              "type": "select",
+              "label": "Moderation",
+              "options": [
+               {
+                "label": "Auto",
+                "value": "auto"
+               },
+               {
+                "label": "Low",
+                "value": "low"
+               }
+              ]
+             },
+             {
+              "help": "The output format of the generated image.",
+              "name": "output_format",
+              "type": "select",
+              "label": "Output Format",
+              "options": [
+               {
+                "label": "PNG",
+                "value": "png"
+               },
+               {
+                "label": "WEBP",
+                "value": "webp",
+                "nested": [
+                 {
+                  "help": "Compression level for the output image.",
+                  "name": "output_compression",
+                  "type": "number",
+                  "label": "Output Compression",
+                  "validate": {
+                   "max": 100,
+                   "min": 0
+                  }
+                 }
+                ]
+               },
+               {
+                "label": "JPEG",
+                "value": "jpeg",
+                "nested": [
+                 {
+                  "help": "Compression level for the output image.",
+                  "name": "output_compression",
+                  "type": "number",
+                  "label": "Output Compression",
+                  "validate": {
+                   "max": 100,
+                   "min": 0
+                  }
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "help": "The quality of the generated image.",
+              "name": "quality",
+              "type": "select",
+              "label": "Quality",
+              "options": [
+               {
+                "label": "Auto",
+                "value": "auto"
+               },
+               {
+                "label": "Low",
+                "value": "low"
+               },
+               {
+                "label": "Medium",
+                "value": "medium"
+               },
+               {
+                "label": "High",
+                "value": "high"
+               }
+              ]
+             },
+             {
+              "help": "The size of the generated image.",
+              "name": "size",
+              "type": "select",
+              "label": "Size",
+              "options": [
+               {
+                "label": "1024x1024",
+                "value": "1024x1024"
+               },
+               {
+                "label": "1024x1536",
+                "value": "1024x1536"
+               },
+               {
+                "label": "1536x1024",
+                "value": "1536x1024"
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "label": "Custom",
+            "value": "custom",
+            "nested": [
+             {
+              "help": "The name of the custom tool, used to identify it in tool calls, for example: `abc`, `abc_defg`.",
+              "name": "name",
+              "type": "text",
+              "label": "Name",
+              "required": true
+             },
+             {
+              "help": "Description of the custom tool, used to provide more context.",
+              "name": "description",
+              "type": "text",
+              "label": "Description"
+             },
+             {
+              "name": "format",
+              "spec": [
+               {
+                "name": "type",
+                "type": "select",
+                "label": "Type",
+                "options": [
+                 {
+                  "label": "Text",
+                  "value": "text"
+                 },
+                 {
+                  "label": "Grammar",
+                  "value": "grammar",
+                  "nested": [
+                   {
+                    "help": "The syntax of the grammar definition.",
+                    "name": "syntax",
+                    "type": "select",
+                    "label": "Syntax",
+                    "options": [
+                     {
+                      "label": "Lark",
+                      "value": "lark"
+                     },
+                     {
+                      "label": "Regex",
+                      "value": "regex"
+                     }
+                    ],
+                    "required": true
+                   },
+                   {
+                    "help": "The grammar definition.",
+                    "name": "definition",
+                    "type": "text",
+                    "label": "Definition",
+                    "required": true
+                   }
+                  ]
+                 }
+                ]
+               }
+              ],
+              "type": "collection",
+              "label": "Format"
+             }
+            ]
+           }
+          ],
+          "required": true
+         }
+        ],
+        "type": "collection",
+        "label": "Tool"
+       },
+       "type": "array",
+       "label": "Tools"
+      },
+      {
+       "name": "tool_choice",
+       "type": "select",
+       "label": "Tool Choice",
+       "validate": {
+        "enum": [
+         "none",
+         "auto",
+         "required",
+         "file_search",
+         "web_search_preview",
+         "computer_use_preview",
+         "code_interpreter",
+         "function",
+         "custom",
+         "allowed_tools"
+        ]
+       }
+      },
+      {
+       "name": "parallel_tool_calls",
+       "type": "boolean",
+       "label": "Parallel Tool Calls"
+      },
+      {
+       "name": "background",
+       "type": "boolean",
+       "label": "Run in Background"
+      },
+      {
+       "name": "context_management",
+       "spec": {
+        "name": "value",
+        "spec": [
+         {
+          "name": "type",
+          "type": "select",
+          "label": "Context entry type",
+          "options": [
+           {
+            "label": "Compaction",
+            "value": "compaction",
+            "nested": [
+             {
+              "help": "The threshold for compacting the context. When the number of tokens in the context exceeds this threshold, the context will be compacted to reduce token usage. See [OpenAI compaction guide](https://developers.openai.com/api/docs/guides/compaction#server-side-compaction).",
+              "name": "compact_threshold",
+              "type": "integer",
+              "label": "Compact threshold",
+              "validate": {
+               "min": 1000
+              }
+             }
+            ]
+           }
+          ],
+          "required": true
+         }
+        ],
+        "type": "collection",
+        "label": "Context entry"
+       },
+       "type": "array",
+       "label": "Context management"
+      },
+      {
+       "name": "conversationId",
+       "type": "text",
+       "label": "Conversation ID"
+      },
+      {
+       "name": "createConversation",
+       "type": "boolean",
+       "label": "Create a new conversation",
+       "required": true
+      },
+      {
+       "name": "temperature",
+       "type": "number",
+       "label": "Temperature",
+       "validate": {
+        "max": 2,
+        "min": 0
+       }
+      },
+      {
+       "name": "top_p",
+       "type": "number",
+       "label": "Top P"
+      },
+      {
+       "name": "store",
+       "type": "boolean",
+       "label": "Store"
+      },
+      {
+       "name": "previous_response_id",
+       "type": "text",
+       "label": "Previous Response ID"
+      },
+      {
+       "name": "instructions",
+       "type": "text",
+       "label": "Instructions"
+      },
+      {
+       "name": "reasoning",
+       "spec": [
+        {
+         "name": "effort",
+         "type": "select",
+         "label": "Effort",
+         "validate": {
+          "enum": [
+           "none",
+           "minimal",
+           "low",
+           "medium",
+           "high",
+           "xhigh",
+           "max"
+          ]
+         }
+        },
+        {
+         "name": "summary",
+         "type": "select",
+         "label": "Summary",
+         "validate": {
+          "enum": [
+           "auto",
+           "concise",
+           "detailed"
+          ]
+         }
+        }
+       ],
+       "type": "collection",
+       "label": "Reasoning"
+      },
+      {
+       "name": "format",
+       "spec": [
+        {
+         "name": "type",
+         "type": "select",
+         "label": "Type",
+         "validate": {
+          "enum": [
+           "text",
+           "json_schema",
+           "json_object"
+          ]
+         }
+        }
+       ],
+       "type": "collection",
+       "label": "Output Format"
+      },
+      {
+       "name": "truncation",
+       "type": "select",
+       "label": "Truncation",
+       "validate": {
+        "enum": [
+         "auto",
+         "disabled"
+        ]
+       }
+      },
+      {
+       "name": "include",
+       "type": "select",
+       "label": "Include",
+       "multiple": true,
+       "validate": {
+        "enum": [
+         "file_search_call.results",
+         "code_interpreter_call.outputs",
+         "message.input_image.image_url",
+         "computer_call_output.output.image_url"
+        ]
+       }
+      },
+      {
+       "name": "metadata",
+       "spec": {
+        "name": "value",
+        "spec": [
+         {
+          "name": "key",
+          "type": "text",
+          "label": "Key"
+         },
+         {
+          "name": "value",
+          "type": "text",
+          "label": "Value"
+         }
+        ],
+        "type": "collection",
+        "label": "Metadata"
+       },
+       "type": "array",
+       "label": "Metadata"
+      },
+      {
+       "name": "input",
+       "type": "text",
+       "label": "Prompt"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "model": {
+        "mode": "chose",
+        "label": "gpt-5.6-luna (system)Fastest and most cost-efficient model for high-volume workloads"
+       },
+       "store": {
+        "mode": "chose"
+       },
+       "tools": {
+        "mode": "chose"
+       },
+       "format": {
+        "nested": {
+         "type": {
+          "mode": "chose",
+          "label": "Empty"
+         }
+        }
+       },
+       "include": {
+        "mode": "chose"
+       },
+       "metadata": {
+        "mode": "chose"
+       },
+       "reasoning": {
+        "nested": {
+         "effort": {
+          "mode": "chose",
+          "label": "Empty"
+         },
+         "summary": {
+          "mode": "chose",
+          "label": "Empty"
+         }
+        }
+       },
+       "background": {
+        "mode": "chose"
+       },
+       "truncation": {
+        "mode": "chose",
+        "label": "Auto"
+       },
+       "tool_choice": {
+        "mode": "chose",
+        "label": "Empty"
+       },
+       "inputContentType": {
+        "mode": "chose",
+        "label": "Text prompt"
+       },
+       "context_management": {
+        "mode": "chose"
+       },
+       "createConversation": {
+        "mode": "chose"
+       },
+       "parallel_tool_calls": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "openai-gpt-3"
+        },
+        "label": "My OpenAI connection"
+       }
+      }
+     },
+     "designer": {
+      "x": 300,
+      "y": 150
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:openai-gpt-3",
+       "label": "Connection",
+       "required": true
+      }
+     ],
+     "setupValidation": {
+      "result": {
+       "valid": true,
+       "fields": []
+      },
+      "version": 1,
+      "configuration": "bd69306c0f85b7ed"
+     }
+    },
+    "parameters": {
+     "__IMTCONN__": 3576859
+    }
+   },
+   {
+    "id": 30,
+    "mapper": {
+     "base": "appxqINt5XKw7a76A",
+     "table": "tblHDo4RQrYvIkDyj",
+     "fields": [
+      "Leads Name",
+      "Leads Email"
+     ],
+     "formula": "  {leads number} = '{{32.result}}'",
+     "maxRecords": "1",
+     "useColumnId": false
+    },
+    "module": "airtable:ActionSearchRecords",
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "base",
+       "type": "select",
+       "label": "Base",
+       "required": true
+      },
+      {
+       "name": "useColumnId",
+       "type": "boolean",
+       "label": "Use Column ID",
+       "required": true
+      },
+      {
+       "name": "table",
+       "type": "select",
+       "label": "Table",
+       "required": true
+      },
+      {
+       "name": "formula",
+       "type": "text",
+       "label": "Formula"
+      },
+      {
+       "name": "maxRecords",
+       "type": "integer",
+       "label": "Limit"
+      },
+      {
+       "name": "sort",
+       "spec": [
+        {
+         "name": "field",
+         "type": "select",
+         "label": "Field",
+         "dynamic": true,
+         "options": []
+        },
+        {
+         "name": "direction",
+         "type": "select",
+         "label": "Direction",
+         "options": [
+          {
+           "label": "Descending",
+           "value": "desc"
+          },
+          {
+           "label": "Ascending",
+           "value": "asc"
+          }
+         ]
+        }
+       ],
+       "type": "array",
+       "label": "Sort"
+      },
+      {
+       "name": "view",
+       "type": "select",
+       "label": "View"
+      },
+      {
+       "name": "fields",
+       "type": "select",
+       "label": "Output Fields",
+       "multiple": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "base": {
+        "mode": "chose",
+        "label": "Alex"
+       },
+       "sort": {
+        "mode": "chose"
+       },
+       "view": {
+        "mode": "chose"
+       },
+       "table": {
+        "mode": "chose",
+        "label": "AI Employee Calls"
+       },
+       "fields": {
+        "mode": "chose",
+        "label": [
+         "Leads Name",
+         "Leads Email"
+        ]
+       },
+       "useColumnId": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "airtable3"
+        },
+        "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+       }
+      }
+     },
+     "designer": {
+      "x": 600,
+      "y": 150
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:airtable3,airtable2",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3589602
+    }
+   },
+   {
+    "id": 16,
+    "mapper": {
+     "name": "esttime",
+     "scope": "roundtrip",
+     "value": "{{formatDate(25.meetingDatandTime; \"MMMM D, YYYY h:mm A\"; \"America/New_York\")}}"
+    },
+    "module": "util:SetVariable2",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "name",
+       "type": "text",
+       "label": "Variable name",
+       "required": true
+      },
+      {
+       "name": "scope",
+       "type": "select",
+       "label": "Variable lifetime",
+       "required": true,
+       "validate": {
+        "enum": [
+         "roundtrip",
+         "execution"
+        ]
+       }
+      },
+      {
+       "name": "value",
+       "type": "any",
+       "label": "Variable value"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "scope": {
+        "label": "One cycle"
+       }
+      }
+     },
+     "designer": {
+      "x": 900,
+      "y": 150
+     }
+    },
+    "parameters": {}
+   },
+   {
+    "id": 2,
+    "mapper": {
+     "scope": "roundtrip",
+     "variables": [
+      {
+       "name": "leadName",
+       "value": "{{30.`Leads Name`}}"
+      },
+      {
+       "name": "email",
+       "value": "{{30.`Leads Email`}}"
+      },
+      {
+       "name": "phoneNumber",
+       "value": "{{25.phone}}"
+      },
+      {
+       "name": "companyWebsite",
+       "value": "{{last(split(30.`Leads Email`; \"@\"))}}"
+      },
+      {
+       "name": "leadSource",
+       "value": "Cold Email"
+      },
+      {
+       "name": "meetingDateTime",
+       "value": "{{last(split(25.meetingDateandTime; \"y,\"))}}"
+      },
+      {
+       "name": "meetingLink",
+       "value": "{{25.meetingLink}}"
+      },
+      {
+       "name": "rescheduleLink",
+       "value": "{{25.rescheduleLink}}"
+      },
+      {
+       "name": "company",
+       "value": "{{ifempty(25.companyName; first(split(last(split(25.email; \"@\")); \".\")))}}"
+      }
+     ]
+    },
+    "module": "util:SetVariables",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "variables",
+       "spec": [
+        {
+         "name": "name",
+         "type": "text",
+         "label": "Variable name",
+         "required": true
+        },
+        {
+         "name": "value",
+         "type": "any",
+         "label": "Variable value"
+        }
+       ],
+       "type": "array",
+       "label": "Variables"
+      },
+      {
+       "name": "scope",
+       "type": "select",
+       "label": "Variable lifetime",
+       "required": true,
+       "validate": {
+        "enum": [
+         "roundtrip",
+         "execution"
+        ]
+       }
+      }
+     ],
+     "restore": {
+      "expect": {
+       "scope": {
+        "label": "One cycle"
+       },
+       "variables": {
+        "items": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null
+        ]
+       }
+      }
+     },
+     "designer": {
+      "x": 1200,
+      "y": 150
+     }
+    },
+    "parameters": {}
+   },
+   {
+    "id": 3,
+    "mapper": {
+     "email": "{{2.email}}",
+     "limit": "1"
+    },
+    "module": "close-crm:searchLeadsviaAdvancedFilters",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "id",
+       "type": "text",
+       "label": "Lead ID"
+      },
+      {
+       "name": "name",
+       "type": "text",
+       "label": "Lead Name"
+      },
+      {
+       "name": "email",
+       "type": "email",
+       "label": "Contact's Email"
+      },
+      {
+       "name": "phone",
+       "type": "text",
+       "label": "Contact's Phone Number"
+      },
+      {
+       "name": "url",
+       "type": "url",
+       "label": "Contact's URL"
+      },
+      {
+       "name": "query",
+       "type": "any",
+       "label": "Filtering Query"
+      },
+      {
+       "name": "limit",
+       "type": "uinteger",
+       "label": "Limit"
+      }
+     ],
+     "restore": {
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "close-crm"
+        },
+        "label": "My Close CRM connection (alexander@dulcymedia.com)"
+       }
+      }
+     },
+     "designer": {
+      "x": 1500,
+      "y": 150
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:close-crm",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 2737753
+    }
+   },
+   {
+    "id": 4,
+    "mapper": null,
+    "module": "builtin:BasicRouter",
+    "routes": [
+     {
+      "flow": [
+       {
+        "id": 5,
+        "filter": {
+         "name": "New lead",
+         "conditions": [
+          [
+           {
+            "a": "{{3.`__IMTLENGTH__`}}",
+            "b": "0",
+            "o": "text:equal"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "url": "https://{{2.companyWebsite}}",
+         "name": "{{2.leadName}}",
+         "custom": {
+          "cf_DsnbXIB92w5EqoI2ZXtFrekDoMGxKK7pUetze2LDrCZ": "{{2.marketingBudget}}",
+          "cf_OoD9hAYZ8KHbT37YG1W6msrBSVtrpKbJaJXYtyWD1CQ": "{{2.salesTeam}}",
+          "cf_PMb16eFLfrXK6svUgFwSGRK0wsMcmVIUJz8xEHpv15h": "{{2.leadSource}}",
+          "cf_W9ZXV2CugvVHnu9CSrVFcCXwc1E9GUZLjrADjR54Bzp": "{{2.currentOutbound}}",
+          "cf_biSHEhDl4yS7zj3WDbajXejueA9ffhzCUAFzNiydlij": "{{2.revenue}}",
+          "cf_ef4lUZ8EpQO7RV0OehjfJghji3MKfWnk5DboWnP0gZ5": "{{2.meetingLink}}",
+          "cf_gjfpaANPAMf7vDNMrjBq4iumZsuvaADkMI3uJNgy5Gg": "{{2.rescheduleLink}}",
+          "cf_hisRvCzyfAkf2PSH9rVrKAdA0x7X2nVsucJFJAjVlVn": "{{2.meetingDateTime}}"
+         },
+         "description": "{{2.company}}"
+        },
+        "module": "close-crm:ActionCreateLead",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "name": "name",
+           "type": "text",
+           "label": "Name"
+          },
+          {
+           "name": "description",
+           "type": "text",
+           "label": "Description"
+          },
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL"
+          },
+          {
+           "name": "status_id",
+           "type": "select",
+           "label": "Status ID"
+          },
+          {
+           "name": "contacts",
+           "spec": {
+            "name": "value",
+            "spec": [
+             {
+              "name": "name",
+              "type": "text",
+              "label": "Name"
+             },
+             {
+              "name": "title",
+              "type": "text",
+              "label": "Title"
+             },
+             {
+              "name": "emails",
+              "spec": {
+               "spec": [
+                {
+                 "name": "type",
+                 "type": "select",
+                 "label": "Type",
+                 "options": [
+                  {
+                   "label": "Office",
+                   "value": "office"
+                  },
+                  {
+                   "label": "Home",
+                   "value": "home"
+                  },
+                  {
+                   "label": "Direct",
+                   "value": "direct"
+                  },
+                  {
+                   "label": "Other",
+                   "value": "other"
+                  }
+                 ]
+                },
+                {
+                 "name": "email",
+                 "type": "email",
+                 "label": "Email"
+                }
+               ],
+               "type": "collection"
+              },
+              "type": "array",
+              "label": "Emails"
+             },
+             {
+              "name": "phones",
+              "spec": {
+               "spec": [
+                {
+                 "name": "type",
+                 "type": "select",
+                 "label": "Type",
+                 "options": [
+                  {
+                   "label": "Office",
+                   "value": "office"
+                  },
+                  {
+                   "label": "Mobile",
+                   "value": "mobile"
+                  },
+                  {
+                   "label": "Home",
+                   "value": "home"
+                  },
+                  {
+                   "label": "Direct",
+                   "value": "direct"
+                  },
+                  {
+                   "label": "Fax",
+                   "value": "fax"
+                  },
+                  {
+                   "label": "Other",
+                   "value": "other"
+                  }
+                 ]
+                },
+                {
+                 "name": "phone",
+                 "type": "text",
+                 "label": "Phone Number"
+                }
+               ],
+               "type": "collection",
+               "label": "Phone"
+              },
+              "type": "array",
+              "label": "Phones"
+             }
+            ],
+            "type": "collection"
+           },
+           "type": "array",
+           "label": "Contacts"
+          },
+          {
+           "name": "addresses",
+           "spec": {
+            "name": "value",
+            "spec": [
+             {
+              "name": "label",
+              "type": "text",
+              "label": "Label"
+             },
+             {
+              "name": "address_1",
+              "type": "text",
+              "label": "Address 1"
+             },
+             {
+              "name": "address_2",
+              "type": "text",
+              "label": "Address 2"
+             },
+             {
+              "name": "city",
+              "type": "text",
+              "label": "City"
+             },
+             {
+              "name": "state",
+              "type": "text",
+              "label": "State"
+             },
+             {
+              "name": "zipcode",
+              "type": "text",
+              "label": "ZIP code"
+             },
+             {
+              "name": "country",
+              "type": "text",
+              "label": "Country"
+             }
+            ],
+            "type": "collection"
+           },
+           "type": "array",
+           "label": "Addresses"
+          },
+          {
+           "name": "custom",
+           "spec": [
+            {
+             "name": "cf_biSHEhDl4yS7zj3WDbajXejueA9ffhzCUAFzNiydlij",
+             "type": "text",
+             "label": "Revenue"
+            },
+            {
+             "name": "cf_OoD9hAYZ8KHbT37YG1W6msrBSVtrpKbJaJXYtyWD1CQ",
+             "type": "text",
+             "label": "Sales Team"
+            },
+            {
+             "name": "cf_DsnbXIB92w5EqoI2ZXtFrekDoMGxKK7pUetze2LDrCZ",
+             "type": "text",
+             "label": "Marketing Budget"
+            },
+            {
+             "name": "cf_W9ZXV2CugvVHnu9CSrVFcCXwc1E9GUZLjrADjR54Bzp",
+             "type": "text",
+             "label": "Current Outbound"
+            },
+            {
+             "name": "cf_PMb16eFLfrXK6svUgFwSGRK0wsMcmVIUJz8xEHpv15h",
+             "type": "text",
+             "label": "Lead Source"
+            },
+            {
+             "name": "cf_hisRvCzyfAkf2PSH9rVrKAdA0x7X2nVsucJFJAjVlVn",
+             "type": "text",
+             "label": "Meeting Time/Date"
+            },
+            {
+             "name": "cf_ef4lUZ8EpQO7RV0OehjfJghji3MKfWnk5DboWnP0gZ5",
+             "type": "text",
+             "label": "Meeting Link"
+            },
+            {
+             "name": "cf_gjfpaANPAMf7vDNMrjBq4iumZsuvaADkMI3uJNgy5Gg",
+             "type": "text",
+             "label": "Reschedule Link"
+            },
+            {
+             "name": "cf_pdFQlR5IaMeYvZamaxZ20JEoUlkY6Oc5YV7aNo8F7Qe",
+             "type": "text",
+             "label": "Contract Link"
+            },
+            {
+             "name": "cf_yVxeD7ciDJLU54curIWvYbgaay48hRkx0oHZ6yf904a",
+             "type": "text",
+             "label": "Zoom Recording"
+            },
+            {
+             "name": "cf_wU4ZyL6uAgFfHU0ADsXs1fjrsrcpI8WgOHugoLGehMN",
+             "type": "text",
+             "label": "Notes"
+            },
+            {
+             "name": "cf_tIynr3k8yIsOYPi9W9UouhKrKpX1rAQu3cr4tioLXPR",
+             "type": "text",
+             "label": "Sells to B2B"
+            },
+            {
+             "name": "cf_Jfa9cQa6ePpMWXRSOB0YyDvebMO5uyj13LLJt7VKbeZ",
+             "type": "text",
+             "label": "Sells Exclusively To Local Businesses"
+            }
+           ],
+           "type": "collection",
+           "label": "Custom Fields"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "contacts": {
+            "mode": "chose"
+           },
+           "addresses": {
+            "mode": "chose"
+           },
+           "status_id": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "close-crm"
+            },
+            "label": "My Close CRM connection (alexander@dulcymedia.com)"
+           }
+          }
+         },
+         "designer": {
+          "x": 2100,
+          "y": 0
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:close-crm",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 2737753
+        }
+       },
+       {
+        "id": 6,
+        "mapper": {
+         "name": "{{2.leadName}}",
+         "custom": {},
+         "emails": [
+          {
+           "email": "{{2.email}}"
+          }
+         ],
+         "phones": [
+          {
+           "phone": "{{2.phoneNumber}}"
+          }
+         ],
+         "lead_id": "{{5.id}}"
+        },
+        "module": "close-crm:ActionCreateContact",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "name": "lead_id",
+           "type": "select",
+           "label": "Lead ID",
+           "required": true
+          },
+          {
+           "name": "name",
+           "type": "text",
+           "label": "Name",
+           "required": true
+          },
+          {
+           "name": "title",
+           "type": "text",
+           "label": "Title"
+          },
+          {
+           "name": "phones",
+           "spec": {
+            "name": "value",
+            "spec": [
+             {
+              "name": "type",
+              "type": "select",
+              "label": "Type",
+              "options": [
+               {
+                "label": "Office",
+                "value": "office"
+               },
+               {
+                "label": "Mobile",
+                "value": "mobile"
+               },
+               {
+                "label": "Home",
+                "value": "home"
+               },
+               {
+                "label": "Direct",
+                "value": "direct"
+               },
+               {
+                "label": "Fax",
+                "value": "fax"
+               },
+               {
+                "label": "Other",
+                "value": "other"
+               }
+              ]
+             },
+             {
+              "name": "phone",
+              "type": "text",
+              "label": "Phone"
+             }
+            ],
+            "type": "collection"
+           },
+           "type": "array",
+           "label": "Phones"
+          },
+          {
+           "name": "emails",
+           "spec": {
+            "name": "value",
+            "spec": [
+             {
+              "name": "type",
+              "type": "select",
+              "label": "Type",
+              "options": [
+               {
+                "label": "Office",
+                "value": "office"
+               },
+               {
+                "label": "Home",
+                "value": "home"
+               },
+               {
+                "label": "Direct",
+                "value": "direct"
+               },
+               {
+                "label": "Other",
+                "value": "other"
+               }
+              ]
+             },
+             {
+              "name": "email",
+              "type": "email",
+              "label": "Email"
+             }
+            ],
+            "type": "collection"
+           },
+           "type": "array",
+           "label": "Emails"
+          },
+          {
+           "name": "urls",
+           "spec": {
+            "name": "value",
+            "spec": [
+             {
+              "name": "url",
+              "type": "url",
+              "label": "URL"
+             },
+             {
+              "name": "type",
+              "type": "hidden",
+              "label": "Type"
+             }
+            ],
+            "type": "collection"
+           },
+           "type": "array",
+           "label": "URLs"
+          },
+          {
+           "name": "custom",
+           "spec": [
+            {
+             "name": "cf_FR1EfIAj1wWhiROT5lX4aiigwN0EzZoHDlIStNkY31f",
+             "type": "select",
+             "label": "Contact Role",
+             "multiple": true
+            }
+           ],
+           "type": "collection",
+           "label": "Custom Fields"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "urls": {
+            "mode": "chose"
+           },
+           "custom": {
+            "nested": {
+             "cf_FR1EfIAj1wWhiROT5lX4aiigwN0EzZoHDlIStNkY31f": {
+              "mode": "chose"
+             }
+            }
+           },
+           "emails": {
+            "mode": "chose",
+            "items": [
+             {
+              "type": {
+               "mode": "chose",
+               "label": "Empty"
+              }
+             }
+            ]
+           },
+           "phones": {
+            "mode": "chose",
+            "items": [
+             {
+              "type": {
+               "mode": "chose",
+               "label": "Empty"
+              }
+             }
+            ]
+           },
+           "lead_id": {
+            "mode": "edit"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "close-crm"
+            },
+            "label": "My Close CRM connection (alexander@dulcymedia.com)"
+           }
+          }
+         },
+         "designer": {
+          "x": 2400,
+          "y": 0
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:close-crm",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 2737753
+        }
+       },
+       {
+        "id": 8,
+        "mapper": {
+         "text": "New meeting booked!\n\nName: {{2.leadName}}\n\nMeeting Date: < {{2.meetingLink}} , {{16.esttime}} >\n\nIs Qualified: {{2.qualifiedbooking}}\n\nID: {{5.id}}",
+         "parse": false,
+         "mrkdwn": true,
+         "channel": "C0755QCE00M",
+         "icon_url": "https://as1.ftcdn.net/v2/jpg/03/09/40/72/1000_F_309407278_rrN9mPXglgybTqSZ35yfUl1yRO8pCfAt.jpg",
+         "username": "Mr. C Booker",
+         "channelType": "private",
+         "channelWType": "list"
+        },
+        "module": "slack:CreateMessage",
+        "version": 4,
+        "metadata": {
+         "expect": [
+          {
+           "name": "channelWType",
+           "type": "select",
+           "label": "Enter a channel ID or name",
+           "required": true,
+           "validate": {
+            "enum": [
+             "manualy",
+             "list"
+            ]
+           }
+          },
+          {
+           "name": "text",
+           "type": "text",
+           "label": "Text"
+          },
+          {
+           "name": "blocks",
+           "type": "text",
+           "label": "Blocks"
+          },
+          {
+           "name": "thread_ts",
+           "type": "text",
+           "label": "Thread message ID (time stamp)"
+          },
+          {
+           "name": "reply_broadcast",
+           "type": "boolean",
+           "label": "Reply broadcast"
+          },
+          {
+           "name": "link_names",
+           "type": "boolean",
+           "label": "Link names"
+          },
+          {
+           "name": "parse",
+           "type": "boolean",
+           "label": "Parse message text"
+          },
+          {
+           "name": "mrkdwn",
+           "type": "boolean",
+           "label": "Use markdown"
+          },
+          {
+           "name": "unfurl_links",
+           "type": "boolean",
+           "label": "Unfurl primarily text-based content"
+          },
+          {
+           "name": "unfurl_media",
+           "type": "boolean",
+           "label": "Unfurl media content"
+          },
+          {
+           "name": "icon_emoji",
+           "type": "text",
+           "label": "Icon emoji"
+          },
+          {
+           "name": "icon_url",
+           "type": "url",
+           "label": "Icon url"
+          },
+          {
+           "name": "username",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "channelType",
+           "type": "select",
+           "label": "Channel type",
+           "required": true,
+           "validate": {
+            "enum": [
+             "public",
+             "private",
+             "im",
+             "mpim"
+            ]
+           }
+          },
+          {
+           "name": "channel",
+           "type": "select",
+           "label": "Private channel",
+           "required": true
+          },
+          {
+           "name": "channelWType",
+           "type": "select",
+           "label": "Enter a channel ID or name",
+           "required": true,
+           "validate": {
+            "enum": [
+             "manualy",
+             "list"
+            ]
+           }
+          },
+          {
+           "name": "text",
+           "type": "text",
+           "label": "Text"
+          },
+          {
+           "name": "blocks",
+           "type": "text",
+           "label": "Blocks"
+          },
+          {
+           "name": "thread_ts",
+           "type": "text",
+           "label": "Thread message ID (time stamp)"
+          },
+          {
+           "name": "reply_broadcast",
+           "type": "boolean",
+           "label": "Reply broadcast"
+          },
+          {
+           "name": "link_names",
+           "type": "boolean",
+           "label": "Link names"
+          },
+          {
+           "name": "parse",
+           "type": "boolean",
+           "label": "Parse message text"
+          },
+          {
+           "name": "mrkdwn",
+           "type": "boolean",
+           "label": "Use markdown"
+          },
+          {
+           "name": "unfurl_links",
+           "type": "boolean",
+           "label": "Unfurl primarily text-based content"
+          },
+          {
+           "name": "unfurl_media",
+           "type": "boolean",
+           "label": "Unfurl media content"
+          },
+          {
+           "name": "icon_emoji",
+           "type": "text",
+           "label": "Icon emoji"
+          },
+          {
+           "name": "icon_url",
+           "type": "url",
+           "label": "Icon url"
+          },
+          {
+           "name": "username",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "channelType",
+           "type": "select",
+           "label": "Channel type",
+           "required": true,
+           "validate": {
+            "enum": [
+             "public",
+             "private",
+             "im",
+             "mpim"
+            ]
+           }
+          },
+          {
+           "name": "channel",
+           "type": "select",
+           "label": "Private channel",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "parse": {
+            "mode": "chose"
+           },
+           "mrkdwn": {
+            "mode": "chose"
+           },
+           "channel": {
+            "mode": "chose",
+            "label": "booked-calls"
+           },
+           "link_names": {
+            "mode": "chose"
+           },
+           "channelType": {
+            "label": "Private channel"
+           },
+           "channelWType": {
+            "label": "Select from the list"
+           },
+           "unfurl_links": {
+            "mode": "chose"
+           },
+           "unfurl_media": {
+            "mode": "chose"
+           },
+           "reply_broadcast": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "slack3"
+            },
+            "label": "My Slack (bot) connectionfix (make)"
+           }
+          }
+         },
+         "advanced": true,
+         "designer": {
+          "x": 2700,
+          "y": 0
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:slack2,slack3",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3736690
+        }
+       },
+       {
+        "id": 9,
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://hook.us1.make.com/REDACTED_PATH",
+         "gzip": true,
+         "method": "post",
+         "headers": [],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "multipart_form_data",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": false,
+         "followRedirect": true,
+         "formDataFields": [
+          {
+           "key": "leadId",
+           "value": "{{5.id}}",
+           "fieldType": "text"
+          },
+          {
+           "key": "qualifiedbooking",
+           "value": "{{2.qualifiedbooking}}",
+           "fieldType": "text"
+          }
+         ],
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "formDataFields",
+           "spec": [
+            {
+             "name": "fieldType",
+             "type": "select",
+             "label": "Field type",
+             "options": [
+              {
+               "label": "Text",
+               "value": "text",
+               "nested": [
+                {
+                 "name": "key",
+                 "type": "text",
+                 "label": "Key",
+                 "required": true
+                },
+                {
+                 "name": "value",
+                 "type": "text",
+                 "label": "Value"
+                }
+               ]
+              },
+              {
+               "label": "File",
+               "value": "file",
+               "nested": [
+                {
+                 "name": "key",
+                 "type": "text",
+                 "label": "Key",
+                 "required": true
+                },
+                {
+                 "name": "data",
+                 "type": "buffer",
+                 "label": "Data",
+                 "semantic": "file:data"
+                },
+                {
+                 "help": "File name, including the suffix, e.g. invoice, xml",
+                 "name": "fileName",
+                 "type": "filename",
+                 "label": "File name",
+                 "semantic": "file:name"
+                }
+               ]
+              }
+             ],
+             "required": true
+            }
+           ],
+           "type": "array",
+           "label": "Fields"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "POST"
+           },
+           "headers": {
+            "mode": "chose"
+           },
+           "bodyType": {
+            "label": "Multipart/form-data"
+           },
+           "formDataFields": {
+            "mode": "chose",
+            "items": [
+             {
+              "fieldType": {
+               "mode": "chose",
+               "label": "Text"
+              }
+             },
+             {
+              "fieldType": {
+               "mode": "chose",
+               "label": "Text"
+              }
+             }
+            ]
+           }
+          }
+         },
+         "designer": {
+          "x": 3000,
+          "y": 0
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": false,
+         "useNewZLibDeCompress": true
+        }
+       },
+       {
+        "id": 21,
+        "mapper": {
+         "ca": "",
+         "qs": [
+          {
+           "name": "Name",
+           "value": "{{25.name}}"
+          },
+          {
+           "name": "email",
+           "value": "{{25.email}}"
+          },
+          {
+           "name": "ID",
+           "value": "{{5.id}}"
+          }
+         ],
+         "url": "https://hook.us1.make.com/REDACTED_PATH",
+         "data": "",
+         "gzip": true,
+         "method": "post",
+         "headers": [],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "raw",
+         "contentType": "application/json",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": false,
+         "followRedirect": true,
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "contentType",
+           "type": "select",
+           "label": "Content type",
+           "validate": {
+            "enum": [
+             "text/plain",
+             "application/json",
+             "application/xml",
+             "text/xml",
+             "text/html",
+             "custom"
+            ]
+           }
+          },
+          {
+           "name": "data",
+           "type": "buffer",
+           "label": "Request content"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose",
+            "items": [
+             null,
+             null,
+             null
+            ]
+           },
+           "method": {
+            "mode": "chose",
+            "label": "POST"
+           },
+           "headers": {
+            "mode": "chose"
+           },
+           "bodyType": {
+            "label": "Raw"
+           },
+           "contentType": {
+            "label": "JSON (application/json)"
+           }
+          }
+         },
+         "designer": {
+          "x": 3300,
+          "y": 0
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": true,
+         "useNewZLibDeCompress": true
+        }
+       }
+      ]
+     },
+     {
+      "flow": [
+       {
+        "id": 10,
+        "filter": {
+         "name": "Existing Lead",
+         "conditions": [
+          [
+           {
+            "a": "{{3.`__IMTLENGTH__`}}",
+            "b": "0",
+            "o": "number:greater"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "id": "{{3.id}}",
+         "custom": {
+          "cf_DsnbXIB92w5EqoI2ZXtFrekDoMGxKK7pUetze2LDrCZ": "{{2.LTV}}",
+          "cf_OoD9hAYZ8KHbT37YG1W6msrBSVtrpKbJaJXYtyWD1CQ": "{{2.Proposal}}",
+          "cf_PMb16eFLfrXK6svUgFwSGRK0wsMcmVIUJz8xEHpv15h": "{{2.leadSource}}",
+          "cf_biSHEhDl4yS7zj3WDbajXejueA9ffhzCUAFzNiydlij": "{{2.currentMrr}}",
+          "cf_ef4lUZ8EpQO7RV0OehjfJghji3MKfWnk5DboWnP0gZ5": "{{2.meetingLink}}",
+          "cf_gjfpaANPAMf7vDNMrjBq4iumZsuvaADkMI3uJNgy5Gg": "{{2.rescheduleLink}}",
+          "cf_hisRvCzyfAkf2PSH9rVrKAdA0x7X2nVsucJFJAjVlVn": "{{2.meetingDateTime}}"
+         }
+        },
+        "module": "close-crm:ActionUpdateLead",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "mode": "edit",
+           "name": "id",
+           "type": "select",
+           "label": "Lead ID",
+           "required": true
+          },
+          {
+           "name": "name",
+           "type": "text",
+           "label": "Name"
+          },
+          {
+           "name": "description",
+           "type": "text",
+           "label": "Description"
+          },
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL"
+          },
+          {
+           "mode": "edit",
+           "name": "status_id",
+           "type": "select",
+           "label": "Status ID"
+          },
+          {
+           "name": "contacts",
+           "spec": {
+            "name": "value",
+            "spec": [
+             {
+              "name": "name",
+              "type": "text",
+              "label": "Name"
+             },
+             {
+              "name": "title",
+              "type": "text",
+              "label": "Title"
+             },
+             {
+              "name": "emails",
+              "spec": {
+               "spec": [
+                {
+                 "name": "type",
+                 "type": "select",
+                 "label": "Type",
+                 "options": [
+                  {
+                   "label": "Office",
+                   "value": "office"
+                  },
+                  {
+                   "label": "Home",
+                   "value": "home"
+                  },
+                  {
+                   "label": "Direct",
+                   "value": "direct"
+                  },
+                  {
+                   "label": "Other",
+                   "value": "other"
+                  }
+                 ]
+                },
+                {
+                 "name": "email",
+                 "type": "email",
+                 "label": "Email"
+                }
+               ],
+               "type": "collection"
+              },
+              "type": "array",
+              "label": "Emails"
+             },
+             {
+              "name": "phones",
+              "spec": {
+               "spec": [
+                {
+                 "name": "type",
+                 "type": "select",
+                 "label": "Type",
+                 "options": [
+                  {
+                   "label": "Office",
+                   "value": "office"
+                  },
+                  {
+                   "label": "Mobile",
+                   "value": "mobile"
+                  },
+                  {
+                   "label": "Home",
+                   "value": "home"
+                  },
+                  {
+                   "label": "Direct",
+                   "value": "direct"
+                  },
+                  {
+                   "label": "Fax",
+                   "value": "fax"
+                  },
+                  {
+                   "label": "Other",
+                   "value": "other"
+                  }
+                 ]
+                },
+                {
+                 "name": "phone",
+                 "type": "text",
+                 "label": "Phone Number"
+                }
+               ],
+               "type": "collection",
+               "label": "Phone"
+              },
+              "type": "array",
+              "label": "Phones"
+             }
+            ],
+            "type": "collection"
+           },
+           "type": "array",
+           "label": "Contacts"
+          },
+          {
+           "name": "addresses",
+           "spec": {
+            "name": "value",
+            "spec": [
+             {
+              "name": "label",
+              "type": "text",
+              "label": "Label"
+             },
+             {
+              "name": "address_1",
+              "type": "text",
+              "label": "Address 1"
+             },
+             {
+              "name": "address_2",
+              "type": "text",
+              "label": "Address 2"
+             },
+             {
+              "name": "city",
+              "type": "text",
+              "label": "City"
+             },
+             {
+              "name": "state",
+              "type": "text",
+              "label": "State"
+             },
+             {
+              "name": "zipcode",
+              "type": "text",
+              "label": "ZIP code"
+             },
+             {
+              "name": "country",
+              "type": "text",
+              "label": "Country"
+             }
+            ],
+            "type": "collection"
+           },
+           "type": "array",
+           "label": "Addresses"
+          },
+          {
+           "name": "custom",
+           "spec": [
+            {
+             "name": "cf_biSHEhDl4yS7zj3WDbajXejueA9ffhzCUAFzNiydlij",
+             "type": "text",
+             "label": "Revenue"
+            },
+            {
+             "name": "cf_OoD9hAYZ8KHbT37YG1W6msrBSVtrpKbJaJXYtyWD1CQ",
+             "type": "text",
+             "label": "Sales Team"
+            },
+            {
+             "name": "cf_DsnbXIB92w5EqoI2ZXtFrekDoMGxKK7pUetze2LDrCZ",
+             "type": "text",
+             "label": "Marketing Budget"
+            },
+            {
+             "name": "cf_W9ZXV2CugvVHnu9CSrVFcCXwc1E9GUZLjrADjR54Bzp",
+             "type": "text",
+             "label": "Current Outbound"
+            },
+            {
+             "name": "cf_PMb16eFLfrXK6svUgFwSGRK0wsMcmVIUJz8xEHpv15h",
+             "type": "text",
+             "label": "Lead Source"
+            },
+            {
+             "name": "cf_hisRvCzyfAkf2PSH9rVrKAdA0x7X2nVsucJFJAjVlVn",
+             "type": "text",
+             "label": "Meeting Time/Date"
+            },
+            {
+             "name": "cf_ef4lUZ8EpQO7RV0OehjfJghji3MKfWnk5DboWnP0gZ5",
+             "type": "text",
+             "label": "Meeting Link"
+            },
+            {
+             "name": "cf_gjfpaANPAMf7vDNMrjBq4iumZsuvaADkMI3uJNgy5Gg",
+             "type": "text",
+             "label": "Reschedule Link"
+            },
+            {
+             "name": "cf_pdFQlR5IaMeYvZamaxZ20JEoUlkY6Oc5YV7aNo8F7Qe",
+             "type": "text",
+             "label": "Contract Link"
+            },
+            {
+             "name": "cf_yVxeD7ciDJLU54curIWvYbgaay48hRkx0oHZ6yf904a",
+             "type": "text",
+             "label": "Zoom Recording"
+            },
+            {
+             "name": "cf_wU4ZyL6uAgFfHU0ADsXs1fjrsrcpI8WgOHugoLGehMN",
+             "type": "text",
+             "label": "Notes"
+            }
+           ],
+           "type": "collection",
+           "label": "Custom Fields"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "id": {
+            "mode": "edit"
+           },
+           "contacts": {
+            "mode": "chose"
+           },
+           "addresses": {
+            "mode": "chose"
+           },
+           "status_id": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "close-crm"
+            },
+            "label": "My Close CRM connection (alexander@dulcymedia.com)"
+           }
+          }
+         },
+         "designer": {
+          "x": 2100,
+          "y": 300
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:close-crm",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 2737753
+        }
+       },
+       {
+        "id": 11,
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://hook.us1.make.com/REDACTED_PATH",
+         "gzip": true,
+         "method": "post",
+         "headers": [],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "multipart_form_data",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": false,
+         "followRedirect": true,
+         "formDataFields": [
+          {
+           "key": "leadId",
+           "value": "{{10.id}}",
+           "fieldType": "text"
+          },
+          {
+           "key": "isRebooking",
+           "value": "{{25.repeats = null}}",
+           "fieldType": "text"
+          }
+         ],
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "formDataFields",
+           "spec": [
+            {
+             "name": "fieldType",
+             "type": "select",
+             "label": "Field type",
+             "options": [
+              {
+               "label": "Text",
+               "value": "text",
+               "nested": [
+                {
+                 "name": "key",
+                 "type": "text",
+                 "label": "Key",
+                 "required": true
+                },
+                {
+                 "name": "value",
+                 "type": "text",
+                 "label": "Value"
+                }
+               ]
+              },
+              {
+               "label": "File",
+               "value": "file",
+               "nested": [
+                {
+                 "name": "key",
+                 "type": "text",
+                 "label": "Key",
+                 "required": true
+                },
+                {
+                 "name": "data",
+                 "type": "buffer",
+                 "label": "Data",
+                 "semantic": "file:data"
+                },
+                {
+                 "help": "File name, including the suffix, e.g. invoice, xml",
+                 "name": "fileName",
+                 "type": "filename",
+                 "label": "File name",
+                 "semantic": "file:name"
+                }
+               ]
+              }
+             ],
+             "required": true
+            }
+           ],
+           "type": "array",
+           "label": "Fields"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "POST"
+           },
+           "headers": {
+            "mode": "chose"
+           },
+           "bodyType": {
+            "label": "Multipart/form-data"
+           },
+           "formDataFields": {
+            "mode": "chose",
+            "items": [
+             {
+              "fieldType": {
+               "mode": "chose",
+               "label": "Text"
+              }
+             },
+             {
+              "fieldType": {
+               "mode": "chose",
+               "label": "Text"
+              }
+             }
+            ]
+           }
+          }
+         },
+         "designer": {
+          "x": 2400,
+          "y": 300
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": false,
+         "useNewZLibDeCompress": true
+        }
+       }
+      ]
+     }
+    ],
+    "version": 1,
+    "metadata": {
+     "designer": {
+      "x": 1800,
+      "y": 150
+     }
+    }
+   }
+  ],
+  "name": "[1.0 PRECALL] Booked Meeting GHL",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": []
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately",
+   "maximum_runs_per_minute": 100
+  }
+ }
+}

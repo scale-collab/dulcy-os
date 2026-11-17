@@ -1,0 +1,597 @@
+{
+ "id": "TyEM8ZYUzjr2kmNZ",
+ "name": "Fanbasis Payment Failed",
+ "active": true,
+ "isArchived": false,
+ "versionId": "b7689161-80de-45d4-a252-dc7a81203966",
+ "triggerCount": 1,
+ "createdAt": "2025-12-05T22:35:39.395Z",
+ "updatedAt": "2026-11-17T16:42:40.143Z",
+ "settings": {
+  "executionOrder": "v1",
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Webhook": {
+   "main": [
+    [
+     {
+      "node": "check payment method1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records": {
+   "main": [
+    [
+     {
+      "node": "Search records1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records1": {
+   "main": [
+    [
+     {
+      "node": "Create a record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Send a message": {
+   "main": [
+    [
+     {
+      "node": "create look up key",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create a record": {
+   "main": [
+    [
+     {
+      "node": "Create a record1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "check payment method1": {
+   "main": [
+    [
+     {
+      "node": "Send a message",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "create look up key": {
+   "main": [
+    [
+     {
+      "node": "Get row(s) in sheet",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get row(s) in sheet": {
+   "main": [
+    [
+     {
+      "node": "Search records",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    -336,
+    224
+   ],
+   "id": "9078cdb3-228b-4969-8189-f145feb90830",
+   "name": "Webhook"
+  },
+  {
+   "parameters": {
+    "select": "channel",
+    "channelId": {
+     "__rl": true,
+     "value": "C075UR0HRRR",
+     "mode": "list",
+     "cachedResultName": "contract-events"
+    },
+    "text": "={{ (() => {\n  const response = $json;\n  const body = response.body ?? response;\n  const status = Number(response.statusCode || (body.status === 'success' ? 200 : 0));\n  const event = $('Webhook').first().json.body;\n  const data = event.data || {};\n  const missing = status === 404 && body.message === 'Customer not found';\n  if (!missing && (status < 200 || status >= 300 || body.status !== 'success')) {\n    throw new Error('Fanbasis customer lookup failed (HTTP ' + status + '): ' + String(body.message || 'Unexpected response'));\n  }\n  const customer = body.data?.customer || {};\n  const email = String(customer.email || '').trim();\n  const identified = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);\n  const clean = value => String(value || '').replace(/[<>&]/g, ' ');\n  return 'Fanbasis Payment Failed!\\n\\n' +\n    (identified ? 'Name: ' + clean(customer.name) + '\\nEmail: ' + clean(email) : 'NEEDS REVIEW: Fanbasis could not identify this customer. No client invoice or client notification will be created.') +\n    '\\nCustomer ID: ' + clean(data.customer_id) +\n    '\\nPayment ID: ' + clean(data.payment_id) +\n    '\\nEvent ID: ' + clean(event.id) +\n    '\\nReason: ' + clean(data.failure_reason || data.reason || 'Not provided') +\n    '\\n\\n<!@channel>';\n})() }}",
+    "otherOptions": {
+     "includeLinkToWorkflow": false
+    }
+   },
+   "type": "n8n-nodes-base.slack",
+   "typeVersion": 2.3,
+   "position": [
+    112,
+    224
+   ],
+   "id": "f5863c6c-68f1-417b-9cba-112001ef0f6f",
+   "name": "Send a message",
+   "webhookId": "ab2d5bff-69b5-4152-82b4-453dc730243e"
+  },
+  {
+   "parameters": {
+    "select": "channel",
+    "channelId": {
+     "__rl": true,
+     "value": "C075UR0HRRR",
+     "mode": "list",
+     "cachedResultName": "contract-events"
+    },
+    "text": "=Fanbasis Payment Failed!  \n\nName: {{ $('Webhook').item.json.body.data.buyer.name }}\nEmail: {{ $('Webhook').item.json.body.data.buyer.email }}\nAmount: {{ $('Webhook').item.json.body.data.amount }} {{ $('Webhook').item.json.body.data.currency }}\n\n{{ $('Webhook').item.json.body.data.reason }}\n\n<!@channel>",
+    "otherOptions": {
+     "includeLinkToWorkflow": false
+    }
+   },
+   "type": "n8n-nodes-base.slack",
+   "typeVersion": 2.3,
+   "position": [
+    -336,
+    0
+   ],
+   "id": "b90dad70-0f30-4213-8ba3-45703aa1b9b8",
+   "name": "message client your payment failed you need to pay me",
+   "webhookId": "ab2d5bff-69b5-4152-82b4-453dc730243e"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tbljhM1JmUwr99tu4",
+     "mode": "list",
+     "cachedResultName": "Onboarding",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tbljhM1JmUwr99tu4"
+    },
+    "filterByFormula": "=Domain = \"{{ $('Get row(s) in sheet').item.json.Domain }}\"",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    784,
+    224
+   ],
+   "id": "7457ffec-1619-451e-b9cd-fee1bd0b57ca",
+   "name": "Search records"
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblxGQqMzeEu23iHi",
+     "mode": "list",
+     "cachedResultName": "Client Invoices",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblxGQqMzeEu23iHi"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "ID": "={{ $('Webhook').item.json.body.id }}",
+      "Date": "={{ $now }}",
+      "Client": "={{ [$json.id] }}",
+      "Type": "Unpaid"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "ID",
+       "displayName": "ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Amount",
+       "displayName": "Amount",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Date",
+       "displayName": "Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Type",
+       "displayName": "Type",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Successful",
+         "value": "Successful"
+        },
+        {
+         "name": "Unpaid",
+         "value": "Unpaid"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Hide",
+       "displayName": "Hide",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1232,
+    224
+   ],
+   "id": "a8c96abf-fd87-461b-aa4a-4f09e730e9a4",
+   "name": "Create a record"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt"
+    },
+    "filterByFormula": "=Record_ID() = \"{{ $json['Workspace IDs'][0] }}\"",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1008,
+    224
+   ],
+   "id": "686309a4-05f3-4575-b72f-a965a474ee98",
+   "name": "Search records1"
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblwJK1VB7affamrz",
+     "mode": "list",
+     "cachedResultName": "Client Notifcations",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblwJK1VB7affamrz"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Title": "Investment Failed",
+      "Message": "Please review Fanbasis as the previous method of payment has failed",
+      "Type": "System",
+      "Client": "={{ $('Search records').item.json['Record ID (from Workspace IDs)'] }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "Title",
+       "displayName": "Title",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Message",
+       "displayName": "Message",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Type",
+       "displayName": "Type",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Task",
+         "value": "Task"
+        },
+        {
+         "name": "Lead",
+         "value": "Lead"
+        },
+        {
+         "name": "Campaign",
+         "value": "Campaign"
+        },
+        {
+         "name": "Booked Meeting",
+         "value": "Booked Meeting"
+        },
+        {
+         "name": "Document",
+         "value": "Document"
+        },
+        {
+         "name": "Call Feedback",
+         "value": "Call Feedback"
+        },
+        {
+         "name": "System",
+         "value": "System"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Time Since Created",
+       "displayName": "Time Since Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Dismissed",
+       "displayName": "Dismissed",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "NotifiedSlack",
+       "displayName": "NotifiedSlack",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Created Time",
+       "displayName": "Created Time",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1456,
+    224
+   ],
+   "id": "078a0969-9307-475f-9fbe-3525ce7cec43",
+   "name": "Create a record1"
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://www.fanbasis.com/public-api/customers/' + encodeURIComponent(String($json.body.data.customer_id || '').trim()) + '/payment-methods' }}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "x-api-key",
+       "value": "REDACTED"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "fullResponse": true,
+       "neverError": true
+      }
+     }
+    }
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.3,
+   "position": [
+    -112,
+    224
+   ],
+   "id": "33cbba72-db46-41d0-b281-59e1381383d3",
+   "name": "check payment method1"
+  },
+  {
+   "parameters": {
+    "documentId": {
+     "__rl": true,
+     "value": "1nUf28kpRs2olqUIIfdrVdyH1q67hRT-zhmaD9UL3knM",
+     "mode": "list",
+     "cachedResultName": "***Dulcy Media P/L***",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1nUf28kpRs2olqUIIfdrVdyH1q67hRT-zhmaD9UL3knM/edit?usp=drivesdk"
+    },
+    "sheetName": {
+     "__rl": true,
+     "value": 1644579049,
+     "mode": "list",
+     "cachedResultName": "Email to ID",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1nUf28kpRs2olqUIIfdrVdyH1q67hRT-zhmaD9UL3knM/edit#gid=1644579049"
+    },
+    "filtersUI": {
+     "values": [
+      {
+       "lookupColumn": "Domain",
+       "lookupValue": "={{ $('create look up key').item.json.lookup_key }}"
+      }
+     ]
+    },
+    "options": {
+     "returnFirstMatch": true
+    }
+   },
+   "type": "n8n-nodes-base.googleSheets",
+   "typeVersion": 4.7,
+   "position": [
+    560,
+    224
+   ],
+   "id": "5032819c-74c8-42f2-a6ad-f502b5b43de3",
+   "name": "Get row(s) in sheet",
+   "alwaysOutputData": true,
+   "notesInFlow": false
+  },
+  {
+   "parameters": {
+    "jsCode": "// Only confirmed Fanbasis customer details may reach client-specific writes.\nconst response = $('check payment method1').first().json;\nconst body = response.body ?? response;\nconst status = Number(response.statusCode || (body.status === 'success' ? 200 : 0));\nif (status === 404 && body.message === 'Customer not found') return [];\nif (status < 200 || status >= 300 || body.status !== 'success') {\n  throw new Error('Fanbasis customer lookup failed: HTTP ' + status);\n}\nconst email = String(body.data?.customer?.email || '').trim().toLowerCase();\nif (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return [];\nconst domain = email.split('@')[1];\nconst genericDomains = ['gmail.com','yahoo.com','outlook.com','hotmail.com','icloud.com','aol.com','proton.me','me.com'];\nreturn [{json:{lookup_key:genericDomains.includes(domain) ? email : domain,message_timestamp:Date.now()}}];\n"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    336,
+    224
+   ],
+   "id": "d3991bdd-c893-4250-8cf4-98677cd4572a",
+   "name": "create look up key"
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

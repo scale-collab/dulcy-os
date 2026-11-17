@@ -1,0 +1,46 @@
+{
+ "id": "tlhIcY03OjA8PFo5",
+ "name": "Converted Make.com Workflow",
+ "active": true,
+ "isArchived": false,
+ "versionId": "64faf551-fbc5-4734-a349-a9259b2f2033",
+ "triggerCount": 1,
+ "createdAt": "2025-12-22T13:57:38.246Z",
+ "updatedAt": "2026-11-17T16:39:36.211Z",
+ "settings": {
+  "executionOrder": "v1",
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Webhook": {
+   "main": [
+    []
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    0,
+    0
+   ],
+   "id": "262eb894-64a2-4a21-aacf-58c923434fbb",
+   "name": "Webhook",
+   "webhookId": "ed55abbf-ccfe-4763-a4ad-82cf9f1e1e1b"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

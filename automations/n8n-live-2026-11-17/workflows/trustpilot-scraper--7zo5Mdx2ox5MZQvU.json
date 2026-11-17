@@ -1,0 +1,1365 @@
+{
+ "id": "7zo5Mdx2ox5MZQvU",
+ "name": "TrustPilot Scraper",
+ "active": true,
+ "isArchived": false,
+ "versionId": "daa7e1aa-dc04-42ba-9e51-93b0740b683b",
+ "triggerCount": 1,
+ "createdAt": "2025-12-03T13:11:25.422Z",
+ "updatedAt": "2026-11-17T16:39:39.281Z",
+ "settings": {
+  "executionOrder": "v1",
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Receive GMB Webhook": {
+   "main": [
+    [
+     {
+      "node": "RUN Trust Actor",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "RUN Trust Actor": {
+   "main": [
+    [
+     {
+      "node": "Update Data ID's",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    0,
+    -32
+   ],
+   "id": "a445b7d8-2b9d-41ff-9087-3075ab711312",
+   "name": "Receive GMB Webhook"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appJNoGcSkyIEPQ68",
+     "mode": "list",
+     "cachedResultName": "Scrapers",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblRcdgzrKsXtvRoQ",
+     "mode": "list",
+     "cachedResultName": "Trust Pilot Scraper",
+     "cachedResultUrl": "https://airtable.com/appJNoGcSkyIEPQ68/tblRcdgzrKsXtvRoQ"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "N8N Automation Ran?": true,
+      "id": "={{ $('Receive GMB Webhook').item.json.body.recordId }}",
+      "List_ID": "={{ $json.defaultDatasetId }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true
+      },
+      {
+       "id": "Run - ID",
+       "displayName": "Run - ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "URL to scrape",
+       "displayName": "URL to scrape",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "List_ID",
+       "displayName": "List_ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "N8N Automation Ran?",
+       "displayName": "N8N Automation Ran?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "country",
+       "displayName": "country",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "af",
+         "value": "af"
+        },
+        {
+         "name": "ax",
+         "value": "ax"
+        },
+        {
+         "name": "al",
+         "value": "al"
+        },
+        {
+         "name": "dz",
+         "value": "dz"
+        },
+        {
+         "name": "as",
+         "value": "as"
+        },
+        {
+         "name": "ad",
+         "value": "ad"
+        },
+        {
+         "name": "ao",
+         "value": "ao"
+        },
+        {
+         "name": "ai",
+         "value": "ai"
+        },
+        {
+         "name": "aq",
+         "value": "aq"
+        },
+        {
+         "name": "ag",
+         "value": "ag"
+        },
+        {
+         "name": "ar",
+         "value": "ar"
+        },
+        {
+         "name": "am",
+         "value": "am"
+        },
+        {
+         "name": "aw",
+         "value": "aw"
+        },
+        {
+         "name": "au",
+         "value": "au"
+        },
+        {
+         "name": "at",
+         "value": "at"
+        },
+        {
+         "name": "az",
+         "value": "az"
+        },
+        {
+         "name": "bs",
+         "value": "bs"
+        },
+        {
+         "name": "bh",
+         "value": "bh"
+        },
+        {
+         "name": "bd",
+         "value": "bd"
+        },
+        {
+         "name": "bb",
+         "value": "bb"
+        },
+        {
+         "name": "by",
+         "value": "by"
+        },
+        {
+         "name": "be",
+         "value": "be"
+        },
+        {
+         "name": "bz",
+         "value": "bz"
+        },
+        {
+         "name": "bj",
+         "value": "bj"
+        },
+        {
+         "name": "bm",
+         "value": "bm"
+        },
+        {
+         "name": "bt",
+         "value": "bt"
+        },
+        {
+         "name": "bo",
+         "value": "bo"
+        },
+        {
+         "name": "bq",
+         "value": "bq"
+        },
+        {
+         "name": "ba",
+         "value": "ba"
+        },
+        {
+         "name": "bw",
+         "value": "bw"
+        },
+        {
+         "name": "bv",
+         "value": "bv"
+        },
+        {
+         "name": "br",
+         "value": "br"
+        },
+        {
+         "name": "io",
+         "value": "io"
+        },
+        {
+         "name": "bn",
+         "value": "bn"
+        },
+        {
+         "name": "bg",
+         "value": "bg"
+        },
+        {
+         "name": "bf",
+         "value": "bf"
+        },
+        {
+         "name": "bi",
+         "value": "bi"
+        },
+        {
+         "name": "cv",
+         "value": "cv"
+        },
+        {
+         "name": "kh",
+         "value": "kh"
+        },
+        {
+         "name": "cm",
+         "value": "cm"
+        },
+        {
+         "name": "ca",
+         "value": "ca"
+        },
+        {
+         "name": "ky",
+         "value": "ky"
+        },
+        {
+         "name": "cf",
+         "value": "cf"
+        },
+        {
+         "name": "td",
+         "value": "td"
+        },
+        {
+         "name": "cl",
+         "value": "cl"
+        },
+        {
+         "name": "cn",
+         "value": "cn"
+        },
+        {
+         "name": "cx",
+         "value": "cx"
+        },
+        {
+         "name": "cc",
+         "value": "cc"
+        },
+        {
+         "name": "co",
+         "value": "co"
+        },
+        {
+         "name": "km",
+         "value": "km"
+        },
+        {
+         "name": "cd",
+         "value": "cd"
+        },
+        {
+         "name": "cg",
+         "value": "cg"
+        },
+        {
+         "name": "ck",
+         "value": "ck"
+        },
+        {
+         "name": "cr",
+         "value": "cr"
+        },
+        {
+         "name": "ci",
+         "value": "ci"
+        },
+        {
+         "name": "hr",
+         "value": "hr"
+        },
+        {
+         "name": "cu",
+         "value": "cu"
+        },
+        {
+         "name": "cw",
+         "value": "cw"
+        },
+        {
+         "name": "cy",
+         "value": "cy"
+        },
+        {
+         "name": "cz",
+         "value": "cz"
+        },
+        {
+         "name": "dk",
+         "value": "dk"
+        },
+        {
+         "name": "dj",
+         "value": "dj"
+        },
+        {
+         "name": "dm",
+         "value": "dm"
+        },
+        {
+         "name": "do",
+         "value": "do"
+        },
+        {
+         "name": "ec",
+         "value": "ec"
+        },
+        {
+         "name": "eg",
+         "value": "eg"
+        },
+        {
+         "name": "sv",
+         "value": "sv"
+        },
+        {
+         "name": "gq",
+         "value": "gq"
+        },
+        {
+         "name": "er",
+         "value": "er"
+        },
+        {
+         "name": "ee",
+         "value": "ee"
+        },
+        {
+         "name": "sz",
+         "value": "sz"
+        },
+        {
+         "name": "et",
+         "value": "et"
+        },
+        {
+         "name": "fk",
+         "value": "fk"
+        },
+        {
+         "name": "fo",
+         "value": "fo"
+        },
+        {
+         "name": "fj",
+         "value": "fj"
+        },
+        {
+         "name": "fi",
+         "value": "fi"
+        },
+        {
+         "name": "fr",
+         "value": "fr"
+        },
+        {
+         "name": "gf",
+         "value": "gf"
+        },
+        {
+         "name": "pf",
+         "value": "pf"
+        },
+        {
+         "name": "tf",
+         "value": "tf"
+        },
+        {
+         "name": "ga",
+         "value": "ga"
+        },
+        {
+         "name": "gm",
+         "value": "gm"
+        },
+        {
+         "name": "ge",
+         "value": "ge"
+        },
+        {
+         "name": "de",
+         "value": "de"
+        },
+        {
+         "name": "gh",
+         "value": "gh"
+        },
+        {
+         "name": "gi",
+         "value": "gi"
+        },
+        {
+         "name": "gr",
+         "value": "gr"
+        },
+        {
+         "name": "gl",
+         "value": "gl"
+        },
+        {
+         "name": "gd",
+         "value": "gd"
+        },
+        {
+         "name": "gp",
+         "value": "gp"
+        },
+        {
+         "name": "gu",
+         "value": "gu"
+        },
+        {
+         "name": "gt",
+         "value": "gt"
+        },
+        {
+         "name": "gg",
+         "value": "gg"
+        },
+        {
+         "name": "gn",
+         "value": "gn"
+        },
+        {
+         "name": "gw",
+         "value": "gw"
+        },
+        {
+         "name": "gy",
+         "value": "gy"
+        },
+        {
+         "name": "ht",
+         "value": "ht"
+        },
+        {
+         "name": "hm",
+         "value": "hm"
+        },
+        {
+         "name": "va",
+         "value": "va"
+        },
+        {
+         "name": "hn",
+         "value": "hn"
+        },
+        {
+         "name": "hk",
+         "value": "hk"
+        },
+        {
+         "name": "hu",
+         "value": "hu"
+        },
+        {
+         "name": "is",
+         "value": "is"
+        },
+        {
+         "name": "in",
+         "value": "in"
+        },
+        {
+         "name": "id",
+         "value": "id"
+        },
+        {
+         "name": "ir",
+         "value": "ir"
+        },
+        {
+         "name": "iq",
+         "value": "iq"
+        },
+        {
+         "name": "ie",
+         "value": "ie"
+        },
+        {
+         "name": "im",
+         "value": "im"
+        },
+        {
+         "name": "il",
+         "value": "il"
+        },
+        {
+         "name": "it",
+         "value": "it"
+        },
+        {
+         "name": "jm",
+         "value": "jm"
+        },
+        {
+         "name": "jp",
+         "value": "jp"
+        },
+        {
+         "name": "je",
+         "value": "je"
+        },
+        {
+         "name": "jo",
+         "value": "jo"
+        },
+        {
+         "name": "kz",
+         "value": "kz"
+        },
+        {
+         "name": "ke",
+         "value": "ke"
+        },
+        {
+         "name": "ki",
+         "value": "ki"
+        },
+        {
+         "name": "kp",
+         "value": "kp"
+        },
+        {
+         "name": "kr",
+         "value": "kr"
+        },
+        {
+         "name": "kw",
+         "value": "kw"
+        },
+        {
+         "name": "kg",
+         "value": "kg"
+        },
+        {
+         "name": "la",
+         "value": "la"
+        },
+        {
+         "name": "lv",
+         "value": "lv"
+        },
+        {
+         "name": "lb",
+         "value": "lb"
+        },
+        {
+         "name": "ls",
+         "value": "ls"
+        },
+        {
+         "name": "lr",
+         "value": "lr"
+        },
+        {
+         "name": "ly",
+         "value": "ly"
+        },
+        {
+         "name": "li",
+         "value": "li"
+        },
+        {
+         "name": "lt",
+         "value": "lt"
+        },
+        {
+         "name": "lu",
+         "value": "lu"
+        },
+        {
+         "name": "mo",
+         "value": "mo"
+        },
+        {
+         "name": "mg",
+         "value": "mg"
+        },
+        {
+         "name": "mw",
+         "value": "mw"
+        },
+        {
+         "name": "my",
+         "value": "my"
+        },
+        {
+         "name": "mv",
+         "value": "mv"
+        },
+        {
+         "name": "ml",
+         "value": "ml"
+        },
+        {
+         "name": "mt",
+         "value": "mt"
+        },
+        {
+         "name": "mh",
+         "value": "mh"
+        },
+        {
+         "name": "mq",
+         "value": "mq"
+        },
+        {
+         "name": "mr",
+         "value": "mr"
+        },
+        {
+         "name": "mu",
+         "value": "mu"
+        },
+        {
+         "name": "yt",
+         "value": "yt"
+        },
+        {
+         "name": "mx",
+         "value": "mx"
+        },
+        {
+         "name": "fm",
+         "value": "fm"
+        },
+        {
+         "name": "md",
+         "value": "md"
+        },
+        {
+         "name": "mc",
+         "value": "mc"
+        },
+        {
+         "name": "mn",
+         "value": "mn"
+        },
+        {
+         "name": "me",
+         "value": "me"
+        },
+        {
+         "name": "ms",
+         "value": "ms"
+        },
+        {
+         "name": "ma",
+         "value": "ma"
+        },
+        {
+         "name": "mz",
+         "value": "mz"
+        },
+        {
+         "name": "mm",
+         "value": "mm"
+        },
+        {
+         "name": "na",
+         "value": "na"
+        },
+        {
+         "name": "nr",
+         "value": "nr"
+        },
+        {
+         "name": "np",
+         "value": "np"
+        },
+        {
+         "name": "nl",
+         "value": "nl"
+        },
+        {
+         "name": "nc",
+         "value": "nc"
+        },
+        {
+         "name": "nz",
+         "value": "nz"
+        },
+        {
+         "name": "ni",
+         "value": "ni"
+        },
+        {
+         "name": "ne",
+         "value": "ne"
+        },
+        {
+         "name": "ng",
+         "value": "ng"
+        },
+        {
+         "name": "nu",
+         "value": "nu"
+        },
+        {
+         "name": "nf",
+         "value": "nf"
+        },
+        {
+         "name": "mk",
+         "value": "mk"
+        },
+        {
+         "name": "mp",
+         "value": "mp"
+        },
+        {
+         "name": "no",
+         "value": "no"
+        },
+        {
+         "name": "om",
+         "value": "om"
+        },
+        {
+         "name": "pk",
+         "value": "pk"
+        },
+        {
+         "name": "pw",
+         "value": "pw"
+        },
+        {
+         "name": "ps",
+         "value": "ps"
+        },
+        {
+         "name": "pa",
+         "value": "pa"
+        },
+        {
+         "name": "pg",
+         "value": "pg"
+        },
+        {
+         "name": "py",
+         "value": "py"
+        },
+        {
+         "name": "pe",
+         "value": "pe"
+        },
+        {
+         "name": "ph",
+         "value": "ph"
+        },
+        {
+         "name": "pn",
+         "value": "pn"
+        },
+        {
+         "name": "pl",
+         "value": "pl"
+        },
+        {
+         "name": "pt",
+         "value": "pt"
+        },
+        {
+         "name": "pr",
+         "value": "pr"
+        },
+        {
+         "name": "qa",
+         "value": "qa"
+        },
+        {
+         "name": "re",
+         "value": "re"
+        },
+        {
+         "name": "ro",
+         "value": "ro"
+        },
+        {
+         "name": "ru",
+         "value": "ru"
+        },
+        {
+         "name": "rw",
+         "value": "rw"
+        },
+        {
+         "name": "bl",
+         "value": "bl"
+        },
+        {
+         "name": "sh",
+         "value": "sh"
+        },
+        {
+         "name": "kn",
+         "value": "kn"
+        },
+        {
+         "name": "lc",
+         "value": "lc"
+        },
+        {
+         "name": "mf",
+         "value": "mf"
+        },
+        {
+         "name": "pm",
+         "value": "pm"
+        },
+        {
+         "name": "vc",
+         "value": "vc"
+        },
+        {
+         "name": "ws",
+         "value": "ws"
+        },
+        {
+         "name": "sm",
+         "value": "sm"
+        },
+        {
+         "name": "st",
+         "value": "st"
+        },
+        {
+         "name": "sa",
+         "value": "sa"
+        },
+        {
+         "name": "sn",
+         "value": "sn"
+        },
+        {
+         "name": "rs",
+         "value": "rs"
+        },
+        {
+         "name": "sc",
+         "value": "sc"
+        },
+        {
+         "name": "sl",
+         "value": "sl"
+        },
+        {
+         "name": "sg",
+         "value": "sg"
+        },
+        {
+         "name": "sx",
+         "value": "sx"
+        },
+        {
+         "name": "sk",
+         "value": "sk"
+        },
+        {
+         "name": "si",
+         "value": "si"
+        },
+        {
+         "name": "sb",
+         "value": "sb"
+        },
+        {
+         "name": "so",
+         "value": "so"
+        },
+        {
+         "name": "za",
+         "value": "za"
+        },
+        {
+         "name": "gs",
+         "value": "gs"
+        },
+        {
+         "name": "ss",
+         "value": "ss"
+        },
+        {
+         "name": "es",
+         "value": "es"
+        },
+        {
+         "name": "lk",
+         "value": "lk"
+        },
+        {
+         "name": "sd",
+         "value": "sd"
+        },
+        {
+         "name": "sr",
+         "value": "sr"
+        },
+        {
+         "name": "sj",
+         "value": "sj"
+        },
+        {
+         "name": "se",
+         "value": "se"
+        },
+        {
+         "name": "ch",
+         "value": "ch"
+        },
+        {
+         "name": "sy",
+         "value": "sy"
+        },
+        {
+         "name": "tw",
+         "value": "tw"
+        },
+        {
+         "name": "tj",
+         "value": "tj"
+        },
+        {
+         "name": "tz",
+         "value": "tz"
+        },
+        {
+         "name": "th",
+         "value": "th"
+        },
+        {
+         "name": "tl",
+         "value": "tl"
+        },
+        {
+         "name": "tg",
+         "value": "tg"
+        },
+        {
+         "name": "tk",
+         "value": "tk"
+        },
+        {
+         "name": "to",
+         "value": "to"
+        },
+        {
+         "name": "tt",
+         "value": "tt"
+        },
+        {
+         "name": "tn",
+         "value": "tn"
+        },
+        {
+         "name": "tr",
+         "value": "tr"
+        },
+        {
+         "name": "tm",
+         "value": "tm"
+        },
+        {
+         "name": "tc",
+         "value": "tc"
+        },
+        {
+         "name": "tv",
+         "value": "tv"
+        },
+        {
+         "name": "ug",
+         "value": "ug"
+        },
+        {
+         "name": "ua",
+         "value": "ua"
+        },
+        {
+         "name": "ae",
+         "value": "ae"
+        },
+        {
+         "name": "gb",
+         "value": "gb"
+        },
+        {
+         "name": "us",
+         "value": "us"
+        },
+        {
+         "name": "um",
+         "value": "um"
+        },
+        {
+         "name": "uy",
+         "value": "uy"
+        },
+        {
+         "name": "uz",
+         "value": "uz"
+        },
+        {
+         "name": "vu",
+         "value": "vu"
+        },
+        {
+         "name": "ve",
+         "value": "ve"
+        },
+        {
+         "name": "vn",
+         "value": "vn"
+        },
+        {
+         "name": "vg",
+         "value": "vg"
+        },
+        {
+         "name": "vi",
+         "value": "vi"
+        },
+        {
+         "name": "wf",
+         "value": "wf"
+        },
+        {
+         "name": "eh",
+         "value": "eh"
+        },
+        {
+         "name": "ye",
+         "value": "ye"
+        },
+        {
+         "name": "zm",
+         "value": "zm"
+        },
+        {
+         "name": "zw",
+         "value": "zw"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Date Range",
+       "displayName": "Date Range",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "all",
+         "value": "all"
+        },
+        {
+         "name": "last30days",
+         "value": "last30days"
+        },
+        {
+         "name": "last3months",
+         "value": "last3months"
+        },
+        {
+         "name": "last6months",
+         "value": "last6months"
+        },
+        {
+         "name": "last12months",
+         "value": "last12months"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "delay (in seconds)",
+       "displayName": "delay (in seconds)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Number of results",
+       "displayName": "Number of results",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Max results per page",
+       "displayName": "Max results per page",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "User",
+       "displayName": "User",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Discord Status (from User)",
+       "displayName": "Discord Status (from User)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "User Name",
+       "displayName": "User Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "File Name",
+       "displayName": "File Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Source of Creation",
+       "displayName": "Source of Creation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Internal",
+         "value": "Internal"
+        },
+        {
+         "name": "Discord",
+         "value": "Discord"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Google Drive Link",
+       "displayName": "Google Drive Link",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Discord Tags",
+       "displayName": "Discord Tags",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Record Created at",
+       "displayName": "Record Created at",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "user_id",
+       "displayName": "user_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    448,
+    -32
+   ],
+   "id": "acff2753-8be8-44cf-a47d-04050a23cc24",
+   "name": "Update Data ID's"
+  },
+  {
+   "parameters": {
+    "actorSource": "store",
+    "actorId": {
+     "__rl": true,
+     "value": "WO94hO14P98iwotpK",
+     "mode": "list",
+     "cachedResultName": "Trustpilot (canadesk/trustpilot)",
+     "cachedResultUrl": "https://console.apify.com/actors/WO94hO14P98iwotpK/input"
+    },
+    "customBody": "={\n    \"country\": \"{{ $json.body.country.name }}\",\n    \"daterange\": \"{{ $json.body['Date Range'].name }}\",\n    \"delay\": 5,\n    \"maxcrawl\": 10,\n    \"maximum\": {{ $json.body['Max results per page'] }},\n    \"proxy\": {\n        \"useApifyProxy\": true\n    },\n    \"website\": [\n        \"{{ $json.body['URL to scrape'] }}\"\n    ]\n}",
+    "waitForFinish": false
+   },
+   "type": "@apify/n8n-nodes-apify.apify",
+   "typeVersion": 1,
+   "position": [
+    224,
+    -32
+   ],
+   "id": "5e0df973-b49d-4581-aa13-528f0527a148",
+   "name": "RUN Trust Actor"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

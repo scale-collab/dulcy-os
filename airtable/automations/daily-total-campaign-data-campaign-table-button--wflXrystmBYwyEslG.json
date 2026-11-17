@@ -1,0 +1,70 @@
+{
+ "id": "wflXrystmBYwyEslG",
+ "name": "Daily Total Campaign Data (Campaign Table Button)",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "genericWebhookReceived",
+  "inputs": {},
+  "webhookUrl": "https://hooks.airtable.com/workflows/v1/genericWebhook/REDACTED_PATH",
+  "webhookSchemaIsSet": true,
+  "webhookSchema": {
+   "type": "object",
+   "properties": {
+    "body": {
+     "type": "object",
+     "properties": {
+      "source": {
+       "type": "string"
+      },
+      "requestedAt": {
+       "type": "string"
+      }
+     }
+    }
+   }
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacSljKwvSPekCCBz",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "apikey": "REDACTED_EMAILBISON_TOKEN"
+     }
+    },
+    "script": "const {apikey} = input.config();\nconst workspaces = await base.getTable('Workspace IDs').selectRecordsAsync({fields:['Status','ID']});\nconst existing = await base.getTable('Campaigns').selectRecordsAsync({fields:['ID','end_date','Status Last Modified']});\nconst tracked = new Map(existing.records.map(r => [Number(r.getCellValue('ID')),r]));\nconst today = Date.parse(new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()));\nfunction eligible(c) {\n  if (c.status === 'active') return true;\n  const r = tracked.get(Number(c.id));\n  if (!r) return false;\n  if (!['paused','inactive','completed'].includes(String(c.status).toLowerCase())) return true;\n  const raw = r.getCellValue('end_date') || r.getCellValue('Status Last Modified');\n  const day = raw ? Date.parse(String(raw).slice(0,10)) : NaN;\n  return Number.isFinite(day) && today-day <= 30*86400000;\n}\nconst combined = new Map();\nconst failures = [];\nfor (const record of workspaces.records.filter(r => r.getCellValue('Status')?.name === 'Active')) {\n  const workspaceID = record.getCellValue('ID');\n  if (!workspaceID) continue;\n  try {\n    const switched = await fetch('https://send.dulcy.io/api/workspaces/switch-workspace', {method:'POST',headers:{Authorization:'Bearer '+apikey,'Content-Type':'application/json'},body:JSON.stringify({team_id:workspaceID})});\n    if (!switched.ok) throw new Error('Workspace switch HTTP '+switched.status);\n    let page=1;\n    while (true) {\n      const response = await fetch('https://send.dulcy.io/api/campaigns?page='+page, {headers:{Authorization:'Bearer '+apikey}});\n      if (!response.ok) throw new Error('Campaign page '+page+' HTTP '+response.status);\n      const result = await response.json();\n      if (!Array.isArray(result.data)) throw new Error('Invalid campaign response');\n      for (const c of result.data) {\n        if (eligible(c)) combined.set(workspaceID+':'+c.id,{...c,workspaceID});\n      }\n      const last = Number(result.meta?.last_page);\n      if (Number.isFinite(last) && last>=1) { if (page>=last) break; }\n      else if (!result.links?.next) break;\n      page++;\n      if (page>100) throw new Error('Pagination limit exceeded');\n    }\n  } catch (error) { failures.push('Workspace '+workspaceID+': '+error.message); }\n}\nif (failures.length) throw new Error('Sync incomplete: '+failures.join('; '));\noutput.set('campaignDetails',JSON.stringify([...combined.values()]));\nconsole.log('Fetched '+combined.size+' campaigns, using the 30-day inactive/completed cutoff.');"
+   },
+   "outputSchema": [
+    {
+     "name": "campaignDetails",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "key": "wacKypPx0wpCPkEfG",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "apikey": "REDACTED_EMAILBISON_TOKEN",
+      "campaignDetails": {
+       "$ref": "wacSljKwvSPekCCBz",
+       "path": [
+        "campaignDetails"
+       ]
+      }
+     }
+    },
+    "script": "const inputData = input.config(); // Fetch input data\nconst apiKey = inputData.apikey; // API key passed in as an input\nlet campaignDetails = inputData.campaignDetails; // Array of campaign details from the script output\nconst table = base.getTable(\"Campaigns\"); // Replace \"Campaigns\" with your Airtable table name\n\nconsole.log(\"Input Data:\", inputData); // Log input data for debugging\n\n// Ensure campaignDetails is an array by parsing it if necessary\nif (typeof campaignDetails === \"string\") {\n    try {\n        campaignDetails = JSON.parse(campaignDetails); // Parse the string into a JSON array\n    } catch (error) {\n        console.error(\"Error parsing campaignDetails:\", error);\n        throw new Error(\"campaignDetails is not a valid JSON array.\");\n    }\n}\n\n// Check if campaignDetails is a valid array\nif (!Array.isArray(campaignDetails) || campaignDetails.length === 0) {\n    console.error(\"Campaign Details is empty or not in the correct format.\");\n    throw new Error(\"Campaign Details is empty or invalid.\");\n}\n\n(async function main() {\n    try {\n        // Fetch all existing records in the table\n        const existingRecords = await table.selectRecordsAsync();\n\n        for (const campaign of campaignDetails) {\n            try {\n                // Reformat created_at and updated_at to ensure proper ISO 8601 format\n                campaign.created_at = new Date(campaign.created_at).toISOString();\n                campaign.updated_at = new Date(campaign.updated_at).toISOString();\n\n                // Check if the campaign already exists in the table\n                const existingRecord = existingRecords.records.find(\n                    record => record.getCellValue(\"ID\") === campaign.id\n                );\n\n                if (existingRecord) {\n                    // Update the existing record\n                    await table.updateRecordAsync(existingRecord.id, {\n                        \"Name\": campaign.name,\n                        \"Emails Sent\": campaign.emails_sent,\n                        \"Unique Replies\": campaign.unique_replies,\n                        \"Progress\": campaign.completion_percentage/100,\n                        \"Bounced\": campaign.bounced,\n                        \"Interested\": campaign.interested,\n                        \"Total Leads Contacted\": campaign.total_leads_contacted,\n                        \"Total Leads Remaining\": campaign.total_leads-campaign.total_leads_contacted,\n                        \"Updated At\": campaign.updated_at,\n                        \"Total Leads\": campaign.total_leads\n                    });\n                    console.log(`Updated record for campaign: ${campaign.name}`);\n                } else {\n                    // Create a new record\n                    await table.createRecordAsync({\n                        \"ID\": campaign.id,\n                        \"Name\": campaign.name,\n                        \"Total Leads\": campaign.total_leads,\n                        \"Emails Sent\": campaign.emails_sent,\n                        \"Unique Replies\": campaign.unique_replies,\n                        \"Progress\": campaign.completion_percentage/100,\n                        \"Bounced\": campaign.bounced,\n                        \"Interested\": campaign.interested,\n                        \"Total Leads Contacted\": campaign.total_leads_contacted,\n                        \"Total Leads Remaining\": campaign.total_leads-campaign.total_leads_contacted,\n                        \"Updated At\": campaign.updated_at,\n                    });\n                    console.log(`Created record for campaign: ${campaign.name}`);\n                }\n            } catch (error) {\n                console.error(`Error processing campaign ${campaign.name}:`, error.message || error);\n            }\n        }\n    } catch (error) {\n        console.error(\"Error fetching existing records or processing campaigns:\", error.message || error);\n    }\n})();"
+   },
+   "outputSchema": []
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

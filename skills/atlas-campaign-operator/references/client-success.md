@@ -46,7 +46,7 @@ Do not invent a promise, deadline, KPI, reason for poor performance, or client s
 
 ## Client promise ownership
 
-Read Scribe (`scribe-cold-email-copywriter`) and its `references/client-promise-contract.md` for the shared, versioned client context and promise contract. Resolve Scribe by skill name rather than assuming a local path. If that reference is unavailable, flag the missing contract instead of silently inventing offer terms.
+Read `rules/client-promise-contract.md` for the shared, versioned client context and promise contract. Resolve Scribe by skill name rather than assuming a local path. If that reference is unavailable, flag the missing contract instead of silently inventing offer terms.
 
 Apply one agency-wide process with client-specific commercial facts. For each promised deliverable, record exact scope/quantity, agreed delivery mode and disclosed conditions, owner/backup, capacity, approved turnaround or next checkpoint, readiness, and actual fulfillment evidence. Keep produced, ready, delivered, booked, held, and qualified distinct. Escalate missing assets honestly; do not substitute a call for a promise to send material. Support an agreed call-delivery offer and verify that the actual asset is supplied. Pass approved context changes to both campaign and reply owners without retroactively changing existing promises.
 

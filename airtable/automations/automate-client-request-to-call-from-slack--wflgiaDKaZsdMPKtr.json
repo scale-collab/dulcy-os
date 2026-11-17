@@ -1,0 +1,188 @@
+{
+ "id": "wflgiaDKaZsdMPKtr",
+ "name": "Automate Client Request to Call from Slack",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "inputReceivedFromConnection",
+  "inputs": {
+   "tableId": "tblADFhWhTcLrl1UY"
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacc2YWATSEJdA3ET",
+   "type": "findRecords",
+   "inputs": {
+    "tableId": "tblcjRBGJEWh5KgOt",
+    "queryType": "filtersObj",
+    "filtersObj": {
+     "obj": {
+      "operator": "and",
+      "operands": {
+       "tuple": [
+        {
+         "obj": {
+          "operands": {
+           "tuple": [
+            "fldO0DrfcpgxtpBw5",
+            {
+             "$ref": "trigger",
+             "path": [
+              "cellValuesByFieldId",
+              "fldRvg1dY1KULcNcK"
+             ]
+            }
+           ]
+          },
+          "operator": "=",
+          "operatorOptions": null
+         }
+        }
+       ]
+      }
+     }
+    },
+    "viewId": "viwaYKmlsZmAgegX7",
+    "limit": 1
+   }
+  },
+  {
+   "key": "wdeYcLTdOcAMfCK1l",
+   "type": "conditionalGroup",
+   "branches": [
+    {
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "fn": "map",
+         "args": [
+          {
+           "fn": "map",
+           "args": [
+            {
+             "$ref": "wacc2YWATSEJdA3ET",
+             "path": [
+              "records"
+             ]
+            },
+            {
+             "fn": "propertyGetter",
+             "args": [
+              "cellValuesByFieldId"
+             ]
+            }
+           ]
+          },
+          {
+           "fn": "propertyGetter",
+           "args": [
+            "fld48x6Yg3v6RP30W"
+           ]
+          }
+         ]
+        },
+        "operator": "doesNotContain",
+        "right": "Dulcy",
+        "valueType": "text",
+        "dataType": "array"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wachWyEQ7z4npG1xq",
+       "type": "sendToSlack",
+       "externalAccountId": "eaclf9jwTHIrMIi0j",
+       "inputs": {
+        "slackConversationId": {
+         "template": [
+          {
+           "fn": "map",
+           "args": [
+            {
+             "fn": "map",
+             "args": [
+              {
+               "$ref": "wacc2YWATSEJdA3ET",
+               "path": [
+                "records"
+               ]
+              },
+              {
+               "fn": "propertyGetter",
+               "args": [
+                "cellValuesByFieldId"
+               ]
+              }
+             ]
+            },
+            {
+             "fn": "propertyGetter",
+             "args": [
+              "fldJvFMD9DkLRcpRs"
+             ]
+            }
+           ]
+          }
+         ]
+        },
+        "notificationText": {
+         "template": [
+          "@channel\n\nWe have an interested prospect who called in. We are requesting that you give this prospect a call in a timely manner to secure their interest in the conversation.\n\nInformation:\nName: ",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldQAcnN9PrbL7R81"
+           ]
+          },
+          "\nEmail: ",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldVkWkLFCGP9O1Aw"
+           ]
+          },
+          "\nNumber: ",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fld8K4zasLt6aaRfB"
+           ]
+          },
+          "\nCall Status: ",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldIEelM8lYXbOQc2",
+            "name"
+           ]
+          },
+          "\n\nCall Transcript: ",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldwbdXG4b1UGOxUC"
+           ]
+          }
+         ]
+        },
+        "unfurlLinks": true
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

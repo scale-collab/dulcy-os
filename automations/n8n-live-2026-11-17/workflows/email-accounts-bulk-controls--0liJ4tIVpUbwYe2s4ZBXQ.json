@@ -1,0 +1,788 @@
+{
+ "id": "0liJ4tIVpUbwYe2s4ZBXQ",
+ "name": "[Email Accounts] Bulk Controls",
+ "active": true,
+ "isArchived": false,
+ "versionId": "037d8a97-dad7-4167-9e89-6ec2103d4db5",
+ "triggerCount": 1,
+ "createdAt": "2026-08-17T20:37:07.309Z",
+ "updatedAt": "2026-11-17T16:42:35.000Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Instant Airtable Webhook": {
+   "main": [
+    [
+     {
+      "node": "Validate Webhook",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate Webhook": {
+   "main": [
+    [
+     {
+      "node": "Get Bulk Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Bulk Request": {
+   "main": [
+    [
+     {
+      "node": "Validate Bulk Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate Bulk Request": {
+   "main": [
+    [
+     {
+      "node": "Request Valid?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Request Valid?": {
+   "main": [
+    [
+     {
+      "node": "Get Client Workspace",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Map Validation Failure",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Client Workspace": {
+   "main": [
+    [
+     {
+      "node": "Resolve Account Records",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Resolve Account Records": {
+   "main": [
+    [
+     {
+      "node": "Accounts Ready?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Accounts Ready?": {
+   "main": [
+    [
+     {
+      "node": "Expand Accounts",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Map Resolution Failure",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Expand Accounts": {
+   "main": [
+    [
+     {
+      "node": "Get Each Email Account",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Each Email Account": {
+   "main": [
+    [
+     {
+      "node": "Prepare One Bulk API Call",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare One Bulk API Call": {
+   "main": [
+    [
+     {
+      "node": "Bulk API Ready?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Bulk API Ready?": {
+   "main": [
+    [
+     {
+      "node": "Apply Bulk Email Bison Control",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Map API Failure",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Apply Bulk Email Bison Control": {
+   "main": [
+    [
+     {
+      "node": "Map Account Updates",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Map Account Updates": {
+   "main": [
+    [
+     {
+      "node": "Bulk Call Successful?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Bulk Call Successful?": {
+   "main": [
+    [
+     {
+      "node": "Remove Workflow Metadata",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Map API Failure",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Remove Workflow Metadata": {
+   "main": [
+    [
+     {
+      "node": "Update Email Account Rows",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Update Email Account Rows": {
+   "main": [
+    [
+     {
+      "node": "Complete Bulk Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Complete Bulk Request": {
+   "main": [
+    [
+     {
+      "node": "Save Bulk Request Result",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Map Validation Failure": {
+   "main": [
+    [
+     {
+      "node": "Save Bulk Request Result",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Map Resolution Failure": {
+   "main": [
+    [
+     {
+      "node": "Save Bulk Request Result",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Map API Failure": {
+   "main": [
+    [
+     {
+      "node": "Save Bulk Request Result",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "id": "e7b181df-15f0-4ade-8adf-6303d9759ce2",
+   "name": "Instant Airtable Webhook",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    3616,
+    -432
+   ]
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const recordId=String($json.body?.recordId||$json.recordId||'').trim();if(!/^rec[a-zA-Z0-9]{14}$/.test(recordId))throw new Error('Missing or invalid Airtable recordId');return {json:{recordId}};"
+   },
+   "id": "5b11c91c-ca2f-4276-be98-0c24239cbbed",
+   "name": "Validate Webhook",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3840,
+    -432
+   ]
+  },
+  {
+   "parameters": {
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tbl9diaQoQS0USoLn",
+     "mode": "list",
+     "cachedResultName": "Email Account Bulk Controls"
+    },
+    "id": "={{$json.recordId}}",
+    "options": {}
+   },
+   "id": "dc297e09-8794-456d-8f6c-cd0e8eea8acb",
+   "name": "Get Bulk Request",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    4064,
+    -432
+   ]
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const row=$json;const pick=v=>v?.name||v||'';const links=v=>(Array.isArray(v)?v:[]).map(x=>x?.id||x).filter(Boolean);const action=String(pick(row.Action)).trim();const scope=String(pick(row.Scope)).trim();const clients=links(row.Client);const selected=links(row['Selected Accounts']);const daily=Number(row['New Daily Limit']);const warm=Number(row['New Warmup Limit']);const allowed=['Turn Warmup On','Turn Warmup Off','Update Daily Limit','Update Warmup Limit'];const errors=[];if(!row.Approve)errors.push('Approve must be checked');if(!allowed.includes(action))errors.push('Select a valid Action');if(!['Entire Client','Selected Accounts'].includes(scope))errors.push('Select a valid Scope');if(clients.length!==1)errors.push('Exactly one Client is required');if(scope==='Selected Accounts'&&!selected.length)errors.push('Select at least one email account');if(action==='Update Daily Limit'&&(!Number.isInteger(daily)||daily<1||daily>200))errors.push('New Daily Limit must be 1 to 200');if(action==='Update Warmup Limit'&&(!Number.isInteger(warm)||warm<1||warm>200))errors.push('New Warmup Limit must be 1 to 200');return {json:{requestId:row.id,action,scope,clientRecordId:clients[0]||'',selectedRecordIds:selected,dailyLimit:daily,warmupLimit:warm,valid:errors.length===0,error:errors.join('; ')}};"
+   },
+   "id": "c5066015-2b68-4271-beaa-1431e26b252e",
+   "name": "Validate Bulk Request",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    4288,
+    -432
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "valid",
+       "leftValue": "={{$json.valid}}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "a6d64f07-2de0-4c6c-8499-a6dfb329b590",
+   "name": "Request Valid?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    4496,
+    -432
+   ]
+  },
+  {
+   "parameters": {
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs"
+    },
+    "id": "={{$json.clientRecordId}}",
+    "options": {}
+   },
+   "id": "cfdc0a7c-d1a5-4995-9a11-ff2bda9b8b86",
+   "name": "Get Client Workspace",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    4736,
+    -528
+   ]
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const req=$('Validate Bulk Request').item.json;const links=v=>(Array.isArray(v)?v:[]).map(x=>x?.id||x).filter(Boolean);const workspaceIds=links($json['Email Accounts']);const recordIds=req.scope==='Selected Accounts'?req.selectedRecordIds:workspaceIds;const token=String($json['EmailBison API']||'').trim();const errors=[];if(!token)errors.push('Client Workspace is missing EmailBison API');if(!recordIds.length)errors.push('No email accounts matched this request');return {json:{...req,recordIds:[...new Set(recordIds)],token,ready:errors.length===0,error:errors.join('; ')}};"
+   },
+   "id": "3cca2db7-6312-4f46-94c1-ba421721ac2f",
+   "name": "Resolve Account Records",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    4960,
+    -528
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "ready",
+       "leftValue": "={{$json.ready}}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "146ae2b3-c9f1-46a0-a923-dd6affeedc42",
+   "name": "Accounts Ready?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    5184,
+    -528
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const src=$input.first().json;return src.recordIds.map(id=>({json:{accountRecordId:id}}));"
+   },
+   "id": "08336156-2f0a-4599-a4db-ffbcaba5d31f",
+   "name": "Expand Accounts",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    5408,
+    -624
+   ]
+  },
+  {
+   "parameters": {
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMSOBJ0wMgxSg4l",
+     "mode": "list",
+     "cachedResultName": "Email Accounts"
+    },
+    "id": "={{$json.accountRecordId}}",
+    "options": {}
+   },
+   "id": "43f8c48f-5581-4ac2-a541-faf418751d0c",
+   "name": "Get Each Email Account",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    5616,
+    -624
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const req=$('Resolve Account Records').first().json;const rows=$input.all().map(i=>i.json);const links=v=>(Array.isArray(v)?v:[]).map(x=>x?.id||x).filter(Boolean);const mapped=rows.map(r=>({recordId:r.id,emailId:Number(r['Email ID']),email:r['Email Account'],clientIds:links(r.Client)}));const mismatched=mapped.filter(a=>!a.clientIds.includes(req.clientRecordId));const accounts=mapped.filter(a=>Number.isInteger(a.emailId)&&a.emailId>0);const missing=rows.length-accounts.length;let endpoint='',body={sender_email_ids:accounts.map(a=>a.emailId)};if(req.action==='Turn Warmup On')endpoint='/api/warmup/sender-emails/enable';if(req.action==='Turn Warmup Off')endpoint='/api/warmup/sender-emails/disable';if(req.action==='Update Warmup Limit'){endpoint='/api/warmup/sender-emails/update-daily-warmup-limits';body.daily_limit=req.warmupLimit;}if(req.action==='Update Daily Limit'){endpoint='/api/sender-emails/daily-limits/bulk';body.daily_limit=req.dailyLimit;}const errors=[];if(!accounts.length)errors.push('No matched account has a valid Email ID');if(missing)errors.push(`${missing} matched account(s) are missing Email ID`);if(mismatched.length)errors.push(`Safety check blocked ${mismatched.length} account(s) that do not belong to the selected client: ${mismatched.map(a=>a.email).join(', ')}`);return [{json:{...req,accounts,matchedCount:rows.length,endpoint,body,ready:errors.length===0,error:errors.join('; ')}}];"
+   },
+   "id": "daca68d1-90de-4287-be56-5ca868b0f468",
+   "name": "Prepare One Bulk API Call",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    5840,
+    -624
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "api",
+       "leftValue": "={{$json.ready}}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "134bd8cf-0307-42b1-bc56-d9697f0d4705",
+   "name": "Bulk API Ready?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    6064,
+    -624
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "={{'https://send.dulcy.io'+$json.endpoint}}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      },
+      {
+       "name": "Authorization",
+       "value": "={{'Bearer '+$json.token}}"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{$json.body}}",
+    "options": {
+     "response": {
+      "response": {
+       "responseFormat": "json"
+      }
+     }
+    }
+   },
+   "id": "3f7e58cd-eb8c-4146-b54d-f1411c95bade",
+   "name": "Apply Bulk Email Bison Control",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    6288,
+    -720
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "jsCode": "const req=$('Prepare One Bulk API Call').first().json;const raw=$input.first().json||{};const err=raw.error?.message||raw.error||((raw.message&&String(raw.message).toLowerCase().includes('error'))?raw.message:'');if(err)return [{json:{_bulkSuccess:false,requestId:req.requestId,error:String(err),matchedCount:req.matchedCount,updatedCount:0}}];return req.accounts.map(a=>{const out={id:a.recordId,'Control Sync Status':'Synced','Control Sync Error':'','Last Control Sync':new Date().toISOString(),_bulkSuccess:true};if(req.action==='Turn Warmup On')out.warmup_enabled=true;if(req.action==='Turn Warmup Off')out.warmup_enabled=false;if(req.action==='Update Daily Limit')out.email_daily_limit=req.dailyLimit;if(req.action==='Update Warmup Limit')out.warmup_daily_limit=req.warmupLimit;return {json:{...out,_requestId:req.requestId,_matchedCount:req.matchedCount,_updatedCount:req.accounts.length}};});"
+   },
+   "id": "10ebfefa-0406-4497-b1ef-818ca73d4010",
+   "name": "Map Account Updates",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    6496,
+    -720
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "bulk-success",
+       "leftValue": "={{$json._bulkSuccess}}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "a4a2c1e3-47cb-43cd-b22e-6fa1b4453774",
+   "name": "Bulk Call Successful?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    6720,
+    -720
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMSOBJ0wMgxSg4l",
+     "mode": "list",
+     "cachedResultName": "Email Accounts"
+    },
+    "columns": {
+     "mappingMode": "autoMapInputData",
+     "value": {},
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": []
+    },
+    "options": {
+     "typecast": true
+    }
+   },
+   "id": "d1ba5b4f-05cf-49e9-97ca-ff1b87288330",
+   "name": "Update Email Account Rows",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    6944,
+    -784
+   ]
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const {_bulkSuccess,_requestId,_matchedCount,_updatedCount,...airtableFields}=$json;return {json:airtableFields};"
+   },
+   "id": "3348e542-5e96-4676-80c5-b0c16280b555",
+   "name": "Remove Workflow Metadata",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    6832,
+    -784
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const req=$('Prepare One Bulk API Call').first().json;return [{json:{id:req.requestId,Status:'Completed',Approve:false,'Accounts Matched':req.matchedCount,'Accounts Updated':req.accounts.length,Error:'','Completed At':new Date().toISOString()}}];"
+   },
+   "id": "3c2cde91-e156-4003-ba3b-7b52298a1a42",
+   "name": "Complete Bulk Request",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    7168,
+    -784
+   ]
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const req=$('Validate Bulk Request').item.json;return {json:{id:req.requestId,Status:'Failed',Approve:false,'Accounts Matched':0,'Accounts Updated':0,Error:String(req.error||'Invalid request').slice(0,10000)}};"
+   },
+   "id": "667fe3fd-d0d0-4643-8c38-7dceac018260",
+   "name": "Map Validation Failure",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    4736,
+    -288
+   ]
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const req=$('Validate Bulk Request').item.json;return {json:{id:req.requestId,Status:'Failed',Approve:false,'Accounts Matched':0,'Accounts Updated':0,Error:String($json.error||'Could not resolve accounts or API key').slice(0,10000)}};"
+   },
+   "id": "94aa0dee-38ff-4eab-9857-18664dc5e504",
+   "name": "Map Resolution Failure",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    5408,
+    -384
+   ]
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const req=$('Prepare One Bulk API Call').item.json;return {json:{id:req.requestId,Status:'Failed',Approve:false,'Accounts Matched':req.matchedCount||0,'Accounts Updated':0,Error:String($json.error||req.error||'Bulk API request failed').slice(0,10000)}};"
+   },
+   "id": "bfdcc478-2800-4997-8b12-7e9bc08cac54",
+   "name": "Map API Failure",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    6944,
+    -560
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tbl9diaQoQS0USoLn",
+     "mode": "list",
+     "cachedResultName": "Email Account Bulk Controls"
+    },
+    "columns": {
+     "mappingMode": "autoMapInputData",
+     "value": {},
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": []
+    },
+    "options": {
+     "typecast": true
+    }
+   },
+   "id": "b5ddac4c-0531-4824-9701-d78ce6e4a3da",
+   "name": "Save Bulk Request Result",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    7376,
+    -512
+   ]
+  },
+  {
+   "parameters": {
+    "content": "## Bulk controls\nOne approved request updates all sender IDs in a single Email Bison API call.\n\nAirtable automation trigger: Email Account Bulk Controls → when Approve is checked and Status is Draft/blank. Pass recordId into the supplied Airtable script.\n\nKeep workflow concurrency at 1.",
+    "height": 220,
+    "width": 440,
+    "color": 5
+   },
+   "id": "b76b2ea8-693c-47ec-924b-1e8c04c66876",
+   "name": "Instructions",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    3616,
+    -784
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

@@ -1,0 +1,753 @@
+{
+ "id": "FY_DhT_f7dTzrshWB5JFq",
+ "name": "[Call Feedback] Request through Slack (Tue - Fri)",
+ "active": true,
+ "isArchived": false,
+ "versionId": "6c6be118-0154-4c93-9760-138a1c6b8821",
+ "triggerCount": 1,
+ "createdAt": "2026-07-23T18:41:22.913Z",
+ "updatedAt": "2026-11-17T16:41:04.482Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Schedule Trigger": {
+   "main": [
+    [
+     {
+      "node": "Search records",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records": {
+   "main": [
+    [
+     {
+      "node": "Filter",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Filter": {
+   "main": [
+    [
+     {
+      "node": "Switch",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Switch": {
+   "main": [
+    [
+     {
+      "node": "Search records1",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Search records2",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records1": {
+   "main": [
+    [
+     {
+      "node": "Slack channel exists",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records2": {
+   "main": [
+    [
+     {
+      "node": "Slack channel exists1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Slack channel exists": {
+   "main": [
+    [
+     {
+      "node": "Create a record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Slack channel exists1": {
+   "main": [
+    [
+     {
+      "node": "Create a record1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "weeks",
+       "triggerAtDay": [
+        5,
+        4,
+        3,
+        2
+       ],
+       "triggerAtHour": 9,
+       "triggerAtMinute": 30
+      }
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.3,
+   "position": [
+    0,
+    0
+   ],
+   "id": "f4a704f4-fa00-4214-9c70-165d70b00c2d",
+   "name": "Schedule Trigger"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblADFhWhTcLrl1UY",
+     "mode": "list",
+     "cachedResultName": "Emails",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY"
+    },
+    "filterByFormula": "AND(NOT({Date of Call Booked} = ''), {skip_request_call_feedback} = 0, NOT({Call Feedback}), IS_SAME({Date of Call Booked}, DATEADD(TODAY(), -1, 'day'), 'day'))",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    208,
+    0
+   ],
+   "id": "7dfedbb7-fc6b-407d-aa69-409a48258ff6",
+   "name": "Search records"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "de9fe2db-40a8-441f-9312-8c2a4ccf40ab",
+       "leftValue": "={{ $json['Call Feedback'][0] }}",
+       "rightValue": "",
+       "operator": {
+        "type": "string",
+        "operation": "notExists",
+        "singleValue": true
+       }
+      },
+      {
+       "id": "e8b3072d-b7ee-419f-82a9-35d76d73112e",
+       "leftValue": "={{ $json['Date of Call Booked'] }}",
+       "rightValue": "2025-11-18T00:00:00",
+       "operator": {
+        "type": "dateTime",
+        "operation": "after"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.filter",
+   "typeVersion": 2.3,
+   "position": [
+    416,
+    0
+   ],
+   "id": "2d9a03fc-9d8c-46a1-9ac8-138cf3095174",
+   "name": "Filter"
+  },
+  {
+   "parameters": {
+    "rules": {
+     "values": [
+      {
+       "conditions": {
+        "options": {
+         "caseSensitive": true,
+         "leftValue": "",
+         "typeValidation": "strict",
+         "version": 3
+        },
+        "conditions": [
+         {
+          "leftValue": "={{ $json['Date of Call Booked'] }}",
+          "rightValue": "={{ DateTime.now().minus({ days: 1 }).toISODate() }}",
+          "operator": {
+           "type": "dateTime",
+           "operation": "equals"
+          },
+          "id": "2b8a4c85-fcc3-458b-ad47-9a7d7bffbbf5"
+         }
+        ],
+        "combinator": "and"
+       },
+       "renameOutput": true,
+       "outputKey": "Calls on the previous day"
+      },
+      {
+       "conditions": {
+        "options": {
+         "caseSensitive": true,
+         "leftValue": "",
+         "typeValidation": "strict",
+         "version": 3
+        },
+        "conditions": [
+         {
+          "id": "1e4ac72c-bf7c-4fbf-abf7-7fe37c106c65",
+          "leftValue": "={{ $json['Date of Call Booked'] }}",
+          "rightValue": "={{ DateTime.now().minus({ days: 1 }).toISODate() }}",
+          "operator": {
+           "type": "dateTime",
+           "operation": "before"
+          }
+         }
+        ],
+        "combinator": "and"
+       },
+       "renameOutput": true,
+       "outputKey": "Calls later without form submission"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.switch",
+   "typeVersion": 3.4,
+   "position": [
+    624,
+    0
+   ],
+   "id": "fae8c8c1-1869-4139-a7ce-ec813b8c5fe6",
+   "name": "Switch"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt"
+    },
+    "filterByFormula": "=AND({ID} = '{{1.`Workspace ID (Bison)`}}', {Status} = 'Active')",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    832,
+    -96
+   ],
+   "id": "788f759e-2aa4-4be9-8a1c-ae6dc17bafbe",
+   "name": "Search records1"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt"
+    },
+    "filterByFormula": "=AND({ID} = '{{1.`Workspace ID (Bison)`}}', {Status} = 'Active')",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    832,
+    80
+   ],
+   "id": "8e7330a5-2778-4b4e-a955-b1efa069ae01",
+   "name": "Search records2"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "c7449649-becd-4811-b2e9-69dbd1d559da",
+       "leftValue": "={{ $json['Slack Channel'] }}",
+       "rightValue": "",
+       "operator": {
+        "type": "string",
+        "operation": "exists",
+        "singleValue": true
+       }
+      },
+      {
+       "id": "16e95855-7fb7-4eeb-b549-027475354453",
+       "leftValue": "={{ $json.Name }}",
+       "rightValue": "Dulcy",
+       "operator": {
+        "type": "string",
+        "operation": "notEquals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.filter",
+   "typeVersion": 2.3,
+   "position": [
+    1040,
+    -96
+   ],
+   "id": "12b3b4bf-4648-4b0f-98d6-8ed4a7d8e128",
+   "name": "Slack channel exists"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "c7449649-becd-4811-b2e9-69dbd1d559da",
+       "leftValue": "={{ $json['Slack Channel'] }}",
+       "rightValue": "",
+       "operator": {
+        "type": "string",
+        "operation": "exists",
+        "singleValue": true
+       }
+      },
+      {
+       "id": "16e95855-7fb7-4eeb-b549-027475354453",
+       "leftValue": "={{ $json.Name }}",
+       "rightValue": "Dulcy",
+       "operator": {
+        "type": "string",
+        "operation": "notEquals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.filter",
+   "typeVersion": 2.3,
+   "position": [
+    1040,
+    80
+   ],
+   "id": "b2111da2-153a-4c2b-9b40-f22c24b043f8",
+   "name": "Slack channel exists1"
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblwJK1VB7affamrz",
+     "mode": "list",
+     "cachedResultName": "Client Notifications",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblwJK1VB7affamrz"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Message": "Just a quick reminder to complete your client feedback form when you have a moment. Your input helps us improve campaign performance and make better decisions for your account. We appreciate it.",
+      "Title": "Feedback Form Reminder",
+      "Client": "={{ [$('Search records1').item.json.id] }}",
+      "Type": "Call Feedback"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "Title",
+       "displayName": "Title",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Message",
+       "displayName": "Message",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Type",
+       "displayName": "Type",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Task",
+         "value": "Task"
+        },
+        {
+         "name": "Lead",
+         "value": "Lead"
+        },
+        {
+         "name": "Campaign",
+         "value": "Campaign"
+        },
+        {
+         "name": "Booked Meeting",
+         "value": "Booked Meeting"
+        },
+        {
+         "name": "Document",
+         "value": "Document"
+        },
+        {
+         "name": "Call Feedback",
+         "value": "Call Feedback"
+        },
+        {
+         "name": "System",
+         "value": "System"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Time Since Created",
+       "displayName": "Time Since Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Dismissed",
+       "displayName": "Dismissed",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "NotifiedSlack",
+       "displayName": "NotifiedSlack",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Created Time",
+       "displayName": "Created Time",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1232,
+    -96
+   ],
+   "id": "ea9f1590-524a-4b27-8fcf-d0476c6be4ba",
+   "name": "Create a record"
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblwJK1VB7affamrz",
+     "mode": "list",
+     "cachedResultName": "Client Notifications",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblwJK1VB7affamrz"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Message": "Just a quick reminder to complete your client feedback form when you have a moment. Your input helps us improve campaign performance and make better decisions for your account. We appreciate it.",
+      "Title": "Feedback Form Reminder",
+      "Client": "={{ [$('Search records2').item.json.id] }}",
+      "Type": "Call Feedback"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "Title",
+       "displayName": "Title",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Message",
+       "displayName": "Message",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Type",
+       "displayName": "Type",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Task",
+         "value": "Task"
+        },
+        {
+         "name": "Lead",
+         "value": "Lead"
+        },
+        {
+         "name": "Campaign",
+         "value": "Campaign"
+        },
+        {
+         "name": "Booked Meeting",
+         "value": "Booked Meeting"
+        },
+        {
+         "name": "Document",
+         "value": "Document"
+        },
+        {
+         "name": "Call Feedback",
+         "value": "Call Feedback"
+        },
+        {
+         "name": "System",
+         "value": "System"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Time Since Created",
+       "displayName": "Time Since Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Dismissed",
+       "displayName": "Dismissed",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "NotifiedSlack",
+       "displayName": "NotifiedSlack",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Created Time",
+       "displayName": "Created Time",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    1232,
+    80
+   ],
+   "id": "d26ba554-7db0-4f60-b8de-e8ad01c00001",
+   "name": "Create a record1"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

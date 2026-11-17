@@ -1,0 +1,80 @@
+{
+ "id": "LONss2xwT8FEqREg",
+ "name": "Old Record Remover",
+ "active": true,
+ "isArchived": false,
+ "versionId": "20596ae9-8282-4a69-a68d-95119c06786a",
+ "triggerCount": 1,
+ "createdAt": "2025-11-28T16:22:54.661Z",
+ "updatedAt": "2026-11-17T16:38:36.927Z",
+ "settings": {
+  "executionOrder": "v1",
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Fetch record need to be deleted": {
+   "main": [
+    [
+     {
+      "node": "Delete Old Placement Test",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    0,
+    0
+   ],
+   "id": "cc75513e-9fe0-4ded-aadc-0a1b6126d004",
+   "name": "Fetch record need to be deleted"
+  },
+  {
+   "parameters": {
+    "operation": "deleteRecord",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblGjv6A5r7md3kxX",
+     "mode": "list",
+     "cachedResultName": "Inbox Placement Testing",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblGjv6A5r7md3kxX"
+    },
+    "id": "={{ $json.body.recordId }}"
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    208,
+    0
+   ],
+   "id": "cf389f01-e2bf-4823-bcdc-f58338834275",
+   "name": "Delete Old Placement Test"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

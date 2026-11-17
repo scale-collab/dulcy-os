@@ -1,0 +1,816 @@
+{
+ "id": 4031111,
+ "name": "[INBOX MANAGER] Explain Reply",
+ "teamId": 629049,
+ "hookId": 2287239,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 199728,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": true,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "gateway",
+  "openai-gpt-3",
+  "airtable"
+ ],
+ "lastEdit": "2025-06-05T09:08:25.077Z",
+ "scheduling": {
+  "type": "immediately"
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2025-06-05T08:34:13.979Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": true,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 1,
+    "mapper": {},
+    "module": "gateway:CustomWebHook",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "hook": {
+        "data": {
+         "editable": "true"
+        },
+        "label": "Inbox Manager - Explain reply"
+       }
+      }
+     },
+     "designer": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "hook",
+       "type": "hook:gateway-webhook",
+       "label": "Webhook",
+       "required": true
+      },
+      {
+       "name": "maxResults",
+       "type": "number",
+       "label": "Maximum number of results"
+      }
+     ]
+    },
+    "parameters": {
+     "hook": 2287239,
+     "maxResults": 1
+    }
+   },
+   {
+    "id": 2,
+    "mapper": {
+     "model": "gpt-4o-mini",
+     "top_p": "1",
+     "select": "chat",
+     "messages": [
+      {
+       "role": "assistant",
+       "content": "You’re an assistant helping an inbox manager. \n\nGiven the full email conversation below (including the most recent reply), analyze the entire thread and explain clearly:\n\n1. What the person is saying or asking in their reply.\n2.\tWhat their tone and intent seem to be (e.g., interested, confused, delaying, objecting, etc.).\n3.\tWhat action, if any, we need to take next (e.g., reply, book a call, follow up later, etc.).\n4.\tAny key details or context we should be aware of (e.g., deadlines, concerns, changes in direction).\n\nKeep it simple, clear, short explanations (1-2 short sentences), and actionable for a busy inbox manager.\n\nDO NOT add bold, italic, or other types of formatting."
+      },
+      {
+       "role": "user",
+       "content": "Here is the latest reply:\n{{1.`Latest Reply`}}\n\nHere is the conversation history:\n{{1.`Conversation History`}}",
+       "imageDetail": "auto"
+      }
+     ],
+     "max_tokens": "500",
+     "temperature": "1",
+     "n_completions": "1",
+     "response_format": "text"
+    },
+    "module": "openai-gpt-3:CreateCompletion",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "select",
+       "type": "select",
+       "label": "Select Method",
+       "required": true,
+       "validate": {
+        "enum": [
+         "chat",
+         "prompt"
+        ]
+       }
+      },
+      {
+       "name": "temperature",
+       "type": "number",
+       "label": "Temperature",
+       "validate": {
+        "max": 2,
+        "min": 0
+       }
+      },
+      {
+       "name": "top_p",
+       "type": "number",
+       "label": "Top P",
+       "validate": {
+        "max": 1,
+        "min": 0
+       }
+      },
+      {
+       "name": "n_completions",
+       "type": "number",
+       "label": "Number"
+      },
+      {
+       "name": "frequency_penalty",
+       "type": "number",
+       "label": "Frequency Penalty",
+       "validate": {
+        "max": 2,
+        "min": -2
+       }
+      },
+      {
+       "name": "presence_penalty",
+       "type": "number",
+       "label": "Presence Penalty",
+       "validate": {
+        "max": 2,
+        "min": -2
+       }
+      },
+      {
+       "name": "logit_bias",
+       "spec": {
+        "name": "value",
+        "spec": [
+         {
+          "name": "token",
+          "type": "text",
+          "label": "Token ID",
+          "required": true
+         },
+         {
+          "name": "probability",
+          "type": "number",
+          "label": "Probability",
+          "required": true,
+          "validate": {
+           "max": 100,
+           "min": -100
+          }
+         }
+        ],
+        "type": "collection",
+        "label": "Token Probability"
+       },
+       "type": "array",
+       "label": "Token Probability"
+      },
+      {
+       "name": "seed",
+       "type": "integer",
+       "label": "Seed"
+      },
+      {
+       "name": "stop",
+       "spec": {
+        "name": "value",
+        "type": "text",
+        "label": "Stop Sequence"
+       },
+       "type": "array",
+       "label": "Stop Sequences",
+       "validate": {
+        "maxItems": 4
+       }
+      },
+      {
+       "name": "additionalParameters",
+       "spec": {
+        "name": "value",
+        "spec": [
+         {
+          "name": "key",
+          "type": "text",
+          "label": "Parameter Name",
+          "required": true
+         },
+         {
+          "name": "type",
+          "type": "select",
+          "label": "Input Type",
+          "options": [
+           {
+            "label": "Text",
+            "value": "text",
+            "nested": [
+             {
+              "name": "value",
+              "type": "text",
+              "label": "Parameter Value"
+             }
+            ],
+            "default": true
+           },
+           {
+            "label": "Number",
+            "value": "number",
+            "nested": [
+             {
+              "name": "value",
+              "type": "number",
+              "label": "Parameter Value"
+             }
+            ]
+           },
+           {
+            "label": "Boolean",
+            "value": "boolean",
+            "nested": [
+             {
+              "name": "value",
+              "type": "boolean",
+              "label": "Parameter Value"
+             }
+            ]
+           },
+           {
+            "label": "Date",
+            "value": "date",
+            "nested": [
+             {
+              "name": "value",
+              "type": "date",
+              "label": "Parameter Value"
+             }
+            ]
+           },
+           {
+            "label": "Any",
+            "value": "any",
+            "nested": [
+             {
+              "name": "value",
+              "type": "any",
+              "label": "Parameter Value"
+             }
+            ]
+           }
+          ]
+         }
+        ],
+        "type": "collection",
+        "label": "Input Parameter"
+       },
+       "type": "array",
+       "label": "Other Input Parameters"
+      },
+      {
+       "name": "model",
+       "type": "select",
+       "label": "Model",
+       "required": true
+      },
+      {
+       "name": "max_tokens",
+       "type": "uinteger",
+       "label": "Max Completion Tokens"
+      },
+      {
+       "name": "messages",
+       "spec": {
+        "name": "value",
+        "spec": [
+         {
+          "name": "role",
+          "type": "select",
+          "label": "Role",
+          "options": {
+           "store": [
+            {
+             "label": "User",
+             "value": "user",
+             "nested": [
+              {
+               "help": "Text content of the message on behalf of the selected __Role__.",
+               "name": "content",
+               "type": "text",
+               "label": "Text Content"
+              },
+              {
+               "name": "imageInputType",
+               "type": "select",
+               "label": "Image Input Type",
+               "options": [
+                {
+                 "label": "URL",
+                 "value": "url",
+                 "nested": [
+                  {
+                   "help": "Make sure to use a publicly accessible URL.\nYou can test if your image is publicly accessible by opening the link in an incognito tab.",
+                   "name": "imageUrl",
+                   "type": "url",
+                   "label": "Image URL"
+                  }
+                 ]
+                },
+                {
+                 "label": "Image File",
+                 "value": "file",
+                 "nested": [
+                  {
+                   "name": "imageFile",
+                   "spec": [
+                    {
+                     "help": "Accepted extensions: `.jpg`, `.jpeg`, `.png`, `.webp` and `.gif`.",
+                     "name": "imageFilename",
+                     "type": "filename",
+                     "label": "Image Filename",
+                     "semantic": "file:name",
+                     "extension": [
+                      "jpg",
+                      "jpeg",
+                      "png",
+                      "webp",
+                      "gif"
+                     ]
+                    },
+                    {
+                     "name": "imageData",
+                     "type": "buffer",
+                     "label": "Image Data",
+                     "semantic": "file:data"
+                    }
+                   ],
+                   "type": "collection",
+                   "label": "Image"
+                  }
+                 ]
+                }
+               ],
+               "mappable": false
+              },
+              {
+               "help": "Recommended value: `Auto`",
+               "name": "imageDetail",
+               "type": "select",
+               "label": "Image Detail",
+               "options": [
+                {
+                 "label": "Auto",
+                 "value": "auto",
+                 "default": true
+                },
+                {
+                 "label": "High",
+                 "value": "high"
+                },
+                {
+                 "label": "Low",
+                 "value": "low"
+                }
+               ]
+              }
+             ]
+            },
+            {
+             "label": "Assistant",
+             "value": "assistant",
+             "nested": [
+              {
+               "help": "Text content of the message on behalf of the selected __Role__.",
+               "name": "content",
+               "type": "text",
+               "label": "Text Content"
+              }
+             ]
+            },
+            {
+             "label": "Developer / System",
+             "value": "system",
+             "nested": [
+              {
+               "help": "Text content of the message on behalf of the selected __Role__.",
+               "name": "content",
+               "type": "text",
+               "label": "Text Content"
+              }
+             ]
+            }
+           ]
+          },
+          "required": true
+         }
+        ],
+        "type": "collection",
+        "label": "Message"
+       },
+       "type": "array",
+       "label": "Messages",
+       "required": true
+      },
+      {
+       "name": "response_format",
+       "type": "select",
+       "label": "Response Format",
+       "validate": {
+        "enum": [
+         "text",
+         "json_object"
+        ]
+       }
+      },
+      {
+       "name": "prediction",
+       "type": "text",
+       "label": "Predicted Outputs"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "stop": {
+        "mode": "chose"
+       },
+       "model": {
+        "mode": "chose",
+        "label": "gpt-4o-mini (system)"
+       },
+       "select": {
+        "label": "Create a Chat Completion (GPT and o1 models)"
+       },
+       "messages": {
+        "mode": "chose",
+        "items": [
+         {
+          "role": {
+           "mode": "chose",
+           "label": "Assistant"
+          }
+         },
+         {
+          "role": {
+           "mode": "chose",
+           "label": "User"
+          },
+          "imageDetail": {
+           "mode": "chose",
+           "label": "Auto"
+          },
+          "imageInputType": {
+           "mode": "chose",
+           "label": "Empty"
+          }
+         }
+        ]
+       },
+       "logit_bias": {
+        "mode": "chose"
+       },
+       "response_format": {
+        "mode": "chose",
+        "label": "Text"
+       },
+       "additionalParameters": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "openai-gpt-3"
+        },
+        "label": "My OpenAI connection"
+       }
+      }
+     },
+     "designer": {
+      "x": 300,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:openai-gpt-3",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3576859
+    }
+   },
+   {
+    "id": 3,
+    "mapper": {
+     "id": "{{1.recordId}}",
+     "base": "appxqINt5XKw7a76A",
+     "table": "tblADFhWhTcLrl1UY",
+     "record": {
+      "fld3OXhmjYmwkUAAK": "{{2.result}}"
+     },
+     "typecast": false,
+     "useColumnId": false
+    },
+    "module": "airtable:ActionUpdateRecords",
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "base",
+       "type": "select",
+       "label": "Base",
+       "required": true
+      },
+      {
+       "name": "typecast",
+       "type": "boolean",
+       "label": "Smart links",
+       "required": true
+      },
+      {
+       "name": "useColumnId",
+       "type": "boolean",
+       "label": "Use Column ID",
+       "required": true
+      },
+      {
+       "name": "table",
+       "type": "select",
+       "label": "Table",
+       "required": true
+      },
+      {
+       "name": "id",
+       "type": "text",
+       "label": "Record ID",
+       "required": true
+      },
+      {
+       "name": "record",
+       "spec": [
+        {
+         "name": "fldVkWkLFCGP9O1Aw",
+         "type": "text",
+         "label": "Leads Email"
+        },
+        {
+         "name": "fldQAcnN9PrbL7R81",
+         "type": "text",
+         "label": "Leads Name"
+        },
+        {
+         "name": "fldNdJB5rvVpf8V9M",
+         "type": "text",
+         "label": "Subject Line"
+        },
+        {
+         "name": "fldjG76LvUTv60Pzj",
+         "type": "text",
+         "label": "Latest Reply"
+        },
+        {
+         "mode": "edit",
+         "name": "fldr2uNiscZfeCNiT",
+         "type": "select",
+         "label": "Lead Status"
+        },
+        {
+         "mode": "edit",
+         "name": "fldE9bxKtmeRsvG9f",
+         "type": "select",
+         "label": "Last Email Sent"
+        },
+        {
+         "mode": "edit",
+         "name": "fldzd2bHc5XMGidFk",
+         "type": "select",
+         "label": "Push To Client Reply"
+        },
+        {
+         "name": "fldxUxP1jBXt3u7dl",
+         "type": "text",
+         "label": "Inbox Email"
+        },
+        {
+         "name": "fldEv7oM5BJPKJpiR",
+         "type": "text",
+         "label": "Campaign Name"
+        },
+        {
+         "name": "fldCfgm35ZqyVe9xm",
+         "type": "text",
+         "label": "Custom Reply"
+        },
+        {
+         "name": "fldYocEhrAzRUw9sA",
+         "type": "text",
+         "label": "Conversation History"
+        },
+        {
+         "name": "fldT2Nvl3qPmSMsgb",
+         "type": "text",
+         "label": "reply_uuid"
+        },
+        {
+         "mode": "edit",
+         "name": "fldfPPfvAoXw04LVs",
+         "type": "select",
+         "label": "Opportunity Status"
+        },
+        {
+         "name": "fldTFmYUnIXPxgJQS",
+         "time": false,
+         "type": "date",
+         "label": "Date of Call Booked"
+        },
+        {
+         "name": "fldv0o5rhmd7jXDrt",
+         "type": "text",
+         "label": "campaign_id"
+        },
+        {
+         "name": "fldv66oGZQQ9Qscmb",
+         "type": "number",
+         "label": "lead_id"
+        },
+        {
+         "name": "flds1ZqBq2ZW6dVBr",
+         "type": "text",
+         "label": "email_stats_id"
+        },
+        {
+         "name": "fldvARFWnr4H2wC8V",
+         "type": "text",
+         "label": "reply_message_id"
+        },
+        {
+         "name": "fld2IjVEsAijZUjPl",
+         "spec": {
+          "name": "value",
+          "label": "Record ID"
+         },
+         "type": "array",
+         "label": "Templates"
+        },
+        {
+         "name": "fldGkiO630UgVCnv5",
+         "type": "text",
+         "label": "CC (Optional)"
+        },
+        {
+         "name": "fld8K4zasLt6aaRfB",
+         "type": "text",
+         "label": "Phone Number"
+        },
+        {
+         "name": "fldlC9uaoYyYwFvDz",
+         "type": "text",
+         "label": "Linkedin URL"
+        },
+        {
+         "name": "fldRYOE8NaSKxs9tB",
+         "type": "text",
+         "label": "Company Name"
+        },
+        {
+         "name": "fldBNI5MPeDfMELjd",
+         "type": "text",
+         "label": "ESP"
+        },
+        {
+         "name": "fldCjo0mB0snziNZQ",
+         "type": "text",
+         "label": "Workspace ID (Bison)"
+        },
+        {
+         "name": "fld3OXhmjYmwkUAAK",
+         "type": "text",
+         "label": "Reply Explanation"
+        },
+        {
+         "name": "fld3YSJ9JV7976gYP",
+         "spec": {
+          "name": "value",
+          "label": "Record ID"
+         },
+         "type": "array",
+         "label": "Call Feedback"
+        }
+       ],
+       "type": "collection",
+       "label": "Record"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "base": {
+        "label": "Alex"
+       },
+       "table": {
+        "label": "Emails"
+       },
+       "record": {
+        "nested": {
+         "fld2IjVEsAijZUjPl": {
+          "mode": "chose"
+         },
+         "fld3YSJ9JV7976gYP": {
+          "mode": "chose"
+         },
+         "fldE9bxKtmeRsvG9f": {
+          "mode": "edit"
+         },
+         "fldfPPfvAoXw04LVs": {
+          "mode": "edit"
+         },
+         "fldr2uNiscZfeCNiT": {
+          "mode": "edit"
+         },
+         "fldzd2bHc5XMGidFk": {
+          "mode": "edit"
+         }
+        }
+       },
+       "typecast": {
+        "mode": "chose"
+       },
+       "useColumnId": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "airtable3"
+        },
+        "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+       }
+      }
+     },
+     "designer": {
+      "x": 600,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:airtable3,airtable2",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3589602
+    }
+   }
+  ],
+  "name": "[INBOX MANAGER] Explain Reply",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": []
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately"
+  }
+ }
+}

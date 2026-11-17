@@ -1,0 +1,249 @@
+{
+ "id": "wfl5Rj3uBhdk3BP36",
+ "name": "When new user added to Softr x Airtable",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordCreated",
+  "inputs": {
+   "tableId": "tbl8VWzIsWJYJfLUA"
+  }
+ },
+ "nodes": [
+  {
+   "key": "wac6schuNpNPbWLh3",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "Email": {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldE01Huu5atFdpmX"
+       ]
+      }
+     }
+    },
+    "script": "// Get email input from Portal Users\nlet { Email } = input.config();\n\n// Extract domain from email\nif (!Email || !Email.includes('@')) {\n    output.set('matchStatus', '❌ Invalid email');\n    output.set('matchedWebsite', null);\n    output.set('matchedEmail', null);\n    return;\n}\n\nlet domain = Email.split('@')[1].toLowerCase();\n\n// Get records from Onboarding table\nlet onboardingTable = base.getTable(\"Onboarding\");\nlet onboardingRecords = await onboardingTable.selectRecordsAsync({\n    fields: [\"Website Link\", \"Email Address\"]\n});\n\n// Initialize result variables\nlet found = false;\nlet matchedWebsite = null;\nlet matchedEmail = null;\n\nfor (let record of onboardingRecords.records) {\n    let website = record.getCellValueAsString(\"Website Link\")?.toLowerCase() || \"\";\n    let onboardingEmail = record.getCellValueAsString(\"Email Address\")?.toLowerCase() || \"\";\n\n    // Clean website domain (remove http, https, www)\n    let websiteDomain = website\n        .replace(/^https?:\\/\\//, '')\n        .replace(/^www\\./, '')\n        .split('/')[0]\n        .trim();\n\n    // Extract domain from onboarding email (if exists)\n    let emailDomain = onboardingEmail.includes('@') ? onboardingEmail.split('@')[1].trim() : \"\";\n\n    // Match either domain\n    if (domain === websiteDomain || domain === emailDomain) {\n        found = true;\n        matchedWebsite = website;\n        matchedEmail = onboardingEmail;\n        break;\n    }\n}\n\n// Return results\nif (found) {\n    output.set('matchStatus', ' found');\n    output.set('matchedWebsite', matchedWebsite);\n    output.set('matchedEmail', matchedEmail);\n} else {\n    output.set('matchStatus', ' not found');\n    output.set('matchedWebsite', null);\n    output.set('matchedEmail', null);\n}\n"
+   },
+   "outputSchema": [
+    {
+     "name": "matchStatus",
+     "type": "string"
+    },
+    {
+     "name": "matchedWebsite",
+     "type": "string"
+    },
+    {
+     "name": "matchedEmail",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "key": "wdeyAxSJqGkn7uNfX",
+   "type": "conditionalGroup",
+   "branches": [
+    {
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "$ref": "wac6schuNpNPbWLh3",
+         "path": [
+          "matchStatus"
+         ]
+        },
+        "operator": "=",
+        "right": "found",
+        "valueType": "text",
+        "dataType": "literal"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wac6tO5MlaDuLK1kT",
+       "type": "findRecords",
+       "inputs": {
+        "tableId": "tbljhM1JmUwr99tu4",
+        "queryType": "filtersObj",
+        "filtersObj": {
+         "obj": {
+          "operator": "or",
+          "operands": {
+           "tuple": [
+            {
+             "obj": {
+              "operands": {
+               "tuple": [
+                "fld6EvR6lV0EnmVFK",
+                {
+                 "$ref": "wac6schuNpNPbWLh3",
+                 "path": [
+                  "matchedWebsite"
+                 ]
+                }
+               ]
+              },
+              "operator": "=",
+              "operatorOptions": null
+             }
+            },
+            {
+             "obj": {
+              "operands": {
+               "tuple": [
+                "fld0aNQPMhyEZRhn5",
+                {
+                 "$ref": "wac6schuNpNPbWLh3",
+                 "path": [
+                  "matchedEmail"
+                 ]
+                }
+               ]
+              },
+              "operator": "=",
+              "operatorOptions": null
+             }
+            }
+           ]
+          }
+         }
+        },
+        "limit": 1000
+       }
+      },
+      {
+       "key": "wac0zltGTqhR97NY5",
+       "type": "customScript",
+       "inputs": {
+        "inputObj": {
+         "obj": {
+          "companyName": {
+           "fn": "map",
+           "args": [
+            {
+             "fn": "map",
+             "args": [
+              {
+               "$ref": "wac6tO5MlaDuLK1kT",
+               "path": [
+                "records"
+               ]
+              },
+              {
+               "fn": "propertyGetter",
+               "args": [
+                "cellValuesByFieldId"
+               ]
+              }
+             ]
+            },
+            {
+             "fn": "propertyGetter",
+             "args": [
+              "fldVkfXhGnNgKwDYN"
+             ]
+            }
+           ]
+          }
+         }
+        },
+        "script": "// 🔹 Input: Company name to search for (from Onboarding record)\nlet { companyName } = input.config();\n\n// Use only the first name if an array is passed\nlet inputCompany = (companyName[0] || \"\").trim().toLowerCase();\n\nif (!inputCompany) {\n    output.set(\"status\", \"❌ No company name provided\");\n    output.set(\"workspaceRecordID\", null);\n    output.set(\"workspaceName\", null);\n    return;\n}\n\n// 🔹 Reference Workspace IDs table\nlet workspaceTable = base.getTable(\"Workspace IDs\");\nlet records = await workspaceTable.selectRecordsAsync({ fields: [\"Name\"] });\n\n// 🔍 Try to find a matching company name\nlet match = records.records.find(record => {\n    let name = record.getCellValueAsString(\"Name\");\n    return name.trim().toLowerCase() === inputCompany;\n});\n\nif (match) {\n    output.set(\"status\", \" Match found\");\n    output.set(\"workspaceRecordID\", match.id);\n    output.set(\"workspaceName\", match.getCellValueAsString(\"Name\"));\n} else {\n    output.set(\"status\", \" No match\");\n    output.set(\"workspaceRecordID\", null);\n    output.set(\"workspaceName\", null);\n}\n"
+       },
+       "outputSchema": [
+        {
+         "name": "status",
+         "type": "string"
+        },
+        {
+         "name": "workspaceRecordID"
+        },
+        {
+         "name": "workspaceName"
+        }
+       ]
+      },
+      {
+       "key": "wdeBNqr9YYn0bOSdr",
+       "type": "conditionalGroup",
+       "branches": [
+        {
+         "condition": {
+          "conjunction": "and",
+          "conditions": [
+           {
+            "left": {
+             "$ref": "wac0zltGTqhR97NY5",
+             "path": [
+              "status"
+             ]
+            },
+            "operator": "contains",
+            "right": "Match Found",
+            "valueType": "text",
+            "dataType": "literal"
+           }
+          ]
+         },
+         "nodes": [
+          {
+           "key": "wacVzcxll4atSrbhP",
+           "type": "updateRecord",
+           "inputs": {
+            "tableId": "tbljhM1JmUwr99tu4",
+            "rowId": {
+             "template": [
+              {
+               "fn": "map",
+               "args": [
+                {
+                 "$ref": "wac6tO5MlaDuLK1kT",
+                 "path": [
+                  "records"
+                 ]
+                },
+                {
+                 "fn": "propertyGetter",
+                 "args": [
+                  "id"
+                 ]
+                }
+               ]
+              }
+             ]
+            },
+            "updateRecordMethod": "customFields",
+            "fields": {
+             "obj": {
+              "fldNZEHEBArPZSvMZ": {
+               "template": [
+                {
+                 "$ref": "wac0zltGTqhR97NY5",
+                 "path": [
+                  "workspaceRecordID"
+                 ]
+                }
+               ]
+              }
+             }
+            }
+           }
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

@@ -1,0 +1,1051 @@
+{
+ "id": "0ar6c5N31Z-_V0aIqSKz2",
+ "name": "[Email Accounts] EmailBison Disconnected Emails - Rate Limited",
+ "active": true,
+ "isArchived": false,
+ "versionId": "4958377c-dc7e-4879-badf-cb36f33a0931",
+ "triggerCount": 1,
+ "createdAt": "2026-07-23T17:47:08.609Z",
+ "updatedAt": "2026-11-17T16:40:58.081Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Webhook": {
+   "main": [
+    [
+     {
+      "node": "Random intake delay",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Send a message": {
+   "main": [
+    [
+     {
+      "node": "Search records1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records": {
+   "main": [
+    [
+     {
+      "node": "Update record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Update record": {
+   "main": [
+    [
+     {
+      "node": "Wait",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wait": {
+   "main": [
+    [
+     {
+      "node": "HTTP Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records1": {
+   "main": [
+    [
+     {
+      "node": "Create a record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "HTTP Request": {
+   "main": [
+    [
+     {
+      "node": "Filter",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Filter": {
+   "main": [
+    [
+     {
+      "node": "Send a message",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Random intake delay": {
+   "main": [
+    [
+     {
+      "node": "Search records",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    1728,
+    416
+   ],
+   "id": "bd177242-65ec-49ba-90e6-ee1d71238dd6",
+   "name": "Webhook"
+  },
+  {
+   "parameters": {
+    "authentication": "oAuth2",
+    "select": "channel",
+    "channelId": {
+     "__rl": true,
+     "value": "C08FDE9K18E",
+     "mode": "list",
+     "cachedResultName": "campaign-alerts"
+    },
+    "text": "=Workspace: {{ $json.body.event.workspace_name }}\n\nDisconnected email: {{ $json.body.data.sender_email.email }}",
+    "otherOptions": {}
+   },
+   "type": "n8n-nodes-base.slack",
+   "typeVersion": 2.4,
+   "position": [
+    3296,
+    416
+   ],
+   "id": "793c13ed-66fe-4b66-96a2-c25c443ddf51",
+   "name": "Send a message",
+   "webhookId": "761e2b91-74f1-4186-9192-1ef3bac4e8d6"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMSOBJ0wMgxSg4l",
+     "mode": "list",
+     "cachedResultName": "Email Accounts",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblMSOBJ0wMgxSg4l"
+    },
+    "filterByFormula": "={Email ID} = '{{ $('Webhook').item.json.body.data.sender_email.id }}'",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    2176,
+    416
+   ],
+   "id": "290d4f7d-954a-4db4-887b-2a67703be538",
+   "name": "Search records",
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 30000
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMSOBJ0wMgxSg4l",
+     "mode": "list",
+     "cachedResultName": "Email Accounts",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblMSOBJ0wMgxSg4l"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Email ID": "={{ $json['Email ID'] }}",
+      "Last Time Disconnected": "={{ $now }}",
+      "Number of Disconnects": "={{ $json['Number of Disconnects']+1 }}"
+     },
+     "matchingColumns": [
+      "Email ID"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Email Account",
+       "displayName": "Email Account",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Email ID",
+       "displayName": "Email ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Workspace ID",
+       "displayName": "Workspace ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Warmup Start Date",
+       "displayName": "Warmup Start Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Days Since Warmup Started",
+       "displayName": "Days Since Warmup Started",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Number of Disconnects",
+       "displayName": "Number of Disconnects",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Status (from Client)",
+       "displayName": "Status (from Client)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "EmailBison API (from Client)",
+       "displayName": "EmailBison API (from Client)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Created",
+       "displayName": "Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Last Warmup Check",
+       "displayName": "Last Warmup Check",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_enabled",
+       "displayName": "warmup_enabled",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_daily_limit",
+       "displayName": "warmup_daily_limit",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_emails_sent",
+       "displayName": "warmup_emails_sent",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_replies_received",
+       "displayName": "warmup_replies_received",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_emails_saved_from_spam",
+       "displayName": "warmup_emails_saved_from_spam",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_score",
+       "displayName": "warmup_score",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_bounces_received_count",
+       "displayName": "warmup_bounces_received_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_bounces_caused_count",
+       "displayName": "warmup_bounces_caused_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_disabled_for_bouncing_count",
+       "displayName": "warmup_disabled_for_bouncing_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "emails_sent_count",
+       "displayName": "emails_sent_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "total_replied_count",
+       "displayName": "total_replied_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "unsubscribed_count",
+       "displayName": "unsubscribed_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "bounced_count",
+       "displayName": "bounced_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "unique_replied_count",
+       "displayName": "unique_replied_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "total_leads_contacted_count",
+       "displayName": "total_leads_contacted_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "interested_leads_count",
+       "displayName": "interested_leads_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "email_status",
+       "displayName": "email_status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "email_type",
+       "displayName": "email_type",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "email_daily_limit",
+       "displayName": "email_daily_limit",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Time Disconnected",
+       "displayName": "Last Time Disconnected",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Actions",
+       "displayName": "Actions",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Update Daily Limit",
+         "value": "Update Daily Limit"
+        },
+        {
+         "name": "Update Warmup Limit",
+         "value": "Update Warmup Limit"
+        },
+        {
+         "name": "Turn Warmup On",
+         "value": "Turn Warmup On"
+        },
+        {
+         "name": "Turn Warmup Off",
+         "value": "Turn Warmup Off"
+        },
+        {
+         "name": "N/A",
+         "value": "N/A"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {
+     "typecast": true
+    }
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    2400,
+    416
+   ],
+   "id": "a22ed4c8-454e-4cee-84f1-0e1f980417dd",
+   "name": "Update record",
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 30000
+  },
+  {
+   "parameters": {
+    "amount": 15,
+    "unit": "minutes"
+   },
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    2624,
+    416
+   ],
+   "id": "8a73c976-2833-4176-9e32-c5a2b4c99dfa",
+   "name": "Wait",
+   "webhookId": "6d062ceb-e3b7-4247-975c-a6d96b81adc4"
+  },
+  {
+   "parameters": {
+    "url": "=https://send.dulcy.io/api/sender-emails/{{ $('Webhook').item.json.body.data.sender_email.id }}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Search records').item.json['EmailBison API (from Client)'][0] }}"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.3,
+   "position": [
+    2848,
+    416
+   ],
+   "id": "e16d8054-e898-4ee1-bdb8-faed9e335bb4",
+   "name": "HTTP Request",
+   "retryOnFail": true,
+   "maxTries": 6,
+   "waitBetweenTries": 60000
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt"
+    },
+    "filterByFormula": "={ID} = {{ $('Search records').item.json['Workspace ID'] }}",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    3520,
+    416
+   ],
+   "id": "1ae0d763-d7a6-44ff-8c5f-be218f716177",
+   "name": "Search records1",
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 30000
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "c5b6d03f-7517-4128-8dd4-79e6f0e50d90",
+       "leftValue": "={{ $json.data.status }}",
+       "rightValue": "Disconnected",
+       "operator": {
+        "type": "string",
+        "operation": "contains"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.filter",
+   "typeVersion": 2.3,
+   "position": [
+    3072,
+    416
+   ],
+   "id": "b37f0445-4370-49a3-b80d-7820cfa8fce9",
+   "name": "Filter"
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblRBxm2N53331mIm",
+     "mode": "list",
+     "cachedResultName": "Tasks",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblRBxm2N53331mIm"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Task Name": "=Disconnected Email Account: {{ $('HTTP Request').item.json.data.email }}",
+      "Assignee": "=recMSulKeJUQ7phxW",
+      "Client": "={{ [$('Search records1').item.json.id] }}",
+      "Priority": "Medium",
+      "Status": "Not Started",
+      "Notes": "Please reconnect the account in the workspace. If needed, contact inbox provider support.",
+      "Due Date": "={{ DateTime.now().plus({ days: 1 }).toISODate() }}",
+      "Stage": "Planning"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "Task Name",
+       "displayName": "Task Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Campaign",
+       "displayName": "Campaign",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Assignee",
+       "displayName": "Assignee",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Stage",
+       "displayName": "Stage",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Intake",
+         "value": "Intake"
+        },
+        {
+         "name": "Planning",
+         "value": "Planning"
+        },
+        {
+         "name": "Execution",
+         "value": "Execution"
+        },
+        {
+         "name": "Review",
+         "value": "Review"
+        },
+        {
+         "name": "QA",
+         "value": "QA"
+        },
+        {
+         "name": "Completed",
+         "value": "Completed"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Due Date",
+       "displayName": "Due Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Priority",
+       "displayName": "Priority",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Urgent",
+         "value": "Urgent"
+        },
+        {
+         "name": "High",
+         "value": "High"
+        },
+        {
+         "name": "Medium",
+         "value": "Medium"
+        },
+        {
+         "name": "Low",
+         "value": "Low"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Status",
+       "displayName": "Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Not Started",
+         "value": "Not Started"
+        },
+        {
+         "name": "In Progress",
+         "value": "In Progress"
+        },
+        {
+         "name": "Done",
+         "value": "Done"
+        },
+        {
+         "name": "Blocked",
+         "value": "Blocked"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Notes",
+       "displayName": "Notes",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Last Updated",
+       "displayName": "Last Updated",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Created",
+       "displayName": "Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Time Ago",
+       "displayName": "Time Ago",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Calculation",
+       "displayName": "Calculation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Project Health",
+       "displayName": "Project Health",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "On Track",
+         "value": "On Track"
+        },
+        {
+         "name": "At Risk",
+         "value": "At Risk"
+        },
+        {
+         "name": "Overdue",
+         "value": "Overdue"
+        },
+        {
+         "name": "On Hold",
+         "value": "On Hold"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    3744,
+    416
+   ],
+   "id": "1704b0b3-b1d1-424c-b4b2-bb03bf804c3a",
+   "name": "Create a record",
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 30000
+  },
+  {
+   "parameters": {
+    "amount": "={{ Math.floor(Math.random() * 300) + 1 }}"
+   },
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    1952,
+    416
+   ],
+   "id": "6f05c663-5583-4b95-a892-92a22fa0cfb7",
+   "name": "Random intake delay",
+   "webhookId": "4eaab23e-75a8-43ab-bc95-74e46f3a0f13",
+   "notes": "Spreads bulk webhook events across 1-300 seconds so Airtable and EmailBison do not receive every request at once."
+  },
+  {
+   "parameters": {
+    "operation": "send",
+    "phoneNumberId": "1121427017729973",
+    "additionalFields": {}
+   },
+   "type": "n8n-nodes-base.whatsApp",
+   "typeVersion": 1.1,
+   "position": [
+    1728,
+    192
+   ],
+   "id": "00aa8c9e-b5f8-44fc-95b7-2e1d334704a7",
+   "name": "Send message1",
+   "webhookId": "1177aa2f-9005-45cc-8487-223b497b735a"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

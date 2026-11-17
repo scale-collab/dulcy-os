@@ -1,0 +1,110 @@
+{
+ "id": "wflPXWwFPYrsSZPpc",
+ "name": "OOO - Alternative name an email",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordUpdated",
+  "inputs": {
+   "tableId": "tblADFhWhTcLrl1UY",
+   "viewId": "viwPu6cngltdW46Ir",
+   "watchFields": [
+    "fld7lWph2AkRQqtPa"
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacl86QBnB6M016gf",
+   "type": "customScript",
+   "inputs": {
+    "script": "// Get the input configuration\nlet config = input.config();\nlet id = Number(config.id); // Convert to number to match the field type\n\n// Get the table\nlet table = base.getTable('Workspace IDs');\n\n// Query all records from the table\nlet query = await table.selectRecordsAsync();\n\n// Find the record where the \"ID\" field matches our input\nlet matchingRecord = query.records.find(record => {\n    return record.getCellValue('ID') === id;\n});\n\n// Output the result\nif (matchingRecord) {\n    let emailBisonAPI = matchingRecord.getCellValue('EmailBison API');\n    output.set('emailBisonAPI', emailBisonAPI);\n    console.log(`EmailBison API: ${emailBisonAPI}`);\n} else {\n    console.log(`No record found with ID: ${id}`);\n    output.set('emailBisonAPI', null);\n}",
+    "inputObj": {
+     "obj": {
+      "id": {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldCjo0mB0snziNZQ"
+       ]
+      }
+     }
+    }
+   },
+   "outputSchema": [
+    {
+     "name": "emailBisonAPI",
+     "type": "string"
+    }
+   ]
+  },
+  {
+   "key": "wacF80yQgTfaWnsTN",
+   "type": "customScript",
+   "inputs": {
+    "script": "// Alternative-contact new-email sender v3. Future sends only; fail closed.\nconst cfg = input.config();\nconst RECORD_ID = String(cfg.recordId || '');\nconst SENDER_EMAIL_ID = String(cfg.senderEmailId || '');\nconst API_TOKEN = String(cfg.api_key || '');\nconst SEND_GATE = cfg.sendGate === true;\nconst API_ROOT = 'https://send.dulcy.io/api';\nconst table = base.getTable('Emails');\n\nfunction address(value) {\n  if (value && typeof value === 'object') return address(value.address || value.email_address || value.email || '');\n  const text = String(value || '').trim().toLowerCase();\n  const angle = text.match(/<([^<>]+)>/);\n  return (angle ? angle[1] : text).trim();\n}\n\nfunction validEmail(value) {\n  return /^[^\\s<>@]+@[^\\s<>@]+\\.[^\\s<>@]+$/.test(value);\n}\n\nasync function requestJson(url, options = {}) {\n  const response = await fetch(url, {\n    ...options,\n    headers: {\n      Authorization: `Bearer ${API_TOKEN}`,\n      'Content-Type': 'application/json',\n      ...(options.headers || {}),\n    },\n  });\n  const raw = await response.text();\n  let payload = {};\n  if (raw) {\n    try { payload = JSON.parse(raw); }\n    catch { throw new Error(`EmailBison returned non-JSON HTTP ${response.status}`); }\n  }\n  if (!response.ok || payload?.error || payload?.success === false) {\n    throw new Error(`EmailBison request failed with HTTP ${response.status}`);\n  }\n  return payload;\n}\n\nfunction rowsFrom(payload) {\n  if (Array.isArray(payload?.data)) return payload.data;\n  if (Array.isArray(payload?.data?.data)) return payload.data.data;\n  if (Array.isArray(payload?.records)) return payload.records;\n  return [];\n}\n\nasync function authoritativeAccounts() {\n  const accounts = [];\n  for (let page = 1; page <= 100; page += 1) {\n    const payload = await requestJson(`${API_ROOT}/sender-emails?per_page=100&page=${page}`);\n    accounts.push(...rowsFrom(payload));\n    const meta = payload?.meta || payload?.data?.meta || {};\n    const current = Number(meta.current_page || page);\n    const last = Number(meta.last_page || current);\n    const next = payload?.next_page_url || payload?.links?.next || meta.next_page_url;\n    if (!next && current >= last) return accounts;\n    if (!next && !Number.isFinite(last)) throw new Error('Sender account pagination is ambiguous');\n  }\n  throw new Error('Sender account pagination exceeded the safety limit');\n}\n\nfunction explicitTime(raw) {\n  if (typeof raw !== 'string' || !/(?:Z|[+-]\\d{2}:?\\d{2}|\\b(?:UT|UTC|GMT))\\s*(?:\\([^)]*\\))?$/i.test(raw.trim())) return null;\n  const millis = Date.parse(raw);\n  return Number.isFinite(millis) ? new Date(millis).toISOString() : null;\n}\n\nfunction confirmedSend(payload) {\n  const reply = payload?.data?.reply || payload?.data || {};\n  const id = String(reply.id || reply.uuid || '');\n  const status = String(reply.folder || reply.status || '').toLowerCase();\n  const sentAt = explicitTime(reply.sent_at)\n    || explicitTime(reply.date_sent)\n    || (String(reply.type || '').toLowerCase() === 'outgoing email' ? explicitTime(reply.date_received) : null);\n  if (!id || !['sent', 'delivered'].includes(status) || !sentAt || Date.parse(sentAt) > Date.now() + 60000) {\n    throw new Error('Submission is unconfirmed or queued. Do not mark sent or retry automatically; reconcile by provider message ID.');\n  }\n  return { id, sentAt };\n}\n\nif (!SEND_GATE) throw new Error('Send gate is not checked');\nif (!RECORD_ID || !SENDER_EMAIL_ID || !API_TOKEN) throw new Error('Missing record, sender, or API identity');\nconst record = await table.selectRecordAsync(RECORD_ID);\nif (!record) throw new Error('Record not found');\n\nconst recipient = address(cfg.alt_email);\nconst recipientName = String(cfg.alt_name || '').trim();\nconst subject = String(cfg.subject || '').trim();\nconst body = String(cfg.body || '');\nif (!validEmail(recipient) || !subject || !body.trim()) throw new Error('Missing or invalid alternative contact, subject, or body');\n\nconst senderPayload = await requestJson(`${API_ROOT}/sender-emails/${encodeURIComponent(SENDER_EMAIL_ID)}`);\nconst sender = senderPayload?.data;\nconst senderAddress = address(sender);\nif (!sender || String(sender.id) !== SENDER_EMAIL_ID || !validEmail(senderAddress)) {\n  throw new Error('Authoritative sender account unavailable or mismatched');\n}\nconst accounts = await authoritativeAccounts();\nconst internalAddresses = new Set(accounts.map(address).filter(validEmail));\ninternalAddresses.add(senderAddress);\nif (internalAddresses.has(recipient)) throw new Error('Alternative recipient is the sender or a known sender alias');\n\nconst result = await requestJson(`${API_ROOT}/replies/new`, {\n  method: 'POST',\n  body: JSON.stringify({\n    subject,\n    message: body,\n    sender_email_id: Number(SENDER_EMAIL_ID),\n    use_dedicated_ips: true,\n    content_type: 'html',\n    to_emails: [{ name: recipientName, email_address: recipient }],\n  }),\n});\nconst confirmation = confirmedSend(result);\n\nawait table.updateRecordAsync(RECORD_ID, {\n  'OOO - Subsequence Email Sent': true,\n});\noutput.set('providerMessageId', confirmation.id);\noutput.set('sentAt', confirmation.sentAt);",
+    "inputObj": {
+     "obj": {
+      "recordId": {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      },
+      "senderEmailId": {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "flds1ZqBq2ZW6dVBr"
+       ]
+      },
+      "api_key": {
+       "$ref": "wacl86QBnB6M016gf",
+       "path": [
+        "emailBisonAPI"
+       ]
+      },
+      "alt_name": {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldCDGcTRfsZc6zA8"
+       ]
+      },
+      "subject": {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldXyhJdaLygDLiJG"
+       ]
+      },
+      "body": {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldp9PPhWuxYKHeNN"
+       ]
+      },
+      "alt_email": {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldqGLoQQasBw4Dto"
+       ]
+      },
+      "sendGate": {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fld7lWph2AkRQqtPa"
+       ]
+      }
+     }
+    }
+   }
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

@@ -1,0 +1,171 @@
+{
+ "id": "wfl5rYBLakhCLIJ8l",
+ "name": "Send Message (Heyreach)",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "inputReceivedFromConnection",
+  "inputs": {
+   "tableId": "tblADFhWhTcLrl1UY"
+  }
+ },
+ "nodes": [
+  {
+   "key": "wacBcZ9FLiqJhm542",
+   "type": "findRecords",
+   "inputs": {
+    "tableId": "tblcjRBGJEWh5KgOt",
+    "queryType": "filtersObj",
+    "filtersObj": {
+     "obj": {
+      "operator": "and",
+      "operands": {
+       "tuple": [
+        {
+         "obj": {
+          "operands": {
+           "tuple": [
+            "fldLXrz8jrMuR22xQ",
+            {
+             "$ref": "trigger",
+             "path": [
+              "cellValuesByFieldId",
+              "fldkBI4eHyZCZiOWt"
+             ]
+            }
+           ]
+          },
+          "operator": "=",
+          "operatorOptions": null
+         }
+        }
+       ]
+      }
+     }
+    },
+    "limit": 1
+   }
+  },
+  {
+   "key": "wacs4Rgp6aw7xQF13",
+   "type": "customScript",
+   "inputs": {
+    "inputObj": {
+     "obj": {
+      "api": {
+       "fn": "map",
+       "args": [
+        {
+         "fn": "map",
+         "args": [
+          {
+           "$ref": "wacBcZ9FLiqJhm542",
+           "path": [
+            "records"
+           ]
+          },
+          {
+           "fn": "propertyGetter",
+           "args": [
+            "cellValuesByFieldId"
+           ]
+          }
+         ]
+        },
+        {
+         "fn": "propertyGetter",
+         "args": [
+          "fldpkIAiF8f5cPoih"
+         ]
+        }
+       ]
+      },
+      "convoid": {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldHMkE8BHLK79MOv"
+       ]
+      },
+      "message": {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fld1NKr1MMJ1GCNNO"
+       ]
+      },
+      "senderid": {
+       "$ref": "trigger",
+       "path": [
+        "cellValuesByFieldId",
+        "fldn8061QIRjA57DF"
+       ]
+      }
+     }
+    },
+    "script": "const inputData = input.config();\n\n// ---- DEBUG: show what we got (this is the #1 fix in cases like this)\nconsole.log(\"RAW inputData:\", JSON.stringify(inputData, null, 2));\n\n// Accept multiple possible variable names (because yours changed a few times)\nconst apiKey = inputData.api;\n\n// message can be stored as \"message\" or \"customReply\"\nconst message = inputData.message || inputData.customReply;\n\n// subject optional — if blank, just reuse message\nconst subject = inputData.subject || \"Hi there\";\n\n// conversationId can be \"convoid\" or \"convo_id\" or \"conversationId\"\nconst conversationId =\n  inputData.convoid ||\n  inputData.convo_id ||\n  inputData.conversationId;\n\n// linkedInAccountId can be \"sender_id\" or \"senderid\"\nconst linkedInAccountIdRaw =\n  inputData.sender_id ||\n  inputData.senderid ||\n  inputData.linkedInAccountId;\n\nconst linkedInAccountId = Number(linkedInAccountIdRaw);\n\n// ---- HARD VALIDATION so you get a useful error BEFORE calling HeyReach\nif (!apiKey) throw new Error(\"Missing api (HeyReach API key).\");\nif (!message) throw new Error(\"Missing message/customReply.\");\nif (!conversationId) throw new Error(\"Missing conversationId (convoid/convo_id).\");\nif (!linkedInAccountIdRaw) throw new Error(\"Missing sender_id (LinkedIn account id).\");\nif (Number.isNaN(linkedInAccountId)) {\n  throw new Error(`sender_id must be a number. Got: ${linkedInAccountIdRaw}`);\n}\n\n// ---- REQUEST\nconst url = \"https://api.heyreach.io/api/public/inbox/SendMessage\";\n\nconst body = {\n  message,\n  subject,\n  conversationId,\n  linkedInAccountId,\n};\n\nconsole.log(\"SENDING body:\", JSON.stringify(body, null, 2));\n\nconst response = await fetch(url, {\n  method: \"POST\",\n  headers: {\n    \"X-API-KEY\": apiKey,\n    \"Content-Type\": \"application/json\",\n    \"Accept\": \"text/plain\",\n  },\n  body: JSON.stringify(body),\n});\n\nconst text = await response.text();\n\nconsole.log(\"STATUS:\", response.status);\nconsole.log(\"RESPONSE:\", text);\n\nif (!response.ok) {\n  throw new Error(`HeyReach error ${response.status}: ${text}`);\n}\n\nreturn { ok: true, status: response.status, response: text, sentBody: body };"
+   },
+   "outputSchema": []
+  },
+  {
+   "key": "wacuCwEQpE4L2XXbE",
+   "type": "updateRecord",
+   "inputs": {
+    "tableId": "tblADFhWhTcLrl1UY",
+    "rowId": {
+     "template": [
+      {
+       "$ref": "trigger",
+       "path": [
+        "id"
+       ]
+      }
+     ]
+    },
+    "updateRecordMethod": "customFields",
+    "fields": {
+     "obj": {
+      "fldNro9b4pwGpSMCC": {
+       "template": [
+        "SENT:\n ",
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fld1NKr1MMJ1GCNNO"
+         ]
+        },
+        " \n\n▃▃▃▃▃▃▃▃▃▃▃▃ \nReply:\n ",
+        {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldNro9b4pwGpSMCC"
+         ]
+        }
+       ]
+      },
+      "fld7jpK3tgsbX0fTw": {
+       "obj": {
+        "id": "selnCU29VWYfblbZR"
+       }
+      },
+      "fld1NKr1MMJ1GCNNO": {
+       "template": [
+        ""
+       ]
+      },
+      "fldSuQyvPM3IlS5oD": {
+       "obj": {
+        "id": "selCdMaB9L7eykuvt"
+       }
+      }
+     }
+    }
+   }
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

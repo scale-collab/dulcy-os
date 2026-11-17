@@ -1,0 +1,5766 @@
+{
+ "id": "ewcunE4ck0jS6IZh",
+ "name": "Manual Emails Sent (Including Dulcy Reply Agent)",
+ "active": true,
+ "isArchived": false,
+ "versionId": "117a756d-5f01-4b85-a162-48b49ae2d9bb",
+ "triggerCount": 1,
+ "createdAt": "2025-11-10T18:28:50.056Z",
+ "updatedAt": "2026-11-17T16:44:07.659Z",
+ "settings": {
+  "executionOrder": "v1",
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Webhook": {
+   "main": [
+    [
+     {
+      "node": "Filter1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records": {
+   "main": [
+    [
+     {
+      "node": "Select Existing Conversation",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "If": {
+   "main": [
+    [
+     {
+      "node": "Update record",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Search records1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Update record": {
+   "main": [
+    [
+     {
+      "node": "Admit Manual History Event - Existing",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Filter": {
+   "main": [
+    [
+     {
+      "node": "Update record1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records1": {
+   "main": [
+    [
+     {
+      "node": "Search records2",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records2": {
+   "main": [
+    [
+     {
+      "node": "Prepare Create Claim Create_a_record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Filter1": {
+   "main": [
+    [
+     {
+      "node": "Resolve Manual Contact Identity",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Manual Learning": {
+   "main": [
+    [
+     {
+      "node": "Find Manual Learning Example",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Find Manual Learning Example": {
+   "main": [
+    [
+     {
+      "node": "Skip Existing Learning Example",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Skip Existing Learning Example": {
+   "main": [
+    [
+     {
+      "node": "Save Manual Learning Candidate",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Resolve Manual Contact Identity": {
+   "main": [
+    [
+     {
+      "node": "Search records",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Select Existing Conversation": {
+   "main": [
+    [
+     {
+      "node": "Need Original Thread?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Need Original Thread?": {
+   "main": [
+    [
+     {
+      "node": "Get Conversation Workspace",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Prepare Manual History Admission",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Conversation Workspace": {
+   "main": [
+    [
+     {
+      "node": "Read Original Conversation",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read Original Conversation": {
+   "main": [
+    [
+     {
+      "node": "Select Verified Thread Record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Select Verified Thread Record": {
+   "main": [
+    [
+     {
+      "node": "Prepare Manual History Admission",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Manual History Admission": {
+   "main": [
+    [
+     {
+      "node": "If",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Admit Manual History Event - Existing": {
+   "main": [
+    [
+     {
+      "node": "Filter",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Prepare Manual Learning",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Schedule next approval-required follow-up",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create a record": {
+   "main": [
+    [
+     {
+      "node": "Admit Manual History Event - New",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Create Claim Create_a_record": {
+   "main": [
+    [
+     {
+      "node": "Claim Conversation Create_a_record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Claim Conversation Create_a_record": {
+   "main": [
+    [
+     {
+      "node": "Check Create Claim Create_a_record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Check Create Claim Create_a_record": {
+   "main": [
+    [
+     {
+      "node": "Create a record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    -3952,
+    976
+   ],
+   "id": "b43de192-485a-4147-9b8a-f5f7cfb13a56",
+   "name": "Webhook"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblADFhWhTcLrl1UY",
+     "mode": "list",
+     "cachedResultName": "Emails",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY"
+    },
+    "filterByFormula": "={{ $json.contactFormula }}",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -3280,
+    976
+   ],
+   "id": "8c5f17c2-2338-4b5c-ba57-bfc16ffd95f8",
+   "name": "Search records",
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "984e47f4-de45-4502-81a6-662968d5accc",
+       "leftValue": "={{ $json['Leads Email'] }}",
+       "rightValue": "",
+       "operator": {
+        "type": "string",
+        "operation": "exists",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.3,
+   "position": [
+    -1712,
+    976
+   ],
+   "id": "dbcd6070-e71a-476b-8bd1-059fe9bb1983",
+   "name": "If"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblADFhWhTcLrl1UY",
+     "mode": "list",
+     "cachedResultName": "Emails",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "id": "={{ $json.id }}",
+      "Last Email Sent": "Last Email Sent By Dulcy",
+      "Last Sent From": "Outside Airtable",
+      "First Response At": "={{ $json['First Response At'] || $('Resolve Manual Contact Identity').first().json.manualSentAt || undefined }}",
+      "Touchpoints to Meeting": "={{ Number($json['Touchpoints to Meeting'] || 0) + 1 }}",
+      "Phone Number": "={{ $json['Phone Number'] || $('Resolve Manual Contact Identity').first().json.manualIdentity.phone || undefined }}",
+      "OOO - Subsequence Email Sent": "={{ $json._oooReceiptConfirmed === true ? true : $json['OOO - Subsequence Email Sent'] }}",
+      "Original Campaign Email": "={{ $json['Original Campaign Email'] || $('Resolve Manual Contact Identity').first().json.body.data.lead?.email || undefined }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": false
+      },
+      {
+       "id": "Leads Email",
+       "displayName": "Leads Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Leads Name",
+       "displayName": "Leads Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Pipeline Stage",
+       "displayName": "Pipeline Stage",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "New Interested",
+         "value": "New Interested"
+        },
+        {
+         "name": "In Conversation",
+         "value": "In Conversation"
+        },
+        {
+         "name": "Booked Meeting",
+         "value": "Booked Meeting"
+        },
+        {
+         "name": "Completed Meeting",
+         "value": "Completed Meeting"
+        },
+        {
+         "name": "Closed Deal",
+         "value": "Closed Deal"
+        },
+        {
+         "name": "Closed -- Not Moving Forward",
+         "value": "Closed -- Not Moving Forward"
+        },
+        {
+         "name": "Lost",
+         "value": "Lost"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Subject Line",
+       "displayName": "Subject Line",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Latest Reply",
+       "displayName": "Latest Reply",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Lead Status",
+       "displayName": "Lead Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Wrong Person",
+         "value": "Wrong Person"
+        },
+        {
+         "name": "Out Of Office",
+         "value": "Out Of Office"
+        },
+        {
+         "name": "Information Request",
+         "value": "Information Request"
+        },
+        {
+         "name": "Do Not Contact",
+         "value": "Do Not Contact"
+        },
+        {
+         "name": "Not Interested",
+         "value": "Not Interested"
+        },
+        {
+         "name": "Meeting Request",
+         "value": "Meeting Request"
+        },
+        {
+         "name": "Interested",
+         "value": "Interested"
+        },
+        {
+         "name": "Untracked Spam",
+         "value": "Untracked Spam"
+        },
+        {
+         "name": "Bounced",
+         "value": "Bounced"
+        },
+        {
+         "name": "Info Request",
+         "value": "Info Request"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Email Sending Provider",
+       "displayName": "Email Sending Provider",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Google",
+         "value": "Google"
+        },
+        {
+         "name": "Outlook",
+         "value": "Outlook"
+        },
+        {
+         "name": "Custom Mail Server",
+         "value": "Custom Mail Server"
+        },
+        {
+         "name": "Zoho",
+         "value": "Zoho"
+        },
+        {
+         "name": "Mimecast",
+         "value": "Mimecast"
+        },
+        {
+         "name": "Proofpoint",
+         "value": "Proofpoint"
+        },
+        {
+         "name": "Barracuda",
+         "value": "Barracuda"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Master Inbox",
+       "displayName": "Master Inbox",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Last Email Sent",
+       "displayName": "Last Email Sent",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Last Email Sent By Dulcy",
+         "value": "Last Email Sent By Dulcy"
+        },
+        {
+         "name": "Last Email Sent By Prospect",
+         "value": "Last Email Sent By Prospect"
+        },
+        {
+         "name": "btufano@treeworks.com",
+         "value": "btufano@treeworks.com"
+        },
+        {
+         "name": "Custom Reply",
+         "value": "Custom Reply"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Push To Client Reply",
+       "displayName": "Push To Client Reply",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Sending to Client",
+         "value": "Sending to Client"
+        },
+        {
+         "name": "Sent to Client",
+         "value": "Sent to Client"
+        },
+        {
+         "name": "Client Responded",
+         "value": "Client Responded"
+        },
+        {
+         "name": "Client Response Sent",
+         "value": "Client Response Sent"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Reply",
+       "displayName": "Last Reply",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Current Time",
+       "displayName": "Current Time",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Last Reply Since",
+       "displayName": "Last Reply Since",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Unattended Reply Time:",
+       "displayName": "Unattended Reply Time:",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Inbox Email",
+       "displayName": "Inbox Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Campaign Name",
+       "displayName": "Campaign Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Custom Reply",
+       "displayName": "Custom Reply",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Status timestamp",
+       "displayName": "Status timestamp",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Conversation History",
+       "displayName": "Conversation History",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Last Lead Interaction",
+       "displayName": "Last Lead Interaction",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "lead + camp",
+       "displayName": "lead + camp",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "reply_uuid",
+       "displayName": "reply_uuid",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Master Inbox Link",
+       "displayName": "Master Inbox Link",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Conversation History (LinkedIn)",
+       "displayName": "Conversation History (LinkedIn)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Latest Reply (LinkedIn)",
+       "displayName": "Latest Reply (LinkedIn)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Lead Status (LinkedIn)",
+       "displayName": "Lead Status (LinkedIn)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Wrong Person",
+         "value": "Wrong Person"
+        },
+        {
+         "name": "Out Of Office",
+         "value": "Out Of Office"
+        },
+        {
+         "name": "Information Request",
+         "value": "Information Request"
+        },
+        {
+         "name": "Do Not Contact",
+         "value": "Do Not Contact"
+        },
+        {
+         "name": "Not Interested",
+         "value": "Not Interested"
+        },
+        {
+         "name": "Meeting Request",
+         "value": "Meeting Request"
+        },
+        {
+         "name": "Interested",
+         "value": "Interested"
+        },
+        {
+         "name": "Untracked Spam",
+         "value": "Untracked Spam"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Master Inbox (LinkedIn)",
+       "displayName": "Master Inbox (LinkedIn)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Master Inbox Link (LinkedIn)",
+       "displayName": "Master Inbox Link (LinkedIn)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Last Message Sent (LinkedIn)",
+       "displayName": "Last Message Sent (LinkedIn)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Last Email Sent By Dulcy",
+         "value": "Last Email Sent By Dulcy"
+        },
+        {
+         "name": "Last Email Sent By Prospect",
+         "value": "Last Email Sent By Prospect"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Custom Reply (LinkedIn)",
+       "displayName": "Custom Reply (LinkedIn)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "sender_id",
+       "displayName": "sender_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "convo_id",
+       "displayName": "convo_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "campaign_idlinkedin",
+       "displayName": "campaign_idlinkedin",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "workspace_id",
+       "displayName": "workspace_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "list_id",
+       "displayName": "list_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "lead_idlinkedin",
+       "displayName": "lead_idlinkedin",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Opportunity Status",
+       "displayName": "Opportunity Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "LOST",
+         "value": "LOST"
+        },
+        {
+         "name": "WON",
+         "value": "WON"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Opp Last Modified",
+       "displayName": "Opp Last Modified",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Date of Call Booked",
+       "displayName": "Date of Call Booked",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "campaign_id",
+       "displayName": "campaign_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "lead_id",
+       "displayName": "lead_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "email_stats_id",
+       "displayName": "email_stats_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "reply_message_id",
+       "displayName": "reply_message_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Templates",
+       "displayName": "Templates",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Template Body",
+       "displayName": "Template Body",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "CC (Optional)",
+       "displayName": "CC (Optional)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Bounce Type",
+       "displayName": "Bounce Type",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Hard Bounce",
+         "value": "Hard Bounce"
+        },
+        {
+         "name": "Soft Bounce",
+         "value": "Soft Bounce"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Bounce Code",
+       "displayName": "Bounce Code",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "554",
+         "value": "554"
+        },
+        {
+         "name": "553",
+         "value": "553"
+        },
+        {
+         "name": "552",
+         "value": "552"
+        },
+        {
+         "name": "551",
+         "value": "551"
+        },
+        {
+         "name": "550",
+         "value": "550"
+        },
+        {
+         "name": "452",
+         "value": "452"
+        },
+        {
+         "name": "451",
+         "value": "451"
+        },
+        {
+         "name": "450",
+         "value": "450"
+        },
+        {
+         "name": "421",
+         "value": "421"
+        },
+        {
+         "name": "Unk",
+         "value": "Unk"
+        },
+        {
+         "name": "454",
+         "value": "454"
+        },
+        {
+         "name": "521",
+         "value": "521"
+        },
+        {
+         "name": "479",
+         "value": "479"
+        },
+        {
+         "name": "503",
+         "value": "503"
+        },
+        {
+         "name": "525",
+         "value": "525"
+        },
+        {
+         "name": "528",
+         "value": "528"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Linkedin URL",
+       "displayName": "Linkedin URL",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "linkedin_url",
+       "displayName": "linkedin_url",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Phone Number",
+       "displayName": "Phone Number",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Model ID (PRE)",
+       "displayName": "AI Model ID (PRE)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Model ID (APTR)",
+       "displayName": "AI Model ID (APTR)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Sent From Number",
+       "displayName": "Sent From Number",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Called?",
+       "displayName": "AI Called?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call ID",
+       "displayName": "Call ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Recording",
+       "displayName": "Call Recording",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Transcript",
+       "displayName": "Call Transcript",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "DNC",
+       "displayName": "DNC",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Times Called (Identifier)",
+       "displayName": "Times Called (Identifier)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Follow Up Counter",
+       "displayName": "Follow Up Counter",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "SMS Latest Reply",
+       "displayName": "SMS Latest Reply",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "SMS Conversation History",
+       "displayName": "SMS Conversation History",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "SMS Custom Reply",
+       "displayName": "SMS Custom Reply",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last SMS Sent",
+       "displayName": "Last SMS Sent",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Last Email Sent By Dulcy",
+         "value": "Last Email Sent By Dulcy"
+        },
+        {
+         "name": "Last Email Sent By Prospect",
+         "value": "Last Email Sent By Prospect"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Status",
+       "displayName": "Call Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Answered Call [INTERESTED (Booked Appointment)]",
+         "value": "Answered Call [INTERESTED (Booked Appointment)]"
+        },
+        {
+         "name": "Answered Call [INTERESTED (Didn't Booked Appointment)]",
+         "value": "Answered Call [INTERESTED (Didn't Booked Appointment)]"
+        },
+        {
+         "name": "Answered Call [BUSY (Call-Back Requested)]",
+         "value": "Answered Call [BUSY (Call-Back Requested)]"
+        },
+        {
+         "name": "Answered Call [BUSY (No Call-Back Requested)]",
+         "value": "Answered Call [BUSY (No Call-Back Requested)]"
+        },
+        {
+         "name": "Answered Call [NOT INTERESTED]",
+         "value": "Answered Call [NOT INTERESTED]"
+        },
+        {
+         "name": "Answered Call [TURNED DNC]",
+         "value": "Answered Call [TURNED DNC]"
+        },
+        {
+         "name": "Answered Call [NONE]",
+         "value": "Answered Call [NONE]"
+        },
+        {
+         "name": "Call Failed",
+         "value": "Call Failed"
+        },
+        {
+         "name": "Reached Voicemail",
+         "value": "Reached Voicemail"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "convo_history_plain",
+       "displayName": "convo_history_plain",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Company Name",
+       "displayName": "Company Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Lead Created",
+       "displayName": "Lead Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "ESP",
+       "displayName": "ESP",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Workspace ID (Bison)",
+       "displayName": "Workspace ID (Bison)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Workspace ID Formula",
+       "displayName": "Workspace ID Formula",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Reply Explanation",
+       "displayName": "Reply Explanation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Feedback",
+       "displayName": "Call Feedback",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Status (from Call Feedback)",
+       "displayName": "Call Status (from Call Feedback)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "How was the call? (from Call Feedback)",
+       "displayName": "How was the call? (from Call Feedback)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Notes (from Call Feedback)",
+       "displayName": "Notes (from Call Feedback)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Link to sales call (from Call Feedback)",
+       "displayName": "Link to sales call (from Call Feedback)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Client Closed Deals",
+       "displayName": "Client Closed Deals",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Deal Value (USD) (from Client Closed Deals)",
+       "displayName": "Deal Value (USD) (from Client Closed Deals)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Deal Closed Date (from Client Closed Deals)",
+       "displayName": "Deal Closed Date (from Client Closed Deals)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Deal Type (from Client Closed Deals)",
+       "displayName": "Deal Type (from Client Closed Deals)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Why They Said Yes (from Client Closed Deals)",
+       "displayName": "Why They Said Yes (from Client Closed Deals)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "OOO - Back In The Office - Date",
+       "displayName": "OOO - Back In The Office - Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "OOO - Back In The Office - Days Left",
+       "displayName": "OOO - Back In The Office - Days Left",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "OOO - Subsequence Email Sent",
+       "displayName": "OOO - Subsequence Email Sent",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "OOO - First Name",
+       "displayName": "OOO - First Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "duplicate_for_tests",
+       "displayName": "duplicate_for_tests",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "skip_request_call_feedback",
+       "displayName": "skip_request_call_feedback",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "internal_call_feedback_url_softr",
+       "displayName": "internal_call_feedback_url_softr",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "internal_close_deal_url_softr",
+       "displayName": "internal_close_deal_url_softr",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Clients Table",
+       "displayName": "Clients Table",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "domain exclusion",
+       "displayName": "domain exclusion",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Alternative Contact Email",
+       "displayName": "Alternative Contact Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Alternative Email: Automation",
+       "displayName": "Alternative Email: Automation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Email sent to alternative email",
+       "displayName": "Email sent to alternative email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Alternative Contact Name",
+       "displayName": "Alternative Contact Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Latest Reply Time",
+       "displayName": "Latest Reply Time",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Send alt email",
+       "displayName": "Send alt email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Subject for alt email",
+       "displayName": "Subject for alt email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Sent From",
+       "displayName": "Last Sent From",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Airtable",
+         "value": "Airtable"
+        },
+        {
+         "name": "Outside Airtable",
+         "value": "Outside Airtable"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "last_updated_time",
+       "displayName": "last_updated_time",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "in conversation trigger",
+       "displayName": "in conversation trigger",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Campaign",
+       "displayName": "Campaign",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Sales Data",
+       "displayName": "Sales Data",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Dulcy Reply Agent State",
+       "displayName": "Dulcy Reply Agent State",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Received",
+         "value": "Received"
+        },
+        {
+         "name": "Drafting",
+         "value": "Drafting"
+        },
+        {
+         "name": "Needs Approval",
+         "value": "Needs Approval"
+        },
+        {
+         "name": "Approved",
+         "value": "Approved"
+        },
+        {
+         "name": "Scheduled",
+         "value": "Scheduled"
+        },
+        {
+         "name": "Sending",
+         "value": "Sending"
+        },
+        {
+         "name": "Sent",
+         "value": "Sent"
+        },
+        {
+         "name": "Skipped",
+         "value": "Skipped"
+        },
+        {
+         "name": "Suppressed",
+         "value": "Suppressed"
+        },
+        {
+         "name": "Paused",
+         "value": "Paused"
+        },
+        {
+         "name": "Failed",
+         "value": "Failed"
+        },
+        {
+         "name": "Thread Complete",
+         "value": "Thread Complete"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Dulcy Reply Agent Intent",
+       "displayName": "Dulcy Reply Agent Intent",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Interested",
+         "value": "Interested"
+        },
+        {
+         "name": "Info Request",
+         "value": "Info Request"
+        },
+        {
+         "name": "Meeting Request",
+         "value": "Meeting Request"
+        },
+        {
+         "name": "Cost Objection",
+         "value": "Cost Objection"
+        },
+        {
+         "name": "Process Objection",
+         "value": "Process Objection"
+        },
+        {
+         "name": "Not Interested",
+         "value": "Not Interested"
+        },
+        {
+         "name": "Do Not Contact",
+         "value": "Do Not Contact"
+        },
+        {
+         "name": "Out of Office",
+         "value": "Out of Office"
+        },
+        {
+         "name": "Check Back Later",
+         "value": "Check Back Later"
+        },
+        {
+         "name": "Referred",
+         "value": "Referred"
+        },
+        {
+         "name": "Wrong Person",
+         "value": "Wrong Person"
+        },
+        {
+         "name": "Automatic Reply",
+         "value": "Automatic Reply"
+        },
+        {
+         "name": "Other",
+         "value": "Other"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Dulcy Reply Agent Confidence",
+       "displayName": "Dulcy Reply Agent Confidence",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Dulcy Reply Agent Draft",
+       "displayName": "Dulcy Reply Agent Draft",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Dulcy Reply Agent Policy Decision",
+       "displayName": "Dulcy Reply Agent Policy Decision",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Dulcy Reply Agent Due At",
+       "displayName": "Dulcy Reply Agent Due At",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Dulcy Reply Agent Human Action",
+       "displayName": "Dulcy Reply Agent Human Action",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "None",
+         "value": "None"
+        },
+        {
+         "name": "Approve Draft",
+         "value": "Approve Draft"
+        },
+        {
+         "name": "Send Edited Reply",
+         "value": "Send Edited Reply"
+        },
+        {
+         "name": "Skip",
+         "value": "Skip"
+        },
+        {
+         "name": "Pause",
+         "value": "Pause"
+        },
+        {
+         "name": "Resume",
+         "value": "Resume"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Dulcy Reply Agent Workspace Record ID",
+       "displayName": "Dulcy Reply Agent Workspace Record ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Dulcy Reply Agent Event ID",
+       "displayName": "Dulcy Reply Agent Event ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Dulcy Reply Agent Sender Email ID",
+       "displayName": "Dulcy Reply Agent Sender Email ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Dulcy Reply Agent Attempt Count",
+       "displayName": "Dulcy Reply Agent Attempt Count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Dulcy Reply Agent Sent At",
+       "displayName": "Dulcy Reply Agent Sent At",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Dulcy Reply Agent Last Error",
+       "displayName": "Dulcy Reply Agent Last Error",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Dulcy Reply Agent Updated At",
+       "displayName": "Dulcy Reply Agent Updated At",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Dulcy Reply Agent Suppression Reason",
+       "displayName": "Dulcy Reply Agent Suppression Reason",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Dulcy Reply Agent Follow-up Type",
+       "displayName": "Dulcy Reply Agent Follow-up Type",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "None",
+         "value": "None"
+        },
+        {
+         "name": "Out of Office",
+         "value": "Out of Office"
+        },
+        {
+         "name": "Check Back Later",
+         "value": "Check Back Later"
+        },
+        {
+         "name": "No Response",
+         "value": "No Response"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Reply Ownership",
+       "displayName": "Reply Ownership",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Dulcy Agent",
+         "value": "Dulcy Agent"
+        },
+        {
+         "name": "Handoff",
+         "value": "Handoff"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "First Inbound Reply At",
+       "displayName": "First Inbound Reply At",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "First Response At",
+       "displayName": "First Response At",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Meeting Booked At",
+       "displayName": "Meeting Booked At",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Touchpoints to Meeting",
+       "displayName": "Touchpoints to Meeting",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Original Campaign Email",
+       "displayName": "Original Campaign Email",
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -1488,
+    880
+   ],
+   "id": "157080c8-216d-45b2-aa06-9e887d32358f",
+   "name": "Update record"
+  },
+  {
+   "parameters": {
+    "rules": {
+     "values": [
+      {
+       "conditions": {
+        "options": {
+         "caseSensitive": true,
+         "leftValue": "",
+         "typeValidation": "strict",
+         "version": 3
+        },
+        "conditions": [
+         {
+          "leftValue": "={{ $json['Last Sent From'] }}",
+          "rightValue": "",
+          "operator": {
+           "type": "string",
+           "operation": "equals"
+          },
+          "id": "6c1eeed2-8179-4885-b663-39f2083966d7"
+         }
+        ],
+        "combinator": "and"
+       }
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.switch",
+   "typeVersion": 3.4,
+   "position": [
+    -3952,
+    560
+   ],
+   "id": "5d695b94-551b-4ce5-9edb-ac2616204d00",
+   "name": "Switch"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "a1ff46c1-7f3c-4b6d-a39a-04eb3418eac7",
+       "leftValue": "={{ $('Update record').first().json.fields['Pipeline Stage'] || '' }}",
+       "rightValue": "Booked Meeting",
+       "operator": {
+        "type": "string",
+        "operation": "notContains"
+       }
+      },
+      {
+       "id": "6d81fe29-3022-4930-a093-253e07bce6a4",
+       "leftValue": "={{ $('Update record').first().json.fields['Pipeline Stage'] || '' }}",
+       "rightValue": "Completed Meeting",
+       "operator": {
+        "type": "string",
+        "operation": "notContains"
+       }
+      },
+      {
+       "id": "84d6b2ab-fc1e-4cb1-a84a-1c97ed5aa11e",
+       "leftValue": "={{ $('Update record').first().json.fields['Pipeline Stage'] || '' }}",
+       "rightValue": "Closed Deal",
+       "operator": {
+        "type": "string",
+        "operation": "notContains"
+       }
+      },
+      {
+       "id": "125e811b-a421-4e9e-b0c1-c620e0b5821d",
+       "leftValue": "={{ $('Update record').first().json.fields['Lead Status'] || '' }}",
+       "rightValue": "Interested",
+       "operator": {
+        "type": "string",
+        "operation": "equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.filter",
+   "typeVersion": 2.3,
+   "position": [
+    -1040,
+    784
+   ],
+   "id": "74269d7f-419b-4bd0-8797-696f3547c32c",
+   "name": "Filter"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblADFhWhTcLrl1UY",
+     "mode": "list",
+     "cachedResultName": "Emails",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "id": "={{ $('Update record').first().json.id }}",
+      "Pipeline Stage": "In Conversation"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": false
+      },
+      {
+       "id": "Leads Email",
+       "displayName": "Leads Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Leads Name",
+       "displayName": "Leads Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Pipeline Stage",
+       "displayName": "Pipeline Stage",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "New Interested",
+         "value": "New Interested"
+        },
+        {
+         "name": "In Conversation",
+         "value": "In Conversation"
+        },
+        {
+         "name": "Booked Meeting",
+         "value": "Booked Meeting"
+        },
+        {
+         "name": "Completed Meeting",
+         "value": "Completed Meeting"
+        },
+        {
+         "name": "Closed Deal",
+         "value": "Closed Deal"
+        },
+        {
+         "name": "Closed -- Not Moving Forward",
+         "value": "Closed -- Not Moving Forward"
+        },
+        {
+         "name": "Lost",
+         "value": "Lost"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Subject Line",
+       "displayName": "Subject Line",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Latest Reply",
+       "displayName": "Latest Reply",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Lead Status",
+       "displayName": "Lead Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Wrong Person",
+         "value": "Wrong Person"
+        },
+        {
+         "name": "Out Of Office",
+         "value": "Out Of Office"
+        },
+        {
+         "name": "Information Request",
+         "value": "Information Request"
+        },
+        {
+         "name": "Do Not Contact",
+         "value": "Do Not Contact"
+        },
+        {
+         "name": "Not Interested",
+         "value": "Not Interested"
+        },
+        {
+         "name": "Meeting Request",
+         "value": "Meeting Request"
+        },
+        {
+         "name": "Interested",
+         "value": "Interested"
+        },
+        {
+         "name": "Untracked Spam",
+         "value": "Untracked Spam"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Master Inbox",
+       "displayName": "Master Inbox",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Last Email Sent",
+       "displayName": "Last Email Sent",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Last Email Sent By Dulcy",
+         "value": "Last Email Sent By Dulcy"
+        },
+        {
+         "name": "Last Email Sent By Prospect",
+         "value": "Last Email Sent By Prospect"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Push To Client Reply",
+       "displayName": "Push To Client Reply",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Sending to Client",
+         "value": "Sending to Client"
+        },
+        {
+         "name": "Sent to Client",
+         "value": "Sent to Client"
+        },
+        {
+         "name": "Client Responded",
+         "value": "Client Responded"
+        },
+        {
+         "name": "Client Response Sent",
+         "value": "Client Response Sent"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Reply",
+       "displayName": "Last Reply",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Current Time",
+       "displayName": "Current Time",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Last Reply Since",
+       "displayName": "Last Reply Since",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Unattended Reply Time:",
+       "displayName": "Unattended Reply Time:",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Inbox Email",
+       "displayName": "Inbox Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Campaign Name",
+       "displayName": "Campaign Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Custom Reply",
+       "displayName": "Custom Reply",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Status timestamp",
+       "displayName": "Status timestamp",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Conversation History",
+       "displayName": "Conversation History",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Lead Interaction",
+       "displayName": "Last Lead Interaction",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "lead + camp",
+       "displayName": "lead + camp",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "reply_uuid",
+       "displayName": "reply_uuid",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Master Inbox Link",
+       "displayName": "Master Inbox Link",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Conversation History (LinkedIn)",
+       "displayName": "Conversation History (LinkedIn)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Latest Reply (LinkedIn)",
+       "displayName": "Latest Reply (LinkedIn)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Lead Status (LinkedIn)",
+       "displayName": "Lead Status (LinkedIn)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Wrong Person",
+         "value": "Wrong Person"
+        },
+        {
+         "name": "Out Of Office",
+         "value": "Out Of Office"
+        },
+        {
+         "name": "Information Request",
+         "value": "Information Request"
+        },
+        {
+         "name": "Do Not Contact",
+         "value": "Do Not Contact"
+        },
+        {
+         "name": "Not Interested",
+         "value": "Not Interested"
+        },
+        {
+         "name": "Meeting Request",
+         "value": "Meeting Request"
+        },
+        {
+         "name": "Interested",
+         "value": "Interested"
+        },
+        {
+         "name": "Untracked Spam",
+         "value": "Untracked Spam"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Master Inbox (LinkedIn)",
+       "displayName": "Master Inbox (LinkedIn)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Master Inbox Link (LinkedIn)",
+       "displayName": "Master Inbox Link (LinkedIn)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Last Message Sent (LinkedIn)",
+       "displayName": "Last Message Sent (LinkedIn)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Last Email Sent By Dulcy",
+         "value": "Last Email Sent By Dulcy"
+        },
+        {
+         "name": "Last Email Sent By Prospect",
+         "value": "Last Email Sent By Prospect"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Custom Reply (LinkedIn)",
+       "displayName": "Custom Reply (LinkedIn)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "sender_id",
+       "displayName": "sender_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "convo_id",
+       "displayName": "convo_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "campaign_idlinkedin",
+       "displayName": "campaign_idlinkedin",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "workspace_id",
+       "displayName": "workspace_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "list_id",
+       "displayName": "list_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "lead_idlinkedin",
+       "displayName": "lead_idlinkedin",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Opportunity Status",
+       "displayName": "Opportunity Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "LOST",
+         "value": "LOST"
+        },
+        {
+         "name": "WON",
+         "value": "WON"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Opp Last Modified",
+       "displayName": "Opp Last Modified",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Date of Call Booked",
+       "displayName": "Date of Call Booked",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "campaign_id",
+       "displayName": "campaign_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "lead_id",
+       "displayName": "lead_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "email_stats_id",
+       "displayName": "email_stats_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "reply_message_id",
+       "displayName": "reply_message_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Templates",
+       "displayName": "Templates",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Template Body",
+       "displayName": "Template Body",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "CC (Optional)",
+       "displayName": "CC (Optional)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Linkedin URL",
+       "displayName": "Linkedin URL",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "linkedin_url",
+       "displayName": "linkedin_url",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Phone Number",
+       "displayName": "Phone Number",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Model ID (PRE)",
+       "displayName": "AI Model ID (PRE)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Model ID (APTR)",
+       "displayName": "AI Model ID (APTR)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Sent From Number",
+       "displayName": "Sent From Number",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Called?",
+       "displayName": "AI Called?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call ID",
+       "displayName": "Call ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Recording",
+       "displayName": "Call Recording",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Transcript",
+       "displayName": "Call Transcript",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "DNC",
+       "displayName": "DNC",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Times Called (Identifier)",
+       "displayName": "Times Called (Identifier)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Follow Up Counter",
+       "displayName": "Follow Up Counter",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "SMS Latest Reply",
+       "displayName": "SMS Latest Reply",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "SMS Conversation History",
+       "displayName": "SMS Conversation History",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "SMS Custom Reply",
+       "displayName": "SMS Custom Reply",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last SMS Sent",
+       "displayName": "Last SMS Sent",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Last Email Sent By Dulcy",
+         "value": "Last Email Sent By Dulcy"
+        },
+        {
+         "name": "Last Email Sent By Prospect",
+         "value": "Last Email Sent By Prospect"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Status",
+       "displayName": "Call Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Answered Call [INTERESTED (Booked Appointment)]",
+         "value": "Answered Call [INTERESTED (Booked Appointment)]"
+        },
+        {
+         "name": "Answered Call [INTERESTED (Didn't Booked Appointment)]",
+         "value": "Answered Call [INTERESTED (Didn't Booked Appointment)]"
+        },
+        {
+         "name": "Answered Call [BUSY (Call-Back Requested)]",
+         "value": "Answered Call [BUSY (Call-Back Requested)]"
+        },
+        {
+         "name": "Answered Call [BUSY (No Call-Back Requested)]",
+         "value": "Answered Call [BUSY (No Call-Back Requested)]"
+        },
+        {
+         "name": "Answered Call [NOT INTERESTED]",
+         "value": "Answered Call [NOT INTERESTED]"
+        },
+        {
+         "name": "Answered Call [TURNED DNC]",
+         "value": "Answered Call [TURNED DNC]"
+        },
+        {
+         "name": "Answered Call [NONE]",
+         "value": "Answered Call [NONE]"
+        },
+        {
+         "name": "Call Failed",
+         "value": "Call Failed"
+        },
+        {
+         "name": "Reached Voicemail",
+         "value": "Reached Voicemail"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "convo_history_plain",
+       "displayName": "convo_history_plain",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Company Name",
+       "displayName": "Company Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Lead Created",
+       "displayName": "Lead Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "ESP",
+       "displayName": "ESP",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Workspace ID (Bison)",
+       "displayName": "Workspace ID (Bison)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Workspace ID Formula",
+       "displayName": "Workspace ID Formula",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Reply Explanation",
+       "displayName": "Reply Explanation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Feedback",
+       "displayName": "Call Feedback",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Status (from Call Feedback)",
+       "displayName": "Call Status (from Call Feedback)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "How was the call? (from Call Feedback)",
+       "displayName": "How was the call? (from Call Feedback)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Notes (from Call Feedback)",
+       "displayName": "Notes (from Call Feedback)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Link to sales call (from Call Feedback)",
+       "displayName": "Link to sales call (from Call Feedback)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Client Closed Deals",
+       "displayName": "Client Closed Deals",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Deal Value (USD) (from Client Closed Deals)",
+       "displayName": "Deal Value (USD) (from Client Closed Deals)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Deal Closed Date (from Client Closed Deals)",
+       "displayName": "Deal Closed Date (from Client Closed Deals)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Deal Type (from Client Closed Deals)",
+       "displayName": "Deal Type (from Client Closed Deals)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Why They Said Yes (from Client Closed Deals)",
+       "displayName": "Why They Said Yes (from Client Closed Deals)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "OOO - Back In The Office - Date",
+       "displayName": "OOO - Back In The Office - Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "OOO - Back In The Office - Days Left",
+       "displayName": "OOO - Back In The Office - Days Left",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "OOO - Subsequence Email Sent",
+       "displayName": "OOO - Subsequence Email Sent",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "OOO - First Name",
+       "displayName": "OOO - First Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "duplicate_for_tests",
+       "displayName": "duplicate_for_tests",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "skip_request_call_feedback",
+       "displayName": "skip_request_call_feedback",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "internal_call_feedback_url_softr",
+       "displayName": "internal_call_feedback_url_softr",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "internal_close_deal_url_softr",
+       "displayName": "internal_close_deal_url_softr",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Clients Table",
+       "displayName": "Clients Table",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "domain exlcusion",
+       "displayName": "domain exlcusion",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Alternative Contact Email",
+       "displayName": "Alternative Contact Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Alternative Email: Automation",
+       "displayName": "Alternative Email: Automation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Email sent to alternative email",
+       "displayName": "Email sent to alternative email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Alternative Contact Name",
+       "displayName": "Alternative Contact Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Latest Reply Time",
+       "displayName": "Latest Reply Time",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Send alt email",
+       "displayName": "Send alt email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Subject for alt email",
+       "displayName": "Subject for alt email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Sent From",
+       "displayName": "Last Sent From",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Airtable",
+         "value": "Airtable"
+        },
+        {
+         "name": "Outside Airtable",
+         "value": "Outside Airtable"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "last_updated_time",
+       "displayName": "last_updated_time",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Last_Modified_Close",
+       "displayName": "Last_Modified_Close",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -816,
+    784
+   ],
+   "id": "121a68b9-0f2e-4058-aff3-33f2a92a3199",
+   "name": "Update record1"
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblADFhWhTcLrl1UY",
+     "mode": "list",
+     "cachedResultName": "Emails",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblADFhWhTcLrl1UY"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Leads Email": "={{ $('Resolve Manual Contact Identity').first().json.manualIdentity.email }}",
+      "Leads Name": "={{ (() => { const s=$('Resolve Manual Contact Identity').first().json; const d=s.body.data; const e=s.manualIdentity.email; const p=(d.reply.to||[]).find(p=>String(p.address||p.email||'').trim().toLowerCase()===e); return p?.name || (String(d.lead?.email||'').trim().toLowerCase()===e ? [d.lead?.first_name,d.lead?.last_name].filter(Boolean).join(' ') : ''); })() }}",
+      "Subject Line": "={{ $('Webhook').item.json.body.data.reply.email_subject }}",
+      "Latest Reply": "={{ $('Webhook').item.json.body.data.reply.text_body }}",
+      "Lead Status": "Interested",
+      "Last Email Sent": "Last Email Sent By Dulcy",
+      "Inbox Email": "={{ $('Webhook').item.json.body.data.sender_email.email }}",
+      "Campaign Name": "={{ $('Webhook').item.json.body.data.campaign.name }}",
+      "reply_uuid": "={{ $('Webhook').item.json.body.data.reply.uuid }}",
+      "campaign_id": "={{ $('Webhook').item.json.body.data.campaign.id + \"\"}}",
+      "lead_id": "={{ $('Webhook').item.json.body.data.lead.id }}",
+      "email_stats_id": "={{ $('Webhook').item.json.body.data.sender_email.id + \"\"}}",
+      "reply_message_id": "={{ $('Webhook').item.json.body.data.reply.id + \"\"}}",
+      "ESP": "Bison",
+      "Workspace ID (Bison)": "={{ $('Webhook').item.json.body.event.workspace_id + \"\" }}",
+      "Company Name": "={{ $('Webhook').item.json.body.data.lead.company }}",
+      "Pipeline Stage": "In Conversation",
+      "Campaign": "={{ $('Search records1').item.json.id ? [$('Search records1').item.json.id] : [] }}",
+      "Clients Table": "={{ [$json.id] }}",
+      "Verification Provider": "={{ (()=>{const d=$('Webhook').item.json.body.data;const vs=d.lead?.custom_variables??[];const tags=vs.filter(v=>v.name==='DULCY_VERIFICATION_'+d.campaign?.id);let a={};try{if(tags.length===1)a=JSON.parse(tags[0].value);}catch{};return ['MillionVerifier','LeadMagic'].includes(a.provider)?a.provider:'Unknown';})() }}",
+      "Email Type": "={{ (()=>{const d=$('Webhook').item.json.body.data;const vs=d.lead?.custom_variables??[];const tags=vs.filter(v=>v.name==='DULCY_VERIFICATION_'+d.campaign?.id);let a={};try{if(tags.length===1)a=JSON.parse(tags[0].value);}catch{};return ['Direct','Generic'].includes(a.emailType)?a.emailType:'Unknown';})() }}",
+      "Verification Path": "={{ (()=>{const d=$('Webhook').item.json.body.data;const vs=d.lead?.custom_variables??[];const tags=vs.filter(v=>v.name==='DULCY_VERIFICATION_'+d.campaign?.id);let a={};try{if(tags.length===1)a=JSON.parse(tags[0].value);}catch{};return typeof a.path==='string'?a.path:'Unknown';})() }}",
+      "Phone Number": "={{ $('Resolve Manual Contact Identity').first().json.manualIdentity.phone || undefined }}",
+      "Original Campaign Email": "={{ $json['Original Campaign Email'] || $('Resolve Manual Contact Identity').first().json.body.data.lead?.email || undefined }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "Leads Email",
+       "displayName": "Leads Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "campaign_id",
+       "displayName": "campaign_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Campaign",
+       "displayName": "Campaign",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Leads Name",
+       "displayName": "Leads Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Pipeline Stage",
+       "displayName": "Pipeline Stage",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "New Interested",
+         "value": "New Interested"
+        },
+        {
+         "name": "In Conversation",
+         "value": "In Conversation"
+        },
+        {
+         "name": "Booked Meeting",
+         "value": "Booked Meeting"
+        },
+        {
+         "name": "Completed Meeting",
+         "value": "Completed Meeting"
+        },
+        {
+         "name": "Closed Deal",
+         "value": "Closed Deal"
+        },
+        {
+         "name": "Closed -- Not Moving Forward",
+         "value": "Closed -- Not Moving Forward"
+        },
+        {
+         "name": "Lost",
+         "value": "Lost"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Subject Line",
+       "displayName": "Subject Line",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Latest Reply",
+       "displayName": "Latest Reply",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Lead Status",
+       "displayName": "Lead Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Wrong Person",
+         "value": "Wrong Person"
+        },
+        {
+         "name": "Out Of Office",
+         "value": "Out Of Office"
+        },
+        {
+         "name": "Information Request",
+         "value": "Information Request"
+        },
+        {
+         "name": "Do Not Contact",
+         "value": "Do Not Contact"
+        },
+        {
+         "name": "Not Interested",
+         "value": "Not Interested"
+        },
+        {
+         "name": "Meeting Request",
+         "value": "Meeting Request"
+        },
+        {
+         "name": "Interested",
+         "value": "Interested"
+        },
+        {
+         "name": "Untracked Spam",
+         "value": "Untracked Spam"
+        },
+        {
+         "name": "Bounced",
+         "value": "Bounced"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Email Sending Provider",
+       "displayName": "Email Sending Provider",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Google",
+         "value": "Google"
+        },
+        {
+         "name": "Outlook",
+         "value": "Outlook"
+        },
+        {
+         "name": "Custom Mail Server",
+         "value": "Custom Mail Server"
+        },
+        {
+         "name": "Zoho",
+         "value": "Zoho"
+        },
+        {
+         "name": "Mimecast",
+         "value": "Mimecast"
+        },
+        {
+         "name": "Proofpoint",
+         "value": "Proofpoint"
+        },
+        {
+         "name": "Barracuda",
+         "value": "Barracuda"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Master Inbox",
+       "displayName": "Master Inbox",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Last Email Sent",
+       "displayName": "Last Email Sent",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Last Email Sent By Dulcy",
+         "value": "Last Email Sent By Dulcy"
+        },
+        {
+         "name": "Last Email Sent By Prospect",
+         "value": "Last Email Sent By Prospect"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Push To Client Reply",
+       "displayName": "Push To Client Reply",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Sending to Client",
+         "value": "Sending to Client"
+        },
+        {
+         "name": "Sent to Client",
+         "value": "Sent to Client"
+        },
+        {
+         "name": "Client Responded",
+         "value": "Client Responded"
+        },
+        {
+         "name": "Client Response Sent",
+         "value": "Client Response Sent"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Reply",
+       "displayName": "Last Reply",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Current Time",
+       "displayName": "Current Time",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Last Reply Since",
+       "displayName": "Last Reply Since",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Unattended Reply Time:",
+       "displayName": "Unattended Reply Time:",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Inbox Email",
+       "displayName": "Inbox Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Campaign Name",
+       "displayName": "Campaign Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Custom Reply",
+       "displayName": "Custom Reply",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Status timestamp",
+       "displayName": "Status timestamp",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Conversation History",
+       "displayName": "Conversation History",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Last Lead Interaction",
+       "displayName": "Last Lead Interaction",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "lead + camp",
+       "displayName": "lead + camp",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "reply_uuid",
+       "displayName": "reply_uuid",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Master Inbox Link",
+       "displayName": "Master Inbox Link",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Conversation History (LinkedIn)",
+       "displayName": "Conversation History (LinkedIn)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Latest Reply (LinkedIn)",
+       "displayName": "Latest Reply (LinkedIn)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Lead Status (LinkedIn)",
+       "displayName": "Lead Status (LinkedIn)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Wrong Person",
+         "value": "Wrong Person"
+        },
+        {
+         "name": "Out Of Office",
+         "value": "Out Of Office"
+        },
+        {
+         "name": "Information Request",
+         "value": "Information Request"
+        },
+        {
+         "name": "Do Not Contact",
+         "value": "Do Not Contact"
+        },
+        {
+         "name": "Not Interested",
+         "value": "Not Interested"
+        },
+        {
+         "name": "Meeting Request",
+         "value": "Meeting Request"
+        },
+        {
+         "name": "Interested",
+         "value": "Interested"
+        },
+        {
+         "name": "Untracked Spam",
+         "value": "Untracked Spam"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Master Inbox (LinkedIn)",
+       "displayName": "Master Inbox (LinkedIn)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Master Inbox Link (LinkedIn)",
+       "displayName": "Master Inbox Link (LinkedIn)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Last Message Sent (LinkedIn)",
+       "displayName": "Last Message Sent (LinkedIn)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Last Email Sent By Dulcy",
+         "value": "Last Email Sent By Dulcy"
+        },
+        {
+         "name": "Last Email Sent By Prospect",
+         "value": "Last Email Sent By Prospect"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Custom Reply (LinkedIn)",
+       "displayName": "Custom Reply (LinkedIn)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "sender_id",
+       "displayName": "sender_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "convo_id",
+       "displayName": "convo_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "campaign_idlinkedin",
+       "displayName": "campaign_idlinkedin",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "workspace_id",
+       "displayName": "workspace_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "list_id",
+       "displayName": "list_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "lead_idlinkedin",
+       "displayName": "lead_idlinkedin",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Opportunity Status",
+       "displayName": "Opportunity Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "LOST",
+         "value": "LOST"
+        },
+        {
+         "name": "WON",
+         "value": "WON"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Opp Last Modified",
+       "displayName": "Opp Last Modified",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Date of Call Booked",
+       "displayName": "Date of Call Booked",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "lead_id",
+       "displayName": "lead_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "email_stats_id",
+       "displayName": "email_stats_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "reply_message_id",
+       "displayName": "reply_message_id",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Templates",
+       "displayName": "Templates",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Template Body",
+       "displayName": "Template Body",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "CC (Optional)",
+       "displayName": "CC (Optional)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Bounce Type",
+       "displayName": "Bounce Type",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Hard Bounce",
+         "value": "Hard Bounce"
+        },
+        {
+         "name": "Soft Bounce",
+         "value": "Soft Bounce"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Bounce Code",
+       "displayName": "Bounce Code",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "554",
+         "value": "554"
+        },
+        {
+         "name": "553",
+         "value": "553"
+        },
+        {
+         "name": "552",
+         "value": "552"
+        },
+        {
+         "name": "551",
+         "value": "551"
+        },
+        {
+         "name": "550",
+         "value": "550"
+        },
+        {
+         "name": "452",
+         "value": "452"
+        },
+        {
+         "name": "451",
+         "value": "451"
+        },
+        {
+         "name": "450",
+         "value": "450"
+        },
+        {
+         "name": "421",
+         "value": "421"
+        },
+        {
+         "name": "Unk",
+         "value": "Unk"
+        },
+        {
+         "name": "454",
+         "value": "454"
+        },
+        {
+         "name": "521",
+         "value": "521"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Linkedin URL",
+       "displayName": "Linkedin URL",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "linkedin_url",
+       "displayName": "linkedin_url",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Phone Number",
+       "displayName": "Phone Number",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Model ID (PRE)",
+       "displayName": "AI Model ID (PRE)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Model ID (APTR)",
+       "displayName": "AI Model ID (APTR)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Sent From Number",
+       "displayName": "Sent From Number",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "AI Called?",
+       "displayName": "AI Called?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call ID",
+       "displayName": "Call ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Recording",
+       "displayName": "Call Recording",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Transcript",
+       "displayName": "Call Transcript",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "DNC",
+       "displayName": "DNC",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Times Called (Identifier)",
+       "displayName": "Times Called (Identifier)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Follow Up Counter",
+       "displayName": "Follow Up Counter",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "SMS Latest Reply",
+       "displayName": "SMS Latest Reply",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "SMS Conversation History",
+       "displayName": "SMS Conversation History",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "SMS Custom Reply",
+       "displayName": "SMS Custom Reply",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last SMS Sent",
+       "displayName": "Last SMS Sent",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Last Email Sent By Dulcy",
+         "value": "Last Email Sent By Dulcy"
+        },
+        {
+         "name": "Last Email Sent By Prospect",
+         "value": "Last Email Sent By Prospect"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Status",
+       "displayName": "Call Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Answered Call [INTERESTED (Booked Appointment)]",
+         "value": "Answered Call [INTERESTED (Booked Appointment)]"
+        },
+        {
+         "name": "Answered Call [INTERESTED (Didn't Booked Appointment)]",
+         "value": "Answered Call [INTERESTED (Didn't Booked Appointment)]"
+        },
+        {
+         "name": "Answered Call [BUSY (Call-Back Requested)]",
+         "value": "Answered Call [BUSY (Call-Back Requested)]"
+        },
+        {
+         "name": "Answered Call [BUSY (No Call-Back Requested)]",
+         "value": "Answered Call [BUSY (No Call-Back Requested)]"
+        },
+        {
+         "name": "Answered Call [NOT INTERESTED]",
+         "value": "Answered Call [NOT INTERESTED]"
+        },
+        {
+         "name": "Answered Call [TURNED DNC]",
+         "value": "Answered Call [TURNED DNC]"
+        },
+        {
+         "name": "Answered Call [NONE]",
+         "value": "Answered Call [NONE]"
+        },
+        {
+         "name": "Call Failed",
+         "value": "Call Failed"
+        },
+        {
+         "name": "Reached Voicemail",
+         "value": "Reached Voicemail"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "convo_history_plain",
+       "displayName": "convo_history_plain",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Company Name",
+       "displayName": "Company Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Lead Created",
+       "displayName": "Lead Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "ESP",
+       "displayName": "ESP",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Workspace ID (Bison)",
+       "displayName": "Workspace ID (Bison)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Workspace ID Formula",
+       "displayName": "Workspace ID Formula",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Reply Explanation",
+       "displayName": "Reply Explanation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Feedback",
+       "displayName": "Call Feedback",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Call Status (from Call Feedback)",
+       "displayName": "Call Status (from Call Feedback)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "How was the call? (from Call Feedback)",
+       "displayName": "How was the call? (from Call Feedback)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Notes (from Call Feedback)",
+       "displayName": "Notes (from Call Feedback)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Link to sales call (from Call Feedback)",
+       "displayName": "Link to sales call (from Call Feedback)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Client Closed Deals",
+       "displayName": "Client Closed Deals",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Deal Value (USD) (from Client Closed Deals)",
+       "displayName": "Deal Value (USD) (from Client Closed Deals)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Deal Closed Date (from Client Closed Deals)",
+       "displayName": "Deal Closed Date (from Client Closed Deals)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Deal Type (from Client Closed Deals)",
+       "displayName": "Deal Type (from Client Closed Deals)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Why They Said Yes (from Client Closed Deals)",
+       "displayName": "Why They Said Yes (from Client Closed Deals)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "OOO - Back In The Office - Date",
+       "displayName": "OOO - Back In The Office - Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "OOO - Back In The Office - Days Left",
+       "displayName": "OOO - Back In The Office - Days Left",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "OOO - Subsequence Email Sent",
+       "displayName": "OOO - Subsequence Email Sent",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "OOO - First Name",
+       "displayName": "OOO - First Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "duplicate_for_tests",
+       "displayName": "duplicate_for_tests",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "skip_request_call_feedback",
+       "displayName": "skip_request_call_feedback",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "internal_call_feedback_url_softr",
+       "displayName": "internal_call_feedback_url_softr",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "internal_close_deal_url_softr",
+       "displayName": "internal_close_deal_url_softr",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Clients Table",
+       "displayName": "Clients Table",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "domain exclusion",
+       "displayName": "domain exclusion",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Alternative Contact Email",
+       "displayName": "Alternative Contact Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Alternative Email: Automation",
+       "displayName": "Alternative Email: Automation",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Email sent to alternative email",
+       "displayName": "Email sent to alternative email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Alternative Contact Name",
+       "displayName": "Alternative Contact Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Latest Reply Time",
+       "displayName": "Latest Reply Time",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Send alt email",
+       "displayName": "Send alt email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Subject for alt email",
+       "displayName": "Subject for alt email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Sent From",
+       "displayName": "Last Sent From",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Airtable",
+         "value": "Airtable"
+        },
+        {
+         "name": "Outside Airtable",
+         "value": "Outside Airtable"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "last_updated_time",
+       "displayName": "last_updated_time",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "in conversation trigger",
+       "displayName": "in conversation trigger",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Verification Provider",
+       "displayName": "Verification Provider",
+       "type": "string",
+       "required": false,
+       "display": true,
+       "removed": false
+      },
+      {
+       "id": "Email Type",
+       "displayName": "Email Type",
+       "type": "string",
+       "required": false,
+       "display": true,
+       "removed": false
+      },
+      {
+       "id": "Verification Path",
+       "displayName": "Verification Path",
+       "type": "string",
+       "required": false,
+       "display": true,
+       "removed": false
+      },
+      {
+       "id": "Original Campaign Email",
+       "displayName": "Original Campaign Email",
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -368,
+    1168
+   ],
+   "id": "b857a659-587c-4cd3-932c-32c2b9968660",
+   "name": "Create a record"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblAVAA6uBPaMj28P",
+     "mode": "list",
+     "cachedResultName": "Campaigns",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblAVAA6uBPaMj28P"
+    },
+    "filterByFormula": "={ID} = '{{ $('Webhook').item.json.body.data.campaign.id }}'",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -1488,
+    1168
+   ],
+   "id": "bf7bcae4-318e-4d45-acdf-57c0fa692cc8",
+   "name": "Search records1",
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt"
+    },
+    "filterByFormula": "=AND({ID} != BLANK(), {ID} = '{{ $('Webhook').item.json.body.event.workspace_id }}')",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -1264,
+    1168
+   ],
+   "id": "845bd180-075a-4f01-a91c-e6cefbff0d1a",
+   "name": "Search records2",
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "b6f684be-3105-4ad1-836f-344851f63657",
+       "leftValue": "={{ (() => { const d = $json.body?.data ?? {}; const r = d.reply ?? {}; const addresses = [r.primary_to_email_address, d.lead?.email, ...[r.to, r.cc, r.bcc].flatMap(v => Array.isArray(v) ? v.map(x => typeof x === 'string' ? x : x?.address ?? x?.email) : [])].filter(Boolean).map(v => String(v).trim().toLowerCase()); const seed = addresses.some(v => /@(?:[a-z0-9-]+\\.)*(?:emailtestingapps\\.co|onlyemailmarketing\\.co)$/.test(v)); const marker = [r.text_body, r.html_body].some(v => /\\begipt_[A-Za-z0-9_-]{10,}\\b/.test(String(v ?? ''))); return seed || marker ? 'BLOCK_PLACEMENT_TEST' : 'ALLOW'; })() }}",
+       "rightValue": "BLOCK_PLACEMENT_TEST",
+       "operator": {
+        "type": "string",
+        "operation": "notContains"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.filter",
+   "typeVersion": 2.3,
+   "position": [
+    -3728,
+    976
+   ],
+   "id": "c0ab9c60-c344-44c7-b326-3afa57e6aaf0",
+   "name": "Filter1"
+  },
+  {
+   "parameters": {
+    "jsCode": "const event=$('Webhook').first().json.body||{};const reply=event.data?.reply||{};\nconst sentBody=String(reply.text_body||'').split(/\\nOn .*<.*> wrote:/)[0].trim();\nconst identity=$('Resolve Manual Contact Identity').first().json.manualIdentity;\nconst recipient=identity.email;\nconst workspace=String(event.event?.workspace_id||'');\nconst messageId=String(reply.uuid||reply.id||'');\nif(!sentBody||!recipient||!workspace||!messageId)return [];\nconst record=$('Prepare Manual History Admission').first().json;\nif(!record.id)return [];\nconst f=record.fields||record;\nif(String(f['Workspace ID (Bison)']||'')!==workspace)return [];\nconst clients=f['Clients Table']||[];\nconst client=String(f['Dulcy Reply Agent Workspace Record ID']||clients[0]?.id||clients[0]||'');\nif(!/^rec[A-Za-z0-9]{14}$/.test(client)||!f['Latest Reply'])return [];\nconst draft=String(f['Dulcy Reply Agent Draft']||'').trim();\n// Agent-generated text is not assumed to be a VA example. Human review remains mandatory.\nif(draft&&draft===sentBody)return [];\nconst intent=String(f['Dulcy Reply Agent Intent']||f['Lead Status']||'');\nconst situation=['Not Interested','Do Not Contact'].includes(intent)?'Not Interested':['Out of Office','Referred','Check Back Later'].includes(intent)?'Out of Office':'Interested';\nconst source='EmailBison manual reply: '+workspace+':'+messageId;\nreturn [{json:{source,body:{records:[{fields:{'Example':'Review EmailBison reply: '+String(f['Leads Name']||recipient),'Workspace Record ID':client,'Email Record ID':record.id,'Situation':situation,'Prospect Message':String(f['Latest Reply']),'AI Draft':draft,'Approved Reply':sentBody,'Feedback':String(f['Reply Feedback']||''),'Review Status':'Candidate','Outcome':'Unknown','Source':source,'Updated At':new Date().toISOString()}}],typecast:true}}}];\n\n"
+   },
+   "id": "0219ba56-638c-40c9-adc5-2d4e10d2fe53",
+   "name": "Prepare Manual Learning",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -1040,
+    976
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tblSnh6YlMTOFSE8l",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "filterByFormula",
+       "value": "={{ \"{Source}='\" + $json.source.replace(/'/g,\"\\'\") + \"'\" }}"
+      },
+      {
+       "name": "maxRecords",
+       "value": "1"
+      },
+      {
+       "name": "fields[]",
+       "value": "Source"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "neverError": true
+      }
+     }
+    }
+   },
+   "id": "ca5c8d7b-b744-4935-940d-ad9b1981a251",
+   "name": "Find Manual Learning Example",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    -816,
+    976
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "if(!Array.isArray($json.records)||$json.error)throw new Error('Learning history lookup failed.');if($json.records.length)return [];return [{json:$('Prepare Manual Learning').first().json}];"
+   },
+   "id": "5ae84f6a-7b51-45de-8392-cb8750433010",
+   "name": "Skip Existing Learning Example",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -592,
+    976
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.airtable.com/v0/appxqINt5XKw7a76A/tblSnh6YlMTOFSE8l",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ $json.body }}",
+    "options": {}
+   },
+   "id": "71323e0a-c93c-4721-9bc1-d6b9eac35896",
+   "name": "Save Manual Learning Candidate",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    -368,
+    976
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const b = $json.body || {}, d = b.data || {}, r = d.reply || {};\nconst normalize = v => String(typeof v === 'object' && v !== null ? (v.address || v.email || '') : (v || '')).trim().toLowerCase();\nconst valid = v => /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v);\nconst senderEmails = [...new Set([normalize(d.sender_email), normalize(r.from_email_address)].filter(valid))];\nif (!senderEmails.length) throw Error('Missing sending account identity; no contact created');\nconst external = v => valid(v) && !senderEmails.includes(v);\nconst leadEmail = normalize(d.lead?.email);\nconst intendedTo = [...new Set([r.primary_to_email_address, ...(Array.isArray(r.to) ? r.to : [])].map(normalize).filter(external))];\nconst email = intendedTo.length === 1 ? intendedTo[0] : '';\nconst campaignId = String(d.campaign?.id || '');\nconst workspace = String(b.event?.workspace_id || '');\n// Exact provider connection self-tests have no prospect and should finish without contact writes.\n// Keep all other missing/ambiguous identities on the original fail-closed path below.\nconst accountEmail = normalize(d.sender_email);\nconst emptyList = v => v == null || (Array.isArray(v) && v.length === 0);\nconst positiveId = v => /^\\d+$/.test(String(v ?? '')) && Number(v) > 0;\nconst connectionSelfTest =\n  b.event?.type === 'MANUAL_EMAIL_SENT' && /^\\d+$/.test(workspace) &&\n  r.type === 'Outgoing Email' && r.folder === 'Sent' &&\n  positiveId(r.id) && positiveId(d.sender_email?.id) &&\n  d.lead === null && d.campaign == null && r.parent_id === null &&\n  valid(accountEmail) && normalize(r.from_email_address) === accountEmail &&\n  normalize(r.primary_to_email_address) === accountEmail &&\n  Array.isArray(r.to) && r.to.length === 1 && normalize(r.to[0]) === accountEmail &&\n  emptyList(r.cc) && emptyList(r.bcc) && emptyList(r.attachments) &&\n  r.email_subject === 'Dulcy Connection Test' &&\n  String(r.text_body ?? '').trim() === 'Hi there. If you receive this email, then everything is working correctly!';\nif (connectionSelfTest) {\n  console.log('SKIP_CONNECTION_SELF_TEST ' + JSON.stringify({workspaceId: workspace, replyId: r.id, senderId: d.sender_email.id}));\n  return [];\n}\nconst needsParentResolution = !external(email) && intendedTo.length > 1 && positiveId(r.parent_id);\nif (!/^\\d+$/.test(workspace) || (!external(email) && !needsParentResolution)) throw Error('Missing or ambiguous external lead identity; no contact created');\nconst leadId = external(leadEmail) ? String(d.lead?.id || '') : '';\nconst parentId = String(r.parent_id || '');\nconst literal = v => \"'\" + String(v).replace(/\\\\/g, '\\\\\\\\').replace(/'/g, \"\\\\'\") + \"'\";\nconst matches = (needsParentResolution ? intendedTo : [email]).map(address => 'LOWER(TRIM({Leads Email}))=' + literal(address));\nif (leadId) matches.push(\"({lead_id}&'')=\" + literal(leadId));\nif (parentId) matches.push(\"({reply_message_id}&'')=\" + literal(parentId));\n\nconst CUTOFF=Date.parse('2026-10-09T22:03:13.000Z');\nfunction decodeEntities(s){const names={amp:'&',lt:'<',gt:'>',quot:'\"',apos:\"'\",nbsp:' ',ensp:' ',emsp:' ',ndash:'–',mdash:'—',hellip:'…'};return String(s||'').replace(/&(#x[0-9a-f]+|#\\d+|[a-z]+);/gi,(all,key)=>{if(key[0]==='#'){const n=key[1].toLowerCase()==='x'?parseInt(key.slice(2),16):parseInt(key.slice(1),10);return Number.isSafeInteger(n)&&n>0&&n<=0x10ffff?String.fromCodePoint(n):all;}return names[key.toLowerCase()]??all;});}\nfunction htmlToText(html){return decodeEntities(String(html||'').replace(/<(script|style)\\b[^>]*>[\\s\\S]*?<\\/\\1\\s*>/gi,'').replace(/<a\\b[^>]*href\\s*=\\s*[\"']([^\"']+)[\"'][^>]*>([\\s\\S]*?)<\\/a>/gi,(_,url,label)=>{const text=decodeEntities(label.replace(/<[^>]*>/g,'')).trim(),decoded=decodeEntities(url).trim();return /^(?:https?:\\/\\/|mailto:)/i.test(decoded)&&text&&text!==decoded?text+' ('+decoded+')':text||decoded;}).replace(/<br\\s*\\/?>/gi,'\\n').replace(/<\\/(?:p|div|li|tr|h[1-6]|blockquote)\\s*>/gi,'\\n').replace(/<li\\b[^>]*>/gi,'- ').replace(/<[^>]*>/g,'')).replace(/\\r\\n?/g,'\\n').replace(/[ \\t]+\\n/g,'\\n').replace(/\\n{4,}/g,'\\n\\n\\n').trim();}\nfunction bodyOf(m){return (typeof m?.text_body==='string'&&m.text_body.trim())||htmlToText(m?.html_body||m?.email_body||'');}\nfunction headerDate(headers){if(Array.isArray(headers)){const h=headers.find(x=>String(x?.name||x?.key||'').toLowerCase()==='date');return h?.value||'';}if(headers&&typeof headers==='object'){const k=Object.keys(headers).find(k=>k.toLowerCase()==='date');return k?headers[k]:'';}if(typeof headers==='string'){try{return headerDate(JSON.parse(headers));}catch{const m=headers.replace(/\\r\\n[ \\t]+/g,' ').match(/(?:^|\\n)Date:\\s*([^\\n\\r]+)/i);return m?m[1]:'';}}return '';}\nfunction friendlyUtc(ms){const d=new Date(ms),months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],h=d.getUTCHours();return months[d.getUTCMonth()]+' '+d.getUTCDate()+', '+d.getUTCFullYear()+', '+(((h+11)%12)+1)+':'+String(d.getUTCMinutes()).padStart(2,'0')+' '+(h<12?'AM':'PM')+' UTC';}\nfunction explicit(raw){if(typeof raw!=='string'||!raw.trim()||!/(?:Z|[+-]\\d{2}:?\\d{2}|\\b(?:UT|UTC|GMT))\\s*(?:\\([^)]*\\))?$/i.test(raw.trim()))return null;const ms=Date.parse(raw);if(!Number.isFinite(ms))return null;const iso=new Date(ms).toISOString();return {iso,display:friendlyUtc(ms),raw:raw.trim()};}\nfunction clockOf(m,direction){for(const source of ['sent_at','date_sent']){const t=explicit(m?.[source]);if(t)return {...t,kind:'Sent',source};}const h=explicit(headerDate(m?.headers));if(h)return {...h,kind:'Sent',source:'Date header'};const received=explicit(m?.date_received);if(received)return {...received,kind:direction==='outbound'?'Provider time':'Received',source:'date_received'};return {iso:null,raw:null,kind:'Time unavailable',source:null};}\nfunction participant(name,email){name=String(name||'').trim();email=String(email||'').trim().toLowerCase();return name&&email?name+' <'+email+'>':email||name||'Sender';}\nfunction hash(value){let h=2166136261;for(const c of String(value)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return (h>>>0).toString(16).padStart(8,'0');}\nfunction finish({provider,workspace,conversation,message,direction}){const messageId=String(message?.id||message?.uuid||'');if(!provider||!workspace||!conversation||!messageId)throw Error('Missing durable provider/workspace/conversation/message identity');const clock=clockOf(message,direction);if(!clock.iso||Date.parse(clock.iso)<CUTOFF)throw Error('Message is not provably post-cutover; future history was not changed');const body=bodyOf(message);if(!body)throw Error('Provider supplied no complete message body; history was not changed');const sender=participant(message.from_name,message.from_email_address);const key='history:v1:'+provider+':'+workspace+':'+conversation+':'+messageId;const fingerprint=hash(JSON.stringify({provider,workspace,conversation,messageId,direction,sender,clock,body}));return {historyEvent:{version:1,key,fingerprint,provider,workspace,conversation,messageId,direction,sender,clock,body}};}\n\nif(b.event?.type!=='MANUAL_EMAIL_SENT'||r.type!=='Outgoing Email'||r.folder!=='Sent')throw Error('Only confirmed EmailBison sent events may change outgoing history');\nconst manualConversation=String(r.conversation_id||r.thread_id||parentId||leadId||[senderEmails[0],email].sort().join(':'));\nconst out=finish({provider:'emailbison',workspace,conversation:manualConversation,message:r,direction:'outbound'});\nconst cc=[...new Set((Array.isArray(r.cc)?r.cc:[]).map(normalize).filter(external))];\nconst bcc=[...new Set((Array.isArray(r.bcc)?r.bcc:[]).map(normalize).filter(external))];\nreturn [{json:{...$json,...out,manualSentAt:out.historyEvent.clock.iso,manualIdentity:{email,needsParentResolution,workspace,campaignId,leadId,parentId,senderEmails,intendedTo,cc,bcc,phone:String((d.lead?.custom_variables||[]).find(v=>String(v.name).toLowerCase()==='phone')?.value||'').trim()},contactFormula:'AND({Workspace ID (Bison)}='+literal(workspace)+',OR('+matches.join(',')+'))'}}];"
+   },
+   "id": "e688c5b7-04cc-46e1-9f8b-a3a1f20202db",
+   "name": "Resolve Manual Contact Identity",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -3504,
+    976
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "// Shared pure selector. No network calls, writes, or fallback to newest record.\nfunction identityFields(row){return row.fields||row;}\nfunction identityEmail(v){return String(v&&typeof v==='object'?(v.address||v.email||''):(v||'')).trim().toLowerCase();}\nfunction identitySelect(rows,identity){\n const f=identityFields,e=identityEmail;\n const workspace=String(identity.workspace||''),campaign=String(identity.campaign||''),mailbox=e(identity.mailbox);\n if(!workspace||!mailbox)throw Error('Conversation workspace or sending mailbox unavailable; no contact created');\n const scoped=rows.filter(r=>r.id&&String(f(r)['Workspace ID (Bison)']||'')===workspace&&(!campaign||String(f(r).campaign_id||'')===campaign));\n // A conflicting known mailbox must never be silently rebound.\n const candidates=scoped.filter(r=>!f(r)['Inbox Email']||e(f(r)['Inbox Email'])===mailbox);\n const sameMessage=candidates.filter(r=>String(f(r).reply_message_id||'')===String(identity.messageId||'')&&identity.messageId);\n if(sameMessage.length===1)return {kind:'match',record:sameMessage[0]};\n if(sameMessage.length>1)throw Error('Duplicate records for received message; reconciliation required');\n const parent=candidates.filter(r=>identity.parentId&&String(f(r).reply_message_id||'')===String(identity.parentId));\n if(parent.length>1)throw Error('Duplicate records for parent message; reconciliation required');\n if(parent.length===1){\n  if(identity.leadId&&f(parent[0]).lead_id&&String(f(parent[0]).lead_id)!==String(identity.leadId))throw Error('Parent conversation lead mismatch');\n  return {kind:'match',record:parent[0]};\n }\n const lead=candidates.filter(r=>identity.leadId&&String(f(r).lead_id||'')===String(identity.leadId));\n if(lead.length===1)return {kind:'match',record:lead[0]};\n if(lead.length>1)return {kind:'thread',reason:'Multiple records share original lead'};\n const contact=candidates.filter(r=>identity.email&&e(f(r)['Leads Email'])===e(identity.email));\n if(contact.length===1&&(!identity.leadId||!f(contact[0]).lead_id||String(f(contact[0]).lead_id)===String(identity.leadId)))return {kind:'match',record:contact[0]};\n if(contact.length||scoped.length)return {kind:'thread',reason:'Conflicting participant or mailbox'};\n return {kind:'unresolved',reason:'No verified existing conversation'};\n}\n\nconst source=$('Resolve Manual Contact Identity').first().json, identity=source.manualIdentity;\nconst fields=row=>row.json.fields||row.json;\nconst rows=$input.all().filter(row=>row.json.id&&String(fields(row)['Workspace ID (Bison)']||'')===identity.workspace);\nconst requestThread = () => {\n if(!identity.parentId)throw Error('Ambiguous standalone conversation; preserve records for reconciliation');\n const clients=[...new Set(rows.flatMap(row=>fields(row)['Clients Table']||[]))];\n const reply=source.body?.data?.reply;\n if(clients.length!==1||rows.some(row=>(fields(row)['Clients Table']||[]).length!==1)||!/^rec[a-zA-Z0-9]+$/.test(clients[0])||!/^\\d+$/.test(String(reply?.id||'')))throw Error('Cannot safely resolve conversation workspace');\n return [{json:{_needsThreadLookup:true,clientRecordId:clients[0],replyId:String(reply.id)}}];\n};\n\nif(identity.needsParentResolution)return requestThread();\nconst match=identitySelect(rows.map(r=>r.json),{workspace:identity.workspace,campaign:identity.campaignId,mailbox:identity.senderEmails[0],messageId:source.body.data.reply.id,parentId:identity.parentId,leadId:identity.leadId,email:identity.email});\nif(match.kind==='duplicate')return [];\nif(match.kind==='match')return [{json:match.record}];\nif(match.kind==='thread')return requestThread();\nif(identity.parentId)throw Error('Unresolved parent conversation; no contact created');\nreturn [{json:{}}];"
+   },
+   "id": "2746f6d8-2e13-4e5d-9f89-4c3808750765",
+   "name": "Select Existing Conversation",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -3056,
+    976
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "979ec95d-0052-4b52-82bb-bfe4ff99ca58",
+       "leftValue": "={{ $json._needsThreadLookup === true }}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.3,
+   "position": [
+    -2832,
+    976
+   ],
+   "id": "127f7878-8163-4334-8c76-ec8f93fbd721",
+   "name": "Need Original Thread?"
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/Workspace%20IDs/' + $json.clientRecordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Accept",
+       "value": "application/json"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 30000
+    }
+   },
+   "id": "5fee3f58-bfe3-4567-8fa7-1bea4e89a205",
+   "name": "Get Conversation Workspace",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    -2608,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://send.dulcy.io/api/replies/'+$('Select Existing Conversation').first().json.replyId+'/conversation-thread' }}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "={{ 'Bearer ' + $json.fields['EmailBison API'] }}"
+      },
+      {
+       "name": "Accept",
+       "value": "application/json"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "responseFormat": "json"
+      }
+     },
+     "timeout": 60000
+    }
+   },
+   "id": "eda4744e-e92e-43e1-84e8-8cdc59b49159",
+   "name": "Read Original Conversation",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    -2384,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const identity=$('Resolve Manual Contact Identity').first().json.manualIdentity;\nconst sent=$('Resolve Manual Contact Identity').first().json.body.data.reply;\nconst thread=$json.data;\nif(!thread?.current_reply||String(thread.current_reply.id)!==String(sent.id)||String(thread.current_reply.parent_id||'')!==String(identity.parentId))throw Error('Conversation response does not match outgoing message');\nconst normalize=v=>String(v||'').trim().toLowerCase();\nif(!identity.senderEmails.includes(normalize(thread.current_reply.from_email_address)))throw Error('Conversation sender mismatch');\nconst messages=new Map([thread.current_reply,...(thread.older_messages||[])].map(m=>[String(m.id),m]));\nconst fields=row=>row.json.fields||row.json;\nconst rows=$('Search records').all().filter(row=>row.json.id&&String(fields(row)['Workspace ID (Bison)']||'')===identity.workspace);\nlet parent=String(thread.current_reply.parent_id||'');const seen=new Set();\nwhile(parent&&!seen.has(parent)){\n seen.add(parent);const message=messages.get(parent);if(!message)break;\n let matches=rows.filter(row=>String(fields(row).reply_message_id||'')===parent);\n if(!matches.length && identity.needsParentResolution && message.lead_id && message.campaign_id){\n  matches=rows.filter(row=>{const f=fields(row);return String(f.lead_id||'')===String(message.lead_id)&&String(f.campaign_id||'')===String(message.campaign_id)&&identity.senderEmails.includes(normalize(f['Inbox Email']))&&identity.intendedTo.includes(normalize(f['Leads Email']));});\n }\n if(matches.length>1)throw Error('Duplicate records for the same ancestor message; reconciliation required');\n if(matches.length===1){\n  const f=fields(matches[0]);\n  if(identity.needsParentResolution && (!identity.senderEmails.includes(normalize(f['Inbox Email'])) || !identity.intendedTo.includes(normalize(f['Leads Email']))))throw Error('Ancestor participants do not match multi-recipient sent message');\n  if(identity.leadId&&f.lead_id&&String(f.lead_id)!==identity.leadId)throw Error('Conversation lead mismatch');\n  if(message.lead_id&&f.lead_id&&String(f.lead_id)!==String(message.lead_id))throw Error('Ancestor lead mismatch');\n  if(message.campaign_id&&f.campaign_id&&String(f.campaign_id)!==String(message.campaign_id))throw Error('Ancestor campaign mismatch');\n  return [{json:matches[0].json,pairedItem:{item:0}}];\n }\n parent=String(message.parent_id||'');\n}\nthrow Error('No unique saved ancestor in the original conversation; preserve records for reconciliation');\n"
+   },
+   "id": "e22733d1-cd94-4c14-ba71-5498ea8fef94",
+   "name": "Select Verified Thread Record",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -2160,
+    1040
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "function address(value){\n  if(value&&typeof value==='object')return address(value.address||value.email_address||value.email||'');\n  const raw=String(value||'').trim().toLowerCase(),match=raw.match(/<([^<>]+)>/);\n  return (match?match[1]:raw).trim();\n}\nfunction repair(value){return String(value||'').replace(/\\u00e2\\u0080\\u0093/g,'\\u2013').replace(/\\u00e2\\u0080\\u0094/g,'\\u2014').replace(/\\u00e2\\u0080\\u0098/g,'\\u2018').replace(/\\u00e2\\u0080\\u0099/g,'\\u2019').replace(/\\u00c2\\u00a0/g,' ');}\nfunction decode(value){\n  const names={amp:'&',lt:'<',gt:'>',quot:'\"',apos:\"'\",nbsp:' ',ndash:'\\u2013',mdash:'\\u2014'};\n  return repair(value).replace(/&(#x[0-9a-f]+|#\\d+|[a-z]+);/gi,(all,key)=>{\n    if(key[0]==='#'){const code=key[1].toLowerCase()==='x'?parseInt(key.slice(2),16):parseInt(key.slice(1),10);return Number.isSafeInteger(code)&&code>0&&code<=0x10ffff?String.fromCodePoint(code):all;}\n    return names[key.toLowerCase()]??all;\n  });\n}\nfunction text(value){return decode(String(value||'').replace(/<(script|style)\\b[^>]*>[\\s\\S]*?<\\/\\1\\s*>/gi,'').replace(/<br\\s*\\/?>/gi,'\\n').replace(/<\\/(?:p|div|li|tr|h[1-6]|blockquote)\\s*>/gi,'\\n').replace(/<li\\b[^>]*>/gi,'- ').replace(/<[^>]*>/g,'')).replace(/\\r\\n?/g,'\\n').replace(/[ \\t]+\\n/g,'\\n').replace(/\\n[ \\t]+/g,'\\n').replace(/\\n{3,}/g,'\\n\\n').trim();}\nconst source=$('Resolve Manual Contact Identity').first().json;\nconst identity=source.manualIdentity||{},event=source.historyEvent||{};\nconst raw=source.body||{},data=raw.data||{},reply=data.reply||{};\nconst record=$json||{},firstName=String(record['OOO - First Name']||'there').trim();\nconst expected=text('<p>Hey '+firstName+',</p><br><p>You mentioned you would be back by this time &ndash; I reached out a couple days ago.</p><br><p>Hopefully we can catch up. Did you get a chance to look at my previous message?</p><br><p>Cheers</p><br>');\nconst subject=String(reply.email_subject||identity.subject||'').trim();\nconst bodyMatches=text(event.body)===expected,subjectMatches=subject==='Back to work?';\nlet confirmed=false;\nif(bodyMatches||subjectMatches){\n  if(!bodyMatches||!subjectMatches)throw Error('OOO-like sent receipt does not exactly match both approved subject and body');\n  const recordId=String(record.id||''),workspace=String(record['Workspace ID (Bison)']||''),recipient=address(record['Leads Email']),inbox=address(record['Inbox Email']);\n  const senders=[...new Set((identity.senderEmails||[]).map(address).filter(Boolean))],intendedTo=[...new Set((identity.intendedTo||[]).map(address).filter(Boolean))];\n  const senderAddress=address(reply.from_email_address),senderEmailId=String(data.sender_email?.id||reply.sender_email_id||'');\n  const cc=[...new Set([...(identity.cc||[]),...(Array.isArray(reply.cc)?reply.cc:[])].map(address).filter(Boolean))];\n  const bcc=[...new Set([...(identity.bcc||[]),...(Array.isArray(reply.bcc)?reply.bcc:[])].map(address).filter(Boolean))];\n  if(!/^rec[a-zA-Z0-9]{14,}$/.test(recordId))throw Error('OOO receipt has no stable Email record identity');\n  if(workspace!==String(identity.workspace||'')||workspace!==String(event.workspace||''))throw Error('OOO receipt workspace does not match the Email record');\n  if(recipient!==address(identity.email)||intendedTo.length!==1||intendedTo[0]!==recipient)throw Error('OOO receipt recipient does not exactly match the authoritative lead');\n  if(!inbox||senders.length!==1||senders[0]!==inbox||senderAddress!==inbox||recipient===inbox)throw Error('OOO receipt sender does not exactly match the authoritative inbox');\n  if(!/^\\d+$/.test(senderEmailId)||String(record.email_stats_id||'')!==senderEmailId)throw Error('OOO receipt sender ID does not match the Email record');\n  if(cc.length||bcc.length)throw Error('OOO receipt unexpectedly contains external copies');\n  if(String(identity.parentId||''))throw Error('OOO receipt is not a standalone new-email send');\n  if(event.provider!=='emailbison'||event.direction!=='outbound'||!event.messageId||!event.key||!event.clock?.iso||!['Sent','Provider time'].includes(String(event.clock.kind||'')))throw Error('OOO receipt is not a durable confirmed provider event');\n  confirmed=true;\n}\nreturn [{json:{...record,_historyEvent:{...event,legacyHistory:String(record['Conversation History']||'')},_oooReceiptConfirmed:confirmed}}];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -1936,
+    976
+   ],
+   "id": "65ed6055-c610-4dc9-bc93-2a2731eaac8d",
+   "name": "Prepare Manual History Admission"
+  },
+  {
+   "parameters": {
+    "workflowId": {
+     "__rl": true,
+     "value": "DulcyCanonicalHistoryAdmissionV2",
+     "mode": "id"
+    },
+    "workflowInputs": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "historyEvent": "={{ $('Resolve Manual Contact Identity').first().json.historyEvent }}",
+      "recordId": "={{ String($json.id||'') }}",
+      "legacyHistory": "={{ String($('Prepare Manual History Admission').first().json._historyEvent.legacyHistory||'') }}"
+     }
+    },
+    "options": {
+     "waitForSubWorkflow": true
+    }
+   },
+   "type": "n8n-nodes-base.executeWorkflow",
+   "typeVersion": 1.3,
+   "position": [
+    -1264,
+    880
+   ],
+   "id": "fa2244ab-cf7b-41d4-bca9-370c56c474d8",
+   "name": "Admit Manual History Event - Existing"
+  },
+  {
+   "parameters": {
+    "workflowId": {
+     "__rl": true,
+     "value": "DulcyCanonicalHistoryAdmissionV2",
+     "mode": "id"
+    },
+    "workflowInputs": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "historyEvent": "={{ $('Resolve Manual Contact Identity').first().json.historyEvent }}",
+      "recordId": "={{ String($json.id||'') }}",
+      "legacyHistory": "={{ '' }}"
+     }
+    },
+    "options": {
+     "waitForSubWorkflow": true
+    }
+   },
+   "type": "n8n-nodes-base.executeWorkflow",
+   "typeVersion": 1.3,
+   "position": [
+    -144,
+    1168
+   ],
+   "id": "758cf223-f555-423e-b560-e947d8a92545",
+   "name": "Admit Manual History Event - New"
+  },
+  {
+   "parameters": {
+    "jsCode": "const b=$('Webhook').first().json.body||{},d=b.data||{},r=d.reply||{};\nconst workspace=String(b.event?.workspace_id||''),campaign=String(d.campaign?.id||''),lead=String(d.lead?.id||'');\nconst mailbox=String(d.sender_email?.email||'').trim().toLowerCase();\nif(!/^\\d+$/.test(workspace)||!/^\\d+$/.test(campaign)||!/^\\d+$/.test(lead)||!mailbox.includes('@'))throw Error('Insufficient stable campaign identity to create a conversation; manual review required');\nreturn [{json:{conversationKey:['emailbison',workspace,campaign,lead,mailbox].join(':'),prior:$json}}];"
+   },
+   "id": "d2dfcff9-3f7b-416b-bccb-fdae54de34d7",
+   "name": "Prepare Create Claim Create_a_record",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -1040,
+    1168
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "INSERT INTO dulcy_reply_agent.conversation_create_claims (conversation_key,execution_id) VALUES ($1,$2) ON CONFLICT DO NOTHING RETURNING conversation_key;",
+    "options": {
+     "queryReplacement": "={{ [$json.conversationKey, String($execution.id)] }}"
+    }
+   },
+   "id": "8fec217e-5f9d-4970-bd8e-d5262c999da7",
+   "name": "Claim Conversation Create_a_record",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    -816,
+    1168
+   ],
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "jsCode": "if(!$json.conversation_key)throw Error('Conversation create already claimed; verify existing record or uncertain prior create before retrying');return [{json:$('Prepare Create Claim Create_a_record').first().json.prior}];"
+   },
+   "id": "a8eafe58-3b3a-49c7-9640-34ed471e69fc",
+   "name": "Check Create Claim Create_a_record",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -592,
+    1168
+   ]
+  },
+  {
+   "parameters": {
+    "workflowId": {
+     "__rl": true,
+     "value": "DulcyReplyFollowupArmV1",
+     "mode": "id"
+    },
+    "workflowInputs": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "recordId": "={{ String($('Update record').first().json.id) }}",
+      "workspaceRecordId": "={{ (()=>{const x=$('Prepare Manual History Admission').first().json;const c=x['Clients Table']||x.fields?.['Clients Table']||[];return String(typeof c[0]==='string'?c[0]:c[0]?.id||'');})() }}",
+      "workspaceIdBison": "={{ String($('Resolve Manual Contact Identity').first().json.body.event.workspace_id) }}",
+      "providerMessageId": "={{ String($('Resolve Manual Contact Identity').first().json.body.data.reply.id) }}",
+      "commit": true
+     }
+    },
+    "options": {
+     "waitForSubWorkflow": false
+    }
+   },
+   "id": "a3542bfb-1c31-4baa-b145-97886b37f3e5",
+   "name": "Schedule next approval-required follow-up",
+   "type": "n8n-nodes-base.executeWorkflow",
+   "typeVersion": 1.2,
+   "position": [
+    1424,
+    384
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

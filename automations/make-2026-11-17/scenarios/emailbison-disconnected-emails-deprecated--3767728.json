@@ -1,0 +1,737 @@
+{
+ "id": 3767728,
+ "name": "EmailBison Disconnected Emails (deprecated)",
+ "teamId": 629049,
+ "hookId": 2135804,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 199728,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": false,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "gateway",
+  "slack",
+  "airtable",
+  "airtable"
+ ],
+ "lastEdit": "2026-07-23T18:04:08.403Z",
+ "scheduling": {
+  "type": "immediately",
+  "maximum_runs_per_minute": 100
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2025-03-14T17:22:59.015Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": false,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 1,
+    "mapper": {},
+    "module": "gateway:CustomWebHook",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "hook": {
+        "data": {
+         "editable": "true"
+        },
+        "label": "emailbison disconnected email"
+       }
+      }
+     },
+     "designer": {
+      "x": -237,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "hook",
+       "type": "hook:gateway-webhook",
+       "label": "Webhook",
+       "required": true
+      },
+      {
+       "name": "maxResults",
+       "type": "number",
+       "label": "Maximum number of results"
+      }
+     ]
+    },
+    "parameters": {
+     "hook": 2135804,
+     "maxResults": 1
+    }
+   },
+   {
+    "id": 2,
+    "mapper": {
+     "text": "Workspace: {{1.event.workspace_name}}\n\nDisconnected email: {{1.data.sender_email.email}}",
+     "parse": false,
+     "mrkdwn": true,
+     "channel": "C08FDE9K18E",
+     "username": "Disconnected Email",
+     "icon_emoji": ":rotating_light:",
+     "channelType": "private",
+     "channelWType": "list"
+    },
+    "module": "slack:CreateMessage",
+    "version": 4,
+    "metadata": {
+     "expect": [
+      {
+       "name": "channelWType",
+       "type": "select",
+       "label": "Enter a channel ID or name",
+       "required": true,
+       "validate": {
+        "enum": [
+         "manualy",
+         "list"
+        ]
+       }
+      },
+      {
+       "name": "text",
+       "type": "text",
+       "label": "Text"
+      },
+      {
+       "name": "blocks",
+       "type": "text",
+       "label": "Blocks"
+      },
+      {
+       "name": "thread_ts",
+       "type": "text",
+       "label": "Thread message ID (time stamp)"
+      },
+      {
+       "name": "reply_broadcast",
+       "type": "boolean",
+       "label": "Reply broadcast"
+      },
+      {
+       "name": "link_names",
+       "type": "boolean",
+       "label": "Link names"
+      },
+      {
+       "name": "parse",
+       "type": "boolean",
+       "label": "Parse message text"
+      },
+      {
+       "name": "mrkdwn",
+       "type": "boolean",
+       "label": "Use markdown"
+      },
+      {
+       "name": "unfurl_links",
+       "type": "boolean",
+       "label": "Unfurl primarily text-based content"
+      },
+      {
+       "name": "unfurl_media",
+       "type": "boolean",
+       "label": "Unfurl media content"
+      },
+      {
+       "name": "icon_emoji",
+       "type": "text",
+       "label": "Icon emoji"
+      },
+      {
+       "name": "icon_url",
+       "type": "url",
+       "label": "Icon url"
+      },
+      {
+       "name": "username",
+       "type": "text",
+       "label": "User name"
+      },
+      {
+       "name": "channelType",
+       "type": "select",
+       "label": "Channel type",
+       "required": true,
+       "validate": {
+        "enum": [
+         "public",
+         "private",
+         "im",
+         "mpim"
+        ]
+       }
+      },
+      {
+       "name": "channel",
+       "type": "select",
+       "label": "Private channel",
+       "required": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "parse": {
+        "mode": "chose"
+       },
+       "mrkdwn": {
+        "mode": "chose"
+       },
+       "channel": {
+        "mode": "chose",
+        "label": "campaign-alerts"
+       },
+       "link_names": {
+        "mode": "chose"
+       },
+       "channelType": {
+        "label": "Private channel"
+       },
+       "channelWType": {
+        "label": "Select from the list"
+       },
+       "unfurl_links": {
+        "mode": "chose"
+       },
+       "unfurl_media": {
+        "mode": "chose"
+       },
+       "reply_broadcast": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "slack3"
+        },
+        "label": "My Slack (bot) connection (make)"
+       }
+      }
+     },
+     "advanced": true,
+     "designer": {
+      "x": 77,
+      "y": -5
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:slack2,slack3",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3738270
+    }
+   },
+   {
+    "id": 3,
+    "mapper": {
+     "base": "appxqINt5XKw7a76A",
+     "table": "tblMSOBJ0wMgxSg4l",
+     "formula": "{Email ID} = '{{1.data.sender_email.id}}'",
+     "maxRecords": "1",
+     "useColumnId": false
+    },
+    "module": "airtable:ActionSearchRecords",
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "base",
+       "type": "select",
+       "label": "Base",
+       "required": true
+      },
+      {
+       "name": "useColumnId",
+       "type": "boolean",
+       "label": "Use Column ID",
+       "required": true
+      },
+      {
+       "name": "table",
+       "type": "select",
+       "label": "Table",
+       "required": true
+      },
+      {
+       "name": "formula",
+       "type": "text",
+       "label": "Formula"
+      },
+      {
+       "name": "maxRecords",
+       "type": "integer",
+       "label": "Limit"
+      },
+      {
+       "name": "sort",
+       "spec": [
+        {
+         "name": "field",
+         "type": "select",
+         "label": "Field",
+         "dynamic": true,
+         "options": []
+        },
+        {
+         "name": "direction",
+         "type": "select",
+         "label": "Direction",
+         "options": [
+          {
+           "label": "Descending",
+           "value": "desc"
+          },
+          {
+           "label": "Ascending",
+           "value": "asc"
+          }
+         ]
+        }
+       ],
+       "type": "array",
+       "label": "Sort"
+      },
+      {
+       "name": "view",
+       "type": "select",
+       "label": "View"
+      },
+      {
+       "name": "fields",
+       "type": "select",
+       "label": "Output Fields",
+       "multiple": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "base": {
+        "mode": "chose",
+        "label": "Alex"
+       },
+       "sort": {
+        "mode": "chose"
+       },
+       "view": {
+        "mode": "chose",
+        "label": "Empty"
+       },
+       "table": {
+        "mode": "chose",
+        "label": "Email Accounts"
+       },
+       "fields": {
+        "mode": "chose"
+       },
+       "useColumnId": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "airtable3"
+        },
+        "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+       }
+      }
+     },
+     "designer": {
+      "x": 377,
+      "y": -5
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:airtable3,airtable2",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3589602
+    }
+   },
+   {
+    "id": 4,
+    "filter": {
+     "name": "",
+     "conditions": [
+      [
+       {
+        "a": "{{3.`__IMTLENGTH__`}}",
+        "b": "1",
+        "o": "text:equal"
+       }
+      ]
+     ]
+    },
+    "mapper": {
+     "id": "{{3.id}}",
+     "base": "appxqINt5XKw7a76A",
+     "table": "tblMSOBJ0wMgxSg4l",
+     "record": {
+      "fldm2q2OfWBOWJpvq": "{{3.`Number of Disconnects` + 1}}"
+     },
+     "typecast": false,
+     "useColumnId": false
+    },
+    "module": "airtable:ActionUpdateRecords",
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "base",
+       "type": "select",
+       "label": "Base",
+       "required": true
+      },
+      {
+       "name": "typecast",
+       "type": "boolean",
+       "label": "Smart links",
+       "required": true
+      },
+      {
+       "name": "useColumnId",
+       "type": "boolean",
+       "label": "Use Column ID",
+       "required": true
+      },
+      {
+       "name": "table",
+       "type": "select",
+       "label": "Table",
+       "required": true
+      },
+      {
+       "name": "id",
+       "type": "text",
+       "label": "Record ID",
+       "required": true
+      },
+      {
+       "name": "record",
+       "spec": [
+        {
+         "name": "fldRYSB93NNdBc4Js",
+         "type": "text",
+         "label": "Email Account"
+        },
+        {
+         "name": "fldR19WUqSSBVQcPO",
+         "type": "number",
+         "label": "Email ID"
+        },
+        {
+         "name": "fldWB4pvEgQ8aYlT2",
+         "type": "number",
+         "label": "Workspace ID"
+        },
+        {
+         "name": "fldURrj0qP1DnAKyD",
+         "time": false,
+         "type": "date",
+         "label": "Warmup Start Date"
+        },
+        {
+         "name": "fldm2q2OfWBOWJpvq",
+         "type": "number",
+         "label": "Number of Disconnects"
+        },
+        {
+         "name": "flduDcGap2GSsqUia",
+         "spec": {
+          "name": "value",
+          "label": "Record ID"
+         },
+         "type": "array",
+         "label": "Client"
+        }
+       ],
+       "type": "collection",
+       "label": "Record"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "base": {
+        "label": "Alex"
+       },
+       "table": {
+        "label": "Email Accounts"
+       },
+       "record": {
+        "nested": {
+         "flduDcGap2GSsqUia": {
+          "mode": "chose"
+         }
+        }
+       },
+       "typecast": {
+        "mode": "chose"
+       },
+       "useColumnId": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "airtable3"
+        },
+        "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+       }
+      }
+     },
+     "designer": {
+      "x": 677,
+      "y": -5
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:airtable3,airtable2",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3589602
+    }
+   }
+  ],
+  "name": "EmailBison Disconnected Emails (deprecated)",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": [
+     [
+      {
+       "id": 7,
+       "module": "util:BasicTrigger",
+       "version": 1,
+       "metadata": {
+        "designer": {
+         "x": 1048,
+         "y": 65,
+         "messages": [
+          {
+           "message": "Field must not be empty.",
+           "category": "setup",
+           "severity": "error"
+          },
+          {
+           "message": "A trigger must be the first module in a scenario.",
+           "category": "link",
+           "severity": "warning"
+          },
+          {
+           "message": "This module is not connected to the flow. This module and everything after it will be skipped during execution. <autoconnect>Link it to your scenario to include them.</autoconnect>",
+           "category": "link",
+           "severity": "warning"
+          }
+         ]
+        }
+       }
+      },
+      {
+       "id": 6,
+       "mapper": {
+        "to": "+19084153001",
+        "body": {
+         "body_0": "123",
+         "body_1": "123",
+         "parameter_names": [
+          "variable1"
+         ],
+         "inputtext-1759772384666": "Hello there! This email account here: {{{{emailaccount}}}} . Has been disconnected in this workspace: {{{{workspace}}}} . May you please reconnect this? Thank you very much."
+        },
+        "fromId": "703687262836451",
+        "messageTemplate": "cheapinboxes_email_disconnect::en_US"
+       },
+       "module": "whatsapp-business-cloud:sendTemplateMessage",
+       "version": 1,
+       "metadata": {
+        "expect": [
+         {
+          "name": "fromId",
+          "type": "select",
+          "label": "Sender ID",
+          "required": true
+         },
+         {
+          "name": "to",
+          "type": "text",
+          "label": "Receiver",
+          "required": true
+         },
+         {
+          "name": "messageTemplate",
+          "type": "select",
+          "label": "Message Template",
+          "required": true
+         },
+         {
+          "name": "body",
+          "spec": [
+           {
+            "name": "inputtext-1759772384666",
+            "type": "hidden",
+            "label": "Text Template"
+           },
+           {
+            "name": "body_0",
+            "type": "text",
+            "label": "{{emailaccount}}",
+            "required": true
+           },
+           {
+            "name": "body_1",
+            "type": "text",
+            "label": "{{workspace}}",
+            "required": true
+           },
+           {
+            "name": "parameter_names",
+            "type": "hidden",
+            "label": "Parameter Names"
+           }
+          ],
+          "type": "collection",
+          "label": "Body"
+         }
+        ],
+        "restore": {
+         "expect": {
+          "fromId": {
+           "mode": "chose",
+           "label": "Dulcy (+1 908-415-6257)"
+          },
+          "messageTemplate": {
+           "label": "cheapinboxes_email_disconnect (en_US)",
+           "nested": [
+            {
+             "name": "body",
+             "spec": [
+              {
+               "type": "html",
+               "label": "<pre>Hello there! This email account here: {{emailaccount}} . Has been disconnected in this workspace: {{workspace}} . May you please reconnect this? Thank you very much.</pre>"
+              },
+              {
+               "name": "inputtext-1759772384666",
+               "type": "hidden",
+               "label": "Text Template",
+               "default": "Hello there! This email account here: {{{{emailaccount}}}} . Has been disconnected in this workspace: {{{{workspace}}}} . May you please reconnect this? Thank you very much."
+              },
+              {
+               "name": "body_0",
+               "type": "text",
+               "label": "{{emailaccount}}",
+               "required": true
+              },
+              {
+               "name": "body_1",
+               "type": "text",
+               "label": "{{workspace}}",
+               "required": true
+              },
+              {
+               "name": "parameter_names",
+               "type": "hidden",
+               "label": "Parameter Names",
+               "default": [
+                "emailaccount",
+                "workspace"
+               ]
+              }
+             ],
+             "type": "collection",
+             "label": "Body"
+            }
+           ]
+          }
+         },
+         "parameters": {
+          "__IMTCONN__": {
+           "data": {
+            "scoped": "true",
+            "connection": "whatsapp-business-cloud2"
+           },
+           "label": "My WhatsApp Business Cloud connection (okay)"
+          }
+         }
+        },
+        "designer": {
+         "x": 1330,
+         "y": 75
+        },
+        "parameters": [
+         {
+          "name": "__IMTCONN__",
+          "type": "account:whatsapp-business-cloud,whatsapp-business-cloud2",
+          "label": "Connection",
+          "required": true
+         }
+        ]
+       },
+       "parameters": {
+        "__IMTCONN__": 4415850
+       }
+      }
+     ]
+    ]
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately",
+   "maximum_runs_per_minute": 100
+  }
+ }
+}

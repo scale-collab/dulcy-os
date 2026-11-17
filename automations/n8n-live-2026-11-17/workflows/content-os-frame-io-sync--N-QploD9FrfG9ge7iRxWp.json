@@ -1,0 +1,807 @@
+{
+ "id": "N-QploD9FrfG9ge7iRxWp",
+ "name": "[Content OS] Frame.io Sync",
+ "active": true,
+ "isArchived": false,
+ "versionId": "411485f5-f92e-4fda-bf16-3dde984b1ee6",
+ "triggerCount": 1,
+ "createdAt": "2026-08-18T17:10:10.268Z",
+ "updatedAt": "2026-11-17T16:41:21.232Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Frame Sync Webhook": {
+   "main": [
+    [
+     {
+      "node": "Validate Frame Request",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate Frame Request": {
+   "main": [
+    [
+     {
+      "node": "Return Frame Accepted",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Get Airtable Content",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Airtable Content": {
+   "main": [
+    [
+     {
+      "node": "Prepare Frame Sync",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Frame Sync": {
+   "main": [
+    [
+     {
+      "node": "Resolve Frame.io Account",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Resolve Frame.io Account": {
+   "main": [
+    [
+     {
+      "node": "Select Frame.io Account",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Select Frame.io Account": {
+   "main": [
+    [
+     {
+      "node": "List Channel Video Folders",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "List Channel Video Folders": {
+   "main": [
+    [
+     {
+      "node": "Match Video Folder",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Match Video Folder": {
+   "main": [
+    [
+     {
+      "node": "Video Folder Exists?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Video Folder Exists?": {
+   "main": [
+    [
+     {
+      "node": "Resolve Video Folder State",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Create Missing Video Folder",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create Missing Video Folder": {
+   "main": [
+    [
+     {
+      "node": "Resolve Video Folder State",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Resolve Video Folder State": {
+   "main": [
+    [
+     {
+      "node": "List Video Folder Children",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "List Video Folder Children": {
+   "main": [
+    [
+     {
+      "node": "Match Raw and Final Folders",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Match Raw and Final Folders": {
+   "main": [
+    [
+     {
+      "node": "Raw Child Exists?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Raw Child Exists?": {
+   "main": [
+    [
+     {
+      "node": "Resolve Raw Child State",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Create Missing Raw Child",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create Missing Raw Child": {
+   "main": [
+    [
+     {
+      "node": "Resolve Raw Child State",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Resolve Raw Child State": {
+   "main": [
+    [
+     {
+      "node": "Final Child Exists?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Final Child Exists?": {
+   "main": [
+    [
+     {
+      "node": "Resolve Final Child State",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Create Missing Final Child",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create Missing Final Child": {
+   "main": [
+    [
+     {
+      "node": "Resolve Final Child State",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Resolve Final Child State": {
+   "main": [
+    [
+     {
+      "node": "List Raw Video Files",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "List Raw Video Files": {
+   "main": [
+    [
+     {
+      "node": "List Final Video Files",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "List Final Video Files": {
+   "main": [
+    [
+     {
+      "node": "Prepare Frame Update",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Frame Update": {
+   "main": [
+    [
+     {
+      "node": "Save Frame.io State",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "responseMode": "responseNode",
+    "options": {}
+   },
+   "id": "e5f35098-fc63-45cc-88cb-69673dc8caed",
+   "name": "Frame Sync Webhook",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    -448,
+    160
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const body=$input.first().json.body??$input.first().json;const recordId=String(body.recordId??body.record_id??'').trim();const action=String(body.action??'').trim();if(!/^rec[A-Za-z0-9]+$/.test(recordId))throw new Error('A valid Airtable content recordId is required.');if(action!=='Sync Frame.io')throw new Error('This workflow only handles Sync Frame.io.');return [{json:{recordId,action}}];"
+   },
+   "id": "cd65656c-b6c7-4ab6-92ee-f6e2eece927c",
+   "name": "Validate Frame Request",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -224,
+    160
+   ]
+  },
+  {
+   "parameters": {
+    "respondWith": "json",
+    "responseBody": "={{ JSON.stringify({success:true,accepted:true,message:'Frame.io sync started.'}) }}",
+    "options": {}
+   },
+   "id": "5f75d4b7-16cb-4fcc-9436-510be12d4a7c",
+   "name": "Return Frame Accepted",
+   "type": "n8n-nodes-base.respondToWebhook",
+   "typeVersion": 1.4,
+   "position": [
+    0,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblcSzvicm3wivvhh/' + $('Validate Frame Request').first().json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "f0d1d05e-f9c7-42ce-8283-0c7f54c54e24",
+   "name": "Get Airtable Content",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    0,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const rec=$input.first().json;const f=rec.fields??{};const title=String(f.Title??'').trim();const date=String(f.Date??'').slice(0,10);const folderName=String(f['Frame.io Folder Name']??'').trim()||[date,title].filter(Boolean).join(' - ');const editingPath=String(f['Editing Route']?.name??f['Editing Route']??f['Editing Path']?.name??f['Editing Path']??'OpusClip').trim();const contentChannel=String(f['Content Channel']?.name??f['Content Channel']??'').trim();const roots={'Alex Woung':'e9c7e6dc-030c-4d02-8ec3-c89b014dc2ad','Alex Woung Raw':'fb84e208-9762-4252-995b-2f478a0545b6'};const channelRootId=roots[contentChannel];if(!channelRootId)throw new Error('Choose Alex Woung or Alex Woung Raw in Content Channel before syncing Frame.io.');if(!folderName)throw new Error('Frame.io Folder Name or Date and Title are required.');return [{json:{recordId:rec.id,record:rec,folderName,editingPath,contentChannel,projectId:'4dc8ec5f-18e7-4e31-be46-96851ff020c7',channelRootId}}];"
+   },
+   "id": "843badd6-4e09-4ee9-bfca-2b88f00b91ca",
+   "name": "Prepare Frame Sync",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    224,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.frame.io/v4/accounts",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "oAuth2Api",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "page_size",
+       "value": "100"
+      },
+      {
+       "name": "include_total_count",
+       "value": "true"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "d1e3740e-6130-4a77-90cc-467fe0e2bad8",
+   "name": "Resolve Frame.io Account",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    448,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const cfg=$('Prepare Frame Sync').first().json;const raw=$input.first().json;const accounts=Array.isArray(raw)?raw:(raw.data??raw.items??raw.accounts??[]);if(!accounts.length)throw new Error('The connected Frame.io credential returned no accessible accounts. Reconnect Frame.io OAuth and retry.');const preferred=accounts.find(x=>String(x.name??x.data?.name??'').trim().toLowerCase().includes('alexander'))??accounts[0];const accountId=preferred.id??preferred.data?.id??'';if(!accountId)throw new Error('Frame.io returned an account without an ID.');return [{json:{...cfg,accountId,accountName:preferred.name??preferred.data?.name??''}}];"
+   },
+   "id": "acaba430-f6d5-43cc-945b-b6479811409c",
+   "name": "Select Frame.io Account",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    672,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblcSzvicm3wivvhh/' + $json.recordId }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify({fields:$json.fields}) }}",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "e7f1ebac-2431-460a-a29b-dcd766329747",
+   "name": "Save Frame.io State",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    4400,
+    160
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.frame.io/v4/accounts/' + $json.accountId + '/folders/' + $json.channelRootId + '/children' }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "oAuth2Api",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "page_size",
+       "value": "100"
+      },
+      {
+       "name": "include_total_count",
+       "value": "true"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "cf2bce69-1862-490b-b5a6-6beed0baecb9",
+   "name": "List Channel Video Folders",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    880,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const cfg=$('Select Frame.io Account').first().json;const raw=$input.first().json;const items=Array.isArray(raw)?raw:(raw.data??raw.items??raw.children??[]);const norm=s=>String(s??'').trim().toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().replace(/\\s+/g,' ');const matches=items.filter(x=>norm(x.name??x.data?.name)===norm(cfg.folderName));if(matches.length>1)throw new Error('Multiple Frame.io video folders match '+cfg.folderName+'. Rename duplicates before syncing.');const folder=matches[0];const videoFolderId=folder?.id??folder?.data?.id??'';const videoFolderUrl=folder?.view_url??folder?.data?.view_url??(videoFolderId?`https://next.frame.io/project/${cfg.projectId}/${videoFolderId}`:'');return [{json:{...cfg,videoFolderId,videoFolderUrl,createVideoFolderBody:JSON.stringify({data:{name:cfg.folderName}})}}];"
+   },
+   "id": "38a23468-a9f3-4f92-9b18-344241be488f",
+   "name": "Match Video Folder",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1104,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "20fc1e84-f658-4f7c-a843-450e2fc81e32",
+       "leftValue": "={{ $json.videoFolderId }}",
+       "rightValue": "",
+       "operator": {
+        "type": "string",
+        "operation": "notEmpty",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "dbfb4ea4-9777-440c-a50d-62b294dced05",
+   "name": "Video Folder Exists?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    1328,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ 'https://api.frame.io/v4/accounts/' + $json.accountId + '/folders/' + $json.channelRootId + '/folders' }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "oAuth2Api",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ $json.createVideoFolderBody }}",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "eced10f0-2da6-4acf-9cf4-090951f67122",
+   "name": "Create Missing Video Folder",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1552,
+    304
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const cfg=$('Match Video Folder').first().json;const response=$input.first().json;const created=response.data??response;const createdId=cfg.videoFolderId?'':(created?.id??'');const videoFolderId=cfg.videoFolderId||createdId;if(!videoFolderId)throw new Error('Frame.io did not return an ID for the video folder.');const videoFolderUrl=cfg.videoFolderUrl||created?.view_url||created?.data?.view_url||`https://next.frame.io/project/${cfg.projectId}/${videoFolderId}`;return [{json:{...cfg,videoFolderId,videoFolderUrl,videoFolderCreated:Boolean(createdId)}}];"
+   },
+   "id": "d099e882-cc75-4907-8dec-f06aae095af5",
+   "name": "Resolve Video Folder State",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1760,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.frame.io/v4/accounts/' + $json.accountId + '/folders/' + $json.videoFolderId + '/children' }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "oAuth2Api",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "page_size",
+       "value": "100"
+      },
+      {
+       "name": "include_total_count",
+       "value": "true"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "0398be44-9466-4cec-9d33-599278ea13d9",
+   "name": "List Video Folder Children",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1984,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const cfg=$('Resolve Video Folder State').first().json;const raw=$input.first().json;const items=Array.isArray(raw)?raw:(raw.data??raw.items??raw.children??[]);const norm=s=>String(s??'').trim().toLowerCase();const find=name=>{const matches=items.filter(x=>norm(x.name??x.data?.name)===norm(name));if(matches.length>1)throw new Error('Multiple '+name+' folders exist inside '+cfg.folderName+'.');return matches[0];};const id=x=>x?.id??x?.data?.id??'';const url=x=>{const folderId=id(x);return x?.view_url??x?.data?.view_url??(folderId?`https://next.frame.io/project/${cfg.projectId}/${folderId}`:'');};const rawFolder=find('Raw');const finalFolder=find('Final');return [{json:{...cfg,rawFolderId:id(rawFolder),rawFolderUrl:url(rawFolder),finalFolderId:id(finalFolder),finalFolderUrl:url(finalFolder),createRawFolderBody:JSON.stringify({data:{name:'Raw'}}),createFinalFolderBody:JSON.stringify({data:{name:'Final'}})}}];"
+   },
+   "id": "4ca07fa7-bede-4d96-8417-7b585ec23069",
+   "name": "Match Raw and Final Folders",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2208,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "43f59d56-5e66-42b5-9009-a531fd0798de",
+       "leftValue": "={{ $json.rawFolderId }}",
+       "rightValue": "",
+       "operator": {
+        "type": "string",
+        "operation": "notEmpty",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "66f8e553-d431-4f01-b78a-2dd37b7a14fd",
+   "name": "Raw Child Exists?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    2432,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ 'https://api.frame.io/v4/accounts/' + $json.accountId + '/folders/' + $json.videoFolderId + '/folders' }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "oAuth2Api",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ $json.createRawFolderBody }}",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "217b3feb-0d44-4985-b6bb-3c80d2750d87",
+   "name": "Create Missing Raw Child",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2640,
+    304
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const cfg=$('Match Raw and Final Folders').first().json;const response=$input.first().json;const created=response.data??response;const createdId=cfg.rawFolderId?'':(created?.id??'');const rawFolderId=cfg.rawFolderId||createdId;if(!rawFolderId)throw new Error('Frame.io did not return an ID for the Raw folder.');const rawFolderUrl=cfg.rawFolderUrl||created?.view_url||created?.data?.view_url||`https://next.frame.io/project/${cfg.projectId}/${rawFolderId}`;return [{json:{...cfg,rawFolderId,rawFolderUrl,rawFolderCreated:Boolean(createdId)}}];"
+   },
+   "id": "da44dbcc-b74e-4b5a-a8de-8fe29fa0f30a",
+   "name": "Resolve Raw Child State",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2864,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "ba921d60-a4f1-4bac-b21c-18abad98a4f3",
+       "leftValue": "={{ $json.finalFolderId }}",
+       "rightValue": "",
+       "operator": {
+        "type": "string",
+        "operation": "notEmpty",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "b1961000-a504-4f33-93ea-0f3f2a4cf75c",
+   "name": "Final Child Exists?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    3088,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ 'https://api.frame.io/v4/accounts/' + $json.accountId + '/folders/' + $json.videoFolderId + '/folders' }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "oAuth2Api",
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ $json.createFinalFolderBody }}",
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "56ce6800-63b2-42f1-9a85-4e220909271f",
+   "name": "Create Missing Final Child",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    3312,
+    304
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const cfg=$('Resolve Raw Child State').first().json;const response=$input.first().json;const created=response.data??response;const createdId=cfg.finalFolderId?'':(created?.id??'');const finalFolderId=cfg.finalFolderId||createdId;if(!finalFolderId)throw new Error('Frame.io did not return an ID for the Final folder.');const finalFolderUrl=cfg.finalFolderUrl||created?.view_url||created?.data?.view_url||`https://next.frame.io/project/${cfg.projectId}/${finalFolderId}`;return [{json:{...cfg,finalFolderId,finalFolderUrl,finalFolderCreated:Boolean(createdId)}}];"
+   },
+   "id": "04e3af05-685b-47a8-a482-c0dfb4464e6c",
+   "name": "Resolve Final Child State",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3520,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.frame.io/v4/accounts/' + $json.accountId + '/folders/' + $json.rawFolderId + '/children' }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "oAuth2Api",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "page_size",
+       "value": "100"
+      },
+      {
+       "name": "include_total_count",
+       "value": "true"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "12906f52-b49b-49d9-9349-3a4263775ad2",
+   "name": "List Raw Video Files",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    3744,
+    160
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.frame.io/v4/accounts/' + $('Resolve Final Child State').first().json.accountId + '/folders/' + $('Resolve Final Child State').first().json.finalFolderId + '/children' }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "oAuth2Api",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "page_size",
+       "value": "100"
+      },
+      {
+       "name": "include_total_count",
+       "value": "true"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 120000
+    }
+   },
+   "id": "9450ba9c-a4b3-42d1-82d4-f2ab7534982d",
+   "name": "List Final Video Files",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    3968,
+    160
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const cfg=$('Resolve Final Child State').first().json;const list=x=>Array.isArray(x)?x:(x.data??x.items??x.children??[]);const rawItems=list($('List Raw Video Files').first().json);const finalItems=list($input.first().json);const files=items=>items.filter(x=>String(x.type??x.data?.type??'').toLowerCase()==='file');const pickVideo=items=>files(items).find(x=>String(x.media_type??x.data?.media_type??'').toLowerCase().startsWith('video/'))??files(items)[0];const rawVideo=pickVideo(rawItems);const finalVideo=pickVideo(finalItems);const assetId=finalVideo?.id??finalVideo?.data?.id??'';const assetUrl=finalVideo?.media_links?.original?.download_url??finalVideo?.data?.media_links?.original?.download_url??finalVideo?.download_url??finalVideo?.data?.download_url??finalVideo?.view_url??finalVideo?.data?.view_url??'';const pathKey=String(cfg.editingPath??'OpusClip').toLowerCase();const usesDaVinci=pathKey==='manual editor'||pathKey.includes('davinci');let stage='Scheduled to Record';let message=(cfg.videoFolderCreated||cfg.rawFolderCreated||cfg.finalFolderCreated)?cfg.contentChannel+' Frame.io folder structure created; upload the recording to Raw.':'Frame.io folders are ready; upload the recording to Raw.';if(rawVideo){stage='Recorded';message=usesDaVinci?'Recording found. Edit it in DaVinci Resolve, then upload the finished video to Final.':'Recording found. Submit it to OpusClip for the long-form editing pass.';}if(finalVideo){stage='Ready for Thumbnail';message=usesDaVinci?'Finished DaVinci Resolve edit found. It is ready for short clips.':'Finished Frame.io video found and linked.';}return [{json:{recordId:cfg.recordId,fields:{'Frame.io Folder Name':cfg.folderName,'Frame.io Raw Folder URL':cfg.rawFolderUrl,'Frame.io Final Folder URL':cfg.finalFolderUrl,'Frame.io Final Asset ID':assetId||null,'Frame.io Final Asset URL':assetUrl||null,'Production Stage':stage,'Last Automation Message':message,'Automation Error':''}}}];"
+   },
+   "id": "d1669524-fa02-4dc3-bacd-b8e3b78e68b3",
+   "name": "Prepare Frame Update",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    4192,
+    160
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

@@ -1,0 +1,2315 @@
+{
+ "id": 2503893,
+ "name": "[2.1 POST CALL] Contract Events",
+ "teamId": 629049,
+ "hookId": 1431992,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 162901,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": false,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "pandadoc",
+  "close-crm",
+  "close-crm",
+  "builtin",
+  "slack",
+  "close-crm",
+  "builtin",
+  "close-crm",
+  "slack",
+  "http",
+  "http"
+ ],
+ "lastEdit": "2026-07-27T16:59:26.384Z",
+ "scheduling": {
+  "type": "immediately",
+  "maximum_runs_per_minute": 100
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2024-05-30T17:24:19.494Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": false,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 1,
+    "mapper": {},
+    "module": "pandadoc:watchDocuments",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "__IMTHOOK__": {
+        "data": {
+         "editable": "false"
+        },
+        "label": "Contract Events"
+       }
+      }
+     },
+     "designer": {
+      "x": 0,
+      "y": 600
+     },
+     "parameters": [
+      {
+       "name": "__IMTHOOK__",
+       "type": "hook:pandadoc",
+       "label": "Webhook",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTHOOK__": 1431992
+    }
+   },
+   {
+    "id": 2,
+    "filter": {
+     "name": "Agreement Yes?",
+     "conditions": [
+      [
+       {
+        "a": "{{1.name}}",
+        "b": "Agreement",
+        "o": "text:contain:ci"
+       }
+      ],
+      [
+       {
+        "a": "{{1.name}}",
+        "b": "Partnership",
+        "o": "text:contain:ci"
+       }
+      ]
+     ]
+    },
+    "mapper": {
+     "email": "{{1.recipients[].email}}",
+     "limit": "1"
+    },
+    "module": "close-crm:searchLeadsviaAdvancedFilters",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "id",
+       "type": "text",
+       "label": "Lead ID"
+      },
+      {
+       "name": "name",
+       "type": "text",
+       "label": "Lead Name"
+      },
+      {
+       "name": "email",
+       "type": "email",
+       "label": "Contact's Email"
+      },
+      {
+       "name": "phone",
+       "type": "text",
+       "label": "Contact's Phone Number"
+      },
+      {
+       "name": "url",
+       "type": "url",
+       "label": "Contact's URL"
+      },
+      {
+       "name": "query",
+       "type": "any",
+       "label": "Filtering Query"
+      },
+      {
+       "name": "limit",
+       "type": "uinteger",
+       "label": "Limit"
+      }
+     ],
+     "restore": {
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "close-crm"
+        },
+        "label": "My Close CRM connection (alexander@dulcymedia.com)"
+       }
+      }
+     },
+     "designer": {
+      "x": 300,
+      "y": 600
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:close-crm",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 2737753
+    }
+   },
+   {
+    "id": 12,
+    "filter": {
+     "name": "",
+     "conditions": [
+      [
+       {
+        "a": "{{2.`__IMTLENGTH__`}}",
+        "b": "0",
+        "o": "number:notequal"
+       },
+       {
+        "a": "{{2.display_name}}",
+        "b": "Alexander Woung",
+        "o": "text:notequal"
+       }
+      ]
+     ]
+    },
+    "mapper": {
+     "limit": "1",
+     "lead_id": "{{2.id}}",
+     "_order_by": "date_created"
+    },
+    "module": "close-crm:ActionListOpportunities",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "lead_id",
+       "type": "select",
+       "label": "Lead IDs",
+       "multiple": true
+      },
+      {
+       "name": "user_id",
+       "type": "select",
+       "label": "User IDs",
+       "multiple": true
+      },
+      {
+       "name": "status_id",
+       "type": "select",
+       "label": "Status IDs",
+       "multiple": true
+      },
+      {
+       "name": "value_period",
+       "type": "select",
+       "label": "Value Periods",
+       "multiple": true,
+       "validate": {
+        "enum": [
+         "one_time",
+         "monthly",
+         "annual"
+        ]
+       }
+      },
+      {
+       "name": "query",
+       "type": "text",
+       "label": "Query"
+      },
+      {
+       "name": "_order_by",
+       "type": "select",
+       "label": "Order by",
+       "validate": {
+        "enum": [
+         "date_won",
+         "date_created",
+         "date_updated",
+         "confidence",
+         "user_name",
+         "value",
+         "annualized_value",
+         "annualized_expected_value"
+        ]
+       }
+      },
+      {
+       "name": "order_direction",
+       "type": "select",
+       "label": "Order Direction",
+       "validate": {
+        "enum": [
+         "",
+         "-"
+        ]
+       }
+      },
+      {
+       "name": "limit",
+       "type": "uinteger",
+       "label": "Limit"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "lead_id": {
+        "mode": "edit"
+       },
+       "user_id": {
+        "mode": "chose"
+       },
+       "_order_by": {
+        "mode": "chose",
+        "label": "Date Created"
+       },
+       "status_id": {
+        "mode": "chose"
+       },
+       "value_period": {
+        "mode": "chose"
+       },
+       "order_direction": {
+        "mode": "chose",
+        "label": "Empty"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "close-crm"
+        },
+        "label": "My Close CRM connection (alexander@dulcymedia.com)"
+       }
+      }
+     },
+     "designer": {
+      "x": 600,
+      "y": 600
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:close-crm",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 2737753
+    }
+   },
+   {
+    "id": 3,
+    "mapper": null,
+    "module": "builtin:BasicRouter",
+    "routes": [
+     {
+      "flow": [
+       {
+        "id": 4,
+        "filter": {
+         "name": "Contract Sent",
+         "conditions": [
+          [
+           {
+            "a": "{{1.status}}",
+            "b": "document.sent",
+            "o": "text:equal"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "text": "{{1.name}} has been sent to {{1.token_values.`Client.Company`}} on {{formatDate(now; \"MM-DD-YYYY\")}}",
+         "parse": false,
+         "mrkdwn": true,
+         "channel": "C075UR0HRRR",
+         "channelType": "private",
+         "channelWType": "list"
+        },
+        "module": "slack:CreateMessage",
+        "version": 4,
+        "metadata": {
+         "expect": [
+          {
+           "name": "channelWType",
+           "type": "select",
+           "label": "Enter a channel ID or name",
+           "required": true,
+           "validate": {
+            "enum": [
+             "manualy",
+             "list"
+            ]
+           }
+          },
+          {
+           "name": "text",
+           "type": "text",
+           "label": "Text"
+          },
+          {
+           "name": "blocks",
+           "type": "text",
+           "label": "Blocks"
+          },
+          {
+           "name": "thread_ts",
+           "type": "text",
+           "label": "Thread message ID (time stamp)"
+          },
+          {
+           "name": "reply_broadcast",
+           "type": "boolean",
+           "label": "Reply broadcast"
+          },
+          {
+           "name": "link_names",
+           "type": "boolean",
+           "label": "Link names"
+          },
+          {
+           "name": "parse",
+           "type": "boolean",
+           "label": "Parse message text"
+          },
+          {
+           "name": "mrkdwn",
+           "type": "boolean",
+           "label": "Use markdown"
+          },
+          {
+           "name": "unfurl_links",
+           "type": "boolean",
+           "label": "Unfurl primarily text-based content"
+          },
+          {
+           "name": "unfurl_media",
+           "type": "boolean",
+           "label": "Unfurl media content"
+          },
+          {
+           "name": "icon_emoji",
+           "type": "text",
+           "label": "Icon emoji"
+          },
+          {
+           "name": "icon_url",
+           "type": "url",
+           "label": "Icon url"
+          },
+          {
+           "name": "username",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "channelType",
+           "type": "select",
+           "label": "Channel type",
+           "required": true,
+           "validate": {
+            "enum": [
+             "public",
+             "private",
+             "im",
+             "mpim"
+            ]
+           }
+          },
+          {
+           "name": "channel",
+           "type": "select",
+           "label": "Private channel",
+           "required": true
+          },
+          {
+           "name": "channelWType",
+           "type": "select",
+           "label": "Enter a channel ID or name",
+           "required": true,
+           "validate": {
+            "enum": [
+             "manualy",
+             "list"
+            ]
+           }
+          },
+          {
+           "name": "text",
+           "type": "text",
+           "label": "Text"
+          },
+          {
+           "name": "blocks",
+           "type": "text",
+           "label": "Blocks"
+          },
+          {
+           "name": "thread_ts",
+           "type": "text",
+           "label": "Thread message ID (time stamp)"
+          },
+          {
+           "name": "reply_broadcast",
+           "type": "boolean",
+           "label": "Reply broadcast"
+          },
+          {
+           "name": "link_names",
+           "type": "boolean",
+           "label": "Link names"
+          },
+          {
+           "name": "parse",
+           "type": "boolean",
+           "label": "Parse message text"
+          },
+          {
+           "name": "mrkdwn",
+           "type": "boolean",
+           "label": "Use markdown"
+          },
+          {
+           "name": "unfurl_links",
+           "type": "boolean",
+           "label": "Unfurl primarily text-based content"
+          },
+          {
+           "name": "unfurl_media",
+           "type": "boolean",
+           "label": "Unfurl media content"
+          },
+          {
+           "name": "icon_emoji",
+           "type": "text",
+           "label": "Icon emoji"
+          },
+          {
+           "name": "icon_url",
+           "type": "url",
+           "label": "Icon url"
+          },
+          {
+           "name": "username",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "channelType",
+           "type": "select",
+           "label": "Channel type",
+           "required": true,
+           "validate": {
+            "enum": [
+             "public",
+             "private",
+             "im",
+             "mpim"
+            ]
+           }
+          },
+          {
+           "name": "channel",
+           "type": "select",
+           "label": "Private channel",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "parse": {
+            "mode": "chose"
+           },
+           "mrkdwn": {
+            "mode": "chose"
+           },
+           "channel": {
+            "mode": "chose",
+            "label": "contract-events"
+           },
+           "link_names": {
+            "mode": "chose"
+           },
+           "channelType": {
+            "label": "Private channel"
+           },
+           "channelWType": {
+            "label": "Select from the list"
+           },
+           "unfurl_links": {
+            "mode": "chose"
+           },
+           "unfurl_media": {
+            "mode": "chose"
+           },
+           "reply_broadcast": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "slack3"
+            },
+            "label": "My Slack (bot) connectionfix (make)"
+           }
+          }
+         },
+         "designer": {
+          "x": 1200,
+          "y": 150
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:slack2,slack3",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3736690
+        }
+       },
+       {
+        "id": 7,
+        "mapper": {
+         "id": "{{2.id}}",
+         "custom": {
+          "cf_pdFQlR5IaMeYvZamaxZ20JEoUlkY6Oc5YV7aNo8F7Qe": "https://app.pandadoc.com/a/#documents/{{1.id}}"
+         }
+        },
+        "module": "close-crm:ActionUpdateLead",
+        "onerror": [
+         {
+          "id": 17,
+          "module": "builtin:Ignore",
+          "version": 1,
+          "metadata": {
+           "designer": {
+            "x": 1800,
+            "y": 300
+           }
+          }
+         }
+        ],
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "mode": "edit",
+           "name": "id",
+           "type": "select",
+           "label": "Lead ID",
+           "required": true
+          },
+          {
+           "name": "name",
+           "type": "text",
+           "label": "Name"
+          },
+          {
+           "name": "description",
+           "type": "text",
+           "label": "Description"
+          },
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL"
+          },
+          {
+           "mode": "edit",
+           "name": "status_id",
+           "type": "select",
+           "label": "Status ID"
+          },
+          {
+           "name": "contacts",
+           "spec": {
+            "name": "value",
+            "spec": [
+             {
+              "name": "name",
+              "type": "text",
+              "label": "Name"
+             },
+             {
+              "name": "title",
+              "type": "text",
+              "label": "Title"
+             },
+             {
+              "name": "emails",
+              "spec": {
+               "spec": [
+                {
+                 "name": "type",
+                 "type": "select",
+                 "label": "Type",
+                 "options": [
+                  {
+                   "label": "Office",
+                   "value": "office"
+                  },
+                  {
+                   "label": "Home",
+                   "value": "home"
+                  },
+                  {
+                   "label": "Direct",
+                   "value": "direct"
+                  },
+                  {
+                   "label": "Other",
+                   "value": "other"
+                  }
+                 ]
+                },
+                {
+                 "name": "email",
+                 "type": "email",
+                 "label": "Email"
+                }
+               ],
+               "type": "collection"
+              },
+              "type": "array",
+              "label": "Emails"
+             },
+             {
+              "name": "phones",
+              "spec": {
+               "spec": [
+                {
+                 "name": "type",
+                 "type": "select",
+                 "label": "Type",
+                 "options": [
+                  {
+                   "label": "Office",
+                   "value": "office"
+                  },
+                  {
+                   "label": "Mobile",
+                   "value": "mobile"
+                  },
+                  {
+                   "label": "Home",
+                   "value": "home"
+                  },
+                  {
+                   "label": "Direct",
+                   "value": "direct"
+                  },
+                  {
+                   "label": "Fax",
+                   "value": "fax"
+                  },
+                  {
+                   "label": "Other",
+                   "value": "other"
+                  }
+                 ]
+                },
+                {
+                 "name": "phone",
+                 "type": "text",
+                 "label": "Phone Number"
+                }
+               ],
+               "type": "collection",
+               "label": "Phone"
+              },
+              "type": "array",
+              "label": "Phones"
+             }
+            ],
+            "type": "collection"
+           },
+           "type": "array",
+           "label": "Contacts"
+          },
+          {
+           "name": "addresses",
+           "spec": {
+            "name": "value",
+            "spec": [
+             {
+              "name": "label",
+              "type": "text",
+              "label": "Label"
+             },
+             {
+              "name": "address_1",
+              "type": "text",
+              "label": "Address 1"
+             },
+             {
+              "name": "address_2",
+              "type": "text",
+              "label": "Address 2"
+             },
+             {
+              "name": "city",
+              "type": "text",
+              "label": "City"
+             },
+             {
+              "name": "state",
+              "type": "text",
+              "label": "State"
+             },
+             {
+              "name": "zipcode",
+              "type": "text",
+              "label": "ZIP code"
+             },
+             {
+              "name": "country",
+              "type": "text",
+              "label": "Country"
+             }
+            ],
+            "type": "collection"
+           },
+           "type": "array",
+           "label": "Addresses"
+          },
+          {
+           "name": "custom",
+           "spec": [
+            {
+             "name": "cf_PMb16eFLfrXK6svUgFwSGRK0wsMcmVIUJz8xEHpv15h",
+             "type": "text",
+             "label": "Lead Source"
+            },
+            {
+             "name": "cf_OoD9hAYZ8KHbT37YG1W6msrBSVtrpKbJaJXYtyWD1CQ",
+             "type": "text",
+             "label": "Current MMR"
+            },
+            {
+             "name": "cf_hisRvCzyfAkf2PSH9rVrKAdA0x7X2nVsucJFJAjVlVn",
+             "type": "text",
+             "label": "Meeting Time/Date"
+            },
+            {
+             "name": "cf_ef4lUZ8EpQO7RV0OehjfJghji3MKfWnk5DboWnP0gZ5",
+             "type": "text",
+             "label": "Meeting Link"
+            },
+            {
+             "name": "cf_gjfpaANPAMf7vDNMrjBq4iumZsuvaADkMI3uJNgy5Gg",
+             "type": "text",
+             "label": "Reschedule Link"
+            },
+            {
+             "name": "cf_pdFQlR5IaMeYvZamaxZ20JEoUlkY6Oc5YV7aNo8F7Qe",
+             "type": "text",
+             "label": "Contract Link"
+            },
+            {
+             "name": "cf_yVxeD7ciDJLU54curIWvYbgaay48hRkx0oHZ6yf904a",
+             "type": "text",
+             "label": "Zoom Recording"
+            },
+            {
+             "name": "cf_qdiqcn7s027s8KUF8FDWfFBjL6cLehCMXgFFjDVsQPb",
+             "type": "text",
+             "label": "Onboarding Form"
+            }
+           ],
+           "type": "collection",
+           "label": "Custom Fields"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "id": {
+            "mode": "edit"
+           },
+           "contacts": {
+            "mode": "chose"
+           },
+           "addresses": {
+            "mode": "chose"
+           },
+           "status_id": {
+            "mode": "edit"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "close-crm"
+            },
+            "label": "My Close CRM connection (alexander@dulcymedia.com)"
+           }
+          }
+         },
+         "designer": {
+          "x": 1500,
+          "y": 150
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:close-crm",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 2737753
+        }
+       },
+       {
+        "id": 6,
+        "mapper": {
+         "id": "{{12.id}}",
+         "custom": {},
+         "status_id": "stat_pQPaE8gYxCL8YnN3BfR8nX3Gup4mRztvNNHwABOkzOs"
+        },
+        "module": "close-crm:ActionUpdateOpportunity",
+        "version": 1,
+        "metadata": {
+         "expect": [
+          {
+           "mode": "edit",
+           "name": "id",
+           "type": "select",
+           "label": "Opportunity ID",
+           "required": true
+          },
+          {
+           "mode": "edit",
+           "name": "status_id",
+           "type": "select",
+           "label": "Status ID"
+          },
+          {
+           "name": "confidence",
+           "type": "uinteger",
+           "label": "Confidence",
+           "validate": {
+            "max": 100,
+            "min": 0
+           }
+          },
+          {
+           "name": "value",
+           "type": "number",
+           "label": "Value"
+          },
+          {
+           "name": "value_period",
+           "type": "select",
+           "label": "Value Period",
+           "validate": {
+            "enum": [
+             "one_time",
+             "monthly",
+             "annual"
+            ]
+           }
+          },
+          {
+           "name": "note",
+           "type": "text",
+           "label": "Note"
+          },
+          {
+           "name": "date_won",
+           "type": "date",
+           "label": "Date Won"
+          },
+          {
+           "name": "custom",
+           "spec": [
+            {
+             "name": "cf_Gsgkvnm2wl7GBDk5Vly2J2lcgOeVru47eyZtunLqrUR",
+             "type": "select",
+             "label": "Product (Example)",
+             "multiple": true
+            },
+            {
+             "name": "cf_sH9bICoOdDXKYClp8t5cxlchbVA0hW61eC2Vi2hTSY8",
+             "time": false,
+             "type": "date",
+             "label": "Renewal Date (Example)"
+            },
+            {
+             "name": "cf_Sktk4MsFVeVffnXB3JLCPxjnbnur3Uqkb3y3HROk0eA",
+             "type": "text",
+             "label": "Contract Link (Example)"
+            },
+            {
+             "name": "cf_hgkn1mBBOgFeu85ooukCzeudZkf1M9nRf4LsSulQHCs",
+             "type": "text",
+             "label": "Tracking ID (Example)"
+            }
+           ],
+           "type": "collection",
+           "label": "Custom Fields"
+          }
+         ],
+         "restore": {
+          "expect": {
+           "id": {
+            "mode": "edit"
+           },
+           "custom": {
+            "nested": {
+             "cf_Gsgkvnm2wl7GBDk5Vly2J2lcgOeVru47eyZtunLqrUR": {
+              "mode": "chose"
+             }
+            }
+           },
+           "status_id": {
+            "mode": "chose",
+            "label": "Contract Sent"
+           },
+           "value_period": {
+            "mode": "chose",
+            "label": "Empty"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "close-crm"
+            },
+            "label": "My Close CRM connection (alexander@dulcymedia.com)"
+           }
+          }
+         },
+         "designer": {
+          "x": 1800,
+          "y": 0
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:close-crm",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 2737753
+        }
+       }
+      ]
+     },
+     {
+      "flow": [
+       {
+        "id": 8,
+        "filter": {
+         "name": "contract viewed",
+         "conditions": [
+          [
+           {
+            "a": "{{1.status}}",
+            "b": "document.viewed",
+            "o": "text:equal"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "text": "{{1.token_values.`Client.Company`}} has viewed the {{1.name}} contract on {{formatDate(now; \"MM-DD-YYYY\")}}",
+         "parse": false,
+         "mrkdwn": true,
+         "channel": "C075UR0HRRR",
+         "channelType": "private",
+         "channelWType": "list"
+        },
+        "module": "slack:CreateMessage",
+        "version": 4,
+        "metadata": {
+         "expect": [
+          {
+           "name": "channelWType",
+           "type": "select",
+           "label": "Enter a channel ID or name",
+           "required": true,
+           "validate": {
+            "enum": [
+             "manualy",
+             "list"
+            ]
+           }
+          },
+          {
+           "name": "text",
+           "type": "text",
+           "label": "Text"
+          },
+          {
+           "name": "blocks",
+           "type": "text",
+           "label": "Blocks"
+          },
+          {
+           "name": "thread_ts",
+           "type": "text",
+           "label": "Thread message ID (time stamp)"
+          },
+          {
+           "name": "reply_broadcast",
+           "type": "boolean",
+           "label": "Reply broadcast"
+          },
+          {
+           "name": "link_names",
+           "type": "boolean",
+           "label": "Link names"
+          },
+          {
+           "name": "parse",
+           "type": "boolean",
+           "label": "Parse message text"
+          },
+          {
+           "name": "mrkdwn",
+           "type": "boolean",
+           "label": "Use markdown"
+          },
+          {
+           "name": "unfurl_links",
+           "type": "boolean",
+           "label": "Unfurl primarily text-based content"
+          },
+          {
+           "name": "unfurl_media",
+           "type": "boolean",
+           "label": "Unfurl media content"
+          },
+          {
+           "name": "icon_emoji",
+           "type": "text",
+           "label": "Icon emoji"
+          },
+          {
+           "name": "icon_url",
+           "type": "url",
+           "label": "Icon url"
+          },
+          {
+           "name": "username",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "channelType",
+           "type": "select",
+           "label": "Channel type",
+           "required": true,
+           "validate": {
+            "enum": [
+             "public",
+             "private",
+             "im",
+             "mpim"
+            ]
+           }
+          },
+          {
+           "name": "channel",
+           "type": "select",
+           "label": "Private channel",
+           "required": true
+          },
+          {
+           "name": "channelWType",
+           "type": "select",
+           "label": "Enter a channel ID or name",
+           "required": true,
+           "validate": {
+            "enum": [
+             "manualy",
+             "list"
+            ]
+           }
+          },
+          {
+           "name": "text",
+           "type": "text",
+           "label": "Text"
+          },
+          {
+           "name": "blocks",
+           "type": "text",
+           "label": "Blocks"
+          },
+          {
+           "name": "thread_ts",
+           "type": "text",
+           "label": "Thread message ID (time stamp)"
+          },
+          {
+           "name": "reply_broadcast",
+           "type": "boolean",
+           "label": "Reply broadcast"
+          },
+          {
+           "name": "link_names",
+           "type": "boolean",
+           "label": "Link names"
+          },
+          {
+           "name": "parse",
+           "type": "boolean",
+           "label": "Parse message text"
+          },
+          {
+           "name": "mrkdwn",
+           "type": "boolean",
+           "label": "Use markdown"
+          },
+          {
+           "name": "unfurl_links",
+           "type": "boolean",
+           "label": "Unfurl primarily text-based content"
+          },
+          {
+           "name": "unfurl_media",
+           "type": "boolean",
+           "label": "Unfurl media content"
+          },
+          {
+           "name": "icon_emoji",
+           "type": "text",
+           "label": "Icon emoji"
+          },
+          {
+           "name": "icon_url",
+           "type": "url",
+           "label": "Icon url"
+          },
+          {
+           "name": "username",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "channelType",
+           "type": "select",
+           "label": "Channel type",
+           "required": true,
+           "validate": {
+            "enum": [
+             "public",
+             "private",
+             "im",
+             "mpim"
+            ]
+           }
+          },
+          {
+           "name": "channel",
+           "type": "select",
+           "label": "Private channel",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "parse": {
+            "mode": "chose"
+           },
+           "mrkdwn": {
+            "mode": "chose"
+           },
+           "channel": {
+            "mode": "chose",
+            "label": "contract-events"
+           },
+           "link_names": {
+            "mode": "chose"
+           },
+           "channelType": {
+            "label": "Private channel"
+           },
+           "channelWType": {
+            "label": "Select from the list"
+           },
+           "unfurl_links": {
+            "mode": "chose"
+           },
+           "unfurl_media": {
+            "mode": "chose"
+           },
+           "reply_broadcast": {
+            "mode": "chose"
+           }
+          },
+          "parameters": {
+           "__IMTCONN__": {
+            "data": {
+             "scoped": "true",
+             "connection": "slack3"
+            },
+            "label": "My Slack (bot) connectionfix (make)"
+           }
+          }
+         },
+         "designer": {
+          "x": 1200,
+          "y": 600
+         },
+         "parameters": [
+          {
+           "name": "__IMTCONN__",
+           "type": "account:slack2,slack3",
+           "label": "Connection",
+           "required": true
+          }
+         ]
+        },
+        "parameters": {
+         "__IMTCONN__": 3736690
+        }
+       }
+      ]
+     },
+     {
+      "flow": [
+       {
+        "id": 10,
+        "filter": {
+         "name": "contract paid",
+         "conditions": [
+          [
+           {
+            "a": "{{1.status}}",
+            "b": "document.paid",
+            "o": "text:equal"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://n8n.dulcy.io/webhook/REDACTED_PATH",
+         "gzip": true,
+         "method": "post",
+         "headers": [],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "multipart_form_data",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": false,
+         "followRedirect": true,
+         "formDataFields": [
+          {
+           "key": "leadId",
+           "value": "{{2.id}}",
+           "fieldType": "text"
+          },
+          {
+           "key": "company",
+           "value": "{{1.token_values.`Client.Company`}}",
+           "fieldType": "text"
+          }
+         ],
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "formDataFields",
+           "spec": [
+            {
+             "name": "fieldType",
+             "type": "select",
+             "label": "Field type",
+             "options": [
+              {
+               "label": "Text",
+               "value": "text",
+               "nested": [
+                {
+                 "name": "key",
+                 "type": "text",
+                 "label": "Key",
+                 "required": true
+                },
+                {
+                 "name": "value",
+                 "type": "text",
+                 "label": "Value"
+                }
+               ]
+              },
+              {
+               "label": "File",
+               "value": "file",
+               "nested": [
+                {
+                 "name": "key",
+                 "type": "text",
+                 "label": "Key",
+                 "required": true
+                },
+                {
+                 "name": "data",
+                 "type": "buffer",
+                 "label": "Data",
+                 "semantic": "file:data"
+                },
+                {
+                 "help": "File name, including the suffix, e.g. invoice, xml",
+                 "name": "fileName",
+                 "type": "filename",
+                 "label": "File name",
+                 "semantic": "file:name"
+                }
+               ]
+              }
+             ],
+             "required": true
+            }
+           ],
+           "type": "array",
+           "label": "Fields"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "POST"
+           },
+           "headers": {
+            "mode": "chose"
+           },
+           "bodyType": {
+            "label": "Multipart/form-data"
+           },
+           "formDataFields": {
+            "mode": "chose",
+            "items": [
+             {
+              "fieldType": {
+               "mode": "chose",
+               "label": "Text"
+              }
+             },
+             {
+              "fieldType": {
+               "mode": "chose",
+               "label": "Text"
+              }
+             }
+            ]
+           }
+          }
+         },
+         "designer": {
+          "x": 1200,
+          "y": 900
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": false,
+         "useNewZLibDeCompress": true
+        }
+       }
+      ],
+      "disabled": true
+     },
+     {
+      "flow": [
+       {
+        "id": 13,
+        "filter": {
+         "name": "",
+         "conditions": [
+          [
+           {
+            "a": "{{1.status}}",
+            "b": "document.completed",
+            "o": "text:equal"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://n8n.dulcy.io/webhook/REDACTED_PATH",
+         "gzip": true,
+         "method": "post",
+         "headers": [],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "multipart_form_data",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": false,
+         "followRedirect": true,
+         "formDataFields": [
+          {
+           "key": "leadId",
+           "value": "{{2.id}}",
+           "fieldType": "text"
+          },
+          {
+           "key": "company",
+           "value": "{{1.token_values.`Client.Company`}}",
+           "fieldType": "text"
+          },
+          {
+           "key": "additional",
+           "value": "{{1.token_values.`Additional Services`}}",
+           "fieldType": "text"
+          }
+         ],
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "formDataFields",
+           "spec": [
+            {
+             "name": "fieldType",
+             "type": "select",
+             "label": "Field type",
+             "options": [
+              {
+               "label": "Text",
+               "value": "text",
+               "nested": [
+                {
+                 "name": "key",
+                 "type": "text",
+                 "label": "Key",
+                 "required": true
+                },
+                {
+                 "name": "value",
+                 "type": "text",
+                 "label": "Value"
+                }
+               ]
+              },
+              {
+               "label": "File",
+               "value": "file",
+               "nested": [
+                {
+                 "name": "key",
+                 "type": "text",
+                 "label": "Key",
+                 "required": true
+                },
+                {
+                 "name": "data",
+                 "type": "buffer",
+                 "label": "Data",
+                 "semantic": "file:data"
+                },
+                {
+                 "help": "File name, including the suffix, e.g. invoice, xml",
+                 "name": "fileName",
+                 "type": "filename",
+                 "label": "File name",
+                 "semantic": "file:name"
+                }
+               ]
+              }
+             ],
+             "required": true
+            }
+           ],
+           "type": "array",
+           "label": "Fields"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "POST"
+           },
+           "headers": {
+            "mode": "chose"
+           },
+           "bodyType": {
+            "label": "Multipart/form-data"
+           },
+           "formDataFields": {
+            "mode": "chose",
+            "items": [
+             {
+              "fieldType": {
+               "mode": "chose",
+               "label": "Text"
+              }
+             },
+             {
+              "fieldType": {
+               "mode": "chose",
+               "label": "Text"
+              }
+             },
+             {
+              "fieldType": {
+               "mode": "chose",
+               "label": "Text"
+              }
+             }
+            ]
+           }
+          }
+         },
+         "designer": {
+          "x": 1200,
+          "y": 1200
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": false,
+         "useNewZLibDeCompress": true
+        }
+       }
+      ]
+     }
+    ],
+    "version": 1,
+    "metadata": {
+     "designer": {
+      "x": 900,
+      "y": 600
+     }
+    }
+   }
+  ],
+  "name": "[2.1 POST CALL] Contract Events",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": [
+     [
+      {
+       "id": 18,
+       "mapper": {
+        "ca": "",
+        "qs": [],
+        "url": "https://n8n.dulcy.io/webhook-test/REDACTED_PATH",
+        "gzip": true,
+        "method": "post",
+        "headers": [],
+        "timeout": "",
+        "useMtls": false,
+        "authPass": "",
+        "authUser": "",
+        "bodyType": "multipart_form_data",
+        "serializeUrl": false,
+        "shareCookies": false,
+        "parseResponse": false,
+        "followRedirect": true,
+        "formDataFields": [
+         {
+          "key": "leadId",
+          "value": "lead_twhcDdS7CnvNyLhH7JkUouHvDMjwFIx99G1AH9MjVxq",
+          "fieldType": "text"
+         },
+         {
+          "key": "company",
+          "value": "Borks",
+          "fieldType": "text"
+         },
+         {
+          "key": "additional",
+          "value": "Cold Email, LinkedIn, AI Caller / Call Flow, Automations",
+          "fieldType": "text"
+         }
+        ],
+        "useQuerystring": false,
+        "followAllRedirects": false,
+        "rejectUnauthorized": true
+       },
+       "module": "http:ActionSendData",
+       "version": 3,
+       "metadata": {
+        "expect": [
+         {
+          "name": "url",
+          "type": "url",
+          "label": "URL",
+          "required": true
+         },
+         {
+          "name": "serializeUrl",
+          "type": "boolean",
+          "label": "Serialize URL",
+          "required": true
+         },
+         {
+          "name": "method",
+          "type": "select",
+          "label": "Method",
+          "required": true,
+          "validate": {
+           "enum": [
+            "get",
+            "head",
+            "post",
+            "put",
+            "patch",
+            "delete",
+            "options"
+           ]
+          }
+         },
+         {
+          "name": "headers",
+          "spec": [
+           {
+            "name": "name",
+            "type": "text",
+            "label": "Name",
+            "required": true
+           },
+           {
+            "name": "value",
+            "type": "text",
+            "label": "Value"
+           }
+          ],
+          "type": "array",
+          "label": "Headers"
+         },
+         {
+          "name": "qs",
+          "spec": [
+           {
+            "name": "name",
+            "type": "text",
+            "label": "Name",
+            "required": true
+           },
+           {
+            "name": "value",
+            "type": "text",
+            "label": "Value"
+           }
+          ],
+          "type": "array",
+          "label": "Query String"
+         },
+         {
+          "name": "bodyType",
+          "type": "select",
+          "label": "Body type",
+          "validate": {
+           "enum": [
+            "raw",
+            "x_www_form_urlencoded",
+            "multipart_form_data"
+           ]
+          }
+         },
+         {
+          "name": "parseResponse",
+          "type": "boolean",
+          "label": "Parse response",
+          "required": true
+         },
+         {
+          "name": "authUser",
+          "type": "text",
+          "label": "User name"
+         },
+         {
+          "name": "authPass",
+          "type": "password",
+          "label": "Password"
+         },
+         {
+          "name": "timeout",
+          "type": "uinteger",
+          "label": "Timeout",
+          "validate": {
+           "max": 300,
+           "min": 1
+          }
+         },
+         {
+          "name": "shareCookies",
+          "type": "boolean",
+          "label": "Share cookies with other HTTP modules",
+          "required": true
+         },
+         {
+          "name": "ca",
+          "type": "cert",
+          "label": "Self-signed certificate"
+         },
+         {
+          "name": "rejectUnauthorized",
+          "type": "boolean",
+          "label": "Reject connections that are using unverified (self-signed) certificates",
+          "required": true
+         },
+         {
+          "name": "followRedirect",
+          "type": "boolean",
+          "label": "Follow redirect",
+          "required": true
+         },
+         {
+          "name": "useQuerystring",
+          "type": "boolean",
+          "label": "Disable serialization of multiple same query string keys as arrays",
+          "required": true
+         },
+         {
+          "name": "gzip",
+          "type": "boolean",
+          "label": "Request compressed content",
+          "required": true
+         },
+         {
+          "name": "useMtls",
+          "type": "boolean",
+          "label": "Use Mutual TLS",
+          "required": true
+         },
+         {
+          "name": "formDataFields",
+          "spec": [
+           {
+            "name": "fieldType",
+            "type": "select",
+            "label": "Field type",
+            "options": [
+             {
+              "label": "Text",
+              "value": "text",
+              "nested": [
+               {
+                "name": "key",
+                "type": "text",
+                "label": "Key",
+                "required": true
+               },
+               {
+                "name": "value",
+                "type": "text",
+                "label": "Value"
+               }
+              ]
+             },
+             {
+              "label": "File",
+              "value": "file",
+              "nested": [
+               {
+                "name": "key",
+                "type": "text",
+                "label": "Key",
+                "required": true
+               },
+               {
+                "name": "data",
+                "type": "buffer",
+                "label": "Data",
+                "semantic": "file:data"
+               },
+               {
+                "help": "File name, including the suffix, e.g. invoice, xml",
+                "name": "fileName",
+                "type": "filename",
+                "label": "File name",
+                "semantic": "file:name"
+               }
+              ]
+             }
+            ],
+            "required": true
+           }
+          ],
+          "type": "array",
+          "label": "Fields"
+         },
+         {
+          "name": "followAllRedirects",
+          "type": "boolean",
+          "label": "Follow all redirect",
+          "required": true
+         }
+        ],
+        "restore": {
+         "expect": {
+          "qs": {
+           "mode": "chose"
+          },
+          "method": {
+           "mode": "chose",
+           "label": "POST"
+          },
+          "headers": {
+           "mode": "chose"
+          },
+          "bodyType": {
+           "label": "Multipart/form-data"
+          },
+          "formDataFields": {
+           "mode": "chose",
+           "items": [
+            {
+             "fieldType": {
+              "mode": "chose",
+              "label": "Text"
+             }
+            },
+            {
+             "fieldType": {
+              "mode": "chose",
+              "label": "Text"
+             }
+            },
+            {
+             "fieldType": {
+              "mode": "chose",
+              "label": "Text"
+             }
+            }
+           ]
+          }
+         }
+        },
+        "designer": {
+         "x": 0,
+         "y": 1500,
+         "name": "testing onboarding n8n",
+         "messages": [
+          {
+           "message": "This module is not connected to the flow. This module and everything after it will be skipped during execution. <autoconnect>Link it to your scenario to include them.</autoconnect>",
+           "category": "link",
+           "severity": "warning"
+          }
+         ]
+        },
+        "parameters": [
+         {
+          "name": "handleErrors",
+          "type": "boolean",
+          "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+          "required": true
+         },
+         {
+          "name": "useNewZLibDeCompress",
+          "type": "hidden"
+         }
+        ]
+       },
+       "parameters": {
+        "handleErrors": false,
+        "useNewZLibDeCompress": true
+       }
+      }
+     ]
+    ]
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately",
+   "maximum_runs_per_minute": 100
+  }
+ }
+}

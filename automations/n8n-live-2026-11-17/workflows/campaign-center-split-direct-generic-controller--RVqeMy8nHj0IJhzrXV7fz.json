@@ -1,0 +1,221 @@
+{
+ "id": "RVqeMy8nHj0IJhzrXV7fz",
+ "name": "[Campaign Center] Split Direct + Generic Controller",
+ "active": true,
+ "isArchived": false,
+ "versionId": "a9ce65f8-d838-4d28-a39c-4827ae4cf422",
+ "triggerCount": 1,
+ "createdAt": "2026-08-27T22:38:44.149Z",
+ "updatedAt": "2026-11-17T16:42:15.363Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Split Campaign Webhook": {
+   "main": [
+    [
+     {
+      "node": "Capture Campaign Run",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Linked Lead List": {
+   "main": [
+    [
+     {
+      "node": "Preflight and Build Output Branches",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Preflight and Build Output Branches": {
+   "main": [
+    [
+     {
+      "node": "Create Missing EmailBison Output",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Capture Campaign Run": {
+   "main": [
+    [
+     {
+      "node": "Save Campaign Running",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Save Campaign Running": {
+   "main": [
+    [
+     {
+      "node": "Restore Campaign Input",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Restore Campaign Input": {
+   "main": [
+    [
+     {
+      "node": "Get Linked Lead List",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "REDACTED_PATH",
+    "options": {}
+   },
+   "id": "1b30713b-349e-482e-b02f-3e7abc8109fb",
+   "name": "Split Campaign Webhook",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    0,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblVOg9BkPOMmnitt",
+     "mode": "list",
+     "cachedResultName": "Lead Lists"
+    },
+    "id": "={{ $('Split Campaign Webhook').first().json.body.leadListRecordId }}",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    896,
+    0
+   ],
+   "id": "39a4d0cd-f8e1-4325-9807-89dec67df990",
+   "name": "Get Linked Lead List"
+  },
+  {
+   "parameters": {
+    "jsCode": "const incoming = $('Split Campaign Webhook').first().json;\nconst payload = incoming.body && typeof incoming.body === 'object' ? incoming.body : incoming;\nconst leadList = $input.first().json;\nconst read = (source, name) => source?.[name] ?? source?.fields?.[name];\nconst numeric = (value, fallback = 0) => {\n  if (Array.isArray(value)) value = value[0];\n  if (value && typeof value === 'object') value = value.name ?? value.value;\n  if (value === null || value === undefined || value === '') return fallback;\n  const result = Number(value);\n  return Number.isFinite(result) ? result : fallback;\n};\nconst name = String(payload.Name || payload['Campaign Name'] || '').trim();\nconst genericLeadCount = Math.max(0, numeric(read(leadList, 'Final Generic Count')));\nconst directLeadCount = Math.max(0, numeric(read(leadList, 'Final Direct Count')));\nlet outputType;\nif (/ - Generic Emails$/i.test(name)) outputType = 'generic';\nelse if (/ - Direct Emails$/i.test(name)) outputType = 'direct';\nelse if (genericLeadCount > 0 && directLeadCount === 0) outputType = 'generic';\nelse if (directLeadCount > 0 && genericLeadCount === 0) outputType = 'direct';\nelse throw new Error('Upload the existing Direct Emails or Generic Emails campaign. Splitting is handled in Campaign Center.');\nconst branchLeadCount = outputType === 'generic' ? genericLeadCount : directLeadCount;\nif (!branchLeadCount) throw new Error('The selected output has no final leads.');\nconst rawAccounts = payload['Email Accounts'];\nif (!Array.isArray(rawAccounts)) throw new Error('Select sender accounts before uploading.');\nconst accountIds = rawAccounts.map(value => typeof value === 'object' ? value.id : value);\nif (!accountIds.length || accountIds.some(id => typeof id !== 'string' || !/^rec[a-zA-Z0-9]{14}$/.test(id))) throw new Error('Valid sender account links are required.');\nif (new Set(accountIds).size !== accountIds.length) throw new Error('Duplicate sender account links must be resolved before uploading.');\nconst delayDays = Math.max(1, numeric(payload['Days Between Emails'], 1));\nconst senderDailyLimit = Math.max(1, numeric(payload['Sender Daily Limit'] ?? payload.senderDailyLimit, 15));\nconst maximumSenders = Math.max(1, Math.ceil(branchLeadCount / delayDays / senderDailyLimit));\nif (accountIds.length > maximumSenders) throw new Error(outputType + ' has ' + accountIds.length + ' senders, above the maximum of ' + maximumSenders + ' for ' + branchLeadCount + ' leads. Reduce the selection before uploading.');\nconst existingId = numeric(payload.ID) || numeric(payload[outputType === 'generic' ? 'EmailBison Generic Campaign ID' : 'EmailBison Direct Campaign ID']);\nif (existingId > 0) throw new Error('This campaign already has EmailBison ID ' + existingId + '. No duplicate was requested.');\n// Forward exactly one existing campaign, retaining its name and every sender.\n// This endpoint builds EmailBison drafts; it must not start LinkedIn campaigns.\nreturn [{json: {...payload, Name: name, outputType, branchLeadCount,\n  genericLeadCount, directLeadCount, senderDailyLimit, maximumSenders,\n  'Email Accounts': rawAccounts, 'LinkedIn (from Client)': false,\n  forceCreate: false, ID: null}}];"
+   },
+   "id": "92519a31-4fe5-4673-b51d-b2b0e9a81935",
+   "name": "Preflight and Build Output Branches",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1120,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://n8n.dulcy.io/webhook/REDACTED_PATH",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "contentType": "raw",
+    "rawContentType": "application/json",
+    "body": "={{ JSON.stringify($json) }}",
+    "options": {}
+   },
+   "id": "95898d40-9384-4415-943c-1a2af27f8719",
+   "name": "Create Missing EmailBison Output",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1344,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const incoming=$input.first().json;\nconst payload=incoming.body && typeof incoming.body==='object' ? incoming.body : incoming;\nconst recordId=String(payload.recordId || payload['Record ID'] || payload['Airtable Record ID'] || '').trim();\nif (!/^rec[a-zA-Z0-9]{14}$/.test(recordId)) throw new Error('Cannot track campaign creation: a valid campaign recordId is required.');\nreturn [{json:{recordId,runId:String($execution.id),startedAt:new Date().toISOString(),incoming}}];"
+   },
+   "id": "0478db9e-62db-4eac-b1f3-0ce6e1f48287",
+   "name": "Capture Campaign Run",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    224,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "={{ 'https://api.airtable.com/v0/appxqINt5XKw7a76A/tblAVAA6uBPaMj28P/' + $json.recordId }}",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "airtableTokenApi",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({fields:{'Processing Status':'Running','Workflow Message':'Checking campaign inputs before draft creation.','Workflow Error':'','Started At':$json.startedAt,'Completed At':null,'Run ID':$json.runId} }) }}",
+    "options": {}
+   },
+   "id": "8cbd724e-8246-4f58-988a-e4f3283858d4",
+   "name": "Save Campaign Running",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    448,
+    0
+   ],
+   "retryOnFail": true,
+   "maxTries": 3,
+   "waitBetweenTries": 1000
+  },
+  {
+   "parameters": {
+    "jsCode": "return [{json:$('Capture Campaign Run').first().json.incoming}];"
+   },
+   "id": "50483bf3-f4db-4af0-b3be-9db11ab2124f",
+   "name": "Restore Campaign Input",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    672,
+    0
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": null,
+ "parentFolderId": null
+}

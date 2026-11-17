@@ -1,0 +1,210 @@
+{
+ "id": "aNVccdm0nm5ft9rt",
+ "name": "[Inbox Placement Tests] Trigger",
+ "active": true,
+ "isArchived": false,
+ "versionId": "15d7e962-6552-4149-bb85-a165c3ea4b8e",
+ "triggerCount": 1,
+ "createdAt": "2025-06-13T16:11:12.684Z",
+ "updatedAt": "2026-11-17T16:42:53.772Z",
+ "settings": {
+  "executionOrder": "v1",
+  "timezone": "America/New_York",
+  "callerPolicy": "workflowsFromSameOwner",
+  "executionTimeout": 21600,
+  "timeSavedMode": "fixed",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Airtable": {
+   "main": [
+    [
+     {
+      "node": "Loop Over Items",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Loop Over Items": {
+   "main": [
+    [],
+    [
+     {
+      "node": "Send to create tests for each client",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Send to create tests for each client": {
+   "main": [
+    [
+     {
+      "node": "Wait",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Wait",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wait": {
+   "main": [
+    [
+     {
+      "node": "Loop Over Items",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Schedule Trigger": {
+   "main": [
+    [
+     {
+      "node": "Airtable",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "weeks",
+       "triggerAtDay": [
+        5
+       ],
+       "triggerAtHour": 14,
+       "triggerAtMinute": 30
+      }
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    128,
+    112
+   ],
+   "id": "5d8b33b5-7d4b-492d-8ed6-c8c2830a4f52",
+   "name": "Schedule Trigger"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.manualTrigger",
+   "typeVersion": 1,
+   "position": [
+    128,
+    304
+   ],
+   "id": "9d62be40-90cb-4625-a6b3-f529c31576b3",
+   "name": "When clicking ‘Execute workflow’"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt"
+    },
+    "filterByFormula": "{Status} = 'Active'",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    352,
+    112
+   ],
+   "id": "39981619-1917-45e1-9f58-6bcde5035e18",
+   "name": "Airtable"
+  },
+  {
+   "parameters": {
+    "workflowId": {
+     "__rl": true,
+     "mode": "id",
+     "value": "f22muKJHad1EqaCI"
+    },
+    "workflowInputs": {
+     "mappingMode": "passThrough",
+     "value": {},
+     "schema": [],
+     "matchingColumns": [],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": true
+    },
+    "options": {
+     "waitForSubWorkflow": true
+    }
+   },
+   "type": "n8n-nodes-base.executeWorkflow",
+   "typeVersion": 1.2,
+   "position": [
+    832,
+    144
+   ],
+   "id": "2376da52-01d6-4a7b-b7f5-baf597711c05",
+   "name": "Send to create tests for each client"
+  },
+  {
+   "parameters": {
+    "options": {}
+   },
+   "type": "n8n-nodes-base.splitInBatches",
+   "typeVersion": 3,
+   "position": [
+    576,
+    112
+   ],
+   "id": "4993c600-66a3-423e-9b47-d27b051d6e2b",
+   "name": "Loop Over Items"
+  },
+  {
+   "parameters": {
+    "amount": 0.5
+   },
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    1056,
+    144
+   ],
+   "id": "f90ba0ac-a90c-4d30-be56-db25bdd8dffa",
+   "name": "Wait",
+   "webhookId": "d6290de8-a147-4054-9cdb-3231e7dddc6b"
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

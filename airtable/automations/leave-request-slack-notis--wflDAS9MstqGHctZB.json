@@ -1,0 +1,218 @@
+{
+ "id": "wflDAS9MstqGHctZB",
+ "name": "Leave Request Slack Notis",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordMatchesConditions",
+  "inputs": {
+   "tableId": "tblmGO2C2l0eRNQ7u",
+   "filtersObj": {
+    "obj": {
+     "operator": "and",
+     "operands": {
+      "tuple": [
+       {
+        "obj": {
+         "operator": "isAnyOf",
+         "operands": {
+          "tuple": [
+           "fldHkhWrqUP3DMVhN",
+           {
+            "tuple": [
+             "selxjvnDf7PSYbX55",
+             "selIzzuvbR7KybpYQ"
+            ]
+           }
+          ]
+         },
+         "operatorOptions": null
+        }
+       }
+      ]
+     }
+    }
+   }
+  }
+ },
+ "nodes": [
+  {
+   "key": "wde6J2k7FzMud5spW",
+   "type": "conditionalGroup",
+   "branches": [
+    {
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldHkhWrqUP3DMVhN"
+         ]
+        },
+        "operator": "=",
+        "right": "selxjvnDf7PSYbX55",
+        "valueType": "select",
+        "dataType": "literal"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wacl5Z5Qnx59oGpxW",
+       "type": "sendToSlack",
+       "externalAccountId": "eaclf9jwTHIrMIi0j",
+       "inputs": {
+        "slackConversationId": {
+         "template": [
+          "C0AHAF0TH7X"
+         ]
+        },
+        "notificationText": {
+         "template": [
+          "🚨 New Leave Request for Approval\nTeam Member: ",
+          {
+           "fn": "map",
+           "args": [
+            {
+             "$ref": "trigger",
+             "path": [
+              "cellValuesByFieldId",
+              "fldxWUFpqB2t0gWXt"
+             ]
+            },
+            {
+             "fn": "propertyGetter",
+             "args": [
+              "name"
+             ]
+            }
+           ]
+          },
+          " \nDates: ",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldj73nv6X870J3f2"
+           ]
+          },
+          " to  ",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldvYpzmceXSfadCS"
+           ]
+          },
+          "\nLeave Type: ",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldDGJGmn6H6CT4KM",
+            "name"
+           ]
+          },
+          "\nHandover Plan:",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldbYee0NilZW03fP"
+           ]
+          },
+          "\n\n👉 Click here to Approve or Deny: ",
+          {
+           "$ref": "trigger",
+           "path": [
+            "url"
+           ]
+          }
+         ]
+        },
+        "unfurlLinks": true
+       }
+      }
+     ]
+    },
+    {
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldHkhWrqUP3DMVhN"
+         ]
+        },
+        "operator": "=",
+        "right": "selIzzuvbR7KybpYQ",
+        "valueType": "select",
+        "dataType": "literal"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wac9DnlcOIHPyWUIK",
+       "type": "sendToSlack",
+       "externalAccountId": "eaclf9jwTHIrMIi0j",
+       "inputs": {
+        "slackConversationId": "C07U1639LSE",
+        "notificationText": {
+         "template": [
+          "🎉 Your Leave Request is Approved!\nHi ",
+          {
+           "fn": "map",
+           "args": [
+            {
+             "$ref": "trigger",
+             "path": [
+              "cellValuesByFieldId",
+              "fldxWUFpqB2t0gWXt"
+             ]
+            },
+            {
+             "fn": "propertyGetter",
+             "args": [
+              "name"
+             ]
+            }
+           ]
+          },
+          ", your leave request has been officially approved.\n🗓️ Dates: ",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldj73nv6X870J3f2"
+           ]
+          },
+          " to ",
+          {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldvYpzmceXSfadCS"
+           ]
+          },
+          "\n✅ Status: Approved\nNext Steps:\nPlease make sure your Motion calendar is updated to \"Busy.\"\nEnsure your Handover Plan is shared with the team before you head out.\nHave a great break! 🏝️"
+         ]
+        },
+        "unfurlLinks": true
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

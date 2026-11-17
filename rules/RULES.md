@@ -32,7 +32,22 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-17] AI reply drafts are review-only. Josh or Alex approve every outgoing reply. Reply Agent pilot is on for Dulcy only, in Human in the Loop mode. (Reply Agent SOP, Oct 7)
 - [2026-11-17] Respect unsubscribes and stop requests. Never override suppression. (Reply Agent SOP)
 
+- [2026-11-17] Booking ask: when a prospect is interested, offer **two specific dated times, no calendar link** (Dulcy data: 27.7% booked vs 6.2% link). (Alex)
+- [2026-11-17] Price question by email: explain how pricing works and that it depends. Example: "we typically work off a monthly investment, but that depends on your goals and where you want to be; to give you an idea of what it might look like..." Then give the client's approved range or example only (never invent one), then offer two times. (Alex)
+- [2026-11-17] A positive reply that goes quiet: keep following up until they answer or say stop. Always honour stop, unsubscribe and suppression. (Alex)
+- [2026-11-17] Josh approves and sends normal replies himself. Tricky ones (price, complaints, unusual cases) go to Alex. RevReply is not used. (Alex)
+
+## Content (Sienna)
+- [2026-11-17] Pillars: cold outbound, agency operations, proof and experiments, founder lessons, AI/modern GTM. Alex's account = first-person lessons and behind-the-scenes decisions; Dulcy's account = systems, frameworks, service education, approved client proof. Never invent results or stories. (Alex)
+- [2026-11-17] Alex Woung Raw clips are never split-screen. Regular Alex Woung clips may be split-screen when showing a screen or demonstrating something. (Alex)
+- [2026-11-17] The repurposing counts (2 LinkedIn, 3-5 X, 2 short scripts, 1 carousel per source) are examples, not a weekly quota. No posting cadence is set yet. (Alex)
+
 ## How to work with Alex
+- [2026-11-17] Agent roster is: Ada (router), Riley (ops/automation), Atlas, Scout, Scribe, Cole (sales), Forge (offers), Sienna (social/content), Pixel (paid ads), Lex (legal/HR), Ledger (finance), Harper (hiring/people), Red Dog (trading). Jarvis is renamed Ada; the "Airtable" skill becomes Riley. (Alex)
+- [2026-11-17] Bounce and campaign-health checks belong to Atlas, never Riley. Riley only fixes n8n and Make.com (and Airtable automations). (Alex correction)
+- [2026-11-17] Build agents one at a time; Alex approves each before the next. (Alex)
+- [2026-11-17] Atlas leads every campaign: runs the managed Airtable campaign/list stages and directs and checks Scout, Scribe and Forge. Riley only fixes systems (n8n, Make, Airtable automations/scripts), not campaign work. Supersedes earlier lines that gave Riley the Airtable stages. (Alex correction)
+- [2026-11-17] Roster update: Forge (offers) is separate from Atlas. Cole (sales/closing) is a separate skill. Scribe is copywriting only. New agent Sean owns reply handling (cold prospect to booked meeting) and the AI replier. Sienna is a full-size agent. Pixel, Lex, Ledger, Harper stay short for now. Red Dog stays out of this repo. Supersedes the earlier roster line where they differ. (Alex)
 - [2026-11-17] Keep answers simple: direct result first, exact numbers, short done/left lists. (Alex)
 - [2026-11-17] Work in small committed steps. A previous Codex run spent heavily for 14 days without finishing; do not repeat that. (Alex)
 - [2026-11-17] ChatGPT handles admin, reporting, personal tasks and email support. Claude handles campaign building, automation and code. (Alex)

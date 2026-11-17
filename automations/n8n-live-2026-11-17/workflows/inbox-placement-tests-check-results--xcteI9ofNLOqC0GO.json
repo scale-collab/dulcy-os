@@ -1,0 +1,1803 @@
+{
+ "id": "xcteI9ofNLOqC0GO",
+ "name": "[Inbox Placement Tests] Check Results",
+ "active": true,
+ "isArchived": false,
+ "versionId": "da9967b1-8450-4c12-b72d-f2b4f6ee0005",
+ "triggerCount": 1,
+ "createdAt": "2025-06-13T16:14:55.123Z",
+ "updatedAt": "2026-11-17T16:42:55.456Z",
+ "settings": {
+  "executionOrder": "v1",
+  "callerPolicy": "workflowsFromSameOwner",
+  "executionTimeout": 2700,
+  "timeSavedMode": "fixed",
+  "availableInMCP": true,
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Schedule Trigger": {
+   "main": [
+    [
+     {
+      "node": "Acquire exclusive result lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Airtable": {
+   "main": [
+    [
+     {
+      "node": "Eligible result records?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Test Results": {
+   "main": [
+    [
+     {
+      "node": "Test Is Complete",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Airtable2",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Loop Over Items": {
+   "main": [
+    [
+     {
+      "node": "Release exclusive result lock",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Heartbeat exclusive result lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Test Is Complete": {
+   "main": [
+    [
+     {
+      "node": "Search records",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Airtable2",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Edit Fields": {
+   "main": [
+    [
+     {
+      "node": "Get Test Results",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Airtable2": {
+   "main": [
+    [
+     {
+      "node": "Loop Over Items",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Airtable3": {
+   "main": [
+    [
+     {
+      "node": "Loop Over Items",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create a record": {
+   "main": [
+    [
+     {
+      "node": "Filter",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Airtable3",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search records": {
+   "main": [
+    [
+     {
+      "node": "Code in JavaScript",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Code in JavaScript": {
+   "main": [
+    [
+     {
+      "node": "Create a record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Filter": {
+   "main": [
+    [
+     {
+      "node": "Get Email Account Health",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Email Account Health": {
+   "main": [
+    [
+     {
+      "node": "Merge Inbox Placement Health",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Merge Inbox Placement Health": {
+   "main": [
+    [
+     {
+      "node": "Update record",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "When clicking ‘Execute workflow’": {
+   "main": [
+    [
+     {
+      "node": "Acquire exclusive result lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Acquire exclusive result lock": {
+   "main": [
+    [
+     {
+      "node": "Result lock acquired?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Result lock acquired?": {
+   "main": [
+    [
+     {
+      "node": "Airtable",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    []
+   ]
+  },
+  "Claim result check": {
+   "main": [
+    [
+     {
+      "node": "Edit Fields",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Heartbeat exclusive result lock": {
+   "main": [
+    [
+     {
+      "node": "Result lock still owned?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Result lock still owned?": {
+   "main": [
+    [
+     {
+      "node": "Claim result check",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    []
+   ]
+  },
+  "Eligible result records?": {
+   "main": [
+    [
+     {
+      "node": "Loop Over Items",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Release exclusive result lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "minutes"
+      }
+     ]
+    }
+   },
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    2496,
+    640
+   ],
+   "id": "f321abbc-36c2-4779-a533-6be277d62c0d",
+   "name": "Schedule Trigger"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appP0WXcqWoGSIhh5",
+     "mode": "list",
+     "cachedResultName": "Inbox Placement Tests",
+     "cachedResultUrl": "https://airtable.com/appP0WXcqWoGSIhh5"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblDJL0agDRpo94La",
+     "mode": "list",
+     "cachedResultName": "Tests",
+     "cachedResultUrl": "https://airtable.com/appP0WXcqWoGSIhh5/tblDJL0agDRpo94La"
+    },
+    "returnAll": true,
+    "options": {
+     "view": {
+      "__rl": true,
+      "value": "viwhWnvnOn9rk7X7s",
+      "mode": "list",
+      "cachedResultName": "DO NOT EDIT (Automation) - Check Tests Again",
+      "cachedResultUrl": "https://airtable.com/appP0WXcqWoGSIhh5/tblDJL0agDRpo94La/viwhWnvnOn9rk7X7s"
+     }
+    },
+    "filterByFormula": "=AND(NOT(LEFT({Test ID},9)='RESERVED:'),OR({checked_at}=BLANK(),DATETIME_DIFF(NOW(),{checked_at},'minutes')>=30))"
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    2720,
+    640
+   ],
+   "id": "27d6b31c-0cc5-48a7-a903-4ee725461167",
+   "name": "Airtable",
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "url": "=https://app.emailguard.io/api/v1/inbox-placement-tests/{{ $json['Test ID'] }}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "REDACTED"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    3392,
+    400
+   ],
+   "id": "9bf0bf80-882c-4587-bc1e-ec0842663a89",
+   "name": "Get Test Results",
+   "retryOnFail": true,
+   "maxTries": 3,
+   "waitBetweenTries": 5000,
+   "onError": "continueErrorOutput"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "45d83cb5-e79e-4e3e-ae25-a1449bb8c855",
+       "leftValue": "={{ $json.data.status }}",
+       "rightValue": "complete",
+       "operator": {
+        "type": "string",
+        "operation": "equals",
+        "name": "filter.operator.equals"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    3616,
+    400
+   ],
+   "id": "6c67c327-a025-49e9-817f-0159c5e3ab82",
+   "name": "Test Is Complete"
+  },
+  {
+   "parameters": {
+    "options": {}
+   },
+   "type": "n8n-nodes-base.splitInBatches",
+   "typeVersion": 3,
+   "position": [
+    2944,
+    640
+   ],
+   "id": "1c189f7c-8506-4a33-bec9-c22832ad1151",
+   "name": "Loop Over Items"
+  },
+  {
+   "parameters": {},
+   "type": "n8n-nodes-base.manualTrigger",
+   "typeVersion": 1,
+   "position": [
+    2496,
+    80
+   ],
+   "id": "65b5c129-0202-47be-8970-c0f69d32c942",
+   "name": "When clicking ‘Execute workflow’"
+  },
+  {
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "06788a62-780f-414c-ba7a-41db83de409c",
+       "name": "id",
+       "value": "={{ $('Loop Over Items').item.json[\"id\"] }}",
+       "type": "string"
+      },
+      {
+       "id": "1de9689a-d4f4-40f6-9b01-14f7be707e91",
+       "name": "Email",
+       "value": "={{ $('Loop Over Items').item.json[\"Email\"] }}",
+       "type": "string"
+      },
+      {
+       "id": "7a834df1-81b2-4a15-bdcf-16ab1e140ed3",
+       "name": "Test ID",
+       "value": "={{ $('Loop Over Items').item.json[\"Test ID\"] }}",
+       "type": "string"
+      },
+      {
+       "id": "9eccc740-0909-4564-be5f-3256b306a3f3",
+       "name": "Status",
+       "value": "={{ $('Loop Over Items').item.json[\"Status\"] }}",
+       "type": "string"
+      },
+      {
+       "id": "1a84c349-59c4-41fd-9b95-730de907d4d2",
+       "name": "checked_at",
+       "value": "={{ $('Loop Over Items').item.json[\"checked_at\"] }}",
+       "type": "string"
+      },
+      {
+       "id": "51837870-fc26-4b2b-874c-eac345d7e15a",
+       "name": "Minutes Since Checked",
+       "value": "={{ $('Loop Over Items').item.json[\"Minutes Since Checked\"] }}",
+       "type": "number"
+      },
+      {
+       "id": "fbd848c4-1457-4d15-aabf-85ac52cce06d",
+       "name": "Workspace ID",
+       "value": "={{ $('Loop Over Items').item.json[\"Workspace ID\"] }}",
+       "type": "number"
+      },
+      {
+       "id": "de8d0609-76ea-4027-adcb-26d2f468e658",
+       "name": "Email ID",
+       "value": "={{ $('Loop Over Items').item.json[\"Email ID\"] }}",
+       "type": "number"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    3168,
+    400
+   ],
+   "id": "ff61e84b-9cc0-47f4-b68a-495df3b32ef9",
+   "name": "Edit Fields"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appP0WXcqWoGSIhh5",
+     "mode": "list",
+     "cachedResultName": "Inbox Placement Tests",
+     "cachedResultUrl": "https://airtable.com/appP0WXcqWoGSIhh5"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblDJL0agDRpo94La",
+     "mode": "list",
+     "cachedResultName": "Tests",
+     "cachedResultUrl": "https://airtable.com/appP0WXcqWoGSIhh5/tblDJL0agDRpo94La"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "id": "={{ $('Claim result check').item.json.id }}",
+      "checked_at": "={{ $('Claim result check').item.json.checked_at }}",
+      "checked_amount": "={{ $('Claim result check').item.json.checked_amount }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": false
+      },
+      {
+       "id": "Email",
+       "displayName": "Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Workspace ID",
+       "displayName": "Workspace ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Email ID",
+       "displayName": "Email ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Test ID",
+       "displayName": "Test ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Status",
+       "displayName": "Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Pending",
+         "value": "Pending"
+        },
+        {
+         "name": "Send",
+         "value": "Send"
+        },
+        {
+         "name": "Failed",
+         "value": "Failed"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "checked_at",
+       "displayName": "checked_at",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Minutes Since Checked",
+       "displayName": "Minutes Since Checked",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "checked_amount",
+       "displayName": "checked_amount",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    3840,
+    496
+   ],
+   "id": "275ff9e9-1e37-492c-8abb-d4b65498a457",
+   "name": "Airtable2"
+  },
+  {
+   "parameters": {
+    "operation": "deleteRecord",
+    "base": {
+     "__rl": true,
+     "value": "appP0WXcqWoGSIhh5",
+     "mode": "list",
+     "cachedResultName": "Inbox Placement Tests",
+     "cachedResultUrl": "https://airtable.com/appP0WXcqWoGSIhh5"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblDJL0agDRpo94La",
+     "mode": "list",
+     "cachedResultName": "Tests",
+     "cachedResultUrl": "https://airtable.com/appP0WXcqWoGSIhh5/tblDJL0agDRpo94La"
+    },
+    "id": "={{ $('Edit Fields').item.json.id }}"
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    4512,
+    480
+   ],
+   "id": "e97587a3-924f-4bdf-ba3e-c32a42e5d625",
+   "name": "Airtable3"
+  },
+  {
+   "parameters": {
+    "operation": "create",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblGjv6A5r7md3kxX",
+     "mode": "list",
+     "cachedResultName": "Inbox Placement Testing",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblGjv6A5r7md3kxX"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Email ID": "={{ $('Edit Fields').item.json['Email ID'] }}",
+      "Email": "={{ $('Edit Fields').item.json.Email }}",
+      "Workspace ID": "={{ $('Edit Fields').item.json['Workspace ID'] }}",
+      "Test ID": "={{ $('Edit Fields').item.json['Test ID'] }}",
+      "Overall Score": "={{ $('Get Test Results').item.json.data.overall_score }}",
+      "Link to Client": "={{ [$('Search records').item.json.id] }}",
+      "Outlook Score": "={{ $json.outlook_percentage }}",
+      "Google Score": "={{ $json.google_percentage }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "Email",
+       "displayName": "Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Email ID",
+       "displayName": "Email ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Workspace ID",
+       "displayName": "Workspace ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Test ID",
+       "displayName": "Test ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Overall Score",
+       "displayName": "Overall Score",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Google Score",
+       "displayName": "Google Score",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Outlook Score",
+       "displayName": "Outlook Score",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Test Date",
+       "displayName": "Test Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Link to Client",
+       "displayName": "Link to Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Client Name",
+       "displayName": "Client Name",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "How many months ago was the test?",
+       "displayName": "How many months ago was the test?",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    4288,
+    304
+   ],
+   "id": "da615221-86ab-49e6-995b-833186219bee",
+   "name": "Create a record"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt"
+    },
+    "filterByFormula": "={{ '{ID} = ' + Number($('Edit Fields').item.json['Workspace ID']) }}",
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    3840,
+    304
+   ],
+   "id": "04ce6531-f72a-49bb-a838-557622cbf983",
+   "name": "Search records"
+  },
+  {
+   "parameters": {
+    "jsCode": "const test = $('Get Test Results').first().json.data;\n\nconst emails = test.inbox_placement_test_emails || [];\n\nconst stats = {\n  Google: {\n    total: 0,\n    inbox: 0,\n  },\n  Microsoft: {\n    total: 0,\n    inbox: 0,\n  },\n};\n\nfor (const email of emails) {\n  const provider = email.provider;\n\n  if (!stats[provider]) continue;\n\n  stats[provider].total++;\n\n  if ((email.folder || '').toLowerCase() === 'inbox') {\n    stats[provider].inbox++;\n  }\n}\n\nconst googlePercentage =\n  stats.Google.total > 0\n    ? Math.round((stats.Google.inbox / stats.Google.total) * 100)\n    : 0;\n\nconst outlookPercentage =\n  stats.Microsoft.total > 0\n    ? Math.round((stats.Microsoft.inbox / stats.Microsoft.total) * 100)\n    : 0;\n\nreturn [\n  {\n    json: {\n      google_percentage: googlePercentage,\n      outlook_percentage: outlookPercentage,\n\n      google_inbox: stats.Google.inbox,\n      google_total: stats.Google.total,\n\n      outlook_inbox: stats.Microsoft.inbox,\n      outlook_total: stats.Microsoft.total,\n\n      completed:\n        emails.every(\n          e =>\n            e.status === 'email_received' ||\n            e.status === 'email_not_received'\n        ),\n    },\n  },\n];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    4064,
+    304
+   ],
+   "id": "a6fc9442-0606-4852-93ea-ad4f81c43158",
+   "name": "Code in JavaScript"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "e967ffee-464d-4b0f-84d7-ce4704b332a5",
+       "leftValue": "={{ $json.fields?.['Overall Score'] }}",
+       "rightValue": 60,
+       "operator": {
+        "type": "number",
+        "operation": "lte"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.filter",
+   "typeVersion": 2.3,
+   "position": [
+    4592,
+    256
+   ],
+   "id": "814cf118-6d81-43ad-bb01-42e75f7b01f9",
+   "name": "Filter"
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMSOBJ0wMgxSg4l",
+     "mode": "list",
+     "cachedResultName": "Email Accounts",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblMSOBJ0wMgxSg4l"
+    },
+    "filterByFormula": "={{ '{Email ID} = ' + Number($('Edit Fields').item.json['Email ID']) }}",
+    "returnAll": false,
+    "limit": 1,
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    4800,
+    256
+   ],
+   "id": "c1e289ed-7d04-445d-a929-5822efd0cbcf",
+   "name": "Get Email Account Health"
+  },
+  {
+   "parameters": {
+    "jsCode": "const row = $json;\nconst score = Number($('Get Test Results').item.json.data.overall_score || 0);\nconst rawReasons = row['Health Reason'];\nconst reasons = (Array.isArray(rawReasons) ? rawReasons : rawReasons ? [rawReasons] : [])\n  .map((reason) => reason?.name || reason)\n  .filter(Boolean)\n  .filter((reason) => reason !== 'Poor Inbox Placement');\n\nif (score <= 60) reasons.push('Poor Inbox Placement');\n\nconst proposedReasons = [...new Set(reasons)];\nlet proposedStatus;\nif (score <= 60 || proposedReasons.includes('Blacklist')) {\n  proposedStatus = 'Spam';\n} else if (proposedReasons.length > 0) {\n  proposedStatus = 'At Risk';\n} else {\n  proposedStatus = 'Healthy';\n}\n\nreturn [{ json: { ...row, proposed_health_reasons: proposedReasons, proposed_status: proposedStatus } }];"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    5024,
+    256
+   ],
+   "id": "7b50b634-2764-4bdb-9c7d-29516a7b7ee0",
+   "name": "Merge Inbox Placement Health"
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Dulcy",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblMSOBJ0wMgxSg4l",
+     "mode": "list",
+     "cachedResultName": "Email Accounts",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblMSOBJ0wMgxSg4l"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Email ID": "={{ $json['Email ID'] }}",
+      "Status": "={{ $json.proposed_status }}",
+      "Health Reason": "={{ $json.proposed_health_reasons }}"
+     },
+     "matchingColumns": [
+      "Email ID"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Email Account",
+       "displayName": "Email Account",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Email ID",
+       "displayName": "Email ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Workspace ID",
+       "displayName": "Workspace ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Warmup Start Date",
+       "displayName": "Warmup Start Date",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Days Since Warmup Started",
+       "displayName": "Days Since Warmup Started",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Number of Disconnects",
+       "displayName": "Number of Disconnects",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Client",
+       "displayName": "Client",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Status (from Client)",
+       "displayName": "Status (from Client)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "EmailBison API (from Client)",
+       "displayName": "EmailBison API (from Client)",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Created",
+       "displayName": "Created",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "Last Warmup Check",
+       "displayName": "Last Warmup Check",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_enabled",
+       "displayName": "warmup_enabled",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "boolean",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_daily_limit",
+       "displayName": "warmup_daily_limit",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_emails_sent",
+       "displayName": "warmup_emails_sent",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_replies_received",
+       "displayName": "warmup_replies_received",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_emails_saved_from_spam",
+       "displayName": "warmup_emails_saved_from_spam",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_score",
+       "displayName": "warmup_score",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_bounces_received_count",
+       "displayName": "warmup_bounces_received_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_bounces_caused_count",
+       "displayName": "warmup_bounces_caused_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_disabled_for_bouncing_count",
+       "displayName": "warmup_disabled_for_bouncing_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "emails_sent_count",
+       "displayName": "emails_sent_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "total_replied_count",
+       "displayName": "total_replied_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "unsubscribed_count",
+       "displayName": "unsubscribed_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "bounced_count",
+       "displayName": "bounced_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "unique_replied_count",
+       "displayName": "unique_replied_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "total_leads_contacted_count",
+       "displayName": "total_leads_contacted_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "interested_leads_count",
+       "displayName": "interested_leads_count",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "email_status",
+       "displayName": "email_status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "email_type",
+       "displayName": "email_type",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "email_daily_limit",
+       "displayName": "email_daily_limit",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Last Time Disconnected",
+       "displayName": "Last Time Disconnected",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Actions",
+       "displayName": "Actions",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "options": [
+        {
+         "name": "Update Daily Limit",
+         "value": "Update Daily Limit"
+        },
+        {
+         "name": "Update Warmup Limit",
+         "value": "Update Warmup Limit"
+        },
+        {
+         "name": "Turn Warmup On",
+         "value": "Turn Warmup On"
+        },
+        {
+         "name": "Turn Warmup Off",
+         "value": "Turn Warmup Off"
+        },
+        {
+         "name": "N/A",
+         "value": "N/A"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "warmup_disable_status",
+       "displayName": "warmup_disable_status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Warmup disabled for receiving bounces. You can enable after 24 hours.",
+         "value": "Warmup disabled for receiving bounces. You can enable after 24 hours."
+        },
+        {
+         "name": "Warmup disabled for causing bounces",
+         "value": "Warmup disabled for causing bounces"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Status",
+       "displayName": "Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Healthy",
+         "value": "Healthy"
+        },
+        {
+         "name": "At Risk",
+         "value": "At Risk"
+        },
+        {
+         "name": "Spam",
+         "value": "Spam"
+        },
+        {
+         "name": "Resting",
+         "value": "Resting"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Health Reason",
+       "displayName": "Health Reason",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "options": [
+        {
+         "name": "Poor Inbox Placement",
+         "value": "Poor Inbox Placement"
+        },
+        {
+         "name": "Low Warmup Score",
+         "value": "Low Warmup Score"
+        },
+        {
+         "name": "High Bounce Rate",
+         "value": "High Bounce Rate"
+        },
+        {
+         "name": "Low Reply Rate",
+         "value": "Low Reply Rate"
+        },
+        {
+         "name": "Blacklist",
+         "value": "Blacklist"
+        },
+        {
+         "name": "Manual Review",
+         "value": "Manual Review"
+        }
+       ],
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Campaigns",
+       "displayName": "Campaigns",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "array",
+       "readOnly": false,
+       "removed": true
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    4800,
+    256
+   ],
+   "id": "e3142dcd-4648-4e7b-a64e-3348df751b54",
+   "name": "Update record"
+  },
+  {
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "SELECT * FROM dulcy_inbox_placement_runtime.acquire_lease($1,$2,$3,$4,$5)",
+    "options": {
+     "queryReplacement": "={{ ['results:global', String($execution.id), String($execution.id), 'result_check', 7200] }}"
+    }
+   },
+   "id": "d02caabc-708a-4c70-9454-f7f25c73e214",
+   "name": "Acquire exclusive result lock",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    2144,
+    256
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "38d1342e-e68f-440e-8285-43767ac81d66",
+       "leftValue": "={{ Boolean($json.acquired) }}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "a9603907-d023-4104-aae3-f8d49f11a845",
+   "name": "Result lock acquired?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    2368,
+    256
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "SELECT * FROM dulcy_inbox_placement_runtime.release_lease($1,$2)",
+    "options": {
+     "queryReplacement": "={{ ['results:global', String($execution.id)] }}"
+    }
+   },
+   "id": "aeab7c0e-12af-44ef-9917-00bca1bac4c3",
+   "name": "Release exclusive result lock",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    6144,
+    64
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appP0WXcqWoGSIhh5",
+     "mode": "list",
+     "cachedResultName": "Inbox Placement Tests",
+     "cachedResultUrl": "https://airtable.com/appP0WXcqWoGSIhh5"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblDJL0agDRpo94La",
+     "mode": "list",
+     "cachedResultName": "Tests",
+     "cachedResultUrl": "https://airtable.com/appP0WXcqWoGSIhh5/tblDJL0agDRpo94La"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "id": "={{ $('Loop Over Items').item.json.id }}",
+      "checked_at": "={{ $now }}",
+      "checked_amount": "={{ Number($('Loop Over Items').item.json.checked_amount || 0) + 1 }}"
+     },
+     "matchingColumns": [
+      "id"
+     ],
+     "schema": [
+      {
+       "id": "id",
+       "displayName": "id",
+       "required": false,
+       "defaultMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": false
+      },
+      {
+       "id": "Email",
+       "displayName": "Email",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Workspace ID",
+       "displayName": "Workspace ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Email ID",
+       "displayName": "Email ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Test ID",
+       "displayName": "Test ID",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "Status",
+       "displayName": "Status",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "options",
+       "options": [
+        {
+         "name": "Pending",
+         "value": "Pending"
+        },
+        {
+         "name": "Send",
+         "value": "Send"
+        },
+        {
+         "name": "Failed",
+         "value": "Failed"
+        }
+       ],
+       "readOnly": false,
+       "removed": true
+      },
+      {
+       "id": "checked_at",
+       "displayName": "checked_at",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "dateTime",
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "Minutes Since Checked",
+       "displayName": "Minutes Since Checked",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "string",
+       "readOnly": true,
+       "removed": true
+      },
+      {
+       "id": "checked_amount",
+       "displayName": "checked_amount",
+       "required": false,
+       "defaultMatch": false,
+       "canBeUsedToMatch": true,
+       "display": true,
+       "type": "number",
+       "readOnly": false,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    2784,
+    256
+   ],
+   "id": "c57c84e4-fcfb-4c7d-b1c6-9538a2084bb8",
+   "name": "Claim result check"
+  },
+  {
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "SELECT * FROM dulcy_inbox_placement_runtime.heartbeat_lease($1,$2,$3)",
+    "options": {
+     "queryReplacement": "={{ ['results:global', String($execution.id), 7200] }}"
+    }
+   },
+   "id": "316b256a-adba-49d0-9ba6-9ebfe2c4f38c",
+   "name": "Heartbeat exclusive result lock",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    2704,
+    256
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "447caf6b-d893-4685-819a-98fb66c98fa6",
+       "leftValue": "={{ Boolean($json.owned) }}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "952ef16f-b5a6-44b2-a7f9-83cf20779cec",
+   "name": "Result lock still owned?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    2912,
+    256
+   ]
+  },
+  {
+   "id": "f6933c6b-991a-454b-aef4-121771e5d378",
+   "name": "Eligible result records?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    2832,
+    640
+   ],
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 3
+     },
+     "conditions": [
+      {
+       "id": "c47f59b0-e382-427c-a87a-cd00efbd1a50",
+       "leftValue": "={{ String($json['Test ID'] || '').trim() }}",
+       "rightValue": "",
+       "operator": {
+        "type": "string",
+        "operation": "notEmpty",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   }
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

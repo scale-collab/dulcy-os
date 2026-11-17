@@ -1,0 +1,209 @@
+{
+ "id": "wfljdbk1BZXSmpGZI",
+ "name": "Webhook to Make for WON",
+ "description": null,
+ "deploymentStatus": "deployed",
+ "deploymentError": null,
+ "trigger": {
+  "type": "recordUpdated",
+  "inputs": {
+   "tableId": "tblADFhWhTcLrl1UY",
+   "watchFields": [
+    "fldfPPfvAoXw04LVs"
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "key": "wdeRYLAaLQ06zllKi",
+   "type": "conditionalGroup",
+   "branches": [
+    {
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldfPPfvAoXw04LVs"
+         ]
+        },
+        "operator": "=",
+        "right": "selLIcZ57maZiEkKM",
+        "valueType": "select",
+        "dataType": "literal"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wacZpVcv8N4bRfyWz",
+       "type": "customScript",
+       "inputs": {
+        "inputObj": {
+         "obj": {
+          "recordID": {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          },
+          "convohistory": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldYocEhrAzRUw9sA"
+           ]
+          },
+          "leadID": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldv66oGZQQ9Qscmb"
+           ]
+          },
+          "workspaceID": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldCjo0mB0snziNZQ"
+           ]
+          },
+          "campaignID": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldv0o5rhmd7jXDrt"
+           ]
+          }
+         }
+        },
+        "script": "const inputData = input.config();  // Store all input data in a single constant\nlet recordId = inputData.recordID;\nlet convoHistory = inputData.convohistory;\nlet leadID = inputData.leadID;\nlet workspaceID = inputData.workspaceID;\nlet campaignID = inputData.campaignID;\n\nlet tableEmails = base.getTable(\"Emails\");\nlet tableCampaigns = base.getTable(\"Campaigns\");\n\nconst apiKey = 'Bearer REDACTED';\n\n// Switch to desired workspace\nasync function switchWorkspace(workspaceID) {\n    const url = 'https://send.dulcy.io/api/workspaces/v1.1/switch-workspace';\n    const options = {\n        method: 'POST',\n        headers: {\n            'Authorization': apiKey,\n            'Content-Type': 'application/json'\n        },\n        body: JSON.stringify({ team_id: workspaceID })\n    };\n\n    const response = await fetch(url, options);\n    const resJson = await response.json();\n    console.log(\"Workspace switch response:\", resJson);\n\n    if (!response.ok) {\n        throw new Error(`Failed to switch workspace: ${response.status}`);\n    }\n\n    console.log(`Switched to workspace ID: ${workspaceID}`);\n}\n\n// Get tag ID by name (case-insensitive)\nasync function getTagID(tagName) {\n    const url = 'https://send.dulcy.io/api/tags';\n    const options = {\n        method: 'GET',\n        headers: {\n            'Authorization': apiKey,\n            'Content-Type': 'application/json'\n        }\n    };\n\n    const response = await fetch(url, options);\n    const data = await response.json();\n\n    if (!response.ok) {\n        throw new Error(`Failed to fetch tags: ${response.status}`);\n    }\n\n    const tagList = data.data;\n    console.log(\"Available tags:\", tagList.map(t => t.name));\n\n    const tag = tagList.find(t =>\n        t.name.trim().toLowerCase() === tagName.trim().toLowerCase()\n    );\n\n    if (!tag) {\n        throw new Error(`Tag \"${tagName}\" not found in current workspace`);\n    }\n\n    return tag.id;\n}\n\n// Attach tag to lead\nasync function attachTagToLead(tagID, leadID) {\n    const url = 'https://send.dulcy.io/api/tags/attach-to-leads';\n    const body = {\n        tag_ids: [tagID],\n        lead_ids: [leadID]\n    };\n\n    const options = {\n        method: 'POST',\n        headers: {\n            'Authorization': apiKey,\n            'Content-Type': 'application/json'\n        },\n        body: JSON.stringify(body)\n    };\n\n    const response = await fetch(url, options);\n    if (!response.ok) {\n        throw new Error(`Failed to attach tag: ${response.status}`);\n    }\n\n    console.log(`Tag ${tagID} attached to lead ${leadID}`);\n}\n\n// Increment Meetings Booked in Campaigns table\nasync function incrementMeetingsBooked(campaignID) {\n    try {\n        const existingRecords = await tableCampaigns.selectRecordsAsync();\n        const campaignRecord = existingRecords.records.find(record => `${record.getCellValue(\"ID\")}` === `${campaignID}`);\n\n        if (campaignRecord) {\n            const current = campaignRecord.getCellValue(\"Meetings Booked\") || 0;\n            await tableCampaigns.updateRecordAsync(campaignRecord.id, {\n                \"Meetings Booked\": current + 1\n            });\n            console.log(`Incremented Meetings Booked for Campaign ID ${campaignID}`);\n        } else {\n            console.error(`Campaign with ID ${campaignID} not found`);\n        }\n    } catch (error) {\n        console.error(`Error incrementing Meetings Booked: ${error.message}`);\n    }\n}\n\n// MAIN FUNCTION\n(async function () {\n    try {\n        await switchWorkspace(workspaceID);\n\n        const tagID = await getTagID(\"Meeting Booked\");\n\n        if (recordId) {\n            const record = await tableEmails.selectRecordAsync(recordId);\n            const webhookUrl = \"https://hook.us1.make.com/REDACTED_PATH\";\n\n            const payload = {\n                \"Leads Name\": record.getCellValue(\"Leads Name\"),\n                \"Leads Email\": record.getCellValue(\"Leads Email\"),\n                \"Campaign Name\": record.getCellValue(\"Campaign Name\"),\n                \"Conversation History\": convoHistory || \"No conversation history available\",\n                \"Workspace ID\": inputData.workspaceID,\n                \"Status\": \"WON\"\n            };\n\n            await fetch(webhookUrl, {\n                method: 'POST',\n                headers: { 'Content-Type': 'application/json' },\n                body: JSON.stringify(payload)\n            });\n\n            console.log(`Webhook sent for Lead: ${record.getCellValue(\"Leads Name\")}`);\n\n            await attachTagToLead(tagID, leadID);\n            await incrementMeetingsBooked(campaignID);\n        } else {\n            console.warn(\"No record ID provided.\");\n        }\n    } catch (error) {\n        console.error(\"Error:\", error.message);\n    }\n})();"
+       },
+       "outputSchema": []
+      },
+      {
+       "key": "wactBoiRum1LVBP9r",
+       "type": "updateRecord",
+       "inputs": {
+        "tableId": "tblADFhWhTcLrl1UY",
+        "rowId": {
+         "template": [
+          {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          }
+         ]
+        },
+        "updateRecordMethod": "customFields",
+        "fields": {
+         "obj": {
+          "fldSuQyvPM3IlS5oD": {
+           "obj": {
+            "id": "selKgbR7Ch6NqESWm"
+           }
+          }
+         }
+        }
+       }
+      }
+     ]
+    },
+    {
+     "condition": {
+      "conjunction": "and",
+      "conditions": [
+       {
+        "left": {
+         "$ref": "trigger",
+         "path": [
+          "cellValuesByFieldId",
+          "fldfPPfvAoXw04LVs"
+         ]
+        },
+        "operator": "=",
+        "right": "selUfeE3vK5v5nlTr",
+        "valueType": "select",
+        "dataType": "literal"
+       }
+      ]
+     },
+     "nodes": [
+      {
+       "key": "wacNho76X8Hoffcg2",
+       "type": "customScript",
+       "inputs": {
+        "inputObj": {
+         "obj": {
+          "recordID": {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          },
+          "convohistory": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldYocEhrAzRUw9sA"
+           ]
+          },
+          "workspaceID": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldCjo0mB0snziNZQ"
+           ]
+          },
+          "campaignID": {
+           "$ref": "trigger",
+           "path": [
+            "cellValuesByFieldId",
+            "fldv0o5rhmd7jXDrt"
+           ]
+          }
+         }
+        },
+        "script": "const inputData = input.config();\n\nconst recordId = inputData.recordID;\nconst convoHistory = inputData.convohistory;\nconst workspaceID = inputData.workspaceID;\n\nlet tableEmails = base.getTable(\"Emails\");\n\n// MAIN FUNCTION\n(async function () {\n  try {\n    if (!recordId) {\n      console.warn(\"No record ID provided.\");\n      return;\n    }\n\n    const record = await tableEmails.selectRecordAsync(recordId);\n    const webhookUrl = \"https://hook.us1.make.com/REDACTED_PATH\";\n\n    const payload = {\n      \"Leads Name\": record.getCellValue(\"Leads Name\"),\n      \"Leads Email\": record.getCellValue(\"Leads Email\"),\n      \"Campaign Name\": record.getCellValue(\"Campaign Name\"),\n      \"Conversation History\": convoHistory || \"No conversation history available\",\n      \"Workspace ID\": workspaceID,\n      \"Status\": \"LOST\"\n\n    };\n\n    await fetch(webhookUrl, {\n      method: \"POST\",\n      headers: { \"Content-Type\": \"application/json\" },\n      body: JSON.stringify(payload)\n    });\n\n    console.log(\"Webhook sent successfully:\", payload);\n\n  } catch (error) {\n    console.error(\"Webhook error:\", error.message);\n  }\n})();"
+       },
+       "outputSchema": []
+      },
+      {
+       "key": "wac8ffvh3nFadMP3T",
+       "type": "updateRecord",
+       "inputs": {
+        "tableId": "tblADFhWhTcLrl1UY",
+        "rowId": {
+         "template": [
+          {
+           "$ref": "trigger",
+           "path": [
+            "id"
+           ]
+          }
+         ]
+        },
+        "updateRecordMethod": "customFields",
+        "fields": {
+         "obj": {
+          "fldSuQyvPM3IlS5oD": {
+           "obj": {
+            "id": "seltgC3GidEfB1CpB"
+           }
+          }
+         }
+        }
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "deployedVersion": null,
+ "configurationStatus": "valid"
+}

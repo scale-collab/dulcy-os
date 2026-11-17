@@ -1,0 +1,421 @@
+{
+ "id": "DsYfiCrZpjLSdzwj7OBXH",
+ "name": "[Clients LTV] Xero Revenue Sync",
+ "active": true,
+ "isArchived": false,
+ "versionId": "546c50ad-8f37-412a-a941-a393751118cc",
+ "triggerCount": 1,
+ "createdAt": "2026-08-17T02:41:50.283Z",
+ "updatedAt": "2026-11-17T16:41:24.693Z",
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true,
+  "timeSavedMode": "fixed",
+  "callerPolicy": "workflowsFromSameOwner",
+  "errorWorkflow": "NtpwlzuP2tuJM6OC5U_m9"
+ },
+ "connections": {
+  "Weekly Monday 6 AM": {
+   "main": [
+    [
+     {
+      "node": "Generate Xero Pages",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Generate Xero Pages": {
+   "main": [
+    [
+     {
+      "node": "Get Xero Bank Transactions",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Xero Bank Transactions": {
+   "main": [
+    [
+     {
+      "node": "Aggregate Xero Revenue",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Aggregate Xero Revenue": {
+   "main": [
+    [
+     {
+      "node": "Generate Xero Invoice Pages",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Generate Xero Invoice Pages": {
+   "main": [
+    [
+     {
+      "node": "Get Xero Invoices",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Xero Invoices": {
+   "main": [
+    [
+     {
+      "node": "Aggregate Xero Invoices",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Aggregate Xero Invoices": {
+   "main": [
+    [
+     {
+      "node": "Get Paying Clients",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Paying Clients": {
+   "main": [
+    [
+     {
+      "node": "Match Clients and Prepare Updates",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Match Clients and Prepare Updates": {
+   "main": [
+    [
+     {
+      "node": "Split Client Updates",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Sync Summary and Exceptions",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Split Client Updates": {
+   "main": [
+    [
+     {
+      "node": "Update Airtable Client Revenue",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "weeks",
+       "triggerAtDay": [
+        1
+       ],
+       "triggerAtHour": 6
+      }
+     ]
+    }
+   },
+   "id": "228b08c9-68ec-4c1a-a2d4-20d9b94ad06a",
+   "name": "Weekly Monday 6 AM",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    -4576,
+    80
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "return Array.from({ length: 20 }, (_, index) => ({ json: { page: index + 1 } }));"
+   },
+   "id": "cf8d06b3-6964-482c-84a4-70535c02be3c",
+   "name": "Generate Xero Pages",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -4400,
+    80
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.xero.com/api.xro/2.0/BankTransactions",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "xeroOAuth2Api",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "page",
+       "value": "={{ $json.page }}"
+      }
+     ]
+    },
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "xero-tenant-id",
+       "value": "d5379ec6-3c1b-445c-8929-25ce94b6837e"
+      },
+      {
+       "name": "Accept",
+       "value": "application/json"
+      }
+     ]
+    },
+    "options": {
+     "batching": {
+      "batch": {
+       "batchSize": 1,
+       "batchInterval": 1500
+      }
+     }
+    }
+   },
+   "id": "cec4bd2d-329d-499a-ac03-0142a3603af2",
+   "name": "Get Xero Bank Transactions",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    -4160,
+    80
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 5000
+  },
+  {
+   "parameters": {
+    "jsCode": "const approvedAccountIds = new Set([\n  '87bb0ffd-edb1-4c73-9e90-80e00a4cecc7',\n  '1bbf09a1-fa5b-41de-8c3a-184d842fa59b',\n  '161d9ebe-822c-4cc0-b730-1702318f5858',\n  '8d746e56-ae78-4e90-8714-eed8b3e72a29',\n  'e7359c77-7858-4bc6-be17-ebd3ffd4a4c9',\n  'cca2cb66-9da8-4e7e-a70f-096d8b612bd5',\n  '1b66c71c-3775-456b-9639-aafd7cf16c96',\n]);\n\nconst transactions = [];\nfor (const item of $input.all()) {\n  const body = item.json.body ?? item.json;\n  const pageTransactions = body.BankTransactions ?? body.bankTransactions ?? [];\n  if (Array.isArray(pageTransactions)) transactions.push(...pageTransactions);\n}\n\nconst totals = {};\nfor (const tx of transactions) {\n  const status = String(tx.Status ?? tx.status ?? '').toUpperCase();\n  if (['DELETED', 'VOIDED'].includes(status)) continue;\n  const bank = tx.BankAccount ?? tx.bankAccount ?? {};\n  const accountId = bank.AccountID ?? bank.accountID ?? bank.id ?? '';\n  if (!approvedAccountIds.has(accountId)) continue;\n  const contact = tx.Contact ?? tx.contact ?? {};\n  const contactName = String(contact.Name ?? contact.name ?? '').trim();\n  if (!contactName) continue;\n  let grossRevenue = 0;\n  for (const line of (tx.LineItems ?? tx.lineItems ?? [])) {\n    const code = Number(line.AccountCode ?? line.accountCode);\n    const amount = Number(line.LineAmount ?? line.lineAmount ?? 0);\n    if (code >= 4000 && code <= 4060 && amount > 0) grossRevenue += amount;\n  }\n  if (grossRevenue <= 0) continue;\n  if (!totals[contactName]) totals[contactName] = { revenue: 0, count: 0 };\n  totals[contactName].revenue += grossRevenue;\n  totals[contactName].count += 1;\n}\nreturn [{ json: { totals, bankTransactionCount: transactions.length } }];"
+   },
+   "id": "b058461f-0a49-4243-bfaa-9970c2395bd4",
+   "name": "Aggregate Xero Revenue",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -3936,
+    80
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "return Array.from({ length: 20 }, (_, index) => ({ json: { page: index + 1 } }));"
+   },
+   "id": "a3347f9b-df79-47ca-97d5-6f39d18b9823",
+   "name": "Generate Xero Invoice Pages",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -3808,
+    80
+   ]
+  },
+  {
+   "parameters": {
+    "url": "https://api.xero.com/api.xro/2.0/Invoices",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "xeroOAuth2Api",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "page",
+       "value": "={{ $json.page }}"
+      }
+     ]
+    },
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "xero-tenant-id",
+       "value": "d5379ec6-3c1b-445c-8929-25ce94b6837e"
+      },
+      {
+       "name": "Accept",
+       "value": "application/json"
+      }
+     ]
+    },
+    "options": {
+     "batching": {
+      "batch": {
+       "batchSize": 1,
+       "batchInterval": 1500
+      }
+     }
+    }
+   },
+   "id": "8ce71b54-1a25-4c64-bbae-97adaa1273b3",
+   "name": "Get Xero Invoices",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    -3712,
+    80
+   ],
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 5000
+  },
+  {
+   "parameters": {
+    "jsCode": "const paid = {};\nconst outstanding = {};\nconst invoices = [];\nfor (const item of $input.all()) {\n  const body = item.json.body ?? item.json;\n  const pageInvoices = body.Invoices ?? body.invoices ?? [];\n  if (Array.isArray(pageInvoices)) invoices.push(...pageInvoices);\n}\nfor (const invoice of invoices) {\n  if (String(invoice.Type ?? invoice.type ?? '').toUpperCase() !== 'ACCREC') continue;\n  const contact = invoice.Contact ?? invoice.contact ?? {};\n  const name = String(contact.Name ?? contact.name ?? '').trim();\n  if (!name) continue;\n  const status = String(invoice.Status ?? invoice.status ?? '').toUpperCase();\n  const paidAmount = Number(invoice.AmountPaid ?? invoice.amountPaid ?? 0);\n  const dueAmount = Number(invoice.AmountDue ?? invoice.amountDue ?? 0);\n  if (status === 'PAID' && paidAmount > 0) {\n    if (!paid[name]) paid[name] = { revenue: 0, count: 0 };\n    paid[name].revenue += paidAmount;\n    paid[name].count += 1;\n  }\n  if (status === 'AUTHORISED' && dueAmount > 0) outstanding[name] = (outstanding[name] ?? 0) + dueAmount;\n}\nreturn [{ json: { paid, outstanding, invoiceCount: invoices.length } }];"
+   },
+   "id": "7faa9b3c-ca1a-4e29-8790-d1ee8f709787",
+   "name": "Aggregate Xero Invoices",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -3472,
+    80
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "search",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt"
+    },
+    "filterByFormula": "={Client Type}='Paying Client'",
+    "options": {}
+   },
+   "id": "3790ac4c-bd52-4b44-8018-c8783fa80e11",
+   "name": "Get Paying Clients",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -3248,
+    80
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const bank = $('Aggregate Xero Revenue').first().json.totals ?? {};\nconst invoices = $('Aggregate Xero Invoices').first().json;\nconst paidInvoices = invoices.paid ?? {};\nconst outstanding = invoices.outstanding ?? {};\nconst syncedAt = new Date().toISOString();\n\nconst normalize = value => String(value ?? '')\n  .toLowerCase()\n  .replace(/&/g, 'and')\n  .replace(/[^a-z0-9]/g, '');\n\nconst aliases = {\n  'marcelloincorporated': ['marcellosbordentown'],\n  'fivensonstudiosllc': ['fivensonstudios'],\n  'unleashedtechnologiesllc': ['unleashedtechnologies'],\n  'awingvisualsinc': ['awingvisuals'],\n  'snowballprintmarketinginc': ['snowballprintmarketing'],\n  'forevercardholdings': ['forevercard'],\n  'mcintyredigital': ['mcintyredigital', 'mitchmcintyre'],\n};\n\nconst bankIndex = {};\nfor (const [name, value] of Object.entries(bank)) bankIndex[normalize(name)] = value;\nconst invoiceIndex = {};\nfor (const [name, value] of Object.entries(paidInvoices)) invoiceIndex[normalize(name)] = value;\nconst dueIndex = {};\nfor (const [name, value] of Object.entries(outstanding)) dueIndex[normalize(name)] = value;\n\nconst updates = [];\nconst exceptions = [];\nfor (const item of $input.all()) {\n  const row = item.json;\n  const clientName = row.Name ?? row.name ?? '';\n  const keys = [normalize(clientName), ...(aliases[normalize(clientName)] ?? [])];\n  const bankMatches = keys.map(k => bankIndex[k]).filter(Boolean);\n  const invoiceMatches = keys.map(k => invoiceIndex[k]).filter(Boolean);\n  const due = keys.reduce((sum, k) => sum + Number(dueIndex[k] ?? 0), 0);\n\n  let revenue = 0;\n  let count = 0;\n  let source = '';\n  if (bankMatches.length) {\n    revenue = bankMatches.reduce((sum, v) => sum + Number(v.revenue ?? 0), 0);\n    count = bankMatches.reduce((sum, v) => sum + Number(v.count ?? 0), 0);\n    source = 'Xero matched client/company sales transactions';\n  } else if (invoiceMatches.length) {\n    revenue = invoiceMatches.reduce((sum, v) => sum + Number(v.revenue ?? 0), 0);\n    count = invoiceMatches.reduce((sum, v) => sum + Number(v.count ?? 0), 0);\n    source = 'Xero paid invoices (fallback)';\n  }\n\n  if (!revenue) {\n    exceptions.push({ airtableRecordId: row.id, clientName, reason: 'No confident Xero client/company match' });\n    continue;\n  }\n  updates.push({\n    airtableRecordId: row.id,\n    clientName,\n    actualLifetimeRevenue: Math.round(revenue * 100) / 100,\n    transactionCount: count,\n    outstandingReceivables: Math.round(due * 100) / 100,\n    revenueSource: source,\n    syncedAt\n  });\n}\n\nreturn [{ json: { updates, exceptions, matchedCount: updates.length, exceptionCount: exceptions.length, syncedAt } }];"
+   },
+   "id": "cd11dc1a-74f9-4750-942d-329dfbbb6daa",
+   "name": "Match Clients and Prepare Updates",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -3008,
+    80
+   ]
+  },
+  {
+   "parameters": {
+    "fieldToSplitOut": "updates",
+    "options": {}
+   },
+   "id": "6db23b26-6e3f-442f-a2f8-87c0303ca909",
+   "name": "Split Client Updates",
+   "type": "n8n-nodes-base.splitOut",
+   "typeVersion": 1,
+   "position": [
+    -2784,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "update",
+    "base": {
+     "__rl": true,
+     "value": "appxqINt5XKw7a76A",
+     "mode": "list",
+     "cachedResultName": "Alex",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A"
+    },
+    "table": {
+     "__rl": true,
+     "value": "tblcjRBGJEWh5KgOt",
+     "mode": "list",
+     "cachedResultName": "Workspace IDs",
+     "cachedResultUrl": "https://airtable.com/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "Actual Lifetime Revenue": "={{ $json.actualLifetimeRevenue }}",
+      "Xero Revenue Transactions": "={{ $json.transactionCount }}",
+      "Lifetime Revenue Source": "={{ $json.revenueSource }}",
+      "Outstanding Receivables": "={{ $json.outstandingReceivables }}",
+      "Last Xero Revenue Sync": "={{ $json.syncedAt }}"
+     },
+     "matchingColumns": [],
+     "schema": []
+    },
+    "options": {}
+   },
+   "id": "d20d5ff4-57a9-4766-b8c5-45bef70e257d",
+   "name": "Update Airtable Client Revenue",
+   "type": "n8n-nodes-base.airtable",
+   "typeVersion": 2.1,
+   "position": [
+    -2560,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const result = $('Match Clients and Prepare Updates').first().json;\nreturn [{ json: {\n  status: result.exceptionCount ? 'completed_with_exceptions' : 'completed',\n  matchedClients: result.matchedCount,\n  unmatchedClients: result.exceptionCount,\n  exceptions: result.exceptions,\n  syncedAt: result.syncedAt,\n  note: result.exceptionCount ? 'Review exceptions and add aliases only after confirming the Xero customer identity.' : 'All paying clients matched.'\n} }];"
+   },
+   "id": "78cefed1-767c-4c26-a3a0-f91e5c0e8162",
+   "name": "Sync Summary and Exceptions",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -2560,
+    176
+   ]
+  }
+ ],
+ "tags": [],
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "parentFolderId": null
+}

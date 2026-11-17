@@ -1,0 +1,4583 @@
+{
+ "id": 3793104,
+ "name": "[TEMPLATE] Videos",
+ "teamId": 629049,
+ "hookId": 2149595,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 252236,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": false,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "gateway",
+  "util",
+  "builtin",
+  "http",
+  "http",
+  "http",
+  "builtin",
+  "http",
+  "http",
+  "http",
+  "builtin",
+  "http",
+  "http",
+  "http",
+  "builtin",
+  "http",
+  "http",
+  "http",
+  "builtin"
+ ],
+ "lastEdit": "2025-06-05T06:33:16.496Z",
+ "scheduling": {
+  "type": "immediately"
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2025-03-21T18:20:14.868Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": false,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 2,
+    "mapper": {},
+    "module": "gateway:CustomWebHook",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "hook": {
+        "data": {
+         "editable": "true"
+        },
+        "label": "Template - Sendspark - Video 1"
+       }
+      }
+     },
+     "designer": {
+      "x": -441,
+      "y": 460
+     },
+     "parameters": [
+      {
+       "name": "hook",
+       "type": "hook:gateway-webhook",
+       "label": "Webhook",
+       "required": true
+      },
+      {
+       "name": "maxResults",
+       "type": "number",
+       "label": "Maximum number of results"
+      }
+     ]
+    },
+    "parameters": {
+     "hook": 2149595,
+     "maxResults": 1
+    }
+   },
+   {
+    "id": 12,
+    "mapper": {
+     "scope": "roundtrip",
+     "variables": [
+      {
+       "name": "api",
+       "value": "REDACTED_EMAILBISON_TOKEN"
+      },
+      {
+       "name": "campaign id",
+       "value": "93"
+      }
+     ]
+    },
+    "module": "util:SetVariables",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "variables",
+       "spec": [
+        {
+         "name": "name",
+         "type": "text",
+         "label": "Variable name",
+         "required": true
+        },
+        {
+         "name": "value",
+         "type": "any",
+         "label": "Variable value"
+        }
+       ],
+       "type": "array",
+       "label": "Variables"
+      },
+      {
+       "name": "scope",
+       "type": "select",
+       "label": "Variable lifetime",
+       "required": true,
+       "validate": {
+        "enum": [
+         "roundtrip",
+         "execution"
+        ]
+       }
+      }
+     ],
+     "restore": {
+      "expect": {
+       "scope": {
+        "label": "One cycle"
+       },
+       "variables": {
+        "items": [
+         null,
+         null
+        ]
+       }
+      }
+     },
+     "designer": {
+      "x": -127,
+      "y": 456,
+      "name": "Set Variables"
+     }
+    },
+    "parameters": {}
+   },
+   {
+    "id": 8,
+    "mapper": null,
+    "module": "builtin:BasicRouter",
+    "routes": [
+     {
+      "flow": [
+       {
+        "id": 9,
+        "filter": {
+         "name": "Video 1",
+         "conditions": [
+          [
+           {
+            "a": "{{2.dynamicCampaignName}}",
+            "b": "Video 1",
+            "o": "text:contain:ci"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://send.dulcy.io/api/leads/create-or-update/{{2.contactEmail}}",
+         "data": "{\n  \"first_name\": \"{{2.contactInfo.contactFirstName}}\",\n  \"last_name\": \"NA\",\n  \"email\": \"{{2.contactEmail}}\",\n  \"title\": \"{{2.contactInfo.jobTitle}}\",\n  \"company\": \"{{2.contactInfo.company}}\",\n  \"custom_variables\": [\n    {\n      \"name\": \"sendspark1\",\n      \"value\": \"{{2.videoLink}}\"\n    }\n  ]\n}",
+         "gzip": true,
+         "method": "post",
+         "headers": [
+          {
+           "name": "Content-Type",
+           "value": "application/json"
+          },
+          {
+           "name": "Authorization",
+           "value": "Bearer {{12.api}}"
+          }
+         ],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "raw",
+         "contentType": "application/json",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": true,
+         "followRedirect": true,
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "contentType",
+           "type": "select",
+           "label": "Content type",
+           "validate": {
+            "enum": [
+             "text/plain",
+             "application/json",
+             "application/xml",
+             "text/xml",
+             "text/html",
+             "custom"
+            ]
+           }
+          },
+          {
+           "name": "data",
+           "type": "buffer",
+           "label": "Request content"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "POST"
+           },
+           "headers": {
+            "mode": "chose",
+            "items": [
+             null,
+             null
+            ]
+           },
+           "bodyType": {
+            "label": "Raw"
+           },
+           "contentType": {
+            "label": "JSON (application/json)"
+           }
+          }
+         },
+         "designer": {
+          "x": 486,
+          "y": 34,
+          "name": "Create lead with video"
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": true,
+         "useNewZLibDeCompress": true
+        }
+       },
+       {
+        "id": 13,
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://send.dulcy.io/api/campaigns/{{12.`campaign id`}}/leads/attach-leads",
+         "data": "{\n  \"lead_ids\": [\n    {{9.data.data.id}}\n  ]\n}",
+         "gzip": true,
+         "method": "post",
+         "headers": [
+          {
+           "name": "Content-Type",
+           "value": "application/json"
+          },
+          {
+           "name": "Authorization",
+           "value": "Bearer {{12.api}}"
+          }
+         ],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "raw",
+         "contentType": "application/json",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": true,
+         "followRedirect": true,
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "contentType",
+           "type": "select",
+           "label": "Content type",
+           "validate": {
+            "enum": [
+             "text/plain",
+             "application/json",
+             "application/xml",
+             "text/xml",
+             "text/html",
+             "custom"
+            ]
+           }
+          },
+          {
+           "name": "data",
+           "type": "buffer",
+           "label": "Request content"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "POST"
+           },
+           "headers": {
+            "mode": "chose",
+            "items": [
+             null,
+             null
+            ]
+           },
+           "bodyType": {
+            "label": "Raw"
+           },
+           "contentType": {
+            "label": "JSON (application/json)"
+           }
+          }
+         },
+         "designer": {
+          "x": 772,
+          "y": 40,
+          "name": "Add lead to campaign"
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": true,
+         "useNewZLibDeCompress": true
+        }
+       },
+       {
+        "id": 20,
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://send.dulcy.io/api/campaigns/{{12.`campaign id`}}/resume",
+         "gzip": true,
+         "method": "patch",
+         "headers": [
+          {
+           "name": "Authorization",
+           "value": "Bearer {{12.api}}"
+          }
+         ],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": true,
+         "followRedirect": true,
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "onerror": [
+         {
+          "id": 21,
+          "module": "builtin:Ignore",
+          "version": 1,
+          "metadata": {
+           "designer": {
+            "x": 1352,
+            "y": 27
+           }
+          }
+         }
+        ],
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "PATCH"
+           },
+           "headers": {
+            "mode": "chose",
+            "items": [
+             null
+            ]
+           },
+           "bodyType": {
+            "label": "Empty"
+           }
+          }
+         },
+         "designer": {
+          "x": 1067,
+          "y": 30,
+          "name": "Resume campaign"
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": true,
+         "useNewZLibDeCompress": true
+        }
+       }
+      ]
+     },
+     {
+      "flow": [
+       {
+        "id": 14,
+        "filter": {
+         "name": "Video 2",
+         "conditions": [
+          [
+           {
+            "a": "{{2.dynamicCampaignName}}",
+            "b": "Video 2",
+            "o": "text:contain:ci"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://send.dulcy.io/api/leads/create-or-update/{{2.contactEmail}}",
+         "data": "{\n  \"first_name\": \"{{2.contactInfo.contactFirstName}}\",\n  \"last_name\": \"NA\",\n  \"email\": \"{{2.contactEmail}}\",\n  \"title\": \"{{2.contactInfo.jobTitle}}\",\n  \"company\": \"{{2.contactInfo.company}}\",\n  \"custom_variables\": [\n    {\n      \"name\": \"sendspark2\",\n      \"value\": \"{{2.videoLink}}\"\n    }\n  ]\n}",
+         "gzip": true,
+         "method": "post",
+         "headers": [
+          {
+           "name": "Content-Type",
+           "value": "application/json"
+          },
+          {
+           "name": "Authorization",
+           "value": "Bearer {{12.api}}"
+          }
+         ],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "raw",
+         "contentType": "application/json",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": true,
+         "followRedirect": true,
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "contentType",
+           "type": "select",
+           "label": "Content type",
+           "validate": {
+            "enum": [
+             "text/plain",
+             "application/json",
+             "application/xml",
+             "text/xml",
+             "text/html",
+             "custom"
+            ]
+           }
+          },
+          {
+           "name": "data",
+           "type": "buffer",
+           "label": "Request content"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "POST"
+           },
+           "headers": {
+            "mode": "chose",
+            "items": [
+             null,
+             null
+            ]
+           },
+           "bodyType": {
+            "label": "Raw"
+           },
+           "contentType": {
+            "label": "JSON (application/json)"
+           }
+          }
+         },
+         "designer": {
+          "x": 503,
+          "y": 331,
+          "name": "Create lead with video"
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": true,
+         "useNewZLibDeCompress": true
+        }
+       },
+       {
+        "id": 15,
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://send.dulcy.io/api/campaigns/{{12.`campaign id`}}/leads/attach-leads",
+         "data": "{\n  \"lead_ids\": [\n    {{14.data.data.id}}\n  ]\n}",
+         "gzip": true,
+         "method": "post",
+         "headers": [
+          {
+           "name": "Content-Type",
+           "value": "application/json"
+          },
+          {
+           "name": "Authorization",
+           "value": "Bearer {{12.api}}"
+          }
+         ],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "raw",
+         "contentType": "application/json",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": true,
+         "followRedirect": true,
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "contentType",
+           "type": "select",
+           "label": "Content type",
+           "validate": {
+            "enum": [
+             "text/plain",
+             "application/json",
+             "application/xml",
+             "text/xml",
+             "text/html",
+             "custom"
+            ]
+           }
+          },
+          {
+           "name": "data",
+           "type": "buffer",
+           "label": "Request content"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "POST"
+           },
+           "headers": {
+            "mode": "chose",
+            "items": [
+             null,
+             null
+            ]
+           },
+           "bodyType": {
+            "label": "Raw"
+           },
+           "contentType": {
+            "label": "JSON (application/json)"
+           }
+          }
+         },
+         "designer": {
+          "x": 789,
+          "y": 336,
+          "name": "Add lead to campaign"
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": true,
+         "useNewZLibDeCompress": true
+        }
+       },
+       {
+        "id": 22,
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://send.dulcy.io/api/campaigns/{{12.`campaign id`}}/resume",
+         "gzip": true,
+         "method": "patch",
+         "headers": [
+          {
+           "name": "Authorization",
+           "value": "Bearer {{12.api}}"
+          }
+         ],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": true,
+         "followRedirect": true,
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "onerror": [
+         {
+          "id": 23,
+          "module": "builtin:Ignore",
+          "version": 1,
+          "metadata": {
+           "designer": {
+            "x": 1368,
+            "y": 332
+           }
+          }
+         }
+        ],
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "PATCH"
+           },
+           "headers": {
+            "mode": "chose",
+            "items": [
+             null
+            ]
+           },
+           "bodyType": {
+            "label": "Empty"
+           }
+          }
+         },
+         "designer": {
+          "x": 1083,
+          "y": 335,
+          "name": "Resume campaign"
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": true,
+         "useNewZLibDeCompress": true
+        }
+       }
+      ]
+     },
+     {
+      "flow": [
+       {
+        "id": 16,
+        "filter": {
+         "name": "Video 3",
+         "conditions": [
+          [
+           {
+            "a": "{{2.dynamicCampaignName}}",
+            "b": "Video 3",
+            "o": "text:contain:ci"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://send.dulcy.io/api/leads/create-or-update/{{2.contactEmail}}",
+         "data": "{\n  \"first_name\": \"{{2.contactInfo.contactFirstName}}\",\n  \"last_name\": \"NA\",\n  \"email\": \"{{2.contactEmail}}\",\n  \"title\": \"{{2.contactInfo.jobTitle}}\",\n  \"company\": \"{{2.contactInfo.company}}\",\n  \"custom_variables\": [\n    {\n      \"name\": \"sendspark3\",\n      \"value\": \"{{2.videoLink}}\"\n    }\n  ]\n}",
+         "gzip": true,
+         "method": "post",
+         "headers": [
+          {
+           "name": "Content-Type",
+           "value": "application/json"
+          },
+          {
+           "name": "Authorization",
+           "value": "Bearer {{12.api}}"
+          }
+         ],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "raw",
+         "contentType": "application/json",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": true,
+         "followRedirect": true,
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "contentType",
+           "type": "select",
+           "label": "Content type",
+           "validate": {
+            "enum": [
+             "text/plain",
+             "application/json",
+             "application/xml",
+             "text/xml",
+             "text/html",
+             "custom"
+            ]
+           }
+          },
+          {
+           "name": "data",
+           "type": "buffer",
+           "label": "Request content"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "POST"
+           },
+           "headers": {
+            "mode": "chose",
+            "items": [
+             null,
+             null
+            ]
+           },
+           "bodyType": {
+            "label": "Raw"
+           },
+           "contentType": {
+            "label": "JSON (application/json)"
+           }
+          }
+         },
+         "designer": {
+          "x": 503,
+          "y": 612,
+          "name": "Create lead with video"
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": true,
+         "useNewZLibDeCompress": true
+        }
+       },
+       {
+        "id": 17,
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://send.dulcy.io/api/campaigns/{{12.`campaign id`}}/leads/attach-leads",
+         "data": "{\n  \"lead_ids\": [\n    {{16.data.data.id}}\n  ]\n}",
+         "gzip": true,
+         "method": "post",
+         "headers": [
+          {
+           "name": "Content-Type",
+           "value": "application/json"
+          },
+          {
+           "name": "Authorization",
+           "value": "Bearer {{12.api}}"
+          }
+         ],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "raw",
+         "contentType": "application/json",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": true,
+         "followRedirect": true,
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "contentType",
+           "type": "select",
+           "label": "Content type",
+           "validate": {
+            "enum": [
+             "text/plain",
+             "application/json",
+             "application/xml",
+             "text/xml",
+             "text/html",
+             "custom"
+            ]
+           }
+          },
+          {
+           "name": "data",
+           "type": "buffer",
+           "label": "Request content"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "POST"
+           },
+           "headers": {
+            "mode": "chose",
+            "items": [
+             null,
+             null
+            ]
+           },
+           "bodyType": {
+            "label": "Raw"
+           },
+           "contentType": {
+            "label": "JSON (application/json)"
+           }
+          }
+         },
+         "designer": {
+          "x": 789,
+          "y": 617,
+          "name": "Add lead to campaign"
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": true,
+         "useNewZLibDeCompress": true
+        }
+       },
+       {
+        "id": 24,
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://send.dulcy.io/api/campaigns/{{12.`campaign id`}}/resume",
+         "gzip": true,
+         "method": "patch",
+         "headers": [
+          {
+           "name": "Authorization",
+           "value": "Bearer {{12.api}}"
+          }
+         ],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": true,
+         "followRedirect": true,
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "onerror": [
+         {
+          "id": 25,
+          "module": "builtin:Ignore",
+          "version": 1,
+          "metadata": {
+           "designer": {
+            "x": 1365,
+            "y": 615
+           }
+          }
+         }
+        ],
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "PATCH"
+           },
+           "headers": {
+            "mode": "chose",
+            "items": [
+             null
+            ]
+           },
+           "bodyType": {
+            "label": "Empty"
+           }
+          }
+         },
+         "designer": {
+          "x": 1080,
+          "y": 618,
+          "name": "Resume campaign"
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": true,
+         "useNewZLibDeCompress": true
+        }
+       }
+      ]
+     },
+     {
+      "flow": [
+       {
+        "id": 18,
+        "filter": {
+         "name": "Video 4",
+         "conditions": [
+          [
+           {
+            "a": "{{2.dynamicCampaignName}}",
+            "b": "Video 4",
+            "o": "text:contain:ci"
+           }
+          ]
+         ]
+        },
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://send.dulcy.io/api/leads/create-or-update/{{2.contactEmail}}",
+         "data": "{\n  \"first_name\": \"{{2.contactInfo.contactFirstName}}\",\n  \"last_name\": \"NA\",\n  \"email\": \"{{2.contactEmail}}\",\n  \"title\": \"{{2.contactInfo.jobTitle}}\",\n  \"company\": \"{{2.contactInfo.company}}\",\n  \"custom_variables\": [\n    {\n      \"name\": \"sendspark4\",\n      \"value\": \"{{2.videoLink}}\"\n    }\n  ]\n}",
+         "gzip": true,
+         "method": "post",
+         "headers": [
+          {
+           "name": "Content-Type",
+           "value": "application/json"
+          },
+          {
+           "name": "Authorization",
+           "value": "Bearer {{12.api}}"
+          }
+         ],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "raw",
+         "contentType": "application/json",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": true,
+         "followRedirect": true,
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "contentType",
+           "type": "select",
+           "label": "Content type",
+           "validate": {
+            "enum": [
+             "text/plain",
+             "application/json",
+             "application/xml",
+             "text/xml",
+             "text/html",
+             "custom"
+            ]
+           }
+          },
+          {
+           "name": "data",
+           "type": "buffer",
+           "label": "Request content"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "POST"
+           },
+           "headers": {
+            "mode": "chose",
+            "items": [
+             null,
+             null
+            ]
+           },
+           "bodyType": {
+            "label": "Raw"
+           },
+           "contentType": {
+            "label": "JSON (application/json)"
+           }
+          }
+         },
+         "designer": {
+          "x": 507,
+          "y": 883,
+          "name": "Create lead with video"
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": true,
+         "useNewZLibDeCompress": true
+        }
+       },
+       {
+        "id": 19,
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://send.dulcy.io/api/campaigns/{{12.`campaign id`}}/leads/attach-leads",
+         "data": "{\n  \"lead_ids\": [\n    {{18.data.data.id}}\n  ]\n}",
+         "gzip": true,
+         "method": "post",
+         "headers": [
+          {
+           "name": "Content-Type",
+           "value": "application/json"
+          },
+          {
+           "name": "Authorization",
+           "value": "Bearer {{12.api}}"
+          }
+         ],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "raw",
+         "contentType": "application/json",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": true,
+         "followRedirect": true,
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "contentType",
+           "type": "select",
+           "label": "Content type",
+           "validate": {
+            "enum": [
+             "text/plain",
+             "application/json",
+             "application/xml",
+             "text/xml",
+             "text/html",
+             "custom"
+            ]
+           }
+          },
+          {
+           "name": "data",
+           "type": "buffer",
+           "label": "Request content"
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "POST"
+           },
+           "headers": {
+            "mode": "chose",
+            "items": [
+             null,
+             null
+            ]
+           },
+           "bodyType": {
+            "label": "Raw"
+           },
+           "contentType": {
+            "label": "JSON (application/json)"
+           }
+          }
+         },
+         "designer": {
+          "x": 793,
+          "y": 888,
+          "name": "Add lead to campaign"
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": true,
+         "useNewZLibDeCompress": true
+        }
+       },
+       {
+        "id": 26,
+        "mapper": {
+         "ca": "",
+         "qs": [],
+         "url": "https://send.dulcy.io/api/campaigns/{{12.`campaign id`}}/resume",
+         "gzip": true,
+         "method": "patch",
+         "headers": [
+          {
+           "name": "Authorization",
+           "value": "Bearer {{12.api}}"
+          }
+         ],
+         "timeout": "",
+         "useMtls": false,
+         "authPass": "",
+         "authUser": "",
+         "bodyType": "",
+         "serializeUrl": false,
+         "shareCookies": false,
+         "parseResponse": true,
+         "followRedirect": true,
+         "useQuerystring": false,
+         "followAllRedirects": false,
+         "rejectUnauthorized": true
+        },
+        "module": "http:ActionSendData",
+        "onerror": [
+         {
+          "id": 27,
+          "module": "builtin:Ignore",
+          "version": 1,
+          "metadata": {
+           "designer": {
+            "x": 1366,
+            "y": 888
+           }
+          }
+         }
+        ],
+        "version": 3,
+        "metadata": {
+         "expect": [
+          {
+           "name": "url",
+           "type": "url",
+           "label": "URL",
+           "required": true
+          },
+          {
+           "name": "serializeUrl",
+           "type": "boolean",
+           "label": "Serialize URL",
+           "required": true
+          },
+          {
+           "name": "method",
+           "type": "select",
+           "label": "Method",
+           "required": true,
+           "validate": {
+            "enum": [
+             "get",
+             "head",
+             "post",
+             "put",
+             "patch",
+             "delete",
+             "options"
+            ]
+           }
+          },
+          {
+           "name": "headers",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Headers"
+          },
+          {
+           "name": "qs",
+           "spec": [
+            {
+             "name": "name",
+             "type": "text",
+             "label": "Name",
+             "required": true
+            },
+            {
+             "name": "value",
+             "type": "text",
+             "label": "Value"
+            }
+           ],
+           "type": "array",
+           "label": "Query String"
+          },
+          {
+           "name": "bodyType",
+           "type": "select",
+           "label": "Body type",
+           "validate": {
+            "enum": [
+             "raw",
+             "x_www_form_urlencoded",
+             "multipart_form_data"
+            ]
+           }
+          },
+          {
+           "name": "parseResponse",
+           "type": "boolean",
+           "label": "Parse response",
+           "required": true
+          },
+          {
+           "name": "authUser",
+           "type": "text",
+           "label": "User name"
+          },
+          {
+           "name": "authPass",
+           "type": "password",
+           "label": "Password"
+          },
+          {
+           "name": "timeout",
+           "type": "uinteger",
+           "label": "Timeout",
+           "validate": {
+            "max": 300,
+            "min": 1
+           }
+          },
+          {
+           "name": "shareCookies",
+           "type": "boolean",
+           "label": "Share cookies with other HTTP modules",
+           "required": true
+          },
+          {
+           "name": "ca",
+           "type": "cert",
+           "label": "Self-signed certificate"
+          },
+          {
+           "name": "rejectUnauthorized",
+           "type": "boolean",
+           "label": "Reject connections that are using unverified (self-signed) certificates",
+           "required": true
+          },
+          {
+           "name": "followRedirect",
+           "type": "boolean",
+           "label": "Follow redirect",
+           "required": true
+          },
+          {
+           "name": "useQuerystring",
+           "type": "boolean",
+           "label": "Disable serialization of multiple same query string keys as arrays",
+           "required": true
+          },
+          {
+           "name": "gzip",
+           "type": "boolean",
+           "label": "Request compressed content",
+           "required": true
+          },
+          {
+           "name": "useMtls",
+           "type": "boolean",
+           "label": "Use Mutual TLS",
+           "required": true
+          },
+          {
+           "name": "followAllRedirects",
+           "type": "boolean",
+           "label": "Follow all redirect",
+           "required": true
+          }
+         ],
+         "restore": {
+          "expect": {
+           "qs": {
+            "mode": "chose"
+           },
+           "method": {
+            "mode": "chose",
+            "label": "PATCH"
+           },
+           "headers": {
+            "mode": "chose",
+            "items": [
+             null
+            ]
+           },
+           "bodyType": {
+            "label": "Empty"
+           }
+          }
+         },
+         "designer": {
+          "x": 1081,
+          "y": 891,
+          "name": "Resume campaign"
+         },
+         "parameters": [
+          {
+           "name": "handleErrors",
+           "type": "boolean",
+           "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+           "required": true
+          },
+          {
+           "name": "useNewZLibDeCompress",
+           "type": "hidden"
+          }
+         ]
+        },
+        "parameters": {
+         "handleErrors": true,
+         "useNewZLibDeCompress": true
+        }
+       }
+      ]
+     }
+    ],
+    "version": 1,
+    "metadata": {
+     "designer": {
+      "x": 187,
+      "y": 457
+     }
+    }
+   }
+  ],
+  "name": "[TEMPLATE] Videos",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": [
+     [
+      {
+       "id": 11,
+       "mapper": {
+        "name": "api",
+        "scope": "roundtrip",
+        "value": "REDACTED_EMAILBISON_TOKEN"
+       },
+       "module": "util:SetVariable2",
+       "version": 1,
+       "metadata": {
+        "expect": [
+         {
+          "name": "name",
+          "type": "text",
+          "label": "Variable name",
+          "required": true
+         },
+         {
+          "name": "scope",
+          "type": "select",
+          "label": "Variable lifetime",
+          "required": true,
+          "validate": {
+           "enum": [
+            "roundtrip",
+            "execution"
+           ]
+          }
+         },
+         {
+          "name": "value",
+          "type": "any",
+          "label": "Variable value"
+         }
+        ],
+        "restore": {
+         "expect": {
+          "scope": {
+           "label": "One cycle"
+          }
+         }
+        },
+        "designer": {
+         "x": -411,
+         "y": -386,
+         "name": "Set API Key",
+         "messages": [
+          {
+           "message": "The module is not connected to the data flow.",
+           "category": "link",
+           "severity": "warning"
+          }
+         ]
+        }
+       },
+       "parameters": {}
+      },
+      {
+       "id": 3,
+       "mapper": {
+        "ca": "",
+        "qs": [],
+        "url": "https://send.dulcy.io/api/custom-variables",
+        "data": "{\n  \"name\": \"SENDSPARK1\"\n}",
+        "gzip": true,
+        "method": "post",
+        "headers": [
+         {
+          "name": "Content-Type",
+          "value": "application/json"
+         },
+         {
+          "name": "Authorization",
+          "value": "Bearer {{11.api}}"
+         }
+        ],
+        "timeout": "",
+        "useMtls": false,
+        "authPass": "",
+        "authUser": "",
+        "bodyType": "raw",
+        "contentType": "application/json",
+        "serializeUrl": false,
+        "shareCookies": false,
+        "parseResponse": true,
+        "followRedirect": true,
+        "useQuerystring": false,
+        "followAllRedirects": false,
+        "rejectUnauthorized": true
+       },
+       "module": "http:ActionSendData",
+       "version": 3,
+       "metadata": {
+        "expect": [
+         {
+          "name": "url",
+          "type": "url",
+          "label": "URL",
+          "required": true
+         },
+         {
+          "name": "serializeUrl",
+          "type": "boolean",
+          "label": "Serialize URL",
+          "required": true
+         },
+         {
+          "name": "method",
+          "type": "select",
+          "label": "Method",
+          "required": true,
+          "validate": {
+           "enum": [
+            "get",
+            "head",
+            "post",
+            "put",
+            "patch",
+            "delete",
+            "options"
+           ]
+          }
+         },
+         {
+          "name": "headers",
+          "spec": [
+           {
+            "name": "name",
+            "type": "text",
+            "label": "Name",
+            "required": true
+           },
+           {
+            "name": "value",
+            "type": "text",
+            "label": "Value"
+           }
+          ],
+          "type": "array",
+          "label": "Headers"
+         },
+         {
+          "name": "qs",
+          "spec": [
+           {
+            "name": "name",
+            "type": "text",
+            "label": "Name",
+            "required": true
+           },
+           {
+            "name": "value",
+            "type": "text",
+            "label": "Value"
+           }
+          ],
+          "type": "array",
+          "label": "Query String"
+         },
+         {
+          "name": "bodyType",
+          "type": "select",
+          "label": "Body type",
+          "validate": {
+           "enum": [
+            "raw",
+            "x_www_form_urlencoded",
+            "multipart_form_data"
+           ]
+          }
+         },
+         {
+          "name": "parseResponse",
+          "type": "boolean",
+          "label": "Parse response",
+          "required": true
+         },
+         {
+          "name": "authUser",
+          "type": "text",
+          "label": "User name"
+         },
+         {
+          "name": "authPass",
+          "type": "password",
+          "label": "Password"
+         },
+         {
+          "name": "timeout",
+          "type": "uinteger",
+          "label": "Timeout",
+          "validate": {
+           "max": 300,
+           "min": 1
+          }
+         },
+         {
+          "name": "shareCookies",
+          "type": "boolean",
+          "label": "Share cookies with other HTTP modules",
+          "required": true
+         },
+         {
+          "name": "ca",
+          "type": "cert",
+          "label": "Self-signed certificate"
+         },
+         {
+          "name": "rejectUnauthorized",
+          "type": "boolean",
+          "label": "Reject connections that are using unverified (self-signed) certificates",
+          "required": true
+         },
+         {
+          "name": "followRedirect",
+          "type": "boolean",
+          "label": "Follow redirect",
+          "required": true
+         },
+         {
+          "name": "useQuerystring",
+          "type": "boolean",
+          "label": "Disable serialization of multiple same query string keys as arrays",
+          "required": true
+         },
+         {
+          "name": "gzip",
+          "type": "boolean",
+          "label": "Request compressed content",
+          "required": true
+         },
+         {
+          "name": "useMtls",
+          "type": "boolean",
+          "label": "Use Mutual TLS",
+          "required": true
+         },
+         {
+          "name": "contentType",
+          "type": "select",
+          "label": "Content type",
+          "validate": {
+           "enum": [
+            "text/plain",
+            "application/json",
+            "application/xml",
+            "text/xml",
+            "text/html",
+            "custom"
+           ]
+          }
+         },
+         {
+          "name": "data",
+          "type": "buffer",
+          "label": "Request content"
+         },
+         {
+          "name": "followAllRedirects",
+          "type": "boolean",
+          "label": "Follow all redirect",
+          "required": true
+         }
+        ],
+        "restore": {
+         "expect": {
+          "qs": {
+           "mode": "chose"
+          },
+          "method": {
+           "mode": "chose",
+           "label": "POST"
+          },
+          "headers": {
+           "mode": "chose",
+           "items": [
+            null,
+            null
+           ]
+          },
+          "bodyType": {
+           "label": "Raw"
+          },
+          "contentType": {
+           "label": "JSON (application/json)"
+          }
+         }
+        },
+        "designer": {
+         "x": -77,
+         "y": -384,
+         "name": "Create Variable SENDSPARK1"
+        },
+        "parameters": [
+         {
+          "name": "handleErrors",
+          "type": "boolean",
+          "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+          "required": true
+         },
+         {
+          "name": "useNewZLibDeCompress",
+          "type": "hidden"
+         }
+        ]
+       },
+       "parameters": {
+        "handleErrors": true,
+        "useNewZLibDeCompress": true
+       }
+      },
+      {
+       "id": 4,
+       "mapper": {
+        "ca": "",
+        "qs": [],
+        "url": "https://send.dulcy.io/api/custom-variables",
+        "data": "{\n  \"name\": \"SENDSPARK2\"\n}",
+        "gzip": true,
+        "method": "post",
+        "headers": [
+         {
+          "name": "Content-Type",
+          "value": "application/json"
+         },
+         {
+          "name": "Authorization",
+          "value": "Bearer {{11.api}}"
+         }
+        ],
+        "timeout": "",
+        "useMtls": false,
+        "authPass": "",
+        "authUser": "",
+        "bodyType": "raw",
+        "contentType": "application/json",
+        "serializeUrl": false,
+        "shareCookies": false,
+        "parseResponse": true,
+        "followRedirect": true,
+        "useQuerystring": false,
+        "followAllRedirects": false,
+        "rejectUnauthorized": true
+       },
+       "module": "http:ActionSendData",
+       "version": 3,
+       "metadata": {
+        "expect": [
+         {
+          "name": "url",
+          "type": "url",
+          "label": "URL",
+          "required": true
+         },
+         {
+          "name": "serializeUrl",
+          "type": "boolean",
+          "label": "Serialize URL",
+          "required": true
+         },
+         {
+          "name": "method",
+          "type": "select",
+          "label": "Method",
+          "required": true,
+          "validate": {
+           "enum": [
+            "get",
+            "head",
+            "post",
+            "put",
+            "patch",
+            "delete",
+            "options"
+           ]
+          }
+         },
+         {
+          "name": "headers",
+          "spec": [
+           {
+            "name": "name",
+            "type": "text",
+            "label": "Name",
+            "required": true
+           },
+           {
+            "name": "value",
+            "type": "text",
+            "label": "Value"
+           }
+          ],
+          "type": "array",
+          "label": "Headers"
+         },
+         {
+          "name": "qs",
+          "spec": [
+           {
+            "name": "name",
+            "type": "text",
+            "label": "Name",
+            "required": true
+           },
+           {
+            "name": "value",
+            "type": "text",
+            "label": "Value"
+           }
+          ],
+          "type": "array",
+          "label": "Query String"
+         },
+         {
+          "name": "bodyType",
+          "type": "select",
+          "label": "Body type",
+          "validate": {
+           "enum": [
+            "raw",
+            "x_www_form_urlencoded",
+            "multipart_form_data"
+           ]
+          }
+         },
+         {
+          "name": "parseResponse",
+          "type": "boolean",
+          "label": "Parse response",
+          "required": true
+         },
+         {
+          "name": "authUser",
+          "type": "text",
+          "label": "User name"
+         },
+         {
+          "name": "authPass",
+          "type": "password",
+          "label": "Password"
+         },
+         {
+          "name": "timeout",
+          "type": "uinteger",
+          "label": "Timeout",
+          "validate": {
+           "max": 300,
+           "min": 1
+          }
+         },
+         {
+          "name": "shareCookies",
+          "type": "boolean",
+          "label": "Share cookies with other HTTP modules",
+          "required": true
+         },
+         {
+          "name": "ca",
+          "type": "cert",
+          "label": "Self-signed certificate"
+         },
+         {
+          "name": "rejectUnauthorized",
+          "type": "boolean",
+          "label": "Reject connections that are using unverified (self-signed) certificates",
+          "required": true
+         },
+         {
+          "name": "followRedirect",
+          "type": "boolean",
+          "label": "Follow redirect",
+          "required": true
+         },
+         {
+          "name": "useQuerystring",
+          "type": "boolean",
+          "label": "Disable serialization of multiple same query string keys as arrays",
+          "required": true
+         },
+         {
+          "name": "gzip",
+          "type": "boolean",
+          "label": "Request compressed content",
+          "required": true
+         },
+         {
+          "name": "useMtls",
+          "type": "boolean",
+          "label": "Use Mutual TLS",
+          "required": true
+         },
+         {
+          "name": "contentType",
+          "type": "select",
+          "label": "Content type",
+          "validate": {
+           "enum": [
+            "text/plain",
+            "application/json",
+            "application/xml",
+            "text/xml",
+            "text/html",
+            "custom"
+           ]
+          }
+         },
+         {
+          "name": "data",
+          "type": "buffer",
+          "label": "Request content"
+         },
+         {
+          "name": "followAllRedirects",
+          "type": "boolean",
+          "label": "Follow all redirect",
+          "required": true
+         }
+        ],
+        "restore": {
+         "expect": {
+          "qs": {
+           "mode": "chose"
+          },
+          "method": {
+           "mode": "chose",
+           "label": "POST"
+          },
+          "headers": {
+           "mode": "chose",
+           "items": [
+            null,
+            null
+           ]
+          },
+          "bodyType": {
+           "label": "Raw"
+          },
+          "contentType": {
+           "label": "JSON (application/json)"
+          }
+         }
+        },
+        "designer": {
+         "x": 268,
+         "y": -386,
+         "name": "Create Variable SENDSPARK2"
+        },
+        "parameters": [
+         {
+          "name": "handleErrors",
+          "type": "boolean",
+          "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+          "required": true
+         },
+         {
+          "name": "useNewZLibDeCompress",
+          "type": "hidden"
+         }
+        ]
+       },
+       "parameters": {
+        "handleErrors": true,
+        "useNewZLibDeCompress": true
+       }
+      },
+      {
+       "id": 5,
+       "mapper": {
+        "ca": "",
+        "qs": [],
+        "url": "https://send.dulcy.io/api/custom-variables",
+        "data": "{\n  \"name\": \"SENDSPARK3\"\n}",
+        "gzip": true,
+        "method": "post",
+        "headers": [
+         {
+          "name": "Content-Type",
+          "value": "application/json"
+         },
+         {
+          "name": "Authorization",
+          "value": "Bearer {{11.api}}"
+         }
+        ],
+        "timeout": "",
+        "useMtls": false,
+        "authPass": "",
+        "authUser": "",
+        "bodyType": "raw",
+        "contentType": "application/json",
+        "serializeUrl": false,
+        "shareCookies": false,
+        "parseResponse": true,
+        "followRedirect": true,
+        "useQuerystring": false,
+        "followAllRedirects": false,
+        "rejectUnauthorized": true
+       },
+       "module": "http:ActionSendData",
+       "version": 3,
+       "metadata": {
+        "expect": [
+         {
+          "name": "url",
+          "type": "url",
+          "label": "URL",
+          "required": true
+         },
+         {
+          "name": "serializeUrl",
+          "type": "boolean",
+          "label": "Serialize URL",
+          "required": true
+         },
+         {
+          "name": "method",
+          "type": "select",
+          "label": "Method",
+          "required": true,
+          "validate": {
+           "enum": [
+            "get",
+            "head",
+            "post",
+            "put",
+            "patch",
+            "delete",
+            "options"
+           ]
+          }
+         },
+         {
+          "name": "headers",
+          "spec": [
+           {
+            "name": "name",
+            "type": "text",
+            "label": "Name",
+            "required": true
+           },
+           {
+            "name": "value",
+            "type": "text",
+            "label": "Value"
+           }
+          ],
+          "type": "array",
+          "label": "Headers"
+         },
+         {
+          "name": "qs",
+          "spec": [
+           {
+            "name": "name",
+            "type": "text",
+            "label": "Name",
+            "required": true
+           },
+           {
+            "name": "value",
+            "type": "text",
+            "label": "Value"
+           }
+          ],
+          "type": "array",
+          "label": "Query String"
+         },
+         {
+          "name": "bodyType",
+          "type": "select",
+          "label": "Body type",
+          "validate": {
+           "enum": [
+            "raw",
+            "x_www_form_urlencoded",
+            "multipart_form_data"
+           ]
+          }
+         },
+         {
+          "name": "parseResponse",
+          "type": "boolean",
+          "label": "Parse response",
+          "required": true
+         },
+         {
+          "name": "authUser",
+          "type": "text",
+          "label": "User name"
+         },
+         {
+          "name": "authPass",
+          "type": "password",
+          "label": "Password"
+         },
+         {
+          "name": "timeout",
+          "type": "uinteger",
+          "label": "Timeout",
+          "validate": {
+           "max": 300,
+           "min": 1
+          }
+         },
+         {
+          "name": "shareCookies",
+          "type": "boolean",
+          "label": "Share cookies with other HTTP modules",
+          "required": true
+         },
+         {
+          "name": "ca",
+          "type": "cert",
+          "label": "Self-signed certificate"
+         },
+         {
+          "name": "rejectUnauthorized",
+          "type": "boolean",
+          "label": "Reject connections that are using unverified (self-signed) certificates",
+          "required": true
+         },
+         {
+          "name": "followRedirect",
+          "type": "boolean",
+          "label": "Follow redirect",
+          "required": true
+         },
+         {
+          "name": "useQuerystring",
+          "type": "boolean",
+          "label": "Disable serialization of multiple same query string keys as arrays",
+          "required": true
+         },
+         {
+          "name": "gzip",
+          "type": "boolean",
+          "label": "Request compressed content",
+          "required": true
+         },
+         {
+          "name": "useMtls",
+          "type": "boolean",
+          "label": "Use Mutual TLS",
+          "required": true
+         },
+         {
+          "name": "contentType",
+          "type": "select",
+          "label": "Content type",
+          "validate": {
+           "enum": [
+            "text/plain",
+            "application/json",
+            "application/xml",
+            "text/xml",
+            "text/html",
+            "custom"
+           ]
+          }
+         },
+         {
+          "name": "data",
+          "type": "buffer",
+          "label": "Request content"
+         },
+         {
+          "name": "followAllRedirects",
+          "type": "boolean",
+          "label": "Follow all redirect",
+          "required": true
+         }
+        ],
+        "restore": {
+         "expect": {
+          "qs": {
+           "mode": "chose"
+          },
+          "method": {
+           "mode": "chose",
+           "label": "POST"
+          },
+          "headers": {
+           "mode": "chose",
+           "items": [
+            null,
+            null
+           ]
+          },
+          "bodyType": {
+           "label": "Raw"
+          },
+          "contentType": {
+           "label": "JSON (application/json)"
+          }
+         }
+        },
+        "designer": {
+         "x": 605,
+         "y": -393,
+         "name": "Create Variable SENDSPARK3"
+        },
+        "parameters": [
+         {
+          "name": "handleErrors",
+          "type": "boolean",
+          "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+          "required": true
+         },
+         {
+          "name": "useNewZLibDeCompress",
+          "type": "hidden"
+         }
+        ]
+       },
+       "parameters": {
+        "handleErrors": true,
+        "useNewZLibDeCompress": true
+       }
+      },
+      {
+       "id": 6,
+       "mapper": {
+        "ca": "",
+        "qs": [],
+        "url": "https://send.dulcy.io/api/custom-variables",
+        "data": "{\n  \"name\": \"SENDSPARK4\"\n}",
+        "gzip": true,
+        "method": "post",
+        "headers": [
+         {
+          "name": "Content-Type",
+          "value": "application/json"
+         },
+         {
+          "name": "Authorization",
+          "value": "Bearer {{11.api}}"
+         }
+        ],
+        "timeout": "",
+        "useMtls": false,
+        "authPass": "",
+        "authUser": "",
+        "bodyType": "raw",
+        "contentType": "application/json",
+        "serializeUrl": false,
+        "shareCookies": false,
+        "parseResponse": true,
+        "followRedirect": true,
+        "useQuerystring": false,
+        "followAllRedirects": false,
+        "rejectUnauthorized": true
+       },
+       "module": "http:ActionSendData",
+       "version": 3,
+       "metadata": {
+        "expect": [
+         {
+          "name": "url",
+          "type": "url",
+          "label": "URL",
+          "required": true
+         },
+         {
+          "name": "serializeUrl",
+          "type": "boolean",
+          "label": "Serialize URL",
+          "required": true
+         },
+         {
+          "name": "method",
+          "type": "select",
+          "label": "Method",
+          "required": true,
+          "validate": {
+           "enum": [
+            "get",
+            "head",
+            "post",
+            "put",
+            "patch",
+            "delete",
+            "options"
+           ]
+          }
+         },
+         {
+          "name": "headers",
+          "spec": [
+           {
+            "name": "name",
+            "type": "text",
+            "label": "Name",
+            "required": true
+           },
+           {
+            "name": "value",
+            "type": "text",
+            "label": "Value"
+           }
+          ],
+          "type": "array",
+          "label": "Headers"
+         },
+         {
+          "name": "qs",
+          "spec": [
+           {
+            "name": "name",
+            "type": "text",
+            "label": "Name",
+            "required": true
+           },
+           {
+            "name": "value",
+            "type": "text",
+            "label": "Value"
+           }
+          ],
+          "type": "array",
+          "label": "Query String"
+         },
+         {
+          "name": "bodyType",
+          "type": "select",
+          "label": "Body type",
+          "validate": {
+           "enum": [
+            "raw",
+            "x_www_form_urlencoded",
+            "multipart_form_data"
+           ]
+          }
+         },
+         {
+          "name": "parseResponse",
+          "type": "boolean",
+          "label": "Parse response",
+          "required": true
+         },
+         {
+          "name": "authUser",
+          "type": "text",
+          "label": "User name"
+         },
+         {
+          "name": "authPass",
+          "type": "password",
+          "label": "Password"
+         },
+         {
+          "name": "timeout",
+          "type": "uinteger",
+          "label": "Timeout",
+          "validate": {
+           "max": 300,
+           "min": 1
+          }
+         },
+         {
+          "name": "shareCookies",
+          "type": "boolean",
+          "label": "Share cookies with other HTTP modules",
+          "required": true
+         },
+         {
+          "name": "ca",
+          "type": "cert",
+          "label": "Self-signed certificate"
+         },
+         {
+          "name": "rejectUnauthorized",
+          "type": "boolean",
+          "label": "Reject connections that are using unverified (self-signed) certificates",
+          "required": true
+         },
+         {
+          "name": "followRedirect",
+          "type": "boolean",
+          "label": "Follow redirect",
+          "required": true
+         },
+         {
+          "name": "useQuerystring",
+          "type": "boolean",
+          "label": "Disable serialization of multiple same query string keys as arrays",
+          "required": true
+         },
+         {
+          "name": "gzip",
+          "type": "boolean",
+          "label": "Request compressed content",
+          "required": true
+         },
+         {
+          "name": "useMtls",
+          "type": "boolean",
+          "label": "Use Mutual TLS",
+          "required": true
+         },
+         {
+          "name": "contentType",
+          "type": "select",
+          "label": "Content type",
+          "validate": {
+           "enum": [
+            "text/plain",
+            "application/json",
+            "application/xml",
+            "text/xml",
+            "text/html",
+            "custom"
+           ]
+          }
+         },
+         {
+          "name": "data",
+          "type": "buffer",
+          "label": "Request content"
+         },
+         {
+          "name": "followAllRedirects",
+          "type": "boolean",
+          "label": "Follow all redirect",
+          "required": true
+         }
+        ],
+        "restore": {
+         "expect": {
+          "qs": {
+           "mode": "chose"
+          },
+          "method": {
+           "mode": "chose",
+           "label": "POST"
+          },
+          "headers": {
+           "mode": "chose",
+           "items": [
+            null,
+            null
+           ]
+          },
+          "bodyType": {
+           "label": "Raw"
+          },
+          "contentType": {
+           "label": "JSON (application/json)"
+          }
+         }
+        },
+        "designer": {
+         "x": 948,
+         "y": -396,
+         "name": "Create Variable SENDSPARK4"
+        },
+        "parameters": [
+         {
+          "name": "handleErrors",
+          "type": "boolean",
+          "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+          "required": true
+         },
+         {
+          "name": "useNewZLibDeCompress",
+          "type": "hidden"
+         }
+        ]
+       },
+       "parameters": {
+        "handleErrors": true,
+        "useNewZLibDeCompress": true
+       }
+      },
+      {
+       "id": 28,
+       "mapper": {
+        "ca": "",
+        "qs": [],
+        "url": "https://send.dulcy.io/api/custom-variables",
+        "data": "{\n  \"name\": \"linkedinurl\"\n}",
+        "gzip": true,
+        "method": "post",
+        "headers": [
+         {
+          "name": "Content-Type",
+          "value": "application/json"
+         },
+         {
+          "name": "Authorization",
+          "value": "Bearer {{11.api}}"
+         }
+        ],
+        "timeout": "",
+        "useMtls": false,
+        "authPass": "",
+        "authUser": "",
+        "bodyType": "raw",
+        "contentType": "application/json",
+        "serializeUrl": false,
+        "shareCookies": false,
+        "parseResponse": true,
+        "followRedirect": true,
+        "useQuerystring": false,
+        "followAllRedirects": false,
+        "rejectUnauthorized": true
+       },
+       "module": "http:ActionSendData",
+       "version": 3,
+       "metadata": {
+        "expect": [
+         {
+          "name": "url",
+          "type": "url",
+          "label": "URL",
+          "required": true
+         },
+         {
+          "name": "serializeUrl",
+          "type": "boolean",
+          "label": "Serialize URL",
+          "required": true
+         },
+         {
+          "name": "method",
+          "type": "select",
+          "label": "Method",
+          "required": true,
+          "validate": {
+           "enum": [
+            "get",
+            "head",
+            "post",
+            "put",
+            "patch",
+            "delete",
+            "options"
+           ]
+          }
+         },
+         {
+          "name": "headers",
+          "spec": [
+           {
+            "name": "name",
+            "type": "text",
+            "label": "Name",
+            "required": true
+           },
+           {
+            "name": "value",
+            "type": "text",
+            "label": "Value"
+           }
+          ],
+          "type": "array",
+          "label": "Headers"
+         },
+         {
+          "name": "qs",
+          "spec": [
+           {
+            "name": "name",
+            "type": "text",
+            "label": "Name",
+            "required": true
+           },
+           {
+            "name": "value",
+            "type": "text",
+            "label": "Value"
+           }
+          ],
+          "type": "array",
+          "label": "Query String"
+         },
+         {
+          "name": "bodyType",
+          "type": "select",
+          "label": "Body type",
+          "validate": {
+           "enum": [
+            "raw",
+            "x_www_form_urlencoded",
+            "multipart_form_data"
+           ]
+          }
+         },
+         {
+          "name": "parseResponse",
+          "type": "boolean",
+          "label": "Parse response",
+          "required": true
+         },
+         {
+          "name": "authUser",
+          "type": "text",
+          "label": "User name"
+         },
+         {
+          "name": "authPass",
+          "type": "password",
+          "label": "Password"
+         },
+         {
+          "name": "timeout",
+          "type": "uinteger",
+          "label": "Timeout",
+          "validate": {
+           "max": 300,
+           "min": 1
+          }
+         },
+         {
+          "name": "shareCookies",
+          "type": "boolean",
+          "label": "Share cookies with other HTTP modules",
+          "required": true
+         },
+         {
+          "name": "ca",
+          "type": "cert",
+          "label": "Self-signed certificate"
+         },
+         {
+          "name": "rejectUnauthorized",
+          "type": "boolean",
+          "label": "Reject connections that are using unverified (self-signed) certificates",
+          "required": true
+         },
+         {
+          "name": "followRedirect",
+          "type": "boolean",
+          "label": "Follow redirect",
+          "required": true
+         },
+         {
+          "name": "useQuerystring",
+          "type": "boolean",
+          "label": "Disable serialization of multiple same query string keys as arrays",
+          "required": true
+         },
+         {
+          "name": "gzip",
+          "type": "boolean",
+          "label": "Request compressed content",
+          "required": true
+         },
+         {
+          "name": "useMtls",
+          "type": "boolean",
+          "label": "Use Mutual TLS",
+          "required": true
+         },
+         {
+          "name": "contentType",
+          "type": "select",
+          "label": "Content type",
+          "validate": {
+           "enum": [
+            "text/plain",
+            "application/json",
+            "application/xml",
+            "text/xml",
+            "text/html",
+            "custom"
+           ]
+          }
+         },
+         {
+          "name": "data",
+          "type": "buffer",
+          "label": "Request content"
+         },
+         {
+          "name": "followAllRedirects",
+          "type": "boolean",
+          "label": "Follow all redirect",
+          "required": true
+         }
+        ],
+        "restore": {
+         "expect": {
+          "qs": {
+           "mode": "chose"
+          },
+          "method": {
+           "mode": "chose",
+           "label": "POST"
+          },
+          "headers": {
+           "mode": "chose",
+           "items": [
+            null,
+            null
+           ]
+          },
+          "bodyType": {
+           "label": "Raw"
+          },
+          "contentType": {
+           "label": "JSON (application/json)"
+          }
+         }
+        },
+        "designer": {
+         "x": 1254,
+         "y": -402,
+         "name": "Create Variable linkedinurl"
+        },
+        "parameters": [
+         {
+          "name": "handleErrors",
+          "type": "boolean",
+          "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+          "required": true
+         },
+         {
+          "name": "useNewZLibDeCompress",
+          "type": "hidden"
+         }
+        ]
+       },
+       "parameters": {
+        "handleErrors": true,
+        "useNewZLibDeCompress": true
+       }
+      }
+     ]
+    ]
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately"
+  }
+ }
+}

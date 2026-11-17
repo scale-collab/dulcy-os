@@ -1,0 +1,1086 @@
+{
+ "id": 4742245,
+ "name": "[Client Closed a Deal] Form Submission -> Closed Deal",
+ "teamId": 629049,
+ "hookId": 2721578,
+ "devices": [],
+ "deviceId": null,
+ "deviceScope": null,
+ "concept": false,
+ "description": "",
+ "folderId": 199728,
+ "slots": null,
+ "isinvalid": false,
+ "islinked": true,
+ "islocked": false,
+ "isPaused": false,
+ "usedPackages": [
+  "gateway",
+  "util",
+  "airtable",
+  "airtable",
+  "slack",
+  "airtable"
+ ],
+ "lastEdit": "2026-05-20T03:06:45.242Z",
+ "scheduling": {
+  "type": "immediately",
+  "maximum_runs_per_minute": null
+ },
+ "iswaiting": false,
+ "dlqCount": 0,
+ "allDlqCount": 0,
+ "createdByUser": {
+  "name": "Alexander Woung"
+ },
+ "updatedByUser": {
+  "name": "Alexander Woung"
+ },
+ "nextExec": null,
+ "created": "2026-05-20T02:40:34.918Z",
+ "chainingRole": "none",
+ "type": "scenario",
+ "isShared": false,
+ "isActive": true,
+ "labels": [],
+ "blueprint": {
+  "flow": [
+   {
+    "id": 1,
+    "mapper": {},
+    "module": "gateway:CustomWebHook",
+    "version": 1,
+    "metadata": {
+     "restore": {
+      "parameters": {
+       "hook": {
+        "data": {
+         "editable": "true"
+        },
+        "label": "Call feedback"
+       }
+      }
+     },
+     "designer": {
+      "x": 0,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "hook",
+       "type": "hook:gateway-webhook",
+       "label": "Webhook",
+       "required": true
+      },
+      {
+       "name": "maxResults",
+       "type": "number",
+       "label": "Maximum number of results"
+      }
+     ]
+    },
+    "parameters": {
+     "hook": 2721578,
+     "maxResults": 1
+    }
+   },
+   {
+    "id": 9,
+    "mapper": {
+     "name": "recordId",
+     "scope": "roundtrip",
+     "value": "{{first(split(1.lead; \"hide_lead=\"))}}"
+    },
+    "module": "util:SetVariable2",
+    "version": 1,
+    "metadata": {
+     "expect": [
+      {
+       "name": "name",
+       "type": "text",
+       "label": "Variable name",
+       "required": true
+      },
+      {
+       "name": "scope",
+       "type": "select",
+       "label": "Variable lifetime",
+       "required": true,
+       "validate": {
+        "enum": [
+         "roundtrip",
+         "execution"
+        ]
+       }
+      },
+      {
+       "name": "value",
+       "type": "any",
+       "label": "Variable value"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "scope": {
+        "label": "One cycle"
+       }
+      }
+     },
+     "designer": {
+      "x": 300,
+      "y": 0
+     }
+    },
+    "parameters": {}
+   },
+   {
+    "id": 4,
+    "mapper": {
+     "id": "{{9.recordId}}",
+     "base": "appxqINt5XKw7a76A",
+     "table": "tblADFhWhTcLrl1UY",
+     "useColumnId": false
+    },
+    "module": "airtable:ActionGetRecord",
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "base",
+       "type": "select",
+       "label": "Base",
+       "required": true
+      },
+      {
+       "name": "useColumnId",
+       "type": "boolean",
+       "label": "Use Column ID",
+       "required": true
+      },
+      {
+       "name": "table",
+       "type": "select",
+       "label": "Table",
+       "required": true
+      },
+      {
+       "name": "id",
+       "type": "text",
+       "label": "Record ID",
+       "required": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "base": {
+        "mode": "chose",
+        "label": "Alex"
+       },
+       "table": {
+        "mode": "chose",
+        "label": "Emails"
+       },
+       "useColumnId": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "airtable3"
+        },
+        "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+       }
+      }
+     },
+     "designer": {
+      "x": 600,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:airtable3,airtable2",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3589602
+    }
+   },
+   {
+    "id": 5,
+    "mapper": {
+     "base": "appxqINt5XKw7a76A",
+     "table": "tblcjRBGJEWh5KgOt",
+     "formula": "{ID} = '{{4.`Workspace ID (Bison)`}}'",
+     "maxRecords": "1",
+     "useColumnId": false
+    },
+    "module": "airtable:ActionSearchRecords",
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "base",
+       "type": "select",
+       "label": "Base",
+       "required": true
+      },
+      {
+       "name": "useColumnId",
+       "type": "boolean",
+       "label": "Use Column ID",
+       "required": true
+      },
+      {
+       "name": "table",
+       "type": "select",
+       "label": "Table",
+       "required": true
+      },
+      {
+       "name": "formula",
+       "type": "text",
+       "label": "Formula"
+      },
+      {
+       "name": "maxRecords",
+       "type": "integer",
+       "label": "Limit"
+      },
+      {
+       "name": "sort",
+       "spec": [
+        {
+         "name": "field",
+         "type": "select",
+         "label": "Field",
+         "dynamic": true,
+         "options": []
+        },
+        {
+         "name": "direction",
+         "type": "select",
+         "label": "Direction",
+         "options": [
+          {
+           "label": "Descending",
+           "value": "desc"
+          },
+          {
+           "label": "Ascending",
+           "value": "asc"
+          }
+         ]
+        }
+       ],
+       "type": "array",
+       "label": "Sort"
+      },
+      {
+       "name": "view",
+       "type": "select",
+       "label": "View"
+      },
+      {
+       "name": "fields",
+       "type": "select",
+       "label": "Output Fields",
+       "multiple": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "base": {
+        "mode": "chose",
+        "label": "Alex"
+       },
+       "sort": {
+        "mode": "chose"
+       },
+       "view": {
+        "mode": "chose",
+        "label": "Empty"
+       },
+       "table": {
+        "mode": "chose",
+        "label": "Workspace IDs"
+       },
+       "fields": {
+        "mode": "chose"
+       },
+       "useColumnId": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "airtable3"
+        },
+        "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+       }
+      }
+     },
+     "designer": {
+      "x": 900,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:airtable3,airtable2",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3589602
+    }
+   },
+   {
+    "id": 10,
+    "mapper": {
+     "text": "⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️\n{{5.Name}} Closed a Deal!\n\nDate: {{4.`Deal Closed Date (from Client Closed Deals)`[]}}\n\nAmount: {{4.`Deal Value (USD) (from Client Closed Deals)`[]}}\n\nType: {{4.`Deal Type (from Client Closed Deals)`[]}}\n\nWhy They Said Yes:\n\n{{4.`Why They Said Yes (from Client Closed Deals)`[]}}\n⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️",
+     "parse": false,
+     "mrkdwn": true,
+     "channel": "C0B4RUTJAV9",
+     "icon_url": "https://www.swisslife.com/en/home/blog/fuck-you-money.html",
+     "username": "Client Closed Deal",
+     "channelType": "private",
+     "channelWType": "list",
+     "unfurl_links": false,
+     "unfurl_media": false
+    },
+    "module": "slack:CreateMessage",
+    "version": 4,
+    "metadata": {
+     "expect": [
+      {
+       "name": "channelWType",
+       "type": "select",
+       "label": "Enter a channel ID or name",
+       "required": true,
+       "validate": {
+        "enum": [
+         "manualy",
+         "list"
+        ]
+       }
+      },
+      {
+       "name": "text",
+       "type": "text",
+       "label": "Text"
+      },
+      {
+       "name": "blocks",
+       "type": "text",
+       "label": "Blocks"
+      },
+      {
+       "name": "thread_ts",
+       "type": "text",
+       "label": "Thread message ID (time stamp)"
+      },
+      {
+       "name": "reply_broadcast",
+       "type": "boolean",
+       "label": "Reply broadcast"
+      },
+      {
+       "name": "link_names",
+       "type": "boolean",
+       "label": "Link names"
+      },
+      {
+       "name": "parse",
+       "type": "boolean",
+       "label": "Parse message text"
+      },
+      {
+       "name": "mrkdwn",
+       "type": "boolean",
+       "label": "Use markdown"
+      },
+      {
+       "name": "unfurl_links",
+       "type": "boolean",
+       "label": "Unfurl primarily text-based content"
+      },
+      {
+       "name": "unfurl_media",
+       "type": "boolean",
+       "label": "Unfurl media content"
+      },
+      {
+       "name": "icon_emoji",
+       "type": "text",
+       "label": "Icon emoji"
+      },
+      {
+       "name": "icon_url",
+       "type": "url",
+       "label": "Icon url"
+      },
+      {
+       "name": "username",
+       "type": "text",
+       "label": "User name"
+      },
+      {
+       "name": "channelType",
+       "type": "select",
+       "label": "Channel type",
+       "required": true,
+       "validate": {
+        "enum": [
+         "public",
+         "private",
+         "im",
+         "mpim"
+        ]
+       }
+      },
+      {
+       "name": "channel",
+       "type": "select",
+       "label": "Private channel",
+       "required": true
+      }
+     ],
+     "restore": {
+      "expect": {
+       "parse": {
+        "mode": "chose"
+       },
+       "mrkdwn": {
+        "mode": "chose"
+       },
+       "channel": {
+        "mode": "chose",
+        "label": "client-closed-deals"
+       },
+       "link_names": {
+        "mode": "chose"
+       },
+       "channelType": {
+        "label": "Private channel"
+       },
+       "channelWType": {
+        "label": "Select from the list"
+       },
+       "unfurl_links": {
+        "mode": "chose"
+       },
+       "unfurl_media": {
+        "mode": "chose"
+       },
+       "reply_broadcast": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "slack3"
+        },
+        "label": "My Slack (bot) connectionfix (make)"
+       }
+      }
+     },
+     "advanced": true,
+     "designer": {
+      "x": 1200,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:slack2,slack3",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3736690
+    }
+   },
+   {
+    "id": 15,
+    "mapper": {
+     "id": "{{4.id}}",
+     "base": "appxqINt5XKw7a76A",
+     "table": "tblADFhWhTcLrl1UY",
+     "record": {
+      "fldSuQyvPM3IlS5oD": "Closed Deal"
+     },
+     "typecast": false,
+     "useColumnId": false
+    },
+    "module": "airtable:ActionUpdateRecords",
+    "version": 3,
+    "metadata": {
+     "expect": [
+      {
+       "name": "base",
+       "type": "select",
+       "label": "Base",
+       "required": true
+      },
+      {
+       "name": "typecast",
+       "type": "boolean",
+       "label": "Smart links",
+       "required": true
+      },
+      {
+       "name": "useColumnId",
+       "type": "boolean",
+       "label": "Use Column ID",
+       "required": true
+      },
+      {
+       "name": "table",
+       "type": "select",
+       "label": "Table",
+       "required": true
+      },
+      {
+       "name": "id",
+       "type": "text",
+       "label": "Record ID",
+       "required": true
+      },
+      {
+       "name": "record",
+       "spec": [
+        {
+         "name": "fldVkWkLFCGP9O1Aw",
+         "type": "text",
+         "label": "Leads Email"
+        },
+        {
+         "name": "fldQAcnN9PrbL7R81",
+         "type": "text",
+         "label": "Leads Name"
+        },
+        {
+         "mode": "edit",
+         "name": "fldSuQyvPM3IlS5oD",
+         "type": "select",
+         "label": "Pipeline Stage"
+        },
+        {
+         "name": "fldNdJB5rvVpf8V9M",
+         "type": "text",
+         "label": "Subject Line"
+        },
+        {
+         "name": "fldjG76LvUTv60Pzj",
+         "type": "text",
+         "label": "Latest Reply"
+        },
+        {
+         "mode": "edit",
+         "name": "fldr2uNiscZfeCNiT",
+         "type": "select",
+         "label": "Lead Status"
+        },
+        {
+         "mode": "edit",
+         "name": "fldE9bxKtmeRsvG9f",
+         "type": "select",
+         "label": "Last Email Sent"
+        },
+        {
+         "mode": "edit",
+         "name": "fldzd2bHc5XMGidFk",
+         "type": "select",
+         "label": "Push To Client Reply"
+        },
+        {
+         "name": "fldxUxP1jBXt3u7dl",
+         "type": "text",
+         "label": "Inbox Email"
+        },
+        {
+         "name": "fldEv7oM5BJPKJpiR",
+         "type": "text",
+         "label": "Campaign Name"
+        },
+        {
+         "name": "fldCfgm35ZqyVe9xm",
+         "type": "text",
+         "label": "Custom Reply"
+        },
+        {
+         "name": "fldYocEhrAzRUw9sA",
+         "type": "text",
+         "label": "Conversation History"
+        },
+        {
+         "name": "fldT2Nvl3qPmSMsgb",
+         "type": "text",
+         "label": "reply_uuid"
+        },
+        {
+         "name": "fldNro9b4pwGpSMCC",
+         "type": "text",
+         "label": "Conversation History (LinkedIn)"
+        },
+        {
+         "name": "fldD5fmGNibdKHSpt",
+         "type": "text",
+         "label": "Latest Reply (LinkedIn)"
+        },
+        {
+         "mode": "edit",
+         "name": "fldkDA7b1UxLAlA81",
+         "type": "select",
+         "label": "Lead Status (LinkedIn)"
+        },
+        {
+         "mode": "edit",
+         "name": "fld7jpK3tgsbX0fTw",
+         "type": "select",
+         "label": "Last Message Sent (LinkedIn)"
+        },
+        {
+         "name": "fld1NKr1MMJ1GCNNO",
+         "type": "text",
+         "label": "Custom Reply (LinkedIn)"
+        },
+        {
+         "name": "fldn8061QIRjA57DF",
+         "type": "number",
+         "label": "sender_id"
+        },
+        {
+         "name": "fldHMkE8BHLK79MOv",
+         "type": "text",
+         "label": "convo_id"
+        },
+        {
+         "name": "fldKmUjCCmBAsrJcO",
+         "type": "number",
+         "label": "campaign_idlinkedin"
+        },
+        {
+         "name": "fldkBI4eHyZCZiOWt",
+         "type": "text",
+         "label": "workspace_id"
+        },
+        {
+         "name": "fld9whaU6BOcX7Wb7",
+         "type": "number",
+         "label": "list_id"
+        },
+        {
+         "name": "fld2Iz1wBhvVqCE2z",
+         "type": "text",
+         "label": "lead_idlinkedin"
+        },
+        {
+         "mode": "edit",
+         "name": "fldfPPfvAoXw04LVs",
+         "type": "select",
+         "label": "Opportunity Status"
+        },
+        {
+         "name": "fldTFmYUnIXPxgJQS",
+         "time": false,
+         "type": "date",
+         "label": "Date of Call Booked"
+        },
+        {
+         "name": "fldv0o5rhmd7jXDrt",
+         "type": "text",
+         "label": "campaign_id"
+        },
+        {
+         "name": "fldv66oGZQQ9Qscmb",
+         "type": "number",
+         "label": "lead_id"
+        },
+        {
+         "name": "flds1ZqBq2ZW6dVBr",
+         "type": "text",
+         "label": "email_stats_id"
+        },
+        {
+         "name": "fldvARFWnr4H2wC8V",
+         "type": "text",
+         "label": "reply_message_id"
+        },
+        {
+         "name": "fld2IjVEsAijZUjPl",
+         "spec": {
+          "name": "value",
+          "label": "Record ID"
+         },
+         "type": "array",
+         "label": "Templates"
+        },
+        {
+         "name": "fldGkiO630UgVCnv5",
+         "type": "text",
+         "label": "CC (Optional)"
+        },
+        {
+         "name": "fldlC9uaoYyYwFvDz",
+         "type": "text",
+         "label": "Linkedin URL"
+        },
+        {
+         "name": "fld8K4zasLt6aaRfB",
+         "type": "text",
+         "label": "Phone Number"
+        },
+        {
+         "name": "fldgYXGaNqOXv1fGq",
+         "type": "text",
+         "label": "AI Model ID (PRE)"
+        },
+        {
+         "name": "fldaX71fUb5SMxZRg",
+         "type": "text",
+         "label": "AI Model ID (APTR)"
+        },
+        {
+         "name": "fldMkQICFPIhxnpjf",
+         "type": "text",
+         "label": "Sent From Number"
+        },
+        {
+         "name": "fld1B1CKOYoScfm5B",
+         "type": "text",
+         "label": "AI Called?"
+        },
+        {
+         "name": "fldtTiMUSxDkIIKL1",
+         "type": "text",
+         "label": "Call ID"
+        },
+        {
+         "name": "fldqSTyR7HK1TYCzf",
+         "type": "text",
+         "label": "Call Recording"
+        },
+        {
+         "name": "fldwbdXG4b1UGOxUC",
+         "type": "text",
+         "label": "Call Transcript"
+        },
+        {
+         "name": "fldbme5e9wDtnVwrx",
+         "type": "boolean",
+         "label": "DNC"
+        },
+        {
+         "name": "fldFzjStaAbNlUpVF",
+         "type": "number",
+         "label": "Times Called (Identifier)"
+        },
+        {
+         "name": "fldDCjl2mVNXBiT0n",
+         "type": "number",
+         "label": "Follow Up Counter"
+        },
+        {
+         "name": "fldZ5IqKrmEK5VftZ",
+         "type": "text",
+         "label": "SMS Latest Reply"
+        },
+        {
+         "name": "fldkoeDCrzxLiFP7D",
+         "type": "text",
+         "label": "SMS Conversation History"
+        },
+        {
+         "name": "fld7omiYDXqSkRDMy",
+         "type": "text",
+         "label": "SMS Custom Reply"
+        },
+        {
+         "mode": "edit",
+         "name": "fldKMkzXPIxoDN7BG",
+         "type": "select",
+         "label": "Last SMS Sent"
+        },
+        {
+         "mode": "edit",
+         "name": "fldIEelM8lYXbOQc2",
+         "type": "select",
+         "label": "Call Status"
+        },
+        {
+         "name": "fldGT7ve1zwbro3ox",
+         "type": "text",
+         "label": "convo_history_plain"
+        },
+        {
+         "name": "fldRYOE8NaSKxs9tB",
+         "type": "text",
+         "label": "Company Name"
+        },
+        {
+         "name": "fldBNI5MPeDfMELjd",
+         "type": "text",
+         "label": "ESP"
+        },
+        {
+         "name": "fldCjo0mB0snziNZQ",
+         "type": "text",
+         "label": "Workspace ID (Bison)"
+        },
+        {
+         "name": "fld3OXhmjYmwkUAAK",
+         "type": "text",
+         "label": "Reply Explanation"
+        },
+        {
+         "name": "fld3YSJ9JV7976gYP",
+         "spec": {
+          "name": "value",
+          "label": "Record ID"
+         },
+         "type": "array",
+         "label": "Call Feedback"
+        },
+        {
+         "name": "fldmT4YMjezdIGFfw",
+         "spec": {
+          "name": "value",
+          "label": "Record ID"
+         },
+         "type": "array",
+         "label": "Client Closed Deals"
+        },
+        {
+         "name": "fld95CBFiC5brYmMM",
+         "type": "number",
+         "label": "Deal Value (USD)"
+        },
+        {
+         "name": "fldyD6xwXgb1uK0rr",
+         "time": false,
+         "type": "date",
+         "label": "Deal Closed Date"
+        },
+        {
+         "mode": "edit",
+         "name": "fldqClP8814zDp1Nw",
+         "type": "select",
+         "label": "Deal Type"
+        },
+        {
+         "name": "fldyTDPYo300Gi98l",
+         "type": "text",
+         "label": "Why They Said Yes"
+        },
+        {
+         "name": "fldu8kQYBvVoqxq9T",
+         "time": false,
+         "type": "date",
+         "label": "OOO - Back In The Office - Date"
+        },
+        {
+         "name": "fldRCbUTcTgEFwnSm",
+         "type": "boolean",
+         "label": "OOO - Subsequence Email Sent"
+        },
+        {
+         "name": "fldMK8ZVPYiZVPKWh",
+         "type": "text",
+         "label": "OOO - First Name"
+        },
+        {
+         "name": "fld7BsWnDpprOkB5h",
+         "type": "text",
+         "label": "duplicate_for_tests"
+        },
+        {
+         "name": "fldUFM7ev0B3nvsgB",
+         "type": "boolean",
+         "label": "skip_request_call_feedback"
+        },
+        {
+         "name": "fldtPAlC0MDPHTWcl",
+         "spec": {
+          "name": "value",
+          "label": "Record ID"
+         },
+         "type": "array",
+         "label": "Clients Table"
+        },
+        {
+         "name": "fldp9PPhWuxYKHeNN",
+         "type": "text",
+         "label": "Email sent to alternative email"
+        },
+        {
+         "name": "fldCDGcTRfsZc6zA8",
+         "type": "text",
+         "label": "Alternative Contact Name"
+        },
+        {
+         "name": "fld7lWph2AkRQqtPa",
+         "type": "boolean",
+         "label": "Send alt email"
+        },
+        {
+         "name": "fldXyhJdaLygDLiJG",
+         "type": "text",
+         "label": "Subject for alt email"
+        },
+        {
+         "mode": "edit",
+         "name": "fldD175mMHmxoGw37",
+         "type": "select",
+         "label": "Last Sent From"
+        }
+       ],
+       "type": "collection",
+       "label": "Record"
+      }
+     ],
+     "restore": {
+      "expect": {
+       "base": {
+        "label": "Alex"
+       },
+       "table": {
+        "label": "Emails"
+       },
+       "record": {
+        "nested": {
+         "fld2IjVEsAijZUjPl": {
+          "mode": "chose"
+         },
+         "fld3YSJ9JV7976gYP": {
+          "mode": "chose"
+         },
+         "fld7jpK3tgsbX0fTw": {
+          "mode": "edit"
+         },
+         "fld7lWph2AkRQqtPa": {
+          "mode": "chose"
+         },
+         "fldD175mMHmxoGw37": {
+          "mode": "edit"
+         },
+         "fldE9bxKtmeRsvG9f": {
+          "mode": "edit"
+         },
+         "fldIEelM8lYXbOQc2": {
+          "mode": "edit"
+         },
+         "fldKMkzXPIxoDN7BG": {
+          "mode": "edit"
+         },
+         "fldRCbUTcTgEFwnSm": {
+          "mode": "chose"
+         },
+         "fldSuQyvPM3IlS5oD": {
+          "mode": "chose",
+          "label": "Closed Deal"
+         },
+         "fldUFM7ev0B3nvsgB": {
+          "mode": "chose"
+         },
+         "fldbme5e9wDtnVwrx": {
+          "mode": "chose"
+         },
+         "fldfPPfvAoXw04LVs": {
+          "mode": "edit"
+         },
+         "fldkDA7b1UxLAlA81": {
+          "mode": "edit"
+         },
+         "fldmT4YMjezdIGFfw": {
+          "mode": "chose"
+         },
+         "fldqClP8814zDp1Nw": {
+          "mode": "edit"
+         },
+         "fldr2uNiscZfeCNiT": {
+          "mode": "edit"
+         },
+         "fldtPAlC0MDPHTWcl": {
+          "mode": "chose"
+         },
+         "fldzd2bHc5XMGidFk": {
+          "mode": "edit"
+         }
+        }
+       },
+       "typecast": {
+        "mode": "chose"
+       },
+       "useColumnId": {
+        "mode": "chose"
+       }
+      },
+      "parameters": {
+       "__IMTCONN__": {
+        "data": {
+         "scoped": "true",
+         "connection": "airtable3"
+        },
+        "label": "My Airtable Token or Key connection (User ID: usrZ0Hn36coHFxw3D)"
+       }
+      }
+     },
+     "designer": {
+      "x": 1500,
+      "y": 0
+     },
+     "parameters": [
+      {
+       "name": "__IMTCONN__",
+       "type": "account:airtable3,airtable2",
+       "label": "Connection",
+       "required": true
+      }
+     ]
+    },
+    "parameters": {
+     "__IMTCONN__": 3589602
+    }
+   }
+  ],
+  "name": "[Client Closed a Deal] Form Submission -> Closed Deal",
+  "metadata": {
+   "instant": true,
+   "version": 1,
+   "designer": {
+    "orphans": []
+   },
+   "scenario": {
+    "dlq": false,
+    "slots": null,
+    "dataloss": false,
+    "maxErrors": 3,
+    "autoCommit": true,
+    "roundtrips": 1,
+    "sequential": false,
+    "confidential": false,
+    "freshVariables": false,
+    "autoCommitTriggerLast": true
+   }
+  },
+  "scheduling": {
+   "type": "immediately",
+   "maximum_runs_per_minute": null
+  }
+ }
+}
