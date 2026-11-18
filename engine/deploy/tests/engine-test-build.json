@@ -1,0 +1,31 @@
+{
+  "_about": "ENGINE TEST build (Alex approved 2026-11-18): Dulcy workspace only, never launched. Copy from Campaigns recHfh5Lzjj5Ql98X; leads from Lead List rec3aL8QzKzcgfTWq (Final Direct, 340). Dedicated test record ID so it never touches the real campaign's receipts.",
+  "recordId": "recEngineTest0001",
+  "name": "ENGINE TEST - do not launch - Manufacturing Direct",
+  "workspace": "dulcy",
+  "outputType": "direct",
+  "daysBetween": 2,
+  "steps": [
+    {
+      "subject": "retail and distribution buyers",
+      "body": "Hi,\n\nAre you {looking to add|trying to add|hoping to add} retail or distribution accounts for your products?\n\nDulcy handles B2B prospect research, verified {prospect lists|lists of prospects|buyer lists} and outreach. The idea is to {put|get} your products in front of buyers {in the markets you want to reach|in the markets you're looking to reach}.\n\nWorth a {short conversation|quick conversation|brief chat} about whether that fits your sales plans?\n"
+    },
+    {
+      "subject": "",
+      "body": "Hi,\n\nOne way to keep this focused is to {start with|begin with|focus on} a product category, target territory and buyer type.\n\nThose would {guide|shape|inform} the prospect list and outreach, alongside any channel restrictions you need to preserve.\n\nIs there one product category you want to {put first|prioritize|start with}?\n"
+    },
+    {
+      "subject": "",
+      "body": "Hi,\n\nThe decision is simply whether {targeted outreach to retail or distribution buyers|direct outreach to retail or distribution buyers|outreach to retail or distribution buyers} is worth exploring for your products.\n\n{If it is|If so|If that makes sense}, which market {would you want to reach first|would you want to target first|would you want to start with}?\n"
+    }
+  ],
+  "source": {
+    "sheetId": "13v8z12POL2L71FKgf3c6nong1qdR53_E3MtfAWug0rw",
+    "tab": "Final Direct"
+  },
+  "expectedLeads": 340,
+  "senderEmailIds": [
+    "6498",
+    "6500"
+  ]
+}
