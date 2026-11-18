@@ -47,8 +47,8 @@ export function loadConfig(env = process.env): Config {
     // Paid calls stay OFF unless DRY_RUN is explicitly "false".
     dryRun: (env.DRY_RUN ?? 'true').toLowerCase() !== 'false',
     slackWebhookUrl: env.SLACK_WEBHOOK_URL || undefined,
-    capPerJob: num('CAP_PER_JOB', 5000, env),
-    capPerDay: num('CAP_PER_DAY', 20000, env),
+    capPerJob: num('CAP_PER_JOB', 100_000, env),
+    capPerDay: num('CAP_PER_DAY', 100_000, env),
     stepTimeoutMs: num('STEP_TIMEOUT_MS', 10 * 60_000, env),
     leaseMs: num('LEASE_MS', 60_000, env),
     maxRequestAgeMs: num('MAX_REQUEST_AGE_MS', 5 * 60_000, env),
