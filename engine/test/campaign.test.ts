@@ -53,7 +53,7 @@ async function settle(c: Config, id: number, max = 60) {
 before(async () => { google = await startFakeGoogle(); bison = await startFakeBison(); if (skip) return; db = createPool(url!); await migrate(db); });
 after(async () => { google.close(); bison.close(); if (!skip) await db.end(); });
 beforeEach(async () => {
-  Object.assign(bison, { campaigns: [], leadLists: [], calls: [], createThen500: false, uploadThen500: false, processAfterChecks: 0, failRowsOnImport: 0, customVariables: new Set(['domain']), workspaceSenders: ['11', '12', '13'], currentTeam: 2, otherToolSwitches: false, switches: 0 });
+  Object.assign(bison, { campaigns: [], leadLists: [], calls: [], createThen500: false, uploadThen500: false, processAfterChecks: 0, failRowsOnImport: 0, customVariables: new Set(['domain']), workspaceSenders: ['11', '12', '13'], currentTeam: 2, otherToolSwitches: false, switches: 0, inSequenceElsewhere: new Set(), forcedParallel: false });
   bison.senderStatus = () => 'connected';
   bison.senderEmail = (id) => `sender${id}@dulcy-mail.com`;
   google.tabs = { 'Final Direct': TAB.map((r) => [...r]) };
@@ -124,6 +124,26 @@ test('build: one campaign, sequence + variant, leads checked until processed, ex
   assert.equal(j.job.result.launched, false);
   assert.ok(!bison.calls.some((x) => /resume|launch/.test(x)), 'never launches');
   assert.ok(bison.customVariables.has('dulcy_verification_500') && bison.customVariables.has('city'));
+});
+
+test('leads already in sequence in another campaign are skipped by EmailBison: reported, not forced, not failed', { skip }, async () => {
+  bison.inSequenceElsewhere = new Set(['bo@beta.com']);
+  const q = await queue();
+  const j = await settle(cfg(), q.job.id);
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.equal(bison.campaigns[0].leads.size, 2);
+  assert.equal(j.job.result.leads.added, 2);
+  assert.equal(j.job.result.leads.skippedInOtherCampaigns, 1);
+  assert.equal(bison.forcedParallel, false, 'never forces parallel sending');
+  assert.match(j.job.result.message, /1 skipped: already in sequence/);
+});
+
+test('every lead already in sequence elsewhere: 0 added goes to review', { skip }, async () => {
+  bison.inSequenceElsewhere = new Set(['ann@acme.com', 'bo@beta.com', 'cy@gamma.com']);
+  const q = await queue();
+  const j = await settle(cfg(), q.job.id);
+  assert.equal(j.job.status, 'needs_review');
+  assert.match(j.job.error, /got 0 of 3 leads/);
 });
 
 test('re-running the same record never duplicates anything', { skip }, async () => {
