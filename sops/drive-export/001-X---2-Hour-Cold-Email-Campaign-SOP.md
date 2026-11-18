@@ -4787,7 +4787,7 @@ OLD-
 =RIGHT(A2, LEN(A2) - FIND("@", A2))
 https://platform.adyntel.com/requests
 Untracked Reply - Make
-https://n8n.dulcy.io/webhook/bison-untracked-replies
+https://n8n.dulcy.io/webhook/REDACTED_PATH
 
 
 Email account added - Make
@@ -4799,11 +4799,11 @@ https://hook.us1.make.com/rxqx17ww5f7o8i1tx7ph5xoy8aa9kjqs
 
 
 Manual Mark Reply as Interested - Update Airtable (Contact Interested)
-https://n8n.dulcy.io/webhook/manual-marked-interested
+https://n8n.dulcy.io/webhook/REDACTED_PATH
 
 
 Contact Replied - n8n
-https://n8n.dulcy.io/webhook/bison-replies
+https://n8n.dulcy.io/webhook/REDACTED_PATH
 
 
 
