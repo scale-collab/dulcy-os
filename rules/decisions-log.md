@@ -35,3 +35,4 @@ Newest at the bottom. Format: `date | decision | why | who`
 - 2026-11-18: Engine credit caps raised to 100k per job (Alex) and 100k per day (so the per-job cap can actually be used).
 - 2026-11-18: Engine reads lead list sheets with a read-only Google service account (domain-wide delegation, impersonating scale@dulcy.io). Sheets aren't in one folder (most in the My Drive root), so sharing a folder wasn't possible. Alex sets it up himself.
 - 2026-11-18: Engine Verify side-by-side test 1 (UK SMEs, 604 emails) matched the old n8n 03 workflow on all 5 counts. No credits spent (reused saved MillionVerifier job).
+- 2026-11-18: Engine Verify side-by-side test 2 (Jonathan, 6,074 emails) matched the old workflow on good, bad and both final lists. Only difference: the engine holds 2 identity-conflict emails for review instead of paying to verify them (old: verified, came back Risky). Kept as the safer rule. Step 2 proven in shadow mode.

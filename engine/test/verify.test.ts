@@ -307,7 +307,7 @@ test('diagnose mode: a saved job that no longer matches the sheet is explained, 
   const j = await runUntilSettled(cfg({ dryRun: true }), q.job.id);
   assert.equal(j.job.status, 'succeeded');
   assert.equal(fake.uploads, 0);
-  assert.deepEqual(j.job.result.diagnosis.whyNotInList, { movedToExcludedPersonalEmails: 1, companyStillInListButEmailGone: 1, companyNoLongerInList: 1 });
+  assert.deepEqual(j.job.result.diagnosis.whyNotInList, { heldByEngineForReview: 0, movedToExcludedPersonalEmails: 1, companyStillInListButEmailGone: 1, companyNoLongerInList: 1 });
   assert.equal(j.job.result.diagnosis.inFileNotInList, 3);
   assert.equal(j.job.result.counts.good, 2);
   assert.ok(!JSON.stringify(j.job.result.diagnosis).includes('@'), 'no emails in the diagnosis');
