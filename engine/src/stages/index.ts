@@ -1,6 +1,7 @@
 import type { JobContext } from '../context.js';
 import { verifyStage } from './verify.js';
 import { campaignBuildStage } from './campaignBuild.js';
+import { campaignTopupStage } from './campaignTopup.js';
 
 /** A stage = one Airtable action. It returns a small result for the Airtable record. */
 export type Stage = (ctx: JobContext) => Promise<Record<string, unknown>>;
@@ -47,5 +48,11 @@ export const STAGES: Record<string, StageDef> = {
     deadlineMs: 6 * 60 * 60_000,
     maxAttempts: 5,
     description: 'Build one EmailBison campaign (find-or-create, sequence, leads with import checks, senders). Never launches.',
+  },
+  'campaign.topup': {
+    run: campaignTopupStage,
+    deadlineMs: 6 * 60 * 60_000,
+    maxAttempts: 5,
+    description: 'Add a Ready lead list to a running EmailBison campaign (KPI rule, import checks, added vs skipped). Never re-uploads, never launches.',
   },
 };

@@ -16,12 +16,13 @@
 // → leads-count → senders → done.
 import type { Stage } from './index.js';
 import type { JobContext } from '../context.js';
-import { NeedsReviewError, PermanentError, WaitError } from '../errors.js';
+import { NeedsReviewError, PermanentError } from '../errors.js';
+import { uploadAndAttach, waitOrReview } from '../campaign/upload.js';
 import { createBisonClient, type BisonClient, type BisonStep } from '../providers/emailbison.js';
 import { createSheetsClient } from '../providers/google.js';
 import { sheetIdFrom } from '../sources/sheet.js';
 import {
-  DEFAULT_SETTINGS, chunks, defaultSchedule, mergeTags, prepareLeads, primaryStepsPayload, senderCap, toCsv,
+  DEFAULT_SETTINGS, defaultSchedule, mergeTags, prepareLeads, primaryStepsPayload, senderCap,
   validateCopy, variantPayload, type CopyStep, type OutputType, type PreparedLeads,
 } from '../campaign/rules.js';
 
@@ -61,13 +62,6 @@ function readInput(raw: Record<string, unknown>): BuildInput {
   if (ids.length && emails.length) throw new PermanentError('give senderEmails or senderEmailIds, not both');
   if (new Set(ids).size !== ids.length || new Set(emails).size !== emails.length) throw new PermanentError('the sender list has duplicates');
   return { ...i, daysBetween: Number(i.daysBetween ?? 2) || 2, senderEmailIds: ids, senderEmails: emails.length ? emails : undefined };
-}
-
-/** Wait for something EmailBison is still doing, but never longer than `limitMs` from the first check. */
-async function waitOrReview(ctx: JobContext, key: string, limitMs: number, progress: string, review: string): Promise<never> {
-  const started = await ctx.step(`wait-start:${key}`, async () => Date.now());
-  if (Date.now() - started > limitMs) throw new NeedsReviewError(review);
-  throw new WaitError(progress, ctx.cfg.bisonPollMs);
 }
 
 export const campaignBuildStage: Stage = async (ctx) => {
@@ -136,64 +130,9 @@ export const campaignBuildStage: Stage = async (ctx) => {
     return p;
   }, { timeoutMs: 15 * 60_000 });
 
-  await ctx.step('custom-variables', async () => {
-    const have = await bison.customVariables();
-    const created: string[] = [];
-    for (const name of leads.customVariables) {
-      if (have.has(name.toLowerCase())) continue;
-      try { await bison.createCustomVariable(name); created.push(name); } catch (e) {
-        // Another run may have created it at the same moment: re-read before failing.
-        if (!(await bison.customVariables()).has(name.toLowerCase())) throw e;
-      }
-    }
-    return { created };
-  });
-
-  const parts = chunks(leads.rows);
-  // Leads in the campaign before our first upload, remembered per record (not per job), so a
-  // re-run compares against the same starting point and never waits for leads twice.
-  const before = (await ctx.step('leads-before', () => ctx.paid({
-    scope: 'record', provider: 'emailbison', callKey: `leads-before:${campaign.id}`, units: 0,
-    run: async () => ({ total: await bison.campaignLeadTotal(campaign.id) }),
-    dryRunResult: () => ({ total: 0 }),
-  }))).total;
-  let expectedAdded = 0;
-  for (let i = 0; i < parts.length; i++) {
-    const listName = `${input.name} Leads [${leads.hash}] part ${i + 1} of ${parts.length}`;
-    const list = await ctx.step(`upload-${i + 1}`, () => ctx.paid({
-      scope: 'record', provider: 'emailbison', callKey: `upload:${leads.hash}:${i + 1}`, units: 0,
-      run: () => bison.uploadLeadsCsv(listName, leads.columnsToMap, toCsv(leads.headers, parts[i])),
-      reconcile: async () => {
-        const found = await bison.findLeadListsByName(listName);
-        if (found.length === 1) return { id: found[0].id, name: listName };
-        if (found.length === 0) return null;
-        throw new NeedsReviewError(`${found.length} lead lists named "${listName}" exist; keep one before continuing`);
-      },
-      dryRunResult: () => ({ id: 0, name: listName }),
-    }), { timeoutMs: 5 * 60_000 });
-
-    // Check the import until EmailBison has processed it (no fixed waits).
-    const imported = await ctx.step(`import-${i + 1}`, async () => {
-      const l = await bison.getLeadList(list.id);
-      if (String(l.status) !== 'Processed') {
-        return await waitOrReview(ctx, `import-${i + 1}`, 60 * 60_000,
-          `lead import ${list.id} (part ${i + 1} of ${parts.length}): ${l.status ?? 'unknown'}`,
-          `lead import ${list.id} was not processed within 60 minutes; check it in EmailBison, do not upload again`);
-      }
-      const processed = Number(l.leads_processed), succeeded = Number(l.leads_succeeded), failed = Number(l.leads_failed);
-      if (processed !== parts[i].length || failed !== 0 || succeeded !== processed) {
-        throw new NeedsReviewError(`lead import ${list.id}: sent ${parts[i].length}, processed ${processed}, succeeded ${succeeded}, failed ${failed}; ${summarizeErrors(l.error_messages)}`);
-      }
-      return { id: list.id, succeeded };
-    });
-    expectedAdded += imported.succeeded;
-
-    await ctx.step(`attach-${i + 1}`, () => ctx.paid({
-      scope: 'record', provider: 'emailbison', callKey: `attach:${campaign.id}:${list.id}`, units: 0,
-      run: async () => { await bison.attachLeadList(campaign.id, list.id); return { attached: list.id }; },
-      dryRunResult: () => ({ attached: 0 }),
-    }));
-  }
+  const up = await uploadAndAttach(ctx, bison, { campaignId: campaign.id, listName: `${input.name} Leads`, leads });
+  const before = up.before;
+  const expectedAdded = up.accepted;
 
   // 6. The campaign must hold exactly the expected leads.
   const total = await ctx.step('leads-count', async () => {
@@ -244,7 +183,7 @@ export const campaignBuildStage: Stage = async (ctx) => {
     campaignId: campaign.id,
     campaignName: input.name,
     leads: { uploaded: leads.rows.length, added: total.added, droppedDuplicate: leads.droppedDuplicate, droppedNoEmail: leads.droppedNoEmail, droppedInvalid: leads.droppedInvalid },
-    imports: parts.length,
+    imports: up.parts,
     senders: senders.count,
     steps: steps.length,
     variants: steps.reduce((n, s) => n + 1 + (s.variants?.length ?? 0), 0),
@@ -304,10 +243,4 @@ function planSummary(input: BuildInput, p: PreparedLeads, stepCount: number) {
     steps: stepCount, senders: input.senderEmails?.length ?? input.senderEmailIds.length, senderCap: senderCap(p.rows.length, input.daysBetween!, input.senderDailyLimit),
     daysBetween: input.daysBetween,
   };
-}
-
-function summarizeErrors(e: unknown): string {
-  if (!e || typeof e !== 'object') return 'no error details';
-  const parts = Object.entries(e as Record<string, unknown>).slice(0, 5).map(([k, v]) => `${k}${typeof v === 'number' ? ` (${v})` : ''}`);
-  return parts.length ? `EmailBison says: ${parts.join('; ')}`.replace(/([A-Za-z0-9._%+-])[A-Za-z0-9._%+-]*@/g, '$1***@') : 'no error details';
 }
