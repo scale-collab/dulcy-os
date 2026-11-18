@@ -13,13 +13,13 @@ test('a clear fit is "fit" with its signals', () => {
   const r = checkCompanyFit(base, K);
   assert.equal(r.decision, 'fit');
   assert.equal(r.domain, 'acmeroofing.com');
-  assert.deepEqual(r.signals, ['target industry', 'target keyword on the homepage']);
+  assert.deepEqual(r.signals, ['target industry', 'target wording ("roof repair")']);
 });
 
 test('obvious bad fits are dropped, each with its reason', () => {
   const drop = (over: object) => checkCompanyFit({ ...base, ...over }, K);
   assert.match(drop({ domain: 'currentclient.com' }).reasons[0], /client exclusion list/);
-  assert.match(drop({ description: 'Roofing franchise opportunities' }).reasons[0], /excluded keyword "franchise"/);
+  assert.match(drop({ description: 'Roofing franchise opportunities' }).reasons[0], /described as "franchise"/);
   assert.match(drop({ employees: 400 }).reasons[0], /400 employees, above 50/);
   assert.match(drop({ country: 'CA' }).reasons[0], /outside the target countries/);
   assert.match(drop({ description: 'The best directory to find a contractor near you' }).reasons[0], /directory, not a provider/);

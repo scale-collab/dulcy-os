@@ -9,6 +9,7 @@ import { runOnce } from '../src/worker.js';
 import { loadConfig, type Config } from '../src/config.js';
 import { approvedFilters, toQuery } from '../src/leadlist/filters.js';
 import { toCompany } from '../src/leadlist/companies.js';
+import { startFakeOpenAI, type FakeOpenAI } from './fakes/openai.js';
 
 const url = process.env.TEST_DATABASE_URL;
 const skip = !url ? 'TEST_DATABASE_URL not set' : false;
@@ -17,6 +18,7 @@ const REC = 'recLeadListTest01';
 let db: pg.Pool;
 const fake = { url: '', count: 250, rows: [] as any[], discoverCalls: 0, countCalls: 0, lastQuery: '', countQuery: '', key: '' };
 let server: http.Server;
+let ai: FakeOpenAI;
 
 const co = (domain: string, description: string, extra: Record<string, unknown> = {}) => ({ domain, name: domain.split('.')[0], description, keywords: { roofing: 0.9 }, industry_groups: { CONSTRUCTION: 1 }, ...extra });
 
@@ -49,19 +51,21 @@ before(async () => {
     if (u.pathname === '/v1/discover') { fake.discoverCalls++; return res.end(JSON.stringify(fake.rows.slice(0, Number(u.searchParams.get('max_records'))))); }
     res.statusCode = 404; res.end('{}');
   });
+  ai = await startFakeOpenAI();
   await new Promise<void>((r) => server.listen(0, () => r()));
   fake.url = `http://127.0.0.1:${(server.address() as any).port}`;
   if (skip) return;
   db = createPool(url!); await migrate(db);
 });
-after(async () => { server.close(); if (!skip) await db.end(); });
+after(async () => { server.close(); ai.close(); if (!skip) await db.end(); });
 beforeEach(async () => {
   Object.assign(fake, { count: 250, discoverCalls: 0, countCalls: 0, lastQuery: '', countQuery: '', key: '' });
   fake.rows = [
     ...Array.from({ length: 9 }, (_, i) => co(`roofer${i}.com`, 'Residential roofing contractor')),
     co('bestroofers-directory.com', 'A directory of local roofers'),
   ];
-  if (!skip) await db.query('TRUNCATE jobs, steps, receipts, events, lead_companies, lead_list_sheets RESTART IDENTITY CASCADE');
+  ai.calls = 0; ai.status = 200; ai.answer = {};
+  if (!skip) await db.query('TRUNCATE jobs, steps, receipts, events, lead_companies, lead_list_sheets, lead_list_profiles RESTART IDENTITY CASCADE');
 });
 
 test('filters: old workflow rules (ICP sentence removed, E_COMMERCE fixed, legacy similarity refused, lists repeat the key)', () => {
@@ -129,7 +133,7 @@ test('no matching companies or no key: stops before spending', { skip }, async (
   const a = await settle(cfg(), (await queue()).job.id);
   assert.equal(a.job.status, 'failed');
   assert.match(a.job.error, /no companies match/);
-  await db.query('TRUNCATE jobs, steps, receipts, events, lead_companies, lead_list_sheets RESTART IDENTITY CASCADE');
+  await db.query('TRUNCATE jobs, steps, receipts, events, lead_companies, lead_list_sheets, lead_list_profiles RESTART IDENTITY CASCADE');
   const b = await settle(cfg({ discoLikeApiKey: undefined }), (await queue()).job.id);
   assert.equal(b.job.status, 'failed');
   assert.match(b.job.error, /no DiscoLike API key/);
@@ -148,4 +152,34 @@ test('credit cap: a sample over the per-job cap stops before the search', { skip
   assert.equal(j.job.status, 'needs_review');
   assert.match(j.job.error, /credit cap/);
   assert.equal(fake.discoverCalls, 0);
+});
+
+test('profile: ONE AI call per list from thesis + client context; it decides the cuts; a re-run never calls again', { skip }, async () => {
+  ai.answer = { summary: 'Residential roofers; the client is a marketing agency, so no directories or agencies.', customer: 'residential', excludeKeywords: ['marketing agency'], targetIndustries: ['CONSTRUCTION'], targetKeywords: ['residential roofing'] };
+  fake.rows = [...Array.from({ length: 8 }, (_, i) => co(`roofer${i}.com`, 'Residential roofing contractor')), co('growthco.com', 'A marketing agency for roofers'), co('bigroof.com', 'Industrial roofing for warehouses')];
+  const c = cfg({ openAiApiKey: 'sk-test', openAiBaseUrl: ai.url });
+  const input = { fit: undefined, thesis: 'Residential roofing companies', clientContext: 'Marketing agency for local home-service businesses' };
+  const j = await settle(c, (await queue(input)).job.id);
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.equal(ai.calls, 1, 'one call for the whole list');
+  assert.match(ai.lastUser, /Residential roofing companies/);
+  assert.match(ai.lastUser, /CONSTRUCTION \(10\)/, 'the AI sees the real industry codes from the sample');
+  assert.equal(j.job.result.profile.source, 'ai');
+  const cut = j.job.result.dropped.map((d: any) => d.domain).sort();
+  assert.deepEqual(cut, ['bigroof.com', 'growthco.com']);
+  assert.equal(j.job.result.sample.tier1, 8, 'industry + target wording = Tier 1');
+  await settle(c, (await queue(input)).job.id);
+  assert.equal(ai.calls, 1, 'the same thesis never calls the AI again');
+});
+
+test('profile: no key or an AI error never stops the list (code-only profile)', { skip }, async () => {
+  const j = await settle(cfg(), (await queue({ thesis: 'Residential roofing companies' })).job.id);
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.equal(j.job.result.profile.source, 'code');
+  await db.query('TRUNCATE jobs, steps, receipts, events, lead_companies, lead_list_sheets, lead_list_profiles RESTART IDENTITY CASCADE');
+  ai.status = 401;
+  const k = await settle(cfg({ openAiApiKey: 'sk-bad', openAiBaseUrl: ai.url }), (await queue({ thesis: 'Residential roofing companies' })).job.id);
+  assert.equal(k.job.status, 'succeeded', k.job.error);
+  assert.equal(k.job.result.profile.source, 'code');
+  assert.match(k.job.result.profile.notes, /AI profile unavailable/);
 });

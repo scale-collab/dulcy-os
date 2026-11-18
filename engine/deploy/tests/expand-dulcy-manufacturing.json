@@ -23,20 +23,8 @@
       "1302ea95-9ba5-447c-a281-f432f8bff18d"
     ]
   },
-  "fit": {
-    "targetsBusinessTypes": [
-      "manufacturer",
-      "wholesaler"
-    ],
-    "countries": [
-      "us",
-      "gb",
-      "ca",
-      "united states",
-      "united kingdom",
-      "canada"
-    ]
-  },
   "target": 1000,
-  "sampleApproved": true
+  "sampleApproved": true,
+  "targeting": "Product manufacturers in the United States, Canada, and the United Kingdom that make and distribute physical consumer or commercial goods through retailers, dealers, distributors, or stores, and could benefit from reaching those buyers directly",
+  "clientContext": "Dulcy Media (the client here is Dulcy itself): done-for-you B2B outbound - verified prospect lists, cold email sending, targeting and copy, reply handoff. This campaign ('Retail and Distribution Buyer Outreach') offers product manufacturers help getting their products in front of retail and distribution buyers. Good fits are real operating manufacturers and brands that make physical goods and sell through retailers, dealers, distributors or stores. Not buyers of this: directories, marketplaces, lead-gen sites, media, software companies, and other outbound / marketing / lead-generation agencies (competitors)."
 }

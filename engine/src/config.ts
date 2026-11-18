@@ -55,6 +55,10 @@ export interface Config {
   /** DiscoLike API key (server .env only) and base URL. */
   discoLikeApiKey?: string;
   discoLikeBaseUrl: string;
+  /** OpenAI: ONE call per lead list for its profile (server .env only). */
+  openAiApiKey?: string;
+  openAiModel: string;
+  openAiBaseUrl: string;
 }
 
 export function loadConfig(env = process.env): Config {
@@ -95,5 +99,8 @@ export function loadConfig(env = process.env): Config {
     bounceCheckWorkspaces: (env.BOUNCE_CHECK_WORKSPACES ?? '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
     discoLikeApiKey: env.DISCOLIKE_API_KEY || undefined,
     discoLikeBaseUrl: env.DISCOLIKE_BASE_URL || 'https://api.discolike.com',
+    openAiApiKey: env.OPENAI_API_KEY || undefined,
+    openAiModel: env.OPENAI_MODEL || 'gpt-4.1-mini',
+    openAiBaseUrl: env.OPENAI_BASE_URL || 'https://api.openai.com',
   };
 }

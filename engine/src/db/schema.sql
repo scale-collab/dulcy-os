@@ -96,3 +96,11 @@ CREATE TABLE IF NOT EXISTS lead_list_sheets (
   mirrored_batches  INT[] NOT NULL DEFAULT '{}',
   PRIMARY KEY (list_id, kind)
 );
+
+-- One profile per lead list: who the list is for (from thesis + client context + plan).
+CREATE TABLE IF NOT EXISTS lead_list_profiles (
+  list_id      TEXT PRIMARY KEY,
+  profile      JSONB NOT NULL,
+  inputs_hash  TEXT NOT NULL,
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
