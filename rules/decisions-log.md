@@ -28,3 +28,4 @@ Newest at the bottom. Format: `date | decision | why | who`
 2026-11-18 | Lead engine auto-launches a campaign once all launch checks pass; manual launches by agents still need Alex's OK | Alex: the information in the system should be sufficient to decide | Alex
 2026-11-18 | 3 workflows the Lead List hands work to (CodexContactProcessorDraft20261028, JWrteAxXQ1PIII4IelGoX, NtpwlzuP2tuJM6OC5U_m9) still return 'Workflow not found'; connector sees 158 | Checked live | Claude
 2026-11-18 | engine/PLAN.md approved by Alex; start step 1 (skeleton, dry-run only) | Alex approved | Alex
+2026-11-18 | Claude may merge its own PRs to main (tests must pass; tell Alex each time) | Alex: standing permission | Alex
