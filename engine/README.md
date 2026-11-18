@@ -74,7 +74,7 @@ Run on the server (dry-run shows the plan; live builds):
 ```bash
 docker compose exec -T engine node dist/src/cli.js campaign < build.json
 ```
-`build.json`: `{"recordId":"rec...","name":"...","workspace":"dulcy","outputType":"direct","steps":[{"subject":"...","body":"...","variants":[...]}],"source":{"sheetId":"..."},"expectedLeads":N,"senderEmailIds":["..."]}`
+`build.json`: `{"recordId":"rec...","name":"...","workspace":"dulcy","outputType":"direct","steps":[{"subject":"...","body":"...","variants":[...]}],"source":{"sheetId":"..."},"expectedLeads":N,"senderEmails":["sender@domain.com"]}`. Use sender **addresses** (`senderEmails`): the engine looks up their current EmailBison IDs, because Airtable's Email IDs can be stale. List a workspace's senders with `docker compose exec engine node dist/src/cli.js senders dulcy [text]`.
 
 Not yet: reading the copy and senders from Airtable, writing the IDs back, splitting direct/generic families, top-up (step 4).
 

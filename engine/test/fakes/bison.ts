@@ -17,6 +17,8 @@ export interface FakeBison {
   failRowsOnImport: number;
   senderStatus: (id: string) => string;
   senderEmail: (id: string) => string;
+  /** Sender IDs that exist in the workspace. */
+  workspaceSenders: string[];
   close(): void;
 }
 
@@ -24,7 +26,7 @@ export async function startFakeBison(): Promise<FakeBison> {
   const s: FakeBison = {
     url: '', key: 'bison-key', campaigns: [], leadLists: [], customVariables: new Set(['domain']), calls: [],
     createThen500: false, uploadThen500: false, processAfterChecks: 0, failRowsOnImport: 0,
-    senderStatus: () => 'connected', senderEmail: (id) => `sender${id}@dulcy-mail.com`, close: () => undefined,
+    senderStatus: () => 'connected', senderEmail: (id) => `sender${id}@dulcy-mail.com`, workspaceSenders: ['11', '12', '13'], close: () => undefined,
   };
   const json = (res: http.ServerResponse, code: number, body: unknown) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(body)); };
   const page = (list: unknown[], u: URL) => ({ data: list, meta: { current_page: Number(u.searchParams.get('page') ?? 1), last_page: 1, total: list.length } });
@@ -87,7 +89,12 @@ export async function startFakeBison(): Promise<FakeBison> {
       return json(res, 200, { data: { success: true } });
     }
     if ((x = m(/^\/api\/campaigns\/(\d+)\/leads$/))) return json(res, 200, { data: [], meta: { total: camp(x[1]).leads.size } });
-    if ((x = m(/^\/api\/campaigns\/(\d+)\/attach-sender-emails$/))) { const c = camp(x[1]); for (const id of body().sender_email_ids) if (!c.senders.includes(String(id))) c.senders.push(String(id)); return json(res, 200, { data: { success: true } }); }
+    if (u.pathname === '/api/sender-emails') return json(res, 200, page(s.workspaceSenders.map((id) => ({ id: Number(id), status: s.senderStatus(id), email: s.senderEmail(id) })), u));
+    if ((x = m(/^\/api\/campaigns\/(\d+)\/attach-sender-emails$/))) {
+      const bad = body().sender_email_ids.findIndex((id: string) => !s.workspaceSenders.includes(String(id)));
+      if (bad >= 0) return json(res, 422, { data: { success: false, message: `The selected sender_email_ids.${bad} is invalid.` } });
+      const c = camp(x[1]); for (const id of body().sender_email_ids) if (!c.senders.includes(String(id))) c.senders.push(String(id)); return json(res, 200, { data: { success: true } });
+    }
     if ((x = m(/^\/api\/campaigns\/(\d+)\/sender-emails$/))) return json(res, 200, page(camp(x[1]).senders.map((id) => ({ id: Number(id), status: s.senderStatus(id), email: s.senderEmail(id) })), u));
     return json(res, 404, { message: 'not found' });
   });

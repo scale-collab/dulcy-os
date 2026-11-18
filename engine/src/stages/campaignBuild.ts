@@ -38,8 +38,10 @@ interface BuildInput {
   source: { sheetId: string; tab?: string };
   /** Final count from Airtable; the sheet must match it. */
   expectedLeads?: number;
-  /** EmailBison sender email IDs to attach. */
+  /** EmailBison sender email IDs to attach, or ... */
   senderEmailIds: string[];
+  /** ... sender email addresses: the engine looks up their current IDs in EmailBison. */
+  senderEmails?: string[];
   senderDailyLimit?: number;
   timezone?: string;
   campaignType?: string;
@@ -53,9 +55,12 @@ function readInput(raw: Record<string, unknown>): BuildInput {
   if (!i.workspace) throw new PermanentError('input.workspace is required');
   if (i.outputType !== 'direct' && i.outputType !== 'generic') throw new PermanentError('input.outputType must be "direct" or "generic"');
   if (!i.source?.sheetId) throw new PermanentError('input.source.sheetId (the lead list sheet) is required');
-  if (!Array.isArray(i.senderEmailIds) || i.senderEmailIds.length === 0) throw new PermanentError('input.senderEmailIds: at least 1 sender is required');
-  if (new Set(i.senderEmailIds.map(String)).size !== i.senderEmailIds.length) throw new PermanentError('input.senderEmailIds has duplicates');
-  return { ...i, daysBetween: Number(i.daysBetween ?? 2) || 2, senderEmailIds: i.senderEmailIds.map(String) };
+  const ids = Array.isArray(i.senderEmailIds) ? i.senderEmailIds.map(String) : [];
+  const emails = Array.isArray(i.senderEmails) ? i.senderEmails.map((e) => String(e).trim().toLowerCase()) : [];
+  if (ids.length === 0 && emails.length === 0) throw new PermanentError('give senderEmails (addresses) or senderEmailIds: at least 1 sender is required');
+  if (ids.length && emails.length) throw new PermanentError('give senderEmails or senderEmailIds, not both');
+  if (new Set(ids).size !== ids.length || new Set(emails).size !== emails.length) throw new PermanentError('the sender list has duplicates');
+  return { ...i, daysBetween: Number(i.daysBetween ?? 2) || 2, senderEmailIds: ids, senderEmails: emails.length ? emails : undefined };
 }
 
 /** Wait for something EmailBison is still doing, but never longer than `limitMs` from the first check. */
@@ -84,7 +89,8 @@ export const campaignBuildStage: Stage = async (ctx) => {
       throw new PermanentError(`the "${tab}" tab has ${p.rows.length} uploadable leads but Airtable expects ${input.expectedLeads}; fix the list before building`);
     }
     const cap = senderCap(p.rows.length, input.daysBetween!, input.senderDailyLimit);
-    if (input.senderEmailIds.length > cap) throw new PermanentError(`${input.senderEmailIds.length} senders for ${p.rows.length} leads; the most that can be kept busy is ${cap}`);
+    const senderCount = input.senderEmails?.length ?? input.senderEmailIds.length;
+    if (senderCount > cap) throw new PermanentError(`${senderCount} senders for ${p.rows.length} leads; the most that can be kept busy is ${cap}`);
     return planSummary(input, p, steps.length);
   }, { timeoutMs: 15 * 60_000 });
 
@@ -201,7 +207,17 @@ export const campaignBuildStage: Stage = async (ctx) => {
     return { before, after, added };
   });
 
-  // 7. Senders: attach once, then the set must match exactly and all be connected.
+  // 7. Senders: addresses are resolved to EmailBison's current IDs (Airtable IDs can be stale).
+  if (input.senderEmails) {
+    input.senderEmailIds = await ctx.step('resolve-senders', async () => {
+      const all = await bison.workspaceSenders();
+      const byEmail = new Map(all.filter((x) => x.email).map((x) => [x.email!, x.id]));
+      const missing = input.senderEmails!.filter((e) => !byEmail.has(e));
+      if (missing.length) throw new PermanentError(`not in this EmailBison workspace: ${missing.join(', ')}`);
+      return input.senderEmails!.map((e) => byEmail.get(e)!);
+    });
+  }
+  // Attach once, then the set must match exactly and all be connected.
   await ctx.step('attach-senders', () => ctx.paid({
     scope: 'record', provider: 'emailbison', callKey: `senders:${campaign.id}:${[...input.senderEmailIds].sort().join(',')}`, units: 0,
     run: async () => { await bison.attachSenders(campaign.id, input.senderEmailIds); return { ok: true }; },
@@ -282,7 +298,7 @@ function planSummary(input: BuildInput, p: PreparedLeads, stepCount: number) {
     leadsMatchAirtable: input.expectedLeads === undefined ? null : p.rows.length === Number(input.expectedLeads),
     droppedDuplicate: p.droppedDuplicate, droppedNoEmail: p.droppedNoEmail, droppedInvalid: p.droppedInvalid,
     imports: Math.ceil(p.rows.length / 5000), columns: p.headers.length, customVariables: p.customVariables.length,
-    steps: stepCount, senders: input.senderEmailIds.length, senderCap: senderCap(p.rows.length, input.daysBetween!, input.senderDailyLimit),
+    steps: stepCount, senders: input.senderEmails?.length ?? input.senderEmailIds.length, senderCap: senderCap(p.rows.length, input.daysBetween!, input.senderDailyLimit),
     daysBetween: input.daysBetween,
   };
 }
