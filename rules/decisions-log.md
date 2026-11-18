@@ -34,3 +34,4 @@ Newest at the bottom. Format: `date | decision | why | who`
 - 2026-11-18: Engine step 2a: Verify stage (leadlist.verify) in shadow mode, same rules as old 03; upload once per list (record-scoped receipt), automatic waits, logs hold counts not lead rows. Next 2b: Sheets read + real-list comparison + write-back.
 - 2026-11-18: Engine credit caps raised to 100k per job (Alex) and 100k per day (so the per-job cap can actually be used).
 - 2026-11-18: Engine reads lead list sheets with a read-only Google service account (domain-wide delegation, impersonating scale@dulcy.io). Sheets aren't in one folder (most in the My Drive root), so sharing a folder wasn't possible. Alex sets it up himself.
+- 2026-11-18: Engine Verify side-by-side test 1 (UK SMEs, 604 emails) matched the old n8n 03 workflow on all 5 counts. No credits spent (reused saved MillionVerifier job).
