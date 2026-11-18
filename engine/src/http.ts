@@ -62,7 +62,7 @@ export function createServer(db: Db, cfg: Config) {
         const def = STAGES[p.kind];
         const r = await enqueue(db, {
           kind: p.kind, recordId: p.recordId, clientId: p.clientId, input: p.input ?? {}, requestId: p.requestId,
-          dryRun: cfg.dryRun, maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs,
+          dryRun: cfg.dryRun && !cfg.liveStages.includes(p.kind), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs,
         });
         const code = r.status === 'queued' ? 202 : 200;
         return send(res, code, { status: r.status, jobId: r.job.id, jobStatus: r.job.status });

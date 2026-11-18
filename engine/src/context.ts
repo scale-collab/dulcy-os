@@ -2,7 +2,7 @@ import type { Db } from './db/pool.js';
 import type { Config } from './config.js';
 import type { Job } from './queue.js';
 import { logEvent } from './log.js';
-import { NeedsReviewError, PermanentError, RetryableError } from './errors.js';
+import { NeedsReviewError, PermanentError, RetryableError, WaitError } from './errors.js';
 
 export interface PaidCall<T> {
   /** Unique identity of this call inside the step, e.g. 'batch-3'. */
@@ -20,6 +20,12 @@ export interface PaidCall<T> {
    * and the same callKey reuses the saved answer instead of paying again.
    */
   scope?: 'job' | 'record';
+  /**
+   * Called when an earlier attempt left this call 'pending' (outcome unknown). It looks at
+   * the provider: return the existing result to adopt it, or null if the call never took
+   * effect (then it is safe to make it). Throw if it can't tell. Without it: needs review.
+   */
+  reconcile?: () => Promise<T | null>;
 }
 
 /**
@@ -33,7 +39,8 @@ export class JobContext {
     readonly job: Job,
   ) {}
 
-  get dryRun(): boolean { return this.cfg.dryRun || this.job.dry_run; }
+  /** Dry-run unless this stage was switched live (LIVE_STAGES) and the job was queued live. */
+  get dryRun(): boolean { return this.job.dry_run || (this.cfg.dryRun && !this.cfg.liveStages.includes(this.job.kind)); }
 
   log(message: string, data: Record<string, unknown> = {}, level: 'info' | 'warn' | 'error' = 'info') {
     return logEvent(this.db, level, message, data, this.job.id);
@@ -65,7 +72,7 @@ export class JobContext {
       return output;
     } catch (e) {
       await this.db.query(`UPDATE steps SET status='failed', error=$3, finished_at=now() WHERE job_id=$1 AND step_key=$2`, [this.job.id, stepKey, String((e as Error).message ?? e)]);
-      await this.log('step failed', { step: stepKey, ms: Date.now() - started, error: String((e as Error).message ?? e) }, 'error');
+      if (!(e instanceof WaitError)) await this.log('step failed', { step: stepKey, ms: Date.now() - started, error: String((e as Error).message ?? e) }, 'error');
       throw e;
     } finally {
       if (timer) clearTimeout(timer);
@@ -89,7 +96,16 @@ export class JobContext {
     // A dry-run answer is only reused in dry-run; a live run makes the real call.
     if (p?.status === 'dry_run' && this.dryRun) return p.response as T;
     if (p?.status === 'pending') {
-      throw new NeedsReviewError(`paid call ${key} has an unclear outcome from an earlier attempt; check ${c.provider} before retrying`);
+      if (!c.reconcile || this.dryRun) {
+        throw new NeedsReviewError(`paid call ${key} has an unclear outcome from an earlier attempt; check ${c.provider} before retrying`);
+      }
+      const found = await c.reconcile();
+      if (found !== null) {
+        await this.db.query(`UPDATE receipts SET status='done', response=$2, error='reconciled after an unclear attempt', finished_at=now() WHERE receipt_key=$1`, [key, JSON.stringify(found ?? null)]);
+        await this.log('paid call reconciled: adopted the existing result', { provider: c.provider, call: c.callKey });
+        return found;
+      }
+      await this.log('paid call reconciled: it never took effect; making it now', { provider: c.provider, call: c.callKey });
     }
 
     await this.checkCaps(c.provider, c.units);

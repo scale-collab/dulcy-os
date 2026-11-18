@@ -13,6 +13,8 @@ interface ServiceAccountKey { client_email: string; private_key: string; token_u
 export interface SheetsClient {
   /** First row of a tab. */
   header(sheetId: string, tab: string): Promise<string[]>;
+  /** A whole tab (header row first), columns A:ZZ. */
+  tab(sheetId: string, tab: string): Promise<string[][]>;
   /** Whole columns (by 0-based index) of a tab, header cell included. */
   columns(sheetId: string, tab: string, indexes: number[]): Promise<string[][]>;
 }
@@ -105,6 +107,10 @@ export function createSheetsClient(o: GoogleOptions): SheetsClient {
       const r = await get(`/v4/spreadsheets/${encodeURIComponent(sheetId)}/values/${encodeURIComponent(`${quoteTab(tab)}!1:1`)}`);
       const values = (r.values as string[][] | undefined) ?? [];
       return (values[0] ?? []).map((v) => String(v ?? ''));
+    },
+    async tab(sheetId, tab) {
+      const r = await get(`/v4/spreadsheets/${encodeURIComponent(sheetId)}/values/${encodeURIComponent(`${quoteTab(tab)}!A:ZZ`)}`);
+      return ((r.values as string[][] | undefined) ?? []).map((row) => row.map((v) => String(v ?? '')));
     },
     async columns(sheetId, tab, indexes) {
       if (indexes.length === 0) return [];
