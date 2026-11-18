@@ -131,7 +131,7 @@ async function main() {
       const j = await getJob(db, Number(args[0]));
       if (!j) throw new Error('job not found');
       const res = (j.job.result ?? {}) as Record<string, unknown>;
-      const keep = ['matching', 'sample', 'topDropReasons', 'checked', 'paused', 'wouldPause', 'watch', 'readiness', 'kpiException', 'launched', 'campaignId', 'campaignName', 'leads', 'imports', 'senders', 'variants', 'note', 'dryRun', 'millionVerifierJobId', 'plan', 'counts', 'finalDirectCount', 'finalGenericCount', 'pendingRemainder', 'message', 'comparison', 'diagnosis', 'wouldSpendCredits'];
+      const keep = ['matching', 'sample', 'topDropReasons', 'dropped', 'checked', 'paused', 'wouldPause', 'watch', 'readiness', 'kpiException', 'launched', 'campaignId', 'campaignName', 'leads', 'imports', 'senders', 'variants', 'note', 'dryRun', 'millionVerifierJobId', 'plan', 'counts', 'finalDirectCount', 'finalGenericCount', 'pendingRemainder', 'message', 'comparison', 'diagnosis', 'wouldSpendCredits'];
       console.log(JSON.stringify({
         id: j.job.id, kind: j.job.kind, record: j.job.record_id, status: j.job.status, progress: j.job.progress, error: j.job.error,
         result: Object.fromEntries(keep.filter((k) => k in res).map((k) => [k, res[k]])),

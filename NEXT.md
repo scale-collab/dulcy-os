@@ -49,7 +49,8 @@ Last updated: 2026-11-18 (engine step 3 proven live)
 Earlier test campaign 648 had landed in client workspace 80 (Brilliant Jewelers) before the per-call workspace switch existed. Cleaned up with Alex's OK (226 test leads, 1 variable, campaign queued for deletion; lead list 776 removed by hand).
 Campaign 649 stays as a draft unless Alex wants it deleted.
 Still open: rotate the MillionVerifier key (pasted in chat 2026-11-18). Delete lead list 776 in workspace 80 by hand if not done.
-Next options (Alex picks): bounce check report-only run (`cli.js bounce dulcy`, needs `EMAILBISON_TEAM_DULCY=2` in the server .env), the DiscoLike company stage (needs a DiscoLike key on the server), or Airtable wiring and write-back (needs an Airtable token).
+**Lead lists step 5a (company sample) PROVEN LIVE** (job 15): Dulcy Manufacturing plan, 100 companies, 94% usable, Passed (old: 98.3%). 6 dropped with reasons. Next: 5b expand companies (batches with DiscoLike's rolling exclusion list) → needs Google Sheets WRITE access (or keep lists in the engine DB), then contacts.
+Other options: bounce check report-only run (`cli.js bounce dulcy`, needs `EMAILBISON_TEAM_DULCY=2` in the server .env), the DiscoLike company stage (needs a DiscoLike key on the server), or Airtable wiring and write-back (needs an Airtable token).
 
 **Built overnight 2026-11-18 (code + tests only, nothing live; 72/72 tests):**
 - Step 4 **top-up** (`campaign.topup`): Alex's KPI rule first (interested 15%+ of replies; bounce/reply/progress are watch flags), connected senders, count vs Airtable, same upload checks as the build, added vs skipped measured once the total settles.
