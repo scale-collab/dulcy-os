@@ -1,3 +1,6 @@
 node_modules/
 dist/
 .env
+deploy/secrets/
+deploy/google-sa.json
+*.pem

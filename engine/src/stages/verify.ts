@@ -16,13 +16,18 @@
 import type { Stage } from './index.js';
 import { NeedsReviewError, PermanentError, WaitError } from '../errors.js';
 import { createMvClient } from '../providers/millionverifier.js';
+import { createSheetsClient } from '../providers/google.js';
+import { loadSheetRows, type SheetSource } from '../sources/sheet.js';
 import {
   buildCandidates, buildOutputs, compare, parseResults, toCsv,
   type CandidateSet, type Expected, type InputRow, type VerifiedEmail,
 } from '../verify/rules.js';
 
 interface VerifyInput {
-  rows: InputRow[];
+  /** Lead rows given directly, or ... */
+  rows?: InputRow[];
+  /** ... read from the lead list's Google Sheet (Contacts / Expanded Companies tabs). */
+  source?: SheetSource;
   includeDirect?: boolean;
   includeGeneric?: boolean;
   genericFootprintMax200?: boolean;
@@ -34,10 +39,14 @@ interface VerifyInput {
 
 function readInput(raw: Record<string, unknown>): VerifyInput {
   const rows = raw.rows;
-  if (!Array.isArray(rows)) throw new PermanentError('input.rows must be a list of lead rows');
+  const source = raw.source as SheetSource | undefined;
+  if (!Array.isArray(rows) && !(source && typeof source.sheetId === 'string')) {
+    throw new PermanentError('give input.rows (a list of lead rows) or input.source.sheetId (the lead list sheet)');
+  }
   const existing = raw.existingJobId === undefined || raw.existingJobId === null ? '' : String(raw.existingJobId).trim();
   return {
-    rows: rows as InputRow[],
+    rows: Array.isArray(rows) ? (rows as InputRow[]) : undefined,
+    source: Array.isArray(rows) ? undefined : source,
     includeDirect: raw.includeDirect !== false,
     includeGeneric: raw.includeGeneric !== false,
     genericFootprintMax200: raw.genericFootprintMax200 === true,
@@ -59,11 +68,19 @@ function summary(set: CandidateSet) {
 
 export const verifyStage: Stage = async (ctx) => {
   const input = readInput(ctx.job.input);
-  const set = await ctx.step('build-candidates', async () => buildCandidates(input.rows, {
+  const opts = {
     includeDirect: input.includeDirect !== false,
     includeGeneric: input.includeGeneric !== false,
     genericFootprintMax200: input.genericFootprintMax200 === true,
-  }));
+  };
+  // Reading the sheet is free; it happens once, inside this checkpoint.
+  const set = await ctx.step('build-candidates', async () => {
+    const rows = input.rows ?? await loadSheetRows(
+      createSheetsClient({ keyFile: ctx.cfg.googleKeyFile, impersonate: ctx.cfg.googleImpersonateUser, sheetsBaseUrl: ctx.cfg.googleSheetsBaseUrl }),
+      input.source!, opts,
+    );
+    return buildCandidates(rows, opts);
+  }, { timeoutMs: 30 * 60_000 });
   const mv = createMvClient({ apiKey: ctx.cfg.millionVerifierApiKey, baseUrl: ctx.cfg.millionVerifierBaseUrl });
   const emails = set.send.map((c) => c.email);
 

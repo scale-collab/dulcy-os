@@ -9,12 +9,14 @@ import { enqueue, getJob } from '../src/queue.js';
 import { runOnce } from '../src/worker.js';
 import { NeedsReviewError, PermanentError } from '../src/errors.js';
 import { buildCandidates, mapVerdict, parseResults, buildOutputs, type InputRow } from '../src/verify/rules.js';
+import { startFakeGoogle, type FakeGoogle } from './fakes/google.js';
 
 const url = process.env.TEST_DATABASE_URL;
 const skip = !url ? 'TEST_DATABASE_URL not set' : false;
 const REC = 'recBBBBBBBBBBBBBB';
 const KEY = 'test-key';
 let db: Db;
+let google: FakeGoogle;
 
 // ---------- fake MillionVerifier ----------
 interface Fake {
@@ -72,12 +74,13 @@ function startFake(): Promise<void> {
 function cfg(over: Partial<Config> = {}): Config {
   return {
     ...loadConfig({ ENGINE_SECRET: 'x'.repeat(40), DATABASE_URL: url ?? 'postgres://x' } as NodeJS.ProcessEnv),
-    millionVerifierApiKey: KEY, millionVerifierBaseUrl: mvUrl, verifyPollMs: 5, dryRun: false, ...over,
+    millionVerifierApiKey: KEY, millionVerifierBaseUrl: mvUrl, verifyPollMs: 5, dryRun: false,
+    googleKeyFile: google.keyFile, googleImpersonateUser: 'scale@dulcy.io', googleSheetsBaseUrl: google.url, ...over,
   };
 }
 
-before(async () => { await startFake(); if (skip) return; db = createPool(url!); await migrate(db); });
-after(async () => { mvServer.close(); if (!skip) await db.end(); });
+before(async () => { await startFake(); google = await startFakeGoogle(); if (skip) return; db = createPool(url!); await migrate(db); });
+after(async () => { mvServer.close(); google.close(); if (!skip) await db.end(); });
 beforeEach(async () => { resetFake(); if (!skip) await db.query('TRUNCATE jobs, steps, receipts, events RESTART IDENTITY CASCADE'); });
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -266,4 +269,25 @@ test('verify: waiting stops at the time limit instead of running for hours', { s
   assert.equal(j.job.status, 'failed');
   assert.match(j.job.error, /time limit/);
   assert.equal(fake.uploads, 1);
+});
+
+test('verify from the lead list sheet: reads Contacts + Expanded Companies, then verifies', { skip }, async () => {
+  google.tabs = {
+    Contacts: [['Email', 'First Name', 'Last Name', 'Domain'], ['ann@acme.com', 'Ann', 'Lee', 'acme.com'], ['bad1@beta.com', 'Bo', 'Ng', 'beta.com'], ['', 'No', 'Mail', 'eps.com']],
+    'Expanded Companies': [['Name', 'Domain', 'Digital Footprint', 'Public Emails'], ['Acme', 'acme.com', '50', '["info@acme.com"]'], ['Huge', 'huge.com', '900', '["hello@huge.com"]']],
+  };
+  const q = await enqueueVerify({ source: { sheetId: 'https://docs.google.com/spreadsheets/d/1QYLOeUxwDXunQm_KMEYKB_7jW7l47ZQJ8wVVtCZBUd8/edit' }, genericFootprintMax200: true });
+  const j = await runUntilSettled(cfg(), q.job.id);
+  assert.equal(j.job.status, 'succeeded');
+  assert.equal(fake.uploads, 1);
+  assert.deepEqual(fake.jobs.get('job-1')!.sort(), ['ann@acme.com', 'bad1@beta.com', 'info@acme.com']);
+  assert.deepEqual(j.job.result.counts, { good: 2, risky: 1, bad: 1, pending: 0, held: 0, sent: 3 });
+  assert.equal(j.job.result.plan.droppedFootprint, 1);
+});
+
+test('verify: needs rows or a sheet', { skip }, async () => {
+  const q = await enqueueVerify({});
+  const j = await runUntilSettled(cfg(), q.job.id);
+  assert.equal(j.job.status, 'failed');
+  assert.match(j.job.error, /input.rows .* or input.source.sheetId/);
 });
