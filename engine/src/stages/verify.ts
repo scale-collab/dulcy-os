@@ -175,9 +175,11 @@ function explainDiff(diff: ResultDiff, set: CandidateSet) {
   const listDomains = new Set([...set.send, ...set.holds, ...set.invalidSyntax].map((c) => domainOf(c.email)));
   for (const r of set.missingEmail) if (r.domain) listDomains.add(String(r.domain).toLowerCase());
   const excluded = new Set(set.excludedPersonal ?? []);
-  let inExcludedPersonal = 0, companyStillInList = 0, companyGone = 0;
+  const held = new Set(set.holds.map((h) => h.email));
+  let inExcludedPersonal = 0, heldByEngine = 0, companyStillInList = 0, companyGone = 0;
   for (const e of diff.inFileNotInList) {
-    if (excluded.has(e)) inExcludedPersonal++;
+    if (held.has(e)) heldByEngine++;
+    else if (excluded.has(e)) inExcludedPersonal++;
     else if (listDomains.has(domainOf(e))) companyStillInList++;
     else companyGone++;
   }
@@ -185,7 +187,7 @@ function explainDiff(diff: ResultDiff, set: CandidateSet) {
     inFileNotInList: diff.inFileNotInList.length,
     inListNotInFile: diff.inListNotInFile.length,
     duplicatesInFile: diff.duplicatesInFile,
-    whyNotInList: { movedToExcludedPersonalEmails: inExcludedPersonal, companyStillInListButEmailGone: companyStillInList, companyNoLongerInList: companyGone },
+    whyNotInList: { heldByEngineForReview: heldByEngine, movedToExcludedPersonalEmails: inExcludedPersonal, companyStillInListButEmailGone: companyStillInList, companyNoLongerInList: companyGone },
     note: 'counts compare the saved MillionVerifier job with the sheet as it is today',
   };
 }
