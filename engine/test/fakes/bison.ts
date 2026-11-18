@@ -51,6 +51,8 @@ export async function startFakeBison(): Promise<FakeBison> {
     if ((x = m(/^\/api\/campaigns\/v1\.1\/(\d+)\/sequence-steps$/))) {
       const c = camp(x[1]);
       if (req.method === 'GET') return json(res, 200, { data: { sequence_steps: c.steps } });
+      const missing = body().sequence_steps.findIndex((st: any) => !String(st.email_subject ?? '').trim());
+      if (missing >= 0) return json(res, 422, { data: { success: false, message: `The sequence_steps.${missing}.email_subject field is required.` } });
       for (const st of body().sequence_steps) c.steps.push({ ...st, id: 9000 + c.steps.length });
       return json(res, 200, { data: { ok: true } });
     }

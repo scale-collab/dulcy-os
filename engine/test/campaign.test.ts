@@ -117,6 +117,8 @@ test('build: one campaign, sequence + variant, leads checked until processed, ex
   assert.equal(c.steps.filter((s) => !s.variant).length, 2);
   assert.equal(c.steps.filter((s) => s.variant).length, 1);
   assert.equal(c.steps[0].wait_in_days, 2, 'default 2 days between emails');
+  assert.equal(c.steps[1].email_subject, '{quick|short} question', 'a follow-up with no subject reuses email 1 subject');
+  assert.equal(c.steps[1].thread_reply, true);
   assert.equal(c.leads.size, 3);
   assert.deepEqual(c.senders, ['11']);
   assert.equal(j.job.result.launched, false);

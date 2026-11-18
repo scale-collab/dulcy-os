@@ -46,7 +46,7 @@ function stripFirstNameGreeting(body: string): string {
 
 export function validateCopy(steps: CopyStep[], outputType: OutputType): CopyStep[] {
   if (!Array.isArray(steps) || steps.length < 1 || steps.length > MAX_STEPS) throw new PermanentError(`copy must have 1-${MAX_STEPS} steps`);
-  return steps.map((st, i) => {
+  const out: CopyStep[] = steps.map((st, i) => {
     const variants = st.variants ?? [];
     if (variants.length + 1 > MAX_VARIANTS) throw new PermanentError(`step ${i + 1} has more than ${MAX_VARIANTS} variants`);
     const fix = (c: CopyVariant): CopyVariant => {
@@ -62,6 +62,13 @@ export function validateCopy(steps: CopyStep[], outputType: OutputType): CopySte
     const main = fix(st);
     return { ...main, threadReply: i > 0 ? st.threadReply !== false : false, variants: variants.map(fix) };
   });
+  // EmailBison needs a subject on every step. A follow-up with no subject is a thread reply
+  // under email 1, so it reuses email 1's subject (old builder rule).
+  const first = out[0].subject;
+  return out.map((st, i) => (i === 0 || st.subject.trim() ? st : {
+    ...st, subject: first, threadReply: true,
+    variants: (st.variants ?? []).map((v) => (v.subject.trim() ? v : { ...v, subject: first })),
+  }));
 }
 
 /** EmailBison sequence payloads. The wait sits on the step before it (old builder rule). */
