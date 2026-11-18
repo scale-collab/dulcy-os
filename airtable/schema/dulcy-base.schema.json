@@ -2584,7 +2584,7 @@
      "description": "Record-scoped link for manually running one inbox placement test.",
      "config": {
       "isValid": true,
-      "formula": "\"https://n8n.dulcy.io/webhook/run-inbox-placement-test?workspace_id=\" & {fldO0DrfcpgxtpBw5}",
+      "formula": "\"https://n8n.dulcy.io/webhook/REDACTED_PATH?workspace_id=\" & {fldO0DrfcpgxtpBw5}",
       "referencedFieldIds": [
        "fldO0DrfcpgxtpBw5"
       ],

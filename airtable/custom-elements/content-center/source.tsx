@@ -507,7 +507,7 @@ function useThumbnailRequests(recordId: string, thumbnailUrl: string, status: st
         locks.current.set(recordId, {url: thumbnailUrl, accepted: false, sawGenerating: false});
         refresh(value => value + 1); setRequestError(''); setFeedback('Submitting thumbnail request…');
         try {
-            const response = await fetch(action === 'Revise Thumbnail' ? 'https://n8n.dulcy.io/webhook/content-os-revise-thumbnail' : 'https://n8n.dulcy.io/webhook/content-os-generate-thumbnail', {
+            const response = await fetch(action === 'Revise Thumbnail' ? 'https://n8n.dulcy.io/webhook/REDACTED_PATH' : 'https://n8n.dulcy.io/webhook/REDACTED_PATH', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(action === 'Revise Thumbnail' ? {recordId, action, changes: changes.trim(), requestId, expectedThumbnailUrl: thumbnailUrl} : {recordId, action}),
             });
@@ -602,7 +602,7 @@ function ContentCenter(): React.ReactElement {
             requestSaved = true;
             const controller = new AbortController();
             timeout = setTimeout(() => controller.abort(), 30000);
-            const response = await fetch('https://n8n.dulcy.io/webhook/content-os-current-review', {
+            const response = await fetch('https://n8n.dulcy.io/webhook/REDACTED_PATH', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({recordId: clip.id}), signal: controller.signal,
             });
@@ -953,7 +953,7 @@ function ContentCenter(): React.ReactElement {
         }
         setBusy(true); setNotice('');
         try {
-            const response = await fetch('https://n8n.dulcy.io/webhook/content-os-prepare-youtube-details', {
+            const response = await fetch('https://n8n.dulcy.io/webhook/REDACTED_PATH', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({recordId: selected.id, action: 'Prepare YouTube Details'}),
@@ -1013,7 +1013,7 @@ function ContentCenter(): React.ReactElement {
         if (!selected || busy || existingAction !== 'Generate Distribution Pack') return;
         setBusy(true); setNotice('');
         try {
-            const response = await fetch('https://n8n.dulcy.io/webhook/content-os-generate-distribution', {
+            const response = await fetch('https://n8n.dulcy.io/webhook/REDACTED_PATH', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({recordId: selected.id, action: 'Generate Distribution Pack'}),
             });
@@ -1088,7 +1088,7 @@ function ContentCenter(): React.ReactElement {
         setBusy(true); setNotice('');
         try {
             if (action === 'Generate Script') {
-                const response = await fetch('https://n8n.dulcy.io/webhook/content-os-generate-script-v2', {
+                const response = await fetch('https://n8n.dulcy.io/webhook/REDACTED_PATH', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({recordId: selected.id, action}),
@@ -1300,7 +1300,7 @@ function ContentCenter(): React.ReactElement {
                 const isGammaResource = /resource/i.test(outputType) || /gamma|resource/i.test(platform);
                 const isNewsletter = /newsletter/i.test(outputType) || /newsletter/i.test(platform);
                 if (isNewsletter) {
-                    const response = await fetch('https://n8n.dulcy.io/webhook/content-os-prepare-newsletter', {
+                    const response = await fetch('https://n8n.dulcy.io/webhook/REDACTED_PATH', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({recordId: record.id}),
@@ -1312,10 +1312,10 @@ function ContentCenter(): React.ReactElement {
                     return;
                 }
                 const response = await fetch(isFramerBlog
-                    ? 'https://n8n.dulcy.io/webhook/content-os-publish-framer-blog-draft'
+                    ? 'https://n8n.dulcy.io/webhook/REDACTED_PATH'
                     : isGammaResource
-                        ? 'https://n8n.dulcy.io/webhook/content-os-publish-gamma-resource'
-                        : 'https://n8n.dulcy.io/webhook/content-os-schedule-approved-posts', {
+                        ? 'https://n8n.dulcy.io/webhook/REDACTED_PATH'
+                        : 'https://n8n.dulcy.io/webhook/REDACTED_PATH', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(isFramerBlog || isGammaResource

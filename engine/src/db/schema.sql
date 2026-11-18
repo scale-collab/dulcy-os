@@ -1,0 +1,70 @@
+-- Dulcy lead engine schema. Safe to run more than once.
+
+-- One job = one Airtable button press (e.g. "verify this lead list").
+CREATE TABLE IF NOT EXISTS jobs (
+  id            BIGSERIAL PRIMARY KEY,
+  kind          TEXT NOT NULL,            -- stage name, e.g. 'leadlist.verify'
+  record_id     TEXT NOT NULL,            -- Airtable record the job is about
+  client_id     TEXT,                     -- Airtable Workspace IDs record (optional)
+  input         JSONB NOT NULL DEFAULT '{}',
+  status        TEXT NOT NULL DEFAULT 'queued'
+                CHECK (status IN ('queued','running','succeeded','failed','needs_review','cancelled')),
+  attempts      INT NOT NULL DEFAULT 0,
+  max_attempts  INT NOT NULL DEFAULT 3,
+  lease_owner   TEXT,
+  lease_until   TIMESTAMPTZ,
+  run_after     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  deadline_at   TIMESTAMPTZ,              -- hard stop for the whole job
+  error         TEXT,
+  result        JSONB,
+  dry_run       BOOLEAN NOT NULL DEFAULT true,
+  request_id    TEXT,                     -- idempotency key from the caller
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Only one active job per record and kind: a double click can't start two runs.
+CREATE UNIQUE INDEX IF NOT EXISTS jobs_one_active_per_record
+  ON jobs (kind, record_id) WHERE status IN ('queued','running');
+-- The same request sent twice returns the same job.
+CREATE UNIQUE INDEX IF NOT EXISTS jobs_request_id ON jobs (request_id) WHERE request_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS jobs_claimable ON jobs (status, run_after);
+
+-- A step is a checkpoint inside a job. A finished step is never run again.
+CREATE TABLE IF NOT EXISTS steps (
+  job_id      BIGINT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+  step_key    TEXT NOT NULL,
+  status      TEXT NOT NULL CHECK (status IN ('running','done','failed')),
+  output      JSONB,
+  error       TEXT,
+  attempts    INT NOT NULL DEFAULT 0,
+  started_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  finished_at TIMESTAMPTZ,
+  PRIMARY KEY (job_id, step_key)
+);
+
+-- A receipt is written BEFORE every paid call, so the engine never pays twice.
+-- 'pending' with no answer = outcome unclear: never retried automatically.
+CREATE TABLE IF NOT EXISTS receipts (
+  receipt_key  TEXT PRIMARY KEY,          -- job id + step + call identity
+  job_id       BIGINT REFERENCES jobs(id) ON DELETE SET NULL,
+  provider     TEXT NOT NULL,             -- e.g. 'millionverifier'
+  units        NUMERIC NOT NULL DEFAULT 0,-- credits/rows this call may spend
+  status       TEXT NOT NULL CHECK (status IN ('pending','done','failed','dry_run')),
+  response     JSONB,
+  error        TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  finished_at  TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS receipts_provider_day ON receipts (provider, created_at);
+
+-- Everything that happens, for debugging and the status page.
+CREATE TABLE IF NOT EXISTS events (
+  id         BIGSERIAL PRIMARY KEY,
+  job_id     BIGINT REFERENCES jobs(id) ON DELETE CASCADE,
+  level      TEXT NOT NULL CHECK (level IN ('info','warn','error')),
+  message    TEXT NOT NULL,
+  data       JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS events_job ON events (job_id, id);

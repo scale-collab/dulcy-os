@@ -44,6 +44,10 @@ Last updated: 2026-11-17 (live pull from n8n and Airtable)
 - [x] Reply conflicts answered by Alex 2026-11-17 (see RULES). Still open: mock-call interviews yes/no (Harper).
 - [ ] Alex reviews each agent and corrects it.
 
+## Main project (Alex, 2026-11-17): reliable lead engine
+Goal: scrape leads → build lead lists → create campaigns, without daily errors. Built as a small app on the Hetzner server (subdomain), with Airtable as the screen. Move the Lead List Center and Campaign Center core out of n8n one stage at a time. `dulcy-lead-worker` is reference only.
+- **Plan approved 2026-11-18** (`engine/PLAN.md`); all 7 decisions answered. Step 1 (skeleton, dry-run) **done 2026-11-18**: `engine/`, 11/11 tests pass. Waiting on: deploy to Hetzner (Alex runs `engine/deploy/deploy.sh`, or adds a GitHub deploy key) and a subdomain. Next: step 2, the Verify stage.
+
 ## Next work, in order (Alex decides)
 1. Finish the foundation as the missing items arrive.
 2. Top Up fix: reconcile-one-import action, then move CSV prep out of n8n.

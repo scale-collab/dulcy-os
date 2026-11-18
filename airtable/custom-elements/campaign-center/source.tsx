@@ -57,7 +57,7 @@ function savedWorkspaceFilter(): string {
 }
 
 const BISON_SYNC_WEBHOOK_URL = 'https://bison-sync-relay.scale-f9d.workers.dev/sync';
-const BISON_SENDER_SYNC_WEBHOOK_URL = 'https://n8n.dulcy.io/webhook/sync-bison-senders';
+const BISON_SENDER_SYNC_WEBHOOK_URL = 'https://n8n.dulcy.io/webhook/REDACTED_PATH';
 function rawTimestampValue(record: any, field: any): string {
     const raw = cellValue(record, field);
     if (raw instanceof Date) return raw.toISOString();
@@ -71,7 +71,7 @@ const pendingBisonChange = (record: any, fields: any) => {
     if (fresh && (request.kind === 'Launch' ? ['active','running','live','scheduled','completed'].includes(status) : request.kind === 'Pause' ? ['paused','inactive'].includes(status) : status === 'deleted')) return false;
     return campaignAutomationState(record, fields, Date.now()).active;
 };
-const CAMPAIGN_SENDER_UPDATE_WEBHOOK_URL = 'https://n8n.dulcy.io/webhook/campaign-update-senders';
+const CAMPAIGN_SENDER_UPDATE_WEBHOOK_URL = 'https://n8n.dulcy.io/webhook/REDACTED_PATH';
 const readSenderUpdateState = (record: any, field: any): any => {
     try { return JSON.parse(textValue(record, field) || '{}'); } catch { return {}; }
 };
@@ -79,8 +79,8 @@ const senderUpdateBlocked = (record: any, field: any) => {
     const state = readSenderUpdateState(record, field);
     return ['Requested', 'Running'].includes(state.status) || state.requiresAttention === true;
 };
-const CAMPAIGN_TOP_UP_PREPARE_URL = 'https://n8n.dulcy.io/webhook/campaign-top-up-prepare';
-const CAMPAIGN_TOP_UP_WEBHOOK_URL = 'https://n8n.dulcy.io/webhook/campaign-top-up-leads';
+const CAMPAIGN_TOP_UP_PREPARE_URL = 'https://n8n.dulcy.io/webhook/REDACTED_PATH';
+const CAMPAIGN_TOP_UP_WEBHOOK_URL = 'https://n8n.dulcy.io/webhook/REDACTED_PATH';
 // Verified split-output families whose top-up intent is stored on one child.
 // Runtime identity checks below prevent these exact IDs from crossing client boundaries.
 const TOP_UP_RESERVATION_FAMILIES = [{

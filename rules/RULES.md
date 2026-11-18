@@ -10,6 +10,9 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-17] Never include keys, tokens, passwords, cookies or client prospect rows in this repo. (design)
 
 ## Campaign health
+- [2026-11-18] Bounce auto-pause: pause when bounce is over 4% **and** the campaign is at 35%+ progress. The floor stops early small numbers from pausing it (1 bounce in the first 10 emails = 10%). The check must re-run on every metric refresh, not fire once. Over 2.5% = watch. (Alex)
+- [2026-11-18] Failed campaigns restart automatically: a failure is usually an error on the sending system's side. Long-running jobs (18+ hours seen) must be investigated, and the engine needs time limits. (Alex)
+- [2026-11-18] Top-up rule: targets are bounce under 4%, reply rate 2%+, interested 15%+ of replies. **Interested rate is the main driver.** A strong interested rate can justify a top-up even with higher bounce (example: bounce 5%, reply rate 8%, interested 20% = OK), but the higher bounce is flagged to watch. Supersedes "top-up needs interested above 15%" where they differ. (Alex)
 - [2026-11-17] Bounce rate over 2.5%: send a watch notification, keep an eye on it. (Alex)
 - [2026-11-17] Bounce rate over 4%: campaign is paused automatically and must be investigated. An Airtable project-management task is created and an email goes to Alex. Causes to check: copy, email accounts, list quality, email security gateways. Use the Spam Center. (Alex)
 - [2026-11-17] Interested rate = interested replies / replies. A top-up needs an interested rate above 15%. (Alex, from handoff)
@@ -17,6 +20,8 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-17] At about 60% campaign completion, Airtable sends a notification. Then: review the next-campaign recommendation, replies, bounce data and variant performance, and plan the next campaign for that client. Atlas decides top-up vs new vertical vs new offer vs copy change. (Alex; Airtable skill)
 
 ## Building campaigns and lists
+- [2026-11-18] Company fit check is code-based, with no LLM call. It uses the campaign thesis and client info (ICP, industries, size, geography, keywords, exclusions) to remove **obvious bad fits**. "Maybe" fits are kept. The goal is no obvious bad fits, not a perfect ideal fit, which doesn't make sense for cold outreach. This replaces the AI review of every contact or company. (Alex)
+- [2026-11-18] Days between emails: default 2, editable per campaign. (Alex)
 - [2026-11-17] Run campaign/list stages through the Airtable interface and stage gates. Do not substitute raw status/checkbox edits or direct provider calls. (Handoff, Alex)
 - [2026-11-17] First sample is 100 companies. Approve when usable fit is at least 80% (prefer 85%+). Scale 100 -> 1,000 -> 10,000 only after review. (Alex)
 - [2026-11-17] Review company fit and contact fit separately. Test contacts from the first 100 companies. (Airtable/Scout skill)
@@ -26,7 +31,7 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-17] Copy: no spintax in client-facing text, no manual signature. Do not spin variables like {FIRST_NAME}. Run EmailGuard spam check and manual review before upload. (Workflow SOP)
 - [2026-11-17] Sender domains: no .info domains. This is only about buying sender domains, not about recipients. (Alex)
 - [2026-11-17] Allocate senders only after the final usable lead count is known. (Airtable skill)
-- [2026-11-17] Launch only after Alex confirms. (Workflow SOP)
+- [2026-11-17] Launch only after Alex confirms. (Workflow SOP) **Changed 2026-11-18:** the lead engine launches automatically once all launch checks pass (list in `engine/PLAN.md`). Manual launches by agents or Claude still need Alex's OK. (Alex)
 
 ## Replies and inbox
 - [2026-11-17] AI reply drafts are review-only. Josh or Alex approve every outgoing reply. Reply Agent pilot is on for Dulcy only, in Human in the Loop mode. (Reply Agent SOP, Oct 7)
@@ -43,6 +48,7 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-17] The repurposing counts (2 LinkedIn, 3-5 X, 2 short scripts, 1 carousel per source) are examples, not a weekly quota. No posting cadence is set yet. (Alex)
 
 ## How to work with Alex
+- [2026-11-18] Claude may merge its own pull requests into `main` without asking each time, only after the tests pass, and tells Alex each time. (Alex)
 - [2026-11-17] Agent roster is: Ada (router), Riley (ops/automation), Atlas, Scout, Scribe, Cole (sales), Forge (offers), Sienna (social/content), Pixel (paid ads), Lex (legal/HR), Ledger (finance), Harper (hiring/people), Red Dog (trading). Jarvis is renamed Ada; the "Airtable" skill becomes Riley. (Alex)
 - [2026-11-17] Bounce and campaign-health checks belong to Atlas, never Riley. Riley only fixes n8n and Make.com (and Airtable automations). (Alex correction)
 - [2026-11-17] Build agents one at a time; Alex approves each before the next. (Alex)

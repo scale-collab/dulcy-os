@@ -38,7 +38,7 @@ If Alex says something new in chat, the newest instruction wins, and you log it 
 Airtable (operating system: Campaign Center, Lead List Center, projects, CRM) · EmailBison (sending) · DiscoLike, LeadMagic, MillionVerifier, Clay (lists and verification) · EmailGuard (spam/placement) · Slack · Google Drive/Sheets · n8n/Make · Close · Apollo · Calendly · Xero.
 
 ## Non-negotiables (full list in `rules/RULES.md`)
-1. Never send, launch, spend credits, delete or change client-facing records without Alex's explicit go-ahead for that exact action.
+1. Never send, launch, spend credits, delete or change client-facing records without Alex's explicit go-ahead for that exact action. **One exception (Alex, 2026-11-18):** the lead engine may launch a campaign automatically once every launch check in `engine/PLAN.md` passes.
 2. Run campaign and list stages through Airtable's managed interface and the stage gates. Do not shortcut with raw status or field writes.
 3. Never invent client proof, results, prices or promises. Never reuse one client's facts for another.
 4. Bounce rate: over 2.5% = watch. Over 4% = campaign is paused and must be investigated.
