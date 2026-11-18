@@ -91,14 +91,13 @@ export function createBisonClient(o: BisonOptions) {
   }
 
   return {
-    /** Confirm a campaign is in our workspace (after creating it while others may switch the key). */
+    /**
+     * Confirm a campaign is in our workspace. Uses the workspace's own campaign list: some single
+     * reads answer for campaigns in other workspaces, the list does not.
+     */
     async confirmCampaignHere(id: number): Promise<void> {
-      for (let i = 0; i < 3; i++) {
-        try { await call('GET', `/api/campaigns/v1.1/${id}/sequence-steps`); return; } catch (e) {
-          if (!(e instanceof RetryableError) || !/another workspace/.test(e.message)) throw e;
-        }
-      }
-      throw new NeedsReviewError(`campaign ${id} is not in workspace ${o.teamId}; it may have been created in another workspace while another tool had switched the key. Check EmailBison before continuing`);
+      const here = (await pages<any>('/api/campaigns')).some((c) => Number(c.id) === id);
+      if (!here) throw new NeedsReviewError(`campaign ${id} is not in workspace ${o.teamId ?? '(no workspace set)'}; it was created while the key pointed at another workspace. Find it with: cli.js whereis ${id}`);
     },
     async findCampaignsByName(name: string): Promise<BisonCampaign[]> {
       const all = await pages<BisonCampaign>('/api/campaigns');
@@ -172,6 +171,17 @@ export function createBisonClient(o: BisonOptions) {
 }
 
 export type BisonClient = ReturnType<typeof createBisonClient>;
+
+/** Which of these workspaces holds the campaign (by each workspace's own campaign list). */
+export async function findCampaignWorkspace(apiKey: string, baseUrl: string, campaignId: number, teamIds: number[]): Promise<{ teamId: number; name: string; status: string }[]> {
+  const found: { teamId: number; name: string; status: string }[] = [];
+  for (const teamId of teamIds) {
+    const c = createBisonClient({ apiKey, baseUrl, teamId });
+    const hit = (await c.listCampaigns()).find((x) => Number(x.id) === campaignId);
+    if (hit) found.push({ teamId, name: String(hit.name ?? ''), status: String(hit.status ?? '') });
+  }
+  return found;
+}
 
 /** The client for one workspace: its key, and its workspace ID (from the job or the server .env). */
 export function bisonFor(cfg: { emailBisonKeys: Record<string, string>; emailBisonTeams: Record<string, number>; emailBisonBaseUrl: string }, workspace: string, workspaceId?: number) {
