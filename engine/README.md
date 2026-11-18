@@ -78,6 +78,18 @@ docker compose exec -T engine node dist/src/cli.js campaign < build.json
 
 Not yet: reading the copy and senders from Airtable, writing the IDs back, splitting direct/generic families, top-up (step 4).
 
+## Top-up stage (`campaign.topup`), step 4
+Adds a new Ready lead list (its Final tab) to a running EmailBison campaign. Never re-uploads, never launches, never changes senders.
+- **Alex's rule first:** interested replies must be 15%+ of replies, or nothing is read or uploaded. Bounce under 4%, reply rate 2%+ and progress 60%+ are only flagged to watch. `kpiException: true` overrides on purpose.
+- Every sender on the campaign must still be connected.
+- The Final tab count must match Airtable before uploading.
+- Same upload path as the build (import checked until Processed, exact counts, receipts, reconcile by list name).
+- **Added vs skipped:** leads already in the campaign are skipped by EmailBison, so the engine waits until the campaign total stops moving and reports `added` and `skippedAlreadyInCampaign` (the old top-up used fixed waits here).
+
+Run on the server: `docker compose exec -T engine node dist/src/cli.js topup < topup.json` with
+`{"recordId":"rec<top-up lead list>","campaignId":123,"name":"<campaign name>","workspace":"dulcy","outputType":"direct","source":{"sheetId":"..."},"expectedLeads":N,"copyTags":["CITY"],"kpis":{"interestedRate":18,"replyRate":2.5,"bounceRate":1.1,"progress":65}}`.
+Needs `LIVE_STAGES` to include `campaign.topup` to run live (dry-run shows the plan).
+
 ## How Airtable will call it
 `POST /jobs` with `{"kind": "...", "recordId": "rec...", "clientId": "rec...", "input": {...}, "requestId": "unique-per-click"}`.
 

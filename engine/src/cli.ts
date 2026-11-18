@@ -5,6 +5,8 @@
 //          [--mv-job <id>] [--expect good=N,risky=N,bad=N] [--diagnose]
 //       Queue a Verify job. Without --direct/--generic, both are included.
 //       With --mv-job it only checks/downloads that saved MillionVerifier job (free).
+//   topup < topup.json
+//       Queue a top-up from a JSON file on stdin: {"recordId": "rec<top-up lead list>", ...input}.
 //   campaign < build.json
 //       Queue a campaign build from a JSON file on stdin: {"recordId": "rec...", ...input}.
 //       Use:  docker compose exec -T engine node dist/src/cli.js campaign < build.json
@@ -53,13 +55,14 @@ async function main() {
       });
       console.log(JSON.stringify({ status: r.status, jobId: r.job.id, dryRun: r.job.dry_run }));
       console.log(`Check it with:  docker compose exec engine node dist/src/cli.js job ${r.job.id}`);
-    } else if (cmd === 'campaign') {
+    } else if (cmd === 'campaign' || cmd === 'topup') {
+      const kind = cmd === 'campaign' ? 'campaign.build' : 'campaign.topup';
       const chunks: Buffer[] = [];
       for await (const c of process.stdin) chunks.push(c as Buffer);
       const { recordId, _about: _ignored, ...input } = JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown> & { recordId?: string };
-      if (!recordId || !/^rec[A-Za-z0-9]{14}$/.test(recordId)) throw new Error('the JSON needs "recordId": the Airtable Campaigns record');
-      const def = STAGES['campaign.build'];
-      const r = await enqueue(db, { kind: 'campaign.build', recordId, input, dryRun: cfg.dryRun && !cfg.liveStages.includes('campaign.build'), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs });
+      if (!recordId || !/^rec[A-Za-z0-9]{14}$/.test(recordId)) throw new Error('the JSON needs "recordId": the Airtable record (campaign for a build, top-up lead list for a top-up)');
+      const def = STAGES[kind];
+      const r = await enqueue(db, { kind, recordId, input, dryRun: cfg.dryRun && !cfg.liveStages.includes(kind), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs });
       console.log(JSON.stringify({ status: r.status, jobId: r.job.id, dryRun: r.job.dry_run }));
       console.log(`Check it with:  docker compose exec engine node dist/src/cli.js job ${r.job.id}`);
     } else if (cmd === 'senders') {
@@ -75,14 +78,14 @@ async function main() {
       const j = await getJob(db, Number(args[0]));
       if (!j) throw new Error('job not found');
       const res = (j.job.result ?? {}) as Record<string, unknown>;
-      const keep = ['launched', 'campaignId', 'campaignName', 'leads', 'imports', 'senders', 'variants', 'note', 'dryRun', 'millionVerifierJobId', 'plan', 'counts', 'finalDirectCount', 'finalGenericCount', 'pendingRemainder', 'message', 'comparison', 'diagnosis', 'wouldSpendCredits'];
+      const keep = ['readiness', 'kpiException', 'launched', 'campaignId', 'campaignName', 'leads', 'imports', 'senders', 'variants', 'note', 'dryRun', 'millionVerifierJobId', 'plan', 'counts', 'finalDirectCount', 'finalGenericCount', 'pendingRemainder', 'message', 'comparison', 'diagnosis', 'wouldSpendCredits'];
       console.log(JSON.stringify({
         id: j.job.id, kind: j.job.kind, record: j.job.record_id, status: j.job.status, progress: j.job.progress, error: j.job.error,
         result: Object.fromEntries(keep.filter((k) => k in res).map((k) => [k, res[k]])),
         steps: j.steps.map((s: { step_key: string; status: string }) => `${s.step_key}: ${s.status}`),
       }, null, 2));
     } else {
-      throw new Error('commands: verify, campaign, senders, job');
+      throw new Error('commands: verify, campaign, topup, senders, job');
     }
   } finally {
     await db.end();
