@@ -161,6 +161,13 @@ export function createBisonClient(o: BisonOptions) {
         return { id: String(x.id), status: String(x.status ?? '').toLowerCase(), email: email ? String(email).trim().toLowerCase() : undefined };
       });
     },
+    // Used only by the ENGINE TEST cleanup command (cli.js cleanup-test), never by a stage.
+    campaignLeads: (campaignId: number) => pages<any>(`/api/campaigns/${campaignId}/leads`, 500),
+    customVariableList: () => pages<any>('/api/custom-variables', 1000),
+    leadLists: () => pages<any>('/api/lead-lists', 1000),
+    deleteLeads: (leadIds: number[]) => call('DELETE', '/api/leads/bulk', { lead_ids: leadIds }, { write: true }),
+    deleteCustomVariable: (id: number) => call('DELETE', `/api/custom-variables/${id}`, undefined, { write: true }),
+    deleteCampaign: (id: number) => call('DELETE', `/api/campaigns/${id}`, undefined, { write: true }),
     attachSenders: (campaignId: number, senderIds: string[]) =>
       call('POST', `/api/campaigns/${campaignId}/attach-sender-emails`, { sender_email_ids: senderIds.map(String) }, { write: true }),
     async campaignSenders(campaignId: number): Promise<BisonSender[]> {
@@ -177,7 +184,13 @@ export async function findCampaignWorkspace(apiKey: string, baseUrl: string, cam
   const found: { teamId: number; name: string; status: string }[] = [];
   for (const teamId of teamIds) {
     const c = createBisonClient({ apiKey, baseUrl, teamId });
-    const hit = (await c.listCampaigns()).find((x) => Number(x.id) === campaignId);
+    let list: any[];
+    // A workspace that no longer exists (EmailBison refuses the switch) is skipped, not fatal.
+    try { list = await c.listCampaigns(); } catch (e) {
+      if (/refused to switch/i.test(String((e as Error).message))) { console.error(`workspace ${teamId}: no longer exists in EmailBison, skipped`); continue; }
+      throw e;
+    }
+    const hit = list.find((x) => Number(x.id) === campaignId);
     if (hit) found.push({ teamId, name: String(hit.name ?? ''), status: String(hit.status ?? '') });
   }
   return found;
