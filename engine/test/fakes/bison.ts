@@ -53,7 +53,8 @@ export async function startFakeBison(): Promise<FakeBison> {
       if (req.method === 'GET') return json(res, 200, { data: { sequence_steps: c.steps } });
       const missing = body().sequence_steps.findIndex((st: any) => !String(st.email_subject ?? '').trim());
       if (missing >= 0) return json(res, 422, { data: { success: false, message: `The sequence_steps.${missing}.email_subject field is required.` } });
-      for (const st of body().sequence_steps) c.steps.push({ ...st, id: 9000 + c.steps.length });
+      // Like the real EmailBison, thread replies don't keep the subject as sent.
+      for (const st of body().sequence_steps) c.steps.push({ ...st, id: 9000 + c.steps.length, email_subject: st.thread_reply ? null : st.email_subject, sent_subject: st.email_subject });
       return json(res, 200, { data: { ok: true } });
     }
     if (u.pathname === '/api/custom-variables') {
