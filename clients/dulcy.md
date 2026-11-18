@@ -184,7 +184,7 @@ Zero-send records in Dulcy Free Campaigns: 2 (tests, drafts, copies, unlaunched:
 
 ## 7. Relationship history (Slack, calls, email)
 Dulcy's own outbound is discussed mainly in #team-marketing (C0938K8LE3Y) and #team-sales (C093EFFQALS). The workspace's Slack Channel field points to #team-chat (C07U1639LSE), which holds only greetings and team notices since May 2026.
-- [2026-06-12] Bot notice in #team-chat: avoid new `.info` sender domains (SURBL blacklisting reports). [Slack #team-chat] (Rule since logged: no .info sender domains. [rules/RULES.md])
+- [2026-06-12] Bot notice in #team-chat: avoid new `.info` sender domains (SURBL blacklisting reports). [Slack #team-chat] (Rule since logged: don't buy new .info sender domains (existing .info senders may be used). [rules/RULES.md])
 - [2026-09-11] Alex shared the EOY sales goals ($12–15k Oct, $18–21k Nov, $21k min / $24k target Dec MRR) with the sales rep. [Slack #team-sales]
 - [2026-09-16] Josh asked whether Dulcy charges per qualified lead; Alex: tell the prospect he would "entertain it". [Slack #team-marketing]
 - [2026-09-17] A Dulcy lead asked for the list before agreeing to a call; Alex asked Josh to build a small sample list. Alex set a weekly inbox-management review (Tuesdays 10 am) because positive replies were not turning into enough meetings. [Slack #team-marketing]
