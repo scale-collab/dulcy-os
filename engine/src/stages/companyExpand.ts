@@ -53,7 +53,8 @@ export const companyExpandStage: Stage = async (ctx) => {
 
   if (ctx.dryRun) {
     const need = Math.max(0, target - before.usable);
-    return { dryRun: true, target, have: before, plan: { nextBatch: Math.min(batchSize, Math.max(5, need)), batchSize }, wouldSpendCredits: { discolike: need ? `about ${Math.ceil(need / Math.max(before.usableRate, 0.5))} (stops at the target)` : 0 }, message: need ? `${before.usable} usable now; needs about ${need} more usable companies` : `already at the target (${before.usable} usable)` };
+    const est = Math.ceil((need / Math.max(0.5, before.usableRate || 0.9)) * 1.05);
+    return { dryRun: true, target, have: before, plan: { nextBatch: Math.min(batchSize, Math.max(5, est)), batchSize }, wouldSpendCredits: { discolike: need ? `about ${est} (stops at the target)` : 0 }, message: need ? `${before.usable} usable now; needs about ${need} more usable companies` : `already at the target (${before.usable} usable)` };
   }
 
   const sheet = await ctx.step('sheet', () => ensureCompanySheet(ctx.db, sheets, listId, { sheetId: input.sheet?.sheetId, title: input.sheet?.title ?? `${input.name ?? listId} - companies (engine)`, tab: input.sheet?.tab }));
@@ -69,7 +70,10 @@ export const companyExpandStage: Stage = async (ctx) => {
     const b = start.startBatch + i;
     const out = await ctx.step(`batch-${b}`, async () => {
       const have = await listCounts(ctx.db, listId);
-      const want = Math.min(batchSize, Math.max(5, target - have.usable));
+      // Ask for enough that the expected cuts still leave the shortfall covered (+5%), so the
+      // list doesn't creep to the target in many tiny batches. Rate floor 50%.
+      const rate = Math.max(0.5, have.usableRate || 0.9);
+      const want = Math.min(batchSize, Math.max(5, Math.ceil(((target - have.usable) / rate) * 1.05)));
       const prior = [...new Set([...(await listDomains(ctx.db, listId)), ...excluded])];
       if (prior.length > MAX_PRIOR_DOMAINS) throw new PermanentError(`the list already has ${prior.length} domains to exclude (limit ${MAX_PRIOR_DOMAINS})`);
       const queryId = await disco.exclusionList(`Lead List ${listId} expansion batch ${b}`, prior, ['lead-list-expansion', listId]);
