@@ -116,6 +116,11 @@ export function createBisonClient(o: BisonOptions) {
       if (!Number.isSafeInteger(total) || total < 0) throw new RetryableError('EmailBison campaign leads: no total in the answer');
       return total;
     },
+    /** Every sender inbox in the workspace (id, email, status). */
+    async workspaceSenders(): Promise<BisonSender[]> {
+      const rows = await pages<any>('/api/sender-emails', 200);
+      return rows.map((x) => ({ id: String(x.id), status: String(x.status ?? '').toLowerCase(), email: x.email ? String(x.email).toLowerCase() : undefined }));
+    },
     attachSenders: (campaignId: number, senderIds: string[]) =>
       call('POST', `/api/campaigns/${campaignId}/attach-sender-emails`, { sender_email_ids: senderIds.map(String) }, { write: true }),
     async campaignSenders(campaignId: number): Promise<BisonSender[]> {

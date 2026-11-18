@@ -53,7 +53,7 @@ async function settle(c: Config, id: number, max = 60) {
 before(async () => { google = await startFakeGoogle(); bison = await startFakeBison(); if (skip) return; db = createPool(url!); await migrate(db); });
 after(async () => { google.close(); bison.close(); if (!skip) await db.end(); });
 beforeEach(async () => {
-  Object.assign(bison, { campaigns: [], leadLists: [], calls: [], createThen500: false, uploadThen500: false, processAfterChecks: 0, failRowsOnImport: 0, customVariables: new Set(['domain']) });
+  Object.assign(bison, { campaigns: [], leadLists: [], calls: [], createThen500: false, uploadThen500: false, processAfterChecks: 0, failRowsOnImport: 0, customVariables: new Set(['domain']), workspaceSenders: ['11', '12', '13'] });
   bison.senderStatus = () => 'connected';
   bison.senderEmail = (id) => `sender${id}@dulcy-mail.com`;
   google.tabs = { 'Final Direct': TAB.map((r) => [...r]) };
@@ -207,4 +207,24 @@ test('EmailBison error messages are kept (with emails hidden)', { skip }, async 
   const { createBisonClient } = await import('../src/providers/emailbison.js');
   const c = createBisonClient({ apiKey: bison.key, baseUrl: bison.url });
   await assert.rejects(c.uploadLeadsCsv('x', { first_name: 'first_name' }, 'first_name\nA\n'), (e: Error) => /HTTP 422 .*l\*\*\*@example\.com/.test(e.message));
+});
+
+test('senders by email address: resolved to EmailBison\'s current IDs; unknown addresses stop before attaching', { skip }, async () => {
+  const q = await queue({ senderEmailIds: undefined, senderEmails: ['Sender12@dulcy-mail.com'] });
+  const j = await settle(cfg(), q.job.id);
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.deepEqual(bison.campaigns[0].senders, ['12']);
+  await db.query('TRUNCATE jobs, steps, receipts, events RESTART IDENTITY CASCADE');
+  Object.assign(bison, { campaigns: [], leadLists: [] });
+  const q2 = await queue({ senderEmailIds: undefined, senderEmails: ['nobody@dulcy-mail.com'] });
+  const j2 = await settle(cfg(), q2.job.id);
+  assert.equal(j2.job.status, 'failed');
+  assert.match(j2.job.error, /not in this EmailBison workspace: nobody@dulcy-mail.com/);
+});
+
+test('stale sender IDs: EmailBison refuses and the job fails cleanly with its reason', { skip }, async () => {
+  const q = await queue({ senderEmailIds: ['999'] });
+  const j = await settle(cfg(), q.job.id);
+  assert.equal(j.job.status, 'failed');
+  assert.match(j.job.error, /sender_email_ids.0 is invalid/);
 });

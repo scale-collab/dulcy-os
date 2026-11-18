@@ -24,8 +24,8 @@
     "tab": "Final Direct"
   },
   "expectedLeads": 226,
-  "senderEmailIds": [
-    "6498",
-    "6500"
+  "senderEmails": [
+    "alexander@usedulcy.com",
+    "alexander@withdulcy.com"
   ]
 }

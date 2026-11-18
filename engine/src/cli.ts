@@ -8,6 +8,8 @@
 //   campaign < build.json
 //       Queue a campaign build from a JSON file on stdin: {"recordId": "rec...", ...input}.
 //       Use:  docker compose exec -T engine node dist/src/cli.js campaign < build.json
+//   senders <workspace> [text]
+//       List the workspace's sender inboxes in EmailBison (id, email, status), optionally filtered.
 //   job <id>
 //       Show a job's status and summary (counts and comparison; no lead rows).
 import { loadConfig } from './config.js';
@@ -60,6 +62,14 @@ async function main() {
       const r = await enqueue(db, { kind: 'campaign.build', recordId, input, dryRun: cfg.dryRun && !cfg.liveStages.includes('campaign.build'), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs });
       console.log(JSON.stringify({ status: r.status, jobId: r.job.id, dryRun: r.job.dry_run }));
       console.log(`Check it with:  docker compose exec engine node dist/src/cli.js job ${r.job.id}`);
+    } else if (cmd === 'senders') {
+      const ws = String(args[0] ?? '').toLowerCase();
+      const { createBisonClient } = await import('./providers/emailbison.js');
+      const bison = createBisonClient({ apiKey: cfg.emailBisonKeys[ws], baseUrl: cfg.emailBisonBaseUrl });
+      const filter = String(args[1] ?? '').toLowerCase();
+      const list = (await bison.workspaceSenders()).filter((x) => !filter || (x.email ?? '').includes(filter));
+      for (const x of list) console.log(`${x.id}\t${x.status}\t${x.email ?? ''}`);
+      console.log(`${list.length} sender(s)`);
     } else if (cmd === 'job') {
       const j = await getJob(db, Number(args[0]));
       if (!j) throw new Error('job not found');
@@ -71,7 +81,7 @@ async function main() {
         steps: j.steps.map((s: { step_key: string; status: string }) => `${s.step_key}: ${s.status}`),
       }, null, 2));
     } else {
-      throw new Error('commands: verify, job');
+      throw new Error('commands: verify, campaign, senders, job');
     }
   } finally {
     await db.end();
