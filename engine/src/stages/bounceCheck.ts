@@ -4,7 +4,7 @@
 // paused; switch it live per stage with LIVE_STAGES=bounce.check. It never resumes anything.
 import type { Stage } from './index.js';
 import { NeedsReviewError, PermanentError } from '../errors.js';
-import { createBisonClient } from '../providers/emailbison.js';
+import { bisonFor } from '../providers/emailbison.js';
 import { bounceAction, bounceRate, statsFrom } from '../campaign/bounce.js';
 import { alert } from '../log.js';
 
@@ -13,7 +13,7 @@ export const bounceCheckStage: Stage = async (ctx) => {
   if (!workspace) throw new PermanentError('input.workspace is required');
   const apiKey = ctx.cfg.emailBisonKeys[workspace];
   if (!apiKey) throw new PermanentError(`no EmailBison key on the server for workspace "${workspace}"`);
-  const bison = createBisonClient({ apiKey, baseUrl: ctx.cfg.emailBisonBaseUrl });
+  const bison = bisonFor(ctx.cfg, workspace, Number(ctx.job.input.workspaceId) || undefined);
 
   const active = (await bison.listCampaigns()).map(statsFrom).filter((c) => c.status === 'active');
   const paused: { id: number; name: string; bounce: number; progress: number }[] = [];

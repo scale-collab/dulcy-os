@@ -43,6 +43,8 @@ export interface Config {
   /** EmailBison API keys per workspace, from EMAILBISON_KEY_<WORKSPACE> (server .env only). */
   emailBisonKeys: Record<string, string>;
   emailBisonBaseUrl: string;
+  /** EmailBison workspace (team) IDs per workspace name, from EMAILBISON_TEAM_<WORKSPACE>. */
+  emailBisonTeams: Record<string, number>;
   /** How often a waiting campaign build checks EmailBison again (imports, lead totals). */
   bisonPollMs: number;
   /** Bounce check: run every N minutes (0 = off) for these workspaces. */
@@ -79,6 +81,9 @@ export function loadConfig(env = process.env): Config {
       .filter(([k, v]) => k.startsWith('EMAILBISON_KEY_') && v)
       .map(([k, v]) => [k.slice('EMAILBISON_KEY_'.length).toLowerCase(), String(v)])),
     emailBisonBaseUrl: env.EMAILBISON_BASE_URL || 'https://send.dulcy.io',
+    emailBisonTeams: Object.fromEntries(Object.entries(env)
+      .filter(([k, v]) => k.startsWith('EMAILBISON_TEAM_') && Number(v) > 0)
+      .map(([k, v]) => [k.slice('EMAILBISON_TEAM_'.length).toLowerCase(), Number(v)])),
     bisonPollMs: num('BISON_POLL_MS', 60_000, env),
     bounceCheckEveryMin: num('BOUNCE_CHECK_EVERY_MIN', 0, env),
     bounceCheckWorkspaces: (env.BOUNCE_CHECK_WORKSPACES ?? '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),

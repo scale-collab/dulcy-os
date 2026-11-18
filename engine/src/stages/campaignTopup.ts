@@ -10,7 +10,7 @@
 // Senders are not changed; they must all still be connected. It never launches or resumes.
 import type { Stage } from './index.js';
 import { NeedsReviewError, PermanentError, WaitError } from '../errors.js';
-import { createBisonClient } from '../providers/emailbison.js';
+import { bisonFor } from '../providers/emailbison.js';
 import { createSheetsClient } from '../providers/google.js';
 import { sheetIdFrom } from '../sources/sheet.js';
 import { prepareLeads, type OutputType } from '../campaign/rules.js';
@@ -22,6 +22,8 @@ interface TopupInput {
   /** Campaign name, used to name the imports. */
   name: string;
   workspace: string;
+  /** EmailBison workspace (team) ID to switch to before every call. */
+  workspaceId?: number;
   outputType: OutputType;
   /** The top-up lead list's sheet and Final tab. */
   source: { sheetId: string; tab?: string };
@@ -70,7 +72,7 @@ export const campaignTopupStage: Stage = async (ctx) => {
 
   const apiKey = ctx.cfg.emailBisonKeys[input.workspace.toLowerCase()];
   if (!apiKey) throw new PermanentError(`no EmailBison key on the server for workspace "${input.workspace}"`);
-  const bison = createBisonClient({ apiKey, baseUrl: ctx.cfg.emailBisonBaseUrl });
+  const bison = bisonFor(ctx.cfg, input.workspace, input.workspaceId);
 
   // 3. Senders stay as they are, but every one must still be connected.
   await ctx.step('senders-connected', async () => {

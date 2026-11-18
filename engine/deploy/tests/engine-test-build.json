@@ -3,6 +3,7 @@
   "recordId": "recEngineTest0001",
   "name": "ENGINE TEST - do not launch - Manufacturing Direct",
   "workspace": "dulcy",
+  "workspaceId": 2,
   "outputType": "direct",
   "daysBetween": 2,
   "steps": [

@@ -10,7 +10,7 @@
 //   campaign < build.json
 //       Queue a campaign build from a JSON file on stdin: {"recordId": "rec...", ...input}.
 //       Use:  docker compose exec -T engine node dist/src/cli.js campaign < build.json
-//   senders <workspace> [text]
+//   senders <workspace> [text] [--workspace-id=N]
 //       List the workspace's sender inboxes in EmailBison (id, email, status), optionally filtered.
 //   bounce <workspace>
 //       Run the bounce check for one workspace now (report-only unless bounce.check is live).
@@ -69,9 +69,9 @@ async function main() {
       console.log(`Check it with:  docker compose exec engine node dist/src/cli.js job ${r.job.id}`);
     } else if (cmd === 'senders') {
       const ws = String(args[0] ?? '').toLowerCase();
-      const { createBisonClient } = await import('./providers/emailbison.js');
-      const bison = createBisonClient({ apiKey: cfg.emailBisonKeys[ws], baseUrl: cfg.emailBisonBaseUrl });
-      const filter = String(args[1] ?? '').toLowerCase();
+      const { bisonFor } = await import('./providers/emailbison.js');
+      const bison = bisonFor(cfg, ws, Number(args.find((a) => /^--workspace-id=\d+$/.test(a))?.split('=')[1]) || undefined);
+      const filter = String(args.slice(1).find((a) => !a.startsWith('--')) ?? '').toLowerCase();
       const all = await bison.workspaceSenders();
       const list = all.filter((x) => !filter || (x.email ?? '').includes(filter));
       for (const x of list) console.log(`${x.id}\t${x.status}\t${x.email ?? ''}`);

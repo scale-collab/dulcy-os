@@ -53,7 +53,7 @@ async function settle(c: Config, id: number, max = 60) {
 before(async () => { google = await startFakeGoogle(); bison = await startFakeBison(); if (skip) return; db = createPool(url!); await migrate(db); });
 after(async () => { google.close(); bison.close(); if (!skip) await db.end(); });
 beforeEach(async () => {
-  Object.assign(bison, { campaigns: [], leadLists: [], calls: [], createThen500: false, uploadThen500: false, processAfterChecks: 0, failRowsOnImport: 0, customVariables: new Set(['domain']), workspaceSenders: ['11', '12', '13'] });
+  Object.assign(bison, { campaigns: [], leadLists: [], calls: [], createThen500: false, uploadThen500: false, processAfterChecks: 0, failRowsOnImport: 0, customVariables: new Set(['domain']), workspaceSenders: ['11', '12', '13'], currentTeam: 2, otherToolSwitches: false, switches: 0 });
   bison.senderStatus = () => 'connected';
   bison.senderEmail = (id) => `sender${id}@dulcy-mail.com`;
   google.tabs = { 'Final Direct': TAB.map((r) => [...r]) };
@@ -227,4 +227,22 @@ test('stale sender IDs: EmailBison refuses and the job fails cleanly with its re
   const j = await settle(cfg(), q.job.id);
   assert.equal(j.job.status, 'failed');
   assert.match(j.job.error, /sender_email_ids.0 is invalid/);
+});
+
+test('workspace switching: the engine points the key at its workspace before every call, even while another tool keeps switching it', { skip }, async () => {
+  bison.otherToolSwitches = true;
+  const j = await settle(cfg(), (await queue({ workspaceId: 2 })).job.id);
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.equal((bison.campaigns[0] as any).team, 2, 'the campaign was created in workspace 2');
+  assert.equal(bison.campaigns[0].leads.size, 3);
+  assert.ok(bison.switches >= bison.calls.length, 'one switch before each call');
+});
+
+test('without a workspace ID, a key left on another workspace is refused and nothing is written there', { skip }, async () => {
+  bison.campaigns.push({ id: 600, name: 'other', leads: new Set(), senders: [], steps: [], team: 2 } as any);
+  bison.currentTeam = 9;
+  const j = await settle(cfg(), (await queue({ existingCampaignId: 600 })).job.id);
+  assert.notEqual(j.job.status, 'succeeded');
+  assert.match(String(j.job.error), /another workspace/);
+  assert.equal(bison.campaigns[0].leads.size, 0);
 });

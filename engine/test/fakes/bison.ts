@@ -21,6 +21,11 @@ export interface FakeBison {
   workspaceSenders: string[];
   /** Accept pause calls but don't actually pause (to test the after-check). */
   pauseIgnored: boolean;
+  /** The workspace the key currently points at (EmailBison keeps this per key). */
+  currentTeam: number;
+  /** Simulate n8n: after every call, another tool switches the key to workspace 9. */
+  otherToolSwitches: boolean;
+  switches: number;
   close(): void;
 }
 
@@ -28,7 +33,7 @@ export async function startFakeBison(): Promise<FakeBison> {
   const s: FakeBison = {
     url: '', key: 'bison-key', campaigns: [], leadLists: [], customVariables: new Set(['domain']), calls: [],
     createThen500: false, uploadThen500: false, processAfterChecks: 0, failRowsOnImport: 0,
-    senderStatus: () => 'connected', senderEmail: (id) => `sender${id}@dulcy-mail.com`, workspaceSenders: ['11', '12', '13'], pauseIgnored: false, close: () => undefined,
+    senderStatus: () => 'connected', senderEmail: (id) => `sender${id}@dulcy-mail.com`, workspaceSenders: ['11', '12', '13'], pauseIgnored: false, currentTeam: 2, otherToolSwitches: false, switches: 0, close: () => undefined,
   };
   const json = (res: http.ServerResponse, code: number, body: unknown) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(body)); };
   const page = (list: unknown[], u: URL) => ({ data: list, meta: { current_page: Number(u.searchParams.get('page') ?? 1), last_page: 1, total: list.length } });
@@ -40,12 +45,17 @@ export async function startFakeBison(): Promise<FakeBison> {
     const raw = Buffer.concat(chunks);
     const body = () => JSON.parse(raw.toString() || '{}');
     const m = (re: RegExp) => u.pathname.match(re);
+    if (u.pathname === '/api/workspaces/switch-workspace') { s.currentTeam = Number(body().team_id); s.switches++; return json(res, 200, { data: { success: true } }); }
     s.calls.push(`${req.method} ${u.pathname}`);
+    const team = s.currentTeam;
+    if (s.otherToolSwitches) s.currentTeam = 9; // the next call finds the key moved, unless the engine switches back
+    const cm = u.pathname.match(/^\/api\/campaigns\/(?:v1\.1\/)?(\d+)\//);
+    if (cm) { const c: any = s.campaigns.find((y) => y.id === Number(cm[1])); if (c && (c.team ?? 2) !== team) return json(res, 403, { data: { success: false, message: 'This action is unauthorized. Consider using api-user keys or switch to the workspace this record is on.' } }); }
     let x;
     if (req.method === 'GET' && u.pathname === '/api/campaigns') return json(res, 200, page(s.campaigns.map((c: any) => ({ id: c.id, name: c.name, status: c.status ?? 'draft', bounced: c.bounced ?? 0, total_leads_contacted: c.contacted ?? 0, completion_percentage: c.progress ?? 0 })), u));
     if ((x = m(/^\/api\/campaigns\/(\d+)\/pause$/)) && req.method === 'PATCH') { const c: any = s.campaigns.find((y) => y.id === Number(x![1])); if (c && !s.pauseIgnored) c.status = 'paused'; return json(res, 200, { data: { success: true } }); }
     if (req.method === 'POST' && u.pathname === '/api/campaigns') {
-      const c = { id: 500 + s.campaigns.length, name: body().name, leads: new Set<string>(), senders: [] as string[], steps: [] as any[] };
+      const c = { id: 500 + s.campaigns.length, name: body().name, leads: new Set<string>(), senders: [] as string[], steps: [] as any[], team };
       s.campaigns.push(c);
       if (s.createThen500) { s.createThen500 = false; return json(res, 500, { message: 'Server Error' }); }
       return json(res, 200, { data: { id: c.id, name: c.name } });

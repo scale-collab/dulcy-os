@@ -6,9 +6,14 @@
 //    receipt stays 'pending' and the stage reconciles before trying again.
 //  - Reads: timeouts, 429 and 5xx are retryable.
 // Emails inside EmailBison messages are masked before they reach logs or Airtable.
-import { PermanentError, RetryableError } from '../errors.js';
+// Workspaces: with `teamId`, the client switches the key to that workspace before EVERY call
+// (the same switch the existing flows use). Other tools (n8n, Airtable) switch the same key
+// too, so a "wrong workspace" refusal is retried after switching back; nothing is written
+// while the key points elsewhere, and new campaigns are checked to be in the right workspace.
+import { NeedsReviewError, PermanentError, RetryableError } from '../errors.js';
 
-export interface BisonOptions { apiKey?: string; baseUrl: string; timeoutMs?: number; fetchImpl?: typeof fetch }
+export interface BisonOptions { apiKey?: string; baseUrl: string; timeoutMs?: number; fetchImpl?: typeof fetch; teamId?: number }
+const WRONG_WORKSPACE = /switch to the workspace|this action is unauthorized/i;
 
 export interface BisonCampaign { id: number; name: string; status?: string; created_at?: string }
 export interface BisonStep { id: number; order: number; email_subject?: string; variant?: boolean; variant_from_step_id?: number | null }
@@ -27,7 +32,24 @@ export function createBisonClient(o: BisonOptions) {
     return { authorization: `Bearer ${o.apiKey}`, accept: 'application/json' };
   };
 
+  async function switchWorkspace() {
+    let res: Response;
+    try {
+      res = await f(`${base}/api/workspaces/switch-workspace`, {
+        method: 'POST', headers: { ...auth(), 'content-type': 'application/json' }, body: JSON.stringify({ team_id: o.teamId }), signal: AbortSignal.timeout(timeoutMs),
+      });
+    } catch (e) {
+      if (e instanceof PermanentError) throw e;
+      throw new RetryableError('EmailBison workspace switch: network error or timeout');
+    }
+    const text = await res.text();
+    if (res.status === 429 || res.status >= 500) throw new RetryableError(`EmailBison workspace switch: HTTP ${res.status}`);
+    if (!res.ok) throw new PermanentError(`EmailBison refused to switch to workspace ${o.teamId}: HTTP ${res.status} ${short(text)}`);
+  }
+
   async function call(method: string, path: string, body?: unknown, opts: { write: boolean; form?: FormData; timeoutMs?: number } = { write: false }) {
+    // Point the key at our workspace right before the call (other tools may have moved it).
+    if (o.teamId) await switchWorkspace();
     const headers: Record<string, string> = auth();
     let payload: BodyInit | undefined;
     if (opts.form) payload = opts.form;
@@ -46,6 +68,8 @@ export function createBisonClient(o: BisonOptions) {
       if (opts.write) throw new Error(`EmailBison ${method} ${path}: HTTP ${res.status}; outcome unknown`);
       throw new RetryableError(`EmailBison ${method} ${path}: HTTP ${res.status}`);
     }
+    // Another tool switched the key away between our switch and our call: not accepted, retry.
+    if (res.status === 403 && WRONG_WORKSPACE.test(text)) throw new RetryableError(`EmailBison ${method} ${path}: the key was on another workspace (another tool switched it); retrying`);
     if (!res.ok) throw new PermanentError(`EmailBison ${method} ${path} refused: HTTP ${res.status} ${short(text)}`);
     try { return text ? JSON.parse(text) : {}; } catch {
       if (opts.write) throw new Error(`EmailBison ${method} ${path}: answer was not JSON; outcome unknown`);
@@ -67,6 +91,15 @@ export function createBisonClient(o: BisonOptions) {
   }
 
   return {
+    /** Confirm a campaign is in our workspace (after creating it while others may switch the key). */
+    async confirmCampaignHere(id: number): Promise<void> {
+      for (let i = 0; i < 3; i++) {
+        try { await call('GET', `/api/campaigns/v1.1/${id}/sequence-steps`); return; } catch (e) {
+          if (!(e instanceof RetryableError) || !/another workspace/.test(e.message)) throw e;
+        }
+      }
+      throw new NeedsReviewError(`campaign ${id} is not in workspace ${o.teamId}; it may have been created in another workspace while another tool had switched the key. Check EmailBison before continuing`);
+    },
     async findCampaignsByName(name: string): Promise<BisonCampaign[]> {
       const all = await pages<BisonCampaign>('/api/campaigns');
       return all.filter((c) => String(c.name).trim() === name.trim()).map((c) => ({ ...c, id: Number(c.id) }));
@@ -139,3 +172,10 @@ export function createBisonClient(o: BisonOptions) {
 }
 
 export type BisonClient = ReturnType<typeof createBisonClient>;
+
+/** The client for one workspace: its key, and its workspace ID (from the job or the server .env). */
+export function bisonFor(cfg: { emailBisonKeys: Record<string, string>; emailBisonTeams: Record<string, number>; emailBisonBaseUrl: string }, workspace: string, workspaceId?: number) {
+  const ws = workspace.toLowerCase();
+  const teamId = Number(workspaceId ?? cfg.emailBisonTeams[ws]) || undefined;
+  return createBisonClient({ apiKey: cfg.emailBisonKeys[ws], baseUrl: cfg.emailBisonBaseUrl, teamId });
+}
