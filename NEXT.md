@@ -46,6 +46,7 @@ Last updated: 2026-11-17 (live pull from n8n and Airtable)
 
 ## Main project (Alex, 2026-11-17): reliable lead engine
 Goal: scrape leads → build lead lists → create campaigns, without daily errors. Built as a small app on the Hetzner server (subdomain), with Airtable as the screen. Move the Lead List Center and Campaign Center core out of n8n one stage at a time. `dulcy-lead-worker` is reference only.
+- **Plan drafted:** `engine/PLAN.md` (2026-11-18). Waiting on Alex: approve the plan and answer the 7 decisions in section 7.
 
 ## Next work, in order (Alex decides)
 1. Finish the foundation as the missing items arrive.
