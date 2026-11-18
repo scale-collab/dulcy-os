@@ -12,6 +12,8 @@
 //       Use:  docker compose exec -T engine node dist/src/cli.js campaign < build.json
 //   senders <workspace> [text]
 //       List the workspace's sender inboxes in EmailBison (id, email, status), optionally filtered.
+//   bounce <workspace>
+//       Run the bounce check for one workspace now (report-only unless bounce.check is live).
 //   job <id>
 //       Show a job's status and summary (counts and comparison; no lead rows).
 import { loadConfig } from './config.js';
@@ -74,18 +76,25 @@ async function main() {
       const list = all.filter((x) => !filter || (x.email ?? '').includes(filter));
       for (const x of list) console.log(`${x.id}\t${x.status}\t${x.email ?? ''}`);
       console.log(`${list.length} shown of ${all.length} sender inboxes (${all.filter((x) => x.status === 'connected').length} connected)`);
+    } else if (cmd === 'bounce') {
+      const ws = String(args[0] ?? '').toLowerCase();
+      if (!ws) throw new Error('usage: bounce <workspace>');
+      const def = STAGES['bounce.check'];
+      const r = await enqueue(db, { kind: 'bounce.check', recordId: `bounce:${ws}`, input: { workspace: ws }, dryRun: cfg.dryRun && !cfg.liveStages.includes('bounce.check'), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs });
+      console.log(JSON.stringify({ status: r.status, jobId: r.job.id, dryRun: r.job.dry_run }));
+      console.log(`Check it with:  docker compose exec engine node dist/src/cli.js job ${r.job.id}`);
     } else if (cmd === 'job') {
       const j = await getJob(db, Number(args[0]));
       if (!j) throw new Error('job not found');
       const res = (j.job.result ?? {}) as Record<string, unknown>;
-      const keep = ['readiness', 'kpiException', 'launched', 'campaignId', 'campaignName', 'leads', 'imports', 'senders', 'variants', 'note', 'dryRun', 'millionVerifierJobId', 'plan', 'counts', 'finalDirectCount', 'finalGenericCount', 'pendingRemainder', 'message', 'comparison', 'diagnosis', 'wouldSpendCredits'];
+      const keep = ['checked', 'paused', 'wouldPause', 'watch', 'readiness', 'kpiException', 'launched', 'campaignId', 'campaignName', 'leads', 'imports', 'senders', 'variants', 'note', 'dryRun', 'millionVerifierJobId', 'plan', 'counts', 'finalDirectCount', 'finalGenericCount', 'pendingRemainder', 'message', 'comparison', 'diagnosis', 'wouldSpendCredits'];
       console.log(JSON.stringify({
         id: j.job.id, kind: j.job.kind, record: j.job.record_id, status: j.job.status, progress: j.job.progress, error: j.job.error,
         result: Object.fromEntries(keep.filter((k) => k in res).map((k) => [k, res[k]])),
         steps: j.steps.map((s: { step_key: string; status: string }) => `${s.step_key}: ${s.status}`),
       }, null, 2));
     } else {
-      throw new Error('commands: verify, campaign, topup, senders, job');
+      throw new Error('commands: verify, campaign, topup, senders, bounce, job');
     }
   } finally {
     await db.end();

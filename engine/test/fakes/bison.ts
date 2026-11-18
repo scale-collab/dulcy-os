@@ -19,6 +19,8 @@ export interface FakeBison {
   senderEmail: (id: string) => string;
   /** Sender IDs that exist in the workspace. */
   workspaceSenders: string[];
+  /** Accept pause calls but don't actually pause (to test the after-check). */
+  pauseIgnored: boolean;
   close(): void;
 }
 
@@ -26,7 +28,7 @@ export async function startFakeBison(): Promise<FakeBison> {
   const s: FakeBison = {
     url: '', key: 'bison-key', campaigns: [], leadLists: [], customVariables: new Set(['domain']), calls: [],
     createThen500: false, uploadThen500: false, processAfterChecks: 0, failRowsOnImport: 0,
-    senderStatus: () => 'connected', senderEmail: (id) => `sender${id}@dulcy-mail.com`, workspaceSenders: ['11', '12', '13'], close: () => undefined,
+    senderStatus: () => 'connected', senderEmail: (id) => `sender${id}@dulcy-mail.com`, workspaceSenders: ['11', '12', '13'], pauseIgnored: false, close: () => undefined,
   };
   const json = (res: http.ServerResponse, code: number, body: unknown) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(body)); };
   const page = (list: unknown[], u: URL) => ({ data: list, meta: { current_page: Number(u.searchParams.get('page') ?? 1), last_page: 1, total: list.length } });
@@ -40,7 +42,8 @@ export async function startFakeBison(): Promise<FakeBison> {
     const m = (re: RegExp) => u.pathname.match(re);
     s.calls.push(`${req.method} ${u.pathname}`);
     let x;
-    if (req.method === 'GET' && u.pathname === '/api/campaigns') return json(res, 200, page(s.campaigns.map((c) => ({ id: c.id, name: c.name })), u));
+    if (req.method === 'GET' && u.pathname === '/api/campaigns') return json(res, 200, page(s.campaigns.map((c: any) => ({ id: c.id, name: c.name, status: c.status ?? 'draft', bounced: c.bounced ?? 0, total_leads_contacted: c.contacted ?? 0, completion_percentage: c.progress ?? 0 })), u));
+    if ((x = m(/^\/api\/campaigns\/(\d+)\/pause$/)) && req.method === 'PATCH') { const c: any = s.campaigns.find((y) => y.id === Number(x![1])); if (c && !s.pauseIgnored) c.status = 'paused'; return json(res, 200, { data: { success: true } }); }
     if (req.method === 'POST' && u.pathname === '/api/campaigns') {
       const c = { id: 500 + s.campaigns.length, name: body().name, leads: new Set<string>(), senders: [] as string[], steps: [] as any[] };
       s.campaigns.push(c);

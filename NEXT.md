@@ -56,7 +56,7 @@ Tomorrow, on the server (`cd /opt/dulcy-os/engine/deploy`):
 4. When it succeeds: step 3 is proven live. Delete campaign 648 in EmailBison if not wanted (needs Alex).
 Still open: rotate the MillionVerifier key (it was pasted in chat on 2026-11-18).
 
-**Built overnight 2026-11-18 (code + tests only, nothing live):** step 4 top-up (`campaign.topup`, see engine/README). Not yet run against the real EmailBison.
+**Built overnight 2026-11-18 (code + tests only, nothing live):** step 4 top-up (`campaign.topup`) and the bounce check (`bounce.check`: pause over 4% at 35%+ progress, watch over 2.5%, re-checked every run, report-only until switched live). See engine/README. Neither has run against the real EmailBison yet.
 
 ## Main project (Alex, 2026-11-17): reliable lead engine
 Goal: scrape leads → build lead lists → create campaigns, without daily errors. Built as a small app on the Hetzner server (subdomain), with Airtable as the screen. Move the Lead List Center and Campaign Center core out of n8n one stage at a time. `dulcy-lead-worker` is reference only.

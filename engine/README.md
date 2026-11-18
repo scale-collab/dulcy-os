@@ -90,6 +90,15 @@ Run on the server: `docker compose exec -T engine node dist/src/cli.js topup < t
 `{"recordId":"rec<top-up lead list>","campaignId":123,"name":"<campaign name>","workspace":"dulcy","outputType":"direct","source":{"sheetId":"..."},"expectedLeads":N,"copyTags":["CITY"],"kpis":{"interestedRate":18,"replyRate":2.5,"bounceRate":1.1,"progress":65}}`.
 Needs `LIVE_STAGES` to include `campaign.topup` to run live (dry-run shows the plan).
 
+## Bounce check (`bounce.check`)
+Alex's rule, re-checked **every run** (the Airtable automation fired once and could miss a campaign that crossed 2.5% first and 4% later):
+- bounce **over 4%** and progress **35%+** → pause; bounce **over 2.5%** → watch.
+- Bounce % = bounced ÷ leads contacted, the same as Airtable's "Bounced %". Read from EmailBison's campaign list, the same list the daily sync reads.
+- Live, each pause is confirmed afterwards; a pause that didn't take effect goes to review. It never resumes anything.
+- Slack gets one message per check if anything needs a pause or a watch.
+- **Report-only by default.** It pauses for real only when `LIVE_STAGES` includes `bounce.check`.
+- Run once by hand: `docker compose exec engine node dist/src/cli.js bounce dulcy`. Run on a timer: `BOUNCE_CHECK_EVERY_MIN=30` and `BOUNCE_CHECK_WORKSPACES=dulcy` in `.env`. Each workspace needs its `EMAILBISON_KEY_<WORKSPACE>`.
+
 ## How Airtable will call it
 `POST /jobs` with `{"kind": "...", "recordId": "rec...", "clientId": "rec...", "input": {...}, "requestId": "unique-per-click"}`.
 

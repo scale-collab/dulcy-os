@@ -71,6 +71,11 @@ export function createBisonClient(o: BisonOptions) {
       const all = await pages<BisonCampaign>('/api/campaigns');
       return all.filter((c) => String(c.name).trim() === name.trim()).map((c) => ({ ...c, id: Number(c.id) }));
     },
+    /** Every campaign in the workspace with EmailBison's own stats (same list the daily sync reads). */
+    async listCampaigns(): Promise<any[]> {
+      return pages<any>('/api/campaigns');
+    },
+    pauseCampaign: (id: number) => call('PATCH', `/api/campaigns/${id}/pause`, undefined, { write: true }),
     async createCampaign(name: string, type: string): Promise<BisonCampaign> {
       const r = await call('POST', '/api/campaigns', { name, type }, { write: true });
       const id = Number(r?.data?.id ?? r?.id);
