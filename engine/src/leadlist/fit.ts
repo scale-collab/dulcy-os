@@ -78,6 +78,8 @@ const NOT_PROVIDERS: Record<string, RegExp> = {
   training: /\b(training provider|training courses|online courses|training academy)\b/,
 };
 const COMMERCIAL_ONLY = /\b(commercial only|industrial|government contractor|municipal|institutional)\b/;
+// What a company IS (not a side activity): cut unless the thesis targets that type.
+const ALWAYS_CUT = new Set(['directory', 'marketplace', 'lead-gen site', 'manufacturer']);
 const RESIDENTIAL_ONLY = /\b(residential only|homeowners only|for homeowners|home owners only)\b/;
 /** An industry code matches its own code or a sub-industry under it (MANUFACTURING ⊃ MANUFACTURING/X). */
 const industryMatch = (have: string[], want: string[]) => have.find((i) => want.some((w) => i === w || i.startsWith(`${w}/`)));
@@ -112,9 +114,19 @@ export function checkCompanyFit(c: Company, k: FitCriteria): FitResult {
 
   // Not a provider (unless the thesis targets that type).
   const targets = list(k.targetsBusinessTypes);
+  // Directories, marketplaces, lead-gen sites and manufacturers are what a company IS: cut.
+  // Other types (wholesale, training, media, software, staffing, associations)
+  // are often a SIDE activity of a real target business (a maker that also wholesales, a soap
+  // maker that runs courses): they cut only a company outside the list's target industries;
+  // inside them the company stays Tier 2 with a note. (Seen live 2026-11-18.)
+  const inTarget = Boolean(wantedInd.length && industryMatch(industries, wantedInd));
+  let sideNote = '';
   for (const [type, re] of Object.entries(NOT_PROVIDERS)) {
     const m = targets.includes(type) ? null : about.match(re);
-    if (m) { reasons.push(`looks like a ${type}, not a provider ("${m[0]}")`); break; }
+    if (!m) continue;
+    if (ALWAYS_CUT.has(type) || !inTarget) reasons.push(`looks like a ${type}, not a provider ("${m[0]}")`);
+    else sideNote = `kept: also mentions "${m[0]}"`;
+    break;
   }
   if (k.residential && COMMERCIAL_ONLY.test(about)) reasons.push('commercial/industrial/government-only, but the campaign is residential');
   if (k.commercialOnly && RESIDENTIAL_ONLY.test(about)) reasons.push('residential-only, but the campaign is commercial');
@@ -128,7 +140,9 @@ export function checkCompanyFit(c: Company, k: FitCriteria): FitResult {
   if (kw) signals.push(`target wording ("${kw}")`);
   const sim = num(c.similarity);
   if (sim !== undefined && (sim > 1 ? sim / 100 : sim) >= (k.similarityTop ?? 0.7)) signals.push('high similarity for this list');
-  const decision: FitDecision = signals.length >= 2 ? 'fit' : 'maybe';
+  // A side activity worth a note keeps the company, but never as Tier 1.
+  const decision: FitDecision = signals.length >= 2 && !sideNote ? 'fit' : 'maybe';
+  if (sideNote) signals.push(sideNote);
   return { domain, decision, reasons, signals };
 }
 

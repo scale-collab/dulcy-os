@@ -50,3 +50,12 @@ test('similarity line is relative to the list and bounded', () => {
   assert.equal(similarityTop(Array.from({ length: 30 }, () => 20)), 0.5);
   assert.equal(similarityTop(Array.from({ length: 30 }, () => 99)), 0.9);
 });
+
+test('side activities: a maker that also wholesales or runs courses is kept (Tier 2, noted); outside the target it is cut; directories always cut', () => {
+  const k = profileCriteria(cleanProfile({ targetIndustries: ['CONSTRUCTION'], targetKeywords: ['roof repair'] }, base), base.filters);
+  const side = checkCompanyFit(co('Roof repair specialists. We are also a wholesaler of roofing felt.'), k);
+  assert.equal(side.decision, 'maybe');
+  assert.ok(side.signals.some((x) => /kept: also mentions "wholesaler"/.test(x)));
+  assert.equal(checkCompanyFit(co('We are a wholesaler of roofing felt.', { industry_groups: ['SUPPLY_CHAIN'], sub_industry: [] }), k).decision, 'drop');
+  assert.equal(checkCompanyFit(co('A business directory of local roofers'), k).decision, 'drop', 'a directory is cut even in the target industry');
+});

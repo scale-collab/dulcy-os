@@ -100,7 +100,7 @@ export function loadConfig(env = process.env): Config {
     discoLikeApiKey: env.DISCOLIKE_API_KEY || undefined,
     discoLikeBaseUrl: env.DISCOLIKE_BASE_URL || 'https://api.discolike.com',
     openAiApiKey: env.OPENAI_API_KEY || undefined,
-    openAiModel: env.OPENAI_MODEL || 'gpt-4.1-mini',
+    openAiModel: env.OPENAI_MODEL || 'gpt-5.6-luna',
     openAiBaseUrl: env.OPENAI_BASE_URL || 'https://api.openai.com',
   };
 }
