@@ -1,5 +1,5 @@
 {
-  "_about": "Company expansion test (leadlist.expand) on the Dulcy Manufacturing sample (recSampleTest0001). Target 300 usable companies (Tier 1 + Tier 2), batches of 2,500 max. About 320 DiscoLike credits. Creates a new Google Sheet (in scale@dulcy.io's Drive) and writes one batch at a time.",
+  "_about": "Company expansion test (leadlist.expand) on the Dulcy Manufacturing sample (recSampleTest0001). Target 1000 usable companies (Tier 1 + Tier 2), batches of 2,500 max. About 970 DiscoLike credits. Creates a new Google Sheet (in scale@dulcy.io's Drive) and writes one batch at a time.",
   "recordId": "recSampleTest0001",
   "name": "[Dulcy] Manufacturing (engine test)",
   "filters": {
@@ -37,6 +37,6 @@
       "canada"
     ]
   },
-  "target": 300,
+  "target": 1000,
   "sampleApproved": true
 }
