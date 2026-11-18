@@ -45,6 +45,9 @@ export interface Config {
   emailBisonBaseUrl: string;
   /** How often a waiting campaign build checks EmailBison again (imports, lead totals). */
   bisonPollMs: number;
+  /** Bounce check: run every N minutes (0 = off) for these workspaces. */
+  bounceCheckEveryMin: number;
+  bounceCheckWorkspaces: string[];
 }
 
 export function loadConfig(env = process.env): Config {
@@ -77,5 +80,7 @@ export function loadConfig(env = process.env): Config {
       .map(([k, v]) => [k.slice('EMAILBISON_KEY_'.length).toLowerCase(), String(v)])),
     emailBisonBaseUrl: env.EMAILBISON_BASE_URL || 'https://send.dulcy.io',
     bisonPollMs: num('BISON_POLL_MS', 60_000, env),
+    bounceCheckEveryMin: num('BOUNCE_CHECK_EVERY_MIN', 0, env),
+    bounceCheckWorkspaces: (env.BOUNCE_CHECK_WORKSPACES ?? '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
   };
 }

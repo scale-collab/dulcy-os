@@ -2,6 +2,7 @@ import { loadConfig } from './config.js';
 import { createPool, migrate } from './db/pool.js';
 import { createServer } from './http.js';
 import { workLoop } from './worker.js';
+import { startScheduler } from './scheduler.js';
 
 const cfg = loadConfig();
 const db = createPool(cfg.databaseUrl);
@@ -12,6 +13,7 @@ server.listen(cfg.port, () => console.log(JSON.stringify({ level: 'info', messag
 
 const stop = new AbortController();
 const loop = workLoop(db, cfg, stop.signal);
+startScheduler(db, cfg, stop.signal);
 
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {
   process.on(sig, async () => {
