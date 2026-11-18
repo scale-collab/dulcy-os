@@ -82,7 +82,7 @@ beforeEach(async () => {
     't3.com': [person('Fay', 'Founder', 't3.com')],
     'cut.com': [person('Gus', 'Owner', 'cut.com')],
   };
-  google.written = {}; ai.calls = 0; ai.status = 200;
+  google.written = {}; google.grid = {}; ai.calls = 0; ai.status = 200;
   ai.answer = { summary: 'Owners and operations leaders.', targetTitleWords: ['owner', 'founder', 'operations director'], excludeTitleWords: ['sales associate'] };
   if (skip) return;
   await db.query('TRUNCATE jobs, steps, receipts, events, lead_companies, lead_list_sheets, lead_list_profiles, lead_contacts, lead_contact_domains, lead_contact_profiles RESTART IDENTITY CASCADE');

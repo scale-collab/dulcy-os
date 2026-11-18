@@ -16,6 +16,8 @@ export interface FakeGoogle {
   written: Record<string, Record<string, string[][]>>;
   writes: number;
   maxWriteBytes: number;
+  /** Grid size per sheet+tab, like real Google (new tabs: 1,000 rows x 26 columns). */
+  grid: Record<string, { rows: number; cols: number }>;
   creates: number;
   close(): void;
 }
@@ -28,7 +30,7 @@ function colIndex(letters: string): number {
 
 export async function startFakeGoogle(): Promise<FakeGoogle> {
   const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
-  const state: FakeGoogle = { url: '', keyFile: '', tabs: {}, tokenCalls: 0, written: {}, writes: 0, maxWriteBytes: 0, creates: 0, close: () => undefined };
+  const state: FakeGoogle = { url: '', keyFile: '', tabs: {}, tokenCalls: 0, written: {}, writes: 0, maxWriteBytes: 0, grid: {}, creates: 0, close: () => undefined };
   const server = http.createServer(async (req, res) => {
     const u = new URL(req.url ?? '/', 'http://x');
     const chunks: Buffer[] = [];
@@ -54,20 +56,32 @@ export async function startFakeGoogle(): Promise<FakeGoogle> {
       state.written[id] = Object.fromEntries(b.sheets.map((x: any) => [x.properties.title, []]));
       return json(200, { spreadsheetId: id });
     }
+    const gridOf = (id: string, tab: string) => (state.grid[`${id}|${tab}`] ??= { rows: 1000, cols: 26 });
+    const titleId = (title: string) => [...title].reduce((a, ch) => a + ch.charCodeAt(0), 0);
     const meta = u.pathname.match(/^\/v4\/spreadsheets\/([^/:]+)$/);
     if (meta && req.method === 'GET') {
       const id = decodeURIComponent(meta[1]);
-      const titles = [...Object.keys(state.written[id] ?? {}), ...Object.keys(state.tabs)];
-      return json(200, { sheets: titles.map((title) => ({ properties: { title } })) });
+      const titles = [...new Set([...Object.keys(state.written[id] ?? {}), ...Object.keys(state.tabs)])];
+      return json(200, { sheets: titles.map((title) => ({ properties: { title, sheetId: titleId(title), gridProperties: { rowCount: gridOf(id, title).rows, columnCount: gridOf(id, title).cols } } })) });
     }
     const upd = u.pathname.match(/^\/v4\/spreadsheets\/([^/]+):batchUpdate$/);
     if (upd && req.method === 'POST') {
       const id = decodeURIComponent(upd[1]);
-      for (const r of JSON.parse(body).requests) if (r.addSheet) (state.written[id] ??= {})[r.addSheet.properties.title] = [];
+      for (const r of JSON.parse(body).requests) {
+        if (r.addSheet) (state.written[id] ??= {})[r.addSheet.properties.title] = [];
+        if (r.appendDimension) {
+          const title = Object.keys(state.written[id] ?? {}).find((t) => titleId(t) === r.appendDimension.sheetId)!;
+          const g = gridOf(id, title);
+          if (r.appendDimension.dimension === 'ROWS') g.rows += r.appendDimension.length; else g.cols += r.appendDimension.length;
+        }
+      }
       return json(200, {});
     }
     const put = decodeURIComponent(u.pathname).match(/^\/v4\/spreadsheets\/([^/]+)\/values\/'(.+)'!A(\d+)$/);
     if (put && req.method === 'PUT') {
+      const vals = JSON.parse(body).values as unknown[][];
+      const g = gridOf(put[1], put[2].replace(/''/g, "'"));
+      if (Number(put[3]) - 1 + vals.length > g.rows) return json(400, { error: { code: 400, message: `Range exceeds grid limits. Max rows: ${g.rows}`, status: 'INVALID_ARGUMENT' } });
       state.writes++; state.maxWriteBytes = Math.max(state.maxWriteBytes, body.length);
       const tabRows = ((state.written[put[1]] ??= {})[put[2].replace(/''/g, "'")] ??= []);
       JSON.parse(body).values.forEach((row: any[], i: number) => { tabRows[Number(put[3]) - 1 + i] = row.map(String); });

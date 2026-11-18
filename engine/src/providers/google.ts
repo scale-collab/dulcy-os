@@ -138,6 +138,20 @@ export function createSheetsClient(o: GoogleOptions): SheetsClient {
     },
     async writeRows(sheetId, tab, startRow, rows) {
       if (!rows.length) return;
+      // A tab has a fixed grid (new sheets: 1,000 rows x 26 columns). Grow it first, or Google
+      // refuses the write ("exceeds grid limits"; seen live 2026-11-18 at row 1,069).
+      const meta = await get(`/v4/spreadsheets/${encodeURIComponent(sheetId)}?fields=sheets.properties(sheetId,title,gridProperties)`);
+      const props = ((meta.sheets as Array<{ properties?: { sheetId?: number; title?: string; gridProperties?: { rowCount?: number; columnCount?: number } } }> | undefined) ?? [])
+        .map((x) => x.properties).find((x) => x?.title === tab);
+      if (props) {
+        const needRows = startRow - 1 + rows.length;
+        const needCols = Math.max(...rows.map((r) => r.length));
+        const requests: unknown[] = [];
+        const haveRows = Number(props.gridProperties?.rowCount ?? 0), haveCols = Number(props.gridProperties?.columnCount ?? 0);
+        if (needRows > haveRows) requests.push({ appendDimension: { sheetId: props.sheetId, dimension: 'ROWS', length: needRows - haveRows + 1000 } });
+        if (needCols > haveCols) requests.push({ appendDimension: { sheetId: props.sheetId, dimension: 'COLUMNS', length: needCols - haveCols } });
+        if (requests.length) await get(`/v4/spreadsheets/${encodeURIComponent(sheetId)}:batchUpdate`, 'POST', { requests });
+      }
       const range = `${quoteTab(tab)}!A${startRow}`;
       await get(`/v4/spreadsheets/${encodeURIComponent(sheetId)}/values/${encodeURIComponent(range)}?valueInputOption=RAW`, 'PUT', { range, majorDimension: 'ROWS', values: rows });
     },
