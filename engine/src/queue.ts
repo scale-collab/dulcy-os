@@ -121,6 +121,18 @@ export async function fail(db: Db, job: Job, error: string, opts: { retryable: b
   return 'failed';
 }
 
+/**
+ * Put a running job back in the queue to run again later (it is waiting, not failing).
+ * The attempt it used is given back, so waiting never exhausts max_attempts.
+ */
+export async function snooze(db: Db, jobId: number, waitMs: number, progress: string): Promise<void> {
+  await db.query(
+    `UPDATE jobs SET status='queued', progress=$2, attempts=GREATEST(attempts-1,0), lease_owner=NULL, lease_until=NULL,
+            run_after = now() + ($3::bigint * interval '1 millisecond'), updated_at=now() WHERE id=$1`,
+    [jobId, progress, waitMs],
+  );
+}
+
 export async function getJob(db: Db, id: number) {
   const job = await db.query('SELECT * FROM jobs WHERE id = $1', [id]);
   if (!job.rows[0]) return null;

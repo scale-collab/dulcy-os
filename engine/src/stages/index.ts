@@ -1,4 +1,5 @@
 import type { JobContext } from '../context.js';
+import { verifyStage } from './verify.js';
 
 /** A stage = one Airtable action. It returns a small result for the Airtable record. */
 export type Stage = (ctx: JobContext) => Promise<Record<string, unknown>>;
@@ -32,4 +33,11 @@ const selfTest: Stage = async (ctx) => {
 
 export const STAGES: Record<string, StageDef> = {
   'engine.selftest': { run: selfTest, deadlineMs: 5 * 60_000, maxAttempts: 3, description: 'End-to-end check of the engine itself. Spends nothing.' },
+  'leadlist.verify': {
+    run: verifyStage,
+    // MillionVerifier can take hours on big lists; waiting checks are free and don't use attempts.
+    deadlineMs: 24 * 60 * 60_000,
+    maxAttempts: 5,
+    description: 'Verify a lead list with MillionVerifier (upload once, wait, download, split Good/Risky/Bad). Shadow mode: writes nothing to Airtable yet.',
+  },
 };

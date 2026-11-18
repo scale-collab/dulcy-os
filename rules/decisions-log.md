@@ -31,3 +31,4 @@ Newest at the bottom. Format: `date | decision | why | who`
 2026-11-18 | Claude may merge its own PRs to main (tests must pass; tell Alex each time) | Alex: standing permission | Alex
 - 2026-11-18: Lead engine deployed on Hetzner (/opt/dulcy-os, read-only deploy key, dry-run). Health OK. Next: subdomain, then step 2 Verify.
 - 2026-11-18: engine.dulcy.io live over HTTPS via Coolify Traefik; health OK from outside, unsigned POST refused (401).
+- 2026-11-18: Engine step 2a: Verify stage (leadlist.verify) in shadow mode, same rules as old 03; upload once per list (record-scoped receipt), automatic waits, logs hold counts not lead rows. Next 2b: Sheets read + real-list comparison + write-back.

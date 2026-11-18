@@ -14,6 +14,12 @@ export interface PaidCall<T> {
   run: () => Promise<T>;
   /** What to return in dry-run mode. */
   dryRunResult: () => T;
+  /**
+   * 'job' (default): the receipt belongs to this job.
+   * 'record': the receipt belongs to the Airtable record, so a NEW job for the same record
+   * and the same callKey reuses the saved answer instead of paying again.
+   */
+  scope?: 'job' | 'record';
 }
 
 /**
@@ -74,10 +80,14 @@ export class JobContext {
    *  - dry-run             → nothing is called; a dry_run receipt is recorded.
    */
   async paid<T>(c: PaidCall<T>): Promise<T> {
-    const key = `${this.job.id}:${c.provider}:${c.callKey}`;
+    const key = c.scope === 'record'
+      ? `rec:${this.job.kind}:${this.job.record_id}:${c.provider}:${c.callKey}`
+      : `${this.job.id}:${c.provider}:${c.callKey}`;
     const prior = await this.db.query('SELECT status, response FROM receipts WHERE receipt_key = $1', [key]);
     const p = prior.rows[0];
-    if (p?.status === 'done' || p?.status === 'dry_run') return p.response as T;
+    if (p?.status === 'done') return p.response as T;
+    // A dry-run answer is only reused in dry-run; a live run makes the real call.
+    if (p?.status === 'dry_run' && this.dryRun) return p.response as T;
     if (p?.status === 'pending') {
       throw new NeedsReviewError(`paid call ${key} has an unclear outcome from an earlier attempt; check ${c.provider} before retrying`);
     }
@@ -98,7 +108,7 @@ export class JobContext {
     // Receipt first. If the process dies after this line, the next attempt sees 'pending'.
     await this.db.query(
       `INSERT INTO receipts (receipt_key, job_id, provider, units, status) VALUES ($1,$2,$3,$4,'pending')
-       ON CONFLICT (receipt_key) DO UPDATE SET status='pending', error=NULL`,
+       ON CONFLICT (receipt_key) DO UPDATE SET status='pending', error=NULL, job_id=EXCLUDED.job_id, units=EXCLUDED.units, response=NULL, created_at=now()`,
       [key, this.job.id, c.provider, c.units],
     );
     try {

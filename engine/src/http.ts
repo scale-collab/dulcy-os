@@ -29,7 +29,7 @@ function send(res: http.ServerResponse, status: number, body: unknown) {
   res.end(JSON.stringify(body));
 }
 
-async function readBody(req: http.IncomingMessage, limit = 1_000_000): Promise<string> {
+async function readBody(req: http.IncomingMessage, limit = 10_000_000): Promise<string> {
   const chunks: Buffer[] = [];
   let size = 0;
   for await (const c of req) {

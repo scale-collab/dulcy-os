@@ -1,9 +1,9 @@
 import type { Db } from './db/pool.js';
 import type { Config } from './config.js';
-import { claim, fail, finish, renewLease, type Job } from './queue.js';
+import { claim, fail, finish, renewLease, snooze, type Job } from './queue.js';
 import { JobContext } from './context.js';
 import { STAGES } from './stages/index.js';
-import { NeedsReviewError, PermanentError } from './errors.js';
+import { NeedsReviewError, PermanentError, WaitError } from './errors.js';
 import { alert, logEvent } from './log.js';
 
 /** Run one job if there is one. Returns true when a job was processed. */
@@ -33,8 +33,13 @@ async function runJob(db: Db, cfg: Config, job: Job): Promise<void> {
     await ctx.log('job started', { kind: job.kind, attempt: job.attempts, dryRun: ctx.dryRun });
     const result = await def.run(ctx);
     await finish(db, job.id, result);
-    await ctx.log('job succeeded', { result });
+    await ctx.log('job succeeded', { result: brief(result) });
   } catch (e) {
+    if (e instanceof WaitError) {
+      await snooze(db, job.id, e.waitMs, e.message);
+      await ctx.log('job waiting', { progress: e.message, nextCheckMs: e.waitMs });
+      return;
+    }
     const msg = String((e as Error).message ?? e);
     const outcome = await fail(db, job, msg, {
       retryable: !(e instanceof PermanentError) && !(e instanceof NeedsReviewError),
@@ -45,6 +50,11 @@ async function runJob(db: Db, cfg: Config, job: Job): Promise<void> {
   } finally {
     clearInterval(renew);
   }
+}
+
+/** Logs keep counts, not lead rows: lists (emails, names) are replaced by their length. */
+function brief(result: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(result ?? {}).map(([k, v]) => [k, Array.isArray(v) ? `${v.length} rows` : v]));
 }
 
 function notify(cfg: Config, job: Job, outcome: string, msg: string) {
