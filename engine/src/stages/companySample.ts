@@ -53,9 +53,9 @@ export const companySampleStage: Stage = async (ctx) => {
     const results = unique.map((c) => checkCompanyFit(c, input.fit ?? {}));
     const summary = summarizeSample(results);
     // The sample is batch 0 of the list's master copy (expansion never pulls these again).
-    await saveCompanies(ctx.db, ctx.job.record_id, 0, unique.map((company, i) => ({ company, fit: results[i] })));
+    await saveCompanies(ctx.db, ctx.job.record_id, 0, unique.map((company, i) => ({ company, fit: results[i] })), { refit: true });
     const reasons: Record<string, number> = {};
-    for (const r of results) for (const why of r.reasons) { const k = why.replace(/\d+/g, 'N'); reasons[k] = (reasons[k] ?? 0) + 1; }
+    for (const r of results) for (const why of r.reasons) { const k = why.replace(/ \(".*"\)$/, '').replace(/\d+/g, 'N'); reasons[k] = (reasons[k] ?? 0) + 1; }
     return {
       summary,
       returned: rows.length,

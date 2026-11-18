@@ -24,6 +24,19 @@ test('obvious bad fits are dropped, each with its reason', () => {
   assert.match(drop({ country: 'CA' }).reasons[0], /outside the target countries/);
   assert.match(drop({ description: 'The best directory to find a contractor near you' }).reasons[0], /directory, not a provider/);
   assert.match(drop({ description: 'Industrial roofing for warehouses' }).reasons[0], /residential/);
+  assert.match(drop({ description: 'The leading online marketplace for roofers' }).reasons[0], /marketplace, not a provider \("online marketplace"\)/);
+});
+
+test('ordinary company wording is not a business type (wrong cuts seen live 2026-11-18)', () => {
+  const k = { ...K, residential: false };
+  for (const description of [
+    'Tape manufacturer. Latest news and product launches.',           // "news"
+    'Steam showers. Find a stockist in our dealer directory.',          // "directory"
+    'Car care products, also on the Amazon marketplace.',               // "marketplace"
+    'Family business. Member of the Roofing Contractors Association.',  // "association"
+  ]) assert.notEqual(checkCompanyFit({ ...base, description }, { ...k, targetsBusinessTypes: ['manufacturer'] }).decision, 'drop', description);
+  // DiscoLike's homepage keyword list alone never decides a business type.
+  assert.notEqual(checkCompanyFit({ ...base, keywords: ['news', 'directory', 'marketplace'] }, k).decision, 'drop');
 });
 
 test('unknowns never drop: missing size or country is a maybe at worst', () => {
