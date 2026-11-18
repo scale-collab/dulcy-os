@@ -3,6 +3,7 @@ import { verifyStage } from './verify.js';
 import { campaignBuildStage } from './campaignBuild.js';
 import { campaignTopupStage } from './campaignTopup.js';
 import { bounceCheckStage } from './bounceCheck.js';
+import { companySampleStage } from './companySample.js';
 
 /** A stage = one Airtable action. It returns a small result for the Airtable record. */
 export type Stage = (ctx: JobContext) => Promise<Record<string, unknown>>;
@@ -55,6 +56,12 @@ export const STAGES: Record<string, StageDef> = {
     deadlineMs: 6 * 60 * 60_000,
     maxAttempts: 5,
     description: 'Add a Ready lead list to a running EmailBison campaign (KPI rule, import checks, added vs skipped). Never re-uploads, never launches.',
+  },
+  'leadlist.sample': {
+    run: companySampleStage,
+    deadlineMs: 30 * 60_000,
+    maxAttempts: 3,
+    description: 'Company sample for a lead list: free DiscoLike count, one paid search of up to 100 companies, fit check in code, sample gate. Shadow mode: writes nothing yet.',
   },
   'bounce.check': {
     run: bounceCheckStage,

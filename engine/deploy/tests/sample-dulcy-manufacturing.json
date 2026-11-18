@@ -1,0 +1,39 @@
+{
+  "_about": "Company sample test (leadlist.sample). Saved DiscoLike plan copied from Lead List recjxQ90hbqlki0Tj '[Dulcy] Manufacturing \u2014 Clean E2E Final 1' (old sample fit rate 98.3%, Passed). Dry-run = free count only; live = one search of 100 companies.",
+  "recordId": "recSampleTest0001",
+  "filters": {
+    "icp_prompt": "Product manufacturers in the United States, Canada, and the United Kingdom that make and distribute physical consumer or commercial goods through retailers, dealers, distributors, or stores, and could benefit from reaching those buyers directly",
+    "icp_text": "Manufacturers of physical consumer or commercial goods that design, produce, and distribute branded products through wholesale and retail channels, including retailers, dealers, distributors, stockists, and stores.",
+    "language": [
+      "en"
+    ],
+    "exclude_leadgen": true,
+    "relevance": "BALANCED",
+    "redirect": false,
+    "include_search_domains": true,
+    "country": [
+      "US",
+      "GB",
+      "CA"
+    ],
+    "exclusion_query_id": [
+      "c32d04db-06b9-46df-9536-7bd3f93f0ec2",
+      "084c66bb-d18d-4e1a-8337-a217fc8633f4",
+      "1302ea95-9ba5-447c-a281-f432f8bff18d"
+    ]
+  },
+  "fit": {
+    "targetsBusinessTypes": [
+      "manufacturer",
+      "wholesaler"
+    ],
+    "countries": [
+      "us",
+      "gb",
+      "ca",
+      "united states",
+      "united kingdom",
+      "canada"
+    ]
+  }
+}
