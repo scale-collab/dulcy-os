@@ -16,6 +16,11 @@
 //       Run the bounce check for one workspace now (report-only unless bounce.check is live).
 //   whereis <campaignId> <workspaceId> [workspaceId...] [--key=<workspace>]
 //       Which of these EmailBison workspaces holds the campaign (read-only).
+//   cleanup-test <campaignId> <workspaceId> [--yes] [--key=<workspace>]
+//       Remove an ENGINE TEST draft campaign and only the leads and custom variables the test
+//       created. Without --yes it only shows what it would delete.
+//   cancel <jobId>
+//       Cancel a job that is waiting to run (queued or retrying). A running job is not touched.
 //   job <id>
 //       Show a job's status and summary (counts and comparison; no lead rows).
 import { loadConfig } from './config.js';
@@ -93,6 +98,33 @@ async function main() {
       const { findCampaignWorkspace } = await import('./providers/emailbison.js');
       const found = await findCampaignWorkspace(cfg.emailBisonKeys[keyName], cfg.emailBisonBaseUrl, campaignId, teams);
       console.log(found.length ? found.map((f) => `campaign ${campaignId} is in workspace ${f.teamId}: "${f.name}" (${f.status})`).join('\n') : `campaign ${campaignId} is in none of workspaces ${teams.join(', ')}`);
+    } else if (cmd === 'cleanup-test') {
+      const campaignId = Number(args[0]);
+      const teamId = Number(args[1]);
+      const keyName = (args.find((a) => a.startsWith('--key='))?.split('=')[1] ?? 'dulcy').toLowerCase();
+      if (!campaignId || !teamId) throw new Error('usage: cleanup-test <campaignId> <workspaceId> [--yes]');
+      const { createBisonClient } = await import('./providers/emailbison.js');
+      const { readCleanupPlan, runCleanup } = await import('./campaign/cleanup.js');
+      const bison = createBisonClient({ apiKey: cfg.emailBisonKeys[keyName], baseUrl: cfg.emailBisonBaseUrl, teamId });
+      // Custom variables our test builds created, from the engine's own step records.
+      const rows = await db.query(
+        `SELECT s.output FROM steps s JOIN jobs j ON j.id = s.job_id
+          WHERE j.kind IN ('campaign.build','campaign.topup') AND s.step_key = 'custom-variables' AND j.record_id LIKE 'recEngineTest%'`);
+      const names = new Set<string>(['Verification Provider', 'Email Type', 'Verification Path']);
+      for (const r of rows.rows) for (const n of (r.output?.created ?? []) as string[]) names.add(n);
+      const plan = await readCleanupPlan(bison, campaignId, [...names]);
+      console.log(`workspace ${teamId}, campaign ${plan.campaign.id} "${plan.campaign.name}" (${plan.campaign.status}, created ${plan.campaign.createdAt})`);
+      console.log(`leads: delete ${plan.deleteLeadIds.length}; keep ${plan.keptLeads.notOurs} that existed before the test, ${plan.keptLeads.contacted} already emailed`);
+      console.log(`custom variables: delete ${plan.deleteVariables.map((v) => v.name).join(', ') || 'none'}${plan.keptVariables.length ? `; keep (older than the test) ${plan.keptVariables.join(', ')}` : ''}`);
+      if (!args.includes('--yes')) {
+        console.log('Preview only. Nothing deleted. Add --yes to delete.');
+      } else {
+        await runCleanup(bison, plan, (s) => console.log(s));
+      }
+      if (plan.leadLists.length) console.log(`EmailBison has no API to delete lead lists. Delete these in the EmailBison screen (workspace ${teamId}):\n${plan.leadLists.map((l) => `  ${l.id}  ${l.name}`).join('\n')}`);
+    } else if (cmd === 'cancel') {
+      const r = await db.query(`UPDATE jobs SET status='cancelled', lease_owner=NULL, lease_until=NULL, updated_at=now() WHERE id=$1 AND status='queued' RETURNING id`, [Number(args[0])]);
+      console.log(r.rowCount ? `job ${args[0]} cancelled` : `job ${args[0]} was not waiting to run (running or already finished); nothing changed`);
     } else if (cmd === 'job') {
       const j = await getJob(db, Number(args[0]));
       if (!j) throw new Error('job not found');
@@ -104,7 +136,7 @@ async function main() {
         steps: j.steps.map((s: { step_key: string; status: string }) => `${s.step_key}: ${s.status}`),
       }, null, 2));
     } else {
-      throw new Error('commands: verify, campaign, topup, senders, bounce, whereis, job');
+      throw new Error('commands: verify, campaign, topup, senders, bounce, whereis, cleanup-test, cancel, job');
     }
   } finally {
     await db.end();
