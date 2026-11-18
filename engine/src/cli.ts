@@ -10,6 +10,8 @@
 //   campaign < build.json
 //       Queue a campaign build from a JSON file on stdin: {"recordId": "rec...", ...input}.
 //       Use:  docker compose exec -T engine node dist/src/cli.js campaign < build.json
+//   sample < sample.json
+//       Queue a company sample from a JSON file on stdin: {"recordId": "rec<lead list>", "filters": {...}, "fit": {...}}.
 //   senders <workspace> [text] [--workspace-id=N]
 //       List the workspace's sender inboxes in EmailBison (id, email, status), optionally filtered.
 //   bounce <workspace>
@@ -64,12 +66,12 @@ async function main() {
       });
       console.log(JSON.stringify({ status: r.status, jobId: r.job.id, dryRun: r.job.dry_run }));
       console.log(`Check it with:  docker compose exec engine node dist/src/cli.js job ${r.job.id}`);
-    } else if (cmd === 'campaign' || cmd === 'topup') {
-      const kind = cmd === 'campaign' ? 'campaign.build' : 'campaign.topup';
+    } else if (cmd === 'campaign' || cmd === 'topup' || cmd === 'sample') {
+      const kind = cmd === 'campaign' ? 'campaign.build' : cmd === 'topup' ? 'campaign.topup' : 'leadlist.sample';
       const chunks: Buffer[] = [];
       for await (const c of process.stdin) chunks.push(c as Buffer);
       const { recordId, _about: _ignored, ...input } = JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown> & { recordId?: string };
-      if (!recordId || !/^rec[A-Za-z0-9]{14}$/.test(recordId)) throw new Error('the JSON needs "recordId": the Airtable record (campaign for a build, top-up lead list for a top-up)');
+      if (!recordId || !/^rec[A-Za-z0-9]{14}$/.test(recordId)) throw new Error('the JSON needs "recordId": the Airtable record (campaign for a build, lead list for a top-up or sample)');
       const def = STAGES[kind];
       const r = await enqueue(db, { kind, recordId, input, dryRun: cfg.dryRun && !cfg.liveStages.includes(kind), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs });
       console.log(JSON.stringify({ status: r.status, jobId: r.job.id, dryRun: r.job.dry_run }));
@@ -129,7 +131,7 @@ async function main() {
       const j = await getJob(db, Number(args[0]));
       if (!j) throw new Error('job not found');
       const res = (j.job.result ?? {}) as Record<string, unknown>;
-      const keep = ['checked', 'paused', 'wouldPause', 'watch', 'readiness', 'kpiException', 'launched', 'campaignId', 'campaignName', 'leads', 'imports', 'senders', 'variants', 'note', 'dryRun', 'millionVerifierJobId', 'plan', 'counts', 'finalDirectCount', 'finalGenericCount', 'pendingRemainder', 'message', 'comparison', 'diagnosis', 'wouldSpendCredits'];
+      const keep = ['matching', 'sample', 'topDropReasons', 'checked', 'paused', 'wouldPause', 'watch', 'readiness', 'kpiException', 'launched', 'campaignId', 'campaignName', 'leads', 'imports', 'senders', 'variants', 'note', 'dryRun', 'millionVerifierJobId', 'plan', 'counts', 'finalDirectCount', 'finalGenericCount', 'pendingRemainder', 'message', 'comparison', 'diagnosis', 'wouldSpendCredits'];
       console.log(JSON.stringify({
         id: j.job.id, kind: j.job.kind, record: j.job.record_id, status: j.job.status, progress: j.job.progress, error: j.job.error,
         result: Object.fromEntries(keep.filter((k) => k in res).map((k) => [k, res[k]])),
