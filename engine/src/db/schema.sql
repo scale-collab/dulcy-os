@@ -104,3 +104,32 @@ CREATE TABLE IF NOT EXISTS lead_list_profiles (
   inputs_hash  TEXT NOT NULL,
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Lead-list contacts (master copy; the sheet's Contacts tab is a view). One row per email.
+CREATE TABLE IF NOT EXISTS lead_contacts (
+  list_id     TEXT NOT NULL,
+  email       TEXT NOT NULL,
+  domain      TEXT NOT NULL,
+  tier        TEXT NOT NULL CHECK (tier IN ('Tier 1','Tier 2','Cut')),
+  reasons     JSONB NOT NULL DEFAULT '[]',
+  signals     JSONB NOT NULL DEFAULT '[]',
+  data        JSONB NOT NULL,
+  batch       INT NOT NULL,
+  seq         BIGSERIAL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (list_id, email)
+);
+CREATE INDEX IF NOT EXISTS lead_contacts_batch ON lead_contacts (list_id, batch, seq);
+-- Which companies were already searched for contacts (a re-run only searches new ones).
+CREATE TABLE IF NOT EXISTS lead_contact_domains (
+  list_id     TEXT NOT NULL,
+  domain      TEXT NOT NULL,
+  batch       INT NOT NULL,
+  found       INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (list_id, domain)
+);
+CREATE TABLE IF NOT EXISTS lead_contact_profiles (
+  list_id      TEXT PRIMARY KEY,
+  profile      JSONB NOT NULL,
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);

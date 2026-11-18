@@ -6,6 +6,7 @@ import { bounceCheckStage } from './bounceCheck.js';
 import { companySampleStage } from './companySample.js';
 import { companyExpandStage } from './companyExpand.js';
 import { companyRefitStage } from './companyRefit.js';
+import { contactsFindStage } from './contactsFind.js';
 
 /** A stage = one Airtable action. It returns a small result for the Airtable record. */
 export type Stage = (ctx: JobContext) => Promise<Record<string, unknown>>;
@@ -76,6 +77,12 @@ export const STAGES: Record<string, StageDef> = {
     deadlineMs: 30 * 60_000,
     maxAttempts: 3,
     description: 'Re-check every saved company of a list with its profile (free; optionally rebuild the profile with one AI call); the sheet is rewritten in place.',
+  },
+  'leadlist.contacts': {
+    run: contactsFindStage,
+    deadlineMs: 12 * 60 * 60_000,
+    maxAttempts: 5,
+    description: 'Find people at the Tier 1/2 companies (500 companies per DiscoLike call), contact profile from one AI call, fit in code; Contacts tab ready for Verify.',
   },
   'bounce.check': {
     run: bounceCheckStage,
