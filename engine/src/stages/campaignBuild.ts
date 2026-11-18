@@ -8,7 +8,7 @@
 //  - Fixed waits: each lead import is checked until EmailBison says Processed, and the
 //    counts must reconcile exactly (processed = rows sent, failed = 0).
 //  - Weak count check: the campaign must end with exactly the expected number of leads.
-//  - Senders: the attached set must equal the selection, all connected, no .info domains.
+//  - Senders: the attached set must equal the selection, all connected.
 //  - Errors keep EmailBison's message (emails masked).
 //
 // Steps (checkpoints): prepare-copy → create-campaign → schedule-settings → sequence
@@ -211,8 +211,6 @@ export const campaignBuildStage: Stage = async (ctx) => {
     const got = await bison.campaignSenders(campaign.id);
     const want = [...input.senderEmailIds].sort();
     const ids = got.map((s) => s.id).sort();
-    const info = got.filter((s) => s.email && /\.info$/i.test(s.email.split('@')[1] ?? ''));
-    if (info.length) throw new PermanentError(`${info.length} attached sender(s) use a .info domain, which is not allowed`);
     const notConnected = got.filter((s) => s.status && s.status !== 'connected');
     if (JSON.stringify(ids) !== JSON.stringify(want) || notConnected.length) {
       return await waitOrReview(ctx, 'senders', 2 * 60_000, `campaign ${campaign.id}: senders ${ids.length}/${want.length} attached, ${notConnected.length} not connected`,

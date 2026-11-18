@@ -187,24 +187,18 @@ test('an import with failed rows goes to review with EmailBison\'s reason (no re
   assert.equal(bison.leadLists.length, 1);
 });
 
-test('senders: a .info domain is refused; a disconnected sender goes to review after waiting', { skip }, async () => {
+test('senders: a disconnected sender goes to review after waiting (.info senders are allowed)', { skip }, async () => {
   bison.senderEmail = (id) => `s${id}@outreach.info`;
-  let j = await settle(cfg(), (await queue()).job.id);
-  assert.equal(j.job.status, 'failed');
-  assert.match(j.job.error, /\.info/);
-  await db.query('TRUNCATE jobs, steps, receipts, events RESTART IDENTITY CASCADE');
-  Object.assign(bison, { campaigns: [], leadLists: [] });
-  bison.senderEmail = (id) => `s${id}@dulcy-mail.com`;
   bison.senderStatus = () => 'disconnected';
-  await db.query(`UPDATE jobs SET id = id`); // no-op
   const q = await queue();
   // Make the 2-minute sender wait limit pass at once.
-  j = await settle(cfg(), q.job.id, 5).catch(async () => {
+  const j = await settle(cfg(), q.job.id, 5).catch(async () => {
     await db.query(`UPDATE steps SET output = to_jsonb(0) WHERE step_key = 'wait-start:senders'`);
     return settle(cfg(), q.job.id);
   });
   assert.equal(j.job.status, 'needs_review');
   assert.match(j.job.error, /not connected/);
+  assert.doesNotMatch(j.job.error, /\.info/);
 });
 
 test('EmailBison error messages are kept (with emails hidden)', { skip }, async () => {

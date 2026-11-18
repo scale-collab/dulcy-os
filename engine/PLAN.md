@@ -83,7 +83,7 @@ Each step ships as its own small pull request. Paid calls are switched on per st
    - every claim in the copy is in the client's approved proof (`clients/<client>.md`);
    - the lead list is Ready: verification done, QA passed, catch-all not counted as Good;
    - EmailBison lead count = expected count, with variables filled and spintax rendered;
-   - senders allocated against the final count, with no .info sender domains; schedule, timezone, daily limits and days between emails set;
+   - senders allocated against the final count (existing .info senders are allowed; the .info rule is about buying domains only); schedule, timezone, daily limits and days between emails set;
    - the client is active (not cancelled or paused) and the credit/spend caps are not exceeded.
    If any check fails, nothing launches; the record shows which check failed, and Slack gets an alert.
 5. **Top-up:** interested 15%+ of replies is the main driver; bounce under 4% and reply rate 2%+ are targets; a higher bounce is flagged to watch, not an automatic fail.
