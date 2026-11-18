@@ -253,15 +253,20 @@ async function buildSequence(ctx: JobContext, bison: BisonClient, campaignId: nu
   for (let i = 0; i < steps.length; i++) {
     const p = byOrder.get(i + 1);
     if (!p) throw new NeedsReviewError(`campaign ${campaignId} is missing sequence step ${i + 1}`);
-    if (p.email_subject !== undefined && p.email_subject !== steps[i].subject) throw new NeedsReviewError(`campaign ${campaignId} step ${i + 1} has a different subject than the approved copy`);
-    const have = now.filter((s) => s.variant && s.variant_from_step_id === p.id);
-    for (let v = 0; v < (steps[i].variants ?? []).length; v++) {
+    // Only email 1's subject is compared: EmailBison stores thread-reply subjects its own way.
+    if (i === 0 && p.email_subject !== undefined && p.email_subject !== null && p.email_subject !== steps[0].subject) {
+      throw new NeedsReviewError(`campaign ${campaignId} email 1 has a different subject than the approved copy`);
+    }
+    // Variants are counted per step (created in order), not matched by subject.
+    const have = now.filter((s) => s.variant && s.variant_from_step_id === p.id).length;
+    const want = (steps[i].variants ?? []).length;
+    if (have > want) throw new NeedsReviewError(`campaign ${campaignId} step ${i + 1} has ${have} variants but the copy has ${want}`);
+    for (let v = have; v < want; v++) {
       const variant = steps[i].variants![v];
-      if (have.some((s) => s.email_subject === variant.subject)) continue;
       await ctx.paid({
         scope: 'record', provider: 'emailbison', callKey: `variant:${campaignId}:${i + 1}:${v + 1}`, units: 0,
         run: async () => { await bison.addSteps(campaignId, variantPayload(input.name, i + 1, p.id, variant, input.daysBetween!, Boolean(steps[i].threadReply))); return { ok: true }; },
-        reconcile: async () => ((await bison.getSteps(campaignId)).some((s) => s.variant && s.variant_from_step_id === p.id && s.email_subject === variant.subject) ? { ok: true } : null),
+        reconcile: async () => ((await bison.getSteps(campaignId)).filter((s) => s.variant && s.variant_from_step_id === p.id).length > v ? { ok: true } : null),
         dryRunResult: () => ({ ok: true }),
       });
     }
