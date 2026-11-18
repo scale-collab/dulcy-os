@@ -1,0 +1,29 @@
+# Lead engine + its own Postgres. Only reachable on 127.0.0.1; the server's
+# reverse proxy (the one already serving n8n.dulcy.io) forwards the subdomain to it.
+services:
+  engine:
+    build: ..
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://engine:${POSTGRES_PASSWORD}@db:5432/engine
+    ports:
+      - "127.0.0.1:8090:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: engine
+      POSTGRES_DB: engine
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - engine-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U engine"]
+      interval: 5s
+      retries: 20
+volumes:
+  engine-db:

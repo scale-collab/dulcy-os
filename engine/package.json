@@ -1,0 +1,22 @@
+{
+  "name": "dulcy-lead-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dulcy lead engine: lead lists and campaigns as safe, resumable jobs. Airtable is the screen.",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/src/main.js",
+    "test": "tsc -p tsconfig.json && node --test dist/test/*.test.js",
+    "migrate": "node dist/src/db/migrate.js"
+  },
+  "dependencies": {
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
+    "typescript": "^5.7.2"
+  }
+}
