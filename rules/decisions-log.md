@@ -49,3 +49,4 @@ Newest at the bottom. Format: `date | decision | why | who`
 - 2026-11-18 (night): Engine bounce check (bounce.check) built: Alex's rule re-checked every run (fixes the fire-once gap), pause confirmed afterwards, Slack summary, report-only until LIVE_STAGES includes bounce.check; optional timer (BOUNCE_CHECK_EVERY_MIN). 66/66 tests.
 - 2026-11-18 (night): Fit check as code (engine/src/leadlist/fit.ts) per Alex's decision 1: drop only obvious bad fits with a reason, keep maybes; sample gate and contact-country rule kept from the old workflow. 72/72 tests.
 - 2026-11-18 (night): DiscoLike API calls used by the old lead-list workflows written to engine/research/discolike-calls.md for the next step (company sample/expand stage).
+- 2026-11-18: Dulcy EmailBison workspace has 380 sender inboxes, all connected. Test build senders set to alex@dulcymediagenius.com + alex@dulcymedialeads.com (from EmailBison's own list).
