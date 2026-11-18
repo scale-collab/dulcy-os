@@ -71,7 +71,7 @@ after(async () => { google.close(); server.close(); if (!skip) await db.end(); }
 beforeEach(async () => {
   disco.pool = Array.from({ length: 300 }, (_, i) => co(i + 1));
   disco.lists = new Map(); disco.discoverCalls = 0;
-  google.written = {}; google.writes = 0; google.creates = 0;
+  google.written = {}; google.writes = 0; google.creates = 0; google.maxWriteBytes = 0;
   if (!skip) await db.query('TRUNCATE jobs, steps, receipts, events, lead_companies, lead_list_sheets RESTART IDENTITY CASCADE');
 });
 
@@ -156,4 +156,22 @@ test('credit cap stops a batch before it is paid', { skip }, async () => {
   const j = await expand({}, cfg({ capPerJob: 30 }));
   assert.equal(j.job.status, 'needs_review');
   assert.match(j.job.error, /credit cap/);
+});
+
+test('scale: 12,000 companies in 2,500 batches to a 10,000 usable target, fast, no duplicates, small sheet writes', { skip }, async () => {
+  disco.pool = Array.from({ length: 12_000 }, (_, i) => co(i + 1));
+  await sample();
+  const t0 = Date.now();
+  const j = await expand({ target: 10_000, batchSize: 2500 });
+  const ms = Date.now() - t0;
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.ok(j.job.result.list.usable >= 10_000, `usable ${j.job.result.list.usable}`);
+  assert.ok(j.job.result.batches.length <= 6, `${j.job.result.batches.length} batches`);
+  const dupes = await db.query(`SELECT domain FROM lead_companies WHERE list_id=$1 GROUP BY domain HAVING COUNT(*) > 1`, [REC]);
+  assert.equal(dupes.rowCount, 0);
+  const sheetId = j.job.result.sheet.url.split('/d/')[1];
+  assert.equal(google.written[sheetId]['Engine Companies'].filter(Boolean).length - 1, j.job.result.list.total);
+  assert.ok(google.maxWriteBytes < 2_000_000, `largest sheet write ${google.maxWriteBytes} bytes`);
+  assert.ok(ms < 60_000, `took ${ms} ms`);
+  console.log(`scale test: ${j.job.result.list.total} companies, ${j.job.result.batches.length} batches, ${ms} ms, largest sheet write ${google.maxWriteBytes} bytes`);
 });

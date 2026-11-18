@@ -10,16 +10,21 @@ export const COMPANY_COLUMNS = ['Domain', 'Company', 'Tier', 'Cut Reasons', 'Sig
 
 /** Save a batch. `refit` (the sample re-run) updates that batch's own rows with the new tiers. */
 export async function saveCompanies(db: Db, listId: string, batch: number, rows: { company: Company; fit: FitResult }[], o: { refit?: boolean } = {}) {
+  // One bulk insert per batch (not one query per company), in chunks of 1,000 rows.
   let inserted = 0;
   const tiers = { 'Tier 1': 0, 'Tier 2': 0, Cut: 0 } as Record<string, number>;
-  for (const r of rows) {
-    const tier = tierOf(r.fit.decision);
+  const seen = new Set<string>();
+  const unique = rows.filter((r) => r.fit.domain && !seen.has(r.fit.domain) && (seen.add(r.fit.domain), true));
+  for (let i = 0; i < unique.length; i += 1000) {
+    const part = unique.slice(i, i + 1000);
     const q = await db.query(
-      `INSERT INTO lead_companies (list_id, domain, tier, reasons, signals, data, batch) VALUES ($1,$2,$3,$4,$5,$6,$7)
-       ON CONFLICT (list_id, domain) DO ${o.refit ? `UPDATE SET tier=EXCLUDED.tier, reasons=EXCLUDED.reasons, signals=EXCLUDED.signals, data=EXCLUDED.data WHERE lead_companies.batch = EXCLUDED.batch` : 'NOTHING'}`,
-      [listId, r.fit.domain, tier, JSON.stringify(r.fit.reasons), JSON.stringify(r.fit.signals), JSON.stringify(r.company), batch],
+      `INSERT INTO lead_companies (list_id, domain, tier, reasons, signals, data, batch)
+       SELECT $1, d, t, r::jsonb, s::jsonb, x::jsonb, $2 FROM unnest($3::text[], $4::text[], $5::text[], $6::text[], $7::text[]) AS u(d, t, r, s, x)
+       ON CONFLICT (list_id, domain) DO ${o.refit ? `UPDATE SET tier=EXCLUDED.tier, reasons=EXCLUDED.reasons, signals=EXCLUDED.signals, data=EXCLUDED.data WHERE lead_companies.batch = EXCLUDED.batch` : 'NOTHING'}
+       RETURNING tier`,
+      [listId, batch, part.map((r) => r.fit.domain), part.map((r) => tierOf(r.fit.decision)), part.map((r) => JSON.stringify(r.fit.reasons)), part.map((r) => JSON.stringify(r.fit.signals)), part.map((r) => JSON.stringify(r.company))],
     );
-    if (q.rowCount) { inserted++; tiers[tier]++; }
+    for (const row of q.rows) { inserted++; tiers[row.tier]++; }
   }
   // A re-fitted batch is written to the sheet again (same rows).
   if (o.refit) await db.query(`UPDATE lead_list_sheets SET mirrored_batches = array_remove(mirrored_batches, $2) WHERE list_id=$1`, [listId, batch]);
@@ -68,9 +73,10 @@ export async function mirrorCompanies(db: Db, sheets: SheetsClient, listId: stri
   for (const b of batches) {
     const before = Number((await db.query(`SELECT COUNT(*)::int AS n FROM lead_companies WHERE list_id=$1 AND batch < $2`, [listId, b])).rows[0].n);
     const rows = (await db.query(`SELECT domain, tier, reasons, signals, data, batch FROM lead_companies WHERE list_id=$1 AND batch=$2 ORDER BY seq`, [listId, b])).rows;
+    // Batches over 2,500 rows (none today) would be split so each write stays small.
     await sheets.writeRows(s.sheet_id, s.tab, 2 + before, rows.map((r) => {
       const d = r.data ?? {};
-      return [r.domain, cell(d.name), r.tier, cell(r.reasons), cell(r.signals), cell(d.description).slice(0, 2000), cell(d.country), cell(d.employees), cell(d.industry_groups), cell(d.sub_industry), cell(d.keywords).slice(0, 500), cell(d.similarity), cell(d.score), r.batch];
+      return [r.domain, cell(d.name), r.tier, cell(r.reasons), cell(r.signals), cell(d.description).slice(0, 300), cell(d.country), cell(d.employees), cell(d.industry_groups), cell(d.sub_industry), cell(d.keywords).slice(0, 200), cell(d.similarity), cell(d.score), r.batch];
     }));
     await db.query(`UPDATE lead_list_sheets SET mirrored_batches = array_append(mirrored_batches, $2) WHERE list_id=$1 AND kind='companies'`, [listId, b]);
     written += rows.length;

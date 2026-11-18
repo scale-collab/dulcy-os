@@ -15,6 +15,7 @@ export interface FakeGoogle {
   /** Written by the engine: sheet ID → tab → rows (row index 0 = sheet row 1). */
   written: Record<string, Record<string, string[][]>>;
   writes: number;
+  maxWriteBytes: number;
   creates: number;
   close(): void;
 }
@@ -27,7 +28,7 @@ function colIndex(letters: string): number {
 
 export async function startFakeGoogle(): Promise<FakeGoogle> {
   const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
-  const state: FakeGoogle = { url: '', keyFile: '', tabs: {}, tokenCalls: 0, written: {}, writes: 0, creates: 0, close: () => undefined };
+  const state: FakeGoogle = { url: '', keyFile: '', tabs: {}, tokenCalls: 0, written: {}, writes: 0, maxWriteBytes: 0, creates: 0, close: () => undefined };
   const server = http.createServer(async (req, res) => {
     const u = new URL(req.url ?? '/', 'http://x');
     const chunks: Buffer[] = [];
@@ -67,7 +68,7 @@ export async function startFakeGoogle(): Promise<FakeGoogle> {
     }
     const put = decodeURIComponent(u.pathname).match(/^\/v4\/spreadsheets\/([^/]+)\/values\/'(.+)'!A(\d+)$/);
     if (put && req.method === 'PUT') {
-      state.writes++;
+      state.writes++; state.maxWriteBytes = Math.max(state.maxWriteBytes, body.length);
       const tabRows = ((state.written[put[1]] ??= {})[put[2].replace(/''/g, "'")] ??= []);
       JSON.parse(body).values.forEach((row: any[], i: number) => { tabRows[Number(put[3]) - 1 + i] = row.map(String); });
       return json(200, {});
