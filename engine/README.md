@@ -2,7 +2,7 @@
 
 The app that will run lead lists and campaigns as safe, resumable jobs, with Airtable as the screen. Plan: `PLAN.md`. Research: `research/`.
 
-**Status (2026-11-18): step 1, the skeleton, is done. Dry-run only: it makes no paid calls.** No real stages yet; the next one is Verify (PLAN step 2).
+**Status (2026-11-18): step 1, the skeleton, is done and deployed on the Hetzner server (`/opt/dulcy-os`, port 127.0.0.1:8090). Dry-run only: it makes no paid calls.** No real stages yet; the next one is Verify (PLAN step 2).
 
 ## What the skeleton already guarantees (all tested)
 | Problem today | What the engine does | Test |
@@ -39,9 +39,9 @@ UNKNOWN: whether Airtable automation scripts can compute HMAC (`crypto.subtle`).
 1. Check out this repo on the server.
 2. `cp engine/deploy/.env.example engine/deploy/.env` and fill it in: a long random `ENGINE_SECRET`, `POSTGRES_PASSWORD`, `SLACK_WEBHOOK_URL`. Keep `DRY_RUN=true`.
 3. `bash engine/deploy/deploy.sh`. It pulls, builds, starts the engine plus its own Postgres on `127.0.0.1:8090`, and checks `/health`.
-4. Point the subdomain (e.g. `engine.dulcy.io`) at it through the server's existing reverse proxy (the one serving `n8n.dulcy.io`), with HTTPS.
+4. Subdomain: add a DNS A record `engine` -> the server IP. The server runs Coolify; its Traefik proxy (`coolify-proxy`) picks the engine up from the labels in `deploy/docker-compose.yml` and gets the HTTPS certificate. Check: `curl https://engine.dulcy.io/health`.
 
-Not tested here: the Docker build. Docker couldn't run in the cloud session; the app itself was run and tested directly.
+Docker build and start confirmed on the server 2026-11-18 (`/health` returned ok, dryRun true).
 
 ## Code map
 - `src/main.ts`: starts the HTTP server and the worker loop.
