@@ -28,12 +28,15 @@ export const companySampleStage: Stage = async (ctx) => {
     return { filters, hash };
   });
 
-  const matching = await ctx.step('count', async () => disco.count(plan.filters));
+  // The count can't apply lookalike text or exclusion lists, so it is an upper bound.
+  const counted = await ctx.step('count', async () => disco.count(plan.filters));
+  const matching = counted?.count ?? null;
   if (matching === 0) throw new PermanentError('no companies match these DiscoLike filters; widen the search plan');
-  const records = Math.min(size, matching);
+  const records = Math.min(size, matching ?? size);
+  const countNote = counted ? `up to ${matching} companies match (count ignores ${counted.ignored.join(', ') || 'nothing'})` : 'these filters cannot be counted for free (lookalike only)';
 
   if (ctx.dryRun) {
-    return { dryRun: true, matching, plan: { sampleRecords: records, filters: plan.filters }, wouldSpendCredits: { discolike: records }, message: `${matching} companies match; the sample would pull ${records}` };
+    return { dryRun: true, matching, plan: { sampleRecords: records, filters: plan.filters }, wouldSpendCredits: { discolike: records }, message: `${countNote}; the sample would pull ${records}` };
   }
 
   const rows = await ctx.step('sample', () => ctx.paid({
@@ -69,6 +72,6 @@ export const companySampleStage: Stage = async (ctx) => {
     topDropReasons: review.topDropReasons,
     dropped: review.dropped,
     kept: review.kept,
-    message: `sample ${s.status}: ${s.fit + s.maybe} of ${s.reviewed} usable (${Math.round(s.usableRate * 100)}%), ${s.drop} dropped; ${matching} companies match in total`,
+    message: `sample ${s.status}: ${s.fit + s.maybe} of ${s.reviewed} usable (${Math.round(s.usableRate * 100)}%), ${s.drop} dropped; ${countNote}`,
   };
 };
