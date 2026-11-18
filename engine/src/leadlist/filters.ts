@@ -27,3 +27,25 @@ export function toQuery(params: Filters): string {
   }
   return parts.join('&');
 }
+
+/**
+ * The free /v1/count accepts fewer settings than the search (old TAM-finder rules): list
+ * filters joined by commas, size/revenue ranges, footprint, leadgen/redirect, founding date
+ * and geo. Lookalike text, relevance, seed domains and exclusion lists are search-only, so
+ * the count is an upper bound. Returns null when nothing countable is left.
+ */
+const COUNT_LISTS = new Set('sub_industry negate_sub_industry phrase_match negate_phrase_match tech_stack negate_tech_stack country negate_country state negate_state category negate_category business_model negate_business_model social negate_social language negate_language'.split(' '));
+const COUNT_PLAIN = new Set(['employee_range', 'revenue_range', 'min_digital_footprint', 'max_digital_footprint', 'exclude_leadgen', 'redirect', 'start_date', 'geo', 'bbox', 'lat', 'lon', 'radius']);
+export function countFilters(f: Filters): { params: Filters; ignored: string[] } | null {
+  const params: Filters = {};
+  const ignored: string[] = [];
+  for (const [k, v] of Object.entries(f)) {
+    if (v === null || v === undefined || v === '' || (Array.isArray(v) && !v.length)) continue;
+    if (COUNT_LISTS.has(k)) params[k] = [...new Set((Array.isArray(v) ? v : String(v).split(',')).map((x) => String(x).trim()).filter(Boolean))].join(',');
+    else if (k === 'redirect') params[k] = [true, 1, 'true', '1'].includes(v as any) ? 1 : 0;
+    else if (COUNT_PLAIN.has(k)) params[k] = v;
+    else ignored.push(k);
+  }
+  const countable = Object.keys(params).some((k) => !['redirect', 'exclude_leadgen', 'min_digital_footprint', 'max_digital_footprint'].includes(k));
+  return countable ? { params, ignored } : null;
+}

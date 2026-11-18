@@ -1,7 +1,7 @@
 // DiscoLike client: free company count and the paid company search (same calls the old
 // n8n lead-list workflows made). Key in the x-discolike-key header, server .env only.
 import { PermanentError, RetryableError } from '../errors.js';
-import { toQuery, type Filters } from '../leadlist/filters.js';
+import { countFilters, toQuery, type Filters } from '../leadlist/filters.js';
 
 export interface DiscoLikeOptions { apiKey?: string; baseUrl: string; timeoutMs?: number; fetchImpl?: typeof fetch }
 
@@ -36,12 +36,14 @@ export function createDiscoLikeClient(o: DiscoLikeOptions) {
   }
 
   return {
-    /** Free: how many companies match these filters. */
-    async count(filters: Filters): Promise<number> {
-      const r = await get(`/v1/count?${toQuery(filters)}`, false);
+    /** Free: about how many companies match (count-compatible filters only; null = not countable). */
+    async count(filters: Filters): Promise<{ count: number; ignored: string[] } | null> {
+      const c = countFilters(filters);
+      if (!c) return null;
+      const r = await get(`/v1/count?${toQuery(c.params)}`, false);
       const n = Number(r.body?.count);
       if (!Number.isSafeInteger(n) || n < 0) throw new RetryableError('DiscoLike did not return a valid count (this is not a zero result)');
-      return n;
+      return { count: n, ignored: c.ignored };
     },
     /** Paid: up to maxRecords companies for these filters. Returns the raw rows. */
     async discover(filters: Filters, maxRecords: number): Promise<any[]> {

@@ -15,7 +15,7 @@ const skip = !url ? 'TEST_DATABASE_URL not set' : false;
 const REC = 'recLeadListTest01';
 
 let db: pg.Pool;
-const fake = { url: '', count: 250, rows: [] as any[], discoverCalls: 0, countCalls: 0, lastQuery: '', key: '' };
+const fake = { url: '', count: 250, rows: [] as any[], discoverCalls: 0, countCalls: 0, lastQuery: '', countQuery: '', key: '' };
 let server: http.Server;
 
 const co = (domain: string, description: string, extra: Record<string, unknown> = {}) => ({ domain, name: domain.split('.')[0], description, keywords: { roofing: 0.9 }, industry_groups: { CONSTRUCTION: 1 }, ...extra });
@@ -23,7 +23,7 @@ const co = (domain: string, description: string, extra: Record<string, unknown> 
 function cfg(over: Partial<Config> = {}): Config {
   return { ...loadConfig({ ENGINE_SECRET: 'x'.repeat(40), DATABASE_URL: url ?? 'postgres://x' } as NodeJS.ProcessEnv), discoLikeApiKey: 'disco-key', discoLikeBaseUrl: fake.url, dryRun: true, liveStages: ['leadlist.sample'], ...over };
 }
-const FILTERS = { category: ['CONSTRUCTION', 'E_COMMERCE'], country: 'US', relevance: 'BALANCED', icp_prompt: 'roofers in Texas' };
+const FILTERS = { category: ['CONSTRUCTION', 'E_COMMERCE'], country: ['US', 'CA'], relevance: 'BALANCED', icp_prompt: 'roofers in Texas', icp_text: 'Residential roofers', exclusion_query_id: ['q1'], redirect: false, exclude_leadgen: true };
 const queue = (input: Record<string, unknown> = {}, dryRun = false) => enqueue(db, { kind: 'leadlist.sample', recordId: REC, dryRun, input: { filters: FILTERS, fit: { excludeKeywords: ['directory'] }, ...input }, maxAttempts: 3, deadlineMs: 60_000 });
 async function settle(c: Config, id: number) {
   for (let i = 0; i < 20; i++) {
@@ -41,7 +41,11 @@ before(async () => {
     fake.key = String(req.headers['x-discolike-key'] ?? '');
     fake.lastQuery = u.search;
     res.setHeader('content-type', 'application/json');
-    if (u.pathname === '/v1/count') { fake.countCalls++; return res.end(JSON.stringify({ count: fake.count })); }
+    if (u.pathname === '/v1/count') {
+      fake.countCalls++; fake.countQuery = u.search;
+      for (const bad of ['icp_text', 'relevance', 'exclusion_query_id', 'domain', 'include_search_domains']) if (u.searchParams.has(bad)) { res.statusCode = 422; return res.end(JSON.stringify({ detail: [{ type: 'extra_forbidden', loc: ['query', bad] }] })); }
+      return res.end(JSON.stringify({ count: fake.count }));
+    }
     if (u.pathname === '/v1/discover') { fake.discoverCalls++; return res.end(JSON.stringify(fake.rows.slice(0, Number(u.searchParams.get('max_records'))))); }
     res.statusCode = 404; res.end('{}');
   });
@@ -52,7 +56,7 @@ before(async () => {
 });
 after(async () => { server.close(); if (!skip) await db.end(); });
 beforeEach(async () => {
-  Object.assign(fake, { count: 250, discoverCalls: 0, countCalls: 0, lastQuery: '', key: '' });
+  Object.assign(fake, { count: 250, discoverCalls: 0, countCalls: 0, lastQuery: '', countQuery: '', key: '' });
   fake.rows = [
     ...Array.from({ length: 9 }, (_, i) => co(`roofer${i}.com`, 'Residential roofing contractor')),
     co('bestroofers-directory.com', 'A directory of local roofers'),
@@ -85,8 +89,9 @@ test('dry-run: free count only; nothing paid', { skip }, async () => {
   assert.deepEqual(j.job.result.wouldSpendCredits, { discolike: 100 });
   assert.equal(fake.discoverCalls, 0);
   assert.equal(fake.key, 'disco-key');
-  assert.match(fake.lastQuery, /category=E-COMMERCE/);
-  assert.doesNotMatch(fake.lastQuery, /icp_prompt/);
+  assert.match(fake.countQuery, /country=US%2CCA/, 'count joins lists with commas');
+  assert.doesNotMatch(fake.countQuery, /icp_text|relevance|exclusion_query_id/, 'search-only settings are left out of the count');
+  assert.match(j.job.result.message, /count ignores icp_text, relevance, exclusion_query_id/);
 });
 
 test('live: one paid search, fit check drops the directory with a reason, gate Passed at 90%', { skip }, async () => {
@@ -98,6 +103,8 @@ test('live: one paid search, fit check drops the directory with a reason, gate P
   assert.equal(j.job.result.sample.drop, 1);
   assert.equal(j.job.result.sample.status, 'Passed');
   assert.equal(j.job.result.dropped[0].domain, 'bestroofers-directory.com');
+  assert.match(fake.lastQuery, /icp_text=Residential/, 'the search keeps the full saved plan');
+  assert.match(fake.lastQuery, /category=CONSTRUCTION&category=E-COMMERCE/);
   assert.match(j.job.result.dropped[0].reasons.join(' '), /directory/);
 });
 
@@ -124,6 +131,13 @@ test('no matching companies or no key: stops before spending', { skip }, async (
   assert.equal(b.job.status, 'failed');
   assert.match(b.job.error, /no DiscoLike API key/);
   assert.equal(fake.discoverCalls, 0);
+});
+
+test('lookalike-only plan: no free count, the sample still runs', { skip }, async () => {
+  const j = await settle(cfg(), (await queue({ filters: { icp_text: 'Residential roofers', relevance: 'BALANCED' } })).job.id);
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.equal(fake.countCalls, 0);
+  assert.equal(fake.discoverCalls, 1);
 });
 
 test('credit cap: a sample over the per-job cap stops before the search', { skip }, async () => {
