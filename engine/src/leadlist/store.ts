@@ -8,18 +8,21 @@ import { tierOf } from './fit.js';
 
 export const COMPANY_COLUMNS = ['Domain', 'Company', 'Tier', 'Cut Reasons', 'Signals', 'Description', 'Country', 'Employees', 'Industry Groups', 'Sub-industry', 'Keywords', 'Similarity', 'Digital Footprint', 'Batch'];
 
-export async function saveCompanies(db: Db, listId: string, batch: number, rows: { company: Company; fit: FitResult }[]) {
+/** Save a batch. `refit` (the sample re-run) updates that batch's own rows with the new tiers. */
+export async function saveCompanies(db: Db, listId: string, batch: number, rows: { company: Company; fit: FitResult }[], o: { refit?: boolean } = {}) {
   let inserted = 0;
   const tiers = { 'Tier 1': 0, 'Tier 2': 0, Cut: 0 } as Record<string, number>;
   for (const r of rows) {
     const tier = tierOf(r.fit.decision);
     const q = await db.query(
       `INSERT INTO lead_companies (list_id, domain, tier, reasons, signals, data, batch) VALUES ($1,$2,$3,$4,$5,$6,$7)
-       ON CONFLICT (list_id, domain) DO NOTHING`,
+       ON CONFLICT (list_id, domain) DO ${o.refit ? `UPDATE SET tier=EXCLUDED.tier, reasons=EXCLUDED.reasons, signals=EXCLUDED.signals, data=EXCLUDED.data WHERE lead_companies.batch = EXCLUDED.batch` : 'NOTHING'}`,
       [listId, r.fit.domain, tier, JSON.stringify(r.fit.reasons), JSON.stringify(r.fit.signals), JSON.stringify(r.company), batch],
     );
     if (q.rowCount) { inserted++; tiers[tier]++; }
   }
+  // A re-fitted batch is written to the sheet again (same rows).
+  if (o.refit) await db.query(`UPDATE lead_list_sheets SET mirrored_batches = array_remove(mirrored_batches, $2) WHERE list_id=$1`, [listId, batch]);
   return { inserted, tier1: tiers['Tier 1'], tier2: tiers['Tier 2'], cut: tiers.Cut };
 }
 

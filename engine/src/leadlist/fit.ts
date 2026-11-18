@@ -55,18 +55,23 @@ const num = (v: unknown): number | undefined => {
 };
 export const normDomain = (d: string) => String(d ?? '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
 
-/** Business types that are not service providers unless the thesis targets them. */
+/**
+ * Business types that are not service providers unless the thesis targets them. Each needs a
+ * phrase that says the company IS that type (single words like "news" or "marketplace" appear
+ * on ordinary company sites and caused wrong cuts: shurtape, steamist, tetrosyl, 2026-11-18).
+ * Checked on the company's name and description only, not DiscoLike's homepage keyword list.
+ */
 const NOT_PROVIDERS: Record<string, RegExp> = {
-  directory: /\b(directory|directories|listing site|find a (pro|contractor)|top \d+ best)\b/,
-  marketplace: /\b(marketplace|compare quotes|get quotes from)\b/,
+  directory: /\b(business directory|online directory|(a|the) directory of|listing site|find a (local )?(pro|contractor|supplier|tradesman)|top \d+ best)\b/,
+  marketplace: /\b(online marketplace|b2b marketplace|(a|the) marketplace (for|connecting|where)|compare quotes|get quotes from)\b/,
   'lead-gen site': /\b(lead generation (site|platform)|referral (network|service)|pay per lead)\b/,
-  association: /\b(association|federation|chamber of commerce|trade body)\b/,
-  media: /\b(magazine|news(paper)?|media outlet|publisher|podcast network)\b/,
-  staffing: /\b(staffing|recruit(ing|ment) agency|temp agency)\b/,
-  software: /\b(saas|software platform|app for)\b/,
-  wholesaler: /\b(wholesale|wholesaler|distributor)\b/,
-  manufacturer: /\b(manufacturer|manufacturing)\b/,
-  training: /\b(training (provider|courses)|online courses|academy)\b/,
+  association: /\b(trade association|industry association|professional association|association of|federation of|chamber of commerce|trade body)\b/,
+  media: /\b(magazine|newspaper|news (site|outlet|website|publication|portal)|media outlet|publisher of|podcast network)\b/,
+  staffing: /\b(staffing (agency|company|firm)|recruit(ing|ment) agency|temp agency)\b/,
+  software: /\b(saas|software platform|software company|app for)\b/,
+  wholesaler: /\b(wholesaler|wholesale distributor|distribution company)\b/,
+  manufacturer: /\b(manufacturer|manufacturing company|we manufacture)\b/,
+  training: /\b(training provider|training courses|online courses|training academy)\b/,
 };
 const COMMERCIAL_ONLY = /\b(commercial only|industrial|government contractor|municipal|institutional)\b/;
 
@@ -96,8 +101,10 @@ export function checkCompanyFit(c: Company, k: FitCriteria): FitResult {
 
   // Not a provider (unless the thesis targets that type).
   const targets = list(k.targetsBusinessTypes);
+  const about = [c.name, c.description].join(' ').toLowerCase();
   for (const [type, re] of Object.entries(NOT_PROVIDERS)) {
-    if (!targets.includes(type) && re.test(text)) { reasons.push(`looks like a ${type}, not a provider`); break; }
+    const m = targets.includes(type) ? null : about.match(re);
+    if (m) { reasons.push(`looks like a ${type}, not a provider ("${m[0]}")`); break; }
   }
   if (k.residential && COMMERCIAL_ONLY.test(text)) reasons.push('commercial/industrial/government-only, but the campaign is residential');
 
