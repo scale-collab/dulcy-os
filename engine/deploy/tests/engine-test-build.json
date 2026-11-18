@@ -1,5 +1,5 @@
 {
-  "_about": "ENGINE TEST build (Alex approved 2026-11-18): Dulcy workspace only, never launched. Copy from Campaigns recHfh5Lzjj5Ql98X; leads from Lead List rec3aL8QzKzcgfTWq (Final Direct, 340). Dedicated test record ID so it never touches the real campaign's receipts.",
+  "_about": "ENGINE TEST build (Alex approved 2026-11-18): Dulcy workspace only, never launched. Copy from Campaigns recHfh5Lzjj5Ql98X; leads from Lead List rec3aL8QzKzcgfTWq (Final Direct: 226 after the Nov 5 clean-up; Airtable still says 340, which is stale). Dedicated test record ID so it never touches the real campaign's receipts.",
   "recordId": "recEngineTest0001",
   "name": "ENGINE TEST - do not launch - Manufacturing Direct",
   "workspace": "dulcy",
@@ -23,7 +23,7 @@
     "sheetId": "13v8z12POL2L71FKgf3c6nong1qdR53_E3MtfAWug0rw",
     "tab": "Final Direct"
   },
-  "expectedLeads": 340,
+  "expectedLeads": 226,
   "senderEmailIds": [
     "6498",
     "6500"
