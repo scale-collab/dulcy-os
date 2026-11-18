@@ -18,7 +18,7 @@ import type { Stage } from './index.js';
 import type { JobContext } from '../context.js';
 import { NeedsReviewError, PermanentError } from '../errors.js';
 import { uploadAndAttach, waitOrReview } from '../campaign/upload.js';
-import { createBisonClient, type BisonClient, type BisonStep } from '../providers/emailbison.js';
+import { bisonFor, type BisonClient, type BisonStep } from '../providers/emailbison.js';
 import { createSheetsClient } from '../providers/google.js';
 import { sheetIdFrom } from '../sources/sheet.js';
 import {
@@ -31,6 +31,8 @@ interface BuildInput {
   name: string;
   /** Workspace key name: the server has EMAILBISON_KEY_<WORKSPACE>. Keys never travel in jobs. */
   workspace: string;
+  /** EmailBison workspace (team) ID to switch to before every call, e.g. 2 for Dulcy. */
+  workspaceId?: number;
   outputType: OutputType;
   steps: CopyStep[];
   /** Days between emails (Alex's default 2). */
@@ -67,7 +69,7 @@ function readInput(raw: Record<string, unknown>): BuildInput {
 export const campaignBuildStage: Stage = async (ctx) => {
   const input = readInput(ctx.job.input);
   const apiKey = ctx.cfg.emailBisonKeys[input.workspace.toLowerCase()];
-  const bison: BisonClient = createBisonClient({ apiKey, baseUrl: ctx.cfg.emailBisonBaseUrl });
+  const bison: BisonClient = bisonFor(ctx.cfg, input.workspace, input.workspaceId);
 
   // 1. Copy: checked before anything is created.
   const steps = await ctx.step('prepare-copy', async () => validateCopy(input.steps, input.outputType));
@@ -110,6 +112,8 @@ export const campaignBuildStage: Stage = async (ctx) => {
       },
       dryRunResult: () => ({ id: 0, name: input.name }),
     }));
+  // Others switch the same key between workspaces: make sure the campaign is in ours.
+  await ctx.step('confirm-workspace', async () => { await bison.confirmCampaignHere(campaign.id); return { ok: true }; });
   await ctx.log('campaign ready', { campaignId: campaign.id });
 
   // 3. Schedule and settings: safe to re-apply, so a retry just sets them again.
