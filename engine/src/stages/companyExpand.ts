@@ -16,10 +16,13 @@ import { approvedFilters, type Filters } from '../leadlist/filters.js';
 import { toCompany } from '../leadlist/companies.js';
 import { checkCompanyFit, normDomain, type FitCriteria } from '../leadlist/fit.js';
 import { ensureCompanySheet, listCounts, listDomains, maxBatch, mirrorCompanies, saveCompanies } from '../leadlist/store.js';
+import { profileCriteria } from '../leadlist/profile.js';
+import { buildProfile, loadProfile, sampleStats } from '../leadlist/profileStore.js';
 
 interface ExpandInput {
   filters: Filters;
   fit?: FitCriteria;
+  targeting?: string; thesis?: string; clientContext?: string;
   /** Usable companies (Tier 1 + Tier 2) wanted in the list. */
   target: number;
   batchSize?: number;
@@ -50,6 +53,13 @@ export const companyExpandStage: Stage = async (ctx) => {
   const start = await ctx.step('start', async () => ({ startBatch: (await maxBatch(ctx.db, listId)) + 1 }));
   const before = await listCounts(ctx.db, listId);
   if (before.total === 0) throw new PermanentError('this list has no saved sample; run the company sample first');
+  // The list's profile from the sample (built now from the saved sample if an older sample has none).
+  const profile = (await loadProfile(ctx, listId))?.profile ?? await ctx.step('profile', async () => {
+    const sample = (await ctx.db.query(`SELECT data FROM lead_companies WHERE list_id=$1 AND batch=0`, [listId])).rows.map((r) => r.data);
+    return buildProfile(ctx, listId, { thesis: input.thesis, targeting: input.targeting, clientContext: input.clientContext }, plan.filters, sampleStats(sample));
+  });
+  const excluded = (input.excludedDomains ?? []).map(normDomain).filter(Boolean);
+  const criteria = { ...profileCriteria(profile, plan.filters, excluded), ...(input.fit ?? {}) };
 
   if (ctx.dryRun) {
     const need = Math.max(0, target - before.usable);
@@ -61,7 +71,6 @@ export const companyExpandStage: Stage = async (ctx) => {
   await ctx.step('mirror-sample', () => mirrorCompanies(ctx.db, sheets, listId));
 
   const maxBatches = Math.min(100, Math.ceil(target / batchSize) * 2 + 2);
-  const excluded = (input.excludedDomains ?? []).map(normDomain).filter(Boolean);
   let stop: 'target' | 'exhausted' | 'batch-limit' = 'batch-limit';
   const batches: Array<Record<string, number>> = [];
   for (let i = 0; i < maxBatches; i++) {
@@ -84,7 +93,7 @@ export const companyExpandStage: Stage = async (ctx) => {
         dryRunResult: () => [],
       });
       const companies = rows.map(toCompany).filter((c) => c.domain);
-      const saved = await saveCompanies(ctx.db, listId, b, companies.map((company) => ({ company, fit: checkCompanyFit(company, input.fit ?? {}) })));
+      const saved = await saveCompanies(ctx.db, listId, b, companies.map((company) => ({ company, fit: checkCompanyFit(company, criteria) })));
       return { batch: b, requested: want, pulled: rows.length, new: saved.inserted, alreadyInList: companies.length - saved.inserted, tier1: saved.tier1, tier2: saved.tier2, cut: saved.cut };
     }, { timeoutMs: 15 * 60_000 });
     batches.push(out);

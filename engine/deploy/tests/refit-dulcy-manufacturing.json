@@ -1,0 +1,28 @@
+{
+  "_about": "Re-check the saved Dulcy Manufacturing list (recSampleTest0001) with a list profile built from the targeting sentence + Dulcy's client context. Free except ONE OpenAI call. Rewrites the sheet in place.",
+  "recordId": "recSampleTest0001",
+  "filters": {
+    "icp_prompt": "Product manufacturers in the United States, Canada, and the United Kingdom that make and distribute physical consumer or commercial goods through retailers, dealers, distributors, or stores, and could benefit from reaching those buyers directly",
+    "icp_text": "Manufacturers of physical consumer or commercial goods that design, produce, and distribute branded products through wholesale and retail channels, including retailers, dealers, distributors, stockists, and stores.",
+    "language": [
+      "en"
+    ],
+    "exclude_leadgen": true,
+    "relevance": "BALANCED",
+    "redirect": false,
+    "include_search_domains": true,
+    "country": [
+      "US",
+      "GB",
+      "CA"
+    ],
+    "exclusion_query_id": [
+      "c32d04db-06b9-46df-9536-7bd3f93f0ec2",
+      "084c66bb-d18d-4e1a-8337-a217fc8633f4",
+      "1302ea95-9ba5-447c-a281-f432f8bff18d"
+    ]
+  },
+  "targeting": "Product manufacturers in the United States, Canada, and the United Kingdom that make and distribute physical consumer or commercial goods through retailers, dealers, distributors, or stores, and could benefit from reaching those buyers directly",
+  "clientContext": "Dulcy Media (the client here is Dulcy itself): done-for-you B2B outbound - verified prospect lists, cold email sending, targeting and copy, reply handoff. This campaign ('Retail and Distribution Buyer Outreach') offers product manufacturers help getting their products in front of retail and distribution buyers. Good fits are real operating manufacturers and brands that make physical goods and sell through retailers, dealers, distributors or stores. Not buyers of this: directories, marketplaces, lead-gen sites, media, software companies, and other outbound / marketing / lead-generation agencies (competitors).",
+  "rebuildProfile": true
+}

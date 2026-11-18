@@ -15,8 +15,18 @@ import { approvedFilters, type Filters } from '../leadlist/filters.js';
 import { toCompany } from '../leadlist/companies.js';
 import { checkCompanyFit, summarizeSample, tierOf, type FitCriteria } from '../leadlist/fit.js';
 import { saveCompanies } from '../leadlist/store.js';
+import { profileCriteria } from '../leadlist/profile.js';
+import { buildProfile, sampleStats } from '../leadlist/profileStore.js';
 
-interface SampleInput { filters: Filters; fit?: FitCriteria; sampleSize?: number }
+interface SampleInput {
+  filters: Filters; sampleSize?: number;
+  /** Who the list is for: targeting sentence / campaign thesis, and the client's own context. */
+  targeting?: string; thesis?: string; clientContext?: string;
+  /** Client do-not-contact / prior campaign domains. */
+  excludedDomains?: string[];
+  /** Optional manual override of the fit settings (normally empty: the profile decides). */
+  fit?: FitCriteria;
+}
 
 export const companySampleStage: Stage = async (ctx) => {
   const input = ctx.job.input as unknown as SampleInput;
@@ -46,11 +56,15 @@ export const companySampleStage: Stage = async (ctx) => {
     dryRunResult: () => [],
   }), { timeoutMs: 5 * 60_000 });
 
+  // ONE AI call for the whole list (never per company): who we want, why, who we don't.
+  const profile = await ctx.step('profile', async () => buildProfile(ctx, ctx.job.record_id, { thesis: input.thesis, targeting: input.targeting, clientContext: input.clientContext }, plan.filters, sampleStats(rows.map(toCompany))));
+  const criteria = { ...profileCriteria(profile, plan.filters, input.excludedDomains ?? []), ...(input.fit ?? {}) };
+
   const review = await ctx.step('fit', async () => {
     const companies = rows.map(toCompany).filter((c) => c.domain);
     const seen = new Set<string>();
     const unique = companies.filter((c) => (seen.has(c.domain) ? false : (seen.add(c.domain), true)));
-    const results = unique.map((c) => checkCompanyFit(c, input.fit ?? {}));
+    const results = unique.map((c) => checkCompanyFit(c, criteria));
     const summary = summarizeSample(results);
     // The sample is batch 0 of the list's master copy (expansion never pulls these again).
     await saveCompanies(ctx.db, ctx.job.record_id, 0, unique.map((company, i) => ({ company, fit: results[i] })), { refit: true });
@@ -71,6 +85,7 @@ export const companySampleStage: Stage = async (ctx) => {
   return {
     dryRun: false,
     matching,
+    profile: { source: profile.source, summary: profile.summary, customer: profile.customer, allowBusinessTypes: profile.allowBusinessTypes, excludeKeywords: profile.excludeKeywords, excludeIndustries: profile.excludeIndustries, targetIndustries: profile.targetIndustries, targetKeywords: profile.targetKeywords, similarityTop: profile.similarityTop, notes: profile.notes },
     sample: { pulled: review.returned, reviewed: s.reviewed, tier1: s.fit, tier2: s.maybe, cut: s.drop, usableRate: s.usableRate, status: s.status },
     topDropReasons: review.topDropReasons,
     dropped: review.dropped,

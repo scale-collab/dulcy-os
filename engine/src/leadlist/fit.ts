@@ -41,7 +41,11 @@ export interface FitCriteria {
   /** Business types the thesis explicitly targets, e.g. "software" or "manufacturer". */
   targetsBusinessTypes?: string[];
   residential?: boolean;
+  /** The thesis targets commercial work only: residential-only companies are cut. */
+  commercialOnly?: boolean;
   minFootprint?: number;
+  /** "High similarity" threshold for this list (0-1), from its own sample; default 0.7. */
+  similarityTop?: number;
 }
 
 export type FitDecision = 'fit' | 'maybe' | 'drop';
@@ -74,6 +78,9 @@ const NOT_PROVIDERS: Record<string, RegExp> = {
   training: /\b(training provider|training courses|online courses|training academy)\b/,
 };
 const COMMERCIAL_ONLY = /\b(commercial only|industrial|government contractor|municipal|institutional)\b/;
+const RESIDENTIAL_ONLY = /\b(residential only|homeowners only|for homeowners|home owners only)\b/;
+/** An industry code matches its own code or a sub-industry under it (MANUFACTURING ⊃ MANUFACTURING/X). */
+const industryMatch = (have: string[], want: string[]) => have.find((i) => want.some((w) => i === w || i.startsWith(`${w}/`)));
 
 export function checkCompanyFit(c: Company, k: FitCriteria): FitResult {
   const reasons: string[] = [];
@@ -84,10 +91,14 @@ export function checkCompanyFit(c: Company, k: FitCriteria): FitResult {
 
   // Explicit exclusions first: they beat any similarity.
   if (list(k.excludedDomains).map(normDomain).includes(domain)) reasons.push('domain is on the client exclusion list');
-  const badWord = list(k.excludeKeywords).find((w) => text.includes(w));
-  if (badWord) reasons.push(`mentions excluded keyword "${badWord}"`);
-  const badIndustry = industries.find((i) => list(k.excludedIndustries).includes(i));
-  if (badIndustry) reasons.push(`industry "${badIndustry}" is excluded`);
+  // Clear evidence only: the company's own name and description, not the homepage keyword list.
+  const about = [c.name, c.description].join(' ').toLowerCase();
+  const badWord = list(k.excludeKeywords).find((w) => about.includes(w));
+  if (badWord) reasons.push(`described as "${badWord}"`);
+  // An excluded industry cuts only a company with none of the target industries.
+  const wantedInd = list(k.industries);
+  const badIndustry = industryMatch(industries, list(k.excludedIndustries));
+  if (badIndustry && !industryMatch(industries, wantedInd)) reasons.push(`industry "${badIndustry}" is excluded`);
 
   // Hard facts only drop when the fact is KNOWN (unknown = maybe, never a drop).
   const emp = num(c.employees);
@@ -101,22 +112,23 @@ export function checkCompanyFit(c: Company, k: FitCriteria): FitResult {
 
   // Not a provider (unless the thesis targets that type).
   const targets = list(k.targetsBusinessTypes);
-  const about = [c.name, c.description].join(' ').toLowerCase();
   for (const [type, re] of Object.entries(NOT_PROVIDERS)) {
     const m = targets.includes(type) ? null : about.match(re);
     if (m) { reasons.push(`looks like a ${type}, not a provider ("${m[0]}")`); break; }
   }
-  if (k.residential && COMMERCIAL_ONLY.test(text)) reasons.push('commercial/industrial/government-only, but the campaign is residential');
+  if (k.residential && COMMERCIAL_ONLY.test(about)) reasons.push('commercial/industrial/government-only, but the campaign is residential');
+  if (k.commercialOnly && RESIDENTIAL_ONLY.test(about)) reasons.push('residential-only, but the campaign is commercial');
 
   if (reasons.length) return { domain, decision: 'drop', reasons, signals };
 
   // Positive signals decide fit vs maybe; nothing here can drop.
-  const wanted = list(k.industries);
-  if (wanted.length && industries.some((i) => wanted.includes(i))) signals.push('target industry');
-  if (list(k.includeKeywords).some((w) => text.includes(w))) signals.push('target keyword on the homepage');
+  // Tier 1 needs two independent signals; anything plausible but unclear stays Tier 2.
+  if (wantedInd.length && industryMatch(industries, wantedInd)) signals.push('target industry');
+  const kw = list(k.includeKeywords).find((w) => text.includes(w));
+  if (kw) signals.push(`target wording ("${kw}")`);
   const sim = num(c.similarity);
-  if (sim !== undefined && (sim > 1 ? sim / 100 : sim) >= 0.7) signals.push('high similarity');
-  const decision: FitDecision = signals.length >= 2 || (signals.length === 1 && !wanted.length) ? 'fit' : 'maybe';
+  if (sim !== undefined && (sim > 1 ? sim / 100 : sim) >= (k.similarityTop ?? 0.7)) signals.push('high similarity for this list');
+  const decision: FitDecision = signals.length >= 2 ? 'fit' : 'maybe';
   return { domain, decision, reasons, signals };
 }
 

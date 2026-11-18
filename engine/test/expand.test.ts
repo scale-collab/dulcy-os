@@ -24,7 +24,7 @@ function cfg(over: Partial<Config> = {}): Config {
   return {
     ...loadConfig({ ENGINE_SECRET: 'x'.repeat(40), DATABASE_URL: url ?? 'postgres://x' } as NodeJS.ProcessEnv),
     discoLikeApiKey: 'k', discoLikeBaseUrl: disco.url, googleKeyFile: google.keyFile, googleImpersonateUser: 'scale@dulcy.io', googleSheetsBaseUrl: google.url,
-    dryRun: true, liveStages: ['leadlist.sample', 'leadlist.expand'], ...over,
+    dryRun: true, liveStages: ['leadlist.sample', 'leadlist.expand', 'leadlist.refit'], ...over,
   };
 }
 const FILTERS = { country: ['US'], icp_text: 'Furniture manufacturers', relevance: 'BALANCED' };
@@ -72,7 +72,7 @@ beforeEach(async () => {
   disco.pool = Array.from({ length: 300 }, (_, i) => co(i + 1));
   disco.lists = new Map(); disco.discoverCalls = 0;
   google.written = {}; google.writes = 0; google.creates = 0; google.maxWriteBytes = 0;
-  if (!skip) await db.query('TRUNCATE jobs, steps, receipts, events, lead_companies, lead_list_sheets RESTART IDENTITY CASCADE');
+  if (!skip) await db.query('TRUNCATE jobs, steps, receipts, events, lead_companies, lead_list_sheets, lead_list_profiles RESTART IDENTITY CASCADE');
 });
 
 test('expand: batches with a rolling exclusion until the usable target; never pulls a company twice', { skip }, async () => {
@@ -174,4 +174,19 @@ test('scale: 12,000 companies in 2,500 batches to a 10,000 usable target, fast, 
   assert.ok(google.maxWriteBytes < 2_000_000, `largest sheet write ${google.maxWriteBytes} bytes`);
   assert.ok(ms < 60_000, `took ${ms} ms`);
   console.log(`scale test: ${j.job.result.list.total} companies, ${j.job.result.batches.length} batches, ${ms} ms, largest sheet write ${google.maxWriteBytes} bytes`);
+});
+
+test('refit: re-checks the whole saved list for free with a new rule, sheet rewritten in place', { skip }, async () => {
+  await sample();
+  const e = await expand({ target: 100 });
+  const calls = disco.discoverCalls;
+  const r = await run('leadlist.refit', { filters: FILTERS, fit: { ...FIT, excludeKeywords: ['outdoor furniture'] } });
+  assert.equal(r.job.status, 'succeeded', r.job.error);
+  assert.equal(disco.discoverCalls, calls, 'no new search');
+  assert.equal(r.job.result.list.usable, 0, 'every furniture maker is now Cut by the new rule');
+  assert.ok(r.job.result.changes.changed > 0);
+  const sheetId = e.job.result.sheet.url.split('/d/')[1];
+  const rows = google.written[sheetId]['Engine Companies'];
+  assert.equal(rows.filter(Boolean).length - 1, r.job.result.list.total, 'same rows, no duplicates');
+  assert.ok(rows.slice(1).every((x) => x[2] === 'Cut'), 'the sheet shows the new tiers');
 });
