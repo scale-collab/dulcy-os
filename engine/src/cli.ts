@@ -54,7 +54,7 @@ async function main() {
     } else if (cmd === 'campaign') {
       const chunks: Buffer[] = [];
       for await (const c of process.stdin) chunks.push(c as Buffer);
-      const { recordId, ...input } = JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown> & { recordId?: string };
+      const { recordId, _about: _ignored, ...input } = JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown> & { recordId?: string };
       if (!recordId || !/^rec[A-Za-z0-9]{14}$/.test(recordId)) throw new Error('the JSON needs "recordId": the Airtable Campaigns record');
       const def = STAGES['campaign.build'];
       const r = await enqueue(db, { kind: 'campaign.build', recordId, input, dryRun: cfg.dryRun && !cfg.liveStages.includes('campaign.build'), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs });
