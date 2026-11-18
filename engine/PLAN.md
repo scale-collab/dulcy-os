@@ -33,7 +33,7 @@ One small service on the Hetzner server, for example `engine.dulcy.io` (name UNK
 
 **Lead List**
 1. Generate filters / company sample (first 100), using DiscoLike.
-2. Review: the 80% usable-fit gate is **enforced**, not just displayed.
+2. Review: the code-based fit check drops obvious bad fits (with logged reasons); the 80% usable gate on the sample is enforced, not just displayed.
 3. Expand companies (in batches; resumable).
 4. Contact sample from the first 100 companies, then expand contacts (5 per company by default).
 5. Apply manual contact decisions (Approve / Reject / Pending).
@@ -74,14 +74,14 @@ Each step ships as its own small pull request. Paid calls are switched on per st
 - **API keys** put on the server (Alex adds them; they're never pasted in chat).
 - **Code location:** a new `engine/` folder in this repo (one-repo idea), or the `dulcy-lead-worker` repo (reference only today). Recommended: `engine/` in this repo.
 
-## 7. Decisions needed before building (found in the maps; Alex decides)
-1. **Contact AI review.** The live contact path runs a DiscoGen AI review of every contact, sometimes with web search. That may break the Oct 9 rule "no second paid AI/web review". Keep it, or remove it in the engine?
-2. **4% bounce pause.** Today it only fires after 35% progress, and only once, at 2.5%, so a campaign that later passes 4% is never paused. Should the engine check every metric refresh, with no 35% floor? (Atlas and Alex.)
-3. **Auto-resume.** "Campaign Fail → Task → Restart" resumes failed campaigns on its own. Keep it, or make it create a task only?
-4. **Launch gate.** Require a recorded "Alex approved launch" on the campaign before the engine launches?
-5. **Top-up gate.** The code uses 60% progress, bounce under 3%, 10+ interested and 20%+ booking, but not RULES' "interested over 15% of replies". Which rules apply?
-6. **Days between emails.** The defaults differ (2 in the builder vs 1 in the screen). Which one?
-7. **Missing workflows.** Alex to check in the n8n screen whether `CodexContactProcessorDraft20261028`, `JWrteAxXQ1PIII4IelGoX` and `NtpwlzuP2tuJM6OC5U_m9` exist, so they can be exported.
+## 7. Decisions (Alex answered 2026-11-18; logged in rules/RULES.md)
+1. **Fit check: code, no LLM.** The engine scores each company against the campaign thesis and client info (industries, size, geography, homepage keywords, exclusions, DiscoLike score) and drops only **obvious bad fits**. Maybes stay. Every drop is logged with its reason, so Alex can check it. This replaces the AI review of every contact.
+2. **Bounce pause:** over 4% **and** 35%+ progress; re-checked on every refresh; 2.5% = watch.
+3. **Auto-restart failed campaigns: keep.** Add time limits and alerts for runs that go long (18+ hour runs were seen; a likely cause is the expansion worker running one 30-minute batch at a time, up to about 20 hours for 100k companies, plus polls with no limit).
+4. **Launch gate:** waiting on Alex's clarification (see the chat).
+5. **Top-up:** interested 15%+ of replies is the main driver; bounce under 4% and reply rate 2%+ are targets; a higher bounce is flagged to watch, not an automatic fail.
+6. **Days between emails:** default 2, editable per campaign.
+7. **Missing workflows:** Alex checks in n8n (see the chat).
 
 ## 8. Not in scope (stays where it is)
 Alerts, analytics syncs, Slack bots, Content OS, the Reply Agent, the sales process in Make, and about 120 small n8n workflows. Security fixes for the old webhooks are parked until the engine replaces them.

@@ -10,6 +10,9 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-17] Never include keys, tokens, passwords, cookies or client prospect rows in this repo. (design)
 
 ## Campaign health
+- [2026-11-18] Bounce auto-pause: pause when bounce is over 4% **and** the campaign is at 35%+ progress. The floor stops early small numbers from pausing it (1 bounce in the first 10 emails = 10%). The check must re-run on every metric refresh, not fire once. Over 2.5% = watch. (Alex)
+- [2026-11-18] Failed campaigns restart automatically: a failure is usually an error on the sending system's side. Long-running jobs (18+ hours seen) must be investigated, and the engine needs time limits. (Alex)
+- [2026-11-18] Top-up rule: targets are bounce under 4%, reply rate 2%+, interested 15%+ of replies. **Interested rate is the main driver.** A strong interested rate can justify a top-up even with higher bounce (example: bounce 5%, reply rate 8%, interested 20% = OK), but the higher bounce is flagged to watch. Supersedes "top-up needs interested above 15%" where they differ. (Alex)
 - [2026-11-17] Bounce rate over 2.5%: send a watch notification, keep an eye on it. (Alex)
 - [2026-11-17] Bounce rate over 4%: campaign is paused automatically and must be investigated. An Airtable project-management task is created and an email goes to Alex. Causes to check: copy, email accounts, list quality, email security gateways. Use the Spam Center. (Alex)
 - [2026-11-17] Interested rate = interested replies / replies. A top-up needs an interested rate above 15%. (Alex, from handoff)
@@ -17,6 +20,8 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-17] At about 60% campaign completion, Airtable sends a notification. Then: review the next-campaign recommendation, replies, bounce data and variant performance, and plan the next campaign for that client. Atlas decides top-up vs new vertical vs new offer vs copy change. (Alex; Airtable skill)
 
 ## Building campaigns and lists
+- [2026-11-18] Company fit check is code-based, with no LLM call. It uses the campaign thesis and client info (ICP, industries, size, geography, keywords, exclusions) to remove **obvious bad fits**. "Maybe" fits are kept. The goal is no obvious bad fits, not a perfect ideal fit, which doesn't make sense for cold outreach. This replaces the AI review of every contact or company. (Alex)
+- [2026-11-18] Days between emails: default 2, editable per campaign. (Alex)
 - [2026-11-17] Run campaign/list stages through the Airtable interface and stage gates. Do not substitute raw status/checkbox edits or direct provider calls. (Handoff, Alex)
 - [2026-11-17] First sample is 100 companies. Approve when usable fit is at least 80% (prefer 85%+). Scale 100 -> 1,000 -> 10,000 only after review. (Alex)
 - [2026-11-17] Review company fit and contact fit separately. Test contacts from the first 100 companies. (Airtable/Scout skill)
