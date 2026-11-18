@@ -26,6 +26,10 @@ export interface FakeBison {
   /** Simulate n8n: after every call, another tool switches the key to workspace 9. */
   otherToolSwitches: boolean;
   switches: number;
+  /** Lead emails "In Sequence" in another campaign: attach skips them unless forced. */
+  inSequenceElsewhere: Set<string>;
+  /** Set when an attach asked to force parallel sending (the engine never should). */
+  forcedParallel: boolean;
   close(): void;
 }
 
@@ -33,7 +37,7 @@ export async function startFakeBison(): Promise<FakeBison> {
   const s: FakeBison = {
     url: '', key: 'bison-key', campaigns: [], leadLists: [], customVariables: new Set(['domain']), calls: [],
     createThen500: false, uploadThen500: false, processAfterChecks: 0, failRowsOnImport: 0,
-    senderStatus: () => 'connected', senderEmail: (id) => `sender${id}@dulcy-mail.com`, workspaceSenders: ['11', '12', '13'], pauseIgnored: false, currentTeam: 2, otherToolSwitches: false, switches: 0, close: () => undefined,
+    senderStatus: () => 'connected', senderEmail: (id) => `sender${id}@dulcy-mail.com`, workspaceSenders: ['11', '12', '13'], pauseIgnored: false, currentTeam: 2, otherToolSwitches: false, switches: 0, inSequenceElsewhere: new Set(), forcedParallel: false, close: () => undefined,
   };
   const json = (res: http.ServerResponse, code: number, body: unknown) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(body)); };
   const page = (list: unknown[], u: URL) => ({ data: list, meta: { current_page: Number(u.searchParams.get('page') ?? 1), last_page: 1, total: list.length } });
@@ -98,7 +102,9 @@ export async function startFakeBison(): Promise<FakeBison> {
     }
     if ((x = m(/^\/api\/campaigns\/(\d+)\/leads\/attach-lead-list$/))) {
       const l = s.leadLists.find((y) => y.id === Number(body().lead_list_id))!;
-      for (const e of l.emails.slice(0, l.emails.length - l.failRows)) camp(x[1]).leads.add(e);
+      const force = body().allow_parallel_sending === true;
+      if (force) s.forcedParallel = true;
+      for (const e of l.emails.slice(0, l.emails.length - l.failRows)) if (force || !s.inSequenceElsewhere.has(e.toLowerCase())) camp(x[1]).leads.add(e);
       return json(res, 200, { data: { success: true } });
     }
     if ((x = m(/^\/api\/campaigns\/(\d+)\/leads$/))) return json(res, 200, { data: [], meta: { total: camp(x[1]).leads.size } });

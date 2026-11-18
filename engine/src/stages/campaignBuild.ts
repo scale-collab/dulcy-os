@@ -16,7 +16,9 @@
 // → leads-count → senders → done.
 import type { Stage } from './index.js';
 import type { JobContext } from '../context.js';
-import { NeedsReviewError, PermanentError } from '../errors.js';
+import { NeedsReviewError, PermanentError, WaitError } from '../errors.js';
+
+const MAX_GROWTH_CHECKS = 20;
 import { uploadAndAttach, waitOrReview } from '../campaign/upload.js';
 import { bisonFor, type BisonClient, type BisonStep } from '../providers/emailbison.js';
 import { createSheetsClient } from '../providers/google.js';
@@ -138,17 +140,26 @@ export const campaignBuildStage: Stage = async (ctx) => {
   const before = up.before;
   const expectedAdded = up.accepted;
 
-  // 6. The campaign must hold exactly the expected leads.
-  const total = await ctx.step('leads-count', async () => {
-    const after = await bison.campaignLeadTotal(campaign.id);
-    const added = after - before;
+  // 6. Added vs skipped. EmailBison skips leads that are "In Sequence" in another campaign
+  // (we never force parallel sending), so the campaign can hold fewer than were uploaded.
+  // Wait until the total stops moving, then report added and skipped. More than uploaded,
+  // or none at all, goes to review.
+  let prev: { total: number } | undefined;
+  let added = 0;
+  for (let k = 1; k <= MAX_GROWTH_CHECKS; k++) {
+    let fresh = false;
+    const obs = await ctx.step(`growth-${k}`, async () => { fresh = true; return { total: await bison.campaignLeadTotal(campaign.id) }; });
+    added = obs.total - before;
     if (added > expectedAdded) throw new NeedsReviewError(`campaign ${campaign.id} gained ${added} leads but only ${expectedAdded} were uploaded; check for a double attach`);
-    if (added < expectedAdded) {
-      return await waitOrReview(ctx, 'leads-count', 30 * 60_000, `campaign ${campaign.id}: ${added} of ${expectedAdded} leads attached so far`,
-        `campaign ${campaign.id} has ${added} of ${expectedAdded} leads after 30 minutes; check the attach in EmailBison`);
-    }
-    return { before, after, added };
-  });
+    if (added < 0) throw new NeedsReviewError(`campaign ${campaign.id} has fewer leads than before the upload (${obs.total} < ${before}); check it in EmailBison`);
+    const settled = added === expectedAdded || (prev !== undefined && prev.total === obs.total);
+    if (settled) break;
+    if (fresh) throw new WaitError(`campaign ${campaign.id}: ${added} of ${expectedAdded} leads attached so far`, ctx.cfg.bisonPollMs);
+    prev = obs;
+    if (k === MAX_GROWTH_CHECKS) throw new NeedsReviewError(`campaign ${campaign.id} lead total kept changing; check the attach in EmailBison`);
+  }
+  if (added === 0) throw new NeedsReviewError(`campaign ${campaign.id} got 0 of ${expectedAdded} leads: EmailBison skipped them all (likely already in sequence in other campaigns)`);
+  const total = { before, after: before + added, added, skippedInOtherCampaigns: expectedAdded - added };
 
   // 7. Senders: addresses are resolved to EmailBison's current IDs (Airtable IDs can be stale).
   if (input.senderEmails) {
@@ -186,12 +197,12 @@ export const campaignBuildStage: Stage = async (ctx) => {
     launched: false,
     campaignId: campaign.id,
     campaignName: input.name,
-    leads: { uploaded: leads.rows.length, added: total.added, droppedDuplicate: leads.droppedDuplicate, droppedNoEmail: leads.droppedNoEmail, droppedInvalid: leads.droppedInvalid },
+    leads: { uploaded: leads.rows.length, added: total.added, skippedInOtherCampaigns: total.skippedInOtherCampaigns, droppedDuplicate: leads.droppedDuplicate, droppedNoEmail: leads.droppedNoEmail, droppedInvalid: leads.droppedInvalid },
     imports: up.parts,
     senders: senders.count,
     steps: steps.length,
     variants: steps.reduce((n, s) => n + 1 + (s.variants?.length ?? 0), 0),
-    message: `campaign ${campaign.id} built with ${total.added} leads and ${senders.count} senders; not launched`,
+    message: `campaign ${campaign.id} built with ${total.added} leads (${total.skippedInOtherCampaigns} skipped: already in sequence in other campaigns) and ${senders.count} senders; not launched`,
     // What a later step writes to the Campaigns record (shadow until Airtable is wired).
     airtablePreview: { ID: campaign.id, [input.outputType === 'generic' ? 'EmailBison Generic Campaign ID' : 'EmailBison Direct Campaign ID']: campaign.id },
   };
