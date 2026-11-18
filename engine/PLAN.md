@@ -47,7 +47,7 @@ One small service on the Hetzner server, for example `engine.dulcy.io` (name UNK
 10. Build the EmailBison campaign: find-or-create first, and save the ID right after creating it.
 11. Upload leads (direct and generic), then **poll the import until it's processed** and compare row counts.
 12. Senders (after the final lead count is known), sequence and settings.
-13. Launch: only with Alex's OK recorded on the record.
+13. Launch: automatic when every launch check in section 7 passes.
 14. Top-up and replenishment cycles (reconcile one failed import, never retry the whole top-up).
 
 The business rules to keep (sample of 100, 80%/85% fit, tier scores, batch sizes, exclusion windows, QA fields and so on) are listed in the research maps, section 3. Each one becomes a small tested function. The 27 hardcoded record IDs become explicit per-list settings that Alex approves.
@@ -78,10 +78,17 @@ Each step ships as its own small pull request. Paid calls are switched on per st
 1. **Fit check: code, no LLM.** The engine scores each company against the campaign thesis and client info (industries, size, geography, homepage keywords, exclusions, DiscoLike score) and drops only **obvious bad fits**. Maybes stay. Every drop is logged with its reason, so Alex can check it. This replaces the AI review of every contact.
 2. **Bounce pause:** over 4% **and** 35%+ progress; re-checked on every refresh; 2.5% = watch.
 3. **Auto-restart failed campaigns: keep.** Add time limits and alerts for runs that go long (18+ hour runs were seen; a likely cause is the expansion worker running one 30-minute batch at a time, up to about 20 hours for 100k companies, plus polls with no limit).
-4. **Launch gate:** waiting on Alex's clarification (see the chat).
+4. **Launch: automatic once every check passes** (Alex, 2026-11-18). Launch checks (all required):
+   - the copy is approved by the client (or "Skip Approval" for Dulcy's own campaigns), with no spintax in the client-facing copy, and the EmailGuard spam check passes;
+   - every claim in the copy is in the client's approved proof (`clients/<client>.md`);
+   - the lead list is Ready: verification done, QA passed, catch-all not counted as Good;
+   - EmailBison lead count = expected count, with variables filled and spintax rendered;
+   - senders allocated against the final count, with no .info sender domains; schedule, timezone, daily limits and days between emails set;
+   - the client is active (not cancelled or paused) and the credit/spend caps are not exceeded.
+   If any check fails, nothing launches; the record shows which check failed, and Slack gets an alert.
 5. **Top-up:** interested 15%+ of replies is the main driver; bounce under 4% and reply rate 2%+ are targets; a higher bounce is flagged to watch, not an automatic fail.
 6. **Days between emails:** default 2, editable per campaign.
-7. **Missing workflows:** Alex checks in n8n (see the chat).
+7. **Missing workflows:** re-checked 2026-11-18. The connector sees 158 workflows, and the 3 IDs (`CodexContactProcessorDraft20261028`, `JWrteAxXQ1PIII4IelGoX`, `NtpwlzuP2tuJM6OC5U_m9`) return "Workflow not found". UNKNOWN whether they were deleted or are just hidden from the connector. The contact rules will be rebuilt from the 2026-10-30 checkpoint notes and the old lead-worker code if they can't be found.
 
 ## 8. Not in scope (stays where it is)
 Alerts, analytics syncs, Slack bots, Content OS, the Reply Agent, the sales process in Make, and about 120 small n8n workflows. Security fixes for the old webhooks are parked until the engine replaces them.

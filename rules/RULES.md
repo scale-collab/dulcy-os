@@ -31,7 +31,7 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-17] Copy: no spintax in client-facing text, no manual signature. Do not spin variables like {FIRST_NAME}. Run EmailGuard spam check and manual review before upload. (Workflow SOP)
 - [2026-11-17] Sender domains: no .info domains. This is only about buying sender domains, not about recipients. (Alex)
 - [2026-11-17] Allocate senders only after the final usable lead count is known. (Airtable skill)
-- [2026-11-17] Launch only after Alex confirms. (Workflow SOP)
+- [2026-11-17] Launch only after Alex confirms. (Workflow SOP) **Changed 2026-11-18:** the lead engine launches automatically once all launch checks pass (list in `engine/PLAN.md`). Manual launches by agents or Claude still need Alex's OK. (Alex)
 
 ## Replies and inbox
 - [2026-11-17] AI reply drafts are review-only. Josh or Alex approve every outgoing reply. Reply Agent pilot is on for Dulcy only, in Human in the Loop mode. (Reply Agent SOP, Oct 7)
