@@ -30,3 +30,4 @@ Newest at the bottom. Format: `date | decision | why | who`
 2026-11-18 | engine/PLAN.md approved by Alex; start step 1 (skeleton, dry-run only) | Alex approved | Alex
 2026-11-18 | Claude may merge its own PRs to main (tests must pass; tell Alex each time) | Alex: standing permission | Alex
 - 2026-11-18: Lead engine deployed on Hetzner (/opt/dulcy-os, read-only deploy key, dry-run). Health OK. Next: subdomain, then step 2 Verify.
+- 2026-11-18: engine.dulcy.io live over HTTPS via Coolify Traefik; health OK from outside, unsigned POST refused (401).
