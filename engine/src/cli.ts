@@ -14,6 +14,8 @@
 //       List the workspace's sender inboxes in EmailBison (id, email, status), optionally filtered.
 //   bounce <workspace>
 //       Run the bounce check for one workspace now (report-only unless bounce.check is live).
+//   whereis <campaignId> <workspaceId> [workspaceId...] [--key=<workspace>]
+//       Which of these EmailBison workspaces holds the campaign (read-only).
 //   job <id>
 //       Show a job's status and summary (counts and comparison; no lead rows).
 import { loadConfig } from './config.js';
@@ -83,6 +85,14 @@ async function main() {
       const r = await enqueue(db, { kind: 'bounce.check', recordId: `bounce:${ws}`, input: { workspace: ws }, dryRun: cfg.dryRun && !cfg.liveStages.includes('bounce.check'), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs });
       console.log(JSON.stringify({ status: r.status, jobId: r.job.id, dryRun: r.job.dry_run }));
       console.log(`Check it with:  docker compose exec engine node dist/src/cli.js job ${r.job.id}`);
+    } else if (cmd === 'whereis') {
+      const campaignId = Number(args[0]);
+      const teams = args.slice(1).filter((a) => /^\d+$/.test(a)).map(Number);
+      const keyName = (args.find((a) => a.startsWith('--key='))?.split('=')[1] ?? 'dulcy').toLowerCase();
+      if (!campaignId || teams.length === 0) throw new Error('usage: whereis <campaignId> <workspaceId> [workspaceId...]');
+      const { findCampaignWorkspace } = await import('./providers/emailbison.js');
+      const found = await findCampaignWorkspace(cfg.emailBisonKeys[keyName], cfg.emailBisonBaseUrl, campaignId, teams);
+      console.log(found.length ? found.map((f) => `campaign ${campaignId} is in workspace ${f.teamId}: "${f.name}" (${f.status})`).join('\n') : `campaign ${campaignId} is in none of workspaces ${teams.join(', ')}`);
     } else if (cmd === 'job') {
       const j = await getJob(db, Number(args[0]));
       if (!j) throw new Error('job not found');
@@ -94,7 +104,7 @@ async function main() {
         steps: j.steps.map((s: { step_key: string; status: string }) => `${s.step_key}: ${s.status}`),
       }, null, 2));
     } else {
-      throw new Error('commands: verify, campaign, topup, senders, bounce, job');
+      throw new Error('commands: verify, campaign, topup, senders, bounce, whereis, job');
     }
   } finally {
     await db.end();

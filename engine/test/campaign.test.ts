@@ -246,3 +246,20 @@ test('without a workspace ID, a key left on another workspace is refused and not
   assert.match(String(j.job.error), /another workspace/);
   assert.equal(bison.campaigns[0].leads.size, 0);
 });
+
+test('a campaign created while the key pointed at another workspace is caught right after creating', { skip }, async () => {
+  // The key is on workspace 41 and the job gives no workspace ID: the campaign lands in 41.
+  bison.currentTeam = 41;
+  const j = await settle(cfg(), (await queue({ workspaceId: undefined })).job.id);
+  assert.equal(j.job.status, 'succeeded', 'without a workspace ID there is nothing to check against');
+  await db.query('TRUNCATE jobs, steps, receipts, events RESTART IDENTITY CASCADE');
+  Object.assign(bison, { campaigns: [], leadLists: [] });
+  bison.currentTeam = 41;
+  // With a workspace ID, a campaign that exists elsewhere (adopted by id) is refused.
+  bison.campaigns.push({ id: 700, name: 'x', leads: new Set(), senders: [], steps: [], team: 41 } as any);
+  const k = await settle(cfg(), (await queue({ workspaceId: 2, existingCampaignId: 700 })).job.id);
+  assert.equal(k.job.status, 'needs_review');
+  assert.match(k.job.error, /campaign 700 is not in workspace 2/);
+  const { findCampaignWorkspace } = await import('../src/providers/emailbison.js');
+  assert.deepEqual((await findCampaignWorkspace(bison.key, bison.url, 700, [2, 41])).map((f) => f.teamId), [41]);
+});
