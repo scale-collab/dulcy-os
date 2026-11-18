@@ -289,7 +289,7 @@ Full detail (formulas, links, select option IDs): `schema/dulcy-base.schema.json
 | Spam Remediation Queue | `fldoVGO9AMVMoiujs` | multipleRecordLinks | → Spam Remediation Queue |
 | New Vertical Pivot | `fldY5tnIicC48grKq` | singleSelect | Enabled, Disabled |
 | New Offer Pivot | `fld9HliYa3igd1Uri` | singleSelect | Enabled, Disabled |
-| Run Inbox Placement Test | `fldgoNwpnP7qOiHKv` | formula | `"https://n8n.dulcy.io/webhook/run-inbox-placement-test?workspace_id=" & {fldO0DrfcpgxtpBw5}` |
+| Run Inbox Placement Test | `fldgoNwpnP7qOiHKv` | formula | `"https://n8n.dulcy.io/webhook/REDACTED_PATH?workspace_id=" & {fldO0DrfcpgxtpBw5}` |
 | Warmup Complete Notified At | `fldE786HiVM3NekW2` | dateTime |  |
 | Sender Title | `fldIMJnjdGGAPotMW` | singleLineText |  |
 | Brand Name | `fldTHTrYh0GCFeBLG` | singleLineText |  |
