@@ -52,7 +52,7 @@ const MAX_GROWTH_CHECKS = 20;
 export const campaignTopupStage: Stage = async (ctx) => {
   const input = readInput(ctx.job.input);
   const tab = input.source.tab ?? (input.outputType === 'generic' ? 'Final Generic' : 'Final Direct');
-  const sheets = () => createSheetsClient({ keyFile: ctx.cfg.googleKeyFile, impersonate: ctx.cfg.googleImpersonateUser, sheetsBaseUrl: ctx.cfg.googleSheetsBaseUrl });
+  const sheets = () => createSheetsClient({ keyFile: ctx.cfg.googleKeyFile, impersonate: ctx.cfg.googleImpersonateUser, scope: ctx.cfg.googleScope, sheetsBaseUrl: ctx.cfg.googleSheetsBaseUrl });
 
   // 1. Alex's rule first: no leads are read or uploaded for a campaign that doesn't qualify.
   const readiness = topUpReadiness(input.kpis);

@@ -11,6 +11,11 @@ export interface FakeGoogle {
   tabs: Record<string, string[][]>;
   tokenCalls: number;
   lastSub?: string;
+  lastScope?: string;
+  /** Written by the engine: sheet ID → tab → rows (row index 0 = sheet row 1). */
+  written: Record<string, Record<string, string[][]>>;
+  writes: number;
+  creates: number;
   close(): void;
 }
 
@@ -22,7 +27,7 @@ function colIndex(letters: string): number {
 
 export async function startFakeGoogle(): Promise<FakeGoogle> {
   const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
-  const state: FakeGoogle = { url: '', keyFile: '', tabs: {}, tokenCalls: 0, close: () => undefined };
+  const state: FakeGoogle = { url: '', keyFile: '', tabs: {}, tokenCalls: 0, written: {}, writes: 0, creates: 0, close: () => undefined };
   const server = http.createServer(async (req, res) => {
     const u = new URL(req.url ?? '/', 'http://x');
     const chunks: Buffer[] = [];
@@ -34,12 +39,39 @@ export async function startFakeGoogle(): Promise<FakeGoogle> {
       const [h, c, sig] = assertion.split('.');
       const ok = createVerify('RSA-SHA256').update(`${h}.${c}`).verify(publicKey, Buffer.from(sig ?? '', 'base64url'));
       if (!ok) { res.writeHead(400); return res.end('{"error":"invalid_grant"}'); }
-      state.lastSub = JSON.parse(Buffer.from(c, 'base64url').toString()).sub;
+      const claims = JSON.parse(Buffer.from(c, 'base64url').toString());
+      state.lastSub = claims.sub; state.lastScope = claims.scope;
       res.writeHead(200, { 'content-type': 'application/json' });
       return res.end(JSON.stringify({ access_token: 'tok', expires_in: 3600 }));
     }
     if (req.headers.authorization !== 'Bearer tok') { res.writeHead(401); return res.end('{}'); }
     const tabRange = (r: string) => { const m = r.match(/^'(.+)'!(.+)$/); return m ? { tab: m[1].replace(/''/g, "'"), range: m[2] } : null; };
+    const json = (code: number, b: unknown) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(b)); };
+    if (u.pathname === '/v4/spreadsheets' && req.method === 'POST') {
+      const b = JSON.parse(body); state.creates++;
+      const id = `sheet-${state.creates}`;
+      state.written[id] = Object.fromEntries(b.sheets.map((x: any) => [x.properties.title, []]));
+      return json(200, { spreadsheetId: id });
+    }
+    const meta = u.pathname.match(/^\/v4\/spreadsheets\/([^/:]+)$/);
+    if (meta && req.method === 'GET') {
+      const id = decodeURIComponent(meta[1]);
+      const titles = [...Object.keys(state.written[id] ?? {}), ...Object.keys(state.tabs)];
+      return json(200, { sheets: titles.map((title) => ({ properties: { title } })) });
+    }
+    const upd = u.pathname.match(/^\/v4\/spreadsheets\/([^/]+):batchUpdate$/);
+    if (upd && req.method === 'POST') {
+      const id = decodeURIComponent(upd[1]);
+      for (const r of JSON.parse(body).requests) if (r.addSheet) (state.written[id] ??= {})[r.addSheet.properties.title] = [];
+      return json(200, {});
+    }
+    const put = decodeURIComponent(u.pathname).match(/^\/v4\/spreadsheets\/([^/]+)\/values\/'(.+)'!A(\d+)$/);
+    if (put && req.method === 'PUT') {
+      state.writes++;
+      const tabRows = ((state.written[put[1]] ??= {})[put[2].replace(/''/g, "'")] ??= []);
+      JSON.parse(body).values.forEach((row: any[], i: number) => { tabRows[Number(put[3]) - 1 + i] = row.map(String); });
+      return json(200, {});
+    }
     const values = decodeURIComponent(u.pathname).match(/\/values\/(.+)$/);
     if (values) {
       const t = tabRange(values[1]);

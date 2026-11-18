@@ -4,6 +4,7 @@ import { campaignBuildStage } from './campaignBuild.js';
 import { campaignTopupStage } from './campaignTopup.js';
 import { bounceCheckStage } from './bounceCheck.js';
 import { companySampleStage } from './companySample.js';
+import { companyExpandStage } from './companyExpand.js';
 
 /** A stage = one Airtable action. It returns a small result for the Airtable record. */
 export type Stage = (ctx: JobContext) => Promise<Record<string, unknown>>;
@@ -62,6 +63,12 @@ export const STAGES: Record<string, StageDef> = {
     deadlineMs: 30 * 60_000,
     maxAttempts: 3,
     description: 'Company sample for a lead list: free DiscoLike count, one paid search of up to 100 companies, fit check in code, sample gate. Shadow mode: writes nothing yet.',
+  },
+  'leadlist.expand': {
+    run: companyExpandStage,
+    deadlineMs: 12 * 60 * 60_000,
+    maxAttempts: 5,
+    description: 'Expand an approved company sample to the target number of usable (Tier 1 + Tier 2) companies, 2,500 per batch with a rolling exclusion list; saved in the engine, written to the list sheet once per batch.',
   },
   'bounce.check': {
     run: bounceCheckStage,

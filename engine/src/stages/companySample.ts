@@ -13,7 +13,8 @@ import { PermanentError } from '../errors.js';
 import { createDiscoLikeClient } from '../providers/discolike.js';
 import { approvedFilters, type Filters } from '../leadlist/filters.js';
 import { toCompany } from '../leadlist/companies.js';
-import { checkCompanyFit, summarizeSample, type FitCriteria } from '../leadlist/fit.js';
+import { checkCompanyFit, summarizeSample, tierOf, type FitCriteria } from '../leadlist/fit.js';
+import { saveCompanies } from '../leadlist/store.js';
 
 interface SampleInput { filters: Filters; fit?: FitCriteria; sampleSize?: number }
 
@@ -51,6 +52,8 @@ export const companySampleStage: Stage = async (ctx) => {
     const unique = companies.filter((c) => (seen.has(c.domain) ? false : (seen.add(c.domain), true)));
     const results = unique.map((c) => checkCompanyFit(c, input.fit ?? {}));
     const summary = summarizeSample(results);
+    // The sample is batch 0 of the list's master copy (expansion never pulls these again).
+    await saveCompanies(ctx.db, ctx.job.record_id, 0, unique.map((company, i) => ({ company, fit: results[i] })));
     const reasons: Record<string, number> = {};
     for (const r of results) for (const why of r.reasons) { const k = why.replace(/\d+/g, 'N'); reasons[k] = (reasons[k] ?? 0) + 1; }
     return {
@@ -60,7 +63,7 @@ export const companySampleStage: Stage = async (ctx) => {
       duplicates: companies.length - unique.length,
       topDropReasons: Object.entries(reasons).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([reason, n]) => ({ reason, companies: n })),
       dropped: results.filter((r) => r.decision === 'drop').map((r) => ({ domain: r.domain, reasons: r.reasons })),
-      kept: results.filter((r) => r.decision !== 'drop').map((r) => ({ domain: r.domain, decision: r.decision, signals: r.signals })),
+      kept: results.filter((r) => r.decision !== 'drop').map((r) => ({ domain: r.domain, tier: tierOf(r.decision), signals: r.signals })),
     };
   });
 
@@ -68,10 +71,10 @@ export const companySampleStage: Stage = async (ctx) => {
   return {
     dryRun: false,
     matching,
-    sample: { pulled: review.returned, reviewed: s.reviewed, fit: s.fit, maybe: s.maybe, drop: s.drop, usableRate: s.usableRate, status: s.status },
+    sample: { pulled: review.returned, reviewed: s.reviewed, tier1: s.fit, tier2: s.maybe, cut: s.drop, usableRate: s.usableRate, status: s.status },
     topDropReasons: review.topDropReasons,
     dropped: review.dropped,
     kept: review.kept,
-    message: `sample ${s.status}: ${s.fit + s.maybe} of ${s.reviewed} usable (${Math.round(s.usableRate * 100)}%), ${s.drop} dropped; ${countNote}`,
+    message: `sample ${s.status}: Tier 1 ${s.fit}, Tier 2 ${s.maybe}, Cut ${s.drop}; ${s.fit + s.maybe} of ${s.reviewed} usable (${Math.round(s.usableRate * 100)}%); ${countNote}`,
   };
 };

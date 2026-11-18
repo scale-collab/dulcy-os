@@ -61,7 +61,7 @@ beforeEach(async () => {
     ...Array.from({ length: 9 }, (_, i) => co(`roofer${i}.com`, 'Residential roofing contractor')),
     co('bestroofers-directory.com', 'A directory of local roofers'),
   ];
-  if (!skip) await db.query('TRUNCATE jobs, steps, receipts, events RESTART IDENTITY CASCADE');
+  if (!skip) await db.query('TRUNCATE jobs, steps, receipts, events, lead_companies, lead_list_sheets RESTART IDENTITY CASCADE');
 });
 
 test('filters: old workflow rules (ICP sentence removed, E_COMMERCE fixed, legacy similarity refused, lists repeat the key)', () => {
@@ -100,7 +100,10 @@ test('live: one paid search, fit check drops the directory with a reason, gate P
   assert.equal(j.job.status, 'succeeded', j.job.error);
   assert.equal(fake.discoverCalls, 1);
   assert.equal(j.job.result.sample.reviewed, 10);
-  assert.equal(j.job.result.sample.drop, 1);
+  assert.equal(j.job.result.sample.cut, 1);
+  assert.equal(j.job.result.sample.tier1 + j.job.result.sample.tier2, 9);
+  const saved = await db.query(`SELECT tier, COUNT(*)::int n FROM lead_companies WHERE list_id=$1 AND batch=0 GROUP BY tier`, [REC]);
+  assert.equal(saved.rows.reduce((a, r) => a + r.n, 0), 10, 'the sample is saved as batch 0');
   assert.equal(j.job.result.sample.status, 'Passed');
   assert.equal(j.job.result.dropped[0].domain, 'bestroofers-directory.com');
   assert.match(fake.lastQuery, /icp_text=Residential/, 'the search keeps the full saved plan');
@@ -126,7 +129,7 @@ test('no matching companies or no key: stops before spending', { skip }, async (
   const a = await settle(cfg(), (await queue()).job.id);
   assert.equal(a.job.status, 'failed');
   assert.match(a.job.error, /no companies match/);
-  await db.query('TRUNCATE jobs, steps, receipts, events RESTART IDENTITY CASCADE');
+  await db.query('TRUNCATE jobs, steps, receipts, events, lead_companies, lead_list_sheets RESTART IDENTITY CASCADE');
   const b = await settle(cfg({ discoLikeApiKey: undefined }), (await queue()).job.id);
   assert.equal(b.job.status, 'failed');
   assert.match(b.job.error, /no DiscoLike API key/);

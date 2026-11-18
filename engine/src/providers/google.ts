@@ -1,12 +1,13 @@
-// Read-only Google Sheets client using a service account (no extra packages).
+// Google Sheets client using a service account (no extra packages). The engine READS lead
+// list tabs (verify, campaign build) and WRITES its own view tabs (one write per batch).
 // With GOOGLE_IMPERSONATE_USER set, it acts as that Workspace user through
 // domain-wide delegation, so it can read every sheet that user can open.
-// Scope: spreadsheets.readonly. The key file lives only on the server.
+// Scope: spreadsheets (read + write, no Drive). The key file lives only on the server.
 import { createSign } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { PermanentError, RetryableError } from '../errors.js';
 
-const SCOPE = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+const DEFAULT_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
 
 interface ServiceAccountKey { client_email: string; private_key: string; token_uri?: string }
 
@@ -17,11 +18,18 @@ export interface SheetsClient {
   tab(sheetId: string, tab: string): Promise<string[][]>;
   /** Whole columns (by 0-based index) of a tab, header cell included. */
   columns(sheetId: string, tab: string, indexes: number[]): Promise<string[][]>;
+  /** Create a new spreadsheet with one tab; returns its ID. */
+  create(title: string, tab: string): Promise<string>;
+  /** Make sure a tab exists (added if missing). */
+  ensureTab(sheetId: string, tab: string): Promise<void>;
+  /** Write rows starting at a fixed row (1-based). Same call twice = same result (no duplicates). */
+  writeRows(sheetId: string, tab: string, startRow: number, rows: (string | number)[][]): Promise<void>;
 }
 
 export interface GoogleOptions {
   keyFile: string;
   impersonate?: string;
+  scope?: string;
   sheetsBaseUrl?: string;
   timeoutMs?: number;
   fetchImpl?: typeof fetch;
@@ -58,7 +66,7 @@ export function createSheetsClient(o: GoogleOptions): SheetsClient {
     const k = await key();
     const now = Math.floor(Date.now() / 1000);
     const tokenUri = k.token_uri ?? 'https://oauth2.googleapis.com/token';
-    const claims: Record<string, unknown> = { iss: k.client_email, scope: SCOPE, aud: tokenUri, iat: now, exp: now + 3600 };
+    const claims: Record<string, unknown> = { iss: k.client_email, scope: o.scope ?? DEFAULT_SCOPE, aud: tokenUri, iat: now, exp: now + 3600 };
     if (o.impersonate) claims.sub = o.impersonate;
     const unsigned = `${b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }))}.${b64url(JSON.stringify(claims))}`;
     const signature = createSign('RSA-SHA256').update(unsigned).sign(k.private_key);
@@ -85,10 +93,12 @@ export function createSheetsClient(o: GoogleOptions): SheetsClient {
     return token.value;
   }
 
-  async function get(path: string): Promise<Record<string, unknown>> {
+  async function get(path: string, method = 'GET', payload?: unknown): Promise<Record<string, unknown>> {
     let res: Response;
     try {
-      res = await f(`${base}${path}`, { headers: { authorization: `Bearer ${await accessToken()}` }, signal: AbortSignal.timeout(timeoutMs) });
+      const headers: Record<string, string> = { authorization: `Bearer ${await accessToken()}` };
+      if (payload !== undefined) headers['content-type'] = 'application/json';
+      res = await f(`${base}${path}`, { method, headers, body: payload === undefined ? undefined : JSON.stringify(payload), signal: AbortSignal.timeout(timeoutMs) });
     } catch (e) {
       if (e instanceof PermanentError || e instanceof RetryableError) throw e;
       throw new RetryableError('Google Sheets: network error or timeout');
@@ -96,7 +106,9 @@ export function createSheetsClient(o: GoogleOptions): SheetsClient {
     const body = await res.text();
     if (res.status === 429 || res.status >= 500) throw new RetryableError(`Google Sheets: HTTP ${res.status}`);
     if (res.status === 401) { token = null; throw new RetryableError('Google Sheets: token expired'); }
-    if (res.status === 403) throw new PermanentError('Google Sheets: no access to this sheet (is it in the impersonated user\'s Drive?)');
+    if (res.status === 403) throw new PermanentError(method === 'GET'
+      ? 'Google Sheets: no access to this sheet (is it in the impersonated user\'s Drive?)'
+      : 'Google Sheets: no write access (check the sheet is shared with the impersonated user and the spreadsheets scope is in domain-wide delegation)');
     if (res.status === 404) throw new PermanentError('Google Sheets: sheet not found');
     if (!res.ok) throw new PermanentError(`Google Sheets: HTTP ${res.status} ${body.replace(/\s+/g, ' ').slice(0, 200)}`);
     return JSON.parse(body) as Record<string, unknown>;
@@ -111,6 +123,23 @@ export function createSheetsClient(o: GoogleOptions): SheetsClient {
     async tab(sheetId, tab) {
       const r = await get(`/v4/spreadsheets/${encodeURIComponent(sheetId)}/values/${encodeURIComponent(`${quoteTab(tab)}!A:ZZ`)}`);
       return ((r.values as string[][] | undefined) ?? []).map((row) => row.map((v) => String(v ?? '')));
+    },
+    async create(title, tab) {
+      const r = await get('/v4/spreadsheets', 'POST', { properties: { title }, sheets: [{ properties: { title: tab } }] });
+      const id = String(r.spreadsheetId ?? '');
+      if (!id) throw new PermanentError('Google Sheets: create returned no spreadsheet ID');
+      return id;
+    },
+    async ensureTab(sheetId, tab) {
+      const meta = await get(`/v4/spreadsheets/${encodeURIComponent(sheetId)}?fields=sheets.properties.title`);
+      const titles = ((meta.sheets as Array<{ properties?: { title?: string } }> | undefined) ?? []).map((x) => x.properties?.title);
+      if (titles.includes(tab)) return;
+      await get(`/v4/spreadsheets/${encodeURIComponent(sheetId)}:batchUpdate`, 'POST', { requests: [{ addSheet: { properties: { title: tab } } }] });
+    },
+    async writeRows(sheetId, tab, startRow, rows) {
+      if (!rows.length) return;
+      const range = `${quoteTab(tab)}!A${startRow}`;
+      await get(`/v4/spreadsheets/${encodeURIComponent(sheetId)}/values/${encodeURIComponent(range)}?valueInputOption=RAW`, 'PUT', { range, majorDimension: 'ROWS', values: rows });
     },
     async columns(sheetId, tab, indexes) {
       if (indexes.length === 0) return [];
