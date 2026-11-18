@@ -71,7 +71,7 @@ after(async () => { google.close(); server.close(); if (!skip) await db.end(); }
 beforeEach(async () => {
   disco.pool = Array.from({ length: 300 }, (_, i) => co(i + 1));
   disco.lists = new Map(); disco.discoverCalls = 0;
-  google.written = {}; google.writes = 0; google.creates = 0; google.maxWriteBytes = 0;
+  google.written = {}; google.grid = {}; google.writes = 0; google.creates = 0; google.maxWriteBytes = 0;
   if (!skip) await db.query('TRUNCATE jobs, steps, receipts, events, lead_companies, lead_list_sheets, lead_list_profiles RESTART IDENTITY CASCADE');
 });
 
