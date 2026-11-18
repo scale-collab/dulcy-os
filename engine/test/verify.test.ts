@@ -291,3 +291,24 @@ test('verify: needs rows or a sheet', { skip }, async () => {
   assert.equal(j.job.status, 'failed');
   assert.match(j.job.error, /input.rows .* or input.source.sheetId/);
 });
+
+test('errors hide the person in an email', () => {
+  assert.throws(() => parseResults('email,result\nlester@lampert.com,ok', ['a@x.com']), (e: Error) => e.message.includes('l***@lampert.com') && !e.message.includes('lester@'));
+});
+
+test('diagnose mode: a saved job that no longer matches the sheet is explained, not failed (counts only)', { skip }, async () => {
+  google.tabs = {
+    Contacts: [['Email', 'First Name', 'Last Name', 'Domain'], ['ann@acme.com', 'Ann', 'Lee', 'acme.com']],
+    'Expanded Companies': [['Name', 'Domain', 'Public Emails', 'Excluded Personal Emails'], ['Acme', 'acme.com', '["info@acme.com"]', '["joe@acme.com"]']],
+  };
+  // Saved job verified 4 emails; today the sheet has 2 of them (+ joe moved to excluded, gone@old.com's company removed, bo@acme.com row deleted).
+  fake.jobs.set('old-5', ['ann@acme.com', 'info@acme.com', 'joe@acme.com', 'gone@old.com', 'bo@acme.com']);
+  const q = await enqueueVerify({ source: { sheetId: '1QYLOeUxwDXunQm_KMEYKB_7jW7l47ZQJ8wVVtCZBUd8' }, existingJobId: 'old-5', diagnose: true }, true);
+  const j = await runUntilSettled(cfg({ dryRun: true }), q.job.id);
+  assert.equal(j.job.status, 'succeeded');
+  assert.equal(fake.uploads, 0);
+  assert.deepEqual(j.job.result.diagnosis.whyNotInList, { movedToExcludedPersonalEmails: 1, companyStillInListButEmailGone: 1, companyNoLongerInList: 1 });
+  assert.equal(j.job.result.diagnosis.inFileNotInList, 3);
+  assert.equal(j.job.result.counts.good, 2);
+  assert.ok(!JSON.stringify(j.job.result.diagnosis).includes('@'), 'no emails in the diagnosis');
+});

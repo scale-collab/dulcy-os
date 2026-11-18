@@ -33,7 +33,15 @@ const CONTACT_COLS: Record<string, string[]> = {
 const COMPANY_COLS: Record<string, string[]> = {
   footprint: ['digital_footprint', 'digital_footprint_score', 'score'], domain: ['domain', 'website', 'company_domain'],
   company: ['name', 'company', 'company_name'], address: ['address'], publicEmails: ['public_emails', 'public_email', 'emails'],
+  excludedPersonal: ['excluded_personal_emails'],
 };
+
+function emailList(raw: string): string[] {
+  if (!raw) return [];
+  let list: unknown[];
+  try { const p = JSON.parse(raw); list = Array.isArray(p) ? p : [p]; } catch { list = raw.split(/[;,\n]+/); }
+  return list.map((item) => String((item as { email?: unknown })?.email ?? item ?? '').trim().toLowerCase()).filter((e) => EMAIL.test(e));
+}
 
 /** Accepts a sheet ID or a full Google Sheets link. */
 export function sheetIdFrom(v: string): string {
@@ -89,17 +97,13 @@ export function directRows(rows: Record<string, string>[]): InputRow[] {
 export function genericRows(rows: Record<string, string>[]): InputRow[] {
   const out: InputRow[] = [];
   for (const g of rows) {
-    const raw = g.publicEmails ?? '';
-    if (!raw) continue;
-    let list: unknown[];
-    try { const p = JSON.parse(raw); list = Array.isArray(p) ? p : [p]; } catch { list = raw.split(/[;,\n]+/); }
     const fp = g.footprint ?? '';
     const footprint = /^\d+(?:\.\d+)?$/.test(fp) ? Number(fp) : null;
-    for (const item of list) {
-      const email = String((item as { email?: unknown })?.email ?? item ?? '').trim().toLowerCase();
-      if (!EMAIL.test(email)) continue;
+    for (const email of emailList(g.publicEmails ?? '')) {
       out.push({ type: 'generic', email, company: g.company ?? '', domain: domainOf(g.domain ?? ''), country: g.address ?? '', footprint });
     }
+    // Kept only to explain differences; never verified or used.
+    for (const email of emailList(g.excludedPersonal ?? '')) out.push({ type: 'excluded', email, domain: domainOf(g.domain ?? '') });
   }
   return out;
 }
