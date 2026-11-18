@@ -67,9 +67,10 @@ async function main() {
       const { createBisonClient } = await import('./providers/emailbison.js');
       const bison = createBisonClient({ apiKey: cfg.emailBisonKeys[ws], baseUrl: cfg.emailBisonBaseUrl });
       const filter = String(args[1] ?? '').toLowerCase();
-      const list = (await bison.workspaceSenders()).filter((x) => !filter || (x.email ?? '').includes(filter));
+      const all = await bison.workspaceSenders();
+      const list = all.filter((x) => !filter || (x.email ?? '').includes(filter));
       for (const x of list) console.log(`${x.id}\t${x.status}\t${x.email ?? ''}`);
-      console.log(`${list.length} sender(s)`);
+      console.log(`${list.length} shown of ${all.length} sender inboxes (${all.filter((x) => x.status === 'connected').length} connected)`);
     } else if (cmd === 'job') {
       const j = await getJob(db, Number(args[0]));
       if (!j) throw new Error('job not found');

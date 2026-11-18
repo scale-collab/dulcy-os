@@ -119,7 +119,10 @@ export function createBisonClient(o: BisonOptions) {
     /** Every sender inbox in the workspace (id, email, status). */
     async workspaceSenders(): Promise<BisonSender[]> {
       const rows = await pages<any>('/api/sender-emails', 200);
-      return rows.map((x) => ({ id: String(x.id), status: String(x.status ?? '').toLowerCase(), email: x.email ? String(x.email).toLowerCase() : undefined }));
+      return rows.map((x) => {
+        const email = x.email ?? x.email_address ?? x.from_email_address;
+        return { id: String(x.id), status: String(x.status ?? '').toLowerCase(), email: email ? String(email).trim().toLowerCase() : undefined };
+      });
     },
     attachSenders: (campaignId: number, senderIds: string[]) =>
       call('POST', `/api/campaigns/${campaignId}/attach-sender-emails`, { sender_email_ids: senderIds.map(String) }, { write: true }),

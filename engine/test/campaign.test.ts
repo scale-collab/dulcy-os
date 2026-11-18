@@ -219,7 +219,7 @@ test('senders by email address: resolved to EmailBison\'s current IDs; unknown a
   const q2 = await queue({ senderEmailIds: undefined, senderEmails: ['nobody@dulcy-mail.com'] });
   const j2 = await settle(cfg(), q2.job.id);
   assert.equal(j2.job.status, 'failed');
-  assert.match(j2.job.error, /not in this EmailBison workspace: nobody@dulcy-mail.com/);
+  assert.match(j2.job.error, /not in this EmailBison workspace: nobody@dulcy-mail.com \(the workspace has 3 sender inboxes, 3 connected/);
 });
 
 test('stale sender IDs: EmailBison refuses and the job fails cleanly with its reason', { skip }, async () => {

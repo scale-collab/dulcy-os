@@ -213,7 +213,10 @@ export const campaignBuildStage: Stage = async (ctx) => {
       const all = await bison.workspaceSenders();
       const byEmail = new Map(all.filter((x) => x.email).map((x) => [x.email!, x.id]));
       const missing = input.senderEmails!.filter((e) => !byEmail.has(e));
-      if (missing.length) throw new PermanentError(`not in this EmailBison workspace: ${missing.join(', ')}`);
+      if (missing.length) {
+        const connected = all.filter((x) => x.status === 'connected').length;
+        throw new PermanentError(`not in this EmailBison workspace: ${missing.join(', ')} (the workspace has ${all.length} sender inboxes, ${connected} connected; list them with: cli.js senders ${input.workspace})`);
+      }
       return input.senderEmails!.map((e) => byEmail.get(e)!);
     });
   }
