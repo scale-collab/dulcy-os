@@ -2,7 +2,7 @@
 // Run on the server:  docker compose exec engine node dist/src/cli.js <command>
 //
 //   verify <recordId> --sheet <link or id> [--direct] [--generic] [--footprint200]
-//          [--mv-job <id>] [--expect good=N,risky=N,bad=N]
+//          [--mv-job <id>] [--expect good=N,risky=N,bad=N] [--diagnose]
 //       Queue a Verify job. Without --direct/--generic, both are included.
 //       With --mv-job it only checks/downloads that saved MillionVerifier job (free).
 //   job <id>
@@ -43,6 +43,7 @@ async function main() {
           genericFootprintMax200: args.includes('--footprint200'),
           existingJobId: flag(args, '--mv-job'),
           expected: Object.keys(expected).length ? expected : undefined,
+          diagnose: args.includes('--diagnose'),
         },
       });
       console.log(JSON.stringify({ status: r.status, jobId: r.job.id, dryRun: r.job.dry_run }));
@@ -51,7 +52,7 @@ async function main() {
       const j = await getJob(db, Number(args[0]));
       if (!j) throw new Error('job not found');
       const res = (j.job.result ?? {}) as Record<string, unknown>;
-      const keep = ['dryRun', 'millionVerifierJobId', 'plan', 'counts', 'finalDirectCount', 'finalGenericCount', 'pendingRemainder', 'message', 'comparison', 'wouldSpendCredits'];
+      const keep = ['dryRun', 'millionVerifierJobId', 'plan', 'counts', 'finalDirectCount', 'finalGenericCount', 'pendingRemainder', 'message', 'comparison', 'diagnosis', 'wouldSpendCredits'];
       console.log(JSON.stringify({
         id: j.job.id, kind: j.job.kind, record: j.job.record_id, status: j.job.status, progress: j.job.progress, error: j.job.error,
         result: Object.fromEntries(keep.filter((k) => k in res).map((k) => [k, res[k]])),

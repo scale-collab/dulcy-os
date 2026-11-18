@@ -53,6 +53,7 @@ The result has the counts, Final Direct / Final Generic rows, held rows, pending
 cd /opt/dulcy-os/engine/deploy
 docker compose exec engine node dist/src/cli.js verify <recordId> --sheet <sheet link> --mv-job <MillionVerifier Job ID> --expect good=N,risky=N,bad=N,finalDirect=N,finalGeneric=N
 docker compose exec engine node dist/src/cli.js job <jobId>
+# If the saved job no longer matches the sheet (the sheet was edited after verification), add --diagnose to see how many emails differ and why (counts only).
 ```
 
 Not in this step: LeadMagic fallback, top-up "this build only" exclusions, the separate-workbook layout, and writing back to Airtable/Sheets.

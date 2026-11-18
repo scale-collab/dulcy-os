@@ -19,7 +19,7 @@ import { createMvClient } from '../providers/millionverifier.js';
 import { createSheetsClient } from '../providers/google.js';
 import { loadSheetRows, type SheetSource } from '../sources/sheet.js';
 import {
-  buildCandidates, buildOutputs, compare, parseResults, toCsv,
+  buildCandidates, buildOutputs, compare, parseResults, parseResultsLoose, toCsv, type ResultDiff,
   type CandidateSet, type Expected, type InputRow, type VerifiedEmail,
 } from '../verify/rules.js';
 
@@ -35,6 +35,11 @@ interface VerifyInput {
   existingJobId?: string;
   /** The old workflow's counts for the same list, for the side-by-side check. */
   expected?: Expected;
+  /**
+   * Shadow tests only, with existingJobId: don't stop on a file/list mismatch; count the
+   * difference and explain it. Never allowed when the engine would write or pay.
+   */
+  diagnose?: boolean;
 }
 
 function readInput(raw: Record<string, unknown>): VerifyInput {
@@ -52,6 +57,7 @@ function readInput(raw: Record<string, unknown>): VerifyInput {
     genericFootprintMax200: raw.genericFootprintMax200 === true,
     existingJobId: existing || undefined,
     expected: (raw.expected ?? undefined) as Expected | undefined,
+    diagnose: raw.diagnose === true,
   };
 }
 
@@ -86,6 +92,7 @@ export const verifyStage: Stage = async (ctx) => {
 
   let fileId = input.existingJobId;
   let results: VerifiedEmail[] = [];
+  let diff: ResultDiff | undefined;
 
   if (emails.length > 0) {
     if (!fileId) {
@@ -118,7 +125,14 @@ export const verifyStage: Stage = async (ctx) => {
     }
 
     const id = fileId;
-    results = await ctx.step('download-results', async () => parseResults(await mv.download(id), emails));
+    if (input.diagnose) {
+      if (!input.existingJobId) throw new PermanentError('diagnose mode only works with a saved MillionVerifier job (existingJobId)');
+      const loose = await ctx.step('download-results', async () => parseResultsLoose(await mv.download(id), emails));
+      results = loose.results;
+      diff = loose.diff;
+    } else {
+      results = await ctx.step('download-results', async () => parseResults(await mv.download(id), emails));
+    }
   }
 
   const out = await ctx.step('outputs', async () => buildOutputs(set, results));
@@ -146,9 +160,32 @@ export const verifyStage: Stage = async (ctx) => {
       'MillionVerifier Job ID': fileId ?? '',
     },
     comparison: input.expected ? compare(out, input.expected) : undefined,
+    // Diagnose mode: how the saved job differs from today's sheet (counts + why; no emails).
+    diagnosis: diff ? explainDiff(diff, set) : undefined,
     finalDirect: out.finalDirect,
     finalGeneric: out.finalGeneric,
     held: out.held,
     pendingEmails: out.pendingEmails,
   };
 };
+
+/** Why a saved MillionVerifier job no longer matches the sheet, in counts only. */
+function explainDiff(diff: ResultDiff, set: CandidateSet) {
+  const domainOf = (e: string) => e.split('@')[1] ?? '';
+  const listDomains = new Set([...set.send, ...set.holds, ...set.invalidSyntax].map((c) => domainOf(c.email)));
+  for (const r of set.missingEmail) if (r.domain) listDomains.add(String(r.domain).toLowerCase());
+  const excluded = new Set(set.excludedPersonal ?? []);
+  let inExcludedPersonal = 0, companyStillInList = 0, companyGone = 0;
+  for (const e of diff.inFileNotInList) {
+    if (excluded.has(e)) inExcludedPersonal++;
+    else if (listDomains.has(domainOf(e))) companyStillInList++;
+    else companyGone++;
+  }
+  return {
+    inFileNotInList: diff.inFileNotInList.length,
+    inListNotInFile: diff.inListNotInFile.length,
+    duplicatesInFile: diff.duplicatesInFile,
+    whyNotInList: { movedToExcludedPersonalEmails: inExcludedPersonal, companyStillInListButEmailGone: companyStillInList, companyNoLongerInList: companyGone },
+    note: 'counts compare the saved MillionVerifier job with the sheet as it is today',
+  };
+}

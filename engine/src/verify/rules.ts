@@ -45,6 +45,8 @@ export interface CandidateSet {
   duplicates: number;
   /** Fingerprint of the email set; the same set on the same list never pays twice. */
   hash: string;
+  /** Personal emails the sheet moved out of public_emails (never verified; used to explain diffs). */
+  excludedPersonal?: string[];
 }
 
 /** Role inboxes treated as generic even when they came from the contacts tab. */
@@ -83,7 +85,9 @@ export function buildCandidates(rows: InputRow[], opts: VerifyOptions): Candidat
   let duplicates = 0;
 
   const byEmail = new Map<string, Candidate[]>();
+  const excludedPersonal: string[] = [];
   for (const row of rows) {
+    if (text(row.type).toLowerCase() === 'excluded') { const e = normalizeEmail(row.email); if (e) excludedPersonal.push(e); continue; }
     const email = normalizeEmail(row.email);
     if (!email) { missingEmail.push(row); continue; }
     const kind = emailKind(row, email);
@@ -126,7 +130,7 @@ export function buildCandidates(rows: InputRow[], opts: VerifyOptions): Candidat
   }
 
   const hash = createHash('sha256').update(send.map((c) => c.email).sort().join('\n')).digest('hex').slice(0, 16);
-  return { send, holds, missingEmail, invalidSyntax, droppedFootprint, droppedByType, duplicates, hash };
+  return { send, holds, missingEmail, invalidSyntax, droppedFootprint, droppedByType, duplicates, hash, excludedPersonal };
 }
 
 export function toCsv(emails: string[]): string {
@@ -166,6 +170,48 @@ export interface VerifiedEmail { email: string; verdict: Verdict; detail: string
  * Parse the MillionVerifier result file. Strict, like the old workflow: an unexpected,
  * duplicate or missing email means the file does not match this list → a person looks.
  */
+/** For messages and logs: keeps the domain, hides the person (j***@acme.com). */
+export function maskEmail(email: string): string {
+  const [local, domain] = email.split('@');
+  return domain ? `${(local ?? '').slice(0, 1)}***@${domain}` : '***';
+}
+
+export interface ResultDiff {
+  /** Emails in the MillionVerifier file that the list no longer has. */
+  inFileNotInList: string[];
+  /** List emails the MillionVerifier file does not cover. */
+  inListNotInFile: string[];
+  duplicatesInFile: number;
+}
+
+/**
+ * Diagnose mode (shadow tests only): parse without failing on a mismatch and report the
+ * difference, so we can see why a saved job no longer matches the sheet.
+ */
+export function parseResultsLoose(csv: string, expectedEmails: string[]): { results: VerifiedEmail[]; diff: ResultDiff } {
+  const lines = csv.replace(/^\uFEFF/, '').split(/\r?\n/).filter((l) => l.trim() !== '');
+  const header = parseLine(lines.shift() ?? '').map((h) => h.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_'));
+  const ei = header.findIndex((h) => h === 'email' || h === 'email_address');
+  const si = ['result', 'status', 'quality'].map((n) => header.indexOf(n)).find((i) => i >= 0) ?? -1;
+  if (ei < 0 || si < 0) throw new NeedsReviewError('MillionVerifier file is missing the email or result column');
+  const expected = new Set(expectedEmails);
+  const seen = new Set<string>();
+  const results: VerifiedEmail[] = [];
+  const inFileNotInList: string[] = [];
+  let duplicatesInFile = 0;
+  for (const line of lines) {
+    const cells = parseLine(line);
+    const email = normalizeEmail(cells[ei]);
+    if (seen.has(email)) { duplicatesInFile++; continue; }
+    seen.add(email);
+    if (!expected.has(email)) { inFileNotInList.push(email); continue; }
+    const detail = text(cells[si]).toLowerCase();
+    results.push({ email, verdict: mapVerdict(detail), detail: detail || 'unprocessed_no_credits' });
+  }
+  const inListNotInFile = expectedEmails.filter((e) => !seen.has(e));
+  return { results, diff: { inFileNotInList, inListNotInFile, duplicatesInFile } };
+}
+
 export function parseResults(csv: string, expectedEmails: string[]): VerifiedEmail[] {
   const lines = csv.replace(/^﻿/, '').split(/\r?\n/).filter((l) => l.trim() !== '');
   const header = parseLine(lines.shift() ?? '').map((h) => h.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_'));
@@ -178,8 +224,8 @@ export function parseResults(csv: string, expectedEmails: string[]): VerifiedEma
   for (const line of lines) {
     const cells = parseLine(line);
     const email = normalizeEmail(cells[ei]);
-    if (!expected.has(email)) throw new NeedsReviewError(`MillionVerifier file has an email that is not in this list (${email}); the saved job may belong to an older version of the list`);
-    if (seen.has(email)) throw new NeedsReviewError(`MillionVerifier file lists ${email} twice`);
+    if (!expected.has(email)) throw new NeedsReviewError(`MillionVerifier file has an email that is not in this list (${maskEmail(email)}); the saved job may belong to an older version of the list`);
+    if (seen.has(email)) throw new NeedsReviewError(`MillionVerifier file lists ${maskEmail(email)} twice`);
     seen.add(email);
     const detail = text(cells[si]).toLowerCase();
     out.push({ email, verdict: mapVerdict(detail), detail: detail || 'unprocessed_no_credits' });
