@@ -1,6 +1,6 @@
 # Lead Engine: plan (draft for Alex's approval)
 
-Status: DRAFT, 2026-11-18. Nothing is built or changed until Alex approves this plan.
+Status: **APPROVED by Alex 2026-11-18.** Building step 1 (skeleton, dry-run only).
 Research behind it: `engine/research/map-lead-list.md`, `engine/research/map-campaign.md`, `engine/research/lead-worker-review.md`.
 
 ## 1. Goal

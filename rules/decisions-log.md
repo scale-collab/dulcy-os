@@ -27,3 +27,4 @@ Newest at the bottom. Format: `date | decision | why | who`
 2026-11-18 | Code-based fit filter (no LLM), drops obvious bad fits only; bounce pause >4% at 35%+ progress, re-checked each refresh; auto-restart failed campaigns stays; top-up = interested 15%+ is the driver (bounce <4%, RR 2%+ targets, higher bounce = watch); days between emails default 2, editable | Alex answered engine plan decisions | Alex
 2026-11-18 | Lead engine auto-launches a campaign once all launch checks pass; manual launches by agents still need Alex's OK | Alex: the information in the system should be sufficient to decide | Alex
 2026-11-18 | 3 workflows the Lead List hands work to (CodexContactProcessorDraft20261028, JWrteAxXQ1PIII4IelGoX, NtpwlzuP2tuJM6OC5U_m9) still return 'Workflow not found'; connector sees 158 | Checked live | Claude
+2026-11-18 | engine/PLAN.md approved by Alex; start step 1 (skeleton, dry-run only) | Alex approved | Alex
