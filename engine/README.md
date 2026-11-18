@@ -58,6 +58,26 @@ docker compose exec engine node dist/src/cli.js job <jobId>
 
 Not in this step: LeadMagic fallback, top-up "this build only" exclusions, the separate-workbook layout, and writing back to Airtable/Sheets.
 
+## Campaign build stage (`campaign.build`), step 3
+Builds one EmailBison campaign (one output: direct **or** generic) and **never launches it**. Built from the old n8n Output Builder's calls and rules (`src/campaign/rules.ts`, `src/providers/emailbison.ts`). It fixes:
+- **Duplicates:** the campaign is created through a record-scoped receipt and its ID is kept at once. If a create's outcome is unclear (timeout, 5xx), the retry looks the campaign up by exact name and adopts it instead of creating a second one. A same-name campaign that already existed is never taken over silently.
+- **Fixed waits:** each 5,000-row import is checked until EmailBison says Processed, then must reconcile exactly (processed = rows sent, failed = 0; otherwise review, with EmailBison's reason).
+- **Lead count:** checked against Airtable's count before anything is created, and the campaign must end with exactly the uploaded leads.
+- **Senders:** at most the number the leads can keep busy (leads / days between / 15); after attaching, the set must match exactly, all connected, no .info domains.
+- **Errors:** EmailBison's message is kept, emails masked. Re-running the same record never duplicates anything.
+- Sequence: 1-4 steps, up to 10 variants per step, wait on the step before (default 2 days). Generic copy drops the "Hi {FIRST_NAME}," line and refuses any other {FIRST_NAME}. Every merge tag must have a column in the Final tab.
+- Schedule Mon-Fri, 08:xx-18:xx America/New_York (stable per campaign); settings as the old builder (can_unsubscribe false: flagged for Lex).
+
+Keys: `EMAILBISON_KEY_<WORKSPACE>` in the server `.env` only. Live switch per stage: `LIVE_STAGES=campaign.build` keeps MillionVerifier in dry-run.
+
+Run on the server (dry-run shows the plan; live builds):
+```bash
+docker compose exec -T engine node dist/src/cli.js campaign < build.json
+```
+`build.json`: `{"recordId":"rec...","name":"...","workspace":"dulcy","outputType":"direct","steps":[{"subject":"...","body":"...","variants":[...]}],"source":{"sheetId":"..."},"expectedLeads":N,"senderEmailIds":["..."]}`
+
+Not yet: reading the copy and senders from Airtable, writing the IDs back, splitting direct/generic families, top-up (step 4).
+
 ## How Airtable will call it
 `POST /jobs` with `{"kind": "...", "recordId": "rec...", "clientId": "rec...", "input": {...}, "requestId": "unique-per-click"}`.
 

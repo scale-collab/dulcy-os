@@ -38,6 +38,13 @@ export interface Config {
   /** Workspace user the service account reads as (domain-wide delegation). */
   googleImpersonateUser?: string;
   googleSheetsBaseUrl: string;
+  /** Stages allowed to make real calls while DRY_RUN stays on for everything else. */
+  liveStages: string[];
+  /** EmailBison API keys per workspace, from EMAILBISON_KEY_<WORKSPACE> (server .env only). */
+  emailBisonKeys: Record<string, string>;
+  emailBisonBaseUrl: string;
+  /** How often a waiting campaign build checks EmailBison again (imports, lead totals). */
+  bisonPollMs: number;
 }
 
 export function loadConfig(env = process.env): Config {
@@ -64,5 +71,11 @@ export function loadConfig(env = process.env): Config {
     googleKeyFile: env.GOOGLE_KEY_FILE || '/app/secrets/google-sa.json',
     googleImpersonateUser: env.GOOGLE_IMPERSONATE_USER || undefined,
     googleSheetsBaseUrl: env.GOOGLE_SHEETS_BASE_URL || 'https://sheets.googleapis.com',
+    liveStages: (env.LIVE_STAGES ?? '').split(',').map((s) => s.trim()).filter(Boolean),
+    emailBisonKeys: Object.fromEntries(Object.entries(env)
+      .filter(([k, v]) => k.startsWith('EMAILBISON_KEY_') && v)
+      .map(([k, v]) => [k.slice('EMAILBISON_KEY_'.length).toLowerCase(), String(v)])),
+    emailBisonBaseUrl: env.EMAILBISON_BASE_URL || 'https://send.dulcy.io',
+    bisonPollMs: num('BISON_POLL_MS', 60_000, env),
   };
 }

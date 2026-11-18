@@ -45,7 +45,7 @@ export async function startFakeGoogle(): Promise<FakeGoogle> {
       const t = tabRange(values[1]);
       if (!t || !state.tabs[t.tab]) { res.writeHead(400); return res.end('{"error":"Unable to parse range"}'); }
       res.writeHead(200, { 'content-type': 'application/json' });
-      return res.end(JSON.stringify({ values: [state.tabs[t.tab][0]] }));
+      return res.end(JSON.stringify({ values: t.range === 'A:ZZ' ? state.tabs[t.tab] : [state.tabs[t.tab][0]] }));
     }
     if (u.pathname.endsWith('/values:batchGet')) {
       const out = u.searchParams.getAll('ranges').map((r) => {
