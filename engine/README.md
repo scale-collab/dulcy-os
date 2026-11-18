@@ -39,7 +39,7 @@ UNKNOWN: whether Airtable automation scripts can compute HMAC (`crypto.subtle`).
 1. Check out this repo on the server.
 2. `cp engine/deploy/.env.example engine/deploy/.env` and fill it in: a long random `ENGINE_SECRET`, `POSTGRES_PASSWORD`, `SLACK_WEBHOOK_URL`. Keep `DRY_RUN=true`.
 3. `bash engine/deploy/deploy.sh`. It pulls, builds, starts the engine plus its own Postgres on `127.0.0.1:8090`, and checks `/health`.
-4. Point the subdomain (e.g. `engine.dulcy.io`) at it through the server's existing reverse proxy (the one serving `n8n.dulcy.io`), with HTTPS.
+4. Subdomain: add a DNS A record `engine` -> the server IP. The server runs Coolify; its Traefik proxy (`coolify-proxy`) picks the engine up from the labels in `deploy/docker-compose.yml` and gets the HTTPS certificate. Check: `curl https://engine.dulcy.io/health`.
 
 Docker build and start confirmed on the server 2026-11-18 (`/health` returned ok, dryRun true).
 
