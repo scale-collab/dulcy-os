@@ -78,7 +78,7 @@ export const campaignBuildStage: Stage = async (ctx) => {
   const tags = mergeTags(steps);
   const tab = input.source.tab ?? (input.outputType === 'generic' ? 'Final Generic' : 'Final Direct');
 
-  const sheets = () => createSheetsClient({ keyFile: ctx.cfg.googleKeyFile, impersonate: ctx.cfg.googleImpersonateUser, sheetsBaseUrl: ctx.cfg.googleSheetsBaseUrl });
+  const sheets = () => createSheetsClient({ keyFile: ctx.cfg.googleKeyFile, impersonate: ctx.cfg.googleImpersonateUser, scope: ctx.cfg.googleScope, sheetsBaseUrl: ctx.cfg.googleSheetsBaseUrl });
 
   // Checks before anything is created in EmailBison: lead count vs Airtable, sender limit.
   const plan = await ctx.step('check-leads', async () => {

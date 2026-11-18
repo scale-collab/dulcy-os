@@ -82,7 +82,7 @@ export const verifyStage: Stage = async (ctx) => {
   // Reading the sheet is free; it happens once, inside this checkpoint.
   const set = await ctx.step('build-candidates', async () => {
     const rows = input.rows ?? await loadSheetRows(
-      createSheetsClient({ keyFile: ctx.cfg.googleKeyFile, impersonate: ctx.cfg.googleImpersonateUser, sheetsBaseUrl: ctx.cfg.googleSheetsBaseUrl }),
+      createSheetsClient({ keyFile: ctx.cfg.googleKeyFile, impersonate: ctx.cfg.googleImpersonateUser, scope: ctx.cfg.googleScope, sheetsBaseUrl: ctx.cfg.googleSheetsBaseUrl }),
       input.source!, opts,
     );
     return buildCandidates(rows, opts);

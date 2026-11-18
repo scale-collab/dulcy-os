@@ -38,6 +38,8 @@ export interface Config {
   /** Workspace user the service account reads as (domain-wide delegation). */
   googleImpersonateUser?: string;
   googleSheetsBaseUrl: string;
+  /** OAuth scope asked for; must match domain-wide delegation exactly (read + write since 2026-11-18). */
+  googleScope: string;
   /** Stages allowed to make real calls while DRY_RUN stays on for everything else. */
   liveStages: string[];
   /** EmailBison API keys per workspace, from EMAILBISON_KEY_<WORKSPACE> (server .env only). */
@@ -79,6 +81,7 @@ export function loadConfig(env = process.env): Config {
     googleKeyFile: env.GOOGLE_KEY_FILE || '/app/secrets/google-sa.json',
     googleImpersonateUser: env.GOOGLE_IMPERSONATE_USER || undefined,
     googleSheetsBaseUrl: env.GOOGLE_SHEETS_BASE_URL || 'https://sheets.googleapis.com',
+    googleScope: env.GOOGLE_SCOPE || 'https://www.googleapis.com/auth/spreadsheets',
     liveStages: (env.LIVE_STAGES ?? '').split(',').map((s) => s.trim()).filter(Boolean),
     emailBisonKeys: Object.fromEntries(Object.entries(env)
       .filter(([k, v]) => k.startsWith('EMAILBISON_KEY_') && v)

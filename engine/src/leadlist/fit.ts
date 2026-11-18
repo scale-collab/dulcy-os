@@ -113,6 +113,10 @@ export function checkCompanyFit(c: Company, k: FitCriteria): FitResult {
   return { domain, decision, reasons, signals };
 }
 
+/** Alex's tiers: Tier 1 and Tier 2 go on to contacts and campaigns; Cut never does. */
+export type Tier = 'Tier 1' | 'Tier 2' | 'Cut';
+export const tierOf = (d: FitDecision): Tier => (d === 'fit' ? 'Tier 1' : d === 'maybe' ? 'Tier 2' : 'Cut');
+
 export interface SampleSummary { reviewed: number; fit: number; maybe: number; drop: number; usableRate: number; status: 'Passed' | 'Needs Review' | 'Failed' }
 
 /** The sample gate kept from the old workflow: usable = fit + maybe; Passed ≥ 80%, Needs Review ≥ 70%. */

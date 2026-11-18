@@ -10,11 +10,13 @@ export function createDiscoLikeClient(o: DiscoLikeOptions) {
   const base = o.baseUrl.replace(/\/+$/, '');
   const timeoutMs = o.timeoutMs ?? 120_000;
 
-  async function get(path: string, paid: boolean): Promise<{ status: number; body: any }> {
+  async function get(path: string, paid: boolean, post?: unknown): Promise<{ status: number; body: any }> {
     if (!o.apiKey) throw new PermanentError('no DiscoLike API key on the server (DISCOLIKE_API_KEY)');
     let res: Response;
     try {
-      res = await f(`${base}${path}`, { headers: { 'x-discolike-key': o.apiKey, accept: 'application/json' }, signal: AbortSignal.timeout(timeoutMs) });
+      const headers: Record<string, string> = { 'x-discolike-key': o.apiKey, accept: 'application/json' };
+      if (post !== undefined) headers['content-type'] = 'application/json';
+      res = await f(`${base}${path}`, { method: post === undefined ? 'GET' : 'POST', headers, body: post === undefined ? undefined : JSON.stringify(post), signal: AbortSignal.timeout(timeoutMs) });
     } catch {
       // A paid search that timed out may still have been charged: outcome unknown.
       if (paid) throw new Error('DiscoLike: network error or timeout; outcome unknown');
@@ -36,6 +38,13 @@ export function createDiscoLikeClient(o: DiscoLikeOptions) {
   }
 
   return {
+    /** Save a list of domains to exclude from later searches; returns its query ID (old workflow call). */
+    async exclusionList(name: string, domains: string[], tags: string[]): Promise<string> {
+      const r = await get('/v1/queries/exclusion-list', false, { query_name: name, domains, tags });
+      const id = String(r.body?.query_id ?? r.body?.id ?? r.body?.data?.query_id ?? r.body?.data?.id ?? '').trim();
+      if (!id) throw new RetryableError('DiscoLike did not return an exclusion query ID');
+      return id;
+    },
     /** Free: about how many companies match (count-compatible filters only; null = not countable). */
     async count(filters: Filters): Promise<{ count: number; ignored: string[] } | null> {
       const c = countFilters(filters);

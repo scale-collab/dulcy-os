@@ -70,3 +70,29 @@ CREATE TABLE IF NOT EXISTS events (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS events_job ON events (job_id, id);
+
+-- Lead-list companies: the engine's master copy (Google Sheets is only a view of it).
+-- One row per company per lead list; batch 0 = the sample, 1.. = expansion batches.
+CREATE TABLE IF NOT EXISTS lead_companies (
+  list_id     TEXT NOT NULL,              -- Airtable Lead List record
+  domain      TEXT NOT NULL,
+  tier        TEXT NOT NULL CHECK (tier IN ('Tier 1','Tier 2','Cut')),
+  reasons     JSONB NOT NULL DEFAULT '[]',
+  signals     JSONB NOT NULL DEFAULT '[]',
+  data        JSONB NOT NULL,             -- the company fields the fit check read
+  batch       INT NOT NULL,
+  seq         BIGSERIAL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (list_id, domain)
+);
+CREATE INDEX IF NOT EXISTS lead_companies_batch ON lead_companies (list_id, batch, seq);
+
+-- Where each list is mirrored in Google Sheets, and which batches are already written.
+CREATE TABLE IF NOT EXISTS lead_list_sheets (
+  list_id           TEXT NOT NULL,
+  kind              TEXT NOT NULL,        -- 'companies' (later: 'contacts', 'final')
+  sheet_id          TEXT NOT NULL,
+  tab               TEXT NOT NULL,
+  mirrored_batches  INT[] NOT NULL DEFAULT '{}',
+  PRIMARY KEY (list_id, kind)
+);
