@@ -1,6 +1,6 @@
 # Where we are (update this at the end of every session)
 
-Last updated: 2026-11-17 (live pull from n8n and Airtable)
+Last updated: 2026-11-18 (engine step 3 proven live)
 
 ## Done
 - Repo is the memory: CLAUDE.md, rules/RULES.md, rules/decisions-log.md, five skills, SOPs, client index, channel evidence, pricing.
@@ -44,17 +44,12 @@ Last updated: 2026-11-17 (live pull from n8n and Airtable)
 - [x] Reply conflicts answered by Alex 2026-11-17 (see RULES). Still open: mock-call interviews yes/no (Harper).
 - [ ] Alex reviews each agent and corrects it.
 
-## ▶ Pick up here (engine live test, paused 2026-11-18 night)
-Test campaign **648** ("ENGINE TEST - do not launch - Manufacturing Direct", Dulcy workspace) is built except senders: sequence done, 226 leads uploaded and verified. Never launched.
-Why it stopped: the 2 senders taken from Airtable (alexander@usedulcy.com, alexander@withdulcy.com; Email IDs 6498/6500) are **not in EmailBison anymore**. EmailBison called the IDs invalid, and the address lookup found neither. Airtable's Email Accounts table still lists removed inboxes (data fix for Riley).
-Tomorrow, on the server (`cd /opt/dulcy-os/engine/deploy`):
-1. `bash deploy.sh` (gets the clearer sender error + totals).
-2. `docker compose exec engine node dist/src/cli.js senders dulcy | tail -20` → pick 2 lines that say `connected`.
-3. Put those 2 addresses in `tests/engine-test-build.json` → `senderEmails` (Claude can do it from the pasted list), then
-   `docker compose exec -T engine node dist/src/cli.js campaign < tests/engine-test-build.json` and `... cli.js job <id>`.
-   It reuses campaign 648 and its leads; only the senders step runs.
-4. When it succeeds: step 3 is proven live. Delete campaign 648 in EmailBison if not wanted (needs Alex).
-Still open: rotate the MillionVerifier key (it was pasted in chat on 2026-11-18).
+## ▶ Pick up here (engine, 2026-11-18 afternoon)
+**Step 3 (campaign build) is PROVEN LIVE.** Job 12 built test campaign **649** ("ENGINE TEST 2 - do not launch - Manufacturing Direct", Dulcy workspace 2): 3 emails (2 days apart, follow-ups threaded), 226 leads uploaded, 52 added, 174 skipped by EmailBison (already in sequence in other Dulcy campaigns; the engine never forces parallel sending), 2 senders attached and connected, draft, not launched. Checked directly in EmailBison.
+Earlier test campaign 648 had landed in client workspace 80 (Brilliant Jewelers) before the per-call workspace switch existed. Cleaned up with Alex's OK (226 test leads, 1 variable, campaign queued for deletion; lead list 776 removed by hand).
+Campaign 649 stays as a draft unless Alex wants it deleted.
+Still open: rotate the MillionVerifier key (pasted in chat 2026-11-18). Delete lead list 776 in workspace 80 by hand if not done.
+Next options (Alex picks): bounce check report-only run (`cli.js bounce dulcy`, needs `EMAILBISON_TEAM_DULCY=2` in the server .env), the DiscoLike company stage (needs a DiscoLike key on the server), or Airtable wiring and write-back (needs an Airtable token).
 
 **Built overnight 2026-11-18 (code + tests only, nothing live; 72/72 tests):**
 - Step 4 **top-up** (`campaign.topup`): Alex's KPI rule first (interested 15%+ of replies; bounce/reply/progress are watch flags), connected senders, count vs Airtable, same upload checks as the build, added vs skipped measured once the total settles.
