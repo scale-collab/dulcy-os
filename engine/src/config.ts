@@ -33,6 +33,11 @@ export interface Config {
   millionVerifierBaseUrl: string;
   /** How often a waiting verification job checks MillionVerifier again. */
   verifyPollMs: number;
+  /** Google service-account key file (read-only Sheets access), on the server only. */
+  googleKeyFile: string;
+  /** Workspace user the service account reads as (domain-wide delegation). */
+  googleImpersonateUser?: string;
+  googleSheetsBaseUrl: string;
 }
 
 export function loadConfig(env = process.env): Config {
@@ -56,5 +61,8 @@ export function loadConfig(env = process.env): Config {
     millionVerifierApiKey: env.MILLIONVERIFIER_API_KEY || undefined,
     millionVerifierBaseUrl: env.MILLIONVERIFIER_BASE_URL || 'https://bulkapi.millionverifier.com',
     verifyPollMs: num('VERIFY_POLL_MS', 2 * 60_000, env),
+    googleKeyFile: env.GOOGLE_KEY_FILE || '/app/secrets/google-sa.json',
+    googleImpersonateUser: env.GOOGLE_IMPERSONATE_USER || undefined,
+    googleSheetsBaseUrl: env.GOOGLE_SHEETS_BASE_URL || 'https://sheets.googleapis.com',
   };
 }

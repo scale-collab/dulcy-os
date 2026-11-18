@@ -46,7 +46,16 @@ Input (`POST /jobs`, `kind: "leadlist.verify"`):
 ```
 The result has the counts, Final Direct / Final Generic rows, held rows, pending emails, an `airtablePreview` of the fields step 2b will write, and the `comparison`. Logs keep counts only, never lead rows.
 
-Not in this step: LeadMagic fallback, reading the rows from the list's Google Sheet, and writing back to Airtable/Sheets (step 2b).
+**Reading the list's sheet** (`input.source.sheetId`, a link or an ID): direct contacts from the `Contacts` tab, generic emails from `Expanded Companies` → `public_emails`, with the old workflow's rules (`src/sources/sheet.ts`). Only the needed columns are downloaded. Access is a read-only Google service account acting as `GOOGLE_IMPERSONATE_USER` (default scale@dulcy.io) through domain-wide delegation. Its key is `deploy/secrets/google-sa.json` on the server only; `deploy.sh` moves `deploy/google-sa.json` there and locks the folder.
+
+**Side-by-side test on the server (free: it reuses the list's saved MillionVerifier job):**
+```bash
+cd /opt/dulcy-os/engine/deploy
+docker compose exec engine node dist/src/cli.js verify <recordId> --sheet <sheet link> --mv-job <MillionVerifier Job ID> --expect good=N,risky=N,bad=N,finalDirect=N,finalGeneric=N
+docker compose exec engine node dist/src/cli.js job <jobId>
+```
+
+Not in this step: LeadMagic fallback, top-up "this build only" exclusions, the separate-workbook layout, and writing back to Airtable/Sheets.
 
 ## How Airtable will call it
 `POST /jobs` with `{"kind": "...", "recordId": "rec...", "clientId": "rec...", "input": {...}, "requestId": "unique-per-click"}`.

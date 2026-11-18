@@ -6,8 +6,12 @@ services:
     build: ..
     restart: unless-stopped
     env_file: .env
+    volumes:
+      # Key files (e.g. google-sa.json) live here on the server only; never in git.
+      - ./secrets:/app/secrets:ro
     environment:
       DATABASE_URL: postgres://engine:${POSTGRES_PASSWORD}@db:5432/engine
+      GOOGLE_IMPERSONATE_USER: ${GOOGLE_IMPERSONATE_USER:-scale@dulcy.io}
     ports:
       - "127.0.0.1:8090:8080"
     networks: [default, coolify]
