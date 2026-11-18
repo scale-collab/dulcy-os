@@ -56,7 +56,11 @@ Tomorrow, on the server (`cd /opt/dulcy-os/engine/deploy`):
 4. When it succeeds: step 3 is proven live. Delete campaign 648 in EmailBison if not wanted (needs Alex).
 Still open: rotate the MillionVerifier key (it was pasted in chat on 2026-11-18).
 
-**Built overnight 2026-11-18 (code + tests only, nothing live):** step 4 top-up (`campaign.topup`) and the bounce check (`bounce.check`: pause over 4% at 35%+ progress, watch over 2.5%, re-checked every run, report-only until switched live). See engine/README. Neither has run against the real EmailBison yet.
+**Built overnight 2026-11-18 (code + tests only, nothing live; 72/72 tests):**
+- Step 4 **top-up** (`campaign.topup`): Alex's KPI rule first (interested 15%+ of replies; bounce/reply/progress are watch flags), connected senders, count vs Airtable, same upload checks as the build, added vs skipped measured once the total settles.
+- **Bounce check** (`bounce.check`): pause over 4% at 35%+ progress, watch over 2.5%, re-checked every run, pause confirmed, Slack summary. Report-only until `LIVE_STAGES` includes `bounce.check`; optional timer `BOUNCE_CHECK_EVERY_MIN`.
+- Step 5 groundwork, **fit check as code** (`engine/src/leadlist/fit.ts`): drops only obvious bad fits with a reason (exclusion lists, excluded words/industries, known size/country outside range, directories/marketplaces/staffing/etc. unless targeted, residential vs commercial-only), keeps maybes, sample gate Passed ≥80% / Needs Review ≥70%, contact-country exclusion by the person's country.
+- **Next to build:** the company sample → expand stage on DiscoLike using this fit check (needs the DiscoLike API calls from the old workflow and a DiscoLike key on the server), then contacts, enrichment, QA. Then wire Airtable buttons and write-back (needs an Airtable token).
 
 ## Main project (Alex, 2026-11-17): reliable lead engine
 Goal: scrape leads → build lead lists → create campaigns, without daily errors. Built as a small app on the Hetzner server (subdomain), with Airtable as the screen. Move the Lead List Center and Campaign Center core out of n8n one stage at a time. `dulcy-lead-worker` is reference only.
