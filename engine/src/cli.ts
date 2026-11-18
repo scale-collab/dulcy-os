@@ -16,6 +16,8 @@
 //       Expand an approved sample: {"recordId": "rec<lead list>", "filters": {...}, "target": N, "sampleApproved": true, ...}.
 //   refit < refit.json
 //       Re-check every saved company of a list with its profile (free). "rebuildProfile": true makes a new profile first.
+//   contacts < contacts.json
+//       Find people at the Tier 1/2 companies: {"recordId", "contactFilters", "personaDna", "companies": 100 for the sample}.
 //   senders <workspace> [text] [--workspace-id=N]
 //       List the workspace's sender inboxes in EmailBison (id, email, status), optionally filtered.
 //   bounce <workspace>
@@ -70,8 +72,8 @@ async function main() {
       });
       console.log(JSON.stringify({ status: r.status, jobId: r.job.id, dryRun: r.job.dry_run }));
       console.log(`Check it with:  docker compose exec engine node dist/src/cli.js job ${r.job.id}`);
-    } else if (cmd === 'campaign' || cmd === 'topup' || cmd === 'sample' || cmd === 'expand' || cmd === 'refit') {
-      const kind = cmd === 'campaign' ? 'campaign.build' : cmd === 'topup' ? 'campaign.topup' : cmd === 'sample' ? 'leadlist.sample' : cmd === 'expand' ? 'leadlist.expand' : 'leadlist.refit';
+    } else if (cmd === 'campaign' || cmd === 'topup' || cmd === 'sample' || cmd === 'expand' || cmd === 'refit' || cmd === 'contacts') {
+      const kind = cmd === 'campaign' ? 'campaign.build' : cmd === 'topup' ? 'campaign.topup' : cmd === 'sample' ? 'leadlist.sample' : cmd === 'expand' ? 'leadlist.expand' : cmd === 'refit' ? 'leadlist.refit' : 'leadlist.contacts';
       const chunks: Buffer[] = [];
       for await (const c of process.stdin) chunks.push(c as Buffer);
       const { recordId, _about: _ignored, ...input } = JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown> & { recordId?: string };
@@ -135,7 +137,7 @@ async function main() {
       const j = await getJob(db, Number(args[0]));
       if (!j) throw new Error('job not found');
       const res = (j.job.result ?? {}) as Record<string, unknown>;
-      const keep = ['profile', 'changes', 'matching', 'sample', 'topDropReasons', 'dropped', 'target', 'have', 'list', 'added', 'batches', 'stoppedBecause', 'shortfall', 'sheet', 'checked', 'paused', 'wouldPause', 'watch', 'readiness', 'kpiException', 'launched', 'campaignId', 'campaignName', 'leads', 'imports', 'senders', 'variants', 'note', 'dryRun', 'millionVerifierJobId', 'plan', 'counts', 'finalDirectCount', 'finalGenericCount', 'pendingRemainder', 'message', 'comparison', 'diagnosis', 'wouldSpendCredits'];
+      const keep = ['profile', 'contacts', 'topCutReasons', 'changes', 'matching', 'sample', 'topDropReasons', 'dropped', 'target', 'have', 'list', 'added', 'batches', 'stoppedBecause', 'shortfall', 'sheet', 'checked', 'paused', 'wouldPause', 'watch', 'readiness', 'kpiException', 'launched', 'campaignId', 'campaignName', 'leads', 'imports', 'senders', 'variants', 'note', 'dryRun', 'millionVerifierJobId', 'plan', 'counts', 'finalDirectCount', 'finalGenericCount', 'pendingRemainder', 'message', 'comparison', 'diagnosis', 'wouldSpendCredits'];
       console.log(JSON.stringify({
         id: j.job.id, kind: j.job.kind, record: j.job.record_id, status: j.job.status, progress: j.job.progress, error: j.job.error,
         result: Object.fromEntries(keep.filter((k) => k in res).map((k) => [k, res[k]])),

@@ -45,6 +45,11 @@ export function createDiscoLikeClient(o: DiscoLikeOptions) {
       if (!id) throw new RetryableError('DiscoLike did not return an exclusion query ID');
       return id;
     },
+    /** Paid: people at these companies (one call per batch of domains). Returns the raw answer. */
+    async discoverContacts(body: Record<string, unknown>): Promise<any> {
+      const r = await get('/v1/contacts/discover', true, body);
+      return r.body ?? {};
+    },
     /** Free: about how many companies match (count-compatible filters only; null = not countable). */
     async count(filters: Filters): Promise<{ count: number; ignored: string[] } | null> {
       const c = countFilters(filters);
