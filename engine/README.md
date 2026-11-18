@@ -2,7 +2,7 @@
 
 The app that will run lead lists and campaigns as safe, resumable jobs, with Airtable as the screen. Plan: `PLAN.md`. Research: `research/`.
 
-**Status (2026-11-18): step 1, the skeleton, is done and deployed on the Hetzner server (`/opt/dulcy-os`, port 127.0.0.1:8090). Dry-run only: it makes no paid calls.** No real stages yet; the next one is Verify (PLAN step 2).
+**Status (2026-11-18): step 1, the skeleton, is done and deployed on the Hetzner server (`/opt/dulcy-os`, port 127.0.0.1:8090). Dry-run only: it makes no paid calls.** Step 2a, the **Verify** stage (`leadlist.verify`), is built and tested in shadow mode: it computes results but writes nothing to Airtable yet.
 
 ## What the skeleton already guarantees (all tested)
 | Problem today | What the engine does | Test |
@@ -20,6 +20,33 @@ Run the tests (needs a Postgres):
 ```bash
 cd engine && npm ci && TEST_DATABASE_URL=postgres://USER@HOST:PORT/DB npm test
 ```
+
+## Verify stage (`leadlist.verify`), shadow mode
+Same rules as the old n8n "03 Verification" workflow (`src/verify/rules.ts`):
+- MillionVerifier first. ok/good/valid/deliverable = **Good**; invalid/bad/disposable/disabled = **Bad**; catch_all/unknown/risky/accept_all = **Risky (never Good)**; blank = **Pending** (not processed, usually no credits). An unknown verdict goes to review.
+- Dedupe by email. One email shared by different people, or one person with several emails, is **held** (never sent, never final).
+- Role inboxes (`info@`, `hello@`, `sales@` and so on) count as generic. "Footprint 200 or less" drops generic emails from companies over 200 or unknown.
+- Rows with no email count as Risky; malformed emails count as Bad without spending a credit.
+- Final Direct and Final Generic contain **Good only**.
+
+What the engine adds:
+- **Upload once.** The receipt belongs to the list and its exact email set, so a retry or a second click reuses the same MillionVerifier job. An unclear upload (timeout, 5xx) goes to review and is never re-uploaded.
+- **A saved MillionVerifier Job ID** (`existingJobId`) is only checked and downloaded, never re-uploaded.
+- **No "Check status" button needed.** While MillionVerifier works, the job checks again every 2 minutes (`VERIFY_POLL_MS`). Waiting is free and uses no attempts. The 24-hour time limit stops it.
+- **Strict results.** If the result file doesn't match the list (extra, duplicate or missing emails), it goes to review.
+- **Credit cap.** A list bigger than `CAP_PER_JOB` stops before uploading. Raise the cap in `.env` for big lists.
+- **Dry-run.** No upload; it returns the plan and the credits it would spend. With `existingJobId` it does the free check and download, which is how it is compared side by side with the old workflow's numbers (`expected`).
+
+Input (`POST /jobs`, `kind: "leadlist.verify"`):
+```json
+{"rows": [{"email": "...", "type": "direct|generic", "firstName": "...", "lastName": "...", "company": "...", "domain": "...", "linkedin": "...", "footprint": 120}],
+ "includeDirect": true, "includeGeneric": true, "genericFootprintMax200": false,
+ "existingJobId": "optional MillionVerifier file id",
+ "expected": {"good": 0, "risky": 0, "bad": 0}}
+```
+The result has the counts, Final Direct / Final Generic rows, held rows, pending emails, an `airtablePreview` of the fields step 2b will write, and the `comparison`. Logs keep counts only, never lead rows.
+
+Not in this step: LeadMagic fallback, reading the rows from the list's Google Sheet, and writing back to Airtable/Sheets (step 2b).
 
 ## How Airtable will call it
 `POST /jobs` with `{"kind": "...", "recordId": "rec...", "clientId": "rec...", "input": {...}, "requestId": "unique-per-click"}`.
@@ -49,5 +76,7 @@ Docker build and start confirmed on the server 2026-11-18 (`/health` returned ok
 - `src/queue.ts`: jobs, leases, retries with backoff.
 - `src/context.ts`: `step()` checkpoints, `paid()` receipts, credit caps, dry-run.
 - `src/worker.ts`: runs jobs and sends Slack alerts on failure.
-- `src/stages/`: one file per stage (only the `engine.selftest` stage so far).
+- `src/stages/`: one file per stage (`engine.selftest`, `verify.ts`).
+- `src/verify/rules.ts`: verification rules (pure, tested).
+- `src/providers/millionverifier.ts`: MillionVerifier bulk API client (paid upload vs free checks).
 - `src/db/schema.sql`: tables `jobs`, `steps`, `receipts`, `events`.

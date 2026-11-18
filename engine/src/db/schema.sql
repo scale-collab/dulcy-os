@@ -29,6 +29,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS jobs_one_active_per_record
 -- The same request sent twice returns the same job.
 CREATE UNIQUE INDEX IF NOT EXISTS jobs_request_id ON jobs (request_id) WHERE request_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS jobs_claimable ON jobs (status, run_after);
+-- Latest progress line while a job waits (e.g. "MillionVerifier 40% complete").
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS progress TEXT;
 
 -- A step is a checkpoint inside a job. A finished step is never run again.
 CREATE TABLE IF NOT EXISTS steps (
