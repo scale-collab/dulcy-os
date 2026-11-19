@@ -22,6 +22,8 @@ export interface Company {
   similarity?: number | string | null;
   address?: string;
   country?: string;
+  /** Generic company emails (info@, sales@ ...) for Verify's generic list. */
+  public_emails?: string[];
 }
 
 export interface FitCriteria {
