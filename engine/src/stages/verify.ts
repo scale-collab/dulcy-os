@@ -122,7 +122,12 @@ export const verifyStage: Stage = async (ctx) => {
       throw new WaitError(`MillionVerifier job ${fileId}: ${info.status}, ${info.percent}% complete`, ctx.cfg.verifyPollMs);
     }
     if (info.status === 'wait_starting') {
-      throw new NeedsReviewError(`MillionVerifier job ${fileId} is waiting to be started; start it in MillionVerifier, then run Verify again (it will reuse this job)`);
+      // Right after an upload MillionVerifier often shows "waiting to start" for a short while
+      // and then starts by itself (seen live 2026-11-19, job 32622427). Keep checking for up to
+      // 30 minutes; only then ask a person to start it.
+      const firstSeen = await ctx.step(`wait-start:${fileId}`, async () => Date.now());
+      if (Date.now() - firstSeen < 30 * 60_000) throw new WaitError(`MillionVerifier job ${fileId}: waiting to start`, ctx.cfg.verifyPollMs);
+      throw new NeedsReviewError(`MillionVerifier job ${fileId} has been waiting to start for 30 minutes; start it in MillionVerifier (check credits), then run Verify again (it will reuse this job)`);
     }
     if (!FINISHED.includes(info.status)) {
       throw new NeedsReviewError(`MillionVerifier job ${fileId} is "${info.status || 'unknown'}"; check it in MillionVerifier before doing anything else`);

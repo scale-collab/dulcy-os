@@ -254,11 +254,22 @@ test('verify: a results file that does not match the list goes to review', { ski
   assert.match(j.job.error, /not in this list/);
 });
 
-test('verify: a job MillionVerifier has not started goes to review (no new upload)', { skip }, async () => {
-  fake.statusSeq = ['wait_starting'];
+test('verify: "waiting to start" right after upload is waited on, not sent to review (seen live)', { skip }, async () => {
+  fake.statusSeq = ['wait_starting', 'wait_starting', 'finished'];
   const q = await enqueueVerify({ rows: ROWS });
   const j = await runUntilSettled(cfg(), q.job.id);
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.equal(fake.uploads, 1);
+});
+
+test('verify: a job still not started after 30 minutes goes to review (no new upload)', { skip }, async () => {
+  fake.statusSeq = ['wait_starting'];
+  const q = await enqueueVerify({ rows: ROWS });
+  await runOnce(db, cfg());
+  await db.query(`UPDATE steps SET output = to_jsonb((extract(epoch from now()) * 1000 - 31 * 60000)::bigint) WHERE job_id = $1 AND step_key LIKE 'wait-start:%'`, [q.job.id]);
+  const j = await runUntilSettled(cfg(), q.job.id);
   assert.equal(j.job.status, 'needs_review');
+  assert.match(j.job.error, /30 minutes/);
   assert.equal(fake.uploads, 1);
 });
 
