@@ -77,6 +77,8 @@ export async function startFakeGoogle(): Promise<FakeGoogle> {
       }
       return json(200, {});
     }
+    const clr = decodeURIComponent(u.pathname).match(/^\/v4\/spreadsheets\/([^/]+)\/values\/'(.+)'!A:ZZ:clear$/);
+    if (clr && req.method === 'POST') { ((state.written[clr[1]] ??= {})[clr[2].replace(/''/g, "'")] = []); return json(200, {}); }
     const put = decodeURIComponent(u.pathname).match(/^\/v4\/spreadsheets\/([^/]+)\/values\/'(.+)'!A(\d+)$/);
     if (put && req.method === 'PUT') {
       const vals = JSON.parse(body).values as unknown[][];
