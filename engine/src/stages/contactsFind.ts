@@ -29,6 +29,9 @@ interface ContactsInput {
   /** How many not-yet-searched usable companies to search this run (omit = all). */
   companies?: number;
   batchSize?: number;
+  /** Also send the persona text to DiscoLike as icp_text (the old flow did; it narrows results a lot).
+   *  Default false: the persona is applied by the engine's own contact check instead. */
+  personaToDiscoLike?: boolean;
 }
 
 const ALLOWED = new Set(['filter_industry', 'negate_filter_industry', 'filter_country', 'negate_filter_country', 'filter_state', 'negate_filter_state', 'employee_range', 'seniority', 'negate_seniority', 'department', 'negate_department', 'skills', 'title', 'negate_title', 'person_country', 'negate_person_country', 'person_state', 'negate_person_state', 'person_city', 'negate_person_city', 'has_email', 'email_validated', 'has_linkedin', 'icp_text', 'results_by_company', 'people_per_company']);
@@ -100,7 +103,7 @@ export const contactsFindStage: Stage = async (ctx) => {
     const domains = plan.domains.slice(i * batchSize, (i + 1) * batchSize);
     const out = await ctx.step(`batch-${b}`, async () => {
       const body: Record<string, unknown> = { ...filters, domain: domains, max_companies: domains.length, offset: 0, results_by_company: perCompany, has_email: filters.has_email ?? true };
-      if (input.personaDna && !body.icp_text) body.icp_text = input.personaDna;
+      if (input.personaToDiscoLike && input.personaDna && !body.icp_text) body.icp_text = input.personaDna;
       if (!body.person_country && !body.negate_person_country) body.negate_person_country = EXCLUDED_PERSON_COUNTRY_CODES;
       const raw = await ctx.paid({
         scope: 'record', provider: 'discolike', callKey: `contacts:${createHash('sha256').update(domains.join(',')).digest('hex').slice(0, 16)}`, units: domains.length * perCompany,

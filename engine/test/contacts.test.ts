@@ -98,6 +98,7 @@ test('contacts: Tier 1 companies first, Cut never searched, country exclusion se
   assert.equal(j.job.status, 'succeeded', j.job.error);
   assert.deepEqual(disco.lastBody.domain, ['t1.com', 't2.com'], 'Tier 1 first, then Tier 2; Cut never');
   assert.ok(disco.lastBody.negate_person_country.includes('IN') && disco.lastBody.has_email === true);
+  assert.equal(disco.lastBody.icp_text, undefined, 'the persona is applied by the engine, not sent as a DiscoLike filter (default)');
   assert.equal(ai.calls, 1);
   const r = j.job.result.contacts;
   // t1: Ann Owner = Tier 1, Bo Sales Associate = Cut, Cy Brand Lead = Tier 2; t2: Di Operations Director = Tier 1, Ed in Pakistan = Cut.
@@ -121,6 +122,11 @@ test('a re-run searches only companies not searched yet; the same companies are 
   assert.match(again.job.result.message, /already been searched/);
   const usable = google.written['sheet-c']['Contacts'];
   assert.equal(new Set(usable.slice(1).filter(Boolean).map((x) => x[0])).size, usable.filter(Boolean).length - 1, 'no duplicate rows');
+});
+
+test('personaToDiscoLike: true sends the persona as icp_text (old behaviour)', { skip }, async () => {
+  await run({ personaDna: PERSONA, companies: 1, personaToDiscoLike: true });
+  assert.equal(disco.lastBody.icp_text, PERSONA);
 });
 
 test('guards: own person countries replace the default exclusion; bad filter refused; dry-run spends nothing; credit cap', { skip }, async () => {

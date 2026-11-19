@@ -6,7 +6,7 @@ import type { SheetsClient } from '../providers/google.js';
 import type { Company, FitResult } from './fit.js';
 import { tierOf } from './fit.js';
 
-export const COMPANY_COLUMNS = ['Domain', 'Company', 'Tier', 'Cut Reasons', 'Signals', 'Description', 'Country', 'Employees', 'Industry Groups', 'Sub-industry', 'Keywords', 'Similarity', 'Digital Footprint', 'Batch'];
+export const COMPANY_COLUMNS = ['Domain', 'Company', 'Tier', 'Cut Reasons', 'Signals', 'Description', 'Country', 'Employees', 'Industry Groups', 'Sub-industry', 'Keywords', 'Similarity', 'Digital Footprint', 'Batch', 'Public Emails'];
 
 /** Save a batch. `refit` (the sample re-run) updates that batch's own rows with the new tiers. */
 export async function saveCompanies(db: Db, listId: string, batch: number, rows: { company: Company; fit: FitResult }[], o: { refit?: boolean } = {}) {
@@ -76,7 +76,7 @@ export async function mirrorCompanies(db: Db, sheets: SheetsClient, listId: stri
     // Batches over 2,500 rows (none today) would be split so each write stays small.
     await sheets.writeRows(s.sheet_id, s.tab, 2 + before, rows.map((r) => {
       const d = r.data ?? {};
-      return [r.domain, cell(d.name), r.tier, cell(r.reasons), cell(r.signals), cell(d.description).slice(0, 300), cell(d.country), cell(d.employees), cell(d.industry_groups), cell(d.sub_industry), cell(d.keywords).slice(0, 200), cell(d.similarity), cell(d.score), r.batch];
+      return [r.domain, cell(d.name), r.tier, cell(r.reasons), cell(r.signals), cell(d.description).slice(0, 300), cell(d.country), cell(d.employees), cell(d.industry_groups), cell(d.sub_industry), cell(d.keywords).slice(0, 200), cell(d.similarity), cell(d.score), r.batch, JSON.stringify(d.public_emails ?? [])];
     }));
     await db.query(`UPDATE lead_list_sheets SET mirrored_batches = array_append(mirrored_batches, $2) WHERE list_id=$1 AND kind='companies'`, [listId, b]);
     written += rows.length;

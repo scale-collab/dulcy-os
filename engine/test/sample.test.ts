@@ -83,6 +83,7 @@ test('rows: DiscoLike label objects become lists; domains are cleaned', () => {
   assert.equal(c.domain, 'acme.com');
   assert.deepEqual(c.keywords, ['roofing', 'gutters']);
   assert.equal(c.country, 'US');
+  assert.deepEqual(toCompany({ domain: 'a.com', public_emails: ['Info@A.com', 'bad', 'sales@a.com'] }).public_emails, ['info@a.com', 'sales@a.com']);
 });
 
 test('dry-run: free count only; nothing paid', { skip }, async () => {
