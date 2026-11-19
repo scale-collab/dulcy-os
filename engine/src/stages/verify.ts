@@ -17,7 +17,7 @@ import type { Stage } from './index.js';
 import { NeedsReviewError, PermanentError, WaitError } from '../errors.js';
 import { createMvClient } from '../providers/millionverifier.js';
 import { createSheetsClient } from '../providers/google.js';
-import { loadSheetRows, type SheetSource } from '../sources/sheet.js';
+import { sheetIdFrom, loadSheetRows, type SheetSource } from '../sources/sheet.js';
 import {
   buildCandidates, buildOutputs, compare, parseResults, parseResultsLoose, toCsv, type ResultDiff,
   type CandidateSet, type Expected, type InputRow, type VerifiedEmail,
@@ -40,6 +40,9 @@ interface VerifyInput {
    * difference and explain it. Never allowed when the engine would write or pay.
    */
   diagnose?: boolean;
+  /** Write the "Final Direct" / "Final Generic" tabs into the source sheet (the tabs the
+   *  campaign build reads). Each tab is replaced in one write. Never in dry-run or diagnose. */
+  writeFinalTabs?: boolean;
 }
 
 function readInput(raw: Record<string, unknown>): VerifyInput {
@@ -58,6 +61,7 @@ function readInput(raw: Record<string, unknown>): VerifyInput {
     existingJobId: existing || undefined,
     expected: (raw.expected ?? undefined) as Expected | undefined,
     diagnose: raw.diagnose === true,
+    writeFinalTabs: raw.writeFinalTabs === true,
   };
 }
 
@@ -137,6 +141,21 @@ export const verifyStage: Stage = async (ctx) => {
 
   const out = await ctx.step('outputs', async () => buildOutputs(set, results));
   const leads = out.finalDirect.length + out.finalGeneric.length;
+  let finalTabs: { direct: number; generic: number } | undefined;
+  if (input.writeFinalTabs && input.source && !ctx.dryRun && !input.diagnose) {
+    finalTabs = await ctx.step('write-final-tabs', async () => {
+      const sheets = createSheetsClient({ keyFile: ctx.cfg.googleKeyFile, impersonate: ctx.cfg.googleImpersonateUser, scope: ctx.cfg.googleScope, sheetsBaseUrl: ctx.cfg.googleSheetsBaseUrl });
+      const id = sheetIdFrom(input.source!.sheetId);
+      const header = ['Email', 'First Name', 'Last Name', 'Title', 'Company', 'Domain', 'LinkedIn URL', 'Country', 'State', 'Email Type', 'Verification Status', 'Verification Provider', 'Verification Path'];
+      const toRow = (r: InputRow, type: string) => [r.email, r.firstName, r.lastName, r.title, r.company, r.domain, r.linkedin, r.country, r.state, type, 'Good', 'MillionVerifier', 'MillionVerifier valid'].map((v) => String(v ?? ''));
+      for (const [tab, rows, type] of [['Final Direct', out.finalDirect, 'Direct'], ['Final Generic', out.finalGeneric, 'Generic']] as const) {
+        await sheets.ensureTab(id, tab);
+        await sheets.clearTab(id, tab);
+        await sheets.writeRows(id, tab, 1, [header, ...rows.map((r) => toRow(r, type))]);
+      }
+      return { direct: out.finalDirect.length, generic: out.finalGeneric.length };
+    });
+  }
   return {
     dryRun: ctx.dryRun,
     shadow: true,
@@ -145,6 +164,7 @@ export const verifyStage: Stage = async (ctx) => {
     counts: out.counts,
     finalDirectCount: out.finalDirect.length,
     finalGenericCount: out.finalGeneric.length,
+    finalTabs,
     pendingRemainder: out.pendingEmails.length,
     message: out.pendingEmails.length
       ? `${out.pendingEmails.length} emails were not processed (usually no MillionVerifier credits); run the remainder only after credits are available`

@@ -22,6 +22,8 @@ export interface SheetsClient {
   create(title: string, tab: string): Promise<string>;
   /** Make sure a tab exists (added if missing). */
   ensureTab(sheetId: string, tab: string): Promise<void>;
+  /** Empty a tab's values (the tab itself stays). */
+  clearTab(sheetId: string, tab: string): Promise<void>;
   /** Write rows starting at a fixed row (1-based). Same call twice = same result (no duplicates). */
   writeRows(sheetId: string, tab: string, startRow: number, rows: (string | number)[][]): Promise<void>;
 }
@@ -135,6 +137,9 @@ export function createSheetsClient(o: GoogleOptions): SheetsClient {
       const titles = ((meta.sheets as Array<{ properties?: { title?: string } }> | undefined) ?? []).map((x) => x.properties?.title);
       if (titles.includes(tab)) return;
       await get(`/v4/spreadsheets/${encodeURIComponent(sheetId)}:batchUpdate`, 'POST', { requests: [{ addSheet: { properties: { title: tab } } }] });
+    },
+    async clearTab(sheetId, tab) {
+      await get(`/v4/spreadsheets/${encodeURIComponent(sheetId)}/values/${encodeURIComponent(`${quoteTab(tab)}!A:ZZ`)}:clear`, 'POST', {});
     },
     async writeRows(sheetId, tab, startRow, rows) {
       if (!rows.length) return;

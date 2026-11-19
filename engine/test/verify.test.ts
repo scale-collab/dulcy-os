@@ -285,6 +285,26 @@ test('verify from the lead list sheet: reads Contacts + Expanded Companies, then
   assert.equal(j.job.result.plan.droppedFootprint, 1);
 });
 
+test('verify writeFinalTabs: Final Direct / Final Generic tabs are written in the columns the campaign build reads', { skip }, async () => {
+  google.tabs = {
+    Contacts: [['Email', 'First Name', 'Last Name', 'Title', 'Company', 'Domain'], ['ann@acme.com', 'Ann', 'Lee', 'Owner', 'Acme', 'acme.com'], ['bad1@beta.com', 'Bo', 'Ng', 'CEO', 'Beta', 'beta.com']],
+    'Expanded Companies': [['Name', 'Domain', 'Digital Footprint', 'Public Emails'], ['Acme', 'acme.com', '50', '["info@acme.com"]']],
+  };
+  const SHEET = '1QYLOeUxwDXunQm_KMEYKB_7jW7l47ZQJ8wVVtCZBUd8';
+  google.written = {}; google.grid = {};
+  const q = await enqueueVerify({ source: { sheetId: SHEET }, writeFinalTabs: true });
+  const j = await runUntilSettled(cfg(), q.job.id);
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.deepEqual(j.job.result.finalTabs, { direct: 1, generic: 1 });
+  const direct = google.written[SHEET]['Final Direct'];
+  assert.equal(direct[0][0], 'Email');
+  assert.deepEqual(direct.slice(1).map((r) => r[0]), ['ann@acme.com'], 'only Good emails');
+  const { prepareLeads } = await import('../src/campaign/rules.js');
+  const p = prepareLeads(direct, { campaignId: 1, outputType: 'direct', tags: ['FIRST_NAME', 'COMPANY'] });
+  assert.equal(p.rows.length, 1, 'the campaign build accepts the tab as written');
+  assert.deepEqual(google.written[SHEET]['Final Generic'].slice(1).map((r) => r[0]), ['info@acme.com']);
+});
+
 test('verify: needs rows or a sheet', { skip }, async () => {
   const q = await enqueueVerify({});
   const j = await runUntilSettled(cfg(), q.job.id);

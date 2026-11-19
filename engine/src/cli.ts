@@ -1,10 +1,11 @@
 // Server command line, for jobs started by hand (e.g. the side-by-side tests).
 // Run on the server:  docker compose exec engine node dist/src/cli.js <command>
 //
-//   verify <recordId> --sheet <link or id> [--direct] [--generic] [--footprint200]
+//   verify <recordId> --sheet <link or id> [--direct] [--generic] [--footprint200] [--write-final]
 //          [--mv-job <id>] [--expect good=N,risky=N,bad=N] [--diagnose]
 //       Queue a Verify job. Without --direct/--generic, both are included.
 //       With --mv-job it only checks/downloads that saved MillionVerifier job (free).
+//       --write-final writes the Final Direct / Final Generic tabs into that sheet (what the campaign build reads).
 //   topup < topup.json
 //       Queue a top-up from a JSON file on stdin: {"recordId": "rec<top-up lead list>", ...input}.
 //   campaign < build.json
@@ -68,6 +69,7 @@ async function main() {
           existingJobId: flag(args, '--mv-job'),
           expected: Object.keys(expected).length ? expected : undefined,
           diagnose: args.includes('--diagnose'),
+          writeFinalTabs: args.includes('--write-final'),
         },
       });
       console.log(JSON.stringify({ status: r.status, jobId: r.job.id, dryRun: r.job.dry_run }));
