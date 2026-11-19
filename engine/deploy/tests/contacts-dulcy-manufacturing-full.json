@@ -1,0 +1,21 @@
+{
+  "_about": "Full contact run for the Dulcy Manufacturing list (recSampleTest0001) with test B settings (standard since 2026-11-19): persona applied by the engine, not sent to DiscoLike; seniority executive + vp + director. Searches every usable company not searched yet (about 3,800), Tier 1 first.",
+  "recordId": "recSampleTest0001",
+  "contactFilters": {
+    "results_by_company": 5,
+    "person_country": [
+      "US",
+      "CA",
+      "GB"
+    ],
+    "person_state": [],
+    "seniority": [
+      "executive",
+      "vp",
+      "director"
+    ]
+  },
+  "personaDna": "Current owner, founder, CEO, president or managing director of the exact product manufacturing company, or a senior sales, commercial, business development, marketing or operations leader with explicit responsibility for revenue growth, channel partnerships, customer acquisition or operational delivery. Prioritize wholesale, retail, dealer, distributor and trade growth. Require a clear current employer match to the supplied company domain. Do not infer an employer from a common company name or infer buying authority from an unqualified Director title. Exclude HR-, finance-, IT-, clinical-, product-development- or project-management-only roles. Keep ambiguous employer identity or buying responsibility pending for manual review; do not treat it as an approved fit.",
+  "targeting": "Product manufacturers in the United States, Canada, and the United Kingdom that make and distribute physical consumer or commercial goods through retailers, dealers, distributors, or stores, and could benefit from reaching those buyers directly",
+  "clientContext": "Dulcy Media (the client here is Dulcy itself): done-for-you B2B outbound - verified prospect lists, cold email sending, targeting and copy, reply handoff. This campaign ('Retail and Distribution Buyer Outreach') offers product manufacturers help getting their products in front of retail and distribution buyers. Good fits are real operating manufacturers and brands that make physical goods and sell through retailers, dealers, distributors or stores. Not buyers of this: directories, marketplaces, lead-gen sites, media, software companies, and other outbound / marketing / lead-generation agencies (competitors)."
+}
