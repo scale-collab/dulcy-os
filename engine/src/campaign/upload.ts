@@ -51,6 +51,7 @@ export async function uploadAndAttach(ctx: JobContext, bison: BisonClient, o: { 
   }))).total;
 
   let accepted = 0;
+  let skippedOnImport = 0;
   const imports: number[] = [];
   for (let i = 0; i < parts.length; i++) {
     const listName = `${o.listName} [${o.leads.hash}] part ${i + 1} of ${parts.length}`;
@@ -75,12 +76,19 @@ export async function uploadAndAttach(ctx: JobContext, bison: BisonClient, o: { 
           `lead import ${list.id} was not processed within 60 minutes; check it in EmailBison, do not upload again`);
       }
       const processed = Number(l.leads_processed), succeeded = Number(l.leads_succeeded), failed = Number(l.leads_failed);
-      if (processed !== parts[i].length || failed !== 0 || succeeded !== processed) {
+      // EmailBison sometimes leaves a few rows out of a finished import with no error and no
+      // failed count (seen live 2026-11-20: 951 sent, 901 processed, 0 failed). Up to 10% is
+      // accepted and reported; failed rows, more than sent, or a bigger gap still go to review.
+      const skipped = parts[i].length - processed;
+      const ok = failed === 0 && succeeded === processed && skipped >= 0 && skipped <= Math.floor(parts[i].length * 0.1);
+      if (!ok) {
         throw new NeedsReviewError(`lead import ${list.id}: sent ${parts[i].length}, processed ${processed}, succeeded ${succeeded}, failed ${failed}; ${summarizeErrors(l.error_messages)}`);
       }
-      return { id: list.id, succeeded };
+      if (skipped) await ctx.log('lead import: EmailBison left some rows out without an error', { list: list.id, sent: parts[i].length, processed, skipped });
+      return { id: list.id, succeeded, skippedByEmailBison: skipped };
     });
     accepted += imported.succeeded;
+    skippedOnImport += Number((imported as { skippedByEmailBison?: number }).skippedByEmailBison ?? 0);
     imports.push(imported.id);
 
     await ctx.step(`attach-${i + 1}`, () => ctx.paid({
@@ -89,5 +97,5 @@ export async function uploadAndAttach(ctx: JobContext, bison: BisonClient, o: { 
       dryRunResult: () => ({ attached: 0 }),
     }));
   }
-  return { before, accepted, imports, parts: parts.length };
+  return { before, accepted, imports, parts: parts.length, skippedOnImport };
 }

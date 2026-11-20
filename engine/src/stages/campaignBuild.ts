@@ -197,7 +197,7 @@ export const campaignBuildStage: Stage = async (ctx) => {
     launched: false,
     campaignId: campaign.id,
     campaignName: input.name,
-    leads: { uploaded: leads.rows.length, added: total.added, skippedInOtherCampaigns: total.skippedInOtherCampaigns, droppedDuplicate: leads.droppedDuplicate, droppedNoEmail: leads.droppedNoEmail, droppedInvalid: leads.droppedInvalid },
+    leads: { uploaded: leads.rows.length, notImportedByEmailBison: up.skippedOnImport, added: total.added, skippedInOtherCampaigns: total.skippedInOtherCampaigns, droppedDuplicate: leads.droppedDuplicate, droppedNoEmail: leads.droppedNoEmail, droppedInvalid: leads.droppedInvalid },
     imports: up.parts,
     senders: senders.count,
     steps: steps.length,
