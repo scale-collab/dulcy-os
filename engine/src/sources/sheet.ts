@@ -7,7 +7,7 @@
 //  - The company's digital footprint is kept for the "200 or less" filter.
 // Only the columns needed are downloaded, so big tabs stay fast.
 import type { SheetsClient } from '../providers/google.js';
-import type { InputRow } from '../verify/rules.js';
+import { chooseCompanyEmail, isPersonalEmail, type InputRow } from '../verify/rules.js';
 import { PermanentError } from '../errors.js';
 
 export interface SheetSource {
@@ -99,11 +99,14 @@ export function genericRows(rows: Record<string, string>[]): InputRow[] {
   for (const g of rows) {
     const fp = g.footprint ?? '';
     const footprint = /^\d+(?:\.\d+)?$/.test(fp) ? Number(fp) : null;
-    for (const email of emailList(g.publicEmails ?? '')) {
+    // The old n8n formula: personal mailboxes set aside, one email per company on its own domain.
+    const all = emailList(g.publicEmails ?? '');
+    for (const email of chooseCompanyEmail(all, g.domain ?? '')) {
       out.push({ type: 'generic', email, company: g.company ?? '', domain: domainOf(g.domain ?? ''), country: g.address ?? '', footprint });
     }
     // Kept only to explain differences; never verified or used.
-    for (const email of emailList(g.excludedPersonal ?? '')) out.push({ type: 'excluded', email, domain: domainOf(g.domain ?? '') });
+    const personal = [...new Set([...emailList(g.excludedPersonal ?? ''), ...all.filter((e) => isPersonalEmail(e))])];
+    for (const email of personal) out.push({ type: 'excluded', email, domain: domainOf(g.domain ?? '') });
   }
   return out;
 }

@@ -31,12 +31,14 @@ test('direct rows: need a domain and an email or a full name; names split', () =
   assert.deepEqual(rows.map((r) => [r.email, r.firstName, r.lastName, r.domain]), [['ann@acme.com', 'Ann', 'Lee', 'acme.com'], ['', 'Bo', 'Ng', 'beta.com']]);
 });
 
-test('generic rows: JSON list or split text, malformed skipped, footprint parsed', () => {
+test('generic rows: JSON list or split text, malformed skipped, footprint parsed; one email per company (old n8n formula)', () => {
   const rows = genericRows([
-    { publicEmails: '["info@acme.com", {"email":"Sales@Acme.com"}, "bad"]', footprint: '150', domain: 'acme.com', company: 'Acme' },
-    { publicEmails: 'hello@b.com; team@b.com', footprint: 'n/a', domain: 'b.com' },
+    { publicEmails: '["Sales@Acme.com", {"email":"info@acme.com"}, "bad"]', footprint: '150', domain: 'acme.com', company: 'Acme' },
+    { publicEmails: 'team@b.com; hello@b.com; owner@gmail.com', footprint: 'n/a', domain: 'b.com' },
   ]);
-  assert.deepEqual(rows.map((r) => [r.email, r.footprint]), [['info@acme.com', 150], ['sales@acme.com', 150], ['hello@b.com', null], ['team@b.com', null]]);
+  assert.deepEqual(rows.filter((r) => r.type === 'generic').map((r) => [r.email, r.footprint]), [['info@acme.com', 150], ['hello@b.com', null]]);
+  // The personal mailbox is set aside (never verified), as the old workflow did.
+  assert.deepEqual(rows.filter((r) => r.type === 'excluded').map((r) => r.email), ['owner@gmail.com']);
 });
 
 test('reads only the needed columns of Contacts and Expanded Companies, signed in as the Workspace user', async () => {

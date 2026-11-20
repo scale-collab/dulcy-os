@@ -35,6 +35,8 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-17] Allocate senders only after the final usable lead count is known. (Airtable skill)
 - [2026-11-17] Launch only after Alex confirms. (Workflow SOP) **Changed 2026-11-18:** the lead engine launches automatically once all launch checks pass (list in `engine/PLAN.md`). Manual launches by agents or Claude still need Alex's OK. (Alex)
 
+- [2026-11-20] Generic emails follow the old n8n formula exactly (chooseCompanyEmail): personal mailboxes (gmail, yahoo, hotmail, outlook, icloud and similar) are set aside and never sent; the address must be on the company's own domain; blocked inboxes (privacy, legal, terms, abuse, noreply, webmaster, postmaster, unsubscribe, marketing, press, media, careers, jobs, hr, security, dpo, gdpr, compliance, billing, accounts, accounting, invoices, payments) are dropped; then ONE email per company by preference: info, contact, office, hello, enquiries, inquiries, sales, estimates, quotes, service, customerservice, support, team, admin, then the rest alphabetically. Reason: the engine must match the proven workflow. (Alex correction)
+
 ## Replies and inbox
 - [2026-11-17] AI reply drafts are review-only. Josh or Alex approve every outgoing reply. Reply Agent pilot is on for Dulcy only, in Human in the Loop mode. (Reply Agent SOP, Oct 7)
 - [2026-11-17] Respect unsubscribes and stop requests. Never override suppression. (Reply Agent SOP)
