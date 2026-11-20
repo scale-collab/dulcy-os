@@ -53,7 +53,7 @@ async function settle(c: Config, id: number, max = 60) {
 before(async () => { google = await startFakeGoogle(); bison = await startFakeBison(); if (skip) return; db = createPool(url!); await migrate(db); });
 after(async () => { google.close(); bison.close(); if (!skip) await db.end(); });
 beforeEach(async () => {
-  Object.assign(bison, { campaigns: [], leadLists: [], calls: [], createThen500: false, uploadThen500: false, processAfterChecks: 0, failRowsOnImport: 0, skipRowsOnImport: 0, customVariables: new Set(['domain']), workspaceSenders: ['11', '12', '13'], currentTeam: 2, otherToolSwitches: false, switches: 0, inSequenceElsewhere: new Set(), forcedParallel: false });
+  Object.assign(bison, { campaigns: [], leadLists: [], calls: [], createThen500: false, uploadThen500: false, processAfterChecks: 0, failRowsOnImport: 0, skipRowsOnImport: 0, underReportOnImport: 0, customVariables: new Set(['domain']), workspaceSenders: ['11', '12', '13'], currentTeam: 2, otherToolSwitches: false, switches: 0, inSequenceElsewhere: new Set(), forcedParallel: false });
   bison.senderStatus = () => 'connected';
   bison.senderEmail = (id) => `sender${id}@dulcy-mail.com`;
   google.tabs = { 'Final Direct': TAB.map((r) => [...r]) };
@@ -205,9 +205,19 @@ test('an import that silently leaves out a few rows (<= 10%, 0 failed) is accept
   bison.skipRowsOnImport = 2;
   const j = await settle(cfg(), (await queue({ expectedLeads: 20 })).job.id);
   assert.equal(j.job.status, 'succeeded', j.job.error);
-  assert.equal(j.job.result.leads.notImportedByEmailBison, 2);
+  assert.equal(j.job.result.leads.importReported, 18);
   assert.equal(j.job.result.leads.added, 18);
   assert.equal(bison.leadLists.length, 1, 'never uploaded again');
+});
+
+test('import report under-counts but every row reaches the campaign: not a double attach (seen live: 901 reported, 951 added)', { skip }, async () => {
+  google.tabs = { 'Final Direct': [HEADER, ...Array.from({ length: 20 }, (_, i) => row(`p${i}@co${i}.com`, `P${i}`, `Co ${i}`))] };
+  bison.underReportOnImport = 1;
+  const j = await settle(cfg(), (await queue({ expectedLeads: 20 })).job.id);
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.equal(j.job.result.leads.importReported, 19);
+  assert.equal(j.job.result.leads.added, 20);
+  assert.equal(j.job.result.leads.skippedInOtherCampaigns, 0);
 });
 
 test('a bigger silent gap still goes to review', { skip }, async () => {
