@@ -241,7 +241,7 @@ export function parseResults(csv: string, expectedEmails: string[]): VerifiedEma
 }
 
 export interface VerifyOutputs {
-  counts: { good: number; risky: number; bad: number; pending: number; held: number; sent: number; notSendable: number };
+  counts: { good: number; risky: number; bad: number; pending: number; held: number; sent: number };
   finalDirect: InputRow[];
   finalGeneric: InputRow[];
   held: Held[];
@@ -249,29 +249,44 @@ export interface VerifyOutputs {
   pendingEmails: string[];
 }
 
-// Generic inboxes that should never get cold email, and free mailboxes small businesses use
-// as their own address. Seen live 2026-11-20 (Med Spas): website scrapes pick up unsubscribe@,
-// legal@, privacy@ and careers@ inboxes, and the web designer's or software vendor's address.
-const ROLE_NEVER = new Set(['unsubscribe', 'legal', 'privacy', 'careers', 'career', 'jobs', 'job', 'hiring', 'recruiting', 'accessibility', 'abuse',
-  'noreply', 'no-reply', 'donotreply', 'do-not-reply', 'webmaster', 'postmaster', 'hostmaster', 'dev', 'developer', 'billing', 'accounting',
-  'accounts', 'payroll', 'hr', 'press', 'compliance', 'dmca', 'security', 'spam', 'optout', 'opt-out', 'remove']);
-const FREE_MAIL = new Set(['gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'live.com', 'msn.com', 'yahoo.com', 'icloud.com', 'me.com', 'mac.com', 'aol.com', 'protonmail.com', 'proton.me']);
-const bareDomain = (v: unknown) => text(v).toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+// The old n8n generic-email formula, copied exactly (Company and Contact Review workflow,
+// chooseCompanyEmail + isPersonalEmail; Alex 2026-11-20: "it should be the same format").
+// Per company: personal mailboxes are set aside (never sent), the address must be on the
+// company's own domain, blocked inboxes are dropped, then ONE email is kept, by preference.
+const PERSONAL_DOMAINS = new Set([
+  'gmail.com', 'googlemail.com', 'ymail.com', 'rocketmail.com', 'msn.com', 'aol.com',
+  'icloud.com', 'me.com', 'mac.com', 'comcast.net', 'verizon.net', 'att.net',
+  'sbcglobal.net', 'bellsouth.net', 'charter.net', 'spectrum.net', 'cox.net',
+  'earthlink.net', 'frontier.com', 'frontier.net', 'windstream.net', 'centurylink.net',
+  'q.com', 'protonmail.com', 'proton.me', 'mail.com', 'gmx.com', 'gmx.net', 'zoho.com',
+  'fastmail.com', 'hushmail.com', 'aim.com', 'juno.com', 'netzero.net', 'optonline.net',
+  'roadrunner.com', 'twc.com',
+]);
+const BLOCKED_LOCAL = new Set(['privacy', 'privacypolicy', 'legal', 'terms', 'abuse', 'noreply', 'donotreply', 'webmaster', 'postmaster', 'unsubscribe',
+  'marketing', 'press', 'media', 'careers', 'jobs', 'hr', 'security', 'dpo', 'gdpr', 'compliance', 'billing', 'accounts', 'accounting', 'invoices', 'payments']);
+const PREFERRED_LOCAL = ['info', 'contact', 'office', 'hello', 'enquiries', 'inquiries', 'sales', 'estimates', 'quotes', 'service', 'customerservice', 'support', 'team', 'admin'];
 
-/** Why a verified generic email must not be sent to (null = fine). */
-export function genericNotSendable(email: string, companyDomain: unknown): string | null {
-  const [local, domain = ''] = email.split('@');
-  const role = local.split(/[^a-z-]/)[0];
-  if (ROLE_NEVER.has(local) || ROLE_NEVER.has(role)) return 'role address';
-  const own = bareDomain(companyDomain);
-  if (FREE_MAIL.has(domain) || !own) return null;
-  if (domain === own || domain.endsWith(`.${own}`) || own.endsWith(`.${domain}`)) return null;
-  return "another company's address";
+export function isPersonalEmail(email: string): boolean {
+  const domain = email.trim().toLowerCase().split('@').pop() ?? '';
+  return PERSONAL_DOMAINS.has(domain) || /^(?:yahoo|hotmail|outlook|live)\.[a-z.]+$/.test(domain);
+}
+
+/** The one generic email to use for a company (none if no address qualifies). */
+export function chooseCompanyEmail(values: string[], companyDomain: unknown): string[] {
+  const domain = text(companyDomain).toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split(/[/:?#]/)[0];
+  const eligible = [...new Set(values.map((v) => text(v).toLowerCase()))].filter((email) => {
+    if (!/^[a-z0-9][a-z0-9._%+-]*@[a-z0-9.-]+\.[a-z]{2,}$/.test(email) || isPersonalEmail(email)) return false;
+    const [local, host] = email.split('@');
+    if (BLOCKED_LOCAL.has(local.split('+')[0].replace(/[._-]/g, ''))) return false;
+    return !!domain && (host === domain || host.endsWith('.' + domain));
+  });
+  const rank = (email: string) => { const i = PREFERRED_LOCAL.indexOf(email.split('@')[0].split('+')[0].replace(/[._-]/g, '')); return i < 0 ? PREFERRED_LOCAL.length : i; };
+  return eligible.sort((a, b) => rank(a) - rank(b) || a.localeCompare(b)).slice(0, 1);
 }
 
 export function buildOutputs(set: CandidateSet, results: VerifiedEmail[]): VerifyOutputs {
   const byEmail = new Map(results.map((r) => [r.email, r]));
-  const counts = { good: 0, risky: set.missingEmail.length, bad: set.invalidSyntax.length, pending: 0, held: set.holds.length, sent: set.send.length, notSendable: 0 };
+  const counts = { good: 0, risky: set.missingEmail.length, bad: set.invalidSyntax.length, pending: 0, held: set.holds.length, sent: set.send.length };
   const finalDirect: InputRow[] = [];
   const finalGeneric: InputRow[] = [];
   const pendingEmails: string[] = [];
@@ -281,9 +296,7 @@ export function buildOutputs(set: CandidateSet, results: VerifiedEmail[]): Verif
     if (verdict === 'Good') {
       counts.good++;
       const row = { ...c.row, email: c.email, verificationStatus: 'Good', verificationDetail: r?.detail };
-      // Good but not for cold email (role inbox or another company's address): left out of the final list.
-      if (c.kind === 'generic' && genericNotSendable(c.email, c.row.domain)) counts.notSendable++;
-      else (c.kind === 'generic' ? finalGeneric : finalDirect).push(row);
+      (c.kind === 'generic' ? finalGeneric : finalDirect).push(row);
     } else if (verdict === 'Risky') counts.risky++;
     else if (verdict === 'Bad') counts.bad++;
     else { counts.pending++; pendingEmails.push(c.email); }

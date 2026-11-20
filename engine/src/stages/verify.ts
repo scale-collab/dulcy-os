@@ -98,7 +98,27 @@ export const verifyStage: Stage = async (ctx) => {
   let results: VerifiedEmail[] = [];
   let diff: ResultDiff | undefined;
 
+  let reused = false;
   if (emails.length > 0) {
+    // Same list, smaller set (e.g. the generic formula now keeps one email per company): every
+    // email may already be verified in an earlier MillionVerifier job of this list. Downloads are
+    // free, so check the saved jobs first and pay only when something is new.
+    if (!fileId && !input.diagnose) {
+      const earlier = await ctx.step('reuse-check', async () => {
+        const prior = await ctx.db.query(
+          `SELECT response->>'file_id' AS file_id FROM receipts WHERE receipt_key LIKE $1 AND status='done' AND response->>'file_id' <> '' ORDER BY finished_at DESC LIMIT 3`,
+          [`rec:${ctx.job.kind}:${ctx.job.record_id}:millionverifier:upload:%`]);
+        for (const row of prior.rows) {
+          const id = String(row.file_id);
+          const info = await mv.fileInfo(id);
+          if (!FINISHED.includes(info.status)) continue;
+          const loose = parseResultsLoose(await mv.download(id), emails);
+          if (loose.diff.inListNotInFile.length === 0) return { fileId: id };
+        }
+        return { fileId: '' };
+      });
+      if (earlier.fileId) { fileId = earlier.fileId; reused = true; }
+    }
     if (!fileId) {
       const csv = toCsv(emails);
       const started = await ctx.step('submit', () => ctx.paid({
@@ -140,7 +160,10 @@ export const verifyStage: Stage = async (ctx) => {
       results = loose.results;
       diff = loose.diff;
     } else {
-      results = await ctx.step('download-results', async () => parseResults(await mv.download(id), emails));
+      // A reused earlier job holds more emails than this set: keep only this set's results.
+      results = await ctx.step('download-results', async () => reused
+        ? parseResultsLoose(await mv.download(id), emails).results
+        : parseResults(await mv.download(id), emails));
     }
   }
 
@@ -165,6 +188,7 @@ export const verifyStage: Stage = async (ctx) => {
     dryRun: ctx.dryRun,
     shadow: true,
     millionVerifierJobId: fileId ?? null,
+    reusedEarlierJob: reused,
     plan: summary(set),
     counts: out.counts,
     finalDirectCount: out.finalDirect.length,
@@ -173,7 +197,7 @@ export const verifyStage: Stage = async (ctx) => {
     pendingRemainder: out.pendingEmails.length,
     message: out.pendingEmails.length
       ? `${out.pendingEmails.length} emails were not processed (usually no MillionVerifier credits); run the remainder only after credits are available`
-      : `verified: ${out.counts.good} good, ${out.counts.risky} risky, ${out.counts.bad} bad; ${leads} final leads${out.counts.notSendable ? ` (${out.counts.notSendable} good generic emails left out: role inboxes or another company's address)` : ''}`,
+      : `verified: ${out.counts.good} good, ${out.counts.risky} risky, ${out.counts.bad} bad; ${leads} final leads${reused ? ` (results reused from MillionVerifier job ${fileId}; nothing uploaded)` : ''}`,
     // What step 2b will write to the Lead Lists record (not written in shadow mode).
     airtablePreview: {
       'Verification Good Count': out.counts.good,
