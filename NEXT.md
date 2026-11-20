@@ -44,11 +44,17 @@ Last updated: 2026-11-18 (engine step 3 proven live)
 - [x] Reply conflicts answered by Alex 2026-11-17 (see RULES). Still open: mock-call interviews yes/no (Harper).
 - [ ] Alex reviews each agent and corrects it.
 
-## ▶ Pick up here (engine, 2026-11-18 afternoon)
+## ▶ Pick up here (engine, 2026-11-20 evening)
+**Airtable wiring built (code + Airtable side), not live yet.** Fields added to Lead Lists (Runs on Engine, Engine Action, Engine Status, Engine Job ID, Engine Message, Engine Action Set At). New page "Lead List Center (Engine)" in the Campaigns interface (draft: Alex publishes). Engine polls every 30 s and writes results back. 127/127 tests.
+To go live: (1) Alex creates an Airtable token for the engine (base appxqINt5XKw7a76A; data.records:read, data.records:write, schema.bases:read) and adds `AIRTABLE_API_KEY=...` to `/opt/dulcy-os/engine/deploy/.env`; (2) `bash engine/deploy/deploy.sh`; (3) publish the Campaigns interface; (4) test on one list: Run Company Sample from the engine page.
+Not wired yet: Build Campaign button; filter generation still runs in the regular Lead List Center (n8n filter step).
+
+## Earlier (engine, 2026-11-18 afternoon)
 **Step 3 (campaign build) is PROVEN LIVE.** Job 12 built test campaign **649** ("ENGINE TEST 2 - do not launch - Manufacturing Direct", Dulcy workspace 2): 3 emails (2 days apart, follow-ups threaded), 226 leads uploaded, 52 added, 174 skipped by EmailBison (already in sequence in other Dulcy campaigns; the engine never forces parallel sending), 2 senders attached and connected, draft, not launched. Checked directly in EmailBison.
 Earlier test campaign 648 had landed in client workspace 80 (Brilliant Jewelers) before the per-call workspace switch existed. Cleaned up with Alex's OK (226 test leads, 1 variable, campaign queued for deletion; lead list 776 removed by hand).
 Campaign 649 stays as a draft unless Alex wants it deleted.
 Still open: rotate the MillionVerifier key (pasted in chat 2026-11-18). Delete lead list 776 in workspace 80 by hand if not done.
+**WHOLE PIPELINE PROVEN LIVE (2026-11-20):** companies → contacts → verify → campaign. Campaign 650 (Dulcy workspace) built with 951 verified leads + 10 Dulcy CI senders, draft, waiting for Alex to review and launch. Next to build: ContraGen fallback for companies with no contacts (76% had none), Airtable buttons + write-back (so runs start from Airtable, not the server command line), bounce check report-only run.
 **Lead lists company stage PROVEN LIVE (2026-11-18):** sample → expand → refit on the Dulcy Manufacturing plan (recSampleTest0001): 1,067 companies, Tier 1 97 / Tier 2 964 / Cut 6 (99% usable), one batch, sheet https://docs.google.com/spreadsheets/d/19Yw3MgY6CBLzYZxRzW2_HlJf4TWymO7PdN_M-2Z_p1A. Fit = ONE AI call per list (OpenAI gpt-5.6-luna) → list profile → code checks every company. Next: 4,000 run (Alex's ladder 100 → 1k → 4k → 10k), then the contacts stage.
 Earlier: **Lead lists step 5a (company sample) PROVEN LIVE** (job 15): Dulcy Manufacturing plan, 100 companies, 94% usable, Passed (old: 98.3%). 6 dropped with reasons. Next: 5b expand companies (batches with DiscoLike's rolling exclusion list) → needs Google Sheets WRITE access (or keep lists in the engine DB), then contacts.
 Other options: bounce check report-only run (`cli.js bounce dulcy`, needs `EMAILBISON_TEAM_DULCY=2` in the server .env), the DiscoLike company stage (needs a DiscoLike key on the server), or Airtable wiring and write-back (needs an Airtable token).

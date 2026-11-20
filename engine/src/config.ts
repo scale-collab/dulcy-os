@@ -59,6 +59,11 @@ export interface Config {
   openAiApiKey?: string;
   openAiModel: string;
   openAiBaseUrl: string;
+  /** Airtable token for the engine (server .env only), the base, and how often buttons are checked (0 = off). */
+  airtableApiKey?: string;
+  airtableBaseId: string;
+  airtableBaseUrl: string;
+  airtablePollMs: number;
 }
 
 export function loadConfig(env = process.env): Config {
@@ -102,5 +107,9 @@ export function loadConfig(env = process.env): Config {
     openAiApiKey: env.OPENAI_API_KEY || undefined,
     openAiModel: env.OPENAI_MODEL || 'gpt-5.6-luna',
     openAiBaseUrl: env.OPENAI_BASE_URL || 'https://api.openai.com',
+    airtableApiKey: env.AIRTABLE_API_KEY || undefined,
+    airtableBaseId: env.AIRTABLE_BASE_ID || 'appxqINt5XKw7a76A',
+    airtableBaseUrl: env.AIRTABLE_BASE_URL || 'https://api.airtable.com',
+    airtablePollMs: num('AIRTABLE_POLL_MS', 30_000, env),
   };
 }

@@ -5,6 +5,28 @@ import type { Db } from './db/pool.js';
 import type { Config } from './config.js';
 import { enqueue } from './queue.js';
 import { STAGES } from './stages/index.js';
+import { createAirtableClient } from './providers/airtable.js';
+import { bridgeTick } from './airtable/bridge.js';
+
+/** Airtable bridge: check the Engine buttons and write results back every AIRTABLE_POLL_MS. Off without a token. */
+export function startAirtableBridge(db: Db, cfg: Config, signal: AbortSignal): void {
+  if (!cfg.airtableApiKey || !cfg.airtablePollMs) return;
+  const at = createAirtableClient({ apiKey: cfg.airtableApiKey, baseId: cfg.airtableBaseId, baseUrl: cfg.airtableBaseUrl });
+  let busy = false;
+  const tick = async () => {
+    if (busy) return; // a slow tick is never doubled
+    busy = true;
+    try {
+      const r = await bridgeTick(db, cfg, at);
+      if (r.queued || r.wrote) console.log(JSON.stringify({ level: 'info', message: 'airtable bridge', ...r }));
+    } catch (e) {
+      console.error(JSON.stringify({ level: 'error', message: 'airtable bridge tick failed', err: String(e) }));
+    } finally { busy = false; }
+  };
+  void tick();
+  const t = setInterval(() => { void tick(); }, Math.max(5_000, cfg.airtablePollMs));
+  signal.addEventListener('abort', () => clearInterval(t));
+}
 
 export async function scheduleTick(db: Db, cfg: Config, now = Date.now()): Promise<number> {
   if (!cfg.bounceCheckEveryMin || cfg.bounceCheckWorkspaces.length === 0) return 0;
