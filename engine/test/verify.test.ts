@@ -145,6 +145,13 @@ test('results file is strict: unexpected, duplicate or missing emails need revie
   assert.throws(() => parseResults('email,result\na@x.com,ok\na@x.com,ok', ['a@x.com']), NeedsReviewError);
   assert.throws(() => parseResults('email,result\na@x.com,ok', ['a@x.com', 'b@x.com']), /reuse the saved job/);
   assert.throws(() => parseResults('foo,bar\n1,2', ['a@x.com']), NeedsReviewError);
+  // A tiny silent gap (seen live: 1,937 of 1,938) counts as Risky, never Good; a bigger one needs review.
+  const many = Array.from({ length: 1000 }, (_, i) => `p${i}@x.com`);
+  const file = (n: number) => 'email,result\n' + many.slice(0, n).map((e) => `${e},ok`).join('\n');
+  const gap = parseResults(file(999), many);
+  assert.equal(gap.length, 1000);
+  assert.deepEqual(gap.find((r) => r.email === 'p999@x.com'), { email: 'p999@x.com', verdict: 'Risky', detail: 'not_returned_by_millionverifier' });
+  assert.throws(() => parseResults(file(994), many), /reuse the saved job/);
   const s = buildCandidates([{ email: 'a@x.com' }, { email: 'pend@x.com' }], { includeDirect: true, includeGeneric: true, genericFootprintMax200: false });
   const out = buildOutputs(s, parseResults('email,result\na@x.com,ok\npend@x.com,', ['a@x.com', 'pend@x.com']));
   assert.deepEqual(out.pendingEmails, ['pend@x.com']);
