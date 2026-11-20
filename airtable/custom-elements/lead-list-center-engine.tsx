@@ -20,6 +20,7 @@ const ID = {
     companyStatus: 'fldY1i1787UwZFOr6', companySummary: 'fld6BhZSLdGOkCJCZ', contactGood: 'fldkWL67N8ZaBIaDi', contactBad: 'flda4qjRC0sCeStBg',
     contactRate: 'fldbiciFuOmAzv38D', contactStatus: 'fldVH77A3Ozjh4t8k', contactSummary: 'fldnScb360OZ17VRt', vGood: 'fld8kUuSdLo5autI7',
     vRisky: 'fldXl4sV7ma4YAOv7', vBad: 'fld9Jgzxc9JqeFAus', finalDirect: 'fldQZJCpTofahmTkl', finalGeneric: 'fld0FHomkh3uyx0FD', leads: 'fld2G5D1yCPFGFiVF',
+    whichCampaign: 'fldepbn71awSjmZPV', listStage: 'fld8nrebRFL0O8kgj', qa: 'fldUB4WsLi5kq6rUy',
 } as const;
 type Key = keyof typeof ID;
 
@@ -29,6 +30,7 @@ const STAGES: {action: string; label: string; help: string; ready: (r: AnyRecord
     {action: 'Refit Companies', label: 'Re-check companies', help: 'Free. Re-runs the fit check on every saved company.', ready: (r, g) => g.text(r, 'filters') ? null : 'No filters on this list'},
     {action: 'Find Contacts', label: '3. Find contacts', help: 'Not approved: a contact sample. Approved: every usable company left.', ready: () => null},
     {action: 'Verify and Finalize', label: '4. Verify (MillionVerifier)', help: 'Verifies the Contacts tab and writes the Final tabs.', ready: (r, g) => g.bool(r, 'includeDirect') || g.bool(r, 'includeGeneric') ? null : 'Tick Include Direct or Include Generic'},
+    {action: 'Build Campaign', label: '5. Build campaign (draft)', help: 'Builds the EmailBison draft(s) from the linked campaign: Generic + Direct, inboxes split by leads. Never launches.', ready: (r, g) => !(g.num(r, 'finalDirect') + g.num(r, 'finalGeneric')) ? 'Run Verify first' : g.option(r, 'qa') !== 'Passed' || !['Ready', 'Uploaded'].includes(g.option(r, 'listStage')) ? 'Mark QA Passed in Lead List Center (QA tab) first' : !g.text(r, 'whichCampaign') ? 'Link this list to a campaign in Campaign Center' : null},
 ];
 const ACTIVE = ['Queued', 'Running', 'Waiting'];
 
@@ -102,7 +104,7 @@ function EnginePanel(): React.ReactElement {
         </aside>
         <main className="flex-1 overflow-y-auto p-6">{!sel ? <div className="mt-20 text-center text-slate-500">Pick a lead list on the left.</div> : <div className="mx-auto max-w-5xl space-y-5">
             <div className="flex items-start justify-between gap-4">
-                <div><h2 className="text-2xl font-black">{g.text(sel, 'name') || sel.name}</h2><div className="mt-1 text-sm text-slate-500">{g.text(sel, 'client')}</div></div>
+                <div><h2 className="text-2xl font-black">{g.text(sel, 'name') || sel.name}</h2><div className="mt-1 text-sm text-slate-500">{g.text(sel, 'client')}{g.text(sel, 'whichCampaign') && <> · Campaign: {g.text(sel, 'whichCampaign')}</>}</div></div>
                 <button className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold" onClick={() => expandRecord(sel)}>Open record</button>
             </div>
             <div className={`rounded-xl border p-4 ${g.option(sel, 'status') === 'Failed' ? 'border-red-200 bg-red-50' : 'border-indigo-200 bg-indigo-50'}`}>
@@ -120,7 +122,7 @@ function EnginePanel(): React.ReactElement {
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
                 <h3 className="font-bold">Run a stage</h3>
-                <div className="mt-3 grid grid-cols-5 gap-3">{STAGES.map(s => { const why = s.ready(sel, g); const blocked = Boolean(why) || busy || ACTIVE.includes(g.option(sel, 'status')) || Boolean(g.option(sel, 'action')); return <div key={s.action} className="flex flex-col"><button disabled={blocked} title={why ?? s.help} onClick={() => run(s.action)} className="rounded-xl bg-indigo-600 px-3 py-3 text-sm font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40">{s.label}</button><div className={`mt-1 text-xs ${why ? 'text-red-700' : 'text-slate-500'}`}>{why ?? s.help}</div></div>; })}</div>
+                <div className="mt-3 grid grid-cols-6 gap-3">{STAGES.map(s => { const why = s.ready(sel, g); const blocked = Boolean(why) || busy || ACTIVE.includes(g.option(sel, 'status')) || Boolean(g.option(sel, 'action')); return <div key={s.action} className="flex flex-col"><button disabled={blocked} title={why ?? s.help} onClick={() => run(s.action)} className="rounded-xl bg-indigo-600 px-3 py-3 text-sm font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40">{s.label}</button><div className={`mt-1 text-xs ${why ? 'text-red-700' : 'text-slate-500'}`}>{why ?? s.help}</div></div>; })}</div>
             </section>
 
             <section className="grid grid-cols-4 gap-3">

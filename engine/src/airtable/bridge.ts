@@ -12,6 +12,7 @@ import type { Config } from '../config.js';
 import type { AirtableClient, AirtableRecord } from '../providers/airtable.js';
 import { enqueue } from '../queue.js';
 import { STAGES } from '../stages/index.js';
+import { BuildInputError, CAMPAIGNS, CF, queueBuild } from './campaignBuild.js';
 
 export const LEAD_LISTS = 'tblVOg9BkPOMmnitt';
 export const CLIENTS = 'tblcjRBGJEWh5KgOt';
@@ -77,10 +78,12 @@ export const ACTIONS: Record<string, string> = {
   'Refit Companies': 'leadlist.refit',
   'Find Contacts': 'leadlist.contacts',
   'Verify and Finalize': 'leadlist.verify',
+  'Build Campaign': 'campaign.build',
 };
 
 const READ_FIELDS = [F.engineAction, F.engineActionSetAt, F.name, F.client, F.filtersJson, F.icp, F.thesis, F.sampleSize, F.sampleApproved,
-  F.expansionTarget, F.personaDna, F.contactFiltersJson, F.contactSampleSize, F.contactApproved, F.includeGeneric, F.includeDirect, F.footprint200];
+  F.expansionTarget, F.personaDna, F.contactFiltersJson, F.contactSampleSize, F.contactApproved, F.includeGeneric, F.includeDirect, F.footprint200,
+  'fldepbn71awSjmZPV', 'fld8nrebRFL0O8kgj', 'fldUB4WsLi5kq6rUy', F.finalDirect, F.finalGeneric];
 // Field names, not IDs: Airtable formulas only take names. The two fields are the engine's own.
 const QUEUED_FORMULA = `AND({Runs on Engine}, {Engine Action} != '')`;
 
@@ -165,6 +168,17 @@ export async function pollActions(db: Db, cfg: Config, at: AirtableClient): Prom
     const action = text(rec.fields[F.engineAction]);
     const kind = ACTIONS[action];
     try {
+      if (kind === 'campaign.build') {
+        const press = `airtable:${rec.id}:${action}:${text(rec.fields[F.engineActionSetAt])}`;
+        const { plan, jobs } = await queueBuild(db, cfg, at, rec.id, rec, press);
+        const fresh = jobs.filter((j) => j.status === 'queued');
+        queued += fresh.length;
+        const names = plan.outputs.map((o) => `"${o.name}" (${o.leads} leads, ${o.senderEmailIds.length} inboxes)`).join(' and ');
+        const msg = `${fresh.length ? 'Build Campaign queued' : 'Build Campaign already queued'} on the engine (job ${jobs.map((j) => j.id).join(', ')}): ${names}; drafts only, never launched${jobs.some((j) => j.status !== 'duplicate_request') && cfg.dryRun && !cfg.liveStages.includes('campaign.build') ? '; dry run: nothing is created in EmailBison' : ''}`;
+        await at.update(LEAD_LISTS, rec.id, { [F.engineAction]: null, [F.engineJobId]: jobs.map((j) => j.id).join(', '), [F.engineMessage]: msg, ...(fresh.length ? { [F.engineStatus]: 'Queued' } : {}) });
+        await at.update(CAMPAIGNS, plan.parent.id, { [CF.processing]: 'Running', [CF.message]: msg, [CF.error]: null, [CF.startedAt]: new Date().toISOString(), [CF.completedAt]: null });
+        continue;
+      }
       if (!kind) throw new InputError(`"${action}" is not wired to the engine yet`);
       const def = STAGES[kind];
       const input = await buildInput(db, at, rec, kind);
@@ -182,6 +196,11 @@ export async function pollActions(db: Db, cfg: Config, at: AirtableClient): Prom
         ...(r.status === 'queued' ? { [F.engineStatus]: 'Queued', [F.processingStatus]: 'Queued', [F.workflowError]: null, [F.workflowMessage]: msg } : {}),
       });
     } catch (e) {
+      if (e instanceof BuildInputError) {
+        // Nothing was queued or spent; the list's own processing fields are left alone.
+        await at.update(LEAD_LISTS, rec.id, { [F.engineAction]: null, [F.engineStatus]: 'Failed', [F.engineMessage]: `Build Campaign: ${e.message}` });
+        continue;
+      }
       if (!(e instanceof InputError)) throw e;
       // Bad input: tell the screen and clear the press; nothing was queued or spent.
       await at.update(LEAD_LISTS, rec.id, { [F.engineAction]: null, [F.engineStatus]: 'Failed', [F.engineMessage]: e.message, [F.processingStatus]: 'Failed', [F.workflowError]: e.message });
@@ -224,7 +243,8 @@ export function resultFields(kind: string, res: any): Record<string, unknown> {
 /** Step 4: write progress and results of every job the bridge queued, once per change. */
 export async function syncResults(db: Db, at: AirtableClient): Promise<number> {
   const r = await db.query(
-    `SELECT a.job_id, a.record_id, a.action, a.written, j.kind, j.status, j.progress, j.error, j.result, j.dry_run, j.attempts
+    `SELECT a.job_id, a.record_id, a.action, a.written, a.target_table, a.target_record, a.parent_record, a.output, a.press,
+            j.kind, j.status, j.progress, j.error, j.result, j.dry_run, j.attempts
      FROM airtable_jobs a JOIN jobs j ON j.id = a.job_id WHERE NOT a.finished ORDER BY a.job_id`);
   let wrote = 0;
   for (const j of r.rows) {
@@ -233,6 +253,11 @@ export async function syncResults(db: Db, at: AirtableClient): Promise<number> {
       : j.status === 'running' ? 'Running' : waiting ? 'Waiting' : 'Queued';
     const key = `${state}|${waiting ? j.progress : ''}`;
     if (key === j.written) continue;
+    if (j.target_table === CAMPAIGNS) {
+      await syncCampaignJob(db, at, j, state, key);
+      wrote++;
+      continue;
+    }
     const fields: Record<string, unknown> = { [F.engineStatus]: state };
     const finished = ['Done', 'Failed', 'Needs Review'].includes(state);
     if (state === 'Running') Object.assign(fields, { [F.processingStatus]: 'Running', ...(j.written?.startsWith('Running') || j.written?.startsWith('Waiting') ? {} : { [F.startedAt]: new Date().toISOString() }) });
@@ -257,4 +282,40 @@ export async function bridgeTick(db: Db, cfg: Config, at: AirtableClient): Promi
   const wrote = await syncResults(db, at);
   const queued = await pollActions(db, cfg, at);
   return { queued, wrote };
+}
+
+const label = (o: string) => (o === 'generic' ? 'Generic' : 'Direct');
+
+/** One campaign.build job: its Campaigns record, the parent's per-output ID, and the list's Engine fields (all outputs of the press). */
+async function syncCampaignJob(db: Db, at: AirtableClient, j: any, state: string, key: string) {
+  const finished = ['Done', 'Failed', 'Needs Review'].includes(state);
+  const now = new Date().toISOString();
+  const res = j.result ?? {};
+  const msg = state === 'Done' ? `${j.dry_run ? 'Dry run (nothing created): ' : ''}${res.message ?? 'campaign built'}`
+    : state === 'Waiting' ? String(j.progress) : finished ? `${state === 'Needs Review' ? 'Needs review' : 'Failed'}: ${j.error ?? 'unknown error'}` : state;
+  const processing = state === 'Done' ? 'Completed' : state === 'Failed' ? 'Failed' : state === 'Needs Review' ? 'Needs review' : 'Running';
+  const idField = j.output === 'generic' ? CF.genericId : CF.directId;
+  const built = state === 'Done' && !j.dry_run && Number(res.campaignId) > 0;
+  await at.update(CAMPAIGNS, j.target_record, {
+    [CF.processing]: processing, [CF.message]: msg, [CF.error]: finished && state !== 'Done' ? msg : null,
+    ...(finished ? { [CF.completedAt]: now } : {}),
+    ...(built ? { [CF.id]: Number(res.campaignId), [idField]: Number(res.campaignId) } : {}),
+  });
+  if (built && j.parent_record && j.parent_record !== j.target_record) await at.update(CAMPAIGNS, j.parent_record, { [idField]: Number(res.campaignId) });
+  await db.query(`UPDATE airtable_jobs SET written=$2, finished=$3, updated_at=now() WHERE job_id=$1`, [j.job_id, key, finished]);
+
+  // The lead list and the parent campaign show the whole press: every output's latest line.
+  const all = (await db.query(
+    `SELECT a.output, j.status, j.progress, j.error, j.result, j.dry_run FROM airtable_jobs a JOIN jobs j ON j.id = a.job_id WHERE a.press = $1 ORDER BY a.output`, [j.press])).rows;
+  const states = all.map((x) => (x.status === 'succeeded' ? 'Done' : x.status === 'failed' ? 'Failed' : x.status === 'needs_review' ? 'Needs Review' : x.status === 'running' ? 'Running' : x.status === 'queued' && x.progress ? 'Waiting' : 'Queued'));
+  const overall = states.includes('Failed') ? 'Failed' : states.includes('Needs Review') ? 'Needs Review' : states.every((x) => x === 'Done') ? 'Done' : states.includes('Running') ? 'Running' : states.includes('Waiting') ? 'Waiting' : 'Queued';
+  const lines = all.map((x, i) => `${label(x.output)}: ${states[i] === 'Done' ? `${x.dry_run ? 'dry run, ' : ''}${x.result?.message ?? 'built'}` : states[i] === 'Waiting' ? x.progress : ['Failed', 'Needs Review'].includes(states[i]) ? `${states[i]}: ${x.error ?? ''}` : states[i]}`).join('\n');
+  await at.update(LEAD_LISTS, j.record_id, { [F.engineStatus]: overall, [F.engineMessage]: `Build Campaign\n${lines}` });
+  if (j.parent_record && j.parent_record !== j.target_record) {
+    const done = ['Done', 'Failed', 'Needs Review'].includes(overall);
+    await at.update(CAMPAIGNS, j.parent_record, {
+      [CF.processing]: overall === 'Done' ? 'Completed' : overall === 'Failed' ? 'Failed' : overall === 'Needs Review' ? 'Needs review' : 'Running',
+      [CF.message]: lines, ...(done ? { [CF.completedAt]: now } : {}), [CF.error]: ['Failed', 'Needs Review'].includes(overall) ? lines : null,
+    });
+  }
 }
