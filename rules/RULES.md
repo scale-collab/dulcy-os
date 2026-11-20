@@ -54,6 +54,8 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-17] The repurposing counts (2 LinkedIn, 3-5 X, 2 short scripts, 1 carousel per source) are examples, not a weekly quota. No posting cadence is set yet. (Alex)
 
 ## How to work with Alex
+- [2026-11-20] Until Alex says otherwise, Claude runs the engine end-to-end tests itself on Dulcy's own test lists, including the approval clicks (Company Sample Approved, Contact Sample Approved, QA Passed) and Build Campaign drafts. Never a launch, and never on a client's list. Reason: Alex wants it proven end to end before he tests. (Alex)
+- [2026-11-20] Dulcy agency lists: 1-200 employees is the better default than 1-50. (Alex)
 - [2026-11-18] Claude may merge its own pull requests into `main` without asking each time, only after the tests pass, and tells Alex each time. (Alex)
 - [2026-11-17] Agent roster is: Ada (router), Riley (ops/automation), Atlas, Scout, Scribe, Cole (sales), Forge (offers), Sienna (social/content), Pixel (paid ads), Lex (legal/HR), Ledger (finance), Harper (hiring/people), Red Dog (trading). Jarvis is renamed Ada; the "Airtable" skill becomes Riley. (Alex)
 - [2026-11-17] Bounce and campaign-health checks belong to Atlas, never Riley. Riley only fixes n8n and Make.com (and Airtable automations). (Alex correction)
