@@ -103,6 +103,11 @@ export function createBisonClient(o: BisonOptions) {
       const all = await pages<BisonCampaign>('/api/campaigns');
       return all.filter((c) => String(c.name).trim() === name.trim()).map((c) => ({ ...c, id: Number(c.id) }));
     },
+    /** One campaign with its settings (max emails/new leads per day, plain text, tracking). */
+    async getCampaign(id: number): Promise<Record<string, any>> {
+      const r = await call('GET', `/api/campaigns/${id}`);
+      return r?.data ?? r ?? {};
+    },
     /** Every campaign in the workspace with EmailBison's own stats (same list the daily sync reads). */
     async listCampaigns(): Promise<any[]> {
       return pages<any>('/api/campaigns');

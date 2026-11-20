@@ -19,6 +19,8 @@ export interface FakeBison {
   skipRowsOnImport: number;
   /** The import REPORT under-counts by this many, but every row still attaches (seen live). */
   underReportOnImport: number;
+  /** Seen live 2026-11-20 (campaign 651): EmailBison set max emails/new leads to 2,500 after the build. */
+  resetLimitsOnSenderAttach: boolean;
   senderStatus: (id: string) => string;
   senderEmail: (id: string) => string;
   /** Sender IDs that exist in the workspace. */
@@ -40,7 +42,7 @@ export interface FakeBison {
 export async function startFakeBison(): Promise<FakeBison> {
   const s: FakeBison = {
     url: '', key: 'bison-key', campaigns: [], leadLists: [], customVariables: new Set(['domain']), calls: [],
-    createThen500: false, uploadThen500: false, processAfterChecks: 0, failRowsOnImport: 0, skipRowsOnImport: 0, underReportOnImport: 0,
+    createThen500: false, uploadThen500: false, processAfterChecks: 0, failRowsOnImport: 0, skipRowsOnImport: 0, underReportOnImport: 0, resetLimitsOnSenderAttach: false,
     senderStatus: () => 'connected', senderEmail: (id) => `sender${id}@dulcy-mail.com`, workspaceSenders: ['11', '12', '13'], pauseIgnored: false, currentTeam: 2, otherToolSwitches: false, switches: 0, inSequenceElsewhere: new Set(), forcedParallel: false, close: () => undefined,
   };
   const json = (res: http.ServerResponse, code: number, body: unknown) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(body)); };
@@ -70,7 +72,8 @@ export async function startFakeBison(): Promise<FakeBison> {
     }
     const camp = (id: string) => s.campaigns.find((c) => c.id === Number(id))!;
     if ((x = m(/^\/api\/campaigns\/(\d+)\/schedule$/)) && req.method === 'POST') return json(res, 200, { data: {} });
-    if ((x = m(/^\/api\/campaigns\/(\d+)\/update$/)) && req.method === 'PATCH') return json(res, 200, { data: {} });
+    if ((x = m(/^\/api\/campaigns\/(\d+)\/update$/)) && req.method === 'PATCH') { const c: any = camp(x[1]); c.settings = { ...(c.settings ?? {}), ...body() }; return json(res, 200, { data: { id: c.id, ...c.settings } }); }
+    if ((x = m(/^\/api\/campaigns\/(\d+)$/)) && req.method === 'GET') { const c: any = camp(x[1]); return json(res, 200, { data: { id: c.id, name: c.name, status: c.status ?? 'draft', ...(c.settings ?? {}) } }); }
     if ((x = m(/^\/api\/campaigns\/v1\.1\/(\d+)\/sequence-steps$/))) {
       const c = camp(x[1]);
       if (req.method === 'GET') return json(res, 200, { data: { sequence_steps: c.steps } });
@@ -116,7 +119,9 @@ export async function startFakeBison(): Promise<FakeBison> {
     if ((x = m(/^\/api\/campaigns\/(\d+)\/attach-sender-emails$/))) {
       const bad = body().sender_email_ids.findIndex((id: string) => !s.workspaceSenders.includes(String(id)));
       if (bad >= 0) return json(res, 422, { data: { success: false, message: `The selected sender_email_ids.${bad} is invalid.` } });
-      const c = camp(x[1]); for (const id of body().sender_email_ids) if (!c.senders.includes(String(id))) c.senders.push(String(id)); return json(res, 200, { data: { success: true } });
+      const c: any = camp(x[1]); for (const id of body().sender_email_ids) if (!c.senders.includes(String(id))) c.senders.push(String(id));
+      if (s.resetLimitsOnSenderAttach) c.settings = { ...(c.settings ?? {}), max_emails_per_day: 2500, max_new_leads_per_day: 2500 };
+      return json(res, 200, { data: { success: true } });
     }
     if ((x = m(/^\/api\/campaigns\/(\d+)\/sender-emails$/))) return json(res, 200, page(camp(x[1]).senders.map((id) => ({ id: Number(id), status: s.senderStatus(id), email: s.senderEmail(id) })), u));
     return json(res, 404, { message: 'not found' });

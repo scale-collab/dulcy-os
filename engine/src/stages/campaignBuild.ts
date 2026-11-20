@@ -197,6 +197,21 @@ export const campaignBuildStage: Stage = async (ctx) => {
     return { count: ids.length };
   });
 
+  // Seen live 2026-11-20 (campaign 651): after the leads and inboxes were attached, EmailBison
+  // showed max emails/new leads per day of 2,500 instead of the values set in step 3. Read the
+  // campaign back, re-apply once if anything changed, and stop for review if it still differs.
+  const settingsCheck = await ctx.step('settings-check', async () => {
+    const want: Record<string, unknown> = { ...DEFAULT_SETTINGS, ...(input.settings ?? {}) };
+    const keys = ['max_emails_per_day', 'max_new_leads_per_day', 'plain_text', 'open_tracking', 'can_unsubscribe'];
+    const diff = (got: Record<string, any>) => keys.filter((k) => want[k] !== undefined && got[k] !== undefined && String(got[k]) !== String(want[k]));
+    let off = diff(await bison.getCampaign(campaign.id));
+    if (!off.length) return { reapplied: false };
+    await bison.updateSettings(campaign.id, want);
+    off = diff(await bison.getCampaign(campaign.id));
+    if (off.length) throw new NeedsReviewError(`campaign ${campaign.id}: EmailBison keeps different settings (${off.join(', ')}); set them in EmailBison before launch`);
+    return { reapplied: true };
+  });
+
   return {
     dryRun: false,
     launched: false,
@@ -205,6 +220,7 @@ export const campaignBuildStage: Stage = async (ctx) => {
     leads: { uploaded: leads.rows.length, importReported: up.accepted, added: total.added, skippedInOtherCampaigns: total.skippedInOtherCampaigns, droppedDuplicate: leads.droppedDuplicate, droppedNoEmail: leads.droppedNoEmail, droppedInvalid: leads.droppedInvalid },
     imports: up.parts,
     senders: senders.count,
+    settingsReapplied: settingsCheck.reapplied,
     steps: steps.length,
     variants: steps.reduce((n, s) => n + 1 + (s.variants?.length ?? 0), 0),
     message: `campaign ${campaign.id} built with ${total.added} leads (${total.skippedInOtherCampaigns} skipped: already in sequence in other campaigns) and ${senders.count} senders; not launched`,
