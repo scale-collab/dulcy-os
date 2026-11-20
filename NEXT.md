@@ -44,7 +44,12 @@ Last updated: 2026-11-18 (engine step 3 proven live)
 - [x] Reply conflicts answered by Alex 2026-11-17 (see RULES). Still open: mock-call interviews yes/no (Harper).
 - [ ] Alex reviews each agent and corrects it.
 
-## ▶ Pick up here (engine, 2026-11-18 afternoon)
+## ▶ Pick up here (engine, 2026-11-20 evening)
+**Airtable wiring built (code + Airtable side), not live yet.** Fields added to Lead Lists (Runs on Engine, Engine Action, Engine Status, Engine Job ID, Engine Message, Engine Action Set At). New page "Lead List Center (Engine)" in the Campaigns interface (draft: Alex publishes). Engine polls every 30 s and writes results back. 127/127 tests.
+To go live: (1) Alex creates an Airtable token for the engine (base appxqINt5XKw7a76A; data.records:read, data.records:write, schema.bases:read) and adds `AIRTABLE_API_KEY=...` to `/opt/dulcy-os/engine/deploy/.env`; (2) `bash engine/deploy/deploy.sh`; (3) publish the Campaigns interface; (4) test on one list: Run Company Sample from the engine page.
+Not wired yet: Build Campaign button; filter generation still runs in the regular Lead List Center (n8n filter step).
+
+## Earlier (engine, 2026-11-18 afternoon)
 **Step 3 (campaign build) is PROVEN LIVE.** Job 12 built test campaign **649** ("ENGINE TEST 2 - do not launch - Manufacturing Direct", Dulcy workspace 2): 3 emails (2 days apart, follow-ups threaded), 226 leads uploaded, 52 added, 174 skipped by EmailBison (already in sequence in other Dulcy campaigns; the engine never forces parallel sending), 2 senders attached and connected, draft, not launched. Checked directly in EmailBison.
 Earlier test campaign 648 had landed in client workspace 80 (Brilliant Jewelers) before the per-call workspace switch existed. Cleaned up with Alex's OK (226 test leads, 1 variable, campaign queued for deletion; lead list 776 removed by hand).
 Campaign 649 stays as a draft unless Alex wants it deleted.

@@ -133,3 +133,14 @@ CREATE TABLE IF NOT EXISTS lead_contact_profiles (
   profile      JSONB NOT NULL,
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Jobs queued from an Airtable button (Engine Action), and what was last written back.
+CREATE TABLE IF NOT EXISTS airtable_jobs (
+  job_id      BIGINT PRIMARY KEY REFERENCES jobs(id) ON DELETE CASCADE,
+  record_id   TEXT NOT NULL,
+  action      TEXT NOT NULL,
+  written     TEXT,                    -- last state written to the record (state|progress)
+  finished    BOOLEAN NOT NULL DEFAULT false,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
