@@ -6,7 +6,7 @@ export async function startFakeOpenAI(): Promise<FakeOpenAI> {
   const server = http.createServer(async (req, res) => {
     const chunks: Buffer[] = []; for await (const c of req) chunks.push(c as Buffer);
     s.calls++;
-    try { s.lastUser = JSON.parse(Buffer.concat(chunks).toString()).messages[1].content; } catch { /* ignore */ }
+    try { const m = JSON.parse(Buffer.concat(chunks).toString()).messages; s.lastUser = m[m.length - 1].content; } catch { /* ignore */ }
     res.setHeader('content-type', 'application/json');
     if (s.status !== 200) { res.statusCode = s.status; return res.end('{"error":{"message":"nope"}}'); }
     res.end(JSON.stringify({ choices: [{ message: { content: JSON.stringify(s.answer) } }] }));

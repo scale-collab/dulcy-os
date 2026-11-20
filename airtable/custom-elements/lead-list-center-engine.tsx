@@ -25,7 +25,8 @@ const ID = {
 type Key = keyof typeof ID;
 
 const STAGES: {action: string; label: string; help: string; ready: (r: AnyRecord, g: Getters) => string | null}[] = [
-    {action: 'Run Company Sample', label: '1. Company sample (100)', help: 'Free count, then up to 100 companies, fit check in code.', ready: (r, g) => g.text(r, 'filters') ? null : 'Generate the DiscoLike filters in Lead List Center first'},
+    {action: 'Generate Filters', label: '0. Generate filters', help: 'DiscoLike ICP analysis of 20 companies + one AI keyword review; writes the search plan (replaces the current one).', ready: (r, g) => !g.text(r, 'icp') ? 'Write the targeting sentence in Lead List Center first' : !g.text(r, 'client') ? 'Link a client first' : null},
+    {action: 'Run Company Sample', label: '1. Company sample (100)', help: 'Free count, then up to 100 companies, fit check in code.', ready: (r, g) => g.text(r, 'filters') ? null : 'Press 0. Generate filters first'},
     {action: 'Expand Companies', label: '2. Expand companies', help: 'Grows to the Expansion Target in batches of 2,500.', ready: (r, g) => !g.bool(r, 'sampleApproved') ? 'Approve the company sample first' : !g.num(r, 'target') ? 'Set an Expansion Target' : null},
     {action: 'Refit Companies', label: 'Re-check companies', help: 'Free. Re-runs the fit check on every saved company.', ready: (r, g) => g.text(r, 'filters') ? null : 'No filters on this list'},
     {action: 'Find Contacts', label: '3. Find contacts', help: 'Not approved: a contact sample. Approved: every usable company left.', ready: () => null},
@@ -114,7 +115,7 @@ function EnginePanel(): React.ReactElement {
             {notice && <div className={`rounded-xl px-4 py-3 text-sm font-semibold ${notice.kind === 'error' ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-700'}`}>{notice.text}</div>}
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
-                <h3 className="font-bold">Setup (edit targeting and filters in Lead List Center)</h3>
+                <h3 className="font-bold">Setup (edit the targeting sentence and filters in Lead List Center)</h3>
                 <div className="mt-3 grid grid-cols-2 gap-4 text-sm"><div><div className="font-semibold text-slate-500">Targeting sentence</div><div className="mt-1 whitespace-pre-wrap">{g.text(sel, 'icp') || '–'}</div></div><div><div className="font-semibold text-slate-500">List thesis</div><div className="mt-1 whitespace-pre-wrap">{g.text(sel, 'thesis') || '–'}</div></div></div>
                 <div className="mt-3 text-sm"><span className="font-semibold text-slate-500">Company filters: </span>{g.text(sel, 'filters') ? <span className="font-semibold text-emerald-700">ready</span> : <span className="font-semibold text-red-700">not generated</span>}<span className="ml-6 font-semibold text-slate-500">Contact filters: </span>{g.text(sel, 'contactFilters') ? 'set' : 'default'}<span className="ml-6 font-semibold text-slate-500">Persona: </span>{g.text(sel, 'persona') ? 'set' : '–'}</div>
                 <div className="mt-4 flex flex-wrap items-end gap-6"><Num k="target" label="Expansion Target"/><Num k="contactSampleSize" label="Contact sample (companies)"/><Check k="sampleApproved" label="Company sample approved"/><Check k="contactApproved" label="Contact sample approved"/><Check k="includeDirect" label="Include Direct"/><Check k="includeGeneric" label="Include Generic"/><Check k="footprint200" label="Generic: footprint 200 or less"/></div>
@@ -122,7 +123,7 @@ function EnginePanel(): React.ReactElement {
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
                 <h3 className="font-bold">Run a stage</h3>
-                <div className="mt-3 grid grid-cols-6 gap-3">{STAGES.map(s => { const why = s.ready(sel, g); const blocked = Boolean(why) || busy || ACTIVE.includes(g.option(sel, 'status')) || Boolean(g.option(sel, 'action')); return <div key={s.action} className="flex flex-col"><button disabled={blocked} title={why ?? s.help} onClick={() => run(s.action)} className="rounded-xl bg-indigo-600 px-3 py-3 text-sm font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40">{s.label}</button><div className={`mt-1 text-xs ${why ? 'text-red-700' : 'text-slate-500'}`}>{why ?? s.help}</div></div>; })}</div>
+                <div className="mt-3 grid grid-cols-4 gap-3">{STAGES.map(s => { const why = s.ready(sel, g); const blocked = Boolean(why) || busy || ACTIVE.includes(g.option(sel, 'status')) || Boolean(g.option(sel, 'action')); return <div key={s.action} className="flex flex-col"><button disabled={blocked} title={why ?? s.help} onClick={() => run(s.action)} className="rounded-xl bg-indigo-600 px-3 py-3 text-sm font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40">{s.label}</button><div className={`mt-1 text-xs ${why ? 'text-red-700' : 'text-slate-500'}`}>{why ?? s.help}</div></div>; })}</div>
             </section>
 
             <section className="grid grid-cols-4 gap-3">

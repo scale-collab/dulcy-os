@@ -7,6 +7,7 @@ import { companySampleStage } from './companySample.js';
 import { companyExpandStage } from './companyExpand.js';
 import { companyRefitStage } from './companyRefit.js';
 import { contactsFindStage } from './contactsFind.js';
+import { filterGenerateStage } from './filterGenerate.js';
 
 /** A stage = one Airtable action. It returns a small result for the Airtable record. */
 export type Stage = (ctx: JobContext) => Promise<Record<string, unknown>>;
@@ -77,6 +78,12 @@ export const STAGES: Record<string, StageDef> = {
     deadlineMs: 30 * 60_000,
     maxAttempts: 3,
     description: 'Re-check every saved company of a list with its profile (free; optionally rebuild the profile with one AI call); the sheet is rewritten in place.',
+  },
+  'leadlist.filters': {
+    run: filterGenerateStage,
+    deadlineMs: 20 * 60_000,
+    maxAttempts: 3,
+    description: 'Generate filters: the old n8n search-plan branch run unchanged (DiscoLike ICP analysis of 20 companies, one AI keyword review, plan built in code); writes the same Airtable fields n8n did.',
   },
   'leadlist.contacts': {
     run: contactsFindStage,
