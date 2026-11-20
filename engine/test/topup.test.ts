@@ -69,7 +69,7 @@ test('top-up: adds the new leads, counts the one already in the campaign as skip
   bison.processAfterChecks = 1;
   const j = await settle(cfg(), (await queue()).job.id);
   assert.equal(j.job.status, 'succeeded', j.job.error);
-  assert.deepEqual(j.job.result.leads, { uploaded: 3, accepted: 3, added: 2, skippedAlreadyInCampaign: 1, droppedDuplicate: 0 });
+  assert.deepEqual(j.job.result.leads, { uploaded: 3, importReported: 3, added: 2, skippedAlreadyInCampaign: 1, droppedDuplicate: 0 });
   assert.equal(bison.campaigns[0].leads.size, 4);
   assert.ok(!bison.calls.some((x) => /resume|launch|attach-sender/.test(x)), 'no launch, no sender changes');
 });

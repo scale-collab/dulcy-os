@@ -93,17 +93,19 @@ export const campaignTopupStage: Stage = async (ctx) => {
 
   // 5. Added vs skipped: leads EmailBison already had in this campaign are skipped, so the
   // total can grow by less than was accepted. Wait until the total stops moving.
+  // Cap = rows sent (EmailBison's import report can under-count; seen live 2026-11-20).
+  const sent = leads.rows.length;
   let prev: { total: number } | undefined;
   let growth = 0;
   for (let k = 1; k <= MAX_GROWTH_CHECKS; k++) {
     let fresh = false;
     const obs = await ctx.step(`growth-${k}`, async () => { fresh = true; return { total: await bison.campaignLeadTotal(input.campaignId) }; });
     growth = obs.total - up.before;
-    if (growth > up.accepted) throw new NeedsReviewError(`campaign ${input.campaignId} grew by ${growth} but only ${up.accepted} leads were uploaded; check for a double attach`);
+    if (growth > sent) throw new NeedsReviewError(`campaign ${input.campaignId} grew by ${growth} but only ${sent} leads were sent; check for a double attach`);
     if (growth < 0) throw new NeedsReviewError(`campaign ${input.campaignId} has fewer leads than before the top-up (${obs.total} < ${up.before}); check it in EmailBison`);
-    const settled = growth === up.accepted || (prev !== undefined && prev.total === obs.total);
+    const settled = growth === sent || (prev !== undefined && prev.total === obs.total);
     if (settled) break;
-    if (fresh) throw new WaitError(`campaign ${input.campaignId}: +${growth} of ${up.accepted} leads so far`, ctx.cfg.bisonPollMs);
+    if (fresh) throw new WaitError(`campaign ${input.campaignId}: +${growth} of ${sent} leads so far`, ctx.cfg.bisonPollMs);
     prev = obs;
     if (k === MAX_GROWTH_CHECKS) throw new NeedsReviewError(`campaign ${input.campaignId} lead total kept changing; check the attach in EmailBison`);
   }
@@ -112,10 +114,10 @@ export const campaignTopupStage: Stage = async (ctx) => {
     dryRun: false,
     launched: false,
     campaignId: input.campaignId,
-    leads: { uploaded: leads.rows.length, accepted: up.accepted, added: growth, skippedAlreadyInCampaign: up.accepted - growth, droppedDuplicate: leads.droppedDuplicate },
+    leads: { uploaded: leads.rows.length, importReported: up.accepted, added: growth, skippedAlreadyInCampaign: sent - growth, droppedDuplicate: leads.droppedDuplicate },
     imports: up.parts,
     readiness,
     kpiException: Boolean(input.kpiException),
-    message: `top-up of campaign ${input.campaignId}: ${growth} leads added, ${up.accepted - growth} already in the campaign${readiness.watch.length ? `; watch: ${readiness.watch.join('; ')}` : ''}`,
+    message: `top-up of campaign ${input.campaignId}: ${growth} leads added, ${sent - growth} already in the campaign${readiness.watch.length ? `; watch: ${readiness.watch.join('; ')}` : ''}`,
   };
 };

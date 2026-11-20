@@ -76,9 +76,10 @@ export async function uploadAndAttach(ctx: JobContext, bison: BisonClient, o: { 
           `lead import ${list.id} was not processed within 60 minutes; check it in EmailBison, do not upload again`);
       }
       const processed = Number(l.leads_processed), succeeded = Number(l.leads_succeeded), failed = Number(l.leads_failed);
-      // EmailBison sometimes leaves a few rows out of a finished import with no error and no
-      // failed count (seen live 2026-11-20: 951 sent, 901 processed, 0 failed). Up to 10% is
-      // accepted and reported; failed rows, more than sent, or a bigger gap still go to review.
+      // EmailBison's import report can come back short with no error and no failed count (seen
+      // live 2026-11-20: 951 sent, "901 processed", 0 failed, yet all 951 reached the campaign).
+      // Up to 10% short is accepted (the campaign's own lead total is the real check, next);
+      // failed rows, more than sent, or a bigger gap still go to review.
       const skipped = parts[i].length - processed;
       const ok = failed === 0 && succeeded === processed && skipped >= 0 && skipped <= Math.floor(parts[i].length * 0.1);
       if (!ok) {

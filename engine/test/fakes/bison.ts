@@ -17,6 +17,8 @@ export interface FakeBison {
   failRowsOnImport: number;
   /** Rows a finished import leaves out with no error and no failed count (seen live). */
   skipRowsOnImport: number;
+  /** The import REPORT under-counts by this many, but every row still attaches (seen live). */
+  underReportOnImport: number;
   senderStatus: (id: string) => string;
   senderEmail: (id: string) => string;
   /** Sender IDs that exist in the workspace. */
@@ -38,7 +40,7 @@ export interface FakeBison {
 export async function startFakeBison(): Promise<FakeBison> {
   const s: FakeBison = {
     url: '', key: 'bison-key', campaigns: [], leadLists: [], customVariables: new Set(['domain']), calls: [],
-    createThen500: false, uploadThen500: false, processAfterChecks: 0, failRowsOnImport: 0, skipRowsOnImport: 0,
+    createThen500: false, uploadThen500: false, processAfterChecks: 0, failRowsOnImport: 0, skipRowsOnImport: 0, underReportOnImport: 0,
     senderStatus: () => 'connected', senderEmail: (id) => `sender${id}@dulcy-mail.com`, workspaceSenders: ['11', '12', '13'], pauseIgnored: false, currentTeam: 2, otherToolSwitches: false, switches: 0, inSequenceElsewhere: new Set(), forcedParallel: false, close: () => undefined,
   };
   const json = (res: http.ServerResponse, code: number, body: unknown) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(body)); };
@@ -100,7 +102,7 @@ export async function startFakeBison(): Promise<FakeBison> {
       l.checks++;
       if (l.checks > s.processAfterChecks) l.status = 'Processed';
       const done = l.status === 'Processed';
-      return json(res, 200, { data: { id: l.id, name: l.name, status: l.status, leads_processed: done ? l.emails.length - (l.skipRows ?? 0) : null, leads_succeeded: done ? l.emails.length - l.failRows - (l.skipRows ?? 0) : null, leads_failed: done ? l.failRows : null, error_messages: l.failRows ? { 'First name is a required field': l.failRows } : {} } });
+      return json(res, 200, { data: { id: l.id, name: l.name, status: l.status, leads_processed: done ? l.emails.length - (l.skipRows ?? 0) - s.underReportOnImport : null, leads_succeeded: done ? l.emails.length - l.failRows - (l.skipRows ?? 0) - s.underReportOnImport : null, leads_failed: done ? l.failRows : null, error_messages: l.failRows ? { 'First name is a required field': l.failRows } : {} } });
     }
     if ((x = m(/^\/api\/campaigns\/(\d+)\/leads\/attach-lead-list$/))) {
       const l = s.leadLists.find((y) => y.id === Number(body().lead_list_id))!;

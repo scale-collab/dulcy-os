@@ -138,7 +138,9 @@ export const campaignBuildStage: Stage = async (ctx) => {
 
   const up = await uploadAndAttach(ctx, bison, { campaignId: campaign.id, listName: `${input.name} Leads`, leads });
   const before = up.before;
-  const expectedAdded = up.accepted;
+  // Cap = rows we actually SENT. EmailBison's import report can under-count (seen live
+  // 2026-11-20: "901 processed" while the campaign gained all 951), so it is not the cap.
+  const expectedAdded = leads.rows.length;
 
   // 6. Added vs skipped. EmailBison skips leads that are "In Sequence" in another campaign
   // (we never force parallel sending), so the campaign can hold fewer than were uploaded.
@@ -150,7 +152,7 @@ export const campaignBuildStage: Stage = async (ctx) => {
     let fresh = false;
     const obs = await ctx.step(`growth-${k}`, async () => { fresh = true; return { total: await bison.campaignLeadTotal(campaign.id) }; });
     added = obs.total - before;
-    if (added > expectedAdded) throw new NeedsReviewError(`campaign ${campaign.id} gained ${added} leads but only ${expectedAdded} were uploaded; check for a double attach`);
+    if (added > expectedAdded) throw new NeedsReviewError(`campaign ${campaign.id} gained ${added} leads but only ${expectedAdded} were sent; check for a double attach`);
     if (added < 0) throw new NeedsReviewError(`campaign ${campaign.id} has fewer leads than before the upload (${obs.total} < ${before}); check it in EmailBison`);
     const settled = added === expectedAdded || (prev !== undefined && prev.total === obs.total);
     if (settled) break;
@@ -197,7 +199,7 @@ export const campaignBuildStage: Stage = async (ctx) => {
     launched: false,
     campaignId: campaign.id,
     campaignName: input.name,
-    leads: { uploaded: leads.rows.length, notImportedByEmailBison: up.skippedOnImport, added: total.added, skippedInOtherCampaigns: total.skippedInOtherCampaigns, droppedDuplicate: leads.droppedDuplicate, droppedNoEmail: leads.droppedNoEmail, droppedInvalid: leads.droppedInvalid },
+    leads: { uploaded: leads.rows.length, importReported: up.accepted, added: total.added, skippedInOtherCampaigns: total.skippedInOtherCampaigns, droppedDuplicate: leads.droppedDuplicate, droppedNoEmail: leads.droppedNoEmail, droppedInvalid: leads.droppedInvalid },
     imports: up.parts,
     senders: senders.count,
     steps: steps.length,
