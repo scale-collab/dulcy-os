@@ -53,7 +53,7 @@ async function settle(c: Config, id: number, max = 60) {
 before(async () => { google = await startFakeGoogle(); bison = await startFakeBison(); if (skip) return; db = createPool(url!); await migrate(db); });
 after(async () => { google.close(); bison.close(); if (!skip) await db.end(); });
 beforeEach(async () => {
-  Object.assign(bison, { campaigns: [], leadLists: [], calls: [], createThen500: false, uploadThen500: false, processAfterChecks: 0, failRowsOnImport: 0, skipRowsOnImport: 0, underReportOnImport: 0, customVariables: new Set(['domain']), workspaceSenders: ['11', '12', '13'], currentTeam: 2, otherToolSwitches: false, switches: 0, inSequenceElsewhere: new Set(), forcedParallel: false });
+  Object.assign(bison, { campaigns: [], leadLists: [], calls: [], createThen500: false, uploadThen500: false, processAfterChecks: 0, failRowsOnImport: 0, skipRowsOnImport: 0, underReportOnImport: 0, resetLimitsOnSenderAttach: false, customVariables: new Set(['domain']), workspaceSenders: ['11', '12', '13'], currentTeam: 2, otherToolSwitches: false, switches: 0, inSequenceElsewhere: new Set(), forcedParallel: false });
   bison.senderStatus = () => 'connected';
   bison.senderEmail = (id) => `sender${id}@dulcy-mail.com`;
   google.tabs = { 'Final Direct': TAB.map((r) => [...r]) };
@@ -105,6 +105,18 @@ test('dry-run: checks the list and reports the plan; nothing is created in Email
   assert.equal(j.job.result.plan.leads, 3);
   assert.equal(j.job.result.plan.leadsMatchAirtable, true);
   assert.equal(bison.calls.length, 0);
+});
+
+test('build: limits EmailBison changes after the inboxes are attached are set again and checked (seen live: 2,500)', { skip }, async () => {
+  bison.resetLimitsOnSenderAttach = true;
+  const q = await queue({ settings: { max_emails_per_day: 75, max_new_leads_per_day: 60, plain_text: true } });
+  const j = await settle(cfg(), q.job.id);
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  const c: any = bison.campaigns[0];
+  assert.equal(c.settings.max_emails_per_day, 75);
+  assert.equal(c.settings.max_new_leads_per_day, 60);
+  assert.equal(c.settings.plain_text, true);
+  assert.equal(j.job.result.settingsReapplied, true);
 });
 
 test('build: one campaign, sequence + variant, leads checked until processed, exact count, senders verified, not launched', { skip }, async () => {
