@@ -29,6 +29,7 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-17] Review company fit and contact fit separately. Test contacts from the first 100 companies. (Airtable/Scout skill)
 - [2026-11-17] After provider contact search, do NOT run a second paid AI/web-research review. Ambiguous contacts stay NeedsReview for manual Approve / Reject / Leave pending. (Alex, Oct 9 correction)
 - [2026-11-17] Default lead database is DiscoLike unless the campaign says otherwise. (Workflow SOP)
+- [2026-11-20] Never pay MillionVerifier twice for the same email on the same list: Verify reuses every earlier result and uploads only emails never verified (e.g. new ContraGen contacts or a top-up). Unprocessed (no credit) emails are sent again. Reason: the ContraGen re-run re-checked 746 already-verified emails. (Alex)
 - [2026-11-17] Verification order: MillionVerifier first; LeadMagic for direct contacts or recovery when needed. Do not treat catch-all as confirmed. Check status on an existing job instead of re-running a paid job. (Airtable skill)
 - [2026-11-17] Copy: no spintax in client-facing text, no manual signature. Do not spin variables like {FIRST_NAME}. Run EmailGuard spam check and manual review before upload. (Workflow SOP)
 - [2026-11-17] Sender domains: don't buy new .info domains. This is only about buying sender domains, not about recipients. **Clarified 2026-11-18:** it is not a launch or campaign check; existing .info senders may be used. (Alex)
