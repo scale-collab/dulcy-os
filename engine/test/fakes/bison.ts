@@ -5,7 +5,7 @@ export interface FakeBison {
   url: string;
   key: string;
   campaigns: { id: number; name: string; leads: Set<string>; senders: string[]; steps: any[] }[];
-  leadLists: { id: number; name: string; emails: string[]; status: string; checks: number; failRows: number }[];
+  leadLists: { id: number; name: string; emails: string[]; status: string; checks: number; failRows: number; skipRows?: number }[];
   customVariables: Set<string>;
   calls: string[];
   /** Create the campaign, then answer 500 (outcome unknown to the caller). */
@@ -15,6 +15,8 @@ export interface FakeBison {
   /** How many status checks a new import stays "Unprocessed". */
   processAfterChecks: number;
   failRowsOnImport: number;
+  /** Rows a finished import leaves out with no error and no failed count (seen live). */
+  skipRowsOnImport: number;
   senderStatus: (id: string) => string;
   senderEmail: (id: string) => string;
   /** Sender IDs that exist in the workspace. */
@@ -36,7 +38,7 @@ export interface FakeBison {
 export async function startFakeBison(): Promise<FakeBison> {
   const s: FakeBison = {
     url: '', key: 'bison-key', campaigns: [], leadLists: [], customVariables: new Set(['domain']), calls: [],
-    createThen500: false, uploadThen500: false, processAfterChecks: 0, failRowsOnImport: 0,
+    createThen500: false, uploadThen500: false, processAfterChecks: 0, failRowsOnImport: 0, skipRowsOnImport: 0,
     senderStatus: () => 'connected', senderEmail: (id) => `sender${id}@dulcy-mail.com`, workspaceSenders: ['11', '12', '13'], pauseIgnored: false, currentTeam: 2, otherToolSwitches: false, switches: 0, inSequenceElsewhere: new Set(), forcedParallel: false, close: () => undefined,
   };
   const json = (res: http.ServerResponse, code: number, body: unknown) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(body)); };
@@ -87,7 +89,7 @@ export async function startFakeBison(): Promise<FakeBison> {
       if (form.get('columnsToMap[email]') !== 'email') return json(res, 422, { message: 'The columns to map.email field is required. lead@example.com' });
       const lines = csv.trim().split('\n').slice(1);
       const emails = lines.map((l) => csvCells(l)[2]);
-      const list = { id: 700 + s.leadLists.length, name: String(form.get('name')), emails, status: 'Unprocessed', checks: 0, failRows: s.failRowsOnImport };
+      const list = { id: 700 + s.leadLists.length, name: String(form.get('name')), emails, status: 'Unprocessed', checks: 0, failRows: s.failRowsOnImport, skipRows: s.skipRowsOnImport };
       s.leadLists.push(list);
       if (s.uploadThen500) { s.uploadThen500 = false; return json(res, 500, { message: 'Server Error' }); }
       return json(res, 200, { data: { id: list.id } });
@@ -98,13 +100,13 @@ export async function startFakeBison(): Promise<FakeBison> {
       l.checks++;
       if (l.checks > s.processAfterChecks) l.status = 'Processed';
       const done = l.status === 'Processed';
-      return json(res, 200, { data: { id: l.id, name: l.name, status: l.status, leads_processed: done ? l.emails.length : null, leads_succeeded: done ? l.emails.length - l.failRows : null, leads_failed: done ? l.failRows : null, error_messages: l.failRows ? { 'First name is a required field': l.failRows } : {} } });
+      return json(res, 200, { data: { id: l.id, name: l.name, status: l.status, leads_processed: done ? l.emails.length - (l.skipRows ?? 0) : null, leads_succeeded: done ? l.emails.length - l.failRows - (l.skipRows ?? 0) : null, leads_failed: done ? l.failRows : null, error_messages: l.failRows ? { 'First name is a required field': l.failRows } : {} } });
     }
     if ((x = m(/^\/api\/campaigns\/(\d+)\/leads\/attach-lead-list$/))) {
       const l = s.leadLists.find((y) => y.id === Number(body().lead_list_id))!;
       const force = body().allow_parallel_sending === true;
       if (force) s.forcedParallel = true;
-      for (const e of l.emails.slice(0, l.emails.length - l.failRows)) if (force || !s.inSequenceElsewhere.has(e.toLowerCase())) camp(x[1]).leads.add(e);
+      for (const e of l.emails.slice(0, l.emails.length - l.failRows - (l.skipRows ?? 0))) if (force || !s.inSequenceElsewhere.has(e.toLowerCase())) camp(x[1]).leads.add(e);
       return json(res, 200, { data: { success: true } });
     }
     if ((x = m(/^\/api\/campaigns\/(\d+)\/leads$/))) return json(res, 200, { data: [], meta: { total: camp(x[1]).leads.size } });
