@@ -17,6 +17,7 @@ const skip = !url ? 'TEST_DATABASE_URL not set' : false;
 const REC = 'recContactsTest01';
 let db: pg.Pool; let google: FakeGoogle; let ai: FakeOpenAI; let server: http.Server;
 const disco = { url: '', calls: 0, lastBody: {} as any, people: {} as Record<string, any[]> };
+const cg = { submits: 0, lastBody: {} as any, polls: 0, pendingPolls: 1, fail: false, results: {} as Record<string, any[]> };
 
 const person = (first: string, title: string, domain: string, extra: Record<string, unknown> = {}) => ({ persona_id: Math.floor(Math.random() * 1e9), first_name: first, last_name: 'Lee', title, email: `${first.toLowerCase()}@${domain}`, person_country: 'US', department: 'Operations', ...extra });
 const C = (over: Partial<Contact>): Contact => ({ domain: 'a.com', name: '', first_name: 'A', last_name: 'B', title: '', seniority: '', department: '', email: 'a@a.com', linkedin_url: '', person_country: 'US', person_state: '', company_name: '', ...over });
@@ -61,11 +62,23 @@ before(async () => {
   server = http.createServer(async (req, res) => {
     const chunks: Buffer[] = []; for await (const c of req) chunks.push(c as Buffer);
     res.setHeader('content-type', 'application/json');
-    if (req.url?.startsWith('/v1/contacts/discover') && req.method === 'POST') {
+    if (req.url === '/v1/contacts/discover' && req.method === 'POST') {
       disco.calls++; disco.lastBody = JSON.parse(Buffer.concat(chunks).toString());
       const results: Record<string, any> = {};
       for (const d of disco.lastBody.domain) if (disco.people[d]) results[d] = { company: { name: d }, contacts: disco.people[d].slice(0, disco.lastBody.results_by_company) };
       return res.end(JSON.stringify({ results }));
+    }
+    if (req.url === '/v1/contacts/discover/generate' && req.method === 'POST') {
+      cg.submits++; cg.lastBody = JSON.parse(Buffer.concat(chunks).toString());
+      return res.end(JSON.stringify({ task_id: `task-${cg.submits}` }));
+    }
+    if (req.url?.startsWith('/v1/discogen/status/')) {
+      cg.polls++;
+      if (cg.fail) return res.end(JSON.stringify({ status: 'failed', error: 'provider down' }));
+      if (cg.polls <= cg.pendingPolls) return res.end(JSON.stringify({ status: 'running' }));
+      const results: Record<string, any> = {};
+      for (const d of cg.lastBody.domains) if (cg.results[d]) results[d] = cg.results[d];
+      return res.end(JSON.stringify({ status: 'completed', results }));
     }
     res.statusCode = 404; res.end('{}');
   });
@@ -82,6 +95,11 @@ beforeEach(async () => {
     't3.com': [person('Fay', 'Founder', 't3.com')],
     'cut.com': [person('Gus', 'Owner', 'cut.com')],
   };
+  Object.assign(cg, { submits: 0, lastBody: {}, polls: 0, pendingPolls: 1, fail: false, results: {
+    't1.com': [{ name: 'Ann Lee', title: 'Owner', email: 'ann.other@t1.com' }, { name: 'Hal Moss', title: 'Managing Director', email: 'hal@t1.com', email_status: 'found', linkedin_url: 'https://www.linkedin.com/in/halmoss/' }, { name: 'No Mail', title: 'Founder', email: 'x@t1.com', email_status: 'not_found' }],
+    't2.com': [{ name: 'Ida Ray', title: 'Founder', email: 'ida@t2.com' }],
+    'other.com': [{ name: 'Not Asked', title: 'Owner', email: 'n@other.com' }],
+  } });
   google.written = {}; google.grid = {}; ai.calls = 0; ai.status = 200;
   ai.answer = { summary: 'Owners and operations leaders.', targetTitleWords: ['owner', 'founder', 'operations director'], excludeTitleWords: ['sales associate'] };
   if (skip) return;
@@ -148,4 +166,52 @@ test('no OpenAI key: code-only contact profile from the persona; the list still 
   assert.equal(j.job.status, 'succeeded', j.job.error);
   assert.equal(j.job.result.profile.source, 'code');
   assert.equal(ai.calls, 0);
+});
+
+test('ContraGen (DiscoLike + ContraGen): runs on every company under the target, not only empty ones; same body as n8n; waits for the task; no duplicates; once per company', { skip }, async () => {
+  const j = await run({ personaDna: PERSONA, targeting: 'B2B agencies', companies: 2, contraGen: true });
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  // t1 has 2 usable, t2 has 1 usable: both under 5, both get ContraGen even though DiscoLike found people.
+  assert.equal(cg.submits, 1);
+  assert.deepEqual(cg.lastBody.domains, ['t1.com', 't2.com']);
+  assert.equal(cg.lastBody.icp_text, PERSONA + '\n\nCompany context: B2B agencies');
+  assert.deepEqual([cg.lastBody.context_mode, cg.lastBody.search_context_size, cg.lastBody.max_contacts_per_domain, cg.lastBody.find_emails], ['website', 'low', 5, true]);
+  assert.equal(cg.lastBody.integration_id, 'e6adab07-e444-471c-9c85-11ec34110ce4');
+  assert.ok(cg.polls >= 2, 'waited while the task was running');
+  const r = j.job.result.contraGen;
+  // Ann Lee at t1 is a duplicate (same name, same company); "No Mail" has no found email (cut);
+  // other.com was never asked for: ignored. New: Hal (t1), Ida (t2).
+  assert.equal(r.duplicates, 1);
+  assert.equal(r.added, 2);
+  assert.match(j.job.result.message, /ContraGen: 2 new usable contacts from 2 companies under 5/);
+  const rows = (await db.query(`SELECT email, data->>'source' AS source FROM lead_contacts WHERE list_id=$1 AND data->>'source'='ContraGen' AND tier <> 'Cut' ORDER BY email`, [REC])).rows;
+  assert.deepEqual(rows.map((x) => x.email), ['hal@t1.com', 'ida@t2.com']);
+  assert.ok(google.written['sheet-c']['Contacts'].some((row: any) => row?.[0] === 'hal@t1.com'), 'ContraGen contacts reach the Contacts tab for Verify');
+  // Next run (after approval): only the new company goes to ContraGen; t1/t2 never again.
+  await run({ personaDna: PERSONA, contraGen: true });
+  assert.equal(cg.submits, 2);
+  assert.deepEqual(cg.lastBody.domains, ['t3.com']);
+  const again = await run({ personaDna: PERSONA, contraGen: true });
+  assert.equal(cg.submits, 2, 'nothing left: no third ContraGen call');
+  assert.match(again.job.result.message, /already been searched/);
+});
+
+test('ContraGen switched on after the contacts were found: runs on the searched companies without searching DiscoLike again', { skip }, async () => {
+  await run({ personaDna: PERSONA });
+  const calls = disco.calls;
+  const j = await run({ personaDna: PERSONA, contraGen: true });
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.equal(disco.calls, calls, 'no new DiscoLike contact search');
+  assert.equal(cg.submits, 1);
+  assert.deepEqual(cg.lastBody.domains, ['t1.com', 't2.com', 't3.com']);
+});
+
+test('ContraGen: a failed task stops for review and is never resubmitted; DiscoLike only (no ContraGen) never calls it', { skip }, async () => {
+  await run({ personaDna: PERSONA, companies: 1 });
+  assert.equal(cg.submits, 0, 'Contact Source DiscoLike: no ContraGen');
+  cg.fail = true;
+  const j = await run({ personaDna: PERSONA, contraGen: true });
+  assert.equal(j.job.status, 'needs_review');
+  assert.match(j.job.error, /ContraGen task failed.*task-1/);
+  assert.equal(cg.submits, 1);
 });

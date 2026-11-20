@@ -50,6 +50,19 @@ export function createDiscoLikeClient(o: DiscoLikeOptions) {
       const r = await get('/v1/contacts/discover', true, body);
       return r.body ?? {};
     },
+    /** Paid: ContraGen (old "Generate ContraGen Contacts"): web-research decision makers at these
+     *  domains. Async: returns the task ID to poll with discoGenStatus. */
+    async contraGenSubmit(body: Record<string, unknown>): Promise<string> {
+      const r = await get('/v1/contacts/discover/generate', true, body);
+      const id = String(r.body?.task_id ?? r.body?.data?.task_id ?? '').trim();
+      if (!id) throw new Error('ContraGen did not return a task ID; outcome unknown (a task may still be running)');
+      return id;
+    },
+    /** Free: status (and, when completed, results) of a DiscoGen / ContraGen task. */
+    async discoGenStatus(taskId: string): Promise<any> {
+      const r = await get(`/v1/discogen/status/${encodeURIComponent(taskId)}`, false);
+      return r.body ?? {};
+    },
     /** Free: about how many companies match (count-compatible filters only; null = not countable). */
     async count(filters: Filters): Promise<{ count: number; ignored: string[] } | null> {
       const c = countFilters(filters);

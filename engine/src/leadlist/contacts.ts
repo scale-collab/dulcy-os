@@ -10,6 +10,8 @@ export interface Contact {
   persona_id?: number; domain: string; name: string; first_name: string; last_name: string; title: string;
   seniority: string; department: string; email: string; linkedin_url: string; person_country: string; person_state: string;
   company_name: string;
+  /** Where the contact came from: DiscoLike (default) or ContraGen. */
+  source?: string;
 }
 
 export function toContacts(response: any): Contact[] {
