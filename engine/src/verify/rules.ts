@@ -230,7 +230,13 @@ export function parseResults(csv: string, expectedEmails: string[]): VerifiedEma
     const detail = text(cells[si]).toLowerCase();
     out.push({ email, verdict: mapVerdict(detail), detail: detail || 'unprocessed_no_credits' });
   }
-  if (seen.size !== expected.size) throw new NeedsReviewError(`MillionVerifier returned ${seen.size} of ${expected.size} emails; reuse the saved job, do not upload again`);
+  // MillionVerifier can silently drop a single odd address (seen live 2026-11-20: 1,937 of
+  // 1,938). A tiny gap (at most 5 emails and 0.5% of the list), with nothing extra and no
+  // duplicates, is accepted: the missing emails count as Risky ("not returned"), so they
+  // never reach a final list. A bigger gap still goes to review.
+  const missing = expectedEmails.filter((e) => !seen.has(e));
+  if (missing.length > Math.min(5, Math.floor(expected.size * 0.005))) throw new NeedsReviewError(`MillionVerifier returned ${seen.size} of ${expected.size} emails; reuse the saved job, do not upload again`);
+  for (const email of missing) out.push({ email, verdict: 'Risky', detail: 'not_returned_by_millionverifier' });
   return out;
 }
 
