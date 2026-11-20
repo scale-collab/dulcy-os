@@ -49,6 +49,7 @@ export const F = {
   sampleApproved: 'fldqGx4RU4zDYxitK',
   expansionTarget: 'fldYzvqGmQZxXL9AP',
   personaDna: 'fldRIomZHeVxPWveE',
+  contactSource: 'fldwoK7IcKH6NYgVJ',
   contactFiltersJson: 'fld8Y8iYpvUV4FDDX',
   contactSampleSize: 'fldE2XBsGSES6fT6X',
   contactApproved: 'fldVz983EKKiPSzjc',
@@ -98,7 +99,7 @@ export const ACTIONS: Record<string, string> = {
 };
 
 const READ_FIELDS = [F.engineAction, F.engineActionSetAt, F.name, F.client, F.filtersJson, F.icp, F.thesis, F.sampleSize, F.sampleApproved,
-  F.expansionTarget, F.personaDna, F.contactFiltersJson, F.contactSampleSize, F.contactApproved, F.includeGeneric, F.includeDirect, F.footprint200,
+  F.expansionTarget, F.personaDna, F.contactFiltersJson, F.contactSampleSize, F.contactApproved, F.contactSource, F.includeGeneric, F.includeDirect, F.footprint200,
   'fldepbn71awSjmZPV', 'fld8nrebRFL0O8kgj', 'fldUB4WsLi5kq6rUy', F.finalDirect, F.finalGeneric];
 // Field names, not IDs: Airtable formulas only take names. The two fields are the engine's own.
 const QUEUED_FORMULA = `AND({Runs on Engine}, {Engine Action} != '')`;
@@ -183,6 +184,7 @@ export async function buildInput(db: Db, at: AirtableClient, rec: AirtableRecord
         contactFilters: json(r[F.contactFiltersJson], 'Contact Filters JSON') ?? {},
         personaDna: text(r[F.personaDna]) || undefined,
         companies: approved ? undefined : num(r[F.contactSampleSize]) ?? 100,
+        contraGen: text(r[F.contactSource]).toLowerCase() === 'discolike + contragen',
         ...who,
       };
     }

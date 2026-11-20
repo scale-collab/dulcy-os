@@ -8,16 +8,22 @@
 //    exclusion is added unless the list sets its own person countries.
 //  - ONE AI call per list (first batch) turns the persona DNA + thesis + client context +
 //    the real titles seen into the contact profile; every contact is checked in code.
+//  - Contact Source "DiscoLike + ContraGen": after DiscoLike, ContraGen (web research) runs on
+//    every company with fewer usable contacts than the people-per-company target (Alex,
+//    2026-11-20: not only companies with nobody), once per company. Async task: submit (paid,
+//    one receipt per 1,000 domains), poll every 30 s (free), merge; duplicates of contacts we
+//    already have (same email, LinkedIn, or name at the same company) are dropped.
 //  - Saved in Postgres; usable contacts written to the sheet's "Contacts" tab in the columns
 //    the Verify stage reads (cut ones to "Contacts (Cut)").
 import { createHash } from 'node:crypto';
 import type { Stage } from './index.js';
 import type { JobContext } from '../context.js';
-import { PermanentError, RetryableError } from '../errors.js';
+import { NeedsReviewError, PermanentError, RetryableError, WaitError } from '../errors.js';
 import { createDiscoLikeClient } from '../providers/discolike.js';
 import { createSheetsClient } from '../providers/google.js';
 import { createOpenAIClient } from '../providers/openai.js';
 import { checkContactFit, cleanContactProfile, codeContactProfile, contactProfilePrompt, CONTACT_PROFILE_SYSTEM, EXCLUDED_PERSON_COUNTRY_CODES, toContacts, type Contact, type ContactProfile } from '../leadlist/contacts.js';
+import { CONTRAGEN_BATCH, contraGenRequest, normLinkedIn, taskState, toContraGenContacts } from '../leadlist/contragen.js';
 import { contactCounts, ensureContactTabs, mirrorContacts, saveContacts } from '../leadlist/contactStore.js';
 
 interface ContactsInput {
@@ -32,6 +38,22 @@ interface ContactsInput {
   /** Also send the persona text to DiscoLike as icp_text (the old flow did; it narrows results a lot).
    *  Default false: the persona is applied by the engine's own contact check instead. */
   personaToDiscoLike?: boolean;
+  /** Contact Source is "DiscoLike + ContraGen". */
+  contraGen?: boolean;
+}
+
+const CONTRAGEN_POLL_MS = 30_000;
+const CONTRAGEN_MAX_WAIT_MS = 3 * 60 * 60_000;
+
+/** Companies due a ContraGen pass: searched, usable, never ContraGen'd, under the target. */
+async function contraGenCandidates(ctx: JobContext, listId: string, perCompany: number) {
+  const r = await ctx.db.query(
+    `SELECT d.domain, (SELECT COUNT(*)::int FROM lead_contacts k WHERE k.list_id=d.list_id AND k.domain=d.domain AND k.tier <> 'Cut') AS usable
+       FROM lead_contact_domains d JOIN lead_companies c ON c.list_id=d.list_id AND c.domain=d.domain
+      WHERE d.list_id=$1 AND d.contragen_at IS NULL AND c.tier <> 'Cut'
+      ORDER BY CASE c.tier WHEN 'Tier 1' THEN 0 ELSE 1 END, c.batch, c.seq`, [listId]);
+  const all = r.rows.map((x) => ({ domain: x.domain as string, usable: Number(x.usable) }));
+  return { checked: all.map((x) => x.domain), short: all.filter((x) => x.usable < perCompany) };
 }
 
 const ALLOWED = new Set(['filter_industry', 'negate_filter_industry', 'filter_country', 'negate_filter_country', 'filter_state', 'negate_filter_state', 'employee_range', 'seniority', 'negate_seniority', 'department', 'negate_department', 'skills', 'title', 'negate_title', 'person_country', 'negate_person_country', 'person_state', 'negate_person_state', 'person_city', 'negate_person_city', 'has_email', 'email_validated', 'has_linkedin', 'icp_text', 'results_by_company', 'people_per_company']);
@@ -85,14 +107,16 @@ export const contactsFindStage: Stage = async (ctx) => {
     const startBatch = Number((await ctx.db.query(`SELECT COALESCE(MAX(batch),0)::int AS b FROM lead_contact_domains WHERE list_id=$1`, [listId])).rows[0].b) + 1;
     return { domains: take, notSearched: all.length, startBatch };
   });
-  if (!plan.domains.length) {
+  const pendingContraGen = input.contraGen ? (await contraGenCandidates(ctx, listId, perCompany)).checked.length : 0;
+  if (!plan.domains.length && !pendingContraGen) {
     const have = await contactCounts(ctx.db, listId);
     if (have.companiesSearched === 0) throw new PermanentError('this list has no usable companies to search; run the company sample and expansion first');
     return { dryRun: ctx.dryRun, contacts: have, message: 'every usable company has already been searched for contacts' };
   }
   const maxContacts = plan.domains.length * perCompany;
   if (ctx.dryRun) {
-    return { dryRun: true, plan: { companies: plan.domains.length, peoplePerCompany: perCompany, batches: Math.ceil(plan.domains.length / batchSize), notSearchedInList: plan.notSearched }, wouldSpendCredits: { discolike: `up to ${maxContacts} contacts` }, message: `would search ${plan.domains.length} companies for up to ${perCompany} people each` };
+    const cg = input.contraGen ? `; then ContraGen on every searched company with fewer than ${perCompany} usable contacts` : '';
+    return { dryRun: true, plan: { companies: plan.domains.length, peoplePerCompany: perCompany, batches: Math.ceil(plan.domains.length / batchSize), notSearchedInList: plan.notSearched, contraGen: !!input.contraGen }, wouldSpendCredits: { discolike: `up to ${maxContacts} contacts${cg}` }, message: `would search ${plan.domains.length} companies for up to ${perCompany} people each${cg}` };
   }
 
   const sheet = await ctx.step('sheet', () => ensureContactTabs(ctx.db, sheets, listId));
@@ -122,6 +146,7 @@ export const contactsFindStage: Stage = async (ctx) => {
     batches.push(out);
     await ctx.step(`mirror-${b}`, () => mirrorContacts(ctx.db, sheets, listId));
   }
+  const contraGen = input.contraGen ? await runContraGen(ctx, listId, input, perCompany, () => profile) : undefined;
   await ctx.step('mirror-final', () => mirrorContacts(ctx.db, sheets, listId));
   profile ??= (await ctx.db.query(`SELECT profile FROM lead_contact_profiles WHERE list_id=$1`, [listId])).rows[0]?.profile as ContactProfile | undefined;
 
@@ -135,8 +160,75 @@ export const contactsFindStage: Stage = async (ctx) => {
     profile: profile ? { source: profile.source, summary: profile.summary, targetTitleWords: profile.targetTitleWords, excludeTitleWords: profile.excludeTitleWords, excludeDepartments: profile.excludeDepartments, notes: profile.notes } : undefined,
     contacts: { ...total, status },
     batches,
+    contraGen,
     topCutReasons: Object.entries(top).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([reason, n]) => ({ reason, contacts: n })),
     sheet: { url: `https://docs.google.com/spreadsheets/d/${sheet.sheetId}`, tab: 'Contacts' },
-    message: `${total.usable} usable contacts (Tier 1 ${total.tier1}, Tier 2 ${total.tier2}, Cut ${total.cut}; ${Math.round(total.usableRate * 100)}% usable, ${status}) from ${total.companiesWithContacts} of ${total.companiesSearched} companies searched`,
+    message: `${total.usable} usable contacts (Tier 1 ${total.tier1}, Tier 2 ${total.tier2}, Cut ${total.cut}; ${Math.round(total.usableRate * 100)}% usable, ${status}) from ${total.companiesWithContacts} of ${total.companiesSearched} companies searched${contraGen ? `; ContraGen: ${contraGen.added} new usable contacts from ${contraGen.companies} companies under ${perCompany}` : ''}`,
   };
 };
+
+/** ContraGen pass: plan, submit (paid), poll (WaitError until done), merge without duplicates. */
+async function runContraGen(ctx: JobContext, listId: string, input: ContactsInput, perCompany: number, currentProfile: () => ContactProfile | undefined) {
+  const plan = await ctx.step('contragen-plan', async () => {
+    const c = await contraGenCandidates(ctx, listId, perCompany);
+    const chunks: string[][] = [];
+    for (let i = 0; i < c.short.length; i += CONTRAGEN_BATCH) chunks.push(c.short.slice(i, i + CONTRAGEN_BATCH).map((x) => x.domain));
+    const have = Object.fromEntries(c.short.map((x) => [x.domain, x.usable]));
+    return { checked: c.checked, chunks, have, startedAt: Date.now() };
+  });
+  const disco = createDiscoLikeClient({ apiKey: ctx.cfg.discoLikeApiKey, baseUrl: ctx.cfg.discoLikeBaseUrl });
+  const taskIds: string[] = [];
+  for (let i = 0; i < plan.chunks.length; i++) {
+    const domains = plan.chunks[i];
+    taskIds.push(await ctx.step(`contragen-submit-${i}`, () => ctx.paid({
+      scope: 'record', provider: 'discolike', callKey: `contragen:${createHash('sha256').update(domains.join(',')).digest('hex').slice(0, 16)}`, units: domains.length * perCompany,
+      run: () => disco.contraGenSubmit(contraGenRequest({ personaDna: input.personaDna, targeting: input.targeting ?? input.thesis, domains, perCompany })),
+      dryRunResult: () => '',
+    })));
+  }
+  const tasks = !taskIds.length ? [] : await ctx.step('contragen-poll', async () => {
+    const answers = [];
+    for (const id of taskIds) answers.push(await disco.discoGenStatus(id));
+    const st = taskState(answers);
+    // Never resubmit: the task IDs are saved in the receipts.
+    if (st.failed) throw new NeedsReviewError(`ContraGen task failed (${st.failed}); task IDs ${taskIds.join(', ')}. Not resubmitted.`);
+    if (!st.done) {
+      if (Date.now() - plan.startedAt > CONTRAGEN_MAX_WAIT_MS) throw new NeedsReviewError(`ContraGen still running after 3 hours; task IDs ${taskIds.join(', ')}`);
+      throw new WaitError(`ContraGen: ${answers.filter((a) => String(a?.status ?? a?.data?.status).toLowerCase() === 'completed').length} of ${taskIds.length} tasks done`, CONTRAGEN_POLL_MS);
+    }
+    return answers;
+  }, { timeoutMs: 10 * 60_000 });
+  return ctx.step('contragen-merge', async () => {
+    const asked = new Set(plan.chunks.flat());
+    const found = toContraGenContacts(tasks).filter((c) => asked.has(c.domain));
+    // Duplicates of contacts we already have: same email (table key), LinkedIn, or name at the same company.
+    const prior = (await ctx.db.query(`SELECT domain, lower(data->>'name') AS name, data->>'linkedin_url' AS li FROM lead_contacts WHERE list_id=$1 AND domain = ANY($2::text[])`, [listId, [...asked]])).rows;
+    const seen = new Set<string>();
+    for (const p of prior) { if (p.name) seen.add(`n:${p.domain}:${p.name}`); const li = normLinkedIn(p.li); if (li) seen.add(`l:${li}`); }
+    const fresh = found.filter((c) => {
+      const keys = [`n:${c.domain}:${c.name.toLowerCase()}`, normLinkedIn(c.linkedin_url) && `l:${normLinkedIn(c.linkedin_url)}`].filter(Boolean) as string[];
+      if (keys.some((k) => seen.has(k))) return false;
+      keys.forEach((k) => seen.add(k));
+      return true;
+    });
+    const profile = currentProfile() ?? await contactProfile(ctx, listId, input, fresh);
+    // Fill each company up to the target; cut contacts are kept for the cut tab.
+    const room: Record<string, number> = {};
+    const rows = fresh.map((c) => ({ c, fit: checkContactFit(c, profile) })).filter(({ c, fit }) => {
+      if (fit.tier === 'Cut') return true;
+      room[c.domain] ??= Math.max(0, perCompany - (plan.have[c.domain] ?? 0));
+      if (room[c.domain] <= 0) return false;
+      room[c.domain]--; return true;
+    });
+    const batch = Number((await ctx.db.query(`SELECT COALESCE(MAX(batch),0)::int AS b FROM lead_contact_domains WHERE list_id=$1`, [listId])).rows[0].b) + 1;
+    const saved = await saveContacts(ctx.db, listId, batch, rows);
+    const added: Record<string, number> = {};
+    for (const { c, fit } of rows) if (fit.tier !== 'Cut') added[c.domain] = (added[c.domain] ?? 0) + 1;
+    await ctx.db.query(
+      `UPDATE lead_contact_domains d SET contragen_at = now(), found = d.found + COALESCE(u.n, 0)
+         FROM unnest($2::text[]) AS a(domain) LEFT JOIN unnest($3::text[], $4::int[]) AS u(domain, n) ON u.domain = a.domain
+        WHERE d.list_id = $1 AND d.domain = a.domain`,
+      [listId, plan.checked, Object.keys(added), Object.values(added)]);
+    return { companies: asked.size, tasks: taskIds.length, returned: found.length, duplicates: found.length - fresh.length, added: saved.tier1 + saved.tier2, tier1: saved.tier1, tier2: saved.tier2, cut: saved.cut };
+  });
+}

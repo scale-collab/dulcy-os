@@ -128,6 +128,8 @@ CREATE TABLE IF NOT EXISTS lead_contact_domains (
   found       INT NOT NULL DEFAULT 0,
   PRIMARY KEY (list_id, domain)
 );
+-- When ContraGen last looked at a company (NULL = never): a company gets one ContraGen pass.
+ALTER TABLE lead_contact_domains ADD COLUMN IF NOT EXISTS contragen_at TIMESTAMPTZ;
 CREATE TABLE IF NOT EXISTS lead_contact_profiles (
   list_id      TEXT PRIMARY KEY,
   profile      JSONB NOT NULL,
