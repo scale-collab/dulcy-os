@@ -1,0 +1,40 @@
+{
+  "_about": "FIRST REAL engine-built campaign (Alex approved copy, 10 Dulcy CI inboxes and name on 2026-11-20). 951 verified leads from the engine sheet's Final Direct tab (Dulcy Manufacturing list). Dulcy workspace 2. Builds everything, NEVER launches: Alex reviews and launches in EmailBison.",
+  "recordId": "recDulcyMfgEng001",
+  "name": "[Dulcy] Manufacturing Direct: Retail & Distribution Buyers (Engine) 2026-11-20",
+  "workspace": "dulcy",
+  "workspaceId": 2,
+  "outputType": "direct",
+  "daysBetween": 2,
+  "steps": [
+    {
+      "subject": "retail and distribution buyers",
+      "body": "Hi,\n\nAre you {looking to add|trying to add|hoping to add} retail or distribution accounts for your products?\n\nDulcy handles B2B prospect research, verified {prospect lists|lists of prospects|buyer lists} and outreach. The idea is to {put|get} your products in front of buyers {in the markets you want to reach|in the markets you're looking to reach}.\n\nWorth a {short conversation|quick conversation|brief chat} about whether that fits your sales plans?\n"
+    },
+    {
+      "subject": "",
+      "body": "Hi,\n\nOne way to keep this focused is to {start with|begin with|focus on} a product category, target territory and buyer type.\n\nThose would {guide|shape|inform} the prospect list and outreach, alongside any channel restrictions you need to preserve.\n\nIs there one product category you want to {put first|prioritize|start with}?\n"
+    },
+    {
+      "subject": "",
+      "body": "Hi,\n\nThe decision is simply whether {targeted outreach to retail or distribution buyers|direct outreach to retail or distribution buyers|outreach to retail or distribution buyers} is worth exploring for your products.\n\n{If it is|If so|If that makes sense}, which market {would you want to reach first|would you want to target first|would you want to start with}?\n"
+    }
+  ],
+  "source": {
+    "sheetId": "19Yw3MgY6CBLzYZxRzW2_HlJf4TWymO7PdN_M-2Z_p1A",
+    "tab": "Final Direct"
+  },
+  "expectedLeads": 951,
+  "senderEmails": [
+    "alexander@dulcyuplift.com",
+    "alexander.woung@dulcysuccess.com",
+    "alexander@dulcysuccess.com",
+    "alexander@dulcywin.com",
+    "alexander@dulcyrise.com",
+    "alexander.woung@dulcywin.com",
+    "alexander.woung@dulcywins.com",
+    "alexander.woung@dulcyuplift.com",
+    "alexander@dulcywins.com",
+    "alexander@dulcythrive.com"
+  ]
+}
