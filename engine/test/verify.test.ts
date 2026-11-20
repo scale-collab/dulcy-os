@@ -8,7 +8,7 @@ import { loadConfig, type Config } from '../src/config.js';
 import { enqueue, getJob } from '../src/queue.js';
 import { runOnce } from '../src/worker.js';
 import { NeedsReviewError, PermanentError } from '../src/errors.js';
-import { buildCandidates, mapVerdict, parseResults, buildOutputs, type InputRow } from '../src/verify/rules.js';
+import { buildCandidates, mapVerdict, parseResults, buildOutputs, genericNotSendable, type InputRow } from '../src/verify/rules.js';
 import { startFakeGoogle, type FakeGoogle } from './fakes/google.js';
 
 const url = process.env.TEST_DATABASE_URL;
@@ -145,6 +145,17 @@ test('results file is strict: unexpected, duplicate or missing emails need revie
   assert.throws(() => parseResults('email,result\na@x.com,ok\na@x.com,ok', ['a@x.com']), NeedsReviewError);
   assert.throws(() => parseResults('email,result\na@x.com,ok', ['a@x.com', 'b@x.com']), /reuse the saved job/);
   assert.throws(() => parseResults('foo,bar\n1,2', ['a@x.com']), NeedsReviewError);
+  // Generic emails: role inboxes and other companies' addresses never reach the final list.
+  assert.equal(genericNotSendable('info@spa.com', 'spa.com'), null);
+  assert.equal(genericNotSendable('info@spa.com', 'https://www.spa.com/'), null);
+  assert.equal(genericNotSendable('glowspa@gmail.com', 'glowspa.com'), null);
+  assert.equal(genericNotSendable('denver@spa.com', 'spa.com'), null);
+  assert.equal(genericNotSendable('unsubscribe@spa.com', 'spa.com'), 'role address');
+  assert.equal(genericNotSendable('privacy@spa.com', 'spa.com'), 'role address');
+  assert.equal(genericNotSendable('careers@spa.com', 'spa.com'), 'role address');
+  assert.equal(genericNotSendable('dev@webdesigner.com', 'spa.com'), 'role address');
+  assert.equal(genericNotSendable('smsinfo@thryv.com', 'spa.com'), "another company's address");
+  assert.equal(genericNotSendable('kyle@agency.com', 'spa.com'), "another company's address");
   // A tiny silent gap (seen live: 1,937 of 1,938) counts as Risky, never Good; a bigger one needs review.
   const many = Array.from({ length: 1000 }, (_, i) => `p${i}@x.com`);
   const file = (n: number) => 'email,result\n' + many.slice(0, n).map((e) => `${e},ok`).join('\n');
@@ -173,7 +184,7 @@ test('verify: uploads once, waits while MillionVerifier works, then splits Good/
   assert.ok(j.job.attempts <= 1, 'waiting must not use up attempts');
   const r = j.job.result;
   // sent 5: ann ok, info ok, bad1 invalid, catch1 catch_all, hello ok; + 1 missing email = Risky
-  assert.deepEqual(r.counts, { good: 3, risky: 2, bad: 1, pending: 0, held: 0, sent: 5 });
+  assert.deepEqual(r.counts, { good: 3, risky: 2, bad: 1, pending: 0, held: 0, sent: 5, notSendable: 0 });
   assert.equal(r.finalDirectCount, 1);
   assert.equal(r.finalGenericCount, 2);
   assert.equal(r.airtablePreview['Number of leads'], 3);
@@ -299,7 +310,7 @@ test('verify from the lead list sheet: reads Contacts + Expanded Companies, then
   assert.equal(j.job.status, 'succeeded');
   assert.equal(fake.uploads, 1);
   assert.deepEqual(fake.jobs.get('job-1')!.sort(), ['ann@acme.com', 'bad1@beta.com', 'info@acme.com']);
-  assert.deepEqual(j.job.result.counts, { good: 2, risky: 1, bad: 1, pending: 0, held: 0, sent: 3 });
+  assert.deepEqual(j.job.result.counts, { good: 2, risky: 1, bad: 1, pending: 0, held: 0, sent: 3, notSendable: 0 });
   assert.equal(j.job.result.plan.droppedFootprint, 1);
 });
 

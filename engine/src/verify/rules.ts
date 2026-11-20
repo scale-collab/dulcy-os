@@ -241,7 +241,7 @@ export function parseResults(csv: string, expectedEmails: string[]): VerifiedEma
 }
 
 export interface VerifyOutputs {
-  counts: { good: number; risky: number; bad: number; pending: number; held: number; sent: number };
+  counts: { good: number; risky: number; bad: number; pending: number; held: number; sent: number; notSendable: number };
   finalDirect: InputRow[];
   finalGeneric: InputRow[];
   held: Held[];
@@ -249,9 +249,29 @@ export interface VerifyOutputs {
   pendingEmails: string[];
 }
 
+// Generic inboxes that should never get cold email, and free mailboxes small businesses use
+// as their own address. Seen live 2026-11-20 (Med Spas): website scrapes pick up unsubscribe@,
+// legal@, privacy@ and careers@ inboxes, and the web designer's or software vendor's address.
+const ROLE_NEVER = new Set(['unsubscribe', 'legal', 'privacy', 'careers', 'career', 'jobs', 'job', 'hiring', 'recruiting', 'accessibility', 'abuse',
+  'noreply', 'no-reply', 'donotreply', 'do-not-reply', 'webmaster', 'postmaster', 'hostmaster', 'dev', 'developer', 'billing', 'accounting',
+  'accounts', 'payroll', 'hr', 'press', 'compliance', 'dmca', 'security', 'spam', 'optout', 'opt-out', 'remove']);
+const FREE_MAIL = new Set(['gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'live.com', 'msn.com', 'yahoo.com', 'icloud.com', 'me.com', 'mac.com', 'aol.com', 'protonmail.com', 'proton.me']);
+const bareDomain = (v: unknown) => text(v).toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+
+/** Why a verified generic email must not be sent to (null = fine). */
+export function genericNotSendable(email: string, companyDomain: unknown): string | null {
+  const [local, domain = ''] = email.split('@');
+  const role = local.split(/[^a-z-]/)[0];
+  if (ROLE_NEVER.has(local) || ROLE_NEVER.has(role)) return 'role address';
+  const own = bareDomain(companyDomain);
+  if (FREE_MAIL.has(domain) || !own) return null;
+  if (domain === own || domain.endsWith(`.${own}`) || own.endsWith(`.${domain}`)) return null;
+  return "another company's address";
+}
+
 export function buildOutputs(set: CandidateSet, results: VerifiedEmail[]): VerifyOutputs {
   const byEmail = new Map(results.map((r) => [r.email, r]));
-  const counts = { good: 0, risky: set.missingEmail.length, bad: set.invalidSyntax.length, pending: 0, held: set.holds.length, sent: set.send.length };
+  const counts = { good: 0, risky: set.missingEmail.length, bad: set.invalidSyntax.length, pending: 0, held: set.holds.length, sent: set.send.length, notSendable: 0 };
   const finalDirect: InputRow[] = [];
   const finalGeneric: InputRow[] = [];
   const pendingEmails: string[] = [];
@@ -261,7 +281,9 @@ export function buildOutputs(set: CandidateSet, results: VerifiedEmail[]): Verif
     if (verdict === 'Good') {
       counts.good++;
       const row = { ...c.row, email: c.email, verificationStatus: 'Good', verificationDetail: r?.detail };
-      (c.kind === 'generic' ? finalGeneric : finalDirect).push(row);
+      // Good but not for cold email (role inbox or another company's address): left out of the final list.
+      if (c.kind === 'generic' && genericNotSendable(c.email, c.row.domain)) counts.notSendable++;
+      else (c.kind === 'generic' ? finalGeneric : finalDirect).push(row);
     } else if (verdict === 'Risky') counts.risky++;
     else if (verdict === 'Bad') counts.bad++;
     else { counts.pending++; pendingEmails.push(c.email); }

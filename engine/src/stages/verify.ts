@@ -173,7 +173,7 @@ export const verifyStage: Stage = async (ctx) => {
     pendingRemainder: out.pendingEmails.length,
     message: out.pendingEmails.length
       ? `${out.pendingEmails.length} emails were not processed (usually no MillionVerifier credits); run the remainder only after credits are available`
-      : `verified: ${out.counts.good} good, ${out.counts.risky} risky, ${out.counts.bad} bad; ${leads} final leads`,
+      : `verified: ${out.counts.good} good, ${out.counts.risky} risky, ${out.counts.bad} bad; ${leads} final leads${out.counts.notSendable ? ` (${out.counts.notSendable} good generic emails left out: role inboxes or another company's address)` : ''}`,
     // What step 2b will write to the Lead Lists record (not written in shadow mode).
     airtablePreview: {
       'Verification Good Count': out.counts.good,
