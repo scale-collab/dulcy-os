@@ -13,6 +13,7 @@ import type { AirtableClient, AirtableRecord } from '../providers/airtable.js';
 import { enqueue } from '../queue.js';
 import { STAGES } from '../stages/index.js';
 import { BuildInputError, CAMPAIGNS, CF, queueBuild } from './campaignBuild.js';
+import { CLIENT_FIELDS as CLIENT_NAMES, LEAD_LIST_FIELDS as LIST_NAMES } from '../leadlist/legacy/fieldNames.js';
 
 export const LEAD_LISTS = 'tblVOg9BkPOMmnitt';
 export const CLIENTS = 'tblcjRBGJEWh5KgOt';
@@ -70,9 +71,10 @@ export const F = {
 } as const;
 
 /** Client (Workspace IDs) fields read for the fit profile. Only these; never the key fields. */
-const CLIENT_FIELDS = { name: 'fld48x6Yg3v6RP30W', brand: 'fldTHTrYh0GCFeBLG', coldOffer: 'fldWAdvAzoPxqW0Ut', frontEnd: 'flde94SLnY3TDibbj' };
+const CLIENT_FIELDS = { name: 'fld48x6Yg3v6RP30W', brand: 'fldTHTrYh0GCFeBLG', coldOffer: 'fldWAdvAzoPxqW0Ut', frontEnd: 'flde94SLnY3TDibbj', exclusionQueryId: 'fldrvOi88COOEPBGe' };
 
 export const ACTIONS: Record<string, string> = {
+  'Generate Filters': 'leadlist.filters',
   'Run Company Sample': 'leadlist.sample',
   'Expand Companies': 'leadlist.expand',
   'Refit Companies': 'leadlist.refit',
@@ -120,12 +122,38 @@ async function clientContext(at: AirtableClient, rec: AirtableRecord): Promise<s
 export async function buildInput(db: Db, at: AirtableClient, rec: AirtableRecord, kind: string): Promise<Record<string, unknown>> {
   const r = rec.fields;
   const who = { thesis: text(r[F.thesis]) || undefined, targeting: text(r[F.icp]) || text(r[F.thesis]) || undefined, clientContext: await clientContext(at, rec) || undefined };
+  // Like n8n ("Apply DiscoLike Exclusion Query"): the client's DiscoLike exclusion list (its
+  // existing and past-campaign domains) is added to the plan every time the list runs.
+  const linked = (rec.fields[F.client] as string[] | undefined) ?? [];
+  const clientExclusion = linked[0] && ['leadlist.sample', 'leadlist.expand', 'leadlist.refit'].includes(kind)
+    ? text((await at.get(CLIENTS, linked[0], [CLIENT_FIELDS.exclusionQueryId]))?.fields[CLIENT_FIELDS.exclusionQueryId]) : '';
   const filters = () => {
     const x = json(r[F.filtersJson], 'DiscoLike Company Filters JSON');
     if (!x) throw new InputError('this list has no company filters yet: generate and review the filters first');
+    if (clientExclusion) {
+      const saved = Array.isArray(x.exclusion_query_id) ? x.exclusion_query_id.map(String) : x.exclusion_query_id ? [String(x.exclusion_query_id)] : [];
+      x.exclusion_query_id = [...new Set([...saved, clientExclusion])];
+    }
     return x;
   };
   switch (kind) {
+    case 'leadlist.filters': {
+      // The copied n8n code reads the record and the client by field NAME; fetch only the
+      // allowed fields (never the key/password fields) and rename them.
+      const byName = async (table: string, id: string, names: Record<string, string>) => {
+        const got = await at.get(table, id, Object.keys(names));
+        if (!got) throw new InputError(`record ${id} was not found`);
+        return { id: got.id, fields: Object.fromEntries(Object.entries(got.fields).map(([k, v]) => [names[k] ?? k, v])) };
+      };
+      const record = await byName(LEAD_LISTS, rec.id, LIST_NAMES);
+      // Like the n8n screen: the old plan and its 4 helper fields are cleared before generating.
+      for (const n of ['DiscoLike Company Filters JSON', 'Employee Range', 'Country Filters', 'State Filters', 'Homepage Keywords']) delete record.fields[n];
+      if (!text(record.fields['ICP Description'])) throw new InputError('write the targeting sentence (ICP Description) first');
+      const clientIds = (rec.fields[F.client] as string[] | undefined) ?? [];
+      if (clientIds.length !== 1) throw new InputError('link exactly one client to this list first');
+      const client = await byName(CLIENTS, clientIds[0], CLIENT_NAMES);
+      return { record, client, action: 'Generate Filters' };
+    }
     case 'leadlist.sample':
       return { filters: filters(), sampleSize: num(r[F.sampleSize]), ...who };
     case 'leadlist.expand':
@@ -215,6 +243,8 @@ const pct = (x: unknown) => (Number.isFinite(Number(x)) ? Number(x) : null);
 export function resultFields(kind: string, res: any): Record<string, unknown> {
   if (!res || res.dryRun) return {};
   switch (kind) {
+    case 'leadlist.filters':
+      return { ...(res.airtableFields ?? {}) };
     case 'leadlist.sample': {
       const s = res.sample ?? {};
       const reasons = (res.topDropReasons ?? []).map((x: any) => `- ${x.reason}: ${x.companies}`).join('\n');

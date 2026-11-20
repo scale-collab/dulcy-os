@@ -70,10 +70,10 @@ after(async () => { server.close(); if (!skip) await db.end(); });
 beforeEach(async () => {
   fake.tables = {
     [LEAD_LISTS]: {
-      [REC]: { [F.name]: 'Roofers TX', [F.client]: [CLIENT], [F.filtersJson]: JSON.stringify(FILTERS), [F.icp]: 'Residential roofers in Texas', [F.thesis]: 'Roofers need more booked jobs', [F.sampleSize]: 100 },
+      [REC]: { [F.name]: 'Roofers TX', fldFvgH9UxZSQesD4: ['list-lookup-key'], [F.client]: [CLIENT], [F.filtersJson]: JSON.stringify(FILTERS), [F.icp]: 'Residential roofers in Texas', [F.thesis]: 'Roofers need more booked jobs', [F.sampleSize]: 100 },
       [OTHER]: { [F.name]: 'Not on engine', [F.engineAction]: 'Run Company Sample', [F.filtersJson]: JSON.stringify(FILTERS) },
     },
-    [CLIENTS]: { [CLIENT]: { fld48x6Yg3v6RP30W: 'Acme Marketing', fldWAdvAzoPxqW0Ut: 'Free roofing lead audit', [KEY_FIELD]: 'secret-key-value' } },
+    [CLIENTS]: { [CLIENT]: { fld48x6Yg3v6RP30W: 'Acme Marketing', fldWAdvAzoPxqW0Ut: 'Free roofing lead audit', fldrvOi88COOEPBGe: 'client-excl-1', [KEY_FIELD]: 'secret-key-value', fld6bFQolVFg4Ub3N: 'client-bison-key' } },
   };
   fake.patches = []; fake.creates = []; fake.created = 0; fake.clientFieldsAsked = [];
   if (skip) return;
@@ -88,7 +88,8 @@ test('a button press queues exactly one job, clears the press and writes Queued'
   assert.equal(jobs.length, 1);
   assert.equal(jobs[0].kind, 'leadlist.sample');
   assert.equal(jobs[0].dry_run, true, 'not in LIVE_STAGES = dry run');
-  assert.deepEqual(jobs[0].input.filters, FILTERS);
+  // The client's DiscoLike exclusion list is added at run time, as in n8n.
+  assert.deepEqual(jobs[0].input.filters, { ...FILTERS, exclusion_query_id: ['client-excl-1'] });
   assert.equal(jobs[0].input.thesis, 'Roofers need more booked jobs');
   assert.match(jobs[0].input.clientContext, /Acme Marketing/);
   assert.match(jobs[0].input.clientContext, /Free roofing lead audit/);
@@ -319,4 +320,25 @@ test('Build Campaign: two outputs, child records, inboxes split by lead share, o
   assert.equal(rec()[F.engineStatus], 'Done');
   assert.match(String(rec()[F.engineMessage]), /Direct: campaign 702[\s\S]*Generic: campaign 701/);
   assert.equal(await syncResults(db, at()), 0);
+});
+
+test('Generate Filters: record and client by field name, plan fields cleared, key fields never read; result written back', { skip }, async () => {
+  Object.assign(rec(), { [F.filtersJson]: '{"old":true}', fldG2MXz5lccu7KKU: '1,50', fldydpLzUzAJGLBBJ: 'old keyword' });
+  press('Generate Filters');
+  assert.equal(await pollActions(db, cfg(), at()), 1);
+  const j = (await db.query(`SELECT * FROM jobs WHERE record_id=$1 AND kind='leadlist.filters'`, [REC])).rows[0];
+  assert.equal(j.input.record.fields['ICP Description'], 'Residential roofers in Texas');
+  assert.equal(j.input.record.fields['Name of the Lead List'], 'Roofers TX');
+  for (const n of ['DiscoLike Company Filters JSON', 'Employee Range', 'Homepage Keywords']) assert.ok(!(n in j.input.record.fields), n + ' cleared');
+  assert.equal(j.input.client.fields.Name, 'Acme Marketing');
+  assert.equal(j.input.client.fields['DiscoLike Exclusion Query ID'], 'client-excl-1');
+  const raw = JSON.stringify(j.input);
+  for (const secret of ['secret-key-value', 'client-bison-key', 'list-lookup-key']) assert.ok(!raw.includes(secret), 'never read: ' + secret);
+  for (const asked of fake.clientFieldsAsked) for (const id of ['fld6bFQolVFg4Ub3N', KEY_FIELD]) assert.ok(!asked.includes(id));
+  await finish(db, j.id, { dryRun: false, airtableFields: { fldC2hZQ3gSqLmi1y: '{"icp_prompt":"x"}', fldG2MXz5lccu7KKU: '11,200', fldf9wpMGWg0SebHV: 'Completed' }, message: 'N keywords. Review them before running the first 100 companies.' });
+  await syncResults(db, at());
+  assert.equal(rec()[F.filtersJson], '{"icp_prompt":"x"}');
+  assert.equal(rec().fldG2MXz5lccu7KKU, '11,200');
+  assert.equal(rec()[F.engineStatus], 'Done');
+  assert.match(String(rec()[F.workflowMessage]), /Review them before running/);
 });

@@ -58,6 +58,8 @@ export interface Config {
   /** OpenAI: ONE call per lead list for its profile (server .env only). */
   openAiApiKey?: string;
   openAiModel: string;
+  /** Model for Generate filters (the old n8n keyword review used gpt-5.6). */
+  openAiFilterModel: string;
   openAiBaseUrl: string;
   /** Airtable token for the engine (server .env only), the base, and how often buttons are checked (0 = off). */
   airtableApiKey?: string;
@@ -108,6 +110,7 @@ export function loadConfig(env = process.env): Config {
     discoLikeBaseUrl: env.DISCOLIKE_BASE_URL || 'https://api.discolike.com',
     openAiApiKey: env.OPENAI_API_KEY || undefined,
     openAiModel: env.OPENAI_MODEL || 'gpt-5.6-luna',
+    openAiFilterModel: env.OPENAI_FILTER_MODEL || 'gpt-5.6',
     openAiBaseUrl: env.OPENAI_BASE_URL || 'https://api.openai.com',
     airtableApiKey: env.AIRTABLE_API_KEY || undefined,
     airtableBaseId: env.AIRTABLE_BASE_ID || 'appxqINt5XKw7a76A',
