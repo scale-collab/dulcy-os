@@ -214,10 +214,24 @@ test('verify: a smaller set of the same list reuses the earlier MillionVerifier 
   assert.equal(jb.job.result.reusedEarlierJob, true);
   assert.equal(jb.job.result.millionVerifierJobId, 'job-1');
   assert.match(jb.job.result.message, /reused from MillionVerifier job job-1/);
-  // A set with a NEW email is not covered by the earlier job: it is uploaded.
+  // A set with a NEW email (e.g. ContraGen added a contact): ONLY the new email is uploaded;
+  // the rest keep their earlier results (never paid twice).
   const c = await enqueueVerify({ rows: [...ROWS, { email: 'new@epsilon.com', type: 'direct', firstName: 'New', lastName: 'Person', domain: 'epsilon.com' }] });
-  assert.equal((await runUntilSettled(cfg(), c.job.id)).job.status, 'succeeded');
+  const jc = await runUntilSettled(cfg(), c.job.id);
+  assert.equal(jc.job.status, 'succeeded', jc.job.error);
   assert.equal(fake.uploads, 2);
+  assert.deepEqual(fake.jobs.get(jc.job.result.millionVerifierJobId), ['new@epsilon.com'], 'only the new email was sent');
+  assert.equal(jc.job.result.alreadyVerified, 5);
+  assert.deepEqual(jc.job.result.counts, { good: 4, risky: 2, bad: 1, pending: 0, held: 0, sent: 6 }, 'earlier results + the new one');
+  assert.match(jc.job.result.message, /5 reused from earlier checks; only 1 new emails verified/);
+  const units = (await db.query(`SELECT units FROM receipts ORDER BY created_at`)).rows.map((x) => Number(x.units));
+  assert.deepEqual(units, [5, 1], 'paid for 5, then only for the 1 new email');
+  // Run again with the same 6: everything is known from the two earlier jobs, nothing uploaded.
+  const d = await enqueueVerify({ rows: [...ROWS, { email: 'new@epsilon.com', type: 'direct', firstName: 'New', lastName: 'Person', domain: 'epsilon.com' }] });
+  const jd = await runUntilSettled(cfg(), d.job.id);
+  assert.equal(jd.job.status, 'succeeded', jd.job.error);
+  assert.equal(fake.uploads, 2, 'no third upload');
+  assert.equal(jd.job.result.alreadyVerified, 6);
 });
 
 test('verify: a saved MillionVerifier Job ID is only checked and downloaded, never re-uploaded', { skip }, async () => {
