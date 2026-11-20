@@ -73,7 +73,7 @@ beforeEach(async () => {
       [REC]: { [F.name]: 'Roofers TX', fldFvgH9UxZSQesD4: ['list-lookup-key'], [F.client]: [CLIENT], [F.filtersJson]: JSON.stringify(FILTERS), [F.icp]: 'Residential roofers in Texas', [F.thesis]: 'Roofers need more booked jobs', [F.sampleSize]: 100 },
       [OTHER]: { [F.name]: 'Not on engine', [F.engineAction]: 'Run Company Sample', [F.filtersJson]: JSON.stringify(FILTERS) },
     },
-    [CLIENTS]: { [CLIENT]: { fld48x6Yg3v6RP30W: 'Acme Marketing', fldWAdvAzoPxqW0Ut: 'Free roofing lead audit', fldrvOi88COOEPBGe: 'client-excl-1', [KEY_FIELD]: 'secret-key-value', fld6bFQolVFg4Ub3N: 'client-bison-key' } },
+    [CLIENTS]: { [CLIENT]: { fld48x6Yg3v6RP30W: 'Acme Marketing', fldWAdvAzoPxqW0Ut: 'Free roofing lead audit', fldrvOi88COOEPBGe: 'client-excl-1', fldv94snzU8CemHnn: 4500, [KEY_FIELD]: 'secret-key-value', fld6bFQolVFg4Ub3N: 'client-bison-key' } },
   };
   fake.patches = []; fake.creates = []; fake.created = 0; fake.clientFieldsAsked = [];
   if (skip) return;
@@ -331,7 +331,10 @@ test('Generate Filters: record and client by field name, plan fields cleared, ke
   assert.equal(j.input.record.fields['Name of the Lead List'], 'Roofers TX');
   for (const n of ['DiscoLike Company Filters JSON', 'Employee Range', 'Homepage Keywords']) assert.ok(!(n in j.input.record.fields), n + ' cleared');
   assert.equal(j.input.client.fields.Name, 'Acme Marketing');
-  assert.equal(j.input.client.fields['DiscoLike Exclusion Query ID'], 'client-excl-1');
+  assert.equal(j.input.client.fields['Cold Traffic Offer'], 'Free roofing lead audit');
+  // Only the useful client fields go to the AI: no exclusion IDs, billing or system fields.
+  assert.deepEqual(Object.keys(j.input.client.fields).sort(), ['Cold Traffic Offer', 'Name']);
+  for (const asked of fake.clientFieldsAsked) assert.ok(!asked.includes('fldv94snzU8CemHnn'), 'billing never read');
   const raw = JSON.stringify(j.input);
   for (const secret of ['secret-key-value', 'client-bison-key', 'list-lookup-key']) assert.ok(!raw.includes(secret), 'never read: ' + secret);
   for (const asked of fake.clientFieldsAsked) for (const id of ['fld6bFQolVFg4Ub3N', KEY_FIELD]) assert.ok(!asked.includes(id));

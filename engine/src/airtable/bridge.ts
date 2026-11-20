@@ -13,7 +13,21 @@ import type { AirtableClient, AirtableRecord } from '../providers/airtable.js';
 import { enqueue } from '../queue.js';
 import { STAGES } from '../stages/index.js';
 import { BuildInputError, CAMPAIGNS, CF, queueBuild } from './campaignBuild.js';
-import { CLIENT_FIELDS as CLIENT_NAMES, LEAD_LIST_FIELDS as LIST_NAMES } from '../leadlist/legacy/fieldNames.js';
+import { LEAD_LIST_FIELDS as LIST_NAMES } from '../leadlist/legacy/fieldNames.js';
+
+// Generate filters sends the AI only the client fields that help pick targeting and keywords
+// (Alex, 2026-11-20): who the client is and what it offers. Never billing, KPIs, logins or
+// system fields. The copied n8n prompt code runs unchanged on this smaller record.
+export const FILTER_CLIENT_FIELDS: Record<string, string> = {
+  fld48x6Yg3v6RP30W: 'Name',
+  fldTHTrYh0GCFeBLG: 'Brand Name',
+  fld91lSa5rBfLrIQM: 'Client Type',
+  fldWAdvAzoPxqW0Ut: 'Cold Traffic Offer',
+  flde94SLnY3TDibbj: 'Front End Offer(s)',
+  fldKPi4HkTJTaMDwj: 'Back End Offer(s)',
+  fldUDxVml8BvjJdeU: 'Outbound Risk Reversal',
+  fldIMJnjdGGAPotMW: 'Sender Title',
+};
 
 export const LEAD_LISTS = 'tblVOg9BkPOMmnitt';
 export const CLIENTS = 'tblcjRBGJEWh5KgOt';
@@ -151,7 +165,7 @@ export async function buildInput(db: Db, at: AirtableClient, rec: AirtableRecord
       if (!text(record.fields['ICP Description'])) throw new InputError('write the targeting sentence (ICP Description) first');
       const clientIds = (rec.fields[F.client] as string[] | undefined) ?? [];
       if (clientIds.length !== 1) throw new InputError('link exactly one client to this list first');
-      const client = await byName(CLIENTS, clientIds[0], CLIENT_NAMES);
+      const client = await byName(CLIENTS, clientIds[0], FILTER_CLIENT_FIELDS);
       return { record, client, action: 'Generate Filters' };
     }
     case 'leadlist.sample':
