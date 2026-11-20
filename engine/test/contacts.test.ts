@@ -62,7 +62,7 @@ before(async () => {
   server = http.createServer(async (req, res) => {
     const chunks: Buffer[] = []; for await (const c of req) chunks.push(c as Buffer);
     res.setHeader('content-type', 'application/json');
-    if (req.url?.startsWith('/v1/contacts/discover') && req.method === 'POST') {
+    if (req.url === '/v1/contacts/discover' && req.method === 'POST') {
       disco.calls++; disco.lastBody = JSON.parse(Buffer.concat(chunks).toString());
       const results: Record<string, any> = {};
       for (const d of disco.lastBody.domain) if (disco.people[d]) results[d] = { company: { name: d }, contacts: disco.people[d].slice(0, disco.lastBody.results_by_company) };
