@@ -142,11 +142,12 @@ export async function buildInput(db: Db, at: AirtableClient, rec: AirtableRecord
       };
     }
     case 'leadlist.verify': {
-      const s = await db.query(`SELECT sheet_id FROM lead_list_sheets WHERE list_id=$1 AND kind='companies'`, [rec.id]);
+      const s = await db.query(`SELECT sheet_id, tab FROM lead_list_sheets WHERE list_id=$1 AND kind='companies'`, [rec.id]);
       if (!s.rows[0]) throw new InputError('this list has no engine sheet yet: run Expand Companies and Find Contacts first');
       const direct = r[F.includeDirect] === true, generic = r[F.includeGeneric] === true;
       return {
-        source: { sheetId: s.rows[0].sheet_id },
+        // The engine sheet's own tabs (the old n8n sheets used "Expanded Companies").
+        source: { sheetId: s.rows[0].sheet_id, contactsTab: 'Contacts', companiesTab: s.rows[0].tab },
         includeDirect: direct || !generic, includeGeneric: generic || !direct,
         genericFootprintMax200: r[F.footprint200] === true,
         writeFinalTabs: true,

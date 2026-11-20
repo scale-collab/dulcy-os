@@ -152,7 +152,7 @@ test('contacts: sample until approved, then everyone; verify reads the engine sh
   press('Verify and Finalize', { [F.includeDirect]: true });
   await pollActions(db, cfg(), at());
   const v = (await db.query(`SELECT * FROM jobs WHERE record_id=$1 AND kind='leadlist.verify'`, [REC])).rows[0];
-  assert.deepEqual(v.input.source, { sheetId: 'sheet123' });
+  assert.deepEqual(v.input.source, { sheetId: 'sheet123', contactsTab: 'Contacts', companiesTab: 'Engine Companies' });
   assert.equal(v.input.includeDirect, true);
   assert.equal(v.input.includeGeneric, false);
   assert.equal(v.input.writeFinalTabs, true);
