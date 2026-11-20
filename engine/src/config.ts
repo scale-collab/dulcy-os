@@ -64,6 +64,8 @@ export interface Config {
   airtableBaseId: string;
   airtableBaseUrl: string;
   airtablePollMs: number;
+  /** EmailBison key name (EMAILBISON_KEY_<NAME>) used for Airtable campaign builds; it is switched to the inboxes' workspace on every call. */
+  emailBisonBuildWorkspace: string;
 }
 
 export function loadConfig(env = process.env): Config {
@@ -111,5 +113,6 @@ export function loadConfig(env = process.env): Config {
     airtableBaseId: env.AIRTABLE_BASE_ID || 'appxqINt5XKw7a76A',
     airtableBaseUrl: env.AIRTABLE_BASE_URL || 'https://api.airtable.com',
     airtablePollMs: num('AIRTABLE_POLL_MS', 30_000, env),
+    emailBisonBuildWorkspace: (env.EMAILBISON_BUILD_WORKSPACE || 'dulcy').toLowerCase(),
   };
 }

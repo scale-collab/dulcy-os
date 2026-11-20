@@ -52,6 +52,9 @@ interface BuildInput {
   campaignType?: string;
   /** Reuse this EmailBison campaign instead of creating one (explicit, never guessed). */
   existingCampaignId?: number;
+  /** From the Airtable campaign record (old builder fields); defaults apply when absent. */
+  days?: Partial<Record<'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday', boolean>>;
+  settings?: Partial<typeof DEFAULT_SETTINGS>;
 }
 
 function readInput(raw: Record<string, unknown>): BuildInput {
@@ -120,8 +123,8 @@ export const campaignBuildStage: Stage = async (ctx) => {
 
   // 3. Schedule and settings: safe to re-apply, so a retry just sets them again.
   await ctx.step('schedule-settings', async () => {
-    await bison.setSchedule(campaign.id, defaultSchedule(ctx.job.record_id, input.timezone));
-    await bison.updateSettings(campaign.id, DEFAULT_SETTINGS);
+    await bison.setSchedule(campaign.id, { ...defaultSchedule(ctx.job.record_id, input.timezone), ...(input.days ?? {}) });
+    await bison.updateSettings(campaign.id, { ...DEFAULT_SETTINGS, ...(input.settings ?? {}) });
     return { ok: true };
   });
 

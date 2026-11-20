@@ -144,3 +144,10 @@ CREATE TABLE IF NOT EXISTS airtable_jobs (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Build Campaign: the Campaigns record a job writes to, its output, and the button press it belongs to.
+ALTER TABLE airtable_jobs ADD COLUMN IF NOT EXISTS target_table  TEXT;
+ALTER TABLE airtable_jobs ADD COLUMN IF NOT EXISTS target_record TEXT;
+ALTER TABLE airtable_jobs ADD COLUMN IF NOT EXISTS parent_record TEXT;
+ALTER TABLE airtable_jobs ADD COLUMN IF NOT EXISTS output        TEXT;
+ALTER TABLE airtable_jobs ADD COLUMN IF NOT EXISTS press         TEXT;

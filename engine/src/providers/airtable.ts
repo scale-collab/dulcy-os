@@ -51,6 +51,13 @@ export function createAirtableClient(o: AirtableOptions) {
       if (!/^rec[A-Za-z0-9]{14}$/.test(recordId)) return null;
       return (await this.list(tableId, `RECORD_ID()='${recordId}'`, fieldIds, 1))[0] ?? null;
     },
+    /** Create one record (fields by ID); returns its record ID. */
+    async create(tableId: string, fields: Record<string, unknown>): Promise<string> {
+      const r = await call('POST', `/${tableId}`, { records: [{ fields }], typecast: true });
+      const id = String(r.records?.[0]?.id ?? '');
+      if (!id) throw new RetryableError('Airtable: no record ID returned for the new record');
+      return id;
+    },
     /** Update fields by ID. Select options are given by name (typecast). */
     async update(tableId: string, recordId: string, fields: Record<string, unknown>): Promise<void> {
       await call('PATCH', `/${tableId}`, { records: [{ id: recordId, fields }], typecast: true });
