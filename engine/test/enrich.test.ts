@@ -122,3 +122,20 @@ test('Run Enrichment: one variable answered as bare values ("Austin") is read, n
   assert.equal(d.find((r) => r[0] === 'ann@acme.com')![ci], 'Austin');
   assert.equal(d.find((r) => r[0] === 'bo@beta.com')![ci] ?? '', '');
 });
+
+test('Copy-friendly fallback (Alex 2026-11-21): the prompt step asks for one; leads the research cannot answer get it instead of a blank', { skip }, async () => {
+  ai.rawText = PROMPT;
+  await run('leadlist.enrichprompt', { project: project({ 'Custom Variables Requested': 'Find the headquarters city of each company.' }) });
+  assert.match(String(ai.lastSystem), /DULCY RULE/);
+  assert.match(String(ai.lastSystem), /your area/);
+  const withFallback = PROMPT.replace('## OUTPUT', '## FALLBACK\nIf the value cannot be verified, return exactly: "your area"\n## OUTPUT');
+  dg.results = { 'acme.com': { city: 'Austin' }, 'beta.com': { city: 'Not Found' } };
+  const j = await run('leadlist.enrich', { project: project({ 'Custom Variables Requested': withFallback }) });
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  const d = google.written['sheet-en']['Final Direct'];
+  const ci = d[0].indexOf('City');
+  assert.equal(d.find((r) => r[0] === 'ann@acme.com')![ci], 'Austin');
+  assert.equal(d.find((r) => r[0] === 'bo@beta.com')![ci], 'your area');
+  const g = google.written['sheet-en']['Final Generic'];
+  assert.ok(g.slice(1).every((r) => r[g[0].indexOf('City')]), 'no blank city left in Final Generic');
+});
