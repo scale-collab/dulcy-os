@@ -35,6 +35,45 @@ const BY_NAME = Object.fromEntries(Object.entries(LEAD_LIST_FIELDS).map(([id, na
 const legacy = (nodes: Record<string, string>) => async (name: string, input: Items, earlier: Record<string, Items> = {}, globals: Record<string, unknown> = {}) => {
   try { return await runNode(nodes[name], input, earlier, globals); } catch (e) { throw new PermanentError(`Enrichment: ${String((e as Error).message ?? e)}`); }
 };
+/** Alex 2026-11-21: a lead the research cannot answer gets a fallback that fits the email copy,
+ *  not a blank (n8n wrote "Not Found" and QA then blocked the list). Added to n8n's prompt compiler. */
+export const COPY_FALLBACK_RULE = `
+
+DULCY RULE (this overrides any not-found sentinel above): every lead must end up with a usable value, because each value is merged into a cold email sentence. In each variable's FALLBACK section give one short, natural phrase that still reads correctly in the email where the value goes (for a city: "your area"; for a case-study customer: "a client like you"; for a phone number: "your main line"), written exactly as: If the value cannot be verified, return exactly: "<phrase>". In that variable's OUTPUT section use the same phrase as the unavailable value. Never use Not Found, Unknown, None found, N/A or an empty string.`;
+
+const MISSING = /^(?:not[ _-]*found|unknown|none found|n\/?a|null|undefined|review required|needs review)?$/i;
+/** The fallback phrase of each variable, read from its ## FALLBACK section ("return exactly: ..."). */
+export function fallbackPhrases(prompt: string, columns: string[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  const blocks = [...prompt.matchAll(/^#{1,4}\s*VARIABLE\s*:?\s*([^\n#]+)\n([\s\S]*?)(?=^#{1,4}\s*VARIABLE\s*:|^#\s+OUTPUT\b|(?![\s\S]))/gim)];
+  for (const col of columns) {
+    const block = blocks.find((m) => m[1].trim().toLowerCase() === col.trim().toLowerCase())?.[2] ?? '';
+    const fb = block.match(/^#{1,4}\s*FALLBACK\s*\n([\s\S]*?)(?=^#{1,4}\s|(?![\s\S]))/im)?.[1] ?? '';
+    const m = fb.match(/return exactly\s*:?\s*[`"\u201c']([^`"\u201d'\n]{1,80})[`"\u201d']/i) ?? fb.match(/return exactly\s*:\s*([^\n.]{1,80})/i);
+    const phrase = m?.[1]?.trim() ?? '';
+    if (phrase && !MISSING.test(phrase)) out[col] = phrase;
+  }
+  return out;
+}
+/** Fill every still-blank (or "Not Found") requested cell with that variable's fallback phrase. */
+export function fillFallbacks(built: any, prompt: string, variables: { column: string }[]): number {
+  const cols = [...new Set(variables.map((v) => String(v.column)))];
+  const phrases = fallbackPhrases(prompt, cols);
+  let filled = 0;
+  for (const [tab, rows] of Object.entries(built?.tabValues ?? {}) as [string, string[][]][]) {
+    if (!Array.isArray(rows) || !rows.length) continue;
+    let here = 0;
+    for (const [col, phrase] of Object.entries(phrases)) {
+      const c = rows[0].indexOf(col);
+      if (c < 0) continue;
+      for (const row of rows.slice(1)) { if (MISSING.test(String(row[c] ?? '').trim())) { row[c] = phrase; here++; } }
+    }
+    if (here && built.tabWritePlan?.[tab]) built.tabWritePlan[tab].shouldWrite = true;
+    filled += here;
+  }
+  if (filled && typeof built.missing === 'number') built.missing = Math.max(0, built.missing - filled);
+  return filled;
+}
 /** With ONE requested variable, DiscoGen can answer each entity with the bare value ("Austin")
  *  instead of an object. The n8n parser rejects that ("Unsupported literal"), so wrap it as
  *  {key: value} first. Error strings become empty results (the cell stays blank for QA). */
@@ -87,7 +126,7 @@ export const enrichPromptStage: Stage = async (ctx) => {
     return node('Build Prompt Compiler Request', [input.project], { 'Validate Prompt Request': v });
   });
   const msgs = req[0]?.openAiBody?.messages ?? [];
-  const system = String(msgs[0]?.content ?? ''), user = String(msgs[1]?.content ?? '');
+  const system = String(msgs[0]?.content ?? '') + COPY_FALLBACK_RULE, user = String(msgs[1]?.content ?? '');
   if (!system || !user) throw new PermanentError('Enrichment: the prompt request came out empty');
   if (ctx.dryRun) return { dryRun: true, wouldSpendCredits: { openai: 1 }, message: 'dry run: would make one AI call to prepare the DiscoGen prompt' };
   const ai = createOpenAIClient({ apiKey: ctx.cfg.openAiApiKey, model: ctx.cfg.openAiModel, baseUrl: ctx.cfg.openAiBaseUrl });
@@ -156,6 +195,7 @@ export const enrichRunStage: Stage = async (ctx) => {
     try { return (await runNode(R['Build Enriched Sheet Values2'], [wrapBareResults(status, r)], { 'Prepare DiscoGen Request2': [r] }))[0]; }
     catch (e) { throw new PermanentError(`Enrichment: ${String((e as Error).message ?? e)}${resultSample(status)} (task ${task}; not resubmitted)`); }
   }, { timeoutMs: 10 * 60_000 });
+  fillFallbacks(built, String(input.project.fields?.['Custom Variables Requested'] ?? ''), prep.norm.variables ?? []);
 
   const ensured = await ctx.step('write', async () => {
     const sheetId = built.sheetId as string;
