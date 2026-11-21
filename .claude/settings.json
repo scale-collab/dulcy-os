@@ -1,6 +1,7 @@
 {
   "permissions": {
     "allow": [
+      "mcp__Airtable",
       "mcp__Airtable__*"
     ]
   }
