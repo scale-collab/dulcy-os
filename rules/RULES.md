@@ -9,6 +9,8 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-17] Do not state client counts, results or proof that are not verified for Dulcy. The "300+ clients" figure in old notes came from another agency's post and is wrong. Dulcy has 6 clients plus itself. (Alex correction)
 - [2026-11-17] Never include keys, tokens, passwords, cookies or client prospect rows in this repo. (design)
 
+- [2026-11-21] Claude may spend credits (DiscoLike, DiscoGen, MillionVerifier, LeadMagic, OpenAI) on Dulcy's own test lists without asking first, and reports the cost after. Never on a client's list, and never a launch or a send. Reason: faster end-to-end testing. (Alex)
+
 ## Campaign health
 - [2026-11-18] Bounce auto-pause: pause when bounce is over 4% **and** the campaign is at 35%+ progress. The floor stops early small numbers from pausing it (1 bounce in the first 10 emails = 10%). The check must re-run on every metric refresh, not fire once. Over 2.5% = watch. (Alex)
 - [2026-11-18] Failed campaigns restart automatically: a failure is usually an error on the sending system's side. Long-running jobs (18+ hours seen) must be investigated, and the engine needs time limits. (Alex)

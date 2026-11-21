@@ -177,3 +177,15 @@ CREATE TABLE IF NOT EXISTS lead_deep_reviews (
   reviewed_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (list_id, domain)
 );
+
+-- DiscoGen contact persona review (optional, paid): one verdict per contact, never reviewed twice.
+CREATE TABLE IF NOT EXISTS lead_contact_reviews (
+  list_id      TEXT NOT NULL,
+  email        TEXT NOT NULL,
+  persona_id   BIGINT,
+  tier         TEXT NOT NULL,             -- n8n's Tier 1 | Tier 2 | Cut
+  row          JSONB NOT NULL,            -- n8n's reviewed row (Contact Review tab)
+  task_id      TEXT,
+  reviewed_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (list_id, email)
+);
