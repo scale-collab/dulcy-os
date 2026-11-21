@@ -35,6 +35,36 @@ const BY_NAME = Object.fromEntries(Object.entries(LEAD_LIST_FIELDS).map(([id, na
 const legacy = (nodes: Record<string, string>) => async (name: string, input: Items, earlier: Record<string, Items> = {}, globals: Record<string, unknown> = {}) => {
   try { return await runNode(nodes[name], input, earlier, globals); } catch (e) { throw new PermanentError(`Enrichment: ${String((e as Error).message ?? e)}`); }
 };
+/** With ONE requested variable, DiscoGen can answer each entity with the bare value ("Austin")
+ *  instead of an object. The n8n parser rejects that ("Unsupported literal"), so wrap it as
+ *  {key: value} first. Error strings become empty results (the cell stays blank for QA). */
+export function wrapBareResults(status: any, req: any): any {
+  const schema = status?.response_format?.json_schema ?? status?.data?.response_format?.json_schema;
+  const schemaKeys = Object.keys(schema?.properties ?? {});
+  const vars = Array.isArray(req?.variables) ? req.variables : [];
+  const key = schemaKeys.length === 1 ? schemaKeys[0] : schemaKeys.length === 0 && vars.length === 1 ? String(vars[0].key ?? vars[0].column ?? '') : '';
+  if (!key) return status;
+  const bare = (v: unknown) => {
+    if (typeof v !== 'string') return v;
+    const t = v.trim();
+    try { JSON.parse(t); return v; } catch { /* not JSON */ }
+    if (/^[{[\'"]/.test(t) || t.includes('|')) return v; // structured: the n8n parser handles it
+    if (!t || /^erro/i.test(t)) return '{}';
+    return JSON.stringify({ [key]: t });
+  };
+  const fix = (set: any) => Array.isArray(set) ? set.map((x) => (x && typeof x === 'object' && 'result' in x ? { ...x, result: bare(x.result) } : bare(x)))
+    : set && typeof set === 'object' ? Object.fromEntries(Object.entries(set).map(([k, v]) => [k, bare(v)])) : set;
+  if (status?.results !== undefined) return { ...status, results: fix(status.results) };
+  if (status?.data?.results !== undefined) return { ...status, data: { ...status.data, results: fix(status.data.results) } };
+  return status;
+}
+/** A short look at the first DiscoGen answer, so a format problem can be fixed without guessing. */
+function resultSample(status: any): string {
+  const set = status?.results ?? status?.data?.results;
+  const first = Array.isArray(set) ? set[0] : set && typeof set === 'object' ? Object.values(set)[0] : set;
+  const text = typeof first === 'string' ? first : JSON.stringify(first ?? null);
+  return ` [first DiscoGen answer: ${String(text).replace(/\s+/g, ' ').slice(0, 160)}]`;
+}
 /** n8n's Airtable update (by field name) -> field IDs, without n8n's own Enrichment Action trigger field. */
 function toFieldIds(named: Record<string, unknown>) {
   const out: Record<string, unknown> = {};
@@ -122,7 +152,10 @@ export const enrichRunStage: Stage = async (ctx) => {
     return checked[0];
   }, { timeoutMs: 10 * 60_000 });
 
-  const built = await ctx.step('build', async () => (await node('Build Enriched Sheet Values2', [status], { 'Prepare DiscoGen Request2': [r] }))[0], { timeoutMs: 10 * 60_000 });
+  const built = await ctx.step('build', async () => {
+    try { return (await runNode(R['Build Enriched Sheet Values2'], [wrapBareResults(status, r)], { 'Prepare DiscoGen Request2': [r] }))[0]; }
+    catch (e) { throw new PermanentError(`Enrichment: ${String((e as Error).message ?? e)}${resultSample(status)} (task ${task}; not resubmitted)`); }
+  }, { timeoutMs: 10 * 60_000 });
 
   const ensured = await ctx.step('write', async () => {
     const sheetId = built.sheetId as string;
