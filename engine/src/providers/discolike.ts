@@ -58,6 +58,11 @@ export function createDiscoLikeClient(o: DiscoLikeOptions) {
       if (!id) throw new Error('ContraGen did not return a task ID; outcome unknown (a task may still be running)');
       return id;
     },
+    /** Paid: a DiscoGen research task (process = per domain, process-personas = per person). Raw answer. */
+    async discoGenSubmit(endpoint: 'process' | 'process-personas', body: Record<string, unknown>): Promise<any> {
+      const r = await get(`/v1/discogen/${endpoint}`, true, body);
+      return r.body ?? {};
+    },
     /** Free: status (and, when completed, results) of a DiscoGen / ContraGen task. */
     async discoGenStatus(taskId: string): Promise<any> {
       const r = await get(`/v1/discogen/status/${encodeURIComponent(taskId)}`, false);

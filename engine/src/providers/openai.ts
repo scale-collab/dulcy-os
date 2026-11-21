@@ -10,14 +10,14 @@ export function createOpenAIClient(o: OpenAIOptions) {
   return {
     configured: Boolean(o.apiKey),
     /** One prompt as a single user message, plain text back (how the old n8n LLM chain nodes called it). */
-    async text(prompt: string, model?: string): Promise<string> {
+    async text(prompt: string, model?: string, system?: string): Promise<string> {
       if (!o.apiKey) throw new PermanentError('no OpenAI API key on the server (OPENAI_API_KEY)');
       let res: Response;
       try {
         res = await f(`${base}/v1/chat/completions`, {
           method: 'POST',
           headers: { authorization: `Bearer ${o.apiKey}`, 'content-type': 'application/json' },
-          body: JSON.stringify({ model: model ?? o.model, messages: [{ role: 'user', content: prompt }] }),
+          body: JSON.stringify({ model: model ?? o.model, messages: [...(system ? [{ role: 'system', content: system }] : []), { role: 'user', content: prompt }] }),
           signal: AbortSignal.timeout(o.timeoutMs ?? 180_000),
         });
       } catch { throw new RetryableError('OpenAI: network error or timeout'); }
