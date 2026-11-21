@@ -102,6 +102,7 @@ export const ACTIONS: Record<string, string> = {
   'Verify and Finalize': 'leadlist.verify',
   'Run Automated QA': 'leadlist.qa',
   'Deep Review Companies': 'leadlist.deepreview',
+  'Deep Review Contacts': 'leadlist.deepcontacts',
   'Prepare Enrichment Prompt': 'leadlist.enrichprompt',
   'Run Enrichment': 'leadlist.enrich',
   'Build Campaign': 'campaign.build',
@@ -171,7 +172,8 @@ export async function buildInput(db: Db, at: AirtableClient, rec: AirtableRecord
       if (!text(project.fields['Lead List Link']) && s.rows[0]) project.fields['Lead List Link'] = `https://docs.google.com/spreadsheets/d/${s.rows[0].sheet_id}`;
       return { project, companyTab: s.rows[0]?.tab ?? undefined };
     }
-    case 'leadlist.deepreview': {
+    case 'leadlist.deepreview':
+    case 'leadlist.deepcontacts': {
       // The copied n8n review code reads the list by field NAME (key fields never read). It also
       // reads "Client Context" (the allowed client fields only) and the campaign's thesis.
       const got = await at.get(LEAD_LISTS, rec.id, Object.keys(LIST_NAMES));
@@ -312,6 +314,7 @@ export function resultFields(kind: string, res: any): Record<string, unknown> {
     case 'leadlist.filters':
     case 'leadlist.qa':
     case 'leadlist.deepreview':
+    case 'leadlist.deepcontacts':
     case 'leadlist.enrichprompt':
     case 'leadlist.enrich':
       return { ...(res.airtableFields ?? {}) };

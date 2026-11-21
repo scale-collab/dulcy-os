@@ -9,6 +9,7 @@ import { companyRefitStage } from './companyRefit.js';
 import { contactsFindStage } from './contactsFind.js';
 import { filterGenerateStage } from './filterGenerate.js';
 import { deepReviewStage } from './deepReview.js';
+import { deepContactsStage } from './deepContacts.js';
 import { automatedQaStage } from './automatedQa.js';
 import { enrichPromptStage, enrichRunStage } from './enrichment.js';
 
@@ -99,6 +100,12 @@ export const STAGES: Record<string, StageDef> = {
     deadlineMs: 8 * 60 * 60_000,
     maxAttempts: 5,
     description: 'Deep review companies (DiscoGen, optional, paid): the old n8n company review run unchanged on the usable companies, for lists with Use DiscoGen Deep Review ticked. Fail cuts the company; each company is reviewed once; AI Company Review tab.',
+  },
+  'leadlist.deepcontacts': {
+    run: deepContactsStage,
+    deadlineMs: 8 * 60 * 60_000,
+    maxAttempts: 5,
+    description: 'Deep review contacts (DiscoGen persona review, optional, paid): the old n8n contact review run unchanged on the usable contacts, for lists with Use DiscoGen Deep Review ticked. Only a clear yes stays; cut contacts leave the Contacts tab; each contact is reviewed once.',
   },
   'leadlist.qa': {
     run: automatedQaStage,
