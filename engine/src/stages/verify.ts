@@ -288,10 +288,35 @@ export const verifyStage: Stage = async (ctx) => {
       const id = sheetIdFrom(input.source!.sheetId);
       const header = ['Email', 'First Name', 'Last Name', 'Title', 'Company', 'Domain', 'LinkedIn URL', 'Country', 'State', 'Email Type', 'Verification Status', 'Verification Provider', 'Verification Path', 'Original Email'];
       const toRow = (r: InputRow, type: string) => [r.email, r.firstName, r.lastName, r.title, r.company, r.domain, r.linkedin, r.country, r.state, type, 'Good', r.verificationProvider ?? 'MillionVerifier', r.verificationPath ?? 'MillionVerifier valid', r.originalEmail ?? ''].map((v) => String(v ?? ''));
+      // Keep columns added after Verify (enrichment variables): a re-run of Verify carries their
+      // values over by email, or by company domain when that company had one value (company facts).
+      const extra: string[] = [], byEmail = new Map<string, Record<string, string>>(), byDomain = new Map<string, Record<string, Set<string>>>();
+      for (const tab of ['Final Direct', 'Final Generic']) {
+        let old: string[][] = [];
+        try { old = await sheets.tab(id, tab); } catch { old = []; }
+        const head = (old[0] ?? []).map((h) => String(h ?? '').trim());
+        const ei = head.findIndex((h) => h.toLowerCase() === 'email'), di = head.findIndex((h) => h.toLowerCase() === 'domain');
+        head.forEach((h, i) => {
+          if (!h || header.some((x) => x.toLowerCase() === h.toLowerCase()) || extra.includes(h)) return;
+          extra.push(h);
+          for (const row of old.slice(1)) {
+            const v = String(row[i] ?? '').trim(); if (!v) continue;
+            const e = String(row[ei] ?? '').trim().toLowerCase(), d = String(row[di] ?? '').trim().toLowerCase();
+            if (e) (byEmail.get(e) ?? byEmail.set(e, {}).get(e)!)[h] = v;
+            if (d) { const m = byDomain.get(d) ?? byDomain.set(d, {}).get(d)!; (m[h] ??= new Set()).add(v); }
+          }
+        });
+      }
+      const carry = (r: InputRow) => extra.map((h) => {
+        const e = byEmail.get(String(r.email ?? '').toLowerCase())?.[h];
+        if (e) return e;
+        const d = byDomain.get(String(r.domain ?? '').toLowerCase())?.[h];
+        return d && d.size === 1 ? [...d][0] : '';
+      });
       for (const [tab, rows, type] of [['Final Direct', out.finalDirect, 'Direct'], ['Final Generic', out.finalGeneric, 'Generic']] as const) {
         await sheets.ensureTab(id, tab);
         await sheets.clearTab(id, tab);
-        await sheets.writeRows(id, tab, 1, [header, ...rows.map((r) => toRow(r, type))]);
+        await sheets.writeRows(id, tab, 1, [[...header, ...extra], ...rows.map((r) => [...toRow(r, type), ...carry(r)])]);
       }
       return { direct: out.finalDirect.length, generic: out.finalGeneric.length };
     });
