@@ -392,3 +392,88 @@ test('diagnose mode: a saved job that no longer matches the sheet is explained, 
   assert.equal(j.job.result.counts.good, 2);
   assert.ok(!JSON.stringify(j.job.result.diagnosis).includes('@'), 'no emails in the diagnosis');
 });
+
+// ---------- LeadMagic fallback ----------
+import { mapLeadMagicRow, leadMagicCandidates } from '../src/verify/leadmagic.js';
+
+const lmFake = { url: '', submits: 0, lastSubmit: {} as any, key: '', statusCalls: 0, pendingPolls: 1, answers: {} as Record<string, any> };
+let lmServer: http.Server;
+before(async () => {
+  lmServer = http.createServer(async (req, res) => {
+    const chunks: Buffer[] = []; for await (const c of req) chunks.push(c as Buffer);
+    lmFake.key = String(req.headers['x-api-key'] ?? '');
+    res.setHeader('content-type', 'application/json');
+    if (req.url === '/bulk/submit' && req.method === 'POST') {
+      lmFake.submits++; lmFake.lastSubmit = JSON.parse(Buffer.concat(chunks).toString());
+      res.statusCode = 202;
+      return res.end(JSON.stringify({ jobId: `lm-${lmFake.submits}`, product: 'email_finder', totalRows: lmFake.lastSubmit.rows.length, status: 'uploaded' }));
+    }
+    const m = req.url?.match(/^\/bulk\/jobs\/([^/?]+)(\/results)?/);
+    if (m && !m[2]) {
+      lmFake.statusCalls++;
+      const done = lmFake.statusCalls > lmFake.pendingPolls;
+      return res.end(JSON.stringify({ job_id: m[1], status: done ? 'completed' : 'processing', total_rows: lmFake.lastSubmit.rows.length, processed_items: done ? lmFake.lastSubmit.rows.length : 0 }));
+    }
+    if (m && m[2]) {
+      const rows = lmFake.lastSubmit.rows.map((r: any, i: number) => ({ id: `id-${i}`, row_index: i, status: 'success', http_status_code: 200, lm_input: r, lm_output: lmFake.answers[`${r.first_name} ${r.last_name}`] ?? { email: null, status: null }, credits_consumed: '1' }));
+      return res.end(JSON.stringify({ rows, offset: 0, limit: 200 }));
+    }
+    res.statusCode = 404; res.end('{}');
+  });
+  await new Promise<void>((r) => lmServer.listen(0, () => r()));
+  lmFake.url = `http://127.0.0.1:${(lmServer.address() as any).port}`;
+});
+after(() => { lmServer.close(); });
+
+const lmCfg = () => cfg({ leadMagicApiKey: 'lm-key', leadMagicBaseUrl: lmFake.url });
+const resetLm = async () => {
+  Object.assign(lmFake, { submits: 0, lastSubmit: {}, key: '', statusCalls: 0, pendingPolls: 1, answers: { 'Cy Ra': { email: 'cy@gamma.com', email_status: 'valid', first_name: 'Cy', last_name: 'Ra', domain: 'gamma.com' } } });
+  await db.query('TRUNCATE lead_lm_results');
+};
+
+test('LeadMagic rules: only valid/deliverable/verified for the same person is Good; never Bad; mismatches and errors stay Risky', () => {
+  const c = { key: 'cy|ra|gamma.com', row: {}, originalEmail: 'catch1@gamma.com', body: { first_name: 'Cy', last_name: 'Ra', domain: 'gamma.com' } };
+  assert.equal(mapLeadMagicRow(c, { status: 'success', lm_output: { email: 'cy@gamma.com', email_status: 'valid' } }).verdict, 'Good');
+  assert.deepEqual(mapLeadMagicRow(c, { status: 'success', lm_output: { email: 'cy@gamma.com', email_status: 'catch_all' } }), { key: c.key, verdict: 'Risky', email: 'cy@gamma.com', detail: 'catch_all' });
+  assert.equal(mapLeadMagicRow(c, { status: 'success', lm_output: { email: null, status: null } }).detail, 'not_found');
+  assert.equal(mapLeadMagicRow(c, { status: 'success', lm_output: { email: 'x@other.com', email_status: 'valid', domain: 'other.com' } }).detail, 'provider_identity_mismatch');
+  assert.match(mapLeadMagicRow(c, { status: 'success', http_status_code: 400, lm_output: { code: 'validation_error:last_name' } }).detail, /provider_error: validation_error:last_name/);
+  assert.equal(mapLeadMagicRow(c, { status: 'failed', error_message: 'boom' }).verdict, 'Risky');
+  // Candidates: direct, not Good, with first + last + domain; generic never.
+  const set = buildCandidates(ROWS, { includeDirect: true, includeGeneric: true, genericFootprintMax200: false });
+  const res = parseResults(['email,result', ...set.send.map((x) => `${x.email},${fake.verdict(x.email)}`)].join('\n'), set.send.map((x) => x.email));
+  assert.deepEqual(leadMagicCandidates(set, res).map((x) => x.key).sort(), ['bo|ng|beta.com', 'cy|ra|gamma.com']);
+});
+
+test('verify + LeadMagic: risky/bad direct contacts are looked up once; a valid find becomes a final lead with the new email', { skip }, async () => {
+  await resetLm();
+  const q = await enqueueVerify({ rows: ROWS, leadMagic: true });
+  const j = await runUntilSettled(lmCfg(), q.job.id);
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.equal(lmFake.key, 'lm-key', 'key in the X-API-Key header');
+  assert.equal(lmFake.lastSubmit.product, 'email_finder');
+  assert.deepEqual(lmFake.lastSubmit.rows.sort((a: any, b: any) => a.first_name.localeCompare(b.first_name)), [{ first_name: 'Bo', last_name: 'Ng', domain: 'beta.com' }, { first_name: 'Cy', last_name: 'Ra', domain: 'gamma.com' }]);
+  assert.ok(lmFake.statusCalls >= 2, 'waited while LeadMagic worked');
+  const r = j.job.result;
+  // Before: good 3 (ann, info, hello), risky 2 (catch1, missing email), bad 1 (bad1). Cy found valid -> Good.
+  assert.deepEqual(r.counts, { good: 4, risky: 1, bad: 1, pending: 0, held: 0, sent: 5 });
+  assert.equal(r.finalDirectCount, 2);
+  assert.deepEqual(r.leadMagic, { candidates: 2, alreadyLookedUp: 0, sent: 2, recovered: 1, jobId: 'lm-1' });
+  assert.match(r.message, /LeadMagic: 1 recovered of 2 direct contacts not Good/);
+  // Again: nobody is looked up twice.
+  const again = await enqueueVerify({ rows: ROWS, leadMagic: true });
+  const ja = await runUntilSettled(lmCfg(), again.job.id);
+  assert.equal(ja.job.status, 'succeeded', ja.job.error);
+  assert.equal(lmFake.submits, 1, 'no second LeadMagic job');
+  assert.equal(ja.job.result.finalDirectCount, 2);
+  assert.equal(ja.job.result.leadMagic.alreadyLookedUp, 2);
+});
+
+test('verify without "Use LeadMagic Fallback" never calls LeadMagic', { skip }, async () => {
+  await resetLm();
+  const q = await enqueueVerify({ rows: ROWS });
+  const j = await runUntilSettled(lmCfg(), q.job.id);
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.equal(lmFake.submits, 0);
+  assert.equal(j.job.result.leadMagic, undefined);
+});

@@ -153,3 +153,16 @@ ALTER TABLE airtable_jobs ADD COLUMN IF NOT EXISTS target_record TEXT;
 ALTER TABLE airtable_jobs ADD COLUMN IF NOT EXISTS parent_record TEXT;
 ALTER TABLE airtable_jobs ADD COLUMN IF NOT EXISTS output        TEXT;
 ALTER TABLE airtable_jobs ADD COLUMN IF NOT EXISTS press         TEXT;
+
+-- LeadMagic email-finder results per person (first|last|domain) of a list: a person is looked
+-- up once, never paid twice (old n8n: each identity attempted once).
+CREATE TABLE IF NOT EXISTS lead_lm_results (
+  list_id     TEXT NOT NULL,
+  key         TEXT NOT NULL,
+  verdict     TEXT NOT NULL CHECK (verdict IN ('Good','Risky')),
+  email       TEXT NOT NULL DEFAULT '',
+  detail      TEXT NOT NULL DEFAULT '',
+  job_id      TEXT NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (list_id, key)
+);

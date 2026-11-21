@@ -55,6 +55,8 @@ export const F = {
   contactApproved: 'fldVz983EKKiPSzjc',
   includeGeneric: 'fldIXN5t3bqfiZ0Wu',
   includeDirect: 'fldfFcn3BB2RyiWer',
+  useLeadMagic: 'fldJbIiQ35ZFPsXPL',
+  leadMagicJobId: 'fld1UmiJ0PsIndCtO',
   footprint200: 'fldAFATYp9G26MmVj',
   // written back
   processingStatus: 'fldf9wpMGWg0SebHV',
@@ -99,7 +101,7 @@ export const ACTIONS: Record<string, string> = {
 };
 
 const READ_FIELDS = [F.engineAction, F.engineActionSetAt, F.name, F.client, F.filtersJson, F.icp, F.thesis, F.sampleSize, F.sampleApproved,
-  F.expansionTarget, F.personaDna, F.contactFiltersJson, F.contactSampleSize, F.contactApproved, F.contactSource, F.includeGeneric, F.includeDirect, F.footprint200,
+  F.expansionTarget, F.personaDna, F.contactFiltersJson, F.contactSampleSize, F.contactApproved, F.contactSource, F.includeGeneric, F.includeDirect, F.useLeadMagic, F.footprint200,
   'fldepbn71awSjmZPV', 'fld8nrebRFL0O8kgj', 'fldUB4WsLi5kq6rUy', F.finalDirect, F.finalGeneric];
 // Field names, not IDs: Airtable formulas only take names. The two fields are the engine's own.
 const QUEUED_FORMULA = `AND({Runs on Engine}, {Engine Action} != '')`;
@@ -197,6 +199,7 @@ export async function buildInput(db: Db, at: AirtableClient, rec: AirtableRecord
         source: { sheetId: s.rows[0].sheet_id, contactsTab: 'Contacts', companiesTab: s.rows[0].tab },
         includeDirect: direct || !generic, includeGeneric: generic || !direct,
         genericFootprintMax200: r[F.footprint200] === true,
+        leadMagic: r[F.useLeadMagic] === true,
         writeFinalTabs: true,
       };
     }
@@ -280,7 +283,7 @@ export function resultFields(kind: string, res: any): Record<string, unknown> {
     }
     case 'leadlist.verify': {
       const c = res.counts ?? {};
-      return { [F.verifyGood]: c.good ?? null, [F.verifyRisky]: c.risky ?? null, [F.verifyBad]: c.bad ?? null, [F.finalDirect]: res.finalDirectCount ?? null, [F.finalGeneric]: res.finalGenericCount ?? null, [F.leads]: (res.finalDirectCount ?? 0) + (res.finalGenericCount ?? 0), [F.mvJobId]: res.millionVerifierJobId ?? null, [F.verifiedAt]: new Date().toISOString(), [F.verifyState]: 'completed' };
+      return { [F.verifyGood]: c.good ?? null, [F.verifyRisky]: c.risky ?? null, [F.verifyBad]: c.bad ?? null, [F.finalDirect]: res.finalDirectCount ?? null, [F.finalGeneric]: res.finalGenericCount ?? null, [F.leads]: (res.finalDirectCount ?? 0) + (res.finalGenericCount ?? 0), [F.mvJobId]: res.millionVerifierJobId ?? null, ...(res.leadMagic?.jobId ? { [F.leadMagicJobId]: res.leadMagic.jobId } : {}), [F.verifiedAt]: new Date().toISOString(), [F.verifyState]: 'completed' };
     }
   }
   return {};

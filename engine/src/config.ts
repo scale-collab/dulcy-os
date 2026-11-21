@@ -31,6 +31,8 @@ export interface Config {
   /** MillionVerifier API key (server .env only). Free status checks need it too. */
   millionVerifierApiKey?: string;
   millionVerifierBaseUrl: string;
+  leadMagicApiKey?: string;
+  leadMagicBaseUrl: string;
   /** How often a waiting verification job checks MillionVerifier again. */
   verifyPollMs: number;
   /** Google service-account key file (read-only Sheets access), on the server only. */
@@ -90,6 +92,8 @@ export function loadConfig(env = process.env): Config {
     workerId: env.WORKER_ID || `worker-${process.pid}`,
     millionVerifierApiKey: env.MILLIONVERIFIER_API_KEY || undefined,
     millionVerifierBaseUrl: env.MILLIONVERIFIER_BASE_URL || 'https://bulkapi.millionverifier.com',
+    leadMagicApiKey: env.LEADMAGIC_API_KEY || undefined,
+    leadMagicBaseUrl: env.LEADMAGIC_BASE_URL || 'https://api.leadmagic.io',
     verifyPollMs: num('VERIFY_POLL_MS', 2 * 60_000, env),
     googleKeyFile: env.GOOGLE_KEY_FILE || '/app/secrets/google-sa.json',
     googleImpersonateUser: env.GOOGLE_IMPERSONATE_USER || undefined,

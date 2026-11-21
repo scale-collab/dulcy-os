@@ -17,6 +17,8 @@ import { createHash } from 'node:crypto';
 import type { Stage } from './index.js';
 import { NeedsReviewError, PermanentError, WaitError } from '../errors.js';
 import { createMvClient } from '../providers/millionverifier.js';
+import { createLeadMagicClient } from '../providers/leadmagic.js';
+import { leadMagicCandidates, mapLeadMagicRow, type LmCandidate, type LmResult } from '../verify/leadmagic.js';
 import { createSheetsClient } from '../providers/google.js';
 import { sheetIdFrom, loadSheetRows, type SheetSource } from '../sources/sheet.js';
 import {
@@ -44,7 +46,12 @@ interface VerifyInput {
   /** Write the "Final Direct" / "Final Generic" tabs into the source sheet (the tabs the
    *  campaign build reads). Each tab is replaced in one write. Never in dry-run or diagnose. */
   writeFinalTabs?: boolean;
+  /** "Use LeadMagic Fallback": direct contacts not Good after MillionVerifier go to the
+   *  LeadMagic email finder (old n8n rules, see verify/leadmagic.ts). */
+  leadMagic?: boolean;
 }
+
+const LM_MAX_WAIT_MS = 3 * 60 * 60_000;
 
 function readInput(raw: Record<string, unknown>): VerifyInput {
   const rows = raw.rows;
@@ -63,6 +70,7 @@ function readInput(raw: Record<string, unknown>): VerifyInput {
     expected: (raw.expected ?? undefined) as Expected | undefined,
     diagnose: raw.diagnose === true,
     writeFinalTabs: raw.writeFinalTabs === true,
+    leadMagic: raw.leadMagic === true,
   };
 }
 
@@ -190,15 +198,96 @@ export const verifyStage: Stage = async (ctx) => {
     }
   }
 
-  const out = await ctx.step('outputs', async () => buildOutputs(set, results));
+  // LeadMagic fallback (after MillionVerifier; direct contacts only; each person once).
+  let lmCands: LmCandidate[] = [];
+  let lmKnown: LmResult[] = [];
+  let lmInfo: { candidates: number; alreadyLookedUp: number; sent: number; recovered: number; jobId?: string; wouldSpend?: number } | undefined;
+  if (input.leadMagic && opts.includeDirect && !input.diagnose) {
+    lmCands = await ctx.step('lm-candidates', async () => leadMagicCandidates(set, results));
+    const keys = lmCands.map((c) => c.key);
+    const before = await ctx.step('lm-known', async () => (await ctx.db.query(`SELECT key FROM lead_lm_results WHERE list_id=$1 AND key = ANY($2::text[])`, [ctx.job.record_id, keys])).rows.map((x) => x.key as string));
+    const done = new Set(before);
+    const todo = lmCands.filter((c) => !done.has(c.key));
+    lmInfo = { candidates: lmCands.length, alreadyLookedUp: before.length, sent: 0, recovered: 0 };
+    if (todo.length && ctx.dryRun) lmInfo.wouldSpend = todo.length;
+    else if (todo.length) {
+      const lm = createLeadMagicClient({ apiKey: ctx.cfg.leadMagicApiKey, baseUrl: ctx.cfg.leadMagicBaseUrl });
+      const key = createHash('sha256').update(todo.map((c) => c.key).sort().join('\n')).digest('hex').slice(0, 16);
+      const jobId = await ctx.step('lm-submit', () => ctx.paid({
+        scope: 'record', provider: 'leadmagic', callKey: `finder:${key}`, units: todo.length,
+        run: () => lm.submitFinder(todo.map((c) => c.body), `dulcy-${ctx.job.record_id}-${key}`),
+        dryRunResult: () => '',
+      }));
+      lmInfo.jobId = jobId; lmInfo.sent = todo.length;
+      const startedAt = await ctx.step(`lm-started:${jobId}`, async () => Date.now());
+      await ctx.step('lm-poll', async () => {
+        const j = await lm.job(jobId);
+        if (['failed', 'canceled', 'cancelled', 'paused'].includes(j.status)) throw new NeedsReviewError(`LeadMagic job ${jobId} is "${j.status}"; check it in LeadMagic. Not resubmitted.`);
+        if (j.status !== 'completed' || (j.total > 0 && j.processed < j.total)) {
+          if (Date.now() - startedAt > LM_MAX_WAIT_MS) throw new NeedsReviewError(`LeadMagic job ${jobId} still "${j.status}" after 3 hours`);
+          throw new WaitError(`LeadMagic job ${jobId}: ${j.status}, ${j.processed} of ${j.total || todo.length} done`, ctx.cfg.verifyPollMs);
+        }
+        return j;
+      });
+      await ctx.step('lm-results', async () => {
+        const rows: any[] = [];
+        for (let offset = 0; offset < todo.length; offset += 200) {
+          const page = await lm.results(jobId, offset);
+          rows.push(...page);
+          if (page.length < 200) break;
+        }
+        // Match by what was asked (name + domain), else by row position.
+        const byKey = new Map(todo.map((c) => [c.key, c]));
+        const got = new Map<string, LmResult>();
+        for (const r of rows) {
+          const i = r?.lm_input;
+          const k = i && typeof i === 'object' ? [i.first_name, i.last_name, i.domain].map((v) => String(v ?? '').trim()).join('|').toLowerCase() : '';
+          const c = (k && byKey.get(k)) || todo[Number(r?.row_index)];
+          if (c && !got.has(c.key)) got.set(c.key, mapLeadMagicRow(c, r));
+        }
+        // No answer for a person: Risky, never retried automatically.
+        for (const c of todo) if (!got.has(c.key)) got.set(c.key, { key: c.key, verdict: 'Risky', email: '', detail: 'provider_outcome_unknown' });
+        const list = [...got.values()];
+        await ctx.db.query(
+          `INSERT INTO lead_lm_results (list_id, key, verdict, email, detail, job_id)
+           SELECT $1, k, v, e, d, $2 FROM unnest($3::text[], $4::text[], $5::text[], $6::text[]) AS u(k, v, e, d) ON CONFLICT DO NOTHING`,
+          [ctx.job.record_id, jobId, list.map((x) => x.key), list.map((x) => x.verdict), list.map((x) => x.email), list.map((x) => x.detail)]);
+        return list.length;
+      });
+    }
+    lmKnown = await ctx.step('lm-load', async () => (await ctx.db.query(`SELECT key, verdict, email, detail FROM lead_lm_results WHERE list_id=$1 AND key = ANY($2::text[])`, [ctx.job.record_id, keys])).rows as LmResult[]);
+  }
+
+  const out = await ctx.step('outputs', async () => {
+    const o = buildOutputs(set, results);
+    if (!lmCands.length) return o;
+    // A LeadMagic Good replaces the contact's earlier verdict and email (old n8n merge).
+    const verdict = new Map(results.map((r) => [r.email, r.verdict]));
+    const invalid = new Set(set.invalidSyntax.map((c) => c.email));
+    const taken = new Set([...o.finalDirect, ...o.finalGeneric].map((r) => String(r.email)));
+    const byKey = new Map(lmKnown.map((r) => [r.key, r]));
+    for (const c of lmCands) {
+      const r = byKey.get(c.key);
+      if (!r || r.verdict !== 'Good' || taken.has(r.email)) continue;
+      taken.add(r.email);
+      o.finalDirect.push({ ...c.row, email: r.email, originalEmail: c.originalEmail, verificationStatus: 'Good', verificationDetail: r.detail, verificationProvider: 'LeadMagic Email Finder', verificationPath: 'LeadMagic recovery' });
+      o.counts.good++;
+      const was = !c.originalEmail ? 'Risky' : invalid.has(c.originalEmail) ? 'Bad' : verdict.get(c.originalEmail) ?? 'Pending';
+      if (was === 'Risky') o.counts.risky--;
+      else if (was === 'Bad') o.counts.bad--;
+      else { o.counts.pending--; o.pendingEmails = o.pendingEmails.filter((e) => e !== c.originalEmail); }
+    }
+    return o;
+  });
+  if (lmInfo) lmInfo.recovered = out.finalDirect.filter((r) => r.verificationProvider === 'LeadMagic Email Finder').length;
   const leads = out.finalDirect.length + out.finalGeneric.length;
   let finalTabs: { direct: number; generic: number } | undefined;
   if (input.writeFinalTabs && input.source && !ctx.dryRun && !input.diagnose) {
     finalTabs = await ctx.step('write-final-tabs', async () => {
       const sheets = createSheetsClient({ keyFile: ctx.cfg.googleKeyFile, impersonate: ctx.cfg.googleImpersonateUser, scope: ctx.cfg.googleScope, sheetsBaseUrl: ctx.cfg.googleSheetsBaseUrl });
       const id = sheetIdFrom(input.source!.sheetId);
-      const header = ['Email', 'First Name', 'Last Name', 'Title', 'Company', 'Domain', 'LinkedIn URL', 'Country', 'State', 'Email Type', 'Verification Status', 'Verification Provider', 'Verification Path'];
-      const toRow = (r: InputRow, type: string) => [r.email, r.firstName, r.lastName, r.title, r.company, r.domain, r.linkedin, r.country, r.state, type, 'Good', 'MillionVerifier', 'MillionVerifier valid'].map((v) => String(v ?? ''));
+      const header = ['Email', 'First Name', 'Last Name', 'Title', 'Company', 'Domain', 'LinkedIn URL', 'Country', 'State', 'Email Type', 'Verification Status', 'Verification Provider', 'Verification Path', 'Original Email'];
+      const toRow = (r: InputRow, type: string) => [r.email, r.firstName, r.lastName, r.title, r.company, r.domain, r.linkedin, r.country, r.state, type, 'Good', r.verificationProvider ?? 'MillionVerifier', r.verificationPath ?? 'MillionVerifier valid', r.originalEmail ?? ''].map((v) => String(v ?? ''));
       for (const [tab, rows, type] of [['Final Direct', out.finalDirect, 'Direct'], ['Final Generic', out.finalGeneric, 'Generic']] as const) {
         await sheets.ensureTab(id, tab);
         await sheets.clearTab(id, tab);
@@ -214,6 +303,7 @@ export const verifyStage: Stage = async (ctx) => {
     reusedEarlierJob: reused,
     alreadyVerified: known.length,
     reusedFrom,
+    leadMagic: lmInfo,
     plan: summary(set),
     counts: out.counts,
     finalDirectCount: out.finalDirect.length,
@@ -222,7 +312,7 @@ export const verifyStage: Stage = async (ctx) => {
     pendingRemainder: out.pendingEmails.length,
     message: out.pendingEmails.length
       ? `${out.pendingEmails.length} emails were not processed (usually no MillionVerifier credits); run the remainder only after credits are available`
-      : `verified: ${out.counts.good} good, ${out.counts.risky} risky, ${out.counts.bad} bad; ${leads} final leads${reused ? (known.length === results.length ? ` (results reused from MillionVerifier job ${reusedFrom.join(', ')}; nothing uploaded)` : ` (${known.length} reused from earlier checks; only ${results.length - known.length} new emails verified)`) : ''}`,
+      : `verified: ${out.counts.good} good, ${out.counts.risky} risky, ${out.counts.bad} bad; ${leads} final leads${reused ? (known.length === results.length ? ` (results reused from MillionVerifier job ${reusedFrom.join(', ')}; nothing uploaded)` : ` (${known.length} reused from earlier checks; only ${results.length - known.length} new emails verified)`) : ''}${lmInfo ? `; LeadMagic: ${lmInfo.recovered} recovered of ${lmInfo.candidates} direct contacts not Good${lmInfo.wouldSpend ? ` (dry run: would look up ${lmInfo.wouldSpend})` : ''}` : ''}`,
     // What step 2b will write to the Lead Lists record (not written in shadow mode).
     airtablePreview: {
       'Verification Good Count': out.counts.good,
