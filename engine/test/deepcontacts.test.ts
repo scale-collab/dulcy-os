@@ -109,3 +109,27 @@ test('Contact deep review guards: box, prompt, persona; client-specific n8n list
   assert.equal(d.job.result.plan.contacts, 3);
   assert.equal(dl.submits, 0);
 });
+
+test('Contact deep review reads DiscoGen\'s one-line answers ("yes | high | ...") and undoes cuts made from unreadable answers', { skip }, async () => {
+  // A cut left by the earlier bug: no reasoning, so it is undone and the contact reviewed again.
+  await db.query(`UPDATE lead_contacts SET tier='Cut', reasons='["DiscoGen persona review: not a clear fit"]' WHERE list_id=$1 AND email='ann@acme.com'`, [REC]);
+  await db.query(`INSERT INTO lead_contact_reviews (list_id, email, persona_id, tier, row, task_id) VALUES ($1,'ann@acme.com',101,'Cut','{"email":"ann@acme.com","tier":"Cut","reasoning":""}','old')`, [REC]);
+  dl.results = { '101': 'yes | high | founder of the agency', '102': 'partial | medium | manager', '103': 'no | high | intern' };
+  const j = await run({ project: project() });
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.deepEqual([...dl.lastBody.persona_ids].sort(), [101, 102, 103], 'the undone contact is reviewed again');
+  const tiers = Object.fromEntries((await db.query(`SELECT email, tier, reasons FROM lead_contacts WHERE list_id=$1`, [REC])).rows.map((r) => [r.email, r.tier]));
+  assert.notEqual(tiers['ann@acme.com'], 'Cut', 'a clear yes stays (back in a usable tier)');
+  assert.equal(tiers['bo@acme.com'], 'Cut'); assert.equal(tiers['cy@acme.com'], 'Cut');
+  const ann = (await db.query(`SELECT row FROM lead_contact_reviews WHERE list_id=$1 AND email='ann@acme.com'`, [REC])).rows[0].row;
+  assert.equal(ann.reasoning, 'founder of the agency');
+});
+
+test('Contact deep review: when no answer can be read, nothing is cut and the job stops for review', { skip }, async () => {
+  dl.results = { '101': 'garbled', '102': 'garbled', '103': 'garbled' };
+  const j = await run({ project: project() });
+  assert.equal(j.job.status, 'needs_review');
+  assert.match(j.job.error, /none of DiscoGen's answers could be read/);
+  const cut = (await db.query(`SELECT COUNT(*)::int AS n FROM lead_contacts WHERE list_id=$1 AND tier='Cut'`, [REC])).rows[0].n;
+  assert.equal(cut, 1, 'only the contact that was already cut');
+});

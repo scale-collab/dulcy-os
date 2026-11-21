@@ -20,6 +20,42 @@ import { CONTACT_COLUMNS, contactCounts, mirrorContacts } from '../leadlist/cont
 import { N8N_ONLY_DEEP_REVIEW } from './deepReview.js';
 
 interface Project { id: string; fields: Record<string, unknown> }
+
+/** DiscoGen's persona answers, keyed by persona ID, as {fit, confidence, reasoning} objects.
+ *  DiscoGen can send each answer as one string ("yes | high | reasoning", in its response-schema
+ *  key order) that n8n's gate cannot read; this reads it first. Unreadable answers are left out. */
+export function readPersonaResults(status: any): Record<string, Record<string, unknown>> {
+  const set = status?.results ?? status?.data?.results ?? status?.validations ?? status?.data?.validations ?? {};
+  const schema = status?.response_format?.json_schema ?? status?.data?.response_format?.json_schema;
+  const keys = Object.keys(schema?.properties ?? {}).length ? Object.keys(schema.properties) : ['fit', 'confidence', 'reasoning'];
+  const read = (v: unknown): Record<string, unknown> | null => {
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+      const o = v as Record<string, unknown>;
+      if (o.result !== undefined && o.fit === undefined) return read(o.result);
+      return o.fit !== undefined || o.classification !== undefined || o.verdict !== undefined ? o : null;
+    }
+    if (Array.isArray(v)) return v.length === 1 ? read(v[0]) : null;
+    if (typeof v !== 'string' || !v.trim()) return null;
+    const t = v.trim();
+    try { return read(JSON.parse(t)); } catch { /* not JSON */ }
+    const parts = t.split('|').map((x) => x.trim());
+    if (parts.length >= 2) {
+      const o: Record<string, unknown> = {};
+      keys.forEach((k, i) => { o[k] = i < keys.length - 1 ? (parts[i] ?? '') : parts.slice(i).join(' | '); });
+      return /^(yes|partial|no)$/i.test(String(o.fit ?? '')) ? o : null;
+    }
+    return /^(yes|partial|no)$/i.test(t) ? { fit: t.toLowerCase() } : null;
+  };
+  const out: Record<string, Record<string, unknown>> = {};
+  const entries: [string, unknown][] = Array.isArray(set) ? set.map((x: any) => [String(x?.persona_id ?? x?.id ?? x?.contact_id ?? ''), x]) : Object.entries(set ?? {});
+  for (const [k, v] of entries) { const r = read(v); if (k && r) out[k] = { ...r, fit: String(r.fit ?? r.classification ?? r.verdict ?? '').toLowerCase() }; }
+  return out;
+}
+function firstAnswer(status: any): string {
+  const set = status?.results ?? status?.data?.results;
+  const first = Array.isArray(set) ? set[0] : set && typeof set === 'object' ? Object.values(set)[0] : set;
+  return ` [first DiscoGen answer: ${String(typeof first === 'string' ? first : JSON.stringify(first ?? null)).replace(/\s+/g, ' ').slice(0, 160)}]`;
+}
 const BATCH_CAP = 8000;
 const POLL_MS = 30_000;
 const MAX_WAIT_MS = 6 * 60 * 60_000;
@@ -38,6 +74,20 @@ export const deepContactsStage: Stage = async (ctx) => {
   if (!String(project.fields['DiscoGen Deep Review Prompt'] ?? '').trim()) throw new PermanentError('write the DiscoGen Deep Review Prompt first');
   if (!String(project.fields['Contact Persona DNA'] ?? '').trim()) throw new PermanentError('write the Contact Persona DNA (who the contact should be) first');
   const startedAt = await ctx.step('started', async () => new Date().toISOString());
+  // Undo verdicts that came from an unreadable answer (empty reasoning): the contact goes back to
+  // its earlier tier and is reviewed again. (Live 2026-11-21: DiscoGen answered "yes | high | ..."
+  // as one string, n8n's gate could not read it and cut all 558 contacts.)
+  await ctx.step('heal', async () => {
+    const bad = (await ctx.db.query(
+      `SELECT email, prev_tier FROM lead_contact_reviews WHERE list_id=$1 AND tier='Cut' AND COALESCE(row->>'reasoning','')=''`, [listId])).rows;
+    for (const b of bad) {
+      await ctx.db.query(
+        `UPDATE lead_contacts SET tier=$3, reasons = COALESCE((SELECT jsonb_agg(x) FROM jsonb_array_elements(reasons) x WHERE x::text NOT LIKE '"DiscoGen persona review%'), '[]'::jsonb)
+          WHERE list_id=$1 AND lower(email)=$2 AND tier='Cut'`, [listId, b.email, b.prev_tier ?? 'Tier 2']);
+      await ctx.db.query(`DELETE FROM lead_contact_reviews WHERE list_id=$1 AND email=$2`, [listId, b.email]);
+    }
+    return bad.length;
+  });
 
   // 1. n8n's request, built by n8n's code, for the next contacts not yet reviewed.
   const prep = await ctx.step('prepare', async () => {
@@ -85,16 +135,22 @@ export const deepContactsStage: Stage = async (ctx) => {
   }, { timeoutMs: 10 * 60_000 });
 
   // 3. n8n's gate, then save the verdicts (Cut contacts leave the Contacts tab).
-  const gate = await ctx.step('gate', async () => (await node(C['Calculate Contact Fit Gate'], [status], { 'Normalize Lead List': prep.norm, 'Prepare Contact AI Review': prep.prepared }))[0], { timeoutMs: 10 * 60_000 });
+  const readable = readPersonaResults(status);
+  const matched = new Set(Object.keys(readable));
+  if (!(prep.prepared[0].personaIds as number[]).some((id) => matched.has(String(id)))) {
+    throw new NeedsReviewError(`Contact deep review: none of DiscoGen's answers could be read, so no contact was cut (task ${task}).${firstAnswer(status)}`);
+  }
+  const gate = await ctx.step('gate', async () => (await node(C['Calculate Contact Fit Gate'], [{ ...status, results: readable }], { 'Normalize Lead List': prep.norm, 'Prepare Contact AI Review': prep.prepared }))[0], { timeoutMs: 10 * 60_000 });
   const saved = await ctx.step('save', async () => {
     let kept = 0, cut = 0;
     for (const row of (gate.reviewed ?? []) as Record<string, any>[]) {
       const email = String(row.email ?? '').trim().toLowerCase();
-      if (!email) continue;
+      if (!email || !matched.has(String(row.persona_id))) continue; // no readable answer: left for the next press
+      const prev = (await ctx.db.query(`SELECT tier FROM lead_contacts WHERE list_id=$1 AND lower(email)=$2`, [listId, email])).rows[0]?.tier ?? null;
       await ctx.db.query(
-        `INSERT INTO lead_contact_reviews (list_id, email, persona_id, tier, row, task_id) VALUES ($1,$2,$3,$4,$5,$6)
+        `INSERT INTO lead_contact_reviews (list_id, email, persona_id, tier, row, task_id, prev_tier) VALUES ($1,$2,$3,$4,$5,$6,$7)
          ON CONFLICT (list_id, email) DO UPDATE SET tier=EXCLUDED.tier, row=EXCLUDED.row, task_id=EXCLUDED.task_id, reviewed_at=now()`,
-        [listId, email, Number(row.persona_id) || null, String(row.tier), JSON.stringify(row), task]);
+        [listId, email, Number(row.persona_id) || null, String(row.tier), JSON.stringify(row), task, prev]);
       if (row.tier === 'Cut') {
         const why = `DiscoGen persona review: ${String(row.reasoning ?? '').replace(/\s+/g, ' ').slice(0, 160) || 'not a clear fit'}`;
         await ctx.db.query(`UPDATE lead_contacts SET tier='Cut', reasons = reasons || $3::jsonb WHERE list_id=$1 AND lower(email)=$2`, [listId, email, JSON.stringify([why])]);
