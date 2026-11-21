@@ -9,6 +9,7 @@ import { companyRefitStage } from './companyRefit.js';
 import { contactsFindStage } from './contactsFind.js';
 import { filterGenerateStage } from './filterGenerate.js';
 import { automatedQaStage } from './automatedQa.js';
+import { enrichPromptStage, enrichRunStage } from './enrichment.js';
 
 /** A stage = one Airtable action. It returns a small result for the Airtable record. */
 export type Stage = (ctx: JobContext) => Promise<Record<string, unknown>>;
@@ -79,6 +80,18 @@ export const STAGES: Record<string, StageDef> = {
     deadlineMs: 30 * 60_000,
     maxAttempts: 3,
     description: 'Re-check every saved company of a list with its profile (free; optionally rebuild the profile with one AI call); the sheet is rewritten in place.',
+  },
+  'leadlist.enrichprompt': {
+    run: enrichPromptStage,
+    deadlineMs: 20 * 60_000,
+    maxAttempts: 3,
+    description: 'Prepare Enrichment Prompt: the old n8n 04 builder run unchanged (one AI call turns Custom Variables Requested into a structured DiscoGen prompt, saved back for review).',
+  },
+  'leadlist.enrich': {
+    run: enrichRunStage,
+    deadlineMs: 8 * 60 * 60_000,
+    maxAttempts: 5,
+    description: 'Run Enrichment: the old n8n 05 (live copy) run unchanged: one DiscoGen task for the rows missing a requested value, empty cells filled only, Final tabs rewritten after a stale-data check.',
   },
   'leadlist.qa': {
     run: automatedQaStage,

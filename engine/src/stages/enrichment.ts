@@ -1,0 +1,152 @@
+// Enrichment, the old n8n 04 + 05 workflows run unchanged (copied code in leadlist/legacy/enrichNodes.ts).
+//
+// leadlist.enrichprompt ("Prepare Enrichment Prompt", n8n 04): the plain-English request in Custom
+//   Variables Requested -> ONE AI call (n8n's model and prompt) -> a structured DiscoGen prompt
+//   (# VARIABLE / ## SCOPE / ## OUTPUT keys), saved back into Custom Variables Requested for review.
+//
+// leadlist.enrich ("Run Enrichment", n8n 05 live copy 2): needs Verify completed and a prepared prompt.
+//   Reads Final Direct + Final Generic, finds the rows missing a requested value, and sends ONE
+//   DiscoGen task: company scope = /v1/discogen/process per domain (seeded with the company name),
+//   person scope = /v1/discogen/process-personas per DiscoLike persona (Direct rows only). Polls until
+//   done, fills ONLY empty cells (never overwrites), appends a column per variable, and writes the two
+//   tabs back after a stale-data check. Airtable: the same fields n8n saved (Stage QA, counts, message).
+//   The persona IDs come from the engine's own contacts (the old flow read them from the Contacts tab).
+//
+// Client-specific n8n overrides (Meta sample, Human AEO recovery, Twenty West beauty pairs) are not
+// run on the engine: those three lists are refused with a clear message.
+import { createHash } from 'node:crypto';
+import type { Stage } from './index.js';
+import { NeedsReviewError, PermanentError, WaitError } from '../errors.js';
+import { createDiscoLikeClient } from '../providers/discolike.js';
+import { createOpenAIClient } from '../providers/openai.js';
+import { createSheetsClient } from '../providers/google.js';
+import { ENRICH_PROMPT_NODES as P, ENRICH_RUN_NODES as R } from '../leadlist/legacy/enrichNodes.js';
+import { runNode, type Items } from '../leadlist/legacy/runNode.js';
+import { LEAD_LIST_FIELDS } from '../leadlist/legacy/fieldNames.js';
+
+interface Project { id: string; fields: Record<string, unknown> }
+interface EnrichInput { project: Project; companyTab?: string }
+
+export const N8N_ONLY_ENRICHMENT = new Set(['rechmwZZ0DCPVKLMT', 'rec468aQaOEYtdYL3', 'rec6zH7MNS1g2DMcE']);
+const POLL_MS = 30_000;
+const MAX_WAIT_MS = 6 * 60 * 60_000;
+const BY_NAME = Object.fromEntries(Object.entries(LEAD_LIST_FIELDS).map(([id, name]) => [name, id]));
+
+const legacy = (nodes: Record<string, string>) => async (name: string, input: Items, earlier: Record<string, Items> = {}, globals: Record<string, unknown> = {}) => {
+  try { return await runNode(nodes[name], input, earlier, globals); } catch (e) { throw new PermanentError(`Enrichment: ${String((e as Error).message ?? e)}`); }
+};
+/** n8n's Airtable update (by field name) -> field IDs, without n8n's own Enrichment Action trigger field. */
+function toFieldIds(named: Record<string, unknown>) {
+  const out: Record<string, unknown> = {};
+  for (const [name, v] of Object.entries(named)) {
+    if (name === 'Enrichment Action') continue;
+    const id = BY_NAME[name];
+    if (!id) throw new PermanentError(`Enrichment: unknown Lead Lists field "${name}"`);
+    out[id] = v;
+  }
+  return out;
+}
+
+export const enrichPromptStage: Stage = async (ctx) => {
+  const input = ctx.job.input as unknown as EnrichInput;
+  if (!input?.project?.id) throw new PermanentError('input.project (the Lead List record by field name) is required');
+  const node = legacy(P);
+  const req = await ctx.step('compile-request', async () => {
+    const v = await node('Validate Prompt Request', [{ body: { recordId: input.project.id, action: 'Prepare Enrichment Prompt' } }]);
+    if (!v.length) throw new PermanentError('the old validator stopped this request quietly');
+    return node('Build Prompt Compiler Request', [input.project], { 'Validate Prompt Request': v });
+  });
+  const msgs = req[0]?.openAiBody?.messages ?? [];
+  const system = String(msgs[0]?.content ?? ''), user = String(msgs[1]?.content ?? '');
+  if (!system || !user) throw new PermanentError('Enrichment: the prompt request came out empty');
+  if (ctx.dryRun) return { dryRun: true, wouldSpendCredits: { openai: 1 }, message: 'dry run: would make one AI call to prepare the DiscoGen prompt' };
+  const ai = createOpenAIClient({ apiKey: ctx.cfg.openAiApiKey, model: ctx.cfg.openAiModel, baseUrl: ctx.cfg.openAiBaseUrl });
+  const reply = await ctx.step('ai', () => ctx.paid({
+    provider: 'openai', callKey: 'enrich-prompt', units: 1,
+    run: async () => ({ text: await ai.text(user, ctx.cfg.openAiModel, system) }),
+    dryRunResult: () => ({ text: '' }),
+  }));
+  const fields = await ctx.step('save', async () => {
+    const checked = await node('Validate Prepared Prompt', [reply]);
+    const upd = await node('Prepare Airtable Prompt Update', checked, { 'Build Prompt Compiler Request': req });
+    return toFieldIds(upd[0]?.body?.fields ?? {});
+  });
+  return { dryRun: false, airtableFields: fields, message: String(fields[BY_NAME['Last Workflow Message']] ?? 'Enrichment prompt prepared for review.') };
+};
+
+export const enrichRunStage: Stage = async (ctx) => {
+  const input = ctx.job.input as unknown as EnrichInput;
+  if (!input?.project?.id) throw new PermanentError('input.project (the Lead List record by field name) is required');
+  if (N8N_ONLY_ENRICHMENT.has(input.project.id)) throw new PermanentError('this list uses a client-specific enrichment that only exists in n8n; run it from the regular Lead List Center');
+  const node = legacy(R);
+  const sheets = createSheetsClient({ keyFile: ctx.cfg.googleKeyFile, impersonate: ctx.cfg.googleImpersonateUser, scope: ctx.cfg.googleScope, sheetsBaseUrl: ctx.cfg.googleSheetsBaseUrl });
+  const startedAt = await ctx.step('started', async () => new Date().toISOString());
+
+  const prep = await ctx.step('prepare', async () => {
+    const v = await node('Validate Enrichment Run2', [{ body: { recordId: input.project.id, action: 'Run Enrichment' } }]);
+    if (!v.length) throw new PermanentError('the old validator stopped this request quietly');
+    const norm = await node('Normalize Enrichment Project2', [input.project], { 'Validate Enrichment Run2': v });
+    const sheetId = norm[0].sheetId as string;
+    const read = async (tab: string) => { try { return await sheets.tab(sheetId, tab); } catch { return []; } };
+    const direct = [{ values: await read('Final Direct') }], generic = [{ values: await read('Final Generic') }];
+    // Persona IDs from the engine's contacts (same columns the old flow found in the Contacts tab).
+    const ids = (await ctx.db.query(`SELECT email, data->>'persona_id' AS pid FROM lead_contacts WHERE list_id=$1 AND tier <> 'Cut' AND data->>'persona_id' IS NOT NULL`, [input.project.id])).rows;
+    const contacts = [{ values: [['Email', 'Persona ID'], ...ids.map((r) => [r.email, r.pid])] }];
+    const companies = [{ values: input.companyTab ? await read(input.companyTab) : [] }];
+    const src = await node('Build Exclusions2 Sources', [{}], { 'Get Enrichment Project2': [input.project] });
+    const col = await node('Build Exclusions2 Collect', [{}], { 'Build Exclusions2 Sources': src, 'Read Company Data for Scoped Enrichment2': companies });
+    const req = await node('Prepare DiscoGen Request2', col, { 'Normalize Enrichment Project2': norm, 'Read Contacts for Persona IDs2': contacts, 'Read Final Direct2': direct, 'Read Final Generic2': generic });
+    return { norm: norm[0], req: req[0] };
+  }, { timeoutMs: 10 * 60_000 });
+
+  const r = prep.req;
+  const endpoint = String(r.requestEndpoint ?? '') as 'process' | 'process-personas';
+  if (!['process', 'process-personas'].includes(endpoint)) throw new PermanentError(`Enrichment: unexpected DiscoGen endpoint "${endpoint}"`);
+  const entities = (r.request?.domains ?? r.request?.persona_ids ?? []).length;
+  if (ctx.dryRun) return { dryRun: true, plan: { endpoint, entities, variables: prep.norm.variables }, wouldSpendCredits: { discolike: `${entities} DiscoGen ${endpoint === 'process' ? 'companies' : 'people'}` }, message: `dry run: would research ${entities} ${endpoint === 'process' ? 'companies' : 'people'} with DiscoGen` };
+
+  const disco = createDiscoLikeClient({ apiKey: ctx.cfg.discoLikeApiKey, baseUrl: ctx.cfg.discoLikeBaseUrl });
+  const task = await ctx.step('submit', () => ctx.paid({
+    scope: 'record', provider: 'discolike', callKey: `discogen:${endpoint}:${createHash('sha256').update(JSON.stringify(r.request)).digest('hex').slice(0, 16)}`, units: entities,
+    run: async () => (await node('Capture Enrichment Task2', [await disco.discoGenSubmit(endpoint, r.request)]))[0].taskId as string,
+    dryRunResult: () => '',
+  }));
+  const status = await ctx.step('poll', async () => {
+    const answer = await disco.discoGenStatus(task);
+    let checked: Items;
+    try { checked = await runNode(R['Check Enrichment Status2'], [answer]); } catch (e) { throw new NeedsReviewError(`${String((e as Error).message)} (task ${task}; not resubmitted)`); }
+    if (checked[0]?.isComplete !== true) {
+      if (Date.parse(startedAt) + MAX_WAIT_MS < Date.now()) throw new NeedsReviewError(`DiscoGen task ${task} still running after 6 hours`);
+      throw new WaitError(`DiscoGen enrichment task ${task}: ${String(answer?.status ?? answer?.data?.status ?? 'running')}`, POLL_MS);
+    }
+    return checked[0];
+  }, { timeoutMs: 10 * 60_000 });
+
+  const built = await ctx.step('build', async () => (await node('Build Enriched Sheet Values2', [status], { 'Prepare DiscoGen Request2': [r] }))[0], { timeoutMs: 10 * 60_000 });
+
+  const ensured = await ctx.step('write', async () => {
+    const sheetId = built.sheetId as string;
+    // Same stale-data check as n8n: the tabs must still be what was read at the start.
+    const props = (await sheets.meta(sheetId)).sheets;
+    const meta = { sheets: await Promise.all(['Final Direct', 'Final Generic'].map(async (title) => {
+      const p = props.find((x) => x.properties.title === title);
+      if (!p) return { properties: { title: `missing:${title}` } };
+      const rows = (await sheets.tab(sheetId, title)).map((row) => row.slice(0, 30));
+      return { properties: p.properties, data: [{ rowData: rows.map((row) => ({ values: row.map((v) => ({ effectiveValue: { stringValue: v } })) })) }] };
+    })) };
+    const ens = (await node('Ensure Final Tabs Capacity2', [meta], { 'Build Enriched Sheet Values2': [built] }))[0];
+    await sheets.batchUpdate(sheetId, ens.requests ?? []);
+    for (const tab of ens.writeTabs as string[]) {
+      const values = (ens.tabValues[tab] as unknown[][]).map((row) => row.map((v) => (typeof v === 'number' ? v : String(v ?? ''))));
+      await sheets.clearTab(sheetId, tab);
+      for (let i = 0; i < values.length; i += 500) await sheets.writeRows(sheetId, tab, i + 1, values.slice(i, i + 500));
+    }
+    return ens;
+  }, { timeoutMs: 15 * 60_000 });
+
+  const fields = await ctx.step('airtable-fields', async () => {
+    const upd = await node('Prepare Enrichment Complete Update2', [{}], { 'Ensure Final Tabs Capacity2': [ensured], 'Mark Enrichment Running2': [{ fields: { 'Processing Started At': startedAt } }] }, { $execution: { id: `engine-job-${ctx.job.id}` } });
+    return toFieldIds(upd[0]?.body?.fields ?? {});
+  });
+  return { dryRun: false, enrichment: { endpoint, entities, matched: ensured.matchedResults, stillMissing: ensured.missing, wroteTabs: ensured.writeTabs, taskId: task }, airtableFields: fields, message: String(fields[BY_NAME['Last Workflow Message']] ?? 'Enrichment complete.') };
+};

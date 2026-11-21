@@ -20,7 +20,7 @@ const ID = {
     companyStatus: 'fldY1i1787UwZFOr6', companySummary: 'fld6BhZSLdGOkCJCZ', contactGood: 'fldkWL67N8ZaBIaDi', contactBad: 'flda4qjRC0sCeStBg',
     contactRate: 'fldbiciFuOmAzv38D', contactStatus: 'fldVH77A3Ozjh4t8k', contactSummary: 'fldnScb360OZ17VRt', vGood: 'fld8kUuSdLo5autI7',
     vRisky: 'fldXl4sV7ma4YAOv7', vBad: 'fld9Jgzxc9JqeFAus', finalDirect: 'fldQZJCpTofahmTkl', finalGeneric: 'fld0FHomkh3uyx0FD', leads: 'fld2G5D1yCPFGFiVF',
-    whichCampaign: 'fldepbn71awSjmZPV', listStage: 'fld8nrebRFL0O8kgj', qa: 'fldUB4WsLi5kq6rUy',
+    whichCampaign: 'fldepbn71awSjmZPV', listStage: 'fld8nrebRFL0O8kgj', qa: 'fldUB4WsLi5kq6rUy', variables: 'fldTYRjTrpVW27tmG',
 } as const;
 type Key = keyof typeof ID;
 
@@ -31,7 +31,10 @@ const STAGES: {action: string; label: string; help: string; ready: (r: AnyRecord
     {action: 'Refit Companies', label: 'Re-check companies', help: 'Free. Re-runs the fit check on every saved company.', ready: (r, g) => g.text(r, 'filters') ? null : 'No filters on this list'},
     {action: 'Find Contacts', label: '3. Find contacts', help: 'Not approved: a contact sample. Approved: every usable company left.', ready: () => null},
     {action: 'Verify and Finalize', label: '4. Verify (MillionVerifier)', help: 'Verifies the Contacts tab and writes the Final tabs.', ready: (r, g) => g.bool(r, 'includeDirect') || g.bool(r, 'includeGeneric') ? null : 'Tick Include Direct or Include Generic'},
-    {action: 'Build Campaign', label: '5. Build campaign (draft)', help: 'Builds the EmailBison draft(s) from the linked campaign: Generic + Direct, inboxes split by leads. Never launches.', ready: (r, g) => !(g.num(r, 'finalDirect') + g.num(r, 'finalGeneric')) ? 'Run Verify first' : g.option(r, 'qa') !== 'Passed' || !['Ready', 'Uploaded'].includes(g.option(r, 'listStage')) ? 'Mark QA Passed in Lead List Center (QA tab) first' : !g.text(r, 'whichCampaign') ? 'Link this list to a campaign in Campaign Center' : null},
+    {action: 'Prepare Enrichment Prompt', label: '5. Enrichment: prepare prompt (optional)', help: 'One AI call turns the plain-English request in Custom Variables Requested into a DiscoGen research prompt and saves it there for review. Nothing is researched yet.', ready: (r, g) => !g.text(r, 'variables') ? 'Write the request in Custom Variables Requested (Lead List Center) first' : /# ENRICHMENT PROMPT/.test(g.text(r, 'variables')) && /# OUTPUT/.test(g.text(r, 'variables')) ? 'Already prepared: review it, then press 6' : null},
+    {action: 'Run Enrichment', label: '6. Run enrichment (optional)', help: 'DiscoGen researches only the rows missing a requested value; fills empty cells only, adds a column per variable. Then run QA.', ready: (r, g) => !(g.num(r, 'finalDirect') + g.num(r, 'finalGeneric')) ? 'Run Verify first' : !/(output|return only|return just)/i.test(g.text(r, 'variables')) ? 'Prepare and review the prompt first (5)' : null},
+    {action: 'Run Automated QA', label: '7. Run automated QA', help: 'Free. Checks every final lead has what the linked campaign copy needs (Company, Email, First Name for direct, every {VARIABLE}), Verification Good, no duplicates; writes the QA Review tab. Passed moves the list to Ready.', ready: (r, g) => !(g.num(r, 'finalDirect') + g.num(r, 'finalGeneric')) ? 'Run Verify first' : null},
+    {action: 'Build Campaign', label: '8. Build campaign (draft)', help: 'Builds the EmailBison draft(s) from the linked campaign: Generic + Direct, inboxes split by leads. Never launches.', ready: (r, g) => !(g.num(r, 'finalDirect') + g.num(r, 'finalGeneric')) ? 'Run Verify first' : g.option(r, 'qa') !== 'Passed' || !['Ready', 'Uploaded'].includes(g.option(r, 'listStage')) ? 'Press 7. Run automated QA first (it must pass)' : !g.text(r, 'whichCampaign') ? 'Link this list to a campaign in Campaign Center' : null},
 ];
 const ACTIVE = ['Queued', 'Running', 'Waiting'];
 

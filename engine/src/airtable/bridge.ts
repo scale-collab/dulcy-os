@@ -99,6 +99,8 @@ export const ACTIONS: Record<string, string> = {
   'Find Contacts': 'leadlist.contacts',
   'Verify and Finalize': 'leadlist.verify',
   'Run Automated QA': 'leadlist.qa',
+  'Prepare Enrichment Prompt': 'leadlist.enrichprompt',
+  'Run Enrichment': 'leadlist.enrich',
   'Build Campaign': 'campaign.build',
 };
 
@@ -156,6 +158,16 @@ export async function buildInput(db: Db, at: AirtableClient, rec: AirtableRecord
     return x;
   };
   switch (kind) {
+    case 'leadlist.enrichprompt':
+    case 'leadlist.enrich': {
+      // The copied n8n enrichment code reads the list by field NAME (key fields never read).
+      const got = await at.get(LEAD_LISTS, rec.id, Object.keys(LIST_NAMES));
+      if (!got) throw new InputError(`record ${rec.id} was not found`);
+      const project = { id: got.id, fields: Object.fromEntries(Object.entries(got.fields).map(([k, v]) => [LIST_NAMES[k] ?? k, v])) as Record<string, unknown> };
+      const s = await db.query(`SELECT sheet_id, tab FROM lead_list_sheets WHERE list_id=$1 AND kind='companies'`, [rec.id]);
+      if (!text(project.fields['Lead List Link']) && s.rows[0]) project.fields['Lead List Link'] = `https://docs.google.com/spreadsheets/d/${s.rows[0].sheet_id}`;
+      return { project, companyTab: s.rows[0]?.tab ?? undefined };
+    }
     case 'leadlist.qa': {
       // The copied n8n QA code reads the list and its linked campaigns by field NAME.
       const got = await at.get(LEAD_LISTS, rec.id, Object.keys(LIST_NAMES));
@@ -285,6 +297,8 @@ export function resultFields(kind: string, res: any): Record<string, unknown> {
   switch (kind) {
     case 'leadlist.filters':
     case 'leadlist.qa':
+    case 'leadlist.enrichprompt':
+    case 'leadlist.enrich':
       return { ...(res.airtableFields ?? {}) };
     case 'leadlist.sample': {
       const s = res.sample ?? {};

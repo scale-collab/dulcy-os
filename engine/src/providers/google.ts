@@ -28,6 +28,8 @@ export interface SheetsClient {
   writeRows(sheetId: string, tab: string, startRow: number, rows: (string | number)[][]): Promise<void>;
   /** Tab properties (sheetId, title, grid size) of a spreadsheet. */
   meta(sheetId: string): Promise<{ sheets: Array<{ properties: { sheetId: number; title: string; gridProperties?: { rowCount?: number; columnCount?: number } } }> }>;
+  /** Sheet structure requests (e.g. grid resize) in one batchUpdate. */
+  batchUpdate(sheetId: string, requests: unknown[]): Promise<void>;
   /** Write several A1 ranges at once (values:batchUpdate, RAW). */
   writeRanges(sheetId: string, data: Array<{ range: string; values: unknown[][] }>): Promise<void>;
 }
@@ -167,6 +169,10 @@ export function createSheetsClient(o: GoogleOptions): SheetsClient {
     async meta(sheetId) {
       const r = await get(`/v4/spreadsheets/${encodeURIComponent(sheetId)}?fields=sheets.properties`);
       return { sheets: ((r.sheets as any[] | undefined) ?? []).map((x) => ({ properties: x.properties })) };
+    },
+    async batchUpdate(sheetId, requests) {
+      if (!requests.length) return;
+      await get(`/v4/spreadsheets/${encodeURIComponent(sheetId)}:batchUpdate`, 'POST', { requests });
     },
     async writeRanges(sheetId, data) {
       if (!data.length) return;
