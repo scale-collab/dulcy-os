@@ -112,3 +112,13 @@ test('Run Enrichment guards: no prepared prompt, verification not completed, cli
   assert.equal(d.job.result.dryRun, true);
   assert.equal(dg.submits, 0);
 });
+
+test('Run Enrichment: one variable answered as bare values ("Austin") is read, not rejected; error strings stay blank', { skip }, async () => {
+  dg.results = { 'acme.com': 'Austin', 'beta.com': 'Error: no data' } as any;
+  const j = await run('leadlist.enrich', { project: project() });
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  const d = google.written['sheet-en']['Final Direct'];
+  const ci = d[0].indexOf('City');
+  assert.equal(d.find((r) => r[0] === 'ann@acme.com')![ci], 'Austin');
+  assert.equal(d.find((r) => r[0] === 'bo@beta.com')![ci] ?? '', '');
+});
