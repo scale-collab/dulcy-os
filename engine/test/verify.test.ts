@@ -365,6 +365,27 @@ test('verify writeFinalTabs: Final Direct / Final Generic tabs are written in th
   assert.deepEqual(google.written[SHEET]['Final Generic'].slice(1).map((r) => r[0]), ['info@acme.com']);
 });
 
+test('verify writeFinalTabs keeps enrichment columns: values carried over by email, or by company domain', { skip }, async () => {
+  const HEAD = ['Email', 'First Name', 'Last Name', 'Title', 'Company', 'Domain', 'LinkedIn URL', 'Country', 'State', 'Email Type', 'Verification Status', 'Verification Provider', 'Verification Path', 'Original Email', 'Headquarters City'];
+  google.tabs = {
+    Contacts: [['Email', 'First Name', 'Last Name', 'Title', 'Company', 'Domain'], ['ann@acme.com', 'Ann', 'Lee', 'Owner', 'Acme', 'acme.com']],
+    'Expanded Companies': [['Name', 'Domain', 'Digital Footprint', 'Public Emails'], ['Acme', 'acme.com', '50', '["info@acme.com"]']],
+    'Final Direct': [HEAD, ['ann@acme.com', 'Ann', 'Lee', 'Owner', 'Acme', 'acme.com', '', 'US', '', 'Direct', 'Good', 'MillionVerifier', 'MillionVerifier valid', '', 'Austin']],
+    'Final Generic': [HEAD],
+  };
+  const SHEET = '1QYLOeUxwDXunQm_KMEYKB_7jW7l47ZQJ8wVVtCZBUd8';
+  google.written = {}; google.grid = {};
+  const q = await enqueueVerify({ source: { sheetId: SHEET }, writeFinalTabs: true });
+  const j = await runUntilSettled(cfg(), q.job.id);
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  const direct = google.written[SHEET]['Final Direct'];
+  const ci = direct[0].indexOf('Headquarters City');
+  assert.ok(ci > 0, 'enrichment column kept');
+  assert.equal(direct.find((r) => r[0] === 'ann@acme.com')![ci], 'Austin', 'carried by email');
+  const generic = google.written[SHEET]['Final Generic'];
+  assert.equal(generic.find((r) => r[0] === 'info@acme.com')![generic[0].indexOf('Headquarters City')], 'Austin', 'carried by company domain');
+});
+
 test('verify: needs rows or a sheet', { skip }, async () => {
   const q = await enqueueVerify({});
   const j = await runUntilSettled(cfg(), q.job.id);
