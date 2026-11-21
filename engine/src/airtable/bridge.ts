@@ -14,6 +14,7 @@ import { enqueue } from '../queue.js';
 import { STAGES } from '../stages/index.js';
 import { BuildInputError, CAMPAIGNS, CF, queueBuild } from './campaignBuild.js';
 import { LEAD_LIST_FIELDS as LIST_NAMES } from '../leadlist/legacy/fieldNames.js';
+import { CAMPAIGN_FIELDS } from '../campaign/campaignFields.js';
 
 // Generate filters sends the AI only the client fields that help pick targeting and keywords
 // (Alex, 2026-11-20): who the client is and what it offers. Never billing, KPIs, logins or
@@ -97,6 +98,7 @@ export const ACTIONS: Record<string, string> = {
   'Refit Companies': 'leadlist.refit',
   'Find Contacts': 'leadlist.contacts',
   'Verify and Finalize': 'leadlist.verify',
+  'Run Automated QA': 'leadlist.qa',
   'Build Campaign': 'campaign.build',
 };
 
@@ -154,6 +156,25 @@ export async function buildInput(db: Db, at: AirtableClient, rec: AirtableRecord
     return x;
   };
   switch (kind) {
+    case 'leadlist.qa': {
+      // The copied n8n QA code reads the list and its linked campaigns by field NAME.
+      const got = await at.get(LEAD_LISTS, rec.id, Object.keys(LIST_NAMES));
+      if (!got) throw new InputError(`record ${rec.id} was not found`);
+      const project = { id: got.id, fields: Object.fromEntries(Object.entries(got.fields).map(([k, v]) => [LIST_NAMES[k] ?? k, v])) as Record<string, unknown> };
+      if (!text(project.fields['Lead List Link'])) {
+        const s = await db.query(`SELECT sheet_id FROM lead_list_sheets WHERE list_id=$1 AND kind='companies'`, [rec.id]);
+        if (!s.rows[0]) throw new InputError('this list has no sheet yet: run Verify and Finalize first');
+        project.fields['Lead List Link'] = `https://docs.google.com/spreadsheets/d/${s.rows[0].sheet_id}`;
+      }
+      const campaignNames = Object.fromEntries(Object.entries(CAMPAIGN_FIELDS).map(([name, id]) => [id, name]));
+      const ids = [...new Set(((project.fields['Which Campaign?'] as string[] | undefined) ?? []).filter((x) => /^rec[A-Za-z0-9]{14}$/.test(String(x))))];
+      const records = [];
+      for (const id of ids) {
+        const c = await at.get(CAMPAIGNS, id, Object.values(CAMPAIGN_FIELDS));
+        if (c) records.push({ id: c.id, fields: Object.fromEntries(Object.entries(c.fields).map(([k, v]) => [campaignNames[k] ?? k, v])) });
+      }
+      return { project, campaigns: { records } };
+    }
     case 'leadlist.filters': {
       // The copied n8n code reads the record and the client by field NAME; fetch only the
       // allowed fields (never the key/password fields) and rename them.
@@ -263,6 +284,7 @@ export function resultFields(kind: string, res: any): Record<string, unknown> {
   if (!res || res.dryRun) return {};
   switch (kind) {
     case 'leadlist.filters':
+    case 'leadlist.qa':
       return { ...(res.airtableFields ?? {}) };
     case 'leadlist.sample': {
       const s = res.sample ?? {};

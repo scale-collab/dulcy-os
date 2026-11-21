@@ -89,12 +89,20 @@ export async function startFakeGoogle(): Promise<FakeGoogle> {
       JSON.parse(body).values.forEach((row: any[], i: number) => { tabRows[Number(put[3]) - 1 + i] = row.map(String); });
       return json(200, {});
     }
+    const bu = u.pathname.match(/^\/v4\/spreadsheets\/([^/]+)\/values:batchUpdate$/);
+    if (bu && req.method === 'POST') {
+      state.writes++;
+      for (const d of JSON.parse(body).data ?? []) ((state as any).rangeWrites ??= []).push(d);
+      return json(200, {});
+    }
     const values = decodeURIComponent(u.pathname).match(/\/values\/(.+)$/);
     if (values) {
       const t = tabRange(values[1]);
-      if (!t || !state.tabs[t.tab]) { res.writeHead(400); return res.end('{"error":"Unable to parse range"}'); }
+      const sid = decodeURIComponent(u.pathname).match(/^\/v4\/spreadsheets\/([^/]+)\//)?.[1] ?? '';
+      const data = t ? (state.tabs[t.tab] ?? state.written[sid]?.[t.tab]) : undefined;
+      if (!t || !data) { res.writeHead(400); return res.end('{"error":"Unable to parse range"}'); }
       res.writeHead(200, { 'content-type': 'application/json' });
-      return res.end(JSON.stringify({ values: t.range === 'A:ZZ' ? state.tabs[t.tab] : [state.tabs[t.tab][0]] }));
+      return res.end(JSON.stringify({ values: t.range === 'A:ZZ' ? data : [data[0]] }));
     }
     if (u.pathname.endsWith('/values:batchGet')) {
       const out = u.searchParams.getAll('ranges').map((r) => {

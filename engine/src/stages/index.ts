@@ -8,6 +8,7 @@ import { companyExpandStage } from './companyExpand.js';
 import { companyRefitStage } from './companyRefit.js';
 import { contactsFindStage } from './contactsFind.js';
 import { filterGenerateStage } from './filterGenerate.js';
+import { automatedQaStage } from './automatedQa.js';
 
 /** A stage = one Airtable action. It returns a small result for the Airtable record. */
 export type Stage = (ctx: JobContext) => Promise<Record<string, unknown>>;
@@ -78,6 +79,12 @@ export const STAGES: Record<string, StageDef> = {
     deadlineMs: 30 * 60_000,
     maxAttempts: 3,
     description: 'Re-check every saved company of a list with its profile (free; optionally rebuild the profile with one AI call); the sheet is rewritten in place.',
+  },
+  'leadlist.qa': {
+    run: automatedQaStage,
+    deadlineMs: 20 * 60_000,
+    maxAttempts: 3,
+    description: 'Run Automated QA: the old n8n 06 QA code run unchanged on Final Direct / Final Generic against the linked campaign copy; QA Review tab; QA Status Passed/Failed (Ready on pass). No paid calls.',
   },
   'leadlist.filters': {
     run: filterGenerateStage,

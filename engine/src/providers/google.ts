@@ -26,6 +26,10 @@ export interface SheetsClient {
   clearTab(sheetId: string, tab: string): Promise<void>;
   /** Write rows starting at a fixed row (1-based). Same call twice = same result (no duplicates). */
   writeRows(sheetId: string, tab: string, startRow: number, rows: (string | number)[][]): Promise<void>;
+  /** Tab properties (sheetId, title, grid size) of a spreadsheet. */
+  meta(sheetId: string): Promise<{ sheets: Array<{ properties: { sheetId: number; title: string; gridProperties?: { rowCount?: number; columnCount?: number } } }> }>;
+  /** Write several A1 ranges at once (values:batchUpdate, RAW). */
+  writeRanges(sheetId: string, data: Array<{ range: string; values: unknown[][] }>): Promise<void>;
 }
 
 export interface GoogleOptions {
@@ -159,6 +163,14 @@ export function createSheetsClient(o: GoogleOptions): SheetsClient {
       }
       const range = `${quoteTab(tab)}!A${startRow}`;
       await get(`/v4/spreadsheets/${encodeURIComponent(sheetId)}/values/${encodeURIComponent(range)}?valueInputOption=RAW`, 'PUT', { range, majorDimension: 'ROWS', values: rows });
+    },
+    async meta(sheetId) {
+      const r = await get(`/v4/spreadsheets/${encodeURIComponent(sheetId)}?fields=sheets.properties`);
+      return { sheets: ((r.sheets as any[] | undefined) ?? []).map((x) => ({ properties: x.properties })) };
+    },
+    async writeRanges(sheetId, data) {
+      if (!data.length) return;
+      await get(`/v4/spreadsheets/${encodeURIComponent(sheetId)}/values:batchUpdate`, 'POST', { valueInputOption: 'RAW', data });
     },
     async columns(sheetId, tab, indexes) {
       if (indexes.length === 0) return [];

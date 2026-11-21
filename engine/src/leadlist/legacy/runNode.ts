@@ -5,7 +5,7 @@ import vm from 'node:vm';
 
 export type Items = Record<string, any>[];
 
-export async function runNode(code: string, input: Items, earlier: Record<string, Items> = {}): Promise<Items> {
+export async function runNode(code: string, input: Items, earlier: Record<string, Items> = {}, globals: Record<string, unknown> = {}): Promise<Items> {
   const wrap = (list: Items) => ({
     first: () => ({ json: list[0] }), last: () => ({ json: list[list.length - 1] }),
     all: () => list.map((json) => ({ json })), item: { json: list[0] },
@@ -19,6 +19,8 @@ export async function runNode(code: string, input: Items, earlier: Record<string
     },
     console: { log: () => undefined, warn: () => undefined, error: () => undefined },
     URL, URLSearchParams, TextEncoder, TextDecoder, structuredClone,
+    // Plain data only (e.g. $execution: { id }), never functions with outside access.
+    ...JSON.parse(JSON.stringify(globals)),
   };
   const context = vm.createContext(sandbox, { codeGeneration: { strings: false, wasm: false } });
   const out = await vm.runInContext(`(async () => {\n${code}\n})()`, context, { timeout: 30_000 });
