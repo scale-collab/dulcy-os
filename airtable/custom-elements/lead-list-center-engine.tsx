@@ -21,6 +21,7 @@ const ID = {
     contactRate: 'fldbiciFuOmAzv38D', contactStatus: 'fldVH77A3Ozjh4t8k', contactSummary: 'fldnScb360OZ17VRt', vGood: 'fld8kUuSdLo5autI7',
     vRisky: 'fldXl4sV7ma4YAOv7', vBad: 'fld9Jgzxc9JqeFAus', finalDirect: 'fldQZJCpTofahmTkl', finalGeneric: 'fld0FHomkh3uyx0FD', leads: 'fld2G5D1yCPFGFiVF',
     whichCampaign: 'fldepbn71awSjmZPV', listStage: 'fld8nrebRFL0O8kgj', qa: 'fldUB4WsLi5kq6rUy', variables: 'fldTYRjTrpVW27tmG',
+    deepReview: 'fldsYFrdNF2VBS6SQ', deepPrompt: 'fldVCKrDuXfEhxjZm', deepResults: 'fld0KlQqxFEG6wgfU',
 } as const;
 type Key = keyof typeof ID;
 
@@ -29,6 +30,7 @@ const STAGES: {action: string; label: string; help: string; ready: (r: AnyRecord
     {action: 'Run Company Sample', label: '1. Company sample (100)', help: 'Free count, then up to 100 companies, fit check in code.', ready: (r, g) => g.text(r, 'filters') ? null : 'Press 0. Generate filters first'},
     {action: 'Expand Companies', label: '2. Expand companies', help: 'Grows to the Expansion Target in batches of 2,500.', ready: (r, g) => !g.bool(r, 'sampleApproved') ? 'Approve the company sample first' : !g.num(r, 'target') ? 'Set an Expansion Target' : null},
     {action: 'Refit Companies', label: 'Re-check companies', help: 'Free. Re-runs the fit check on every saved company.', ready: (r, g) => g.text(r, 'filters') ? null : 'No filters on this list'},
+    {action: 'Deep Review Companies', label: '2b. Deep review companies (DiscoGen, optional)', help: 'Paid. DiscoGen researches each usable company against your prompt (web search). Fail cuts it; each company is reviewed once. First 100 until the company sample is approved, then the rest. Run before Find Contacts.', ready: (r, g) => !g.bool(r, 'deepReview') ? 'Tick "Use DiscoGen Deep Review" (Lead List Center) first' : !g.text(r, 'deepPrompt') ? 'Write the DiscoGen Deep Review Prompt first' : !g.num(r, 'companyGood') ? 'Run the company sample first' : null},
     {action: 'Find Contacts', label: '3. Find contacts', help: 'Not approved: a contact sample. Approved: every usable company left.', ready: () => null},
     {action: 'Verify and Finalize', label: '4. Verify (MillionVerifier)', help: 'Verifies the Contacts tab and writes the Final tabs.', ready: (r, g) => g.bool(r, 'includeDirect') || g.bool(r, 'includeGeneric') ? null : 'Tick Include Direct or Include Generic'},
     {action: 'Prepare Enrichment Prompt', label: '5. Enrichment: prepare prompt (optional)', help: 'One AI call turns the plain-English request in Custom Variables Requested into a DiscoGen research prompt and saves it there for review. Nothing is researched yet.', ready: (r, g) => !g.text(r, 'variables') ? 'Write the request in Custom Variables Requested (Lead List Center) first' : /# ENRICHMENT PROMPT/.test(g.text(r, 'variables')) && /# OUTPUT/.test(g.text(r, 'variables')) ? 'Already prepared: review it, then press 6' : null},
@@ -134,6 +136,7 @@ function EnginePanel(): React.ReactElement {
                 <Stat label="Usable contacts">{n(sel, 'contactGood')}</Stat><Stat label="Cut contacts">{n(sel, 'contactBad')}</Stat><Stat label={`Contact rate · ${g.option(sel, 'contactStatus') || '–'}`}>{pct(sel, 'contactRate')}</Stat><Stat label="Leads (final)">{n(sel, 'leads')}</Stat>
                 <Stat label="Verified good">{n(sel, 'vGood')}</Stat><Stat label="Risky">{n(sel, 'vRisky')}</Stat><Stat label="Bad">{n(sel, 'vBad')}</Stat><Stat label="Final direct / generic">{n(sel, 'finalDirect')} / {n(sel, 'finalGeneric')}</Stat>
             </section>
+            {g.text(sel, 'deepResults') && <a className="block rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 font-bold text-indigo-800" href={g.text(sel, 'deepResults')} target="_blank" rel="noreferrer">Open the DiscoGen deep review results ↗</a>}
             {g.text(sel, 'sheet') && <a className="block rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 font-bold text-emerald-800" href={g.text(sel, 'sheet')} target="_blank" rel="noreferrer">Open the list's Google Sheet ↗</a>}
             {[['companySummary', 'Company review summary'], ['contactSummary', 'Contact review summary'], ['error', 'Last error']].map(([k, label]) => g.text(sel, k as Key) ? <details key={k} className="rounded-xl border border-slate-200 bg-white"><summary className="cursor-pointer px-4 py-3 text-sm font-bold">{label}</summary><pre className="whitespace-pre-wrap border-t border-slate-100 px-4 py-3 text-xs text-slate-700">{g.text(sel, k as Key)}</pre></details> : null)}
         </div>}</main>

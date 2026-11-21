@@ -166,3 +166,14 @@ CREATE TABLE IF NOT EXISTS lead_lm_results (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (list_id, key)
 );
+
+-- DiscoGen deep review (optional, paid): one verdict per company, so a company is never reviewed twice.
+CREATE TABLE IF NOT EXISTS lead_deep_reviews (
+  list_id      TEXT NOT NULL,
+  domain       TEXT NOT NULL,
+  verdict      TEXT NOT NULL,             -- Pass | Needs review | Fail (n8n's Deep Review Verdict)
+  row          JSONB NOT NULL,            -- n8n's reviewed row (AI Company Review tab)
+  task_id      TEXT,
+  reviewed_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (list_id, domain)
+);

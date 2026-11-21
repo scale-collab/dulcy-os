@@ -8,6 +8,7 @@ import { companyExpandStage } from './companyExpand.js';
 import { companyRefitStage } from './companyRefit.js';
 import { contactsFindStage } from './contactsFind.js';
 import { filterGenerateStage } from './filterGenerate.js';
+import { deepReviewStage } from './deepReview.js';
 import { automatedQaStage } from './automatedQa.js';
 import { enrichPromptStage, enrichRunStage } from './enrichment.js';
 
@@ -92,6 +93,12 @@ export const STAGES: Record<string, StageDef> = {
     deadlineMs: 8 * 60 * 60_000,
     maxAttempts: 5,
     description: 'Run Enrichment: the old n8n 05 (live copy) run unchanged: one DiscoGen task for the rows missing a requested value, empty cells filled only, Final tabs rewritten after a stale-data check.',
+  },
+  'leadlist.deepreview': {
+    run: deepReviewStage,
+    deadlineMs: 8 * 60 * 60_000,
+    maxAttempts: 5,
+    description: 'Deep review companies (DiscoGen, optional, paid): the old n8n company review run unchanged on the usable companies, for lists with Use DiscoGen Deep Review ticked. Fail cuts the company; each company is reviewed once; AI Company Review tab.',
   },
   'leadlist.qa': {
     run: automatedQaStage,
