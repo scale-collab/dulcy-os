@@ -189,3 +189,4 @@ CREATE TABLE IF NOT EXISTS lead_contact_reviews (
   reviewed_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (list_id, email)
 );
+ALTER TABLE lead_contact_reviews ADD COLUMN IF NOT EXISTS prev_tier TEXT;  -- the code-fit tier before the review (for an undo)
