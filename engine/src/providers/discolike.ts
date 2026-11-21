@@ -63,6 +63,11 @@ export function createDiscoLikeClient(o: DiscoLikeOptions) {
       const r = await get(`/v1/discogen/${endpoint}`, true, body);
       return r.body ?? {};
     },
+    /** Paid: an ICP validation task (n8n "Validate Companies Against ICP"; web search when deep review is on). Raw answer. */
+    async validateIcpSubmit(body: Record<string, unknown>): Promise<any> {
+      const r = await get('/v1/validate/icp', true, body);
+      return r.body ?? {};
+    },
     /** Free: status (and, when completed, results) of a DiscoGen / ContraGen task. */
     async discoGenStatus(taskId: string): Promise<any> {
       const r = await get(`/v1/discogen/status/${encodeURIComponent(taskId)}`, false);

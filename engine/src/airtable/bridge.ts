@@ -15,6 +15,8 @@ import { STAGES } from '../stages/index.js';
 import { BuildInputError, CAMPAIGNS, CF, queueBuild } from './campaignBuild.js';
 import { LEAD_LIST_FIELDS as LIST_NAMES } from '../leadlist/legacy/fieldNames.js';
 import { CAMPAIGN_FIELDS } from '../campaign/campaignFields.js';
+/** Campaigns: "Campaign Thesis" (rich text), read by n8n's company review for its campaign context. */
+const CAMPAIGN_THESIS = 'fldlixHfhzrd7nuSc';
 
 // Generate filters sends the AI only the client fields that help pick targeting and keywords
 // (Alex, 2026-11-20): who the client is and what it offers. Never billing, KPIs, logins or
@@ -99,6 +101,7 @@ export const ACTIONS: Record<string, string> = {
   'Find Contacts': 'leadlist.contacts',
   'Verify and Finalize': 'leadlist.verify',
   'Run Automated QA': 'leadlist.qa',
+  'Deep Review Companies': 'leadlist.deepreview',
   'Prepare Enrichment Prompt': 'leadlist.enrichprompt',
   'Run Enrichment': 'leadlist.enrich',
   'Build Campaign': 'campaign.build',
@@ -167,6 +170,17 @@ export async function buildInput(db: Db, at: AirtableClient, rec: AirtableRecord
       const s = await db.query(`SELECT sheet_id, tab FROM lead_list_sheets WHERE list_id=$1 AND kind='companies'`, [rec.id]);
       if (!text(project.fields['Lead List Link']) && s.rows[0]) project.fields['Lead List Link'] = `https://docs.google.com/spreadsheets/d/${s.rows[0].sheet_id}`;
       return { project, companyTab: s.rows[0]?.tab ?? undefined };
+    }
+    case 'leadlist.deepreview': {
+      // The copied n8n review code reads the list by field NAME (key fields never read). It also
+      // reads "Client Context" (the allowed client fields only) and the campaign's thesis.
+      const got = await at.get(LEAD_LISTS, rec.id, Object.keys(LIST_NAMES));
+      if (!got) throw new InputError(`record ${rec.id} was not found`);
+      const project = { id: got.id, fields: Object.fromEntries(Object.entries(got.fields).map(([k, v]) => [LIST_NAMES[k] ?? k, v])) as Record<string, unknown> };
+      if (who.clientContext) project.fields['Client Context'] = who.clientContext;
+      const campaignId = ((project.fields['Which Campaign?'] as string[] | undefined) ?? []).find((x) => /^rec[A-Za-z0-9]{14}$/.test(String(x)));
+      const c = campaignId ? await at.get(CAMPAIGNS, campaignId, [CAMPAIGN_THESIS]) : null;
+      return { project, ...(c ? { campaign: { id: c.id, fields: { 'Campaign Thesis': text(c.fields[CAMPAIGN_THESIS]) } } } : {}) };
     }
     case 'leadlist.qa': {
       // The copied n8n QA code reads the list and its linked campaigns by field NAME.
@@ -297,6 +311,7 @@ export function resultFields(kind: string, res: any): Record<string, unknown> {
   switch (kind) {
     case 'leadlist.filters':
     case 'leadlist.qa':
+    case 'leadlist.deepreview':
     case 'leadlist.enrichprompt':
     case 'leadlist.enrich':
       return { ...(res.airtableFields ?? {}) };
