@@ -21,6 +21,9 @@ export interface Config {
   capPerJob: number;
   /** Max provider units per day, per provider. */
   capPerDay: number;
+  /** Providers with no cap at all (Alex 2026-11-22: company and contact searches run to the
+   *  requested size; the Expansion Target is the limit). Default: discolike. */
+  capFreeProviders: string[];
   /** A step running longer than this is treated as stuck. */
   stepTimeoutMs: number;
   /** How long a worker holds a job before it must renew. */
@@ -86,6 +89,7 @@ export function loadConfig(env = process.env): Config {
     slackWebhookUrl: env.SLACK_WEBHOOK_URL || undefined,
     capPerJob: num('CAP_PER_JOB', 100_000, env),
     capPerDay: num('CAP_PER_DAY', 100_000, env),
+    capFreeProviders: (env.CAP_FREE_PROVIDERS ?? 'discolike').split(',').map((x) => x.trim().toLowerCase()).filter(Boolean),
     stepTimeoutMs: num('STEP_TIMEOUT_MS', 10 * 60_000, env),
     leaseMs: num('LEASE_MS', 60_000, env),
     maxRequestAgeMs: num('MAX_REQUEST_AGE_MS', 5 * 60_000, env),

@@ -157,7 +157,7 @@ test('guards: own person countries replace the default exclusion; bad filter ref
   const q = await enqueue(db, { kind: 'leadlist.contacts', recordId: REC, dryRun: true, input: {}, maxAttempts: 1, deadlineMs: 60_000 });
   await runOnce(db, cfg()); const d = await getJob(db, q.job.id);
   assert.equal(d!.job.result.dryRun, true); assert.equal(disco.calls, calls);
-  const capped = await run({}, cfg({ capPerJob: 3 }));
+  const capped = await run({}, cfg({ capPerJob: 3, capFreeProviders: [] })); // a capped provider
   assert.equal(capped.job.status, 'needs_review'); assert.match(capped.job.error, /credit cap/);
 });
 

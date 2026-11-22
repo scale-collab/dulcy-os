@@ -151,11 +151,18 @@ test('guards: not approved, no sample, client exclusions are never pulled, dry-r
   assert.equal(got.rowCount, 0);
 });
 
-test('credit cap stops a batch before it is paid', { skip }, async () => {
+test('credit cap stops a batch before it is paid (only for a capped provider)', { skip }, async () => {
   await sample();
-  const j = await expand({}, cfg({ capPerJob: 30 }));
+  const j = await expand({}, cfg({ capPerJob: 30, capFreeProviders: [] }));
   assert.equal(j.job.status, 'needs_review');
   assert.match(j.job.error, /credit cap/);
+});
+
+test('DiscoLike has no cap by default (Alex 2026-11-22): the Expansion Target is the limit', { skip }, async () => {
+  await sample();
+  const j = await expand({}, cfg({ capPerJob: 30, capPerDay: 30 }));
+  assert.notEqual(j.job.status, 'needs_review', j.job.error ?? '');
+  assert.doesNotMatch(String(j.job.error ?? ''), /credit cap/);
 });
 
 test('scale: 12,000 companies in 2,500 batches to a 10,000 usable target, fast, no duplicates, small sheet writes', { skip }, async () => {
