@@ -144,4 +144,14 @@ function EnginePanel(): React.ReactElement {
     </div>;
 }
 
-initializeBlock({interface: () => <EnginePanel/>});
+// Shows the real error on the page (Airtable otherwise says only "Something went wrong").
+class EngineErrorBoundary extends React.Component<{children: React.ReactNode}, {error: Error | null}> {
+    state = {error: null as Error | null};
+    static getDerivedStateFromError(error: Error) { return {error}; }
+    render() {
+        if (!this.state.error) return this.props.children;
+        return <div className="p-8"><div className="mx-auto max-w-3xl rounded-2xl border border-red-200 bg-white p-6"><div className="text-sm font-bold uppercase tracking-widest text-red-600">Lead List Center (Engine) error</div><div className="mt-3 rounded-xl bg-red-50 p-4 font-mono text-sm text-red-800 whitespace-pre-wrap">{String(this.state.error?.message ?? this.state.error)}{'\n'}{String(this.state.error?.stack ?? '').split('\n').slice(0, 6).join('\n')}</div><button className="mt-4 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white" onClick={() => this.setState({error: null})}>Try again</button></div></div>;
+    }
+}
+
+initializeBlock({interface: () => <EngineErrorBoundary><EnginePanel/></EngineErrorBoundary>});

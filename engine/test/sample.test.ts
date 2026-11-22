@@ -149,7 +149,7 @@ test('lookalike-only plan: no free count, the sample still runs', { skip }, asyn
 });
 
 test('credit cap: a sample over the per-job cap stops before the search', { skip }, async () => {
-  const j = await settle(cfg({ capPerJob: 50 }), (await queue()).job.id);
+  const j = await settle(cfg({ capPerJob: 50, capFreeProviders: [] }), (await queue()).job.id); // a capped provider
   assert.equal(j.job.status, 'needs_review');
   assert.match(j.job.error, /credit cap/);
   assert.equal(fake.discoverCalls, 0);

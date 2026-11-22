@@ -144,6 +144,7 @@ export class JobContext {
 
   private async checkCaps(provider: string, units: number): Promise<void> {
     if (units <= 0) return;
+    if ((this.cfg.capFreeProviders ?? []).includes(provider.toLowerCase())) return; // no cap (the list size is the limit)
     const job = await this.db.query(
       `SELECT COALESCE(SUM(units),0)::float AS used FROM receipts WHERE job_id=$1 AND provider=$2 AND status IN ('pending','done','dry_run')`,
       [this.job.id, provider],
