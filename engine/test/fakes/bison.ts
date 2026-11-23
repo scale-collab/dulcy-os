@@ -4,7 +4,7 @@ import http from 'node:http';
 export interface FakeBison {
   url: string;
   key: string;
-  campaigns: { id: number; name: string; leads: Set<string>; senders: string[]; steps: any[] }[];
+  campaigns: { id: number; name: string; leads: Set<string>; senders: string[]; steps: any[]; status?: string; team?: number }[];
   leadLists: { id: number; name: string; emails: string[]; status: string; checks: number; failRows: number; skipRows?: number }[];
   customVariables: Set<string>;
   calls: string[];
@@ -27,6 +27,12 @@ export interface FakeBison {
   workspaceSenders: string[];
   /** Accept pause calls but don't actually pause (to test the after-check). */
   pauseIgnored: boolean;
+  /** Resume (= launch for a draft): accepted but the status stays for this many status reads, then "active". */
+  resumeDelayReads: number;
+  /** Accept resume calls but never change the status. */
+  resumeIgnored: boolean;
+  /** Resume takes effect, then the answer is a 500 (outcome unknown to the caller). */
+  resumeThen500: boolean;
   /** The workspace the key currently points at (EmailBison keeps this per key). */
   currentTeam: number;
   /** Simulate n8n: after every call, another tool switches the key to workspace 9. */
@@ -43,7 +49,7 @@ export async function startFakeBison(): Promise<FakeBison> {
   const s: FakeBison = {
     url: '', key: 'bison-key', campaigns: [], leadLists: [], customVariables: new Set(['domain']), calls: [],
     createThen500: false, uploadThen500: false, processAfterChecks: 0, failRowsOnImport: 0, skipRowsOnImport: 0, underReportOnImport: 0, resetLimitsOnSenderAttach: false,
-    senderStatus: () => 'connected', senderEmail: (id) => `sender${id}@dulcy-mail.com`, workspaceSenders: ['11', '12', '13'], pauseIgnored: false, currentTeam: 2, otherToolSwitches: false, switches: 0, inSequenceElsewhere: new Set(), forcedParallel: false, close: () => undefined,
+    senderStatus: () => 'connected', senderEmail: (id) => `sender${id}@dulcy-mail.com`, workspaceSenders: ['11', '12', '13'], pauseIgnored: false, resumeDelayReads: 0, resumeIgnored: false, resumeThen500: false, currentTeam: 2, otherToolSwitches: false, switches: 0, inSequenceElsewhere: new Set(), forcedParallel: false, close: () => undefined,
   };
   const json = (res: http.ServerResponse, code: number, body: unknown) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(body)); };
   const page = (list: unknown[], u: URL) => ({ data: list, meta: { current_page: Number(u.searchParams.get('page') ?? 1), last_page: 1, total: list.length } });
@@ -63,6 +69,12 @@ export async function startFakeBison(): Promise<FakeBison> {
     if (cm) { const c: any = s.campaigns.find((y) => y.id === Number(cm[1])); if (c && (c.team ?? 2) !== team) return json(res, 403, { data: { success: false, message: 'This action is unauthorized. Consider using api-user keys or switch to the workspace this record is on.' } }); }
     let x;
     if (req.method === 'GET' && u.pathname === '/api/campaigns') return json(res, 200, page(s.campaigns.filter((c: any) => (c.team ?? 2) === team).map((c: any) => ({ id: c.id, name: c.name, status: c.status ?? 'draft', bounced: c.bounced ?? 0, total_leads_contacted: c.contacted ?? 0, completion_percentage: c.progress ?? 0 })), u));
+    if ((x = m(/^\/api\/campaigns\/(\d+)\/resume$/)) && req.method === 'PATCH') {
+      const c: any = s.campaigns.find((y) => y.id === Number(x![1]));
+      if (c && !s.resumeIgnored) { if (s.resumeDelayReads > 0) c.resumeIn = s.resumeDelayReads; else c.status = 'active'; }
+      if (s.resumeThen500) { s.resumeThen500 = false; return json(res, 500, { message: 'Server Error' }); }
+      return json(res, 200, { data: { success: true } });
+    }
     if ((x = m(/^\/api\/campaigns\/(\d+)\/pause$/)) && req.method === 'PATCH') { const c: any = s.campaigns.find((y) => y.id === Number(x![1])); if (c && !s.pauseIgnored) c.status = 'paused'; return json(res, 200, { data: { success: true } }); }
     if (req.method === 'POST' && u.pathname === '/api/campaigns') {
       const c = { id: 500 + s.campaigns.length, name: body().name, leads: new Set<string>(), senders: [] as string[], steps: [] as any[], team };
@@ -73,7 +85,7 @@ export async function startFakeBison(): Promise<FakeBison> {
     const camp = (id: string) => s.campaigns.find((c) => c.id === Number(id))!;
     if ((x = m(/^\/api\/campaigns\/(\d+)\/schedule$/)) && req.method === 'POST') return json(res, 200, { data: {} });
     if ((x = m(/^\/api\/campaigns\/(\d+)\/update$/)) && req.method === 'PATCH') { const c: any = camp(x[1]); c.settings = { ...(c.settings ?? {}), ...body() }; return json(res, 200, { data: { id: c.id, ...c.settings } }); }
-    if ((x = m(/^\/api\/campaigns\/(\d+)$/)) && req.method === 'GET') { const c: any = camp(x[1]); return json(res, 200, { data: { id: c.id, name: c.name, status: c.status ?? 'draft', ...(c.settings ?? {}) } }); }
+    if ((x = m(/^\/api\/campaigns\/(\d+)$/)) && req.method === 'GET') { const c: any = camp(x[1]); if (c.resumeIn !== undefined && --c.resumeIn <= 0) { c.status = 'active'; delete c.resumeIn; } return json(res, 200, { data: { id: c.id, name: c.name, status: c.status ?? 'draft', ...(c.settings ?? {}) } }); }
     if ((x = m(/^\/api\/campaigns\/v1\.1\/(\d+)\/sequence-steps$/))) {
       const c = camp(x[1]);
       if (req.method === 'GET') return json(res, 200, { data: { sequence_steps: c.steps } });
@@ -116,7 +128,17 @@ export async function startFakeBison(): Promise<FakeBison> {
     }
     if ((x = m(/^\/api\/campaigns\/(\d+)\/leads$/))) return json(res, 200, { data: [], meta: { total: camp(x[1]).leads.size } });
     if (u.pathname === '/api/sender-emails') return json(res, 200, page(s.workspaceSenders.map((id) => ({ id: Number(id), status: s.senderStatus(id), email: s.senderEmail(id) })), u));
+    // Like EmailBison: senders change only while the campaign is a draft or paused.
+    const sendingNow = (c: any) => ['active', 'queued', 'launching'].includes(String(c?.status ?? 'draft'));
+    if ((x = m(/^\/api\/campaigns\/(\d+)\/remove-sender-emails$/)) && req.method === 'DELETE') {
+      const c: any = camp(x[1]);
+      if (sendingNow(c)) return json(res, 422, { data: { success: false, message: 'Senders can only be changed on draft or paused campaigns.' } });
+      const drop = body().sender_email_ids.map(String);
+      c.senders = c.senders.filter((id: string) => !drop.includes(id));
+      return json(res, 200, { data: { success: true } });
+    }
     if ((x = m(/^\/api\/campaigns\/(\d+)\/attach-sender-emails$/))) {
+      if (sendingNow(camp(x[1]))) return json(res, 422, { data: { success: false, message: 'Senders can only be changed on draft or paused campaigns.' } });
       const bad = body().sender_email_ids.findIndex((id: string) => !s.workspaceSenders.includes(String(id)));
       if (bad >= 0) return json(res, 422, { data: { success: false, message: `The selected sender_email_ids.${bad} is invalid.` } });
       const c: any = camp(x[1]); for (const id of body().sender_email_ids) if (!c.senders.includes(String(id))) c.senders.push(String(id));

@@ -18,6 +18,7 @@ import { CAMPAIGN_FIELDS } from '../campaign/campaignFields.js';
 import { createDiscoLikeClient, type DiscoLikeClient } from '../providers/discolike.js';
 import { countFilters } from '../leadlist/filters.js';
 import { PermanentError, RetryableError, WaitError } from '../errors.js';
+import { CE, pollCampaignActions, syncCampaignActionJob } from './campaignActions.js';
 /** Campaigns: "Campaign Thesis" (rich text), read by n8n's company review for its campaign context. */
 const CAMPAIGN_THESIS = 'fldlixHfhzrd7nuSc';
 
@@ -365,7 +366,7 @@ export function resultFields(kind: string, res: any): Record<string, unknown> {
 /** Step 4: write progress and results of every job the bridge queued, once per change. */
 export async function syncResults(db: Db, at: AirtableClient): Promise<number> {
   const r = await db.query(
-    `SELECT a.job_id, a.record_id, a.action, a.written, a.target_table, a.target_record, a.parent_record, a.output, a.press,
+    `SELECT a.job_id, a.record_id, a.action, a.written, a.target_table, a.target_record, a.parent_record, a.output, a.press, a.campaign_record,
             j.kind, j.status, j.progress, j.error, j.result, j.dry_run, j.attempts
      FROM airtable_jobs a JOIN jobs j ON j.id = a.job_id WHERE NOT a.finished ORDER BY a.job_id`);
   let wrote = 0;
@@ -376,7 +377,9 @@ export async function syncResults(db: Db, at: AirtableClient): Promise<number> {
     const key = `${state}|${waiting ? j.progress : ''}`;
     if (key === j.written) continue;
     if (j.target_table === CAMPAIGNS) {
-      await syncCampaignJob(db, at, j, state, key);
+      // Build Campaign (from the Lead List or the campaign) vs the other Campaign Center buttons.
+      if (j.action === 'Build Campaign') await syncCampaignJob(db, at, j, state, key);
+      else await syncCampaignActionJob(db, at, j, state, key);
       wrote++;
       continue;
     }
@@ -442,10 +445,10 @@ export async function pollTam(cfg: Config, at: AirtableClient, disco: Pick<Disco
   return answered;
 }
 
-/** One bridge tick: results first (cheap), then new button presses, then TAM checks (free). */
+/** One bridge tick: results first (cheap), then new button presses (Lead Lists, then Campaigns), then TAM checks (free). */
 export async function bridgeTick(db: Db, cfg: Config, at: AirtableClient): Promise<{ queued: number; wrote: number; tam: number }> {
   const wrote = await syncResults(db, at);
-  const queued = await pollActions(db, cfg, at);
+  const queued = await pollActions(db, cfg, at) + await pollCampaignActions(db, cfg, at);
   const tam = await pollTam(cfg, at);
   return { queued, wrote, tam };
 }
@@ -477,6 +480,8 @@ async function syncCampaignJob(db: Db, at: AirtableClient, j: any, state: string
   const overall = states.includes('Failed') ? 'Failed' : states.includes('Needs Review') ? 'Needs Review' : states.every((x) => x === 'Done') ? 'Done' : states.includes('Running') ? 'Running' : states.includes('Waiting') ? 'Waiting' : 'Queued';
   const lines = all.map((x, i) => `${label(x.output)}: ${states[i] === 'Done' ? `${x.dry_run ? 'dry run, ' : ''}${x.result?.message ?? 'built'}` : states[i] === 'Waiting' ? x.progress : ['Failed', 'Needs Review'].includes(states[i]) ? `${states[i]}: ${x.error ?? ''}` : states[i]}`).join('\n');
   await at.update(LEAD_LISTS, j.record_id, { [F.engineStatus]: overall, [F.engineMessage]: `Build Campaign\n${lines}` });
+  // Pressed on the campaign (Campaign Center): its own Engine fields show the same lines.
+  if (j.campaign_record) await at.update(CAMPAIGNS, j.campaign_record, { [CE.engineStatus]: overall, [CE.engineMessage]: `Build Campaign\n${lines}` });
   if (j.parent_record && j.parent_record !== j.target_record) {
     const done = ['Done', 'Failed', 'Needs Review'].includes(overall);
     await at.update(CAMPAIGNS, j.parent_record, {

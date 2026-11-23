@@ -3,6 +3,7 @@ import { verifyStage } from './verify.js';
 import { campaignBuildStage } from './campaignBuild.js';
 import { campaignTopupStage } from './campaignTopup.js';
 import { bounceCheckStage } from './bounceCheck.js';
+import { campaignLaunchStage, campaignPauseStage, campaignSendersStage } from './campaignControl.js';
 import { companySampleStage } from './companySample.js';
 import { companyExpandStage } from './companyExpand.js';
 import { companyRefitStage } from './companyRefit.js';
@@ -65,6 +66,25 @@ export const STAGES: Record<string, StageDef> = {
     deadlineMs: 6 * 60 * 60_000,
     maxAttempts: 5,
     description: 'Add a Ready lead list to a running EmailBison campaign (KPI rule, import checks, added vs skipped). Never re-uploads, never launches.',
+  },
+  'campaign.launch': {
+    run: campaignLaunchStage,
+    // Checks are reads; the launch is confirmed within a few status reads.
+    deadlineMs: 30 * 60_000,
+    maxAttempts: 3,
+    description: 'Launch Campaign (Campaign Center): every launch check first (copy approved, lead list Ready + QA Passed, EmailBison campaign has leads, steps and connected senders, client active); any fail = nothing launched. Then resume (launches a draft) once per campaign and confirm it is live.',
+  },
+  'campaign.pause': {
+    run: campaignPauseStage,
+    deadlineMs: 30 * 60_000,
+    maxAttempts: 3,
+    description: 'Pause Campaign (Campaign Center): pause each running EmailBison campaign of the record right away and confirm it is paused. Never resumes.',
+  },
+  'campaign.senders': {
+    run: campaignSendersStage,
+    deadlineMs: 60 * 60_000,
+    maxAttempts: 3,
+    description: "Update Senders (Campaign Center): make each EmailBison campaign's inboxes equal the record's Email Accounts (add missing, remove extra). A live campaign is paused, changed and resumed. Inboxes not connected are warnings only.",
   },
   'leadlist.sample': {
     run: companySampleStage,
