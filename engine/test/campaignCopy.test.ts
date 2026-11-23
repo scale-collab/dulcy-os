@@ -58,6 +58,10 @@ test('settings: old builder defaults; Mon-Fri cannot be switched off; record val
   assert.deepEqual(d.settings, { plain_text: true, open_tracking: false, reputation_building: false, can_unsubscribe: false, unsubscribe_text: '' });
   assert.equal(d.maxEmailsPerDay, null);
   assert.equal(d.daysBetween, 2);
+  // Unsubscribe link is always off, even when the record ticks it (Alex, 2026-11-23).
+  const u = campaignSettings({ can_unsubscribe: true, unsubscribe_text: 'Unsubscribe here' });
+  assert.equal(u.settings.can_unsubscribe, false);
+  assert.equal(u.settings.unsubscribe_text, '');
   const s = campaignSettings({ 'Run on Saturday': true, TimeZone: 'Europe/London', plain_text: true, max_emails_per_day: 300, 'Days Between Emails': '3' });
   assert.equal(s.days.saturday, true);
   assert.equal(s.timezone, 'Europe/London');

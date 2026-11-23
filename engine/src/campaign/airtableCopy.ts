@@ -117,7 +117,9 @@ export function campaignSettings(r: Cells) {
     settings: {
       // Plain text ON by default (Alex, Campaign Center walkthrough + EmailBison SOP: "always on").
       plain_text: bool(r.plain_text, true), open_tracking: bool(r.open_tracking, false), reputation_building: bool(r.reputation_building, false),
-      can_unsubscribe: bool(r.can_unsubscribe, false), unsubscribe_text: text(r.unsubscribe_text),
+      // Unsubscribe link ALWAYS off, whatever the record says (Alex, 2026-11-23: no links in our
+      // emails; people opt out by replying to the P.S.).
+      can_unsubscribe: false, unsubscribe_text: '',
     },
     // Blank = sized to the campaign's inboxes (see sendingLimits); a set value is checked against them.
     maxEmailsPerDay: num(r.max_emails_per_day, 0) || null,

@@ -102,7 +102,7 @@ Set **Contact Source** on the list before **Find Contacts**. **Leave it empty fo
 
 - **Never pays twice.** Every paid call has a receipt. A retry, a double click or a re-press reuses the earlier result.
 - **Never launches or sends.** Build Campaign makes drafts only.
-- **Unsubscribe link off** on every campaign (Alex, 2026-11-23); people opt out by replying.
+- **Unsubscribe link always off** on every campaign, even if the campaign record ticks it (Alex, 2026-11-23); people opt out by replying.
 - **Daily limits fit the inboxes.** Max emails per day = inboxes x each inbox's daily limit (e.g. 7 x 15 = 105). A bigger number copied from another campaign is lowered to that; a smaller one is refused (the campaign would stall). Max new leads per day = 80% of that unless set lower. If you raise the inboxes' daily limits later, raise the campaign's limits in EmailBison too.
 - **No credit cap on DiscoLike.** The list size (Expansion Target) is the limit. MillionVerifier, LeadMagic and OpenAI keep the engine's safety caps.
 - **One job per list and action at a time.** A second press of the same button while one runs is refused.
