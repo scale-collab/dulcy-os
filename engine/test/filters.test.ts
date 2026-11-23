@@ -125,3 +125,12 @@ test('generate filters: no targeting sentence or an empty DiscoLike answer stops
   assert.match(jb.job.error, /targeting sentence/i);
   assert.equal(disco.calls, 0);
 });
+
+test('generate filters: "between 10 and 200 employees" sets the employee range (live 2026-11-23: it was ignored)', { skip }, async () => {
+  const sentence = 'Pet ecom brands in the US between 10 and 200 employees';
+  const q = await enqueue(db, { kind: 'leadlist.filters', recordId: REC, dryRun: false, input: { record: { ...record, fields: { ...record.fields, 'ICP Description': sentence } }, client, action: 'Generate Filters' }, requestId: 'between', maxAttempts: 3, deadlineMs: 60_000 });
+  const j = await settle(cfg(), q.job.id);
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.equal(j.job.result.filters.employee_range, '10,200');
+  assert.equal(j.job.result.airtableFields.fldG2MXz5lccu7KKU, '10,200');
+});
