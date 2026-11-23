@@ -22,6 +22,7 @@ const ID = {
     vRisky: 'fldXl4sV7ma4YAOv7', vBad: 'fld9Jgzxc9JqeFAus', finalDirect: 'fldQZJCpTofahmTkl', finalGeneric: 'fld0FHomkh3uyx0FD', leads: 'fld2G5D1yCPFGFiVF',
     whichCampaign: 'fldepbn71awSjmZPV', listStage: 'fld8nrebRFL0O8kgj', qa: 'fldUB4WsLi5kq6rUy', variables: 'fldTYRjTrpVW27tmG',
     deepReview: 'fldsYFrdNF2VBS6SQ', deepPrompt: 'fldVCKrDuXfEhxjZm', deepResults: 'fld0KlQqxFEG6wgfU',
+    contactSource: 'fldwoK7IcKH6NYgVJ', useLeadMagic: 'fldJbIiQ35ZFPsXPL',
 } as const;
 type Key = keyof typeof ID;
 
@@ -94,6 +95,7 @@ function EnginePanel(): React.ReactElement {
     const chip = (s: string) => s === 'Done' || s === 'Passed' ? 'bg-emerald-100 text-emerald-800' : s === 'Failed' ? 'bg-red-100 text-red-800' : s === 'Needs Review' ? 'bg-amber-100 text-amber-800' : ACTIVE.includes(s) ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-600';
     const Stat = ({label, children}: {label: string; children: React.ReactNode}) => <div className="rounded-xl border border-slate-200 bg-white p-3"><div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</div><div className="mt-1 text-xl font-black text-slate-900">{children}</div></div>;
     const Check = ({k, label}: {k: Key; label: string}) => <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><input type="checkbox" checked={g.bool(sel, k)} onChange={e => set(k, e.target.checked)}/>{label}</label>;
+    const Select = ({k, label}: {k: Key; label: string}) => { const f = field(k); const choices: {name: string}[] = f?.options?.choices ?? []; if (!f) return null; return <label className="text-sm font-semibold text-slate-700">{label}<select className="mt-1 block w-64 rounded-lg border border-slate-300 px-3 py-2" value={g.option(sel, k)} onChange={e => set(k, e.target.value ? {name: e.target.value} : null)}><option value="">(default: DiscoLike Contacts Run)</option>{choices.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}</select></label>; };
     const Num = ({k, label}: {k: Key; label: string}) => <label className="text-sm font-semibold text-slate-700">{label}<input type="number" min={0} className="mt-1 block w-36 rounded-lg border border-slate-300 px-3 py-2" defaultValue={g.num(sel, k) || ''} key={`${sel?.id}-${k}`} onBlur={e => set(k, e.target.value === '' ? null : Number(e.target.value))}/></label>;
 
     return <div className="flex h-screen bg-slate-50 text-slate-900">
@@ -105,13 +107,13 @@ function EnginePanel(): React.ReactElement {
                 <label className="mt-2 flex items-center gap-2 text-xs font-semibold text-slate-600"><input type="checkbox" checked={engineOnly} onChange={e => setEngineOnly(e.target.checked)}/>Only lists on the engine</label>
             </div>
             <div className="flex-1 overflow-y-auto">{list.map(r => <button key={r.id} onClick={() => { setSelectedId(r.id); setNotice(null); }} className={`block w-full border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 ${r.id === selectedId ? 'bg-indigo-50' : ''}`}>
-                <div className="truncate text-sm font-bold">{g.text(r, 'name') || r.name || r.id}</div>
+                <div className="truncate text-sm font-bold">{g.text(r, 'name') || '(no name)'}</div>
                 <div className="mt-1 flex items-center gap-2 text-xs">{g.bool(r, 'runsOnEngine') ? <span className={`rounded-full px-2 py-0.5 font-semibold ${chip(g.option(r, 'status'))}`}>{g.option(r, 'status') || 'On engine'}</span> : <span className="text-slate-400">n8n</span>}<span className="truncate text-slate-500">{g.text(r, 'client')}</span></div>
             </button>)}</div>
         </aside>
         <main className="flex-1 overflow-y-auto p-6">{!sel ? <div className="mt-20 text-center text-slate-500">Pick a lead list on the left.</div> : <div className="mx-auto max-w-5xl space-y-5">
             <div className="flex items-start justify-between gap-4">
-                <div><h2 className="text-2xl font-black">{g.text(sel, 'name') || sel.name}</h2><div className="mt-1 text-sm text-slate-500">{g.text(sel, 'client')}{g.text(sel, 'whichCampaign') && <> · Campaign: {g.text(sel, 'whichCampaign')}</>}</div></div>
+                <div><h2 className="text-2xl font-black">{g.text(sel, 'name') || '(no name)'}</h2><div className="mt-1 text-sm text-slate-500">{g.text(sel, 'client')}{g.text(sel, 'whichCampaign') && <> · Campaign: {g.text(sel, 'whichCampaign')}</>}</div></div>
                 <button className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold" onClick={() => expandRecord(sel)}>Open record</button>
             </div>
             <div className={`rounded-xl border p-4 ${g.option(sel, 'status') === 'Failed' ? 'border-red-200 bg-red-50' : 'border-indigo-200 bg-indigo-50'}`}>
@@ -124,7 +126,7 @@ function EnginePanel(): React.ReactElement {
                 <h3 className="font-bold">Setup (edit the targeting sentence and filters in Lead List Center)</h3>
                 <div className="mt-3 grid grid-cols-2 gap-4 text-sm"><div><div className="font-semibold text-slate-500">Targeting sentence</div><div className="mt-1 whitespace-pre-wrap">{g.text(sel, 'icp') || '–'}</div></div><div><div className="font-semibold text-slate-500">List thesis</div><div className="mt-1 whitespace-pre-wrap">{g.text(sel, 'thesis') || '–'}</div></div></div>
                 <div className="mt-3 text-sm"><span className="font-semibold text-slate-500">Company filters: </span>{g.text(sel, 'filters') ? <span className="font-semibold text-emerald-700">ready</span> : <span className="font-semibold text-red-700">not generated</span>}<span className="ml-6 font-semibold text-slate-500">Contact filters: </span>{g.text(sel, 'contactFilters') ? 'set' : 'default'}<span className="ml-6 font-semibold text-slate-500">Persona: </span>{g.text(sel, 'persona') ? 'set' : '–'}<span className="ml-6 font-semibold text-slate-500">Deep review: </span>{g.bool(sel, 'deepReview') ? (g.text(sel, 'deepPrompt') ? 'on' : 'on, no prompt') : 'off'}<span className="ml-6 font-semibold text-slate-500">Enrichment: </span>{!g.text(sel, 'variables') ? '–' : /# ENRICHMENT PROMPT/.test(g.text(sel, 'variables')) ? 'prompt prepared' : 'request written'}</div>
-                <div className="mt-4 flex flex-wrap items-end gap-6"><Num k="target" label="Expansion Target"/><Num k="contactSampleSize" label="Contact sample (companies)"/><Check k="sampleApproved" label="Company sample approved"/><Check k="contactApproved" label="Contact sample approved"/><Check k="includeDirect" label="Include Direct"/><Check k="includeGeneric" label="Include Generic"/><Check k="footprint200" label="Generic: footprint 200 or less"/></div>
+                <div className="mt-4 flex flex-wrap items-end gap-6"><Num k="target" label="Expansion Target"/><Num k="contactSampleSize" label="Contact sample (companies)"/><Check k="sampleApproved" label="Company sample approved"/><Check k="contactApproved" label="Contact sample approved"/><Check k="includeDirect" label="Include Direct"/><Check k="includeGeneric" label="Include Generic"/><Check k="footprint200" label="Generic: footprint 200 or less"/><Check k="useLeadMagic" label="Use LeadMagic (slow; off by default)"/><Select k="contactSource" label="Contact Source"/></div>
             </section>
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
