@@ -144,7 +144,7 @@ test('generate filters: employee ranges snap to DiscoLike size steps (Alex, 2026
   }
 });
 
-test('generate filters: "ecom" in the sentence requires the E-COMMERCE tag on top of the product category (Alex, 2026-11-23)', { skip }, async () => {
+test('generate filters: "ecom" in the sentence adds E-COMMERCE as an either/or industry (Alex, 2026-11-23)', { skip }, async () => {
   const run = async (sentence: string, id: string) => {
     const q = await enqueue(db, { kind: 'leadlist.filters', recordId: REC, dryRun: false, input: { record: { ...record, fields: { ...record.fields, 'ICP Description': sentence } }, client, action: 'Generate Filters' }, requestId: id, maxAttempts: 3, deadlineMs: 60_000 });
     const j = await settle(cfg(), q.job.id);
@@ -152,7 +152,8 @@ test('generate filters: "ecom" in the sentence requires the E-COMMERCE tag on to
     return j.job.result.filters;
   };
   const ecom = await run('Pet ecom brands in the US between 10 and 200 employees', 'ecom');
-  assert.ok((ecom.category ?? []).includes('+E-COMMERCE'), JSON.stringify(ecom));
+  assert.ok((ecom.category ?? []).includes('E-COMMERCE'), JSON.stringify(ecom));
+  assert.ok(!(ecom.category ?? []).some((c: string) => c.startsWith('+')), 'either/or: nothing marked required');
   const plain = await run('Medical spas and aesthetic clinics with 1-200 employees in the United States', 'plain');
   assert.ok(!(plain.category ?? []).some((c: string) => /E-COMMERCE/.test(c)), 'no online-selling words: no E-COMMERCE');
 });
