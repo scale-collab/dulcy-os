@@ -153,6 +153,8 @@ ALTER TABLE airtable_jobs ADD COLUMN IF NOT EXISTS target_record TEXT;
 ALTER TABLE airtable_jobs ADD COLUMN IF NOT EXISTS parent_record TEXT;
 ALTER TABLE airtable_jobs ADD COLUMN IF NOT EXISTS output        TEXT;
 ALTER TABLE airtable_jobs ADD COLUMN IF NOT EXISTS press         TEXT;
+-- Campaign Center: the Campaigns record whose Engine Action was pressed (its Engine Status/Message show the result).
+ALTER TABLE airtable_jobs ADD COLUMN IF NOT EXISTS campaign_record TEXT;
 
 -- LeadMagic email-finder results per person (first|last|domain) of a list: a person is looked
 -- up once, never paid twice (old n8n: each identity attempted once).

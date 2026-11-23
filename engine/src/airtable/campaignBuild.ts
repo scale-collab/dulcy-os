@@ -21,7 +21,7 @@ import { campaignSettings, outputCopy, readSequence, sendingLimits } from '../ca
 export const CAMPAIGNS = 'tblAVAA6uBPaMj28P';
 const EMAIL_ACCOUNTS = 'tblMSOBJ0wMgxSg4l';
 const CLIENTS = 'tblcjRBGJEWh5KgOt';
-const LL = { whichCampaign: 'fldepbn71awSjmZPV', stage: 'fld8nrebRFL0O8kgj', qa: 'fldUB4WsLi5kq6rUy', finalDirect: 'fldQZJCpTofahmTkl', finalGeneric: 'fld0FHomkh3uyx0FD' };
+export const LL = { whichCampaign: 'fldepbn71awSjmZPV', stage: 'fld8nrebRFL0O8kgj', qa: 'fldUB4WsLi5kq6rUy', finalDirect: 'fldQZJCpTofahmTkl', finalGeneric: 'fld0FHomkh3uyx0FD' };
 const EA = { emailId: 'fldR19WUqSSBVQcPO', workspaceId: 'fldWB4pvEgQ8aYlT2', dailyLimit: 'fldBP1gljUUM44JMk', email: 'fldRYSB93NNdBc4Js' };
 const CL = { name: 'fld48x6Yg3v6RP30W', brand: 'fldTHTrYh0GCFeBLG', senderTitle: 'fldIMJnjdGGAPotMW' };
 export const CF = {
@@ -31,7 +31,7 @@ export const CF = {
   processing: CAMPAIGN_FIELDS['Processing Status'], message: CAMPAIGN_FIELDS['Workflow Message'], error: CAMPAIGN_FIELDS['Workflow Error'],
   startedAt: CAMPAIGN_FIELDS['Started At'], completedAt: CAMPAIGN_FIELDS['Completed At'],
 };
-const SUFFIX = /\s+-\s+(?:Generic|Direct) Emails\s*$/i;
+export const SUFFIX = /\s+-\s+(?:Generic|Direct) Emails\s*$/i;
 
 export class BuildInputError extends Error {}
 const text = (v: unknown) => (Array.isArray(v) ? String(v[0] ?? '') : v === undefined || v === null ? '' : typeof v === 'object' ? String((v as any).name ?? '') : String(v)).trim();

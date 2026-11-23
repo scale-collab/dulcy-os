@@ -5,8 +5,18 @@ import type { Db } from './db/pool.js';
 import type { Config } from './config.js';
 import { enqueue } from './queue.js';
 import { STAGES } from './stages/index.js';
-import { createAirtableClient } from './providers/airtable.js';
+import { createAirtableClient, type AirtableClient } from './providers/airtable.js';
 import { bridgeTick } from './airtable/bridge.js';
+import { skipBouncePauseIds } from './airtable/campaignActions.js';
+
+/**
+ * EmailBison IDs the bounce check must never pause ("Skip Bounce Pause" ticked in Campaign
+ * Center). Read from Airtable when the engine has a token; without one the list is empty.
+ */
+export async function bounceSkipList(cfg: Config, at?: Pick<AirtableClient, 'list'>): Promise<number[]> {
+  const client = at ?? (cfg.airtableApiKey ? createAirtableClient({ apiKey: cfg.airtableApiKey, baseId: cfg.airtableBaseId, baseUrl: cfg.airtableBaseUrl }) : undefined);
+  return client ? skipBouncePauseIds(client) : [];
+}
 
 /** Airtable bridge: check the Engine buttons and write results back every AIRTABLE_POLL_MS. Off without a token. */
 export function startAirtableBridge(db: Db, cfg: Config, signal: AbortSignal): void {
@@ -28,14 +38,20 @@ export function startAirtableBridge(db: Db, cfg: Config, signal: AbortSignal): v
   signal.addEventListener('abort', () => clearInterval(t));
 }
 
-export async function scheduleTick(db: Db, cfg: Config, now = Date.now()): Promise<number> {
+export async function scheduleTick(db: Db, cfg: Config, now = Date.now(), at?: Pick<AirtableClient, 'list'>): Promise<number> {
   if (!cfg.bounceCheckEveryMin || cfg.bounceCheckWorkspaces.length === 0) return 0;
   const slot = Math.floor(now / (cfg.bounceCheckEveryMin * 60_000));
   const def = STAGES['bounce.check'];
+  // Airtable is read only when this slot still has a check to queue (not every minute).
+  const have = await db.query(`SELECT request_id FROM jobs WHERE request_id = ANY($1)`, [cfg.bounceCheckWorkspaces.map((ws) => `bounce:${ws}:${slot}`)]);
+  if (have.rows.length === cfg.bounceCheckWorkspaces.length) return 0;
+  // If Airtable cannot be read, nothing is queued this minute (the next tick tries again):
+  // a check without the skip list could pause a campaign Alex said not to.
+  const skipPauseCampaignIds = await bounceSkipList(cfg, at);
   let queued = 0;
   for (const ws of cfg.bounceCheckWorkspaces) {
     const r = await enqueue(db, {
-      kind: 'bounce.check', recordId: `bounce:${ws}`, input: { workspace: ws }, requestId: `bounce:${ws}:${slot}`,
+      kind: 'bounce.check', recordId: `bounce:${ws}`, input: { workspace: ws, skipPauseCampaignIds }, requestId: `bounce:${ws}:${slot}`,
       dryRun: cfg.dryRun && !cfg.liveStages.includes('bounce.check'), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs,
     });
     if (r.status === 'queued') queued++;
