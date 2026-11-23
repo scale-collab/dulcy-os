@@ -1,7 +1,17 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {expandRecord, initializeBlock, useBase, useCustomProperties, useRecords} from '@airtable/blocks/interface/ui';
 import {FieldType} from '@airtable/blocks/interface/models';
-import {ArrowRightIcon, CaretRightIcon, FileArrowUpIcon, FunnelIcon, MagnifyingGlassIcon, PlusIcon, TrashIcon, XIcon} from '@phosphor-icons/react';
+// Small built-in icons (the page cannot load an icon library in Airtable's editor).
+type IconProps = {size?: number; className?: string};
+const icon = (paths: string[]) => ({size = 20, className}: IconProps) => <svg width={size} height={size} viewBox="0 0 256 256" fill="none" stroke="currentColor" strokeWidth={16} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">{paths.map(d => <path key={d} d={d}/>)}</svg>;
+const ArrowRightIcon = icon(['M40 128h176', 'M144 56l72 72-72 72']);
+const CaretRightIcon = icon(['M96 48l80 80-80 80']);
+const FileArrowUpIcon = icon(['M200 224H56a8 8 0 0 1-8-8V40a8 8 0 0 1 8-8h96l56 56v128a8 8 0 0 1-8 8z', 'M152 32v56h56', 'M100 148l28-28 28 28', 'M128 184v-64']);
+const FunnelIcon = icon(['M40 48h176l-68 80v72l-40 24v-96z']);
+const MagnifyingGlassIcon = icon(['M112 184a72 72 0 1 0 0-144 72 72 0 0 0 0 144z', 'M163 163l53 53']);
+const PlusIcon = icon(['M40 128h176', 'M128 40v176']);
+const TrashIcon = icon(['M216 56H40', 'M104 104v64', 'M152 104v64', 'M200 56v152a8 8 0 0 1-8 8H64a8 8 0 0 1-8-8V56', 'M168 56V40a16 16 0 0 0-16-16h-48a16 16 0 0 0-16 16v16']);
+const XIcon = icon(['M200 56L56 200', 'M200 200L56 56']);
 
 type AnyField = any;
 type AnyRecord = any;
