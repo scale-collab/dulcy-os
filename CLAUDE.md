@@ -65,4 +65,5 @@ Airtable (operating system: Campaign Center, Lead List Center, projects, CRM) ·
 | Source SOPs (history, not validated as current) | `sops/drive-export/` |
 | n8n and automation notes | `automations/` |
 | Old Jarvis project (history only) | `legacy/` |
+| Lead engine user guide (plain language, update with every engine change) | `engine/GUIDE.md` |
 | Code worker (separate private repo) | `scale-collab/dulcy-lead-worker` (offline, never connected to live) |
