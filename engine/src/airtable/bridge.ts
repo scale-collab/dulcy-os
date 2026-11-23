@@ -252,6 +252,7 @@ export async function buildInput(db: Db, at: AirtableClient, rec: AirtableRecord
         genericFootprintMax200: r[F.footprint200] === true,
         leadMagic: r[F.useLeadMagic] === true,
         writeFinalTabs: true,
+        name: text(r[F.name]) || undefined,
       };
     }
   }
