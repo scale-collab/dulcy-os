@@ -622,7 +622,76 @@ function completedSplitParentIds(records: AnyRecord[], fields: any): Set<string>
     }).map(parent => parent.id));
 }
 
+const CompletedSourceAdoption=(()=>{
+
+const DEFINITIONS=[{"kind":"manufacturing","sourceListId":"reckX3pofXs4D9n60","priorManagedScopeRecordId":"recrWIAOWk6tCSqjE","parentRecordId":"recUkVwvAfgaPzlyN","originalListId":"recewDdIYEsDynhJo","clientRecordId":"recBP0AXQ0UYfTYz1","workspaceId":"80","familyRecordIds":["recUkVwvAfgaPzlyN","recYRI1W3xFXlnwka","recQlgGlMyqpTffq9"],"destinations":[{"recordId":"recYRI1W3xFXlnwka","campaignId":605,"outputType":"generic"},{"recordId":"recQlgGlMyqpTffq9","campaignId":606,"outputType":"direct"}],"originalSource":{"tabs":["Expanded Companies","Final Direct","Final Generic"],"sheetId":"1-HisSUUGhL_YjC8xdRODvg0Rc_3h9wf6B92v6O7YBvw","recordId":"recewDdIYEsDynhJo"},"sheetId":"1R84kM_g4a5n6QA0TKjh7_X47_vI3s4RFhByYjjrQD9k","qaRunId":"1365465","completedAt":"2026-11-18T06:38:29.773Z","counts":{"generic":22,"direct":1},"oldRunId":"1364327","oldCounts":{"generic":0,"direct":0},"baselineCounts":{"generic":1209,"direct":821},"reviewedAt":"2026-11-18T07:54:00.857296+00:00","expiresAt":"2026-11-19T00:00:00Z","companyOverlap":65,"finalRowsAtPriorCompanies":0,"emailOverlap":0,"scope":{"version":1,"mode":"this-build-only","buildRecordId":"reckX3pofXs4D9n60","parentFirstVersion":1,"campaignRecordId":"recUkVwvAfgaPzlyN","campaignRecordIds":["recUkVwvAfgaPzlyN","recYRI1W3xFXlnwka","recQlgGlMyqpTffq9"],"originalParentRecordId":"recUkVwvAfgaPzlyN","originalLeadListRecordId":"recewDdIYEsDynhJo","clientRecordId":"recBP0AXQ0UYfTYz1","workspaceId":"80","destinations":[{"recordId":"recYRI1W3xFXlnwka","campaignId":605,"outputType":"generic"},{"recordId":"recQlgGlMyqpTffq9","campaignId":606,"outputType":"direct"}],"sources":[{"tabs":["Expanded Companies","Final Direct","Final Generic"],"sheetId":"1-HisSUUGhL_YjC8xdRODvg0Rc_3h9wf6B92v6O7YBvw","recordId":"recewDdIYEsDynhJo"}],"createdAt":"2026-11-18T07:54:00.857296+00:00","adoption":{"protocol":"completed-source-adoption-v1","sourceWasCreatedAsNewList":true,"historicalTopupBuildProvenanceClaimed":false,"qaRunId":"1365465","qaCompletedAt":"2026-11-18T06:38:29.773Z","reviewedAt":"2026-11-18T07:54:00.857296+00:00","exclusionMode":"final-email-exclusions-rechecked-at-adoption","originalCompanyExclusionProven":false,"companyOverlap":65,"finalRowsAtPriorCompanies":0,"supersededSelectionIds":["recrWIAOWk6tCSqjE"]}}},{"kind":"repair","sourceListId":"recbKy0IdDNqUK0s3","priorManagedScopeRecordId":"recCnTxJUBXZO9rin","parentRecordId":"recPlO9d71XNQWJR8","originalListId":"recNlBCr6YdLnlgRJ","clientRecordId":"recBP0AXQ0UYfTYz1","workspaceId":"80","familyRecordIds":["recPlO9d71XNQWJR8","rec85D4CUvr25cPa8","recVqMBdhlWnvxzTa"],"destinations":[{"recordId":"rec85D4CUvr25cPa8","campaignId":603,"outputType":"generic"},{"recordId":"recVqMBdhlWnvxzTa","campaignId":604,"outputType":"direct"}],"originalSource":{"tabs":["Expanded Companies","Final Direct","Final Generic"],"sheetId":"1cP0KAc8B5pCiDfBmpfFfSmYhXykLxj1TcSethnj4sII","recordId":"recNlBCr6YdLnlgRJ"},"sheetId":"1lmQNNonxyhpEkuJBkUrdLcBr2fOH3DhVBNAOZapDLi4","qaRunId":"1365538","completedAt":"2026-11-18T06:43:12.630Z","counts":{"generic":117,"direct":108},"oldRunId":"1364823","oldCounts":{"generic":0,"direct":4},"baselineCounts":{"generic":1107,"direct":1254},"reviewedAt":"2026-11-18T07:54:00.861028+00:00","expiresAt":"2026-11-19T00:00:00Z","companyOverlap":1119,"finalRowsAtPriorCompanies":25,"emailOverlap":0,"scope":{"version":1,"mode":"this-build-only","buildRecordId":"recbKy0IdDNqUK0s3","parentFirstVersion":1,"campaignRecordId":"recPlO9d71XNQWJR8","campaignRecordIds":["recPlO9d71XNQWJR8","rec85D4CUvr25cPa8","recVqMBdhlWnvxzTa"],"originalParentRecordId":"recPlO9d71XNQWJR8","originalLeadListRecordId":"recNlBCr6YdLnlgRJ","clientRecordId":"recBP0AXQ0UYfTYz1","workspaceId":"80","destinations":[{"recordId":"rec85D4CUvr25cPa8","campaignId":603,"outputType":"generic"},{"recordId":"recVqMBdhlWnvxzTa","campaignId":604,"outputType":"direct"}],"sources":[{"tabs":["Expanded Companies","Final Direct","Final Generic"],"sheetId":"1cP0KAc8B5pCiDfBmpfFfSmYhXykLxj1TcSethnj4sII","recordId":"recNlBCr6YdLnlgRJ"}],"createdAt":"2026-11-18T07:54:00.861028+00:00","adoption":{"protocol":"completed-source-adoption-v1","sourceWasCreatedAsNewList":true,"historicalTopupBuildProvenanceClaimed":false,"qaRunId":"1365538","qaCompletedAt":"2026-11-18T06:43:12.630Z","reviewedAt":"2026-11-18T07:54:00.861028+00:00","exclusionMode":"final-email-exclusions-rechecked-at-adoption","originalCompanyExclusionProven":false,"companyOverlap":1119,"finalRowsAtPriorCompanies":25,"supersededSelectionIds":["recCnTxJUBXZO9rin"]}}}];
+const COMPLETED_HISTORY_SUPERSESSIONS=[{"sourceListId":"reckX3pofXs4D9n60","completedReceipt":{"version":1,"state":"completed","sourceId":"reckX3pofXs4D9n60","uploadId":"a66efc00-0a81-495f-ac71-7aaf314f7f18","revisionHash":"8cf573de228509a3b885961ffe3135a3eaecad5704aba2f37ccf7fab577abb8f","contentHash":"e661314b92920050a3fffa972f0ebdf9ad6a915d49f5e20c2cb8a56e077bf18c","binding":{"counts":{"direct":1,"generic":22},"listId":"reckX3pofXs4D9n60","sheetId":"1R84kM_g4a5n6QA0TKjh7_X47_vI3s4RFhByYjjrQD9k","workspaceId":"80","destinations":[{"recordId":"recYRI1W3xFXlnwka","campaignId":605,"outputType":"generic"},{"recordId":"recQlgGlMyqpTffq9","campaignId":606,"outputType":"direct"}],"emptyStreams":{"direct":null,"generic":null},"rootRecordId":"recUkVwvAfgaPzlyN","clientRecordId":"recBP0AXQ0UYfTYz1","originalListId":"recewDdIYEsDynhJo","sourceRevision":{"qa":"Passed","runId":"1365465","scope":{"mode":"this-build-only","sources":[{"tabs":["Expanded Companies","Final Direct","Final Generic"],"sheetId":"1-HisSUUGhL_YjC8xdRODvg0Rc_3h9wf6B92v6O7YBvw","recordId":"recewDdIYEsDynhJo"}],"version":1,"adoption":{"qaRunId":"1365465","protocol":"completed-source-adoption-v1","reviewedAt":"2026-11-18T07:54:00.857296+00:00","exclusionMode":"final-email-exclusions-rechecked-at-adoption","qaCompletedAt":"2026-11-18T06:38:29.773Z","companyOverlap":65,"supersededSelectionIds":["recrWIAOWk6tCSqjE"],"finalRowsAtPriorCompanies":0,"sourceWasCreatedAsNewList":true,"originalCompanyExclusionProven":false,"historicalTopupBuildProvenanceClaimed":false},"createdAt":"2026-11-18T07:54:00.857296+00:00","workspaceId":"80","destinations":[{"recordId":"recYRI1W3xFXlnwka","campaignId":605,"outputType":"generic"},{"recordId":"recQlgGlMyqpTffq9","campaignId":606,"outputType":"direct"}],"buildRecordId":"reckX3pofXs4D9n60","clientRecordId":"recBP0AXQ0UYfTYz1","campaignRecordId":"recUkVwvAfgaPzlyN","campaignRecordIds":["recUkVwvAfgaPzlyN","recYRI1W3xFXlnwka","recQlgGlMyqpTffq9"],"parentFirstVersion":1,"originalParentRecordId":"recUkVwvAfgaPzlyN","originalLeadListRecordId":"recewDdIYEsDynhJo"},"stage":"Ready","counts":{"direct":1,"generic":22},"listId":"reckX3pofXs4D9n60","sheetId":"1R84kM_g4a5n6QA0TKjh7_X47_vI3s4RFhByYjjrQD9k","version":1,"finalFiles":[],"completedAt":"2026-11-18T06:38:29.773Z"}},"receipt":{"added":23,"failed":0,"status":"Completed","message":"Provider imports processed and attachment acknowledged. Net campaign growth: 23. 0 processed rows not reflected in growth (provider suppression/existing membership not individually classified). No full membership audit performed.","results":[{"added":22,"failed":0,"skipped":0,"afterTotal":845,"campaignId":605,"countBasis":"net-campaign-growth-after-provider-attachment","leadListId":778,"outputType":"generic","beforeTotal":823,"acceptedRows":22,"campaignName":"generic destination","providerImport":{"id":778,"failed":0,"status":"Processed","processed":22,"succeeded":22},"attachmentReceipt":{"message":"Leads successfully imported to [MJJ Brilliant] US Jewelry Brands, Single-Style Manufacturing Fit (Direct Offer) - Generic Emails","success":true,"campaignId":605,"leadListId":778}},{"added":1,"failed":0,"skipped":0,"afterTotal":431,"campaignId":606,"countBasis":"net-campaign-growth-after-provider-attachment","leadListId":777,"outputType":"direct","beforeTotal":430,"acceptedRows":1,"campaignName":"direct destination","providerImport":{"id":777,"failed":0,"status":"Processed","processed":1,"succeeded":1},"attachmentReceipt":{"message":"Leads successfully imported to [MJJ Brilliant] US Jewelry Brands, Single-Style Manufacturing Fit (Direct Offer) - Direct Emails","success":true,"campaignId":606,"leadListId":777}}],"skipped":0,"parentRecordId":"recQlgGlMyqpTffq9","topUpLeadListId":"reckX3pofXs4D9n60"}},"supersededStage":"Verification","supersededProcessing":"Waiting","supersededSheetId":"1dCPW6AH729zSXaf20BGhO76cDMKwUz-7z-pw6Fbo3Gk","supersededScope":{"version":1,"mode":"this-build-only","buildRecordId":"recrWIAOWk6tCSqjE","parentFirstVersion":1,"campaignRecordId":"recUkVwvAfgaPzlyN","campaignRecordIds":["recUkVwvAfgaPzlyN","recYRI1W3xFXlnwka","recQlgGlMyqpTffq9"],"originalParentRecordId":"recUkVwvAfgaPzlyN","originalLeadListRecordId":"recewDdIYEsDynhJo","clientRecordId":"recBP0AXQ0UYfTYz1","workspaceId":"80","destinations":[{"recordId":"recYRI1W3xFXlnwka","campaignId":605,"outputType":"generic"},{"recordId":"recQlgGlMyqpTffq9","campaignId":606,"outputType":"direct"}],"sources":[{"recordId":"recewDdIYEsDynhJo","sheetId":"1-HisSUUGhL_YjC8xdRODvg0Rc_3h9wf6B92v6O7YBvw","tabs":["Expanded Companies","Final Direct","Final Generic"]}],"createdAt":"2026-11-17T01:48:20.600Z"}}];
+const fields=r=>r?.fields??r?.cellValuesByFieldId??{};
+const text=v=>String(v&&typeof v==='object'?v.name??'':v??'').trim();
+const ids=v=>Array.isArray(v)?v.map(x=>typeof x==='string'?x:x?.id).filter(Boolean):[];
+const canonical=v=>Array.isArray(v)?'['+v.map(canonical).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical(v[k])).join(',')+'}':JSON.stringify(v??null);
+function definition(record){return DEFINITIONS.find(d=>d.sourceListId===record?.id);}
+function scopeFor(record,closedHistory=false){
+ const d=definition(record);if(!d)return null;const f=fields(record);
+ if(!closedHistory&&Date.now()>Date.parse(d.expiresAt))throw Error('Completed-source adoption review expired; review the current source again.');
+ if(!(closedHistory?['Ready','Uploaded']:['Ready']).includes(text(f.fld8nrebRFL0O8kgj))||text(f.fldUB4WsLi5kq6rUy)!=='Passed'||text(f.fldf9wpMGWg0SebHV)!=='Completed')throw Error('Adoption requires the existing Ready, QA-passed completed source.');
+ if(canonical(ids(f.fldEujtSLqwdpOyGD))!==canonical([d.clientRecordId])||text(f.fld4kyzDwnHq5V4Iy)!==d.qaRunId||text(f.fldMSv3547BOvfdmH)!==d.completedAt)throw Error('Completed-source adoption QA revision or client changed.');
+ if(text(f.fldSOTvnUxzKWXMDD).match(/\/spreadsheets\/d\/([A-Za-z0-9_-]+)/)?.[1]!==d.sheetId||Number(f.fld0FHomkh3uyx0FD??0)!==d.counts.generic||Number(f.fldQZJCpTofahmTkl??0)!==d.counts.direct)throw Error('Completed-source adoption sheet or final counts changed.');
+ let existing;try{existing=f.fldevysyehxsGxt2q?JSON.parse(String(f.fldevysyehxsGxt2q)):null;}catch{throw Error('Unreadable adoption scope.');}
+ if(existing&&canonical(existing)!==canonical(d.scope))throw Error('An existing source scope cannot be replaced by this adoption.');
+ return d.scope;
+}
+function withScope(input){
+ const source=input.lists?.find(r=>r.id===input.currentListId),d=definition(source);if(!d)return input;
+ const scope=scopeFor(source),needed=!fields(source).fldevysyehxsGxt2q;
+ if(!d.familyRecordIds.includes(input.selectedRecordId))throw Error('Completed source belongs to another exact campaign family.');
+ return {...input,adoptionNeeded:needed,lists:input.lists.map(r=>r.id===source.id?{...r,fields:{...fields(r),fldevysyehxsGxt2q:JSON.stringify(scope)}}:r)};
+}
+function projectSupersededSelection(input,d,pin){
+ const old=input.lists.find(r=>r.id===d.priorManagedScopeRecordId);if(!old)throw Error('Superseded selection metadata is missing.');const of=fields(old);
+ if(text(of.fld4kyzDwnHq5V4Iy)!==d.oldRunId||Number(of.fld0FHomkh3uyx0FD??0)!==d.oldCounts.generic||Number(of.fldQZJCpTofahmTkl??0)!==d.oldCounts.direct||ids(of.fldEujtSLqwdpOyGD).join(',')!==d.clientRecordId||text(of.fld8MIk1KUeT6fDDu))throw Error('Superseded selection changed or has an upload receipt; reconcile it.');
+ if(!['waiting','failed'].includes(text(of.fldf9wpMGWg0SebHV).toLowerCase()))throw Error('Superseded selection state changed; do not hide active work.');
+ if(pin&&(text(of.fld8nrebRFL0O8kgj)!==pin.supersededStage||text(of.fldf9wpMGWg0SebHV)!==pin.supersededProcessing||text(of.fldSOTvnUxzKWXMDD).match(/\/spreadsheets\/d\/([A-Za-z0-9_-]+)/)?.[1]!==pin.supersededSheetId||canonical(JSON.parse(String(of.fldevysyehxsGxt2q||'null')))!==canonical(pin.supersededScope)))throw Error('Completed-history supersession changed; reconcile the old selection.');
+ const remove=links=>(links??[]).filter(x=>(typeof x==='string'?x:x?.id)!==old.id);
+ // Projection only. Never alter the old record, original list links, campaigns,
+ // discovery receipts, verification history, held rows or live provider state.
+ return {...input,lists:input.lists.filter(r=>r.id!==old.id),campaigns:input.campaigns.map(r=>d.familyRecordIds.includes(r.id)?{...r,fields:{...fields(r),fld5weZ6ED31dBlaz:remove(fields(r).fld5weZ6ED31dBlaz),fld4lMlTPjrRmAFHp:remove(fields(r).fld4lMlTPjrRmAFHp)}}:r)};
+}
+function normalizeInput(input){
+ // A closed, exact upload receipt can prove supersession for the next build.
+ // This does not reopen adoption, clear statuses, delete records, or modify receipts.
+ for(const pin of COMPLETED_HISTORY_SUPERSESSIONS){
+  const source=input.lists?.find(r=>r.id===pin.sourceListId),d=definition(source);
+  if(!d||input.currentListId===source.id||!d.familyRecordIds.includes(input.selectedRecordId))continue;
+  let receipt;try{receipt=JSON.parse(String(fields(source).fld8MIk1KUeT6fDDu||'null'));}catch{throw Error('Unreadable completed-history upload receipt.');}
+  if(receipt?.state!=='completed')continue;
+  if(canonical(receipt)!==canonical(pin.completedReceipt))throw Error('Completed-history upload receipt changed; reconcile before a new build.');
+  if(canonical(scopeFor(source,true))!==canonical(receipt.binding?.sourceRevision?.scope))throw Error('Completed-history source revision changed.');
+  if(canonical(fields(source).fldjn5vqHSVYiAR6z??[])!==canonical(receipt.binding?.sourceRevision?.finalFiles??[]))throw Error('Completed-history final export changed.');
+  input=projectSupersededSelection(input,d,pin);
+ }
+ const source=input.lists?.find(r=>r.id===input.currentListId);let scope;
+ try{scope=fields(source).fldevysyehxsGxt2q?JSON.parse(String(fields(source).fldevysyehxsGxt2q)):null;}catch{return input;}
+ if(scope?.adoption?.protocol!=='completed-source-adoption-v1')return input;
+ const d=definition(source);if(!d||canonical(scope)!==canonical(scopeFor(source)))throw Error('Unreviewed completed-source adoption scope.');
+ return projectSupersededSelection(input,d);
+}
+function assertBaseline(currentRanges,baseline,record){
+ const d=definition(record);if(!d)return null;
+ if(baseline?.spreadsheetId!==d.originalSource.sheetId||!Array.isArray(baseline.valueRanges)||baseline.valueRanges.length!==2)throw Error('Adoption baseline final source is incomplete.');
+ const get=(ranges,tab)=>{const a=ranges.filter(r=>String(r.range??'').split('!')[0].replace(/^'|'$/g,'')===tab);if(a.length!==1||!Array.isArray(a[0].values))throw Error('Adoption baseline tab is missing.');return a[0].values;};
+ const emails=(matrix,count)=>{const head=matrix[0]?.map(v=>String(v??'').trim().toLowerCase());if(!head||head.filter(v=>v==='email').length!==1)throw Error('Adoption baseline email column changed.');const i=head.indexOf('email'),rows=matrix.slice(1).filter(r=>r.some(v=>String(v??'').trim()));if(rows.length!==count)throw Error('Adoption baseline count changed.');const a=rows.map(r=>String(r[i]??'').trim().toLowerCase());if(a.some(e=>!/^\S+@\S+\.\S+$/.test(e))||new Set(a).size!==a.length)throw Error('Adoption baseline has malformed or duplicate emails.');return a;};
+ const prior=new Set(),current=[];
+ for(const type of ['generic','direct']){const tab='Final '+(type==='generic'?'Generic':'Direct');for(const e of emails(get(baseline.valueRanges,tab),d.baselineCounts[type])){if(prior.has(e))throw Error('Duplicate across original final streams.');prior.add(e);}current.push(...emails(get(currentRanges,tab),d.counts[type]));}
+ if(current.some(e=>prior.has(e)))throw Error('Adoption source repeats an original final email; reconcile before selection.');
+ return {protocol:'final-email-exclusions-rechecked-at-adoption',originalSheetId:d.originalSource.sheetId,originalFinalEmails:prior.size,currentFinalEmails:current.length,exactEmailOverlap:0,companyOverlap:d.companyOverlap,finalRowsAtPriorCompanies:d.finalRowsAtPriorCompanies,historicalCompanyExclusionClaimed:false};
+}
+
+return {definition,scopeFor,withScope,normalizeInput,assertBaseline};
+})();
+
 function resolveParentFirstPlan(input) {
+  input=CompletedSourceAdoption.normalizeInput(input);
   const CF = {name:'fldSsb4QjS9UyvKhj',client:'fldl5bZ644djPsBmN',lists:'fld5weZ6ED31dBlaz',topup:'fld4lMlTPjrRmAFHp',bison:'fldxSETE3D66RyWRH',workspace:'fldQjybcwloD9dZxS',status:'fldZABZwE9SmnwMv3',processing:'fldCebt3IMI8ZxdQq'};
   const LF = {client:'fldEujtSLqwdpOyGD',sheet:'fldSOTvnUxzKWXMDD',scope:'fldevysyehxsGxt2q',direct:'fldQZJCpTofahmTkl',generic:'fld0FHomkh3uyx0FD',processing:'fldf9wpMGWg0SebHV',stage:'fld8nrebRFL0O8kgj',campaign:'fldepbn71awSjmZPV'};
   const fail = message => {throw Error('Parent-first top-up blocked: '+message);};
@@ -769,15 +838,14 @@ function resolveParentFirstPlan(input) {
 const parentFirstInFlight = new Set<string>();
 const parentFirstCampaignKeys = ['fldSsb4QjS9UyvKhj','fldl5bZ644djPsBmN','fld5weZ6ED31dBlaz','fld4lMlTPjrRmAFHp','fldxSETE3D66RyWRH','fldQjybcwloD9dZxS','fldZABZwE9SmnwMv3','fldCebt3IMI8ZxdQq'];
 const ManagedTopUp = (() => {
-
-
-const F={scope:'fldevysyehxsGxt2q',client:'fldEujtSLqwdpOyGD',stage:'fld8nrebRFL0O8kgj',qa:'fldUB4WsLi5kq6rUy',processing:'fldf9wpMGWg0SebHV',sheet:'fldSOTvnUxzKWXMDD',direct:'fldQZJCpTofahmTkl',generic:'fld0FHomkh3uyx0FD',run:'fld4kyzDwnHq5V4Iy',completed:'fldMSv3547BOvfdmH',file:'fldjn5vqHSVYiAR6z',name:'fldbg5PAnKyFHc3uy'};
+const F={scope:'fldevysyehxsGxt2q',client:'fldEujtSLqwdpOyGD',stage:'fld8nrebRFL0O8kgj',qa:'fldUB4WsLi5kq6rUy',processing:'fldf9wpMGWg0SebHV',sheet:'fldSOTvnUxzKWXMDD',direct:'fldQZJCpTofahmTkl',generic:'fld0FHomkh3uyx0FD',run:'fld4kyzDwnHq5V4Iy',completed:'fldMSv3547BOvfdmH',file:'fldjn5vqHSVYiAR6z',name:'fldbg5PAnKyFHc3uy',receipt:'fld8MIk1KUeT6fDDu'};
 const fields=r=>r?.fields??r?.cellValuesByFieldId??{};
 const text=v=>String(v&&typeof v==='object'?v.name??'':v??'').trim();
 const ids=v=>Array.isArray(v)?v.map(x=>typeof x==='string'?x:x?.id).filter(Boolean):[];
 function canonical(v){if(Array.isArray(v))return '['+v.map(canonical).join(',')+']';if(v&&typeof v==='object')return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical(v[k])).join(',')+'}';return JSON.stringify(v??null);}
 function readScope(record){const v=fields(record)[F.scope];if(!v)return null;try{return typeof v==='string'?JSON.parse(v):v;}catch{throw Error('Unreadable saved top-up scope.');}}
 function candidatePlan(input){
+ input=CompletedSourceAdoption.withScope(input);
  const current=input.lists.find(r=>r.id===input.currentListId);if(!current)throw Error('Completed top-up is not loaded.');const f=fields(current),scope=readScope(current);
  if(!scope||scope.parentFirstVersion!==1||scope.version!==1||scope.mode!=='this-build-only'||scope.buildRecordId!==current.id)throw Error('A saved managed top-up scope is required.');
  if(!scope.campaignRecordIds?.includes(input.selectedRecordId)||!Array.isArray(scope.destinations)||scope.destinations.length!==2)throw Error('This top-up belongs to another campaign family.');
@@ -791,7 +859,7 @@ function candidatePlan(input){
  const plan=resolveParentFirstPlan({...input,campaigns,complete:true});
  if(plan.rootRecordId!==scope.originalParentRecordId||plan.originalListId!==scope.originalLeadListRecordId||plan.workspaceId!==String(scope.workspaceId))throw Error('Saved top-up identity changed.');
  const revision={version:1,listId:current.id,sheetId,runId:text(f[F.run]),completedAt:text(f[F.completed]),qa:'Passed',stage:'Ready',counts,scope,finalFiles:(f[F.file]??[]).map(x=>({id:x.id,size:x.size??null})).sort((a,b)=>a.id.localeCompare(b.id))};
- return {plan,revision,revisionText:canonical(revision),sheetId,counts,name:text(f[F.name])};
+ return {plan,revision,revisionText:canonical(revision),sheetId,counts,name:text(f[F.name]),adoptionNeeded:input.adoptionNeeded===true,adoptionScope:scope.adoption?.protocol==='completed-source-adoption-v1'?scope:null};
 }
 function finalRows(values,label,expected){
  if(!Array.isArray(values)||!values.length||!Array.isArray(values[0]))throw Error('Missing '+label+' final data.');
@@ -811,11 +879,10 @@ function inspectImports(all,current,revision){
  const recent=[];for(const item of all){const at=Date.parse(item.created_at??item.createdAt??'');if(!Number.isFinite(at))throw Error('Complete import history contains an uncertain import timestamp.');if(at>=created)recent.push(Number(item.id));}
  return {complete:true,total:all.length,matchingImports:0,sourceListId:revision.listId,sourceName:current.name,createdAtValidated:true,recentImportIds:recent};
 }
-
 return {F,canonical,candidatePlan};
 })();
 
-const parentFirstListKeys = ['fldEujtSLqwdpOyGD','fldSOTvnUxzKWXMDD','fldevysyehxsGxt2q','fldQZJCpTofahmTkl','fld0FHomkh3uyx0FD','fldf9wpMGWg0SebHV','fld8nrebRFL0O8kgj','fldepbn71awSjmZPV'];
+const parentFirstListKeys = [...new Set(['fldEujtSLqwdpOyGD','fldSOTvnUxzKWXMDD','fldevysyehxsGxt2q','fldQZJCpTofahmTkl','fld0FHomkh3uyx0FD','fldf9wpMGWg0SebHV','fld8nrebRFL0O8kgj','fldepbn71awSjmZPV',...Object.values(ManagedTopUp.F)])];
 const parentFirstTemplateNames = ['Name of the Lead List','Name','File Name','Client','Source Type','Third-Party Source Method','ICP Description','List Thesis','DiscoLike Company Filters JSON','Included Industries','Included Countries','Excluded Industries','Included States','Employee Range','Homepage Keywords','State Filters','Industry Filters','Excluded Industry Filters','Country Filters','Include Generic Emails','Include Direct Contacts','Target Personas','Contact Persona DNA','Contact Source','Contact Filters JSON','Generic Verification Provider','Direct Verification Provider','Verification Provider','Catch-All Policy','Role Email Policy','Free Email Policy','SEG Rule','Custom Variables Requested','Column Mapping JSON','Workflow Template','Use DiscoGen Deep Review','DiscoGen Deep Review Prompt','DiscoGen Deep Review Additional Requirements','Expansion Target'];
 const parentFirstSnapshot = (record:AnyRecord, keys:string[]) => ({id:record.id,fields:Object.fromEntries(keys.map(key=>[key,record.getCellValue(key)]))});
 function readParentFirstContext(campaignRecords:AnyRecord[], listRecords:AnyRecord[], selectedRecordId:string, currentListId?:string, workspaceId?:string) {
@@ -1434,6 +1501,8 @@ function CampaignCenter(): React.ReactElement {
     const [sequenceDelayDraft, setSequenceDelayDraft] = useState('');
     const [skipApprovalConfirmed, setSkipApprovalConfirmed] = useState(false);
     const [manualTopUpAcknowledged, setManualTopUpAcknowledged] = useState(false);
+    const [topUpConfirmation, setTopUpConfirmation] = useState<any>(null);
+    const topUpUploadInFlight = useRef(false);
 
     const creationClientRecord = clientFilter === 'all'
         ? null
@@ -1838,7 +1907,7 @@ function CampaignCenter(): React.ReactElement {
     const completedTopUpCandidates = useMemo(()=>{
       if(!selected||!leadListsTable)return [];
       const inputs=managedTopUpInputs();
-      return inputs.lists.flatMap(r=>{try{const scope=JSON.parse(String(r.fields.fldevysyehxsGxt2q||'{}'));if(!scope.campaignRecordIds?.includes(selected.id))return [];const candidate=ManagedTopUp.candidatePlan({...inputs,currentListId:r.id,selectedRecordId:selected.id,complete:true});return [{id:r.id,...candidate}];}catch{return [];}});
+      return inputs.lists.flatMap(r=>{try{const candidate=ManagedTopUp.candidatePlan({...inputs,currentListId:r.id,selectedRecordId:selected.id,complete:true});return [{id:r.id,...candidate}];}catch{return [];}});
     },[selected?.id,campaigns,leadListRecords,leadListsTable]);
     useEffect(()=>{setExistingTopUpChoice('');},[selected?.id]);
     const selectedTopUpLeadListId = selected && fields.topUpLeadList ? linkedIds(selected, fields.topUpLeadList)[0] ?? null : null;
@@ -2840,19 +2909,21 @@ function CampaignCenter(): React.ReactElement {
       const serverField=campaignsTable.getFieldIfExists?.('fld0DL0enVj3G1fUJ');if(!serverField||serverField.isComputed)throw Error('Enable the editable EmailBison Base URL field in this interface.');
       for(const id of candidate.plan.familyRecordIds){const campaign=campaignsTable.getRecordByIdIfExists?.(id)??campaigns.find(r=>r.id===id);if(!campaign)throw Error('Exact campaign family is not loaded.');const prior=textValue(campaign,serverField).trim().replace(/\/+$/,'');if(prior&&prior!=='https://send.dulcy.io')throw Error('An existing campaign connection points to another server. Review it before proceeding.');if(!campaignsTable.hasPermissionToUpdateRecord(campaign,{[fields.topUpLeadList.id]:[{id:list.id}],[serverField.id]:'https://send.dulcy.io'}))throw Error('You cannot link this completed top-up to its exact campaign family.');}
       if(!leadListsTable.hasPermissionToUpdateRecord(list,{[topUpUploadReceiptField.id]:''}))throw Error('You cannot save the source-bound top-up preparation.');
+      const adoptionScopeField=candidate.adoptionNeeded?leadListsTable.getFieldIfExists?.('fldevysyehxsGxt2q'):null;if(candidate.adoptionNeeded&&(!adoptionScopeField||adoptionScopeField.isComputed||!leadListsTable.hasPermissionToUpdateRecord(list,{[adoptionScopeField.id]:JSON.stringify(candidate.adoptionScope)})))throw Error('Enable the editable Top-up Build Scope JSON field to adopt this completed source.');
       const response=await fetch(CAMPAIGN_TOP_UP_PREPARE_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sourceId:list.id,selectedRecordId:record.id,expectedRevision:candidate.revisionText,apiKey:textValue(record,fields.bisonApiKey).trim()})});
       let receipt;try{receipt=JSON.parse(await response.text());}catch{throw Error('Preparation did not return a verified receipt. No upload was requested.');}
       if(!response.ok||receipt.ok!==true)throw Error(receipt.message||'Existing imports or the final source could not be verified. No upload was permitted.');
       const fresh=ManagedTopUp.candidatePlan({...managedTopUpInputs(),selectedRecordId:record.id,currentListId:list.id,complete:true});
       if(receipt.sourceId!==list.id||receipt.state!=='prepared'||receipt.baseUrl!=='https://send.dulcy.io'||!/^([a-f0-9]{64})$/.test(receipt.revisionHash??'')||!/^([a-f0-9]{64})$/.test(receipt.contentHash??'')||!receipt.uploadId||(!Number.isFinite(Date.parse(receipt.expiresAt))||Date.parse(receipt.expiresAt)<=Date.now())||ManagedTopUp.canonical(receipt.binding?.sourceRevision)!==fresh.revisionText||ManagedTopUp.canonical(receipt.binding?.destinations)!==ManagedTopUp.canonical(fresh.plan.destinations))throw Error('The source or destinations changed during preparation. Nothing was uploaded.');
-      await leadListsTable.updateRecordAsync(list.id,{[topUpUploadReceiptField.id]:JSON.stringify(receipt)});
+      if(candidate.adoptionScope&&ManagedTopUp.canonical(receipt.adoptionScope)!==ManagedTopUp.canonical(candidate.adoptionScope))throw Error('The reviewed adoption scope was not confirmed. Nothing was selected.');
+      await leadListsTable.updateRecordAsync(list.id,{[topUpUploadReceiptField.id]:JSON.stringify(receipt),...(candidate.adoptionNeeded?{[adoptionScopeField.id]:JSON.stringify(receipt.adoptionScope)}:{})});
       await campaignsTable.updateRecordsAsync(fresh.plan.familyRecordIds.map(id=>({id,fields:{[fields.topUpLeadList.id]:[{id:list.id}],[serverField.id]:receipt.baseUrl}})));
       const linked=readParentFirstContext(campaigns.map(r=>campaignsTable.getRecordByIdIfExists?.(r.id)??r),leadListRecords,record.id,list.id);
       if(ManagedTopUp.canonical(linked.plan.destinations)!==ManagedTopUp.canonical(fresh.plan.destinations)||fresh.plan.familyRecordIds.some(id=>!linkedIds(campaignsTable.getRecordByIdIfExists?.(id)??campaigns.find(r=>r.id===id),fields.topUpLeadList).includes(list.id)))throw Error('Family linkage is incomplete. Re-select this existing list; do not create or upload another one.');
       setNotice({kind:'success',text:`Existing top-up selected: ${fresh.counts.generic} generic and ${fresh.counts.direct} direct. Original lists preserved. Nothing uploaded.`});
     });
 
-    const requestCampaignTopUp = (record: AnyRecord, outsideKpi = false) => runAction('Top up campaign', async () => {
+    const requestCampaignTopUp = (record: AnyRecord, outsideKpi = false, confirmed: any = null) => runAction('Top up campaign', async () => {
         if (outsideKpi && !manualTopUpAcknowledged) throw new Error('Acknowledge that this campaign has not reached the KPI threshold before topping it up.');
         if (!selectedTopUpLeadList || !selectedTopUpLeadListId) throw new Error('Select the completed lead list you want to add.');
         if(!selectedPreparedReceipt)throw Error('Use existing completed top-up to refresh its exact source and import checks before uploading.');
@@ -2869,14 +2940,20 @@ function CampaignCenter(): React.ReactElement {
 
 
         const requestedName=textValue(record,fields.name)||record.name;
-        const familyContext=readParentFirstContext(campaigns,leadListRecords,record.id,selectedTopUpLeadListId,selectedWorkspaceNames.length===1?selectedWorkspaceNames[0]:undefined);
+        const familyContext=readParentFirstContext(campaigns.map(r=>campaignsTable.getRecordByIdIfExists?.(r.id)??r),leadListRecords.map(r=>leadListsTable.getRecordByIdIfExists?.(r.id)??r),record.id,selectedTopUpLeadListId,selectedWorkspaceNames.length===1?selectedWorkspaceNames[0]:undefined);
         const plan=familyContext.plan;
         const targets=plan.destinations.map((target:any)=>({...target,campaignName:target.outputType+' destination',expectedRows:target.outputType==='generic'?selectedTopUpGenericCount:selectedTopUpDirectCount}));
         const familyExclusion={familyRecordIds:plan.familyRecordIds,readinessRecordIds:[selectedTopUpLeadListId,...plan.sources.map((source:any)=>source.recordId)],parentFirstManifest:plan.manifest};
         const totalQualified = selectedTopUpGenericCount + selectedTopUpDirectCount;
         const topUpName = textValue(selectedTopUpLeadList, leadListFields.name) || selectedTopUpLeadList.name;
         const thresholdWarning = outsideKpi ? ' This campaign has not reached the KPI top-up threshold, and you chose to proceed anyway.' : '';
-        if (!window.confirm(`Add up to ${new Intl.NumberFormat().format(totalQualified)} qualified leads from ${topUpName} to ${requestedName}? Existing EmailBison leads will be skipped.${thresholdWarning}`)) return;
+        const currentCandidate=ManagedTopUp.candidatePlan({...managedTopUpInputs(),selectedRecordId:record.id,currentListId:selectedTopUpLeadListId,complete:true});
+        const currentList=leadListsTable.getRecordByIdIfExists?.(selectedTopUpLeadListId)??selectedTopUpLeadList;
+        let currentReceipt;try{currentReceipt=JSON.parse(textValue(currentList,topUpUploadReceiptField)||'{}');}catch{throw Error('Unreadable top-up receipt. Refresh the completed source checks.');}
+        if(currentReceipt.state!=='prepared'||currentReceipt.sourceId!==selectedTopUpLeadListId||currentReceipt.uploadId!==selectedPreparedReceipt.uploadId||!Number.isFinite(Date.parse(currentReceipt.expiresAt))||Date.parse(currentReceipt.expiresAt)<=Date.now()||ManagedTopUp.canonical(currentReceipt.binding?.sourceRevision)!==currentCandidate.revisionText||ManagedTopUp.canonical(currentReceipt.binding?.destinations)!==ManagedTopUp.canonical(plan.destinations))throw Error('The prepared source changed or expired. Refresh its checks before uploading.');
+        const confirmation={recordId:record.id,sourceId:selectedTopUpLeadListId,uploadId:currentReceipt.uploadId,revisionText:currentCandidate.revisionText,destinations:ManagedTopUp.canonical(plan.destinations),outsideKpi,message:`Add up to ${new Intl.NumberFormat().format(totalQualified)} qualified leads from ${topUpName} to ${requestedName}? Existing EmailBison leads will be skipped.${thresholdWarning}`};
+        if(!confirmed){setTopUpConfirmation(confirmation);return;}
+        if(confirmed.recordId!==confirmation.recordId||confirmed.sourceId!==confirmation.sourceId||confirmed.uploadId!==confirmation.uploadId||confirmed.revisionText!==confirmation.revisionText||confirmed.destinations!==confirmation.destinations||confirmed.outsideKpi!==confirmation.outsideKpi)throw Error('The top-up selection changed. Review and confirm the current selection again.');
 
         const requestUpdate: Record<string, any> = {...automationRequestUpdate(record, 'topup', 'Top up campaign')};
         if (fields.topUpRequest) requestUpdate[fields.topUpRequest.id] = true;
@@ -2906,7 +2983,19 @@ function CampaignCenter(): React.ReactElement {
         const responseText = await response.text();
         if (!response.ok) throw new Error(responseText || `The top-up automation returned ${response.status}.`);
         setNotice({kind: 'success', text: 'Top-up started. This campaign will show the added, skipped, and failed totals when EmailBison finishes checking duplicates.'});
-    });
+    }, null);
+
+    const confirmCampaignTopUp = async () => {
+        if(topUpUploadInFlight.current||!topUpConfirmation)return;
+        const confirmation=topUpConfirmation;
+        topUpUploadInFlight.current=true;
+        setTopUpConfirmation(null);
+        try{
+            const record=campaignsTable.getRecordByIdIfExists?.(confirmation.recordId)??campaigns.find(r=>r.id===confirmation.recordId);
+            if(!record||selected?.id!==confirmation.recordId){setNotice({kind:'error',text:'The campaign selection changed. Open the intended campaign and confirm again.'});return;}
+            await requestCampaignTopUp(record,confirmation.outsideKpi,confirmation);
+        }finally{topUpUploadInFlight.current=false;}
+    };
 
     const updateCampaignSenders = async () => {
         if (!selected || senderUpdateDispatch.current || senderUpdatePending) return;
@@ -3430,6 +3519,7 @@ function CampaignCenter(): React.ReactElement {
     );
 
     return <div className={`min-h-screen flex flex-col ${dark ? 'bg-gray-800' : 'bg-slate-50'}`}>
+        {topUpConfirmation && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-6"><section role="dialog" aria-modal="true" aria-labelledby="top-up-confirmation-title" className="w-full max-w-lg rounded-2xl bg-white p-6 text-gray-950 shadow-2xl" onKeyDown={event=>{if(event.key==='Escape')setTopUpConfirmation(null);}}><h2 id="top-up-confirmation-title" className="text-lg font-bold">Confirm completed top-up</h2><p className="mt-3 text-sm leading-6">{topUpConfirmation.message}</p><p className="mt-2 text-xs text-gray-600">The source and destinations will be checked again before the request is submitted.</p><div className="mt-5 flex justify-end gap-3"><button autoFocus onClick={()=>setTopUpConfirmation(null)} className="rounded-lg border px-4 py-2 text-sm font-semibold">Cancel</button><button disabled={!!busy} onClick={confirmCampaignTopUp} className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">Confirm upload</button></div></section></div>}
         <header className={`relative overflow-hidden border-b px-6 py-5 ${panel}`}>
             <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-purple-100 opacity-60 blur-3xl"/>
             <div className="relative flex items-center justify-between gap-4 mb-5">
@@ -3539,7 +3629,7 @@ function CampaignCenter(): React.ReactElement {
                             <div className="flex items-start justify-between gap-4"><div><div className="text-[10px] font-semibold uppercase tracking-wider opacity-70">Recommended next move</div><div className="mt-1 text-xl font-bold">{selectedNextMove.label}</div><p className="mt-1 text-sm opacity-90">{selectedNextMove.detail}</p></div><span className="shrink-0 rounded-full bg-white/70 px-2.5 py-1 text-xs font-semibold">{progressPercent(selected, fields.progress) === null ? 'No progress' : `${progressPercent(selected, fields.progress)?.toFixed(0)}% complete`}</span></div>
                             {'action' in selectedNextMove && selectedNextMove.action === 'top-up-leads' && <div className="mt-3 rounded-xl border border-emerald-200 bg-white/70 p-3">
                                 <div className="grid gap-3">
-                                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-3"><label className="block text-sm font-semibold text-blue-950">Use existing completed top-up<select aria-label="Existing completed top-up" value={existingTopUpChoice} disabled={!!busy} onChange={event=>setExistingTopUpChoice(event.currentTarget.value)} className="mt-2 w-full rounded-lg border bg-white p-2 text-xs"><option value="">Choose a Ready, QA-passed list…</option>{completedTopUpCandidates.map(c=><option key={c.id} value={c.id}>{c.name} · {c.counts.generic} generic / {c.counts.direct} direct</option>)}</select></label><button disabled={!!busy||!existingTopUpChoice||!topUpUploadReceiptField} onClick={()=>adoptExistingCompletedTopUp(selected)} className="mt-2 rounded-lg bg-blue-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">Use this completed top-up</button><p className="mt-2 text-xs text-blue-900">Checks the exact final source and prior imports, then links both existing destinations. This step does not upload or send.</p>{!topUpUploadReceiptField&&<p role="alert" className="mt-2 text-xs text-red-700">Enable Top-up Upload Receipt JSON in this interface’s data fields.</p>}{selectedTopUpLeadList&&!selectedPreparedReceipt&&<p className="mt-2 text-xs text-amber-800">Select this existing list to refresh its checks. Completed or uncertain uploads require reconciliation.</p>}</div>
+                                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-3"><label className="block text-sm font-semibold text-blue-950">Use existing completed top-up<select aria-label="Existing completed top-up" value={existingTopUpChoice} disabled={!!busy} onChange={event=>setExistingTopUpChoice(event.currentTarget.value)} className="mt-2 w-full rounded-lg border bg-white p-2 text-xs"><option value="">Choose a Ready, QA-passed list…</option>{completedTopUpCandidates.map(c=><option key={c.id} value={c.id}>{c.name} · {c.counts.generic} generic / {c.counts.direct} direct{c.adoptionNeeded?' · adopt completed list':''}</option>)}</select></label><button disabled={!!busy||!existingTopUpChoice||!topUpUploadReceiptField} onClick={()=>adoptExistingCompletedTopUp(selected)} className="mt-2 rounded-lg bg-blue-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">Use this completed top-up</button><p className="mt-2 text-xs text-blue-900">Checks the exact final source and prior imports, then links both existing destinations. Reviewed completed lists are bound now; their original build history is preserved. This step does not upload or send.</p>{!topUpUploadReceiptField&&<p role="alert" className="mt-2 text-xs text-red-700">Enable Top-up Upload Receipt JSON in this interface’s data fields.</p>}{selectedTopUpLeadList&&!selectedPreparedReceipt&&<p className="mt-2 text-xs text-amber-800">Select this existing list to refresh its checks. Completed or uncertain uploads require reconciliation.</p>}</div>
                                     <div className="rounded-lg border bg-white p-3"><div className="text-sm font-semibold">{selectedTopUpLeadList ? (textValue(selectedTopUpLeadList, leadListFields.name) || selectedTopUpLeadList.name) : 'Create a new top-up list'}</div><p className="mt-1 text-xs">Copies your targeting and excludes contacts from this campaign’s attached lists for this build only.</p><button disabled={!!busy} onClick={() => createTopUpBuild(selected)} className="mt-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">Top up · Create lead list</button></div>
                                     <div className="flex items-center justify-between gap-3">
                                         <div><div className="text-sm font-semibold text-emerald-900">{selectedTopUpLeadList ? `${new Intl.NumberFormat().format(selectedTopUpGenericCount + selectedTopUpDirectCount)} qualified leads selected` : 'Continue the new build in Lead List Center'}</div><div className="mt-0.5 text-xs text-emerald-800/75">{selectedTopUpLeadList ? `${new Intl.NumberFormat().format(selectedTopUpGenericCount)} generic · ${new Intl.NumberFormat().format(selectedTopUpDirectCount)} direct · duplicates will be skipped` : 'The original lead list remains attached to the campaign.'}</div></div>
