@@ -23,6 +23,8 @@ Format: `- [date] rule. (why / source)`
 
 - [2026-11-23] The engine has a plain-language user guide, engine/GUIDE.md (end-to-end steps, Contact Source options, statuses, safety, costs, server commands, change log). Every engine change updates GUIDE.md in the same pull request. Reason: Alex wants a guide that explains the system end to end and stays current. (Alex)
 
+- [2026-11-23] Give Alex times in US Eastern time (ET), not UTC. Reason: Alex is on Eastern; UTC check times confused him. (Alex)
+
 ## Campaign health
 - [2026-11-18] Bounce auto-pause: pause when bounce is over 4% **and** the campaign is at 35%+ progress. The floor stops early small numbers from pausing it (1 bounce in the first 10 emails = 10%). The check must re-run on every metric refresh, not fire once. Over 2.5% = watch. (Alex)
 - [2026-11-18] Failed campaigns restart automatically: a failure is usually an error on the sending system's side. Long-running jobs (18+ hours seen) must be investigated, and the engine needs time limits. (Alex)
