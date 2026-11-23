@@ -15,6 +15,8 @@ Format: `- [date] rule. (why / source)`
 
 - [2026-11-22] No credit cap on DiscoLike (company and contact searches, ContraGen, DiscoGen): a list searches up to the size asked for (the Expansion Target is the limit). Other providers (MillionVerifier, LeadMagic, OpenAI) keep the engine's per-job/per-day caps. Set with CAP_FREE_PROVIDERS (default discolike). Reason: a cap stopped a 30,000-company list mid-run. (Alex)
 
+- [2026-11-23] Do not use ContraGen on list recHoMoNkGZdjnRDD (Contact Source set to "DiscoLike"). Claude had picked "DiscoLike + ContraGen" when setting the list up; Alex: "we shouldn't". Also: DiscoLike retires ContraGen (/v1/contacts/discover/generate), the legacy contact search (/v1/contacts/discover) and the email-finder endpoints on 2026-12-31; the replacement is POST /v1/contacts/run (search + web research + email check in one run). Company search (/v1/discover), /v1/validate/icp and /v1/discogen/process-personas stay. Reason: Alex correction; DiscoLike changelog 2026-11.
+
 ## Campaign health
 - [2026-11-18] Bounce auto-pause: pause when bounce is over 4% **and** the campaign is at 35%+ progress. The floor stops early small numbers from pausing it (1 bounce in the first 10 emails = 10%). The check must re-run on every metric refresh, not fire once. Over 2.5% = watch. (Alex)
 - [2026-11-18] Failed campaigns restart automatically: a failure is usually an error on the sending system's side. Long-running jobs (18+ hours seen) must be investigated, and the engine needs time limits. (Alex)
