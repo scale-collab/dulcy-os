@@ -8,7 +8,8 @@ import { createPool, migrate } from '../src/db/pool.js';
 import { getJob, finish, fail, snooze } from '../src/queue.js';
 import { loadConfig, type Config } from '../src/config.js';
 import { createAirtableClient } from '../src/providers/airtable.js';
-import { F, CLIENTS, LEAD_LISTS, bridgeTick, pollActions, syncResults } from '../src/airtable/bridge.js';
+import { F, CLIENTS, LEAD_LISTS, bridgeTick, pollActions, pollTam, syncResults } from '../src/airtable/bridge.js';
+import { WaitError } from '../src/errors.js';
 
 const url = process.env.TEST_DATABASE_URL;
 const skip = !url ? 'TEST_DATABASE_URL not set' : false;
@@ -347,4 +348,69 @@ test('Generate Filters: record and client by field name, plan fields cleared, ke
   assert.equal(rec().fldG2MXz5lccu7KKU, '11,200');
   assert.equal(rec()[F.engineStatus], 'Done');
   assert.match(String(rec()[F.workflowMessage]), /Review them before running/);
+});
+
+test('Restart Companies and Skip Enrichment buttons queue their engine stages', { skip }, async () => {
+  press('Restart Companies');
+  await pollActions(db, cfg(), at());
+  let j = (await db.query(`SELECT * FROM jobs WHERE record_id=$1 ORDER BY id DESC LIMIT 1`, [REC])).rows[0];
+  assert.equal(j.kind, 'leadlist.restart');
+  await db.query(`UPDATE jobs SET status='succeeded' WHERE id=$1`, [j.id]);
+  press('Skip Enrichment', { [F.finalDirect]: 80, [F.finalGeneric]: 20 });
+  await pollActions(db, cfg(), at());
+  j = (await db.query(`SELECT * FROM jobs WHERE record_id=$1 ORDER BY id DESC LIMIT 1`, [REC])).rows[0];
+  assert.equal(j.kind, 'leadlist.skipenrich');
+  assert.deepEqual(j.input, { finalDirect: 80, finalGeneric: 20 });
+});
+
+test('Use DiscoGen Deep Review ticked: deep review is queued by itself after the sample; not when unticked or dry run', { skip }, async () => {
+  const done = async (dryRun: boolean) => {
+    press('Run Company Sample');
+    await pollActions(db, cfg({ liveStages: dryRun ? [] : ['leadlist.sample'] }), at());
+    const id = Number(rec()[F.engineJobId]);
+    await finish(db, id, { dryRun, sample: { reviewed: 100, tier1: 40, tier2: 45, cut: 15, usableRate: 0.85, status: 'Passed' }, message: 'sample Passed' });
+    await syncResults(db, at());
+  };
+  await done(false);
+  assert.equal(rec()[F.engineAction], null, 'not ticked: nothing queued');
+  Object.assign(rec(), { [F.useDeepReview]: true, [F.deepReviewPrompt]: 'Pass only B2B agencies' });
+  await done(true);
+  assert.equal(rec()[F.engineAction], null, 'dry run: nothing queued');
+  await done(false);
+  assert.equal(rec()[F.engineAction], 'Deep Review Companies');
+  assert.match(String(rec()[F.engineMessage]), /Deep review queued automatically/);
+  await pollActions(db, cfg(), at());
+  const j = (await db.query(`SELECT kind FROM jobs WHERE record_id=$1 ORDER BY id DESC LIMIT 1`, [REC])).rows[0];
+  assert.equal(j.kind, 'leadlist.deepreview');
+});
+
+test('TAM check: a requested count is answered with the free count; uncountable or bad filters get an error; a rate limit waits', { skip }, async () => {
+  const ask = (source: string) => { rec()[F.tamCheck] = JSON.stringify({ version: 1, status: 'requested', requestId: 'req-1', requestedAt: '2026-11-23T20:00:00Z', source }); };
+  let calls = 0;
+  const disco = { count: async (f: any) => { calls++; return f.country ? { count: 1234, ignored: ['icp_prompt'] } : null; } };
+  ask(JSON.stringify(FILTERS));
+  assert.equal(await pollTam(cfg(), at(), disco as any), 1);
+  let snap = JSON.parse(String(rec()[F.tamCheck]));
+  assert.equal(snap.status, 'complete');
+  assert.equal(snap.count, 1234);
+  assert.equal(snap.requestId, 'req-1');
+  assert.equal(snap.source, JSON.stringify(FILTERS));
+  assert.deepEqual(snap.params, { country: 'US' });
+  assert.ok(snap.checkedAt);
+  assert.equal(await pollTam(cfg(), at(), disco as any), 0, 'a finished check is not counted again');
+  assert.equal(calls, 1);
+
+  ask(JSON.stringify({ icp_prompt: 'lookalike only' }));
+  await pollTam(cfg(), at(), disco as any);
+  snap = JSON.parse(String(rec()[F.tamCheck]));
+  assert.equal(snap.status, 'error');
+  assert.match(snap.message, /cannot be counted/);
+
+  ask('not json');
+  await pollTam(cfg(), at(), disco as any);
+  assert.match(JSON.parse(String(rec()[F.tamCheck])).message, /not valid JSON/);
+
+  ask(JSON.stringify(FILTERS));
+  await pollTam(cfg(), at(), { count: async () => { throw new WaitError('DiscoLike: rate limited', 60_000); } } as any);
+  assert.equal(JSON.parse(String(rec()[F.tamCheck])).status, 'requested', 'rate limited: left for the next tick');
 });

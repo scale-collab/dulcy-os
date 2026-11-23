@@ -15,6 +15,9 @@ import { STAGES } from '../stages/index.js';
 import { BuildInputError, CAMPAIGNS, CF, queueBuild } from './campaignBuild.js';
 import { LEAD_LIST_FIELDS as LIST_NAMES } from '../leadlist/legacy/fieldNames.js';
 import { CAMPAIGN_FIELDS } from '../campaign/campaignFields.js';
+import { createDiscoLikeClient, type DiscoLikeClient } from '../providers/discolike.js';
+import { countFilters } from '../leadlist/filters.js';
+import { PermanentError, RetryableError, WaitError } from '../errors.js';
 /** Campaigns: "Campaign Thesis" (rich text), read by n8n's company review for its campaign context. */
 const CAMPAIGN_THESIS = 'fldlixHfhzrd7nuSc';
 
@@ -88,6 +91,9 @@ export const F = {
   mvJobId: 'fld4B7jLPdcgzdkgF',
   verifiedAt: 'fldxehC2cjGGK8ruN',
   verifyState: 'fldflrzfkhmW7JarV',
+  useDeepReview: 'fldsYFrdNF2VBS6SQ',
+  deepReviewPrompt: 'fldVCKrDuXfEhxjZm',
+  tamCheck: 'fldKNUnxiySLsIUny',
 } as const;
 
 /** Client (Workspace IDs) fields read for the fit profile. Only these; never the key fields. */
@@ -106,6 +112,8 @@ export const ACTIONS: Record<string, string> = {
   'Prepare Enrichment Prompt': 'leadlist.enrichprompt',
   'Run Enrichment': 'leadlist.enrich',
   'Build Campaign': 'campaign.build',
+  'Restart Companies': 'leadlist.restart',
+  'Skip Enrichment': 'leadlist.skipenrich',
 };
 
 const READ_FIELDS = [F.engineAction, F.engineActionSetAt, F.name, F.client, F.filtersJson, F.icp, F.thesis, F.sampleSize, F.sampleApproved,
@@ -228,6 +236,10 @@ export async function buildInput(db: Db, at: AirtableClient, rec: AirtableRecord
       return { filters: filters(), target: num(r[F.expansionTarget]), sampleApproved: true, name: text(r[F.name]) || undefined, ...who };
     case 'leadlist.refit':
       return { filters: filters(), ...who };
+    case 'leadlist.restart':
+      return { name: text(r[F.name]) || undefined };
+    case 'leadlist.skipenrich':
+      return { finalDirect: num(r[F.finalDirect]) ?? 0, finalGeneric: num(r[F.finalGeneric]) ?? 0 };
     case 'leadlist.contacts': {
       // Not approved yet = a contact sample (old "Build Contact Sample"); approved = everyone left.
       const approved = r[F.contactApproved] === true;
@@ -322,6 +334,8 @@ export function resultFields(kind: string, res: any): Record<string, unknown> {
     case 'leadlist.deepcontacts':
     case 'leadlist.enrichprompt':
     case 'leadlist.enrich':
+    case 'leadlist.restart':
+    case 'leadlist.skipenrich':
       return { ...(res.airtableFields ?? {}) };
     case 'leadlist.sample': {
       const s = res.sample ?? {};
@@ -373,6 +387,12 @@ export async function syncResults(db: Db, at: AirtableClient): Promise<number> {
     if (state === 'Done') {
       const msg = `${j.dry_run ? 'Dry run (nothing spent): ' : ''}${j.result?.message ?? `${j.action} finished`}`;
       Object.assign(fields, resultFields(j.kind, j.result), { [F.processingStatus]: 'Completed', [F.completedAt]: new Date().toISOString(), [F.engineMessage]: msg, [F.workflowMessage]: msg, [F.workflowError]: null });
+      // "Use DiscoGen Deep Review" ticked (Lead List Center checkbox): the deep review runs on its
+      // own after the sample (first 100) and after each expand (the rest) (Alex, 2026-11-23).
+      if (!j.dry_run && ['leadlist.sample', 'leadlist.expand'].includes(j.kind) && await deepReviewWanted(at, j.record_id)) {
+        fields[F.engineAction] = 'Deep Review Companies';
+        fields[F.engineMessage] = fields[F.workflowMessage] = `${msg}\nDeep review queued automatically (Use DiscoGen Deep Review is ticked).`;
+      }
     }
     if (state === 'Failed' || state === 'Needs Review') {
       const msg = `${state === 'Needs Review' ? 'Needs review' : 'Failed'}: ${j.error ?? 'unknown error'}`;
@@ -385,11 +405,49 @@ export async function syncResults(db: Db, at: AirtableClient): Promise<number> {
   return wrote;
 }
 
-/** One bridge tick: results first (cheap), then new button presses. */
-export async function bridgeTick(db: Db, cfg: Config, at: AirtableClient): Promise<{ queued: number; wrote: number }> {
+async function deepReviewWanted(at: AirtableClient, recordId: string): Promise<boolean> {
+  const r = await at.get(LEAD_LISTS, recordId, [F.useDeepReview, F.deepReviewPrompt]);
+  return r?.fields[F.useDeepReview] === true && text(r?.fields[F.deepReviewPrompt]) !== '';
+}
+
+// TAM Finder (Lead List Center, Source & ICP): the screen writes TAM Check JSON with status
+// "requested" and the saved filters; the engine answers with DiscoLike's FREE count (the same
+// count the company sample runs first). Replaces the separate n8n TAM workflow.
+const TAM_FORMULA = `FIND('"status":"requested"', {TAM Check JSON})`;
+
+/** Answer every requested TAM check. A rate limit leaves it requested for the next tick. */
+export async function pollTam(cfg: Config, at: AirtableClient, disco: Pick<DiscoLikeClient, 'count'> = createDiscoLikeClient({ apiKey: cfg.discoLikeApiKey, baseUrl: cfg.discoLikeBaseUrl })): Promise<number> {
+  const recs = await at.list(LEAD_LISTS, TAM_FORMULA, [F.tamCheck]);
+  let answered = 0;
+  for (const rec of recs) {
+    let snap: any;
+    try { snap = JSON.parse(text(rec.fields[F.tamCheck])); } catch { continue; }
+    if (snap?.status !== 'requested') continue;
+    const base = { version: 1, requestId: snap.requestId, requestedAt: snap.requestedAt, source: snap.source, checkedAt: new Date().toISOString() };
+    let out: Record<string, unknown>;
+    try {
+      const filters = JSON.parse(String(snap.source ?? ''));
+      if (!filters || typeof filters !== 'object' || Array.isArray(filters)) throw new PermanentError('Generate or save your company filters first.');
+      const counted = await disco.count(filters);
+      out = counted
+        ? { ...base, status: 'complete', count: counted.count, params: countFilters(filters)?.params ?? {}, ignored: counted.ignored, notes: [] }
+        : { ...base, status: 'error', message: 'These filters cannot be counted for free (lookalike text only). Add a country, industry, keyword or company size filter.' };
+    } catch (e) {
+      if (e instanceof WaitError || e instanceof RetryableError) continue; // try again next tick
+      out = { ...base, status: 'error', message: e instanceof SyntaxError ? 'The saved company filters are not valid JSON.' : (e as Error).message };
+    }
+    await at.update(LEAD_LISTS, rec.id, { [F.tamCheck]: JSON.stringify(out) });
+    answered++;
+  }
+  return answered;
+}
+
+/** One bridge tick: results first (cheap), then new button presses, then TAM checks (free). */
+export async function bridgeTick(db: Db, cfg: Config, at: AirtableClient): Promise<{ queued: number; wrote: number; tam: number }> {
   const wrote = await syncResults(db, at);
   const queued = await pollActions(db, cfg, at);
-  return { queued, wrote };
+  const tam = await pollTam(cfg, at);
+  return { queued, wrote, tam };
 }
 
 const label = (o: string) => (o === 'generic' ? 'Generic' : 'Direct');

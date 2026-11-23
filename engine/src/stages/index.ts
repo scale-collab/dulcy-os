@@ -12,6 +12,7 @@ import { deepReviewStage } from './deepReview.js';
 import { deepContactsStage } from './deepContacts.js';
 import { automatedQaStage } from './automatedQa.js';
 import { enrichPromptStage, enrichRunStage } from './enrichment.js';
+import { restartStage, skipEnrichStage } from './listControl.js';
 
 /** A stage = one Airtable action. It returns a small result for the Airtable record. */
 export type Stage = (ctx: JobContext) => Promise<Record<string, unknown>>;
@@ -124,6 +125,18 @@ export const STAGES: Record<string, StageDef> = {
     deadlineMs: 12 * 60 * 60_000,
     maxAttempts: 5,
     description: 'Find people at the Tier 1/2 companies (500 companies per DiscoLike call), contact profile from one AI call, fit in code; Contacts tab ready for Verify.',
+  },
+  'leadlist.restart': {
+    run: restartStage,
+    deadlineMs: 20 * 60_000,
+    maxAttempts: 3,
+    description: 'Restart Companies: back up every working row of the list (companies, contacts, reviews, profiles), clear it and the sheet tabs, and reset counts, approvals, verify and QA. Spends nothing; earlier paid results stay reusable.',
+  },
+  'leadlist.skipenrich': {
+    run: skipEnrichStage,
+    deadlineMs: 5 * 60_000,
+    maxAttempts: 2,
+    description: 'Skip Enrichment: a verified list moves to QA (stage QA, progress 5/6). Spends nothing.',
   },
   'bounce.check': {
     run: bounceCheckStage,
