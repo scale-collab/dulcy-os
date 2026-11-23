@@ -49,6 +49,10 @@ Set **Contact Source** on the list before **Find Contacts**. **Leave it empty fo
 | **DiscoLike** (legacy, ends 2026-12-31) | DiscoLike's contact database only, no email check. | Only if picked on purpose. |
 | **DiscoLike + ContraGen** (legacy, ends 2026-12-31) | Database first, then ContraGen web research on companies under 5 usable contacts. | Only if picked on purpose. |
 
+**Ready for 2027:** every DiscoLike endpoint the default path uses stays after 2026-12-31 (company search, count, exclusion lists, ICP review, DiscoGen, Contacts run). From 2027-01-01 a list still set to a legacy option automatically uses the Contacts run instead of failing. If DiscoLike marks any endpoint we use as retiring (Deprecation/Sunset header), the engine logs a warning: "DiscoLike says this endpoint is being retired".
+
+**Known limit:** about 28% of Contacts-run people (the ones found on the web, not in DiscoLike's database) have no DiscoLike person ID. Deep Review Contacts and person-level enrichment skip those people (company-level enrichment still works).
+
 **Verify stays the same for every option:** MillionVerifier checks every email ("just making sure"), and **LeadMagic runs only when "Use LeadMagic" is ticked** (off by default).
 
 **What the live test showed (2026-11-23, 518 companies, 383 contacts, MillionVerifier on 366):**
@@ -143,6 +147,7 @@ SSH in: `ssh -o ServerAliveInterval=30 root@178.156.132.86`
 ## 9. Change log
 
 - **2026-11-23:**
+  - From 2027-01-01 legacy contact options automatically use the Contacts run; DiscoLike retirement headers are logged as warnings.
   - **DiscoLike Contacts Run is the default Contact Source** (also when the field is empty). The legacy options run only when picked on purpose. MillionVerifier stays after it; LeadMagic only when ticked.
   - Fixed: the Contacts tab could miss contacts or have gaps (a ContraGen batch and the next DiscoLike batch could share a batch number; rows were written at fixed places that shifted after cuts). Every Find Contacts press now ends with a clean rewrite of Contacts and Contacts (Cut) from the engine's saved contacts.
   - MillionVerifier and LeadMagic jobs are named after the lead list.
