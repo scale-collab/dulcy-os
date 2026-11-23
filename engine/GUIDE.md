@@ -136,6 +136,7 @@ SSH in: `ssh -o ServerAliveInterval=30 root@178.156.132.86`
 ## 9. Change log
 
 - **2026-11-23:**
+  - Fixed: the Contacts tab could miss contacts or have gaps (a ContraGen batch and the next DiscoLike batch could share a batch number; rows were written at fixed places that shifted after cuts). Every Find Contacts press now ends with a clean rewrite of Contacts and Contacts (Cut) from the engine's saved contacts.
   - MillionVerifier and LeadMagic jobs are named after the lead list.
   - New server command `mv-compare`: compares MillionVerifier's verdicts with DiscoLike's email check.
   - New Contact Source "DiscoLike Contacts Run" (DiscoLike's new one-step contact search).

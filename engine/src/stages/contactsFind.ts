@@ -24,7 +24,7 @@ import { createSheetsClient } from '../providers/google.js';
 import { createOpenAIClient } from '../providers/openai.js';
 import { checkContactFit, cleanContactProfile, codeContactProfile, contactProfilePrompt, CONTACT_PROFILE_SYSTEM, EXCLUDED_PERSON_COUNTRY_CODES, toContacts, toRunContacts, type Contact, type ContactProfile } from '../leadlist/contacts.js';
 import { CONTRAGEN_BATCH, contraGenRequest, normLinkedIn, taskState, toContraGenContacts } from '../leadlist/contragen.js';
-import { contactCounts, ensureContactTabs, mirrorContacts, saveContacts } from '../leadlist/contactStore.js';
+import { contactCounts, ensureContactTabs, mirrorContacts, nextContactBatch, rewriteContactTabs, saveContacts } from '../leadlist/contactStore.js';
 
 interface ContactsInput {
   /** The list's Contact Filters JSON (seniority, person_country, results_by_company, ...). */
@@ -115,7 +115,8 @@ export const contactsFindStage: Stage = async (ctx) => {
         ORDER BY CASE c.tier WHEN 'Tier 1' THEN 0 ELSE 1 END, c.batch, c.seq`, [listId]);
     const all = r.rows.map((x) => x.domain as string);
     const take = input.companies ? all.slice(0, Math.max(1, Math.round(input.companies))) : all;
-    const startBatch = Number((await ctx.db.query(`SELECT COALESCE(MAX(batch),0)::int AS b FROM lead_contact_domains WHERE list_id=$1`, [listId])).rows[0].b) + 1;
+    // Never reuse a batch number (a ContraGen batch saves contacts without searched domains).
+    const startBatch = await nextContactBatch(ctx.db, listId);
     return { domains: take, notSearched: all.length, startBatch };
   });
   const pendingContraGen = input.contraGen ? (await contraGenCandidates(ctx, listId, perCompany)).checked.length : 0;
@@ -125,7 +126,7 @@ export const contactsFindStage: Stage = async (ctx) => {
     // A run that saved contacts but failed at the sheet write (e.g. a Google sign-in error) is
     // finished here: write any saved contacts the sheet does not have yet (free; Verify reads the sheet).
     const hasTab = (await ctx.db.query(`SELECT 1 FROM lead_list_sheets WHERE list_id=$1 AND kind='contacts'`, [listId])).rowCount;
-    if (hasTab && !ctx.dryRun) await ctx.step('mirror-final', () => mirrorContacts(ctx.db, sheets, listId));
+    if (hasTab && !ctx.dryRun) await ctx.step('mirror-final', () => rewriteContactTabs(ctx.db, sheets, listId));
     return { dryRun: ctx.dryRun, contacts: have, message: 'every usable company has already been searched for contacts' };
   }
   const maxContacts = plan.domains.length * perCompany;
@@ -178,7 +179,7 @@ export const contactsFindStage: Stage = async (ctx) => {
     await ctx.step(`mirror-${b}`, () => mirrorContacts(ctx.db, sheets, listId));
   }
   const contraGen = input.contraGen && !input.contactsRun ? await runContraGen(ctx, listId, input, perCompany, () => profile) : undefined;
-  await ctx.step('mirror-final', () => mirrorContacts(ctx.db, sheets, listId));
+  await ctx.step('mirror-final', () => rewriteContactTabs(ctx.db, sheets, listId));
   profile ??= (await ctx.db.query(`SELECT profile FROM lead_contact_profiles WHERE list_id=$1`, [listId])).rows[0]?.profile as ContactProfile | undefined;
 
   const total = await contactCounts(ctx.db, listId);
@@ -252,7 +253,7 @@ async function runContraGen(ctx: JobContext, listId: string, input: ContactsInpu
       if (room[c.domain] <= 0) return false;
       room[c.domain]--; return true;
     });
-    const batch = Number((await ctx.db.query(`SELECT COALESCE(MAX(batch),0)::int AS b FROM lead_contact_domains WHERE list_id=$1`, [listId])).rows[0].b) + 1;
+    const batch = await nextContactBatch(ctx.db, listId);
     const saved = await saveContacts(ctx.db, listId, batch, rows);
     const added: Record<string, number> = {};
     for (const { c, fit } of rows) if (fit.tier !== 'Cut') added[c.domain] = (added[c.domain] ?? 0) + 1;
