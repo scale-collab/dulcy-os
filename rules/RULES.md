@@ -27,6 +27,8 @@ Format: `- [date] rule. (why / source)`
 
 - [2026-11-23] MillionVerifier and LeadMagic jobs are named after the lead list (its Airtable name plus a short code), not the record ID. Reason: Alex could not tell the jobs apart in MillionVerifier. (Alex)
 
+- [2026-11-23] Default Contact Source is "DiscoLike Contacts Run" (also when the field is empty). The legacy "DiscoLike" and "DiscoLike + ContraGen" run only when picked on purpose (ending 2026-12-31). MillionVerifier always checks the emails after it (DiscoLike's plain "Validated" was 3.5% bad in the live test); LeadMagic runs only when "Use LeadMagic" is ticked (off by default). No verifier-choice options on Verify. No real-send catch-all test for now. Reason: live accuracy test 2026-11-23. (Alex)
+
 ## Campaign health
 - [2026-11-18] Bounce auto-pause: pause when bounce is over 4% **and** the campaign is at 35%+ progress. The floor stops early small numbers from pausing it (1 bounce in the first 10 emails = 10%). The check must re-run on every metric refresh, not fire once. Over 2.5% = watch. (Alex)
 - [2026-11-18] Failed campaigns restart automatically: a failure is usually an error on the sending system's side. Long-running jobs (18+ hours seen) must be investigated, and the engine needs time limits. (Alex)

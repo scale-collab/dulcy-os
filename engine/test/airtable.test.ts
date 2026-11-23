@@ -149,11 +149,14 @@ test('contacts: sample until approved, then everyone; verify reads the engine sh
   let j = (await db.query(`SELECT * FROM jobs WHERE record_id=$1 AND kind='leadlist.contacts'`, [REC])).rows[0];
   assert.equal(j.input.companies, 50);
   assert.deepEqual(j.input.contactFilters, { seniority: ['executive'] });
+  assert.equal(j.input.contactsRun, true, 'no Contact Source = the DiscoLike Contacts run (default since 2026-11-23)');
+  assert.equal(j.input.contraGen, false);
   await finish(db, j.id, { dryRun: true, message: 'x' });
-  press('Find Contacts', { [F.contactApproved]: true });
+  press('Find Contacts', { [F.contactApproved]: true, [F.contactSource]: 'DiscoLike' });
   await pollActions(db, cfg(), at());
   j = (await db.query(`SELECT * FROM jobs WHERE record_id=$1 AND kind='leadlist.contacts' ORDER BY id DESC`, [REC])).rows[0];
   assert.equal(j.input.companies, undefined);
+  assert.equal(j.input.contactsRun, false, 'the legacy DiscoLike search only when picked on purpose');
 
   await db.query(`INSERT INTO lead_list_sheets (list_id, kind, sheet_id, tab) VALUES ($1,'companies','sheet123','Engine Companies')`, [REC]);
   press('Verify and Finalize', { [F.includeDirect]: true });

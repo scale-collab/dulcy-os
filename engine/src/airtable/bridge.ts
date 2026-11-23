@@ -235,9 +235,11 @@ export async function buildInput(db: Db, at: AirtableClient, rec: AirtableRecord
         contactFilters: json(r[F.contactFiltersJson], 'Contact Filters JSON') ?? {},
         personaDna: text(r[F.personaDna]) || undefined,
         companies: approved ? undefined : num(r[F.contactSampleSize]) ?? 100,
+        // Contact Source (Alex, 2026-11-23): DiscoLike's new one-step Contacts run is the default
+        // (empty or "DiscoLike Contacts Run"); the legacy "DiscoLike" / "DiscoLike + ContraGen" run
+        // only when picked on purpose, until DiscoLike retires them on 2026-12-31.
         contraGen: text(r[F.contactSource]).toLowerCase() === 'discolike + contragen',
-        // DiscoLike's new one-step Contacts run (replaces contact search + ContraGen, which end 2026-12-31).
-        contactsRun: text(r[F.contactSource]).toLowerCase() === 'discolike contacts run',
+        contactsRun: ['', 'discolike contacts run'].includes(text(r[F.contactSource]).toLowerCase()),
         ...who,
       };
     }
