@@ -141,7 +141,7 @@ SSH in: `ssh -o ServerAliveInterval=30 root@178.156.132.86`
 
 - **Catch-alls:** DiscoLike's "catch-all resolved" contacts are dropped by MillionVerifier (risky). Keeping them needs a real-send bounce test (Alex: not now).
 - **More contacts:** wider people description, `max_coverage`, re-search companies that gave nobody (after the accuracy test).
-- **Airtable:** the Engine page shows "Something went wrong" (need the error text). Move the engine buttons into the main Lead List Center. Add "DiscoLike Contacts Run" to the Contact Source dropdown.
+- **Airtable:** move the engine buttons into the main Lead List Center. Add "DiscoLike Contacts Run" to the Contact Source dropdown choices.
 - **Per-list cost:** show each list's DiscoLike cost in Airtable.
 
 ---
@@ -149,6 +149,7 @@ SSH in: `ssh -o ServerAliveInterval=30 root@178.156.132.86`
 ## 9. Change log
 
 - **2026-11-23:**
+  - Fixed the Engine page error ("No field with ID ... in table 'Lead Lists'"): the page no longer reads the table's hidden primary field. The page now also has Contact Source and Use LeadMagic.
   - Build Campaign sizes the daily limits to the campaign's inboxes. A limit copied from a bigger campaign (live: 2,325 a day on 7 inboxes) is lowered to what the inboxes can send.
   - Tested live: launch, then pause, of a built campaign works (test campaign 653: 0 emails sent, then deleted).
   - From 2027-01-01 legacy contact options automatically use the Contacts run; DiscoLike retirement headers are logged as warnings.
