@@ -182,6 +182,7 @@ SSH in: `ssh -o ServerAliveInterval=30 root@178.156.132.86`
 ## 9. Change log
 
 - **2026-11-23:**
+  - "ecom", "e-commerce", "DTC", "online store" or "Shopify" in the targeting sentence makes the E-commerce tag required on top of the product industry ("pet ecom brands" = pet brands that sell online first; US 11-200: 1,956 instead of 3,086).
   - Employee ranges snap to DiscoLike's size steps (1-10, 11-50, 51-200, 201-500, ...): "10 to 200" = 11-200 (Alex).
   - Fixed: Generate filters ignored "between 10 and 200 employees" (only "10-200" / "10 to 200" worked), so no employee filter was set.
   - New: **Campaign Center buttons on the engine** (section 2b): Build, Launch (all launch checks first; any fail = nothing launched), Pause, Update Senders (pause, change, start again when running), Top Up (top-up rule from the campaign's numbers). The bounce check now honours **Skip Bounce Pause**.
