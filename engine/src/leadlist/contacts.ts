@@ -12,6 +12,8 @@ export interface Contact {
   company_name: string;
   /** Where the contact came from: DiscoLike (default) or ContraGen. */
   source?: string;
+  /** DiscoLike Contacts run only: its own email check ("Validated" / "Validated (catch-all resolved)"). */
+  email_status?: string;
 }
 
 export function toContacts(response: any): Contact[] {
@@ -55,7 +57,7 @@ export function toRunContacts(page: any): { contacts: Contact[]; domains: Record
         domain: s(c.domain || domain).toLowerCase(), name, first_name: s(c.first_name ?? first), last_name: s(c.last_name ?? rest.join(' ')),
         title: s(c.title), seniority: s(c.seniority), department: s(c.department), email, linkedin_url: s(c.linkedin_url),
         person_country: s(c.person_country ?? c.country), person_state: s(c.person_state ?? c.state),
-        company_name: s(company.name ?? company.company_name ?? co?.name), source: 'DiscoLike Contacts run',
+        company_name: s(company.name ?? company.company_name ?? co?.name), source: 'DiscoLike Contacts run', email_status: s(c.email_status) || undefined,
       });
       domains[domain]++;
     }
