@@ -131,6 +131,15 @@ test('generate filters: "between 10 and 200 employees" sets the employee range (
   const q = await enqueue(db, { kind: 'leadlist.filters', recordId: REC, dryRun: false, input: { record: { ...record, fields: { ...record.fields, 'ICP Description': sentence } }, client, action: 'Generate Filters' }, requestId: 'between', maxAttempts: 3, deadlineMs: 60_000 });
   const j = await settle(cfg(), q.job.id);
   assert.equal(j.job.status, 'succeeded', j.job.error);
-  assert.equal(j.job.result.filters.employee_range, '10,200');
-  assert.equal(j.job.result.airtableFields.fldG2MXz5lccu7KKU, '10,200');
+  assert.equal(j.job.result.filters.employee_range, '11,200', '10 is the end of the 1-10 step: the minimum moves to 11 (Alex)');
+  assert.equal(j.job.result.airtableFields.fldG2MXz5lccu7KKU, '11,200');
+});
+
+test('generate filters: employee ranges snap to DiscoLike size steps (Alex, 2026-11-23)', { skip }, async () => {
+  for (const [sentence, want] of [['Roofers with 20-100 employees in Texas', '11,200'], ['Agencies between 50 and 500 employees in the US', '51,500'], ['Clinics with 1-200 employees in the US', '1,200']]) {
+    const q = await enqueue(db, { kind: 'leadlist.filters', recordId: REC, dryRun: false, input: { record: { ...record, fields: { ...record.fields, 'ICP Description': sentence } }, client, action: 'Generate Filters' }, requestId: `steps:${sentence}`, maxAttempts: 3, deadlineMs: 60_000 });
+    const j = await settle(cfg(), q.job.id);
+    assert.equal(j.job.status, 'succeeded', j.job.error);
+    assert.equal(j.job.result.filters.employee_range, want, sentence);
+  }
 });
