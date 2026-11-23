@@ -156,6 +156,8 @@ async function main() {
       const rows = (await db.query(`SELECT email, data->>'email_status' AS status FROM lead_contacts WHERE list_id=$1 AND data->>'source'='DiscoLike Contacts run'`, [recordId])).rows as { email: string; status: string | null }[];
       const status = new Map(rows.map((r) => [r.email, r.status || 'unknown']));
       const mv = createMvClient({ apiKey: cfg.millionVerifierApiKey, baseUrl: cfg.millionVerifierBaseUrl });
+      const info = await mv.fileInfo(mvJob);
+      if (!['finished', 'completed', 'complete', 'done'].includes(info.status)) { console.log(`MillionVerifier job ${mvJob} is not finished yet (${info.status || 'unknown'}, ${info.percent}% done). Run this again when it is.`); return; }
       const { results, diff } = parseResultsLoose(await mv.download(mvJob), rows.map((r) => r.email));
       const table: Record<string, Record<string, number>> = {};
       const detail: Record<string, number> = {};
