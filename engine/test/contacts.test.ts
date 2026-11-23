@@ -252,6 +252,10 @@ test('DiscoLike Contacts run (new API): our Tier 1/2 domains + persona in one ru
   const again = await run({ personaDna: PERSONA, contactsRun: true });
   assert.equal(again.job.status, 'succeeded', again.job.error);
   assert.equal(runApi.starts, 1, 'every company already searched: no new run');
+  const later = await run({ personaDna: PERSONA, contraGen: true });
+  assert.equal(later.job.status, 'succeeded', later.job.error);
+  assert.equal(cg.submits, 0, 'switching to DiscoLike + ContraGen later never pays ContraGen again for companies the Contacts run researched');
+  assert.equal(disco.calls, 0);
   const d = await run({ personaDna: PERSONA, contactsRun: true }, cfg({ dryRun: true, liveStages: [] }));
   assert.equal(d.job.status, 'succeeded');
 });

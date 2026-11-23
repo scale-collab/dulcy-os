@@ -314,8 +314,14 @@ async function contactsRun(
     if (!out.rows) break;
   }
   // Companies the run never returned were still searched: mark them so a re-press does not pay again.
-  await ctx.step(`run-domains-${r.batch}`, () => ctx.db.query(
-    `INSERT INTO lead_contact_domains (list_id, domain, batch, found) SELECT $1, d, $2, 0 FROM unnest($3::text[]) AS u(d) ON CONFLICT DO NOTHING`,
-    [r.listId, r.batch, r.domains]).then(() => true));
+  // The run already did the web research (its built-in ContaGen): mark them so switching the list to
+  // "DiscoLike + ContraGen" later never pays ContraGen again for these companies (Alex, 2026-11-23).
+  await ctx.step(`run-domains-${r.batch}`, async () => {
+    await ctx.db.query(
+      `INSERT INTO lead_contact_domains (list_id, domain, batch, found) SELECT $1, d, $2, 0 FROM unnest($3::text[]) AS u(d) ON CONFLICT DO NOTHING`,
+      [r.listId, r.batch, r.domains]);
+    await ctx.db.query(`UPDATE lead_contact_domains SET contragen_at = COALESCE(contragen_at, now()) WHERE list_id=$1 AND domain = ANY($2::text[])`, [r.listId, r.domains]);
+    return true;
+  });
   return { batch: r.batch, runId, companies: r.domains.length, ...totals, spentUsd: done.spentUsd, stopReason: done.stopReason };
 }
