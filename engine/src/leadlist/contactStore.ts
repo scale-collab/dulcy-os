@@ -66,3 +66,34 @@ export async function mirrorContacts(db: Db, sheets: SheetsClient, listId: strin
   }
   return { written };
 }
+
+/** Rewrite both contact tabs from the engine's saved contacts: clear, header, every row in
+ *  order (batch, then the order saved). Run at the end of every Find Contacts press, so the
+ *  sheet Verify reads always matches the engine exactly, whatever happened to earlier batches
+ *  (tier changes after a deep review, a failed write, a batch number written twice). */
+export async function rewriteContactTabs(db: Db, sheets: SheetsClient, listId: string) {
+  const s = (await db.query(`SELECT sheet_id FROM lead_list_sheets WHERE list_id=$1 AND kind='contacts'`, [listId])).rows[0];
+  if (!s) return { usable: 0, cut: 0 };
+  const out: Record<string, number> = {};
+  for (const [kind, tab] of Object.entries(TABS)) {
+    const cond = kind === 'usable' ? `tier <> 'Cut'` : `tier = 'Cut'`;
+    const rows = (await db.query(`SELECT tier, reasons, signals, data, batch FROM lead_contacts WHERE list_id=$1 AND ${cond} ORDER BY batch, seq`, [listId])).rows;
+    await sheets.clearTab(s.sheet_id, tab);
+    await sheets.writeRows(s.sheet_id, tab, 1, [CONTACT_COLUMNS]);
+    for (let i = 0; i < rows.length; i += 5000) {
+      await sheets.writeRows(s.sheet_id, tab, 2 + i, rows.slice(i, i + 5000).map((r) => {
+        const c = r.data as Contact;
+        return [c.email, c.first_name, c.last_name, c.name, c.title, c.company_name, c.domain, c.linkedin_url, c.person_country, c.person_state, r.tier, (r.reasons ?? []).join(', '), (r.signals ?? []).join(', '), c.seniority, c.department, r.batch];
+      }));
+    }
+    out[kind] = rows.length;
+  }
+  await db.query(`UPDATE lead_list_sheets SET mirrored_batches = ARRAY(SELECT DISTINCT batch FROM lead_contacts WHERE list_id=$1 ORDER BY batch) WHERE list_id=$1 AND kind='contacts'`, [listId]);
+  return { usable: out.usable ?? 0, cut: out.cut ?? 0 };
+}
+
+/** The next unused batch number for a list's contacts (contacts and searched domains both count). */
+export async function nextContactBatch(db: Db, listId: string): Promise<number> {
+  const r = await db.query(`SELECT GREATEST(COALESCE((SELECT MAX(batch) FROM lead_contacts WHERE list_id=$1),0), COALESCE((SELECT MAX(batch) FROM lead_contact_domains WHERE list_id=$1),0))::int AS b`, [listId]);
+  return Number(r.rows[0].b) + 1;
+}

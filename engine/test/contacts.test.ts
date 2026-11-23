@@ -283,3 +283,23 @@ test('a run that saved contacts but failed at the sheet write: the next press wr
   assert.match(again.job.result.message, /already been searched/);
   assert.ok((google.written['sheet-c']?.['Contacts'] ?? []).filter(Boolean).length > 1, 'saved contacts written to the Contacts tab');
 });
+
+test('the Contacts tab always matches the engine exactly: DiscoLike, then ContraGen, then a newly added company, then a re-tiered contact', { skip }, async () => {
+  // 1. DiscoLike on two companies, 2. ContraGen on them, 3. a new company (expansion) searched.
+  assert.equal((await run({ personaDna: PERSONA, companies: 2 })).job.status, 'succeeded');
+  assert.equal((await run({ personaDna: PERSONA, companies: 2, contraGen: true })).job.status, 'succeeded');
+  const third = await run({ personaDna: PERSONA });
+  assert.equal(third.job.status, 'succeeded', third.job.error);
+  const batches = (await db.query(`SELECT batch, COUNT(*)::int AS n FROM lead_contacts WHERE list_id=$1 GROUP BY batch ORDER BY batch`, [REC])).rows;
+  assert.equal(new Set(batches.map((b) => b.batch)).size, batches.length);
+  assert.ok(batches.length >= 3, 'DiscoLike, ContraGen and the new company each got their own batch number');
+  const tab = (name: string) => (google.written['sheet-c'][name] ?? []).slice(1).filter((r) => r && r[0]).map((r) => r[0]).sort();
+  const db_ = async (cond: string) => (await db.query(`SELECT email FROM lead_contacts WHERE list_id=$1 AND ${cond} ORDER BY email`, [REC])).rows.map((r) => r.email);
+  assert.deepEqual(tab('Contacts'), await db_(`tier <> 'Cut'`), 'every usable contact, once, no gaps');
+  assert.deepEqual(tab('Contacts (Cut)'), await db_(`tier = 'Cut'`));
+  // 4. A contact is cut later (e.g. by a deep review); the next press rewrites the tabs cleanly.
+  await db.query(`UPDATE lead_contacts SET tier='Cut' WHERE list_id=$1 AND email = (SELECT email FROM lead_contacts WHERE list_id=$1 AND tier <> 'Cut' ORDER BY batch, seq LIMIT 1)`, [REC]);
+  assert.equal((await run({ personaDna: PERSONA })).job.status, 'succeeded');
+  assert.deepEqual(tab('Contacts'), await db_(`tier <> 'Cut'`));
+  assert.deepEqual(tab('Contacts (Cut)'), await db_(`tier = 'Cut'`));
+});
