@@ -236,6 +236,8 @@ export async function buildInput(db: Db, at: AirtableClient, rec: AirtableRecord
         personaDna: text(r[F.personaDna]) || undefined,
         companies: approved ? undefined : num(r[F.contactSampleSize]) ?? 100,
         contraGen: text(r[F.contactSource]).toLowerCase() === 'discolike + contragen',
+        // DiscoLike's new one-step Contacts run (replaces contact search + ContraGen, which end 2026-12-31).
+        contactsRun: text(r[F.contactSource]).toLowerCase() === 'discolike contacts run',
         ...who,
       };
     }
