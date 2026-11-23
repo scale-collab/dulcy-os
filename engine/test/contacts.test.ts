@@ -84,7 +84,7 @@ before(async () => {
       const u = new URL(req.url, 'http://x');
       const off = Number(u.searchParams.get('rows_offset') ?? 0), lim = Number(u.searchParams.get('rows_limit') ?? 10);
       const domains: string[] = runApi.lastBody.companies.domains;
-      const companies = domains.map((d) => ({ domain: d, status: 'validated', company: { name: d.toUpperCase() }, contacts: (disco.people[d] ?? []).slice(0, runApi.lastBody.per_company).map((p, i) => ({ row_key: `${d}-${i}`, domain: d, name: `${p.first_name} ${p.last_name}`, title: p.title, email: p.email, persona_id: p.persona_id })) }));
+      const companies = domains.map((d) => ({ domain: d, status: 'validated', company: { name: d.toUpperCase() }, contacts: (disco.people[d] ?? []).slice(0, runApi.lastBody.per_company).map((p, i) => ({ row_key: `${d}-${i}`, domain: d, name: `${p.first_name} ${p.last_name}`, title: p.title, email: p.email, persona_id: p.persona_id, email_status: i ? 'Validated (catch-all resolved)' : 'Validated' })) }));
       if (lim > 1) runApi.pages.push(`${off}:${lim}`); else runApi.polls++;
       const st = lim === 1 && runApi.polls <= runApi.pendingPolls ? 'running' : runApi.status;
       return res.end(JSON.stringify({ id: 'run-1', status: st, created_at: new Date().toISOString(), companies_total: companies.length, contacts_total: companies.reduce((n, c) => n + c.contacts.length, 0), companies: companies.slice(off, off + lim), summary: st === 'completed' ? { companies_delivered: 3, validated_contacts: 6, spent_usd: '0.06' } : null }));
@@ -248,6 +248,8 @@ test('DiscoLike Contacts run (new API): our Tier 1/2 domains + persona in one ru
   assert.equal(r.total, 6);
   assert.ok(r.cut >= 1, 'excluded titles are still cut');
   assert.equal(j.job.result.contactsRuns[0].runId, 'run-1');
+  const st = (await db.query(`SELECT data->>'email_status' AS s, data->>'source' AS src FROM lead_contacts WHERE list_id=$1 AND email='ann@t1.com'`, [REC])).rows[0];
+  assert.deepEqual(st, { s: 'Validated', src: 'DiscoLike Contacts run' }, 'DiscoLike\'s own email check is kept on each contact (to compare with MillionVerifier)');
   assert.equal(google.written['sheet-c']['Contacts'][0][0], 'Email');
   const again = await run({ personaDna: PERSONA, contactsRun: true });
   assert.equal(again.job.status, 'succeeded', again.job.error);
