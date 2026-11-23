@@ -30,7 +30,7 @@ The engine builds lead lists and campaigns. It replaces the old n8n list workflo
 | 2b | **Deep Review Companies** (optional) | DiscoGen web review of each company against your deep-review prompt. Fails are cut. Needs "Use DiscoGen Deep Review" ticked and a prompt. | Yes | AI Company Review tab |
 | 3 | **Find Contacts** | Finds people at the Tier 1/2 companies (see section 3 for the options). Before the contact sample is approved it searches 100 companies; after, all the rest. | Yes | Usable %, then tick contact approval |
 | 3b | **Deep Review Contacts** (optional) | DiscoGen persona review of each contact. Only a clear "yes" stays. | Yes | Contact Review tab |
-| 4 | **Verify and Finalize** | Checks emails with MillionVerifier (and LeadMagic for risky ones when "Use LeadMagic" is on), then writes **Final Direct** and **Final Generic**. Never checks the same email twice. | Yes (per new email) | Good / risky / bad, final lead count |
+| 4 | **Verify and Finalize** | Checks emails with MillionVerifier (and LeadMagic for risky ones when "Use LeadMagic" is on), then writes **Final Direct** and **Final Generic**. Never checks the same email twice. Jobs in MillionVerifier and LeadMagic are named after the lead list (list name + a short code). | Yes (per new email) | Good / risky / bad, final lead count |
 | 5 | **Prepare Enrichment Prompt** / **Run Enrichment** (optional) | Turns your plain-English "Custom Variables Requested" into a DiscoGen prompt, then fills those columns (e.g. city, niche). Blanks get a short phrase that fits the email copy. | Yes | The new columns in the Final tabs |
 | 6 | **Run Automated QA** | Structural checks on the final rows (company, email, first name, verification, copy variables). Passed = Lead List Stage "Ready". | Free | QA Review tab |
 | 7 | **Build Campaign** | Builds the EmailBison campaign as a draft: leads, copy, senders, schedule. **Never launches.** | Free | The draft in EmailBison |
@@ -119,6 +119,7 @@ SSH in: `ssh -o ServerAliveInterval=30 root@178.156.132.86`
 | Deploy a new build | `cd /opt/dulcy-os && git pull && bash engine/deploy/deploy.sh` |
 | See a job | `cd /opt/dulcy-os/engine/deploy && docker compose exec engine node dist/src/cli.js job <id>` |
 | Cancel a waiting job | `cd /opt/dulcy-os/engine/deploy && docker compose exec engine node dist/src/cli.js cancel <id>` (works only while it is queued/waiting; a running job needs the engine stopped first) |
+| Compare MillionVerifier with DiscoLike's own email check (free) | `cd /opt/dulcy-os/engine/deploy && docker compose exec engine node dist/src/cli.js mv-compare <recordId> <MillionVerifier job id>` |
 | Stop / start the engine | `docker compose stop engine` / `docker compose start engine` (jobs pick up where they left off) |
 
 ---
@@ -135,6 +136,8 @@ SSH in: `ssh -o ServerAliveInterval=30 root@178.156.132.86`
 ## 9. Change log
 
 - **2026-11-23:**
+  - MillionVerifier and LeadMagic jobs are named after the lead list.
+  - New server command `mv-compare`: compares MillionVerifier's verdicts with DiscoLike's email check.
   - New Contact Source "DiscoLike Contacts Run" (DiscoLike's new one-step contact search).
   - A later switch to ContraGen never re-pays companies a Contacts Run already searched.
   - DiscoLike's own email status is kept on each contact.

@@ -32,6 +32,9 @@
 //       Cancel a job that is waiting to run (queued or retrying). A running job is not touched.
 //   job <id>
 //       Show a job's status and summary (counts and comparison; no lead rows).
+//   mv-compare <recordId> <millionVerifierJobId>
+//       Free: download a MillionVerifier job and compare its verdicts with DiscoLike's own email
+//       check on the list's DiscoLike Contacts-run contacts (counts; emails masked).
 import { loadConfig } from './config.js';
 import { createPool, migrate } from './db/pool.js';
 import { enqueue, getJob } from './queue.js';
@@ -145,8 +148,29 @@ async function main() {
         result: Object.fromEntries(keep.filter((k) => k in res).map((k) => [k, res[k]])),
         steps: j.steps.map((s: { step_key: string; status: string }) => `${s.step_key}: ${s.status}`),
       }, null, 2));
+    } else if (cmd === 'mv-compare') {
+      const [recordId, mvJob] = args;
+      if (!recordId || !/^rec[A-Za-z0-9]{14}$/.test(recordId) || !mvJob) throw new Error('usage: mv-compare <recordId> <millionVerifierJobId>');
+      const { createMvClient } = await import('./providers/millionverifier.js');
+      const { parseResultsLoose, maskEmail } = await import('./verify/rules.js');
+      const rows = (await db.query(`SELECT email, data->>'email_status' AS status FROM lead_contacts WHERE list_id=$1 AND data->>'source'='DiscoLike Contacts run'`, [recordId])).rows as { email: string; status: string | null }[];
+      const status = new Map(rows.map((r) => [r.email, r.status || 'unknown']));
+      const mv = createMvClient({ apiKey: cfg.millionVerifierApiKey, baseUrl: cfg.millionVerifierBaseUrl });
+      const { results, diff } = parseResultsLoose(await mv.download(mvJob), rows.map((r) => r.email));
+      const table: Record<string, Record<string, number>> = {};
+      const detail: Record<string, number> = {};
+      for (const r of results) {
+        const s = status.get(r.email) ?? 'unknown';
+        (table[s] ??= {})[r.verdict] = (table[s][r.verdict] ?? 0) + 1;
+        detail[`${r.verdict}: ${r.detail}`] = (detail[`${r.verdict}: ${r.detail}`] ?? 0) + 1;
+      }
+      console.log(JSON.stringify({
+        contactsRunContacts: rows.length, inThisMillionVerifierJob: results.length, notInJob: diff.inListNotInFile.length,
+        byDiscoLikeStatus: table, millionVerifierDetail: detail,
+        notGood: results.filter((r) => r.verdict !== 'Good').map((r) => `${maskEmail(r.email)} | DiscoLike: ${status.get(r.email)} | MillionVerifier: ${r.verdict} (${r.detail})`),
+      }, null, 2));
     } else {
-      throw new Error('commands: verify, campaign, topup, senders, bounce, whereis, cleanup-test, cancel, job');
+      throw new Error('commands: verify, mv-compare, campaign, topup, senders, bounce, whereis, cleanup-test, cancel, job');
     }
   } finally {
     await db.end();

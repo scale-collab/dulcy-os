@@ -46,6 +46,8 @@ interface VerifyInput {
   /** Write the "Final Direct" / "Final Generic" tabs into the source sheet (the tabs the
    *  campaign build reads). Each tab is replaced in one write. Never in dry-run or diagnose. */
   writeFinalTabs?: boolean;
+  /** The lead list's name: MillionVerifier and LeadMagic jobs are named after it (Alex, 2026-11-23). */
+  name?: string;
   /** "Use LeadMagic Fallback": direct contacts not Good after MillionVerifier go to the
    *  LeadMagic email finder (old n8n rules, see verify/leadmagic.ts). */
   leadMagic?: boolean;
@@ -70,6 +72,7 @@ function readInput(raw: Record<string, unknown>): VerifyInput {
     expected: (raw.expected ?? undefined) as Expected | undefined,
     diagnose: raw.diagnose === true,
     writeFinalTabs: raw.writeFinalTabs === true,
+    name: typeof raw.name === 'string' ? raw.name : undefined,
     leadMagic: raw.leadMagic === true,
   };
 }
@@ -153,7 +156,7 @@ export const verifyStage: Stage = async (ctx) => {
         callKey: `upload:${key}`,
         provider: 'millionverifier',
         units: toSend.length,
-        run: () => mv.upload(csv, `dulcy-${ctx.job.record_id}-${key}.csv`),
+        run: () => mv.upload(csv, `${jobName(input.name, ctx.job.record_id, key)}.csv`),
         dryRunResult: () => ({ file_id: '', status: 'dry_run' }),
       }));
       if (!started.file_id) {
@@ -215,7 +218,7 @@ export const verifyStage: Stage = async (ctx) => {
       const key = createHash('sha256').update(todo.map((c) => c.key).sort().join('\n')).digest('hex').slice(0, 16);
       const jobId = await ctx.step('lm-submit', () => ctx.paid({
         scope: 'record', provider: 'leadmagic', callKey: `finder:${key}`, units: todo.length,
-        run: () => lm.submitFinder(todo.map((c) => c.body), `dulcy-${ctx.job.record_id}-${key}`),
+        run: () => lm.submitFinder(todo.map((c) => c.body), jobName(input.name, ctx.job.record_id, key)),
         dryRunResult: () => '',
       }));
       lmInfo.jobId = jobId; lmInfo.sent = todo.length;
@@ -379,4 +382,11 @@ function explainDiff(diff: ResultDiff, set: CandidateSet) {
     whyNotInList: { heldByEngineForReview: heldByEngine, movedToExcludedPersonalEmails: inExcludedPersonal, companyStillInListButEmailGone: companyStillInList, companyNoLongerInList: companyGone },
     note: 'counts compare the saved MillionVerifier job with the sheet as it is today',
   };
+}
+
+/** Provider job name: the lead list's name (as in Airtable) plus a short code that keeps each
+ *  upload unique; the old record-ID name when the list has no name. */
+export function jobName(listName: string | undefined, recordId: string, key: string): string {
+  const name = String(listName ?? '').replace(/[^\w\s()\[\].,&+'-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+  return name ? `${name} - ${key.slice(0, 8)}` : `dulcy-${recordId}-${key}`;
 }
