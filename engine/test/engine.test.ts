@@ -6,7 +6,7 @@ import { loadConfig, type Config } from '../src/config.js';
 import { enqueue, claim, getJob } from '../src/queue.js';
 import { runOnce } from '../src/worker.js';
 import { JobContext } from '../src/context.js';
-import { NeedsReviewError } from '../src/errors.js';
+import { NeedsReviewError, WaitError } from '../src/errors.js';
 import { sign, verifySignature, createServer } from '../src/http.js';
 import { STAGES } from '../src/stages/index.js';
 
@@ -98,6 +98,16 @@ test('credit cap stops a job before it spends', { skip }, async () => {
     NeedsReviewError,
   );
   assert.equal(calls, 0);
+});
+
+test('rate limited paid call (WaitError): nothing charged, the next attempt calls again (no "unclear outcome")', { skip }, async () => {
+  const q = await enqueue(db, { kind: 'engine.selftest', recordId: REC, dryRun: false });
+  const ctx = new JobContext(db, cfg({ dryRun: false }), { ...q.job, dry_run: false });
+  let calls = 0;
+  const call = (fail: boolean) => ctx.paid({ callKey: 'rl', provider: 'discolike', units: 1, run: async () => { calls++; if (fail) throw new WaitError('rate limited', 60_000); return { ok: true }; }, dryRunResult: () => ({}) });
+  await assert.rejects(call(true), WaitError);
+  assert.deepEqual(await call(false), { ok: true });
+  assert.equal(calls, 2);
 });
 
 test('step time limit: a hung step fails instead of running for hours', { skip }, async () => {

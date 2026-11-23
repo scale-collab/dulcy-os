@@ -1,6 +1,6 @@
 // DiscoLike client: free company count and the paid company search (same calls the old
 // n8n lead-list workflows made). Key in the x-discolike-key header, server .env only.
-import { PermanentError, RetryableError } from '../errors.js';
+import { PermanentError, RetryableError, WaitError } from '../errors.js';
 import { countFilters, toQuery, type Filters } from '../leadlist/filters.js';
 
 export interface DiscoLikeOptions { apiKey?: string; baseUrl: string; timeoutMs?: number; fetchImpl?: typeof fetch }
@@ -23,7 +23,12 @@ export function createDiscoLikeClient(o: DiscoLikeOptions) {
       throw new RetryableError('DiscoLike: network error or timeout');
     }
     const text = await res.text();
-    if (res.status === 429) throw new RetryableError('DiscoLike: rate limited (HTTP 429)');
+    // Rate limited: nothing was charged. Wait and carry on (Retry-After, else 60 s) instead of
+    // failing a long run (live 2026-11-22: a 30,088-company contact search hit 429 and failed).
+    if (res.status === 429) {
+      const ra = Number(res.headers.get('retry-after'));
+      throw new WaitError('DiscoLike: rate limited (HTTP 429); waiting and continuing', Number.isFinite(ra) && ra > 0 ? Math.min(ra, 600) * 1000 : 60_000);
+    }
     if (res.status >= 500) {
       if (paid) throw new Error(`DiscoLike: HTTP ${res.status}; outcome unknown`);
       throw new RetryableError(`DiscoLike: HTTP ${res.status}`);

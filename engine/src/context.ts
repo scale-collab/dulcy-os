@@ -134,7 +134,7 @@ export class JobContext {
       return result;
     } catch (e) {
       // Only a failure we know happened before anything was charged may be retried.
-      if (e instanceof RetryableError || e instanceof PermanentError) {
+      if (e instanceof RetryableError || e instanceof PermanentError || e instanceof WaitError) {
         await this.db.query(`UPDATE receipts SET status='failed', error=$2, finished_at=now() WHERE receipt_key=$1`, [key, String(e.message)]);
       }
       // Any other error leaves the receipt 'pending' on purpose (outcome unclear).
