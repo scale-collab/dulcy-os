@@ -41,13 +41,20 @@ The engine builds lead lists and campaigns. It replaces the old n8n list workflo
 
 ## 3. Contact Source: which one to pick
 
-Set **Contact Source** on the list before **Find Contacts**.
+Set **Contact Source** on the list before **Find Contacts**. **Leave it empty for the default.**
 
 | Option | What happens | When to use |
 |---|---|---|
-| **DiscoLike** | DiscoLike's contact database only. Cheapest. | Companies whose people are likely on LinkedIn (tech and similar), or to save money. |
-| **DiscoLike + ContraGen** | DiscoLike first, then ContraGen web research on every company with fewer than 5 usable contacts. | Everything else (local and offline businesses). |
-| **DiscoLike Contacts Run** (new, being tested) | DiscoLike's new one-step search: database, web research and email check in one run. Returns only people with a checked email. | Will become the default once the live test passes. The old two options use DiscoLike endpoints that end **2026-12-31**. |
+| **DiscoLike Contacts Run** (default; also used when the field is empty) | DiscoLike's one-step search: its database first, then web search for companies with nobody, then a real-time email check. Only people with a checked email are delivered and paid for (1 cent each). | Every new list (decided 2026-11-23 after the live accuracy test). |
+| **DiscoLike** (legacy, ends 2026-12-31) | DiscoLike's contact database only, no email check. | Only if picked on purpose. |
+| **DiscoLike + ContraGen** (legacy, ends 2026-12-31) | Database first, then ContraGen web research on companies under 5 usable contacts. | Only if picked on purpose. |
+
+**Verify stays the same for every option:** MillionVerifier checks every email ("just making sure"), and **LeadMagic runs only when "Use LeadMagic" is ticked** (off by default).
+
+**What the live test showed (2026-11-23, 518 companies, 383 contacts, MillionVerifier on 366):**
+- DiscoLike "Validated" (201): 82% good, 15% risky, **3.5% bad**. That's why MillionVerifier stays.
+- DiscoLike "Validated (catch-all resolved)" (165): 79% risky. MillionVerifier can't check catch-alls, and only 1.2% came back bad. They are dropped today; keeping them needs a real-send bounce test first.
+- Cost: about 2 cents per sendable lead (1 cent per delivered contact, ~54% MillionVerifier-good).
 
 **Switching later is safe.** You can run 100 or 1,000 companies on "DiscoLike", then switch to "DiscoLike + ContraGen":
 - ContraGen then runs **once** on the companies already searched that are under 5 usable contacts.
@@ -126,8 +133,8 @@ SSH in: `ssh -o ServerAliveInterval=30 root@178.156.132.86`
 
 ## 8. Not finished yet
 
-- **Contacts Run:** live test, then make it the default.
-- **MillionVerifier/LeadMagic:** decide whether to skip them for Contacts Run contacts (needs the test results).
+- **Catch-alls:** DiscoLike's "catch-all resolved" contacts are dropped by MillionVerifier (risky). Keeping them needs a real-send bounce test (Alex: not now).
+- **More contacts:** wider people description, `max_coverage`, re-search companies that gave nobody (after the accuracy test).
 - **Airtable:** the Engine page shows "Something went wrong" (need the error text). Move the engine buttons into the main Lead List Center. Add "DiscoLike Contacts Run" to the Contact Source dropdown.
 - **Per-list cost:** show each list's DiscoLike cost in Airtable.
 
@@ -136,6 +143,7 @@ SSH in: `ssh -o ServerAliveInterval=30 root@178.156.132.86`
 ## 9. Change log
 
 - **2026-11-23:**
+  - **DiscoLike Contacts Run is the default Contact Source** (also when the field is empty). The legacy options run only when picked on purpose. MillionVerifier stays after it; LeadMagic only when ticked.
   - Fixed: the Contacts tab could miss contacts or have gaps (a ContraGen batch and the next DiscoLike batch could share a batch number; rows were written at fixed places that shifted after cuts). Every Find Contacts press now ends with a clean rewrite of Contacts and Contacts (Cut) from the engine's saved contacts.
   - MillionVerifier and LeadMagic jobs are named after the lead list.
   - New server command `mv-compare`: compares MillionVerifier's verdicts with DiscoLike's email check.
