@@ -76,6 +76,12 @@ test('inbox split: by lead share, at least 1 each when both outputs exist', () =
 
 test('daily limits: sized to the inboxes; a set limit below what they send is refused', () => {
   assert.deepEqual(sendingLimits(100, 15, null, null), { max_emails_per_day: 1500, max_new_leads_per_day: 1200 });
-  assert.deepEqual(sendingLimits(10, 15, 5000, 2000), { max_emails_per_day: 5000, max_new_leads_per_day: 2000 });
   assert.throws(() => sendingLimits(100, 15, 1000, null), /cop|stall/);
+});
+
+test('daily limits: a value copied from a bigger campaign is lowered to what the inboxes send (2026-11-23)', () => {
+  // Live: 7 inboxes x 15/day built with 2,325 emails and 775 new leads a day.
+  assert.deepEqual(sendingLimits(7, 15, 2325, 775), { max_emails_per_day: 105, max_new_leads_per_day: 105 });
+  assert.deepEqual(sendingLimits(7, 15, 2325, null), { max_emails_per_day: 105, max_new_leads_per_day: 84 });
+  assert.deepEqual(sendingLimits(10, 15, 5000, 60), { max_emails_per_day: 150, max_new_leads_per_day: 60 });
 });

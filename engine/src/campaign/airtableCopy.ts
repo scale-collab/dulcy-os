@@ -131,13 +131,16 @@ export function campaignSettings(r: Cells) {
  * Daily limits for one campaign (Alex: "if you're sending 5,000 emails a day you can't have your
  * max emails as 2,500, or the campaign will cop out halfway"). Capacity = inboxes x daily limit.
  * Blank fields: max emails = capacity, new leads = 80% of it (EmailBison SOP). A set max emails
- * below capacity is refused.
+ * below capacity is refused. A set value ABOVE capacity is lowered to capacity (Alex, 2026-11-23:
+ * a test campaign with 7 inboxes was built with 2,325/day and 775 new leads/day, copied from a
+ * bigger campaign's record). New leads never exceed max emails.
  */
 export function sendingLimits(inboxes: number, dailyLimit: number, maxEmails: number | null, maxNewLeads: number | null) {
   const capacity = Math.max(1, inboxes * dailyLimit);
   if (maxEmails !== null && maxEmails < capacity) {
     throw new PermanentError(`max_emails_per_day is ${maxEmails} but the ${inboxes} inboxes send about ${capacity} a day; raise it to at least ${capacity} (or clear it) so the campaign does not stall`);
   }
-  const max_emails_per_day = maxEmails ?? capacity;
-  return { max_emails_per_day, max_new_leads_per_day: maxNewLeads ?? Math.floor(max_emails_per_day * 0.8) };
+  const max_emails_per_day = capacity;
+  const newLeads = maxNewLeads ?? Math.floor(capacity * 0.8);
+  return { max_emails_per_day, max_new_leads_per_day: Math.max(1, Math.min(newLeads, capacity)) };
 }
