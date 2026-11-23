@@ -122,6 +122,10 @@ export const contactsFindStage: Stage = async (ctx) => {
   if (!plan.domains.length && !pendingContraGen) {
     const have = await contactCounts(ctx.db, listId);
     if (have.companiesSearched === 0) throw new PermanentError('this list has no usable companies to search; run the company sample and expansion first');
+    // A run that saved contacts but failed at the sheet write (e.g. a Google sign-in error) is
+    // finished here: write any saved contacts the sheet does not have yet (free; Verify reads the sheet).
+    const hasTab = (await ctx.db.query(`SELECT 1 FROM lead_list_sheets WHERE list_id=$1 AND kind='contacts'`, [listId])).rowCount;
+    if (hasTab && !ctx.dryRun) await ctx.step('mirror-final', () => mirrorContacts(ctx.db, sheets, listId));
     return { dryRun: ctx.dryRun, contacts: have, message: 'every usable company has already been searched for contacts' };
   }
   const maxContacts = plan.domains.length * perCompany;
