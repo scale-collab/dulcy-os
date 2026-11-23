@@ -89,7 +89,13 @@ async function contactProfile(ctx: JobContext, listId: string, input: ContactsIn
 }
 
 export const contactsFindStage: Stage = async (ctx) => {
-  const input = ctx.job.input as unknown as ContactsInput;
+  const input = { ...(ctx.job.input as unknown as ContactsInput) };
+  // DiscoLike retires the legacy contact search and ContraGen on 2026-12-31: from then on a list
+  // still set to "DiscoLike" / "DiscoLike + ContraGen" uses the Contacts run instead of failing.
+  let switchedFromLegacy = false;
+  if (!input.contactsRun && Date.now() >= Date.parse(ctx.cfg.legacyContactsEnd ?? '2027-01-01T00:00:00Z')) {
+    input.contactsRun = true; input.contraGen = false; switchedFromLegacy = true;
+  }
   const listId = ctx.job.record_id;
   const filters = { ...(input.contactFilters ?? {}) };
   for (const k of Object.keys(filters)) {
@@ -196,7 +202,7 @@ export const contactsFindStage: Stage = async (ctx) => {
     contraGen,
     topCutReasons: Object.entries(top).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([reason, n]) => ({ reason, contacts: n })),
     sheet: { url: `https://docs.google.com/spreadsheets/d/${sheet.sheetId}`, tab: 'Contacts' },
-    message: `${total.usable} usable contacts (Tier 1 ${total.tier1}, Tier 2 ${total.tier2}, Cut ${total.cut}; ${Math.round(total.usableRate * 100)}% usable, ${status}) from ${total.companiesWithContacts} of ${total.companiesSearched} companies searched${contraGen ? `; ContraGen: ${contraGen.added} new usable contacts from ${contraGen.companies} companies under ${perCompany}` : ''}`,
+    message: `${switchedFromLegacy ? 'Legacy DiscoLike contact options are retired: used the DiscoLike Contacts run. ' : ''}${total.usable} usable contacts (Tier 1 ${total.tier1}, Tier 2 ${total.tier2}, Cut ${total.cut}; ${Math.round(total.usableRate * 100)}% usable, ${status}) from ${total.companiesWithContacts} of ${total.companiesSearched} companies searched${contraGen ? `; ContraGen: ${contraGen.added} new usable contacts from ${contraGen.companies} companies under ${perCompany}` : ''}`,
   };
 };
 

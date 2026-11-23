@@ -303,3 +303,12 @@ test('the Contacts tab always matches the engine exactly: DiscoLike, then Contra
   assert.deepEqual(tab('Contacts'), await db_(`tier <> 'Cut'`));
   assert.deepEqual(tab('Contacts (Cut)'), await db_(`tier = 'Cut'`));
 });
+
+test('from 2027-01-01 a list still set to the legacy DiscoLike / ContraGen options uses the Contacts run (never the retired endpoints)', { skip }, async () => {
+  const j = await run({ personaDna: PERSONA, contraGen: true }, cfg({ legacyContactsEnd: '2020-01-01T00:00:00Z' }));
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.equal(disco.calls, 0, 'no legacy contact search');
+  assert.equal(cg.submits, 0, 'no ContraGen');
+  assert.equal(runApi.starts, 1, 'the Contacts run instead');
+  assert.match(j.job.result.message, /Legacy DiscoLike contact options are retired/);
+});

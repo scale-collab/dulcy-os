@@ -23,6 +23,8 @@ export interface Config {
   capPerDay: number;
   /** Providers with no cap at all (Alex 2026-11-22: company and contact searches run to the
    *  requested size; the Expansion Target is the limit). Default: discolike. */
+  /** From this date the legacy DiscoLike contact options use the Contacts run (DiscoLike retires them 2026-12-31). */
+  legacyContactsEnd?: string;
   capFreeProviders: string[];
   /** A step running longer than this is treated as stuck. */
   stepTimeoutMs: number;
@@ -89,6 +91,7 @@ export function loadConfig(env = process.env): Config {
     slackWebhookUrl: env.SLACK_WEBHOOK_URL || undefined,
     capPerJob: num('CAP_PER_JOB', 100_000, env),
     capPerDay: num('CAP_PER_DAY', 100_000, env),
+    legacyContactsEnd: env.LEGACY_CONTACTS_END || '2027-01-01T00:00:00Z',
     capFreeProviders: (env.CAP_FREE_PROVIDERS ?? 'discolike').split(',').map((x) => x.trim().toLowerCase()).filter(Boolean),
     stepTimeoutMs: num('STEP_TIMEOUT_MS', 10 * 60_000, env),
     leaseMs: num('LEASE_MS', 60_000, env),

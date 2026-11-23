@@ -5,6 +5,16 @@ import { countFilters, toQuery, type Filters } from '../leadlist/filters.js';
 
 export interface DiscoLikeOptions { apiKey?: string; baseUrl: string; timeoutMs?: number; fetchImpl?: typeof fetch }
 
+const warned = new Set<string>();
+/** Endpoints DiscoLike has told us it is retiring (path -> Sunset/Deprecation value), this process. */
+export const deprecatedSeen = new Map<string, string>();
+function warnDeprecated(path: string, when: string) {
+  deprecatedSeen.set(path, when);
+  if (warned.has(path)) return;
+  warned.add(path);
+  console.log(JSON.stringify({ t: new Date().toISOString(), level: 'warn', message: 'DiscoLike says this endpoint is being retired: move off it', path, sunset: when }));
+}
+
 export function createDiscoLikeClient(o: DiscoLikeOptions) {
   const f = o.fetchImpl ?? fetch;
   const base = o.baseUrl.replace(/\/+$/, '');
@@ -23,6 +33,10 @@ export function createDiscoLikeClient(o: DiscoLikeOptions) {
       throw new RetryableError('DiscoLike: network error or timeout');
     }
     const text = await res.text();
+    // DiscoLike marks endpoints it is retiring with Deprecation / Sunset headers (2026-11: the
+    // legacy contact endpoints). Warn once per endpoint so the next change is seen early.
+    const sunset = res.headers.get('sunset') ?? res.headers.get('deprecation');
+    if (sunset) warnDeprecated(path.split('?')[0], sunset);
     // Rate limited: nothing was charged. Wait and carry on (Retry-After, else 60 s) instead of
     // failing a long run (live 2026-11-22: a 30,088-company contact search hit 429 and failed).
     if (res.status === 429) {
