@@ -197,3 +197,51 @@ test('refit: re-checks the whole saved list for free with a new rule, sheet rewr
   assert.equal(rows.filter(Boolean).length - 1, r.job.result.list.total, 'same rows, no duplicates');
   assert.ok(rows.slice(1).every((x) => x[2] === 'Cut'), 'the sheet shows the new tiers');
 });
+
+test('restart (Alex, 2026-11-23): backs up, clears the list and its sheet, resets the record; the next sample pays nothing again', { skip }, async () => {
+  await sample();
+  const e = await expand();
+  const sheetId = e.job.result.sheet.url.split('/d/')[1];
+  const before = Number((await db.query(`SELECT COUNT(*)::int AS n FROM lead_companies WHERE list_id=$1`, [REC])).rows[0].n);
+  assert.ok(before > 100);
+  const calls = disco.discoverCalls;
+
+  const r = await run('leadlist.restart', {}, cfg({ liveStages: ['leadlist.sample', 'leadlist.restart'] }));
+  assert.equal(r.job.status, 'succeeded', r.job.error);
+  assert.equal(Number((await db.query(`SELECT COUNT(*)::int AS n FROM lead_companies WHERE list_id=$1`, [REC])).rows[0].n), 0, 'working list cleared');
+  const backup = `${REC}~backup~${r.job.id}`;
+  assert.equal(Number((await db.query(`SELECT COUNT(*)::int AS n FROM lead_companies WHERE list_id=$1`, [backup])).rows[0].n), before, 'every company kept in the backup');
+  assert.equal((await db.query(`SELECT 1 FROM lead_list_profiles WHERE list_id=$1`, [backup])).rowCount, 1, 'profile kept in the backup');
+  const rows = google.written[sheetId]['Engine Companies'];
+  assert.equal(rows[0][0], 'Domain', 'header written again');
+  assert.equal(rows.slice(1).filter(Boolean).length, 0, 'no company rows left in the sheet');
+  const f = r.job.result.airtableFields;
+  assert.equal(f.fldqGx4RU4zDYxitK, false, 'company sample approval reset');
+  assert.equal(f.fldVz983EKKiPSzjc, false, 'contact sample approval reset');
+  assert.equal(f.fldAWCY4Tl9jpQtYc, null, 'usable count cleared');
+  assert.equal(f.fldUB4WsLi5kq6rUy, 'Not Checked');
+  assert.equal(f.fld8nrebRFL0O8kgj, 'Source & ICP');
+
+  // Same filters again: the paid sample result is reused (no new DiscoLike search).
+  const s = await sample();
+  assert.equal(s.job.status, 'succeeded', s.job.error);
+  assert.equal(disco.discoverCalls, calls, 'no new paid search after a restart with the same filters');
+  assert.ok(Number((await db.query(`SELECT COUNT(*)::int AS n FROM lead_companies WHERE list_id=$1`, [REC])).rows[0].n) > 0);
+});
+
+test('restart dry run changes nothing', { skip }, async () => {
+  await sample();
+  const n = Number((await db.query(`SELECT COUNT(*)::int AS n FROM lead_companies WHERE list_id=$1`, [REC])).rows[0].n);
+  const r = await run('leadlist.restart', {}, cfg(), true);
+  assert.equal(r.job.result.dryRun, true);
+  assert.equal(Number((await db.query(`SELECT COUNT(*)::int AS n FROM lead_companies WHERE list_id=$1`, [REC])).rows[0].n), n);
+});
+
+test('skip enrichment: a verified list moves to QA; an unverified list is refused', { skip }, async () => {
+  const ok = await run('leadlist.skipenrich', { finalDirect: 120, finalGeneric: 0 }, cfg({ liveStages: ['leadlist.skipenrich'] }));
+  assert.equal(ok.job.status, 'succeeded', ok.job.error);
+  assert.deepEqual(ok.job.result.airtableFields, { fld8nrebRFL0O8kgj: 'QA', fldaUFUWOLtKIovQE: 5 / 6 });
+  const no = await run('leadlist.skipenrich', { finalDirect: 0, finalGeneric: 0 }, cfg({ liveStages: ['leadlist.skipenrich'] }));
+  assert.equal(no.job.status, 'failed');
+  assert.match(String(no.job.error), /run Verify first/);
+});
