@@ -269,3 +269,17 @@ test('DiscoLike Contacts run: a failed run stops for review and is not restarted
   assert.match(j.job.error, /Contacts run run-1 is "failed"/);
   assert.equal(runApi.starts, 1);
 });
+
+test('a run that saved contacts but failed at the sheet write: the next press writes them to the sheet without searching again', { skip }, async () => {
+  const first = await run({ personaDna: PERSONA });
+  assert.equal(first.job.status, 'succeeded', first.job.error);
+  const calls = disco.calls;
+  // Simulate the failed sheet write: the sheet never got the contacts.
+  await db.query(`UPDATE lead_list_sheets SET mirrored_batches='{}' WHERE list_id=$1 AND kind='contacts'`, [REC]);
+  google.written = {};
+  const again = await run({ personaDna: PERSONA });
+  assert.equal(again.job.status, 'succeeded', again.job.error);
+  assert.equal(disco.calls, calls, 'nothing searched again');
+  assert.match(again.job.result.message, /already been searched/);
+  assert.ok((google.written['sheet-c']?.['Contacts'] ?? []).filter(Boolean).length > 1, 'saved contacts written to the Contacts tab');
+});
