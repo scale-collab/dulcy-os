@@ -1,6 +1,11 @@
 # Where we are (update this at the end of every session)
 
-Last updated: 2026-11-18 (engine step 3 proven live)
+Last updated: 2026-11-23 (Lead List Center + Campaign Center on the engine)
+
+## Now (2026-11-23)
+- **Engine pages live in Airtable (test pages, old pages untouched):** Lead List Center (Engine) `pagBY673DlKSnwt0q` and Campaign Center (Engine) `pagLpw4zkXwDx32I5`. Source in `airtable/custom-elements/*/source.slim.tsx`; Alex pastes code in Airtable's editor (too big for the build tool).
+- **Next:** 1) end-to-end test on a small Dulcy list (Lead List Center: filters, TAM, sample, expand, contacts, Verify, Skip enrichment, QA, Restart); 2) Campaign Center test (Build, Launch, Pause, Update Senders, Top up) on Dulcy's own campaign; 3) switch the main pages to the engine versions; 4) turn the bounce check live (needs the server's EMAILBISON_KEY_/TEAM_/BOUNCE_ setting names from Alex).
+- **To do later:** add a check (header auth) to the n8n sync-bison-senders webhook; spintax, Sync with Bison and Delete still on n8n; remove legacy DiscoLike contact options in early January (Airtable task); EmailGuard + claims-vs-proof are not automatic launch checks yet; missing company names should be filled from the company list automatically.
 
 ## Done
 - Repo is the memory: CLAUDE.md, rules/RULES.md, rules/decisions-log.md, five skills, SOPs, client index, channel evidence, pricing.
