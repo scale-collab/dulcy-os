@@ -66,7 +66,7 @@ Builds one EmailBison campaign (one output: direct **or** generic) and **never l
 - **Senders:** at most the number the leads can keep busy (leads / days between / 15); after attaching, the set must match exactly, all connected.
 - **Errors:** EmailBison's message is kept, emails masked. Re-running the same record never duplicates anything.
 - Sequence: 1-4 steps, up to 10 variants per step, wait on the step before (default 2 days). Generic copy drops the "Hi {FIRST_NAME}," line and refuses any other {FIRST_NAME}. Every merge tag must have a column in the Final tab.
-- Schedule Mon-Fri, 08:xx-18:xx America/New_York (stable per campaign); settings as the old builder (can_unsubscribe false: flagged for Lex).
+- Schedule Mon-Fri, 08:xx-18:xx America/New_York (stable per campaign); settings as the old builder (can_unsubscribe false: Alex decision 2026-11-23).
 
 Keys: `EMAILBISON_KEY_<WORKSPACE>` in the server `.env` only. Live switch per stage: `LIVE_STAGES=campaign.build` keeps MillionVerifier in dry-run.
 

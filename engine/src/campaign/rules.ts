@@ -97,7 +97,7 @@ export function defaultSchedule(seed: string, timezone = 'America/New_York') {
   };
 }
 
-/** Old builder settings (can_unsubscribe false is kept as-is; flagged for Lex in the research notes). */
+/** Old builder settings (can_unsubscribe false: Alex decision 2026-11-23, keep the link off). */
 export const DEFAULT_SETTINGS = {
   max_emails_per_day: 1000, max_new_leads_per_day: 1000, plain_text: false, open_tracking: false,
   reputation_building: false, can_unsubscribe: false, unsubscribe_text: '',
