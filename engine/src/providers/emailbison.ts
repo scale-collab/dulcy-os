@@ -113,6 +113,17 @@ export function createBisonClient(o: BisonOptions) {
       return pages<any>('/api/campaigns');
     },
     pauseCampaign: (id: number) => call('PATCH', `/api/campaigns/${id}/pause`, undefined, { write: true }),
+    /**
+     * Resume a paused campaign. The same call launches a draft (live test 2026-11-23:
+     * draft → queued → launching → active in about 7 seconds). Only the launch and sender
+     * stages call it, after their checks.
+     */
+    resumeCampaign: (id: number) => call('PATCH', `/api/campaigns/${id}/resume`, undefined, { write: true }),
+    /** The campaign's status in lower case (draft, queued, launching, active, paused, completed, ...). */
+    async campaignStatus(id: number): Promise<string> {
+      const r = await call('GET', `/api/campaigns/${id}`);
+      return String((r?.data ?? r)?.status ?? '').trim().toLowerCase();
+    },
     async createCampaign(name: string, type: string): Promise<BisonCampaign> {
       const r = await call('POST', '/api/campaigns', { name, type }, { write: true });
       const id = Number(r?.data?.id ?? r?.id);
@@ -175,6 +186,9 @@ export function createBisonClient(o: BisonOptions) {
     deleteCampaign: (id: number) => call('DELETE', `/api/campaigns/${id}`, undefined, { write: true }),
     attachSenders: (campaignId: number, senderIds: string[]) =>
       call('POST', `/api/campaigns/${campaignId}/attach-sender-emails`, { sender_email_ids: senderIds.map(String) }, { write: true }),
+    /** EmailBison allows sender changes only while the campaign is a draft or paused. */
+    removeSenders: (campaignId: number, senderIds: string[]) =>
+      call('DELETE', `/api/campaigns/${campaignId}/remove-sender-emails`, { sender_email_ids: senderIds.map(String) }, { write: true }),
     async campaignSenders(campaignId: number): Promise<BisonSender[]> {
       const rows = await pages<any>(`/api/campaigns/${campaignId}/sender-emails`, 100);
       return rows.map((x) => ({ id: String(x.id), status: String(x.status ?? '').toLowerCase(), email: x.email ? String(x.email) : undefined }));
