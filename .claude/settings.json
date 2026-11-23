@@ -2,7 +2,30 @@
   "permissions": {
     "allow": [
       "mcp__Airtable",
-      "mcp__Airtable__*"
+      "mcp__Airtable__*",
+      "mcp__Discolike__count-matching-domains",
+      "mcp__Discolike__list-industry-categories",
+      "mcp__Discolike__account-status",
+      "mcp__Discolike__usage-statistics",
+      "mcp__Discolike__get-contacts-run",
+      "mcp__Discolike__list-saved-queries",
+      "mcp__Discolike__list-tags",
+      "mcp__leadmagic__check_credit_balance",
+      "mcp__leadmagic__get_bulk_job_status",
+      "mcp__leadmagic__list_bulk_jobs",
+      "mcp__leadmagic__preview_cost",
+      "mcp__EmailBison__get_active_workspace_info",
+      "mcp__EmailBison__list_campaigns",
+      "mcp__EmailBison__get_campaign",
+      "mcp__EmailBison__get_campaign_stats",
+      "mcp__EmailBison__get_campaign_analytics",
+      "mcp__EmailBison__search_api_spec",
+      "mcp__EmailBison__list_leads",
+      "mcp__EmailBison__get_lead",
+      "mcp__Google_Sheets__get_values",
+      "mcp__Google_Sheets__get_spreadsheet",
+      "mcp__github__pull_request_read",
+      "mcp__github__get_file_contents"
     ]
   }
 }
