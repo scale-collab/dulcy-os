@@ -27,7 +27,10 @@ export function createDiscoLikeClient(o: DiscoLikeOptions) {
     // failing a long run (live 2026-11-22: a 30,088-company contact search hit 429 and failed).
     if (res.status === 429) {
       const ra = Number(res.headers.get('retry-after'));
-      throw new WaitError('DiscoLike: rate limited (HTTP 429); waiting and continuing', Number.isFinite(ra) && ra > 0 ? Math.min(ra, 600) * 1000 : 60_000);
+      // DiscoLike says why (per-minute rate, or "3 tasks are already running"): show it.
+      let why = '';
+      try { const d = JSON.parse(text)?.detail; why = typeof d === 'string' ? d : String(d?.message ?? ''); } catch { /* not JSON */ }
+      throw new WaitError(`DiscoLike: rate limited (HTTP 429)${why ? `: ${why.replace(/\s+/g, ' ').slice(0, 200)}` : ''}; waiting and continuing`, Number.isFinite(ra) && ra > 0 ? Math.min(ra, 600) * 1000 : 60_000);
     }
     if (res.status >= 500) {
       if (paid) throw new Error(`DiscoLike: HTTP ${res.status}; outcome unknown`);
@@ -53,6 +56,20 @@ export function createDiscoLikeClient(o: DiscoLikeOptions) {
     /** Paid: people at these companies (one call per batch of domains). Returns the raw answer. */
     async discoverContacts(body: Record<string, unknown>): Promise<any> {
       const r = await get('/v1/contacts/discover', true, body);
+      return r.body ?? {};
+    },
+    /** Paid: start a Contacts run (POST /v1/contacts/run, DiscoLike's replacement for contact
+     *  search + ContaGen + email checks, 2026-11). Returns the run ID. The body's create_key makes
+     *  a repeat return the SAME run, so a repeat after an unclear outcome never pays twice. */
+    async contactsRunStart(body: Record<string, unknown>): Promise<string> {
+      const r = await get('/v1/contacts/run', true, body);
+      const id = String(r.body?.id ?? r.body?.run_id ?? '').trim();
+      if (!id) throw new Error('DiscoLike Contacts run did not return a run ID; outcome unknown');
+      return id;
+    },
+    /** Free: a Contacts run's status, totals and one page of companies (each with its validated contacts). */
+    async contactsRunGet(runId: string, rowsOffset = 0, rowsLimit = 100): Promise<any> {
+      const r = await get(`/v1/contacts/run/${encodeURIComponent(runId)}?rows_offset=${rowsOffset}&rows_limit=${rowsLimit}`, false);
       return r.body ?? {};
     },
     /** Paid: ContraGen (old "Generate ContraGen Contacts"): web-research decision makers at these

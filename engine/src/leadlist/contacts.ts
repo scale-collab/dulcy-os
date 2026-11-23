@@ -34,6 +34,35 @@ export function toContacts(response: any): Contact[] {
   return out;
 }
 
+/** One page of a DiscoLike Contacts run (GET /v1/contacts/run/{id}): companies, each with its
+ *  validated contacts. Rows without an email, debug rows and rows DiscoLike marks not_fit are left out. */
+export function toRunContacts(page: any): { contacts: Contact[]; domains: Record<string, number> } {
+  const s = (v: unknown) => String(v ?? '').trim();
+  const contacts: Contact[] = [];
+  const domains: Record<string, number> = {};
+  for (const co of Array.isArray(page?.companies) ? page.companies : []) {
+    const domain = s(co?.domain).toLowerCase();
+    if (!domain) continue;
+    domains[domain] ??= 0;
+    const company = co?.company ?? {};
+    for (const c of Array.isArray(co?.contacts) ? co.contacts : []) {
+      const email = s(c?.email).toLowerCase();
+      if (!email || c?.debug_only || c?.not_fit) continue;
+      const name = s(c.name);
+      const [first, ...rest] = name.split(/\s+/);
+      contacts.push({
+        persona_id: Number.isFinite(Number(c.persona_id)) && c.persona_id !== null ? Number(c.persona_id) : undefined,
+        domain: s(c.domain || domain).toLowerCase(), name, first_name: s(c.first_name ?? first), last_name: s(c.last_name ?? rest.join(' ')),
+        title: s(c.title), seniority: s(c.seniority), department: s(c.department), email, linkedin_url: s(c.linkedin_url),
+        person_country: s(c.person_country ?? c.country), person_state: s(c.person_state ?? c.state),
+        company_name: s(company.name ?? company.company_name ?? co?.name), source: 'DiscoLike Contacts run',
+      });
+      domains[domain]++;
+    }
+  }
+  return { contacts, domains };
+}
+
 /** ISO codes for the old global person-country exclusion (India, Pakistan, every African country). */
 export const EXCLUDED_PERSON_COUNTRY_CODES = ['IN', 'PK', 'DZ', 'AO', 'BJ', 'BW', 'BF', 'BI', 'CV', 'CM', 'CF', 'TD', 'KM', 'CG', 'CD', 'CI', 'DJ', 'EG', 'GQ', 'ER', 'SZ', 'ET', 'GA', 'GM', 'GH', 'GN', 'GW', 'KE', 'LS', 'LR', 'LY', 'MG', 'MW', 'ML', 'MR', 'MU', 'MA', 'MZ', 'NA', 'NE', 'NG', 'RW', 'ST', 'SN', 'SC', 'SL', 'SO', 'ZA', 'SS', 'SD', 'TZ', 'TG', 'TN', 'UG', 'ZM', 'ZW', 'EH', 'RE', 'YT', 'SH'];
 const EXCLUDED_CODES = new Set(EXCLUDED_PERSON_COUNTRY_CODES.map((c) => c.toLowerCase()));

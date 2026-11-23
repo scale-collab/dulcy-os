@@ -17,6 +17,7 @@ const skip = !url ? 'TEST_DATABASE_URL not set' : false;
 const REC = 'recContactsTest01';
 let db: pg.Pool; let google: FakeGoogle; let ai: FakeOpenAI; let server: http.Server;
 const disco = { url: '', calls: 0, lastBody: {} as any, people: {} as Record<string, any[]> };
+const runApi = { starts: 0, keys: [] as string[], lastBody: {} as any, polls: 0, pendingPolls: 1, status: 'completed', pages: [] as string[] };
 const cg = { submits: 0, lastBody: {} as any, polls: 0, pendingPolls: 1, fail: false, results: {} as Record<string, any[]> };
 
 const person = (first: string, title: string, domain: string, extra: Record<string, unknown> = {}) => ({ persona_id: Math.floor(Math.random() * 1e9), first_name: first, last_name: 'Lee', title, email: `${first.toLowerCase()}@${domain}`, person_country: 'US', department: 'Operations', ...extra });
@@ -72,6 +73,22 @@ before(async () => {
       cg.submits++; cg.lastBody = JSON.parse(Buffer.concat(chunks).toString());
       return res.end(JSON.stringify({ task_id: `task-${cg.submits}` }));
     }
+    if (req.url === '/v1/contacts/run' && req.method === 'POST') {
+      runApi.lastBody = JSON.parse(Buffer.concat(chunks).toString());
+      // Same create_key = the same run (DiscoLike's idempotency).
+      if (!runApi.keys.includes(runApi.lastBody.create_key)) { runApi.keys.push(runApi.lastBody.create_key); runApi.starts++; }
+      res.statusCode = 202;
+      return res.end(JSON.stringify({ id: `run-${runApi.keys.indexOf(runApi.lastBody.create_key) + 1}`, status: 'running', kind: 'contacts', generation: 1 }));
+    }
+    if (req.url?.startsWith('/v1/contacts/run/') && req.method === 'GET') {
+      const u = new URL(req.url, 'http://x');
+      const off = Number(u.searchParams.get('rows_offset') ?? 0), lim = Number(u.searchParams.get('rows_limit') ?? 10);
+      const domains: string[] = runApi.lastBody.companies.domains;
+      const companies = domains.map((d) => ({ domain: d, status: 'validated', company: { name: d.toUpperCase() }, contacts: (disco.people[d] ?? []).slice(0, runApi.lastBody.per_company).map((p, i) => ({ row_key: `${d}-${i}`, domain: d, name: `${p.first_name} ${p.last_name}`, title: p.title, email: p.email, persona_id: p.persona_id })) }));
+      if (lim > 1) runApi.pages.push(`${off}:${lim}`); else runApi.polls++;
+      const st = lim === 1 && runApi.polls <= runApi.pendingPolls ? 'running' : runApi.status;
+      return res.end(JSON.stringify({ id: 'run-1', status: st, created_at: new Date().toISOString(), companies_total: companies.length, contacts_total: companies.reduce((n, c) => n + c.contacts.length, 0), companies: companies.slice(off, off + lim), summary: st === 'completed' ? { companies_delivered: 3, validated_contacts: 6, spent_usd: '0.06' } : null }));
+    }
     if (req.url?.startsWith('/v1/discogen/status/')) {
       cg.polls++;
       if (cg.fail) return res.end(JSON.stringify({ status: 'failed', error: 'provider down' }));
@@ -95,6 +112,7 @@ beforeEach(async () => {
     't3.com': [person('Fay', 'Founder', 't3.com')],
     'cut.com': [person('Gus', 'Owner', 'cut.com')],
   };
+  Object.assign(runApi, { starts: 0, keys: [], lastBody: {}, polls: 0, pendingPolls: 1, status: 'completed', pages: [] });
   Object.assign(cg, { submits: 0, lastBody: {}, polls: 0, pendingPolls: 1, fail: false, results: {
     't1.com': [{ name: 'Ann Lee', title: 'Owner', email: 'ann.other@t1.com' }, { name: 'Hal Moss', title: 'Managing Director', email: 'hal@t1.com', email_status: 'found', linkedin_url: 'https://www.linkedin.com/in/halmoss/' }, { name: 'No Mail', title: 'Founder', email: 'x@t1.com', email_status: 'not_found' }],
     't2.com': [{ name: 'Ida Ray', title: 'Founder', email: 'ida@t2.com' }],
@@ -214,4 +232,34 @@ test('ContraGen: a failed task stops for review and is never resubmitted; DiscoL
   assert.equal(j.job.status, 'needs_review');
   assert.match(j.job.error, /ContraGen task failed.*task-1/);
   assert.equal(cg.submits, 1);
+});
+
+test('DiscoLike Contacts run (new API): our Tier 1/2 domains + persona in one run, waits, reads it page by page, same contact check; a re-press never pays again', { skip }, async () => {
+  const j = await run({ contactFilters: { results_by_company: 5, relevance: 'max_coverage' }, personaDna: PERSONA, contactsRun: true, contraGen: true });
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.equal(runApi.starts, 1); assert.equal(disco.calls, 0, 'the legacy contact search is not used'); assert.equal(cg.submits, 0, 'no ContraGen with a Contacts run');
+  assert.deepEqual(runApi.lastBody.companies, { source: 'domains', domains: ['t1.com', 't2.com', 't3.com'] }, 'Tier 1 first, Cut never');
+  assert.equal(runApi.lastBody.people.fit, PERSONA);
+  assert.equal(runApi.lastBody.per_company, 5); assert.equal(runApi.lastBody.relevance, 'max_coverage'); assert.match(runApi.lastBody.create_key, /^dulcy-os:recContactsTest01:/);
+  assert.ok(runApi.polls >= 2, 'waited while the run was running');
+  const r = j.job.result.contacts;
+  // Same engine check as before: Ann Owner T1, Bo Sales Associate Cut, Cy Brand Lead T2, Di Ops Director T1, Ed (Pakistan) unknown country here -> usable, Fay Founder.
+  assert.equal(r.companiesSearched, 3);
+  assert.equal(r.total, 6);
+  assert.ok(r.cut >= 1, 'excluded titles are still cut');
+  assert.equal(j.job.result.contactsRuns[0].runId, 'run-1');
+  assert.equal(google.written['sheet-c']['Contacts'][0][0], 'Email');
+  const again = await run({ personaDna: PERSONA, contactsRun: true });
+  assert.equal(again.job.status, 'succeeded', again.job.error);
+  assert.equal(runApi.starts, 1, 'every company already searched: no new run');
+  const d = await run({ personaDna: PERSONA, contactsRun: true }, cfg({ dryRun: true, liveStages: [] }));
+  assert.equal(d.job.status, 'succeeded');
+});
+
+test('DiscoLike Contacts run: a failed run stops for review and is not restarted', { skip }, async () => {
+  runApi.status = 'failed'; runApi.pendingPolls = 0;
+  const j = await run({ personaDna: PERSONA, contactsRun: true });
+  assert.equal(j.job.status, 'needs_review');
+  assert.match(j.job.error, /Contacts run run-1 is "failed"/);
+  assert.equal(runApi.starts, 1);
 });

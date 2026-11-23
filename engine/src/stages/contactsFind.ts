@@ -22,7 +22,7 @@ import { NeedsReviewError, PermanentError, RetryableError, WaitError } from '../
 import { createDiscoLikeClient } from '../providers/discolike.js';
 import { createSheetsClient } from '../providers/google.js';
 import { createOpenAIClient } from '../providers/openai.js';
-import { checkContactFit, cleanContactProfile, codeContactProfile, contactProfilePrompt, CONTACT_PROFILE_SYSTEM, EXCLUDED_PERSON_COUNTRY_CODES, toContacts, type Contact, type ContactProfile } from '../leadlist/contacts.js';
+import { checkContactFit, cleanContactProfile, codeContactProfile, contactProfilePrompt, CONTACT_PROFILE_SYSTEM, EXCLUDED_PERSON_COUNTRY_CODES, toContacts, toRunContacts, type Contact, type ContactProfile } from '../leadlist/contacts.js';
 import { CONTRAGEN_BATCH, contraGenRequest, normLinkedIn, taskState, toContraGenContacts } from '../leadlist/contragen.js';
 import { contactCounts, ensureContactTabs, mirrorContacts, saveContacts } from '../leadlist/contactStore.js';
 
@@ -40,9 +40,17 @@ interface ContactsInput {
   personaToDiscoLike?: boolean;
   /** Contact Source is "DiscoLike + ContraGen". */
   contraGen?: boolean;
+  /** Contact Source is "DiscoLike Contacts Run": DiscoLike's new one-step Contacts run (POST /v1/contacts/run). */
+  contactsRun?: boolean;
 }
 
 const CONTRAGEN_POLL_MS = 30_000;
+const RUN_MAX_DOMAINS = 10_000; // DiscoLike's limit per Contacts run
+const RUN_PAGE = 100;
+const RUN_POLL_MS = 30_000;
+const RUN_MAX_WAIT_MS = 10 * 60 * 60_000;
+const RUN_DONE = new Set(['done', 'completed', 'complete', 'finished', 'succeeded', 'success']);
+const RUN_STOPPED = new Set(['failed', 'error', 'cancelled', 'canceled', 'expired']);
 const CONTRAGEN_MAX_WAIT_MS = 3 * 60 * 60_000;
 
 /** Companies due a ContraGen pass: searched, usable, never ContraGen'd, under the target. */
@@ -56,7 +64,7 @@ async function contraGenCandidates(ctx: JobContext, listId: string, perCompany: 
   return { checked: all.map((x) => x.domain), short: all.filter((x) => x.usable < perCompany) };
 }
 
-const ALLOWED = new Set(['filter_industry', 'negate_filter_industry', 'filter_country', 'negate_filter_country', 'filter_state', 'negate_filter_state', 'employee_range', 'seniority', 'negate_seniority', 'department', 'negate_department', 'skills', 'title', 'negate_title', 'person_country', 'negate_person_country', 'person_state', 'negate_person_state', 'person_city', 'negate_person_city', 'has_email', 'email_validated', 'has_linkedin', 'icp_text', 'results_by_company', 'people_per_company']);
+const ALLOWED = new Set(['filter_industry', 'negate_filter_industry', 'filter_country', 'negate_filter_country', 'filter_state', 'negate_filter_state', 'employee_range', 'seniority', 'negate_seniority', 'department', 'negate_department', 'skills', 'title', 'negate_title', 'person_country', 'negate_person_country', 'person_state', 'negate_person_state', 'person_city', 'negate_person_city', 'has_email', 'email_validated', 'has_linkedin', 'icp_text', 'results_by_company', 'people_per_company', 'relevance']);
 
 async function contactProfile(ctx: JobContext, listId: string, input: ContactsInput, first: Contact[]): Promise<ContactProfile> {
   const prior = (await ctx.db.query(`SELECT profile FROM lead_contact_profiles WHERE list_id=$1`, [listId])).rows[0];
@@ -91,6 +99,9 @@ export const contactsFindStage: Stage = async (ctx) => {
   }
   const perCompany = Math.min(25, Math.max(1, Number(filters.results_by_company ?? filters.people_per_company ?? 5)));
   delete filters.people_per_company;
+  // Contacts run only: how strict DiscoLike's person fit is (default balanced). Not sent to the legacy search.
+  const relevance = ['max_relevance', 'balanced', 'max_coverage'].includes(String(filters.relevance ?? '').toLowerCase()) ? String(filters.relevance).toLowerCase() : 'balanced';
+  delete filters.relevance;
   const batchSize = Math.min(500, Math.max(1, Math.round(Number(input.batchSize ?? 500))));
   const disco = createDiscoLikeClient({ apiKey: ctx.cfg.discoLikeApiKey, baseUrl: ctx.cfg.discoLikeBaseUrl, timeoutMs: 10 * 60_000 });
   const sheets = createSheetsClient({ keyFile: ctx.cfg.googleKeyFile, impersonate: ctx.cfg.googleImpersonateUser, scope: ctx.cfg.googleScope, sheetsBaseUrl: ctx.cfg.googleSheetsBaseUrl });
@@ -115,6 +126,10 @@ export const contactsFindStage: Stage = async (ctx) => {
   }
   const maxContacts = plan.domains.length * perCompany;
   if (ctx.dryRun) {
+    if (input.contactsRun) {
+      const runCount = Math.ceil(plan.domains.length / RUN_MAX_DOMAINS);
+      return { dryRun: true, plan: { companies: plan.domains.length, peoplePerCompany: perCompany, contactsRuns: runCount, relevance, notSearchedInList: plan.notSearched }, wouldSpendCredits: { discolike: `up to ${maxContacts} validated contacts (DiscoLike Contacts run)` }, message: `would search ${plan.domains.length} companies for up to ${perCompany} validated contacts each in ${runCount} DiscoLike Contacts run(s)` };
+    }
     const cg = input.contraGen ? `; then ContraGen on every searched company with fewer than ${perCompany} usable contacts` : '';
     return { dryRun: true, plan: { companies: plan.domains.length, peoplePerCompany: perCompany, batches: Math.ceil(plan.domains.length / batchSize), notSearchedInList: plan.notSearched, contraGen: !!input.contraGen }, wouldSpendCredits: { discolike: `up to ${maxContacts} contacts${cg}` }, message: `would search ${plan.domains.length} companies for up to ${perCompany} people each${cg}` };
   }
@@ -122,7 +137,19 @@ export const contactsFindStage: Stage = async (ctx) => {
   const sheet = await ctx.step('sheet', () => ensureContactTabs(ctx.db, sheets, listId));
   let profile: ContactProfile | undefined;
   const batches: Array<Record<string, number>> = [];
-  for (let i = 0; i * batchSize < plan.domains.length; i++) {
+  const runs: Array<Record<string, unknown>> = [];
+  // New DiscoLike Contacts run (Contact Source "DiscoLike Contacts Run"): search, web research and
+  // email checks in one run of up to 10,000 of our domains; replaces the legacy contact search and
+  // ContraGen, which DiscoLike retires on 2026-12-31.
+  for (let i = 0; input.contactsRun && i * RUN_MAX_DOMAINS < plan.domains.length; i++) {
+    const b = plan.startBatch + i;
+    const domains = plan.domains.slice(i * RUN_MAX_DOMAINS, (i + 1) * RUN_MAX_DOMAINS);
+    const out = await contactsRun(ctx, disco, { listId, batch: b, domains, input, perCompany, relevance },
+      async (people) => (profile ??= await contactProfile(ctx, listId, input, people)));
+    runs.push(out);
+    await ctx.step(`mirror-${b}`, () => mirrorContacts(ctx.db, sheets, listId));
+  }
+  for (let i = 0; !input.contactsRun && i * batchSize < plan.domains.length; i++) {
     const b = plan.startBatch + i;
     const domains = plan.domains.slice(i * batchSize, (i + 1) * batchSize);
     const out = await ctx.step(`batch-${b}`, async () => {
@@ -146,7 +173,7 @@ export const contactsFindStage: Stage = async (ctx) => {
     batches.push(out);
     await ctx.step(`mirror-${b}`, () => mirrorContacts(ctx.db, sheets, listId));
   }
-  const contraGen = input.contraGen ? await runContraGen(ctx, listId, input, perCompany, () => profile) : undefined;
+  const contraGen = input.contraGen && !input.contactsRun ? await runContraGen(ctx, listId, input, perCompany, () => profile) : undefined;
   await ctx.step('mirror-final', () => mirrorContacts(ctx.db, sheets, listId));
   profile ??= (await ctx.db.query(`SELECT profile FROM lead_contact_profiles WHERE list_id=$1`, [listId])).rows[0]?.profile as ContactProfile | undefined;
 
@@ -160,6 +187,7 @@ export const contactsFindStage: Stage = async (ctx) => {
     profile: profile ? { source: profile.source, summary: profile.summary, targetTitleWords: profile.targetTitleWords, excludeTitleWords: profile.excludeTitleWords, excludeDepartments: profile.excludeDepartments, notes: profile.notes } : undefined,
     contacts: { ...total, status },
     batches,
+    contactsRuns: runs.length ? runs : undefined,
     contraGen,
     topCutReasons: Object.entries(top).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([reason, n]) => ({ reason, contacts: n })),
     sheet: { url: `https://docs.google.com/spreadsheets/d/${sheet.sheetId}`, tab: 'Contacts' },
@@ -231,4 +259,63 @@ async function runContraGen(ctx: JobContext, listId: string, input: ContactsInpu
       [listId, plan.checked, Object.keys(added), Object.values(added)]);
     return { companies: asked.size, tasks: taskIds.length, returned: found.length, duplicates: found.length - fresh.length, added: saved.tier1 + saved.tier2, tier1: saved.tier1, tier2: saved.tier2, cut: saved.cut };
   });
+}
+
+/** One DiscoLike Contacts run over up to 10,000 of the list's domains: start (paid; the receipt and
+ *  DiscoLike's create_key make a retry reuse the same run), wait (free polls), then read the result
+ *  page by page (100 companies each, its own step) and save the contacts through the engine's own
+ *  contact check. Every domain of the run is then marked searched. */
+async function contactsRun(
+  ctx: JobContext, disco: ReturnType<typeof createDiscoLikeClient>,
+  r: { listId: string; batch: number; domains: string[]; input: ContactsInput; perCompany: number; relevance: string },
+  getProfile: (people: Contact[]) => Promise<ContactProfile>,
+) {
+  const fit = String(r.input.personaDna ?? '').trim().slice(0, 4000) || 'Owners, founders and senior decision makers';
+  const hash = createHash('sha256').update(JSON.stringify([r.domains, fit, r.perCompany, r.relevance])).digest('hex').slice(0, 16);
+  const body = {
+    companies: { source: 'domains', domains: r.domains }, people: { fit }, relevance: r.relevance,
+    max_companies: r.domains.length, per_company: r.perCompany, create_key: `dulcy-os:${r.listId}:${hash}`,
+  };
+  const runId = await ctx.step(`run-start-${r.batch}`, () => ctx.paid({
+    scope: 'record', provider: 'discolike', callKey: `contacts-run:${hash}`, units: r.domains.length * r.perCompany,
+    run: () => disco.contactsRunStart(body),
+    // Same create_key = the same run: safe to ask again after an unclear answer.
+    reconcile: () => disco.contactsRunStart(body),
+    dryRunResult: () => '',
+  }));
+  const done = await ctx.step(`run-wait-${r.batch}`, async () => {
+    const s = await disco.contactsRunGet(runId, 0, 1);
+    const st = String(s?.status ?? '').toLowerCase();
+    if (RUN_STOPPED.has(st)) throw new NeedsReviewError(`DiscoLike Contacts run ${runId} is "${st}"${s?.error ? `: ${String(s.error).slice(0, 200)}` : ''}. Not restarted.`);
+    if (!RUN_DONE.has(st)) {
+      const started = Date.parse(String(s?.created_at ?? ''));
+      if (Number.isFinite(started) && Date.now() - started > RUN_MAX_WAIT_MS) throw new NeedsReviewError(`DiscoLike Contacts run ${runId} still "${st}" after 10 hours; check it in DiscoLike (Tasks)`);
+      throw new WaitError(`DiscoLike Contacts run (batch ${r.batch}, ${r.domains.length} companies): ${st || 'running'}, ${Number(s?.contacts_total ?? 0)} validated contacts so far`, RUN_POLL_MS);
+    }
+    return { companies: Number(s?.companies_total ?? r.domains.length), contacts: Number(s?.contacts_total ?? 0), spentUsd: String(s?.summary?.spent_usd ?? s?.total_charged_usd ?? ''), stopReason: s?.summary?.stop_reason ?? null };
+  }, { timeoutMs: 5 * 60_000 });
+
+  const wanted = new Set(r.domains);
+  const totals = { contacts: 0, new: 0, tier1: 0, tier2: 0, cut: 0, withContacts: 0 };
+  for (let off = 0; off < Math.max(done.companies, 1); off += RUN_PAGE) {
+    const out = await ctx.step(`run-${r.batch}-page-${off}`, async () => {
+      const page = await disco.contactsRunGet(runId, off, RUN_PAGE);
+      const { contacts, domains } = toRunContacts(page);
+      const people = contacts.filter((c) => wanted.has(c.domain));
+      const profile = await getProfile(people);
+      const saved = await saveContacts(ctx.db, r.listId, r.batch, people.map((c) => ({ c, fit: checkContactFit(c, profile) })));
+      const ds = Object.keys(domains).filter((d) => wanted.has(d));
+      await ctx.db.query(
+        `INSERT INTO lead_contact_domains (list_id, domain, batch, found) SELECT $1, d, $2, f FROM unnest($3::text[], $4::int[]) AS u(d, f) ON CONFLICT DO NOTHING`,
+        [r.listId, r.batch, ds, ds.map((d) => domains[d])]);
+      return { contacts: people.length, new: saved.inserted, tier1: saved.tier1, tier2: saved.tier2, cut: saved.cut, withContacts: ds.filter((d) => domains[d] > 0).length, rows: Array.isArray(page?.companies) ? page.companies.length : 0 };
+    }, { timeoutMs: 5 * 60_000 });
+    for (const k of Object.keys(totals) as (keyof typeof totals)[]) totals[k] += out[k];
+    if (!out.rows) break;
+  }
+  // Companies the run never returned were still searched: mark them so a re-press does not pay again.
+  await ctx.step(`run-domains-${r.batch}`, () => ctx.db.query(
+    `INSERT INTO lead_contact_domains (list_id, domain, batch, found) SELECT $1, d, $2, 0 FROM unnest($3::text[]) AS u(d) ON CONFLICT DO NOTHING`,
+    [r.listId, r.batch, r.domains]).then(() => true));
+  return { batch: r.batch, runId, companies: r.domains.length, ...totals, spentUsd: done.spentUsd, stopReason: done.stopReason };
 }
