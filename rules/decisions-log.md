@@ -179,3 +179,4 @@ Newest at the bottom. Format: `date | decision | why | who`
 - 2026-11-24 — Alex: swapped Scroll Stop's Reply Agent booking link to James's cal.com link; deployed; calendar reader key confirmed on the server.
 - 2026-11-24 — Approvals count only from a real click (Slack ✅ or Airtable Approve), never inferred from chat. 6 replies (Geoffrey, Matthew, Dean, Ana, Claudia, Cindy) were sent after Claude set Approve Draft on Alex's chat message.
 - 2026-11-24 — Alex corrected the line above: approving in Airtable on his chat word was the right call. Rule changed to allow it.
+- 2026-11-24 — Alex: yes to Sean's follow-ups before the bounce agent. Sean drafts due follow-ups (client's Follow-up Plan JSON, else 2/3/5 business days, then a close-the-loop note, then Thread Complete); same approval as replies; the engine arms follow-ups after every send. The old n8n timer node in 'Manual Emails Sent' is to be switched off first (FIX=followup-arm-off), then SEAN_FOLLOWUPS=on.

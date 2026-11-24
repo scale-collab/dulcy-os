@@ -314,7 +314,7 @@ This covers paused campaigns too, and runs every day of the week. Only records w
 - a [GAP] marker is left in.
 
 **After sending:**
-- The row shows Sent.
+- Interested threads are set to **Scheduled** with a **Due At** (the first follow-up). Not-interested, stop and booked threads show **Sent** and get no follow-ups.
 - Last Email Sent = By Dulcy.
 - A Reply Learning row is saved as **Approved**, and Sean learns from it.
 - The Slack thread says "Sent".
@@ -325,3 +325,12 @@ This covers paused campaigns too, and runs every day of the week. Only records w
 - `SEAN_EVERY_MIN` (0 = off) plus `sean.draft` in LIVE_STAGES (otherwise a dry run: Claude is not called).
 - `REPLY_SENDER=on` plus `reply.send` in LIVE_STAGES. Only after the old n8n replier is off (`automations/n8n-fix.mjs`, FIX=replier-off).
 - `CALENDAR_READER_TOKEN` for client calendars.
+- `SEAN_FOLLOWUPS=on` for follow-ups (below). Only after the old n8n follow-up timer is off (FIX=followup-arm-off).
+
+### Sean's follow-ups (2026-11-24)
+Your rule: keep following up on a positive reply until they answer or say stop.
+1. **When.** A thread is Scheduled with a Due At after every reply we send. Out-of-office and check-back-later replies keep the return date the old intake gave them.
+2. **Draft.** When Due At passes and the prospect still hasn't answered, Sean drafts the next follow-up. Each one must have a real reason: their open question, the promised next step, or one new true point. Never "just bumping this". Out of office: welcome back + the open point.
+3. **Approve.** Same as replies: the draft lands on the row (Reply Queue) and in Slack as "Follow-up N to …". ✅ or Approve sends it. Nothing goes out without you.
+4. **How many.** The client's **Follow-up Plan JSON** (Reply Agent settings: steps with a delay and what each should do). No plan saved: 3 follow-ups at 2, 3 and 5 business days. Then one polite close-the-loop note 7 days later, then the thread is marked **Thread Complete**. A plan with `enabled: false` means no follow-ups for that client.
+5. **Stops.** Any answer from the prospect, a stop or unsubscribe, booked/closed, Not Interested, DNC or client-handled. If the prospect wrote, it becomes a normal reply for Sean. If someone already followed up by hand after the draft, the sender refuses to send a second one.

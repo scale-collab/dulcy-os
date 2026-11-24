@@ -16,6 +16,7 @@ import { enqueue } from '../queue.js';
 import { STAGES } from '../stages/index.js';
 import { EMAILS, EF, RA, SETTINGS, REPLY_LEARNING, val, wsRecordOf } from './emailsFields.js';
 import { DECISIONS, DF } from '../decisions/fields.js';
+import { armFields, parsePlan, policyOf, shouldArm } from './followups.js';
 
 const STOP = /\b(unsubscribe|remove me|take me off|stop emailing|do not contact)\b/i;
 const DONE_STATES = ['Sent', 'Sending', 'Suppressed', 'Thread Complete'];
@@ -72,6 +73,8 @@ export const replySendStage: Stage = async (ctx) => {
   const f = rec.fields;
   const action = val(f[RA.humanAction]);
   const via = String(ctx.job.input.via ?? 'Airtable');
+  const policy = policyOf(f);
+  const isFollowup = policy.kind === 'followup';
   const fail = async (msg: string) => {
     if (!ctx.dryRun) {
       await at.update(EMAILS, recId, { [RA.lastError]: msg, [RA.humanAction]: 'None', [RA.state]: 'Needs Approval', [RA.updatedAt]: new Date().toISOString() });
@@ -87,7 +90,8 @@ export const replySendStage: Stage = async (ctx) => {
   if (!body) throw await fail(`${action === 'Send Edited Reply' ? 'Custom Reply' : 'the draft'} is empty`);
   if (/\[GAP|\{\{|\{[^{}]*\|[^{}]*\}/.test(body)) throw await fail('the reply still has a [GAP] marker or a placeholder; edit it first');
   if (STOP.test(val(f[EF.latestReply]))) throw await fail('the prospect asked to stop; nothing sent');
-  if (val(f[EF.lastSent]) === 'Last Email Sent By Dulcy') throw await fail('someone already answered this thread from our side');
+  if (!isFollowup && val(f[EF.lastSent]) === 'Last Email Sent By Dulcy') throw await fail('someone already answered this thread from our side');
+  if (isFollowup && val(f[EF.lastSent]) === 'Last Email Sent By Prospect' && val(policy.followupType) === 'No Response') throw await fail('the prospect answered since; this needs a reply, not a follow-up');
   const latest = Date.parse(val(f[EF.latestReplyAt])), drafted = Date.parse(val(f[RA.updatedAt]));
   if (action === 'Approve Draft' && Number.isFinite(latest) && Number.isFinite(drafted) && latest > drafted + 60_000) throw await fail('the prospect wrote again after this draft; it needs a redraft');
 
@@ -98,15 +102,19 @@ export const replySendStage: Stage = async (ctx) => {
   const thread = await bison.conversationThread(replyId);
   const cur = thread.current_reply;
   if (!cur || Number(cur.id) !== replyId) throw await fail('EmailBison thread does not match this row');
-  if (thread.newer_messages.length) throw await fail('there are newer messages in the thread; refresh and redraft');
   const to = String(cur.from_email_address ?? '').trim().toLowerCase();
+  // A reply answers the prospect's latest message: nothing may follow it. A follow-up comes after
+  // our own emails, so only a newer message from the prospect stops it.
+  const fromProspect = (m: any) => String(m?.from_email_address ?? '').trim().toLowerCase() === to;
+  if (isFollowup ? thread.newer_messages.some(fromProspect) : thread.newer_messages.length) throw await fail(isFollowup ? 'the prospect wrote again; this needs a reply, not a follow-up' : 'there are newer messages in the thread; refresh and redraft');
+  if (isFollowup && Number.isFinite(drafted) && thread.newer_messages.some((m: any) => !fromProspect(m) && Date.parse(String(m?.date_received ?? '')) > drafted)) throw await fail('someone already followed up in this thread after the draft');
   const senderEmailId = Number(cur.sender_email_id ?? val(f[RA.emailStatsId]) ?? 0);
   if (!emails(to).length || !(senderEmailId > 0)) throw await fail('the thread has no prospect address or sending inbox');
   const sender = await bison.senderEmail(senderEmailId);
   if (sender.email && sender.email === to) throw await fail('the To address is our own inbox');
 
   const wsRec = wsRecordOf(f);
-  const settings = wsRec ? (await at.list(SETTINGS, `{Workspace Record ID}='${wsRec}'`, ['CC BCC Settings JSON'], 2, { byName: true })) : [];
+  const settings = wsRec ? (await at.list(SETTINGS, `{Workspace Record ID}='${wsRec}'`, ['CC BCC Settings JSON', 'Follow-up Plan JSON'], 2, { byName: true })) : [];
   if (settings.length > 1) throw await fail('this client has two Reply Agent settings rows; keep one');
   const eventMatches = val(f[RA.eventId]) === `bison:${wsRec}:${replyId}`;
   const replyType = eventMatches && val(f[RA.intent]) ? val(f[RA.intent]) : val(f[EF.leadStatus]);
@@ -126,20 +134,24 @@ export const replySendStage: Stage = async (ctx) => {
   if (!(sent.id > 0)) throw new NeedsReviewError('EmailBison accepted the reply but returned no message ID; check the thread in EmailBison before anything else');
 
   const now = new Date().toISOString();
+  // Arm the next follow-up (Alex: keep following up until they answer or say stop), or close the thread.
+  const sentFollowups = isFollowup ? (Number(policy.seanFollowupsSent ?? 0) || 0) + 1 : 0;
+  const arm = armFields(parsePlan(val(settings[0]?.fields['Follow-up Plan JSON'])), sentFollowups, new Date(now), shouldArm(f));
   await at.update(EMAILS, recId, {
-    [RA.state]: 'Sent', [RA.sentAt]: now, [RA.humanAction]: 'None', [RA.draft]: '', [RA.customReply]: '', [RA.lastError]: '', [RA.updatedAt]: now,
+    ...arm, [RA.sentAt]: now, [RA.policy]: JSON.stringify({ ...policy, seanFollowupsSent: sentFollowups }), [RA.humanAction]: 'None', [RA.draft]: '', [RA.customReply]: '', [RA.lastError]: '', [RA.updatedAt]: now,
     [EF.lastSent]: 'Last Email Sent By Dulcy',
     ...(['', 'New Interested'].includes(val(f[EF.stage])) ? { [EF.stage]: 'In Conversation' } : {}),
   });
   // Learning: what Sean drafted vs what went out (approved by a person), read by Sean next time.
   try {
     await at.create(REPLY_LEARNING, {
-      'Workspace Record ID': wsRec, 'Email Record ID': recId, Situation: 'Interested', 'Prospect Message': val(f[EF.latestReply]).slice(0, 5000),
+      'Workspace Record ID': wsRec, 'Email Record ID': recId, Situation: isFollowup ? 'Follow-up' : 'Interested', 'Prospect Message': val(f[EF.latestReply]).slice(0, 5000),
       'AI Draft': val(f[RA.draft]), 'Approved Reply': body, 'Review Status': 'Approved', Outcome: 'Unknown', Source: `Engine sender (${via})`,
     });
   } catch (e) { await ctx.log('reply learning row not written', { err: String((e as Error).message) }, 'warn'); }
-  await mirrorToSlack(at, slackFor(cfg), recId, 'Done', `:white_check_mark: Sent (approved in ${via}${action === 'Send Edited Reply' ? ', edited' : ''}).`);
-  return { message: `Sent to the prospect${cc.length ? ` with ${cc.length} cc` : ''}${bcc.length ? ` and ${bcc.length} bcc` : ''}`, sentReplyId: sent.id };
+  const nextNote = arm[RA.state] === 'Scheduled' ? ` Next follow-up drafted ${new Date(String(arm[RA.dueAt])).toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' })} if they don't answer.` : arm[RA.state] === 'Thread Complete' ? ' That was the last follow-up.' : '';
+  await mirrorToSlack(at, slackFor(cfg), recId, 'Done', `:white_check_mark: Sent (approved in ${via}${action === 'Send Edited Reply' ? ', edited' : ''}).${nextNote}`);
+  return { message: `Sent to the prospect${cc.length ? ` with ${cc.length} cc` : ''}${bcc.length ? ` and ${bcc.length} bcc` : ''}.${nextNote}`, sentReplyId: sent.id, next: arm[RA.state] };
 };
 
 /**
@@ -172,9 +184,11 @@ export async function repliesTick(db: Db, cfg: Config, at: Pick<AirtableClient, 
   const waiting = await at.list(DECISIONS, `AND({Emails Record}!='',OR({Status}='New',{Status}='Waiting'))`, [DF.emailsRecord], 50);
   if (waiting.length) {
     const ids = [...new Set(waiting.map((d) => val(d.fields[DF.emailsRecord])).filter(Boolean))];
-    const rows = await at.list(EMAILS, `OR(${ids.map((id) => `RECORD_ID()='${id}'`).join(',')})`, [EF.lastSent, RA.state], 50);
+    const rows = await at.list(EMAILS, `OR(${ids.map((id) => `RECORD_ID()='${id}'`).join(',')})`, [EF.lastSent, RA.state, RA.policy], 50);
     for (const row of rows) {
-      if (val(row.fields[EF.lastSent]) === 'Last Email Sent By Dulcy' || val(row.fields[RA.state]) === 'Sent') {
+      // A follow-up waiting for approval always has "Last Email Sent By Dulcy": that is not an answer.
+      const pendingFollowup = policyOf(row.fields).kind === 'followup' && val(row.fields[RA.state]) === 'Needs Approval';
+      if (!pendingFollowup && (val(row.fields[EF.lastSent]) === 'Last Email Sent By Dulcy' || val(row.fields[RA.state]) === 'Sent')) {
         await mirrorToSlack(at, slack, row.id, 'Done', ':white_check_mark: Answered in Airtable / EmailBison. Nothing more to do here.');
         closed++;
       }

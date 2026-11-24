@@ -14,6 +14,7 @@ export const RA = {
   sentAt: 'fldbsojFueApMnmSy', lastError: 'fldiM9YjXlyojPSpk', updatedAt: 'fldTn2Eth51XolDMg', ownership: 'fldtWgoLnMFX7DFj8',
   customReply: 'fldCfgm35ZqyVe9xm', clients: 'fldtPAlC0MDPHTWcl', emailStatsId: 'flds1ZqBq2ZW6dVBr', ccOptional: 'fldGkiO630UgVCnv5',
   seanReason: 'fldoRsrNu5VGArdmV', seanInput: 'fldRLOKZdWYkgZjgU',
+  dueAt: 'fldgqdIguhudcKI8Z', followupType: 'fldDB9nVzj6mSprZP',
 } as const;
 export const INTENTS = ['Interested', 'Info Request', 'Meeting Request', 'Cost Objection', 'Process Objection', 'Not Interested', 'Do Not Contact', 'Out of Office', 'Check Back Later', 'Referred', 'Wrong Person', 'Automatic Reply', 'Other'] as const;
 /** Per-workspace Reply Agent settings (CC/BCC, booking link, calendar preferences). Read by field name. */

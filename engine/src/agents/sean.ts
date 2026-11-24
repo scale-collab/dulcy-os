@@ -43,12 +43,12 @@ How Alex writes (follow it exactly):
 
 Fill every field: "reason" (one line: why this action), "they_said" (one line: what the prospect said), "draft" (email body or empty), "question_for_alex" (or empty).`;
 
-function trimHistory(h: string, max = 6000): string {
+export function trimHistory(h: string, max = 6000): string {
   return h.length <= max ? h : `[earlier messages cut]\n${h.slice(-max)}`;
 }
 
 /** This client's real threads that reached a booked meeting, plus replies Alex approved (newest first). */
-async function realExamples(at: Pick<AirtableClient, 'list'>, ws: number, wsRec: string): Promise<string> {
+export async function realExamples(at: Pick<AirtableClient, 'list'>, ws: number, wsRec: string): Promise<string> {
   const parts: string[] = [];
   try {
     const booked = await at.list(EMAILS, `AND({Workspace ID (Bison)}='${ws}',OR({Pipeline Stage}='Booked Meeting',{Pipeline Stage}='Completed Meeting',{Pipeline Stage}='Closed Deal'))`,
@@ -65,7 +65,7 @@ async function realExamples(at: Pick<AirtableClient, 'list'>, ws: number, wsRec:
 }
 
 /** Booking options for a workspace: two live times from the client's connected calendar, else the saved booking link. */
-async function bookingFor(cfg: Parameters<typeof openTimes>[0], at: Pick<AirtableClient, 'list'>, wsRec: string): Promise<{ times: string[]; link: string }> {
+export async function bookingFor(cfg: Parameters<typeof openTimes>[0], at: Pick<AirtableClient, 'list'>, wsRec: string): Promise<{ times: string[]; link: string }> {
   let link = '', disableTimes = false, disableLinks = false;
   try {
     const s = (await at.list(SETTINGS, `{Workspace Record ID}='${wsRec}'`, ['Calendar Link', 'Calendar Settings JSON'], 1, { byName: true }))[0];
@@ -75,6 +75,20 @@ async function bookingFor(cfg: Parameters<typeof openTimes>[0], at: Pick<Airtabl
   } catch { /* no settings row: defaults */ }
   const open = disableTimes ? null : await openTimes(cfg, wsRec);
   return { times: open ? twoTimes(open.slots, open.timezone) : [], link: disableLinks ? '' : link };
+}
+
+/** The knowledge every Sean call shares (cached by Claude): brief, skill, playbooks, real data, rules. */
+export function sharedKnowledge(dir: string, brief = SEAN_BRIEF): string {
+  return [
+    brief,
+    `# Sean skill\n${readKnowledge(dir, 'skills/sean-reply-handling/SKILL.md')}`,
+    `# Reply decisions\n${readKnowledge(dir, 'skills/sean-reply-handling/references/reply-decision.md')}\n${readKnowledge(dir, 'skills/sean-reply-handling/references/decision-playbook.md')}`,
+    `# What worked before (real reply data)\n${readKnowledge(dir, 'skills/sean-reply-handling/references/historical-patterns.md')}`,
+    `# Methods from the creators we follow\n${readKnowledge(dir, 'skills/sean-reply-handling/references/creator-methods.md')}`,
+    `# From Dulcy's Google Drive SOPs\n${readKnowledge(dir, 'skills/sean-reply-handling/references/drive-findings.md')}`,
+    `# Sales method (objections)\n${readKnowledge(dir, 'skills/cole-sales-closing/references/closers-methods.md')}`,
+    `# Standing rules (newest wins)\n${readKnowledge(dir, 'rules/RULES.md')}\n${readKnowledge(dir, 'rules/client-promise-contract.md')}`,
+  ].join('\n\n---\n\n');
 }
 
 export const seanDraftStage: Stage = async (ctx) => {
@@ -90,16 +104,7 @@ export const seanDraftStage: Stage = async (ctx) => {
   if (!todo.length) return { message: `${recs.length} waiting replies, none new`, waiting: recs.length, drafted: 0 };
 
   const dir = cfg.knowledgeDir;
-  const shared = [
-    SEAN_BRIEF,
-    `# Sean skill\n${readKnowledge(dir, 'skills/sean-reply-handling/SKILL.md')}`,
-    `# Reply decisions\n${readKnowledge(dir, 'skills/sean-reply-handling/references/reply-decision.md')}\n${readKnowledge(dir, 'skills/sean-reply-handling/references/decision-playbook.md')}`,
-    `# What worked before (real reply data)\n${readKnowledge(dir, 'skills/sean-reply-handling/references/historical-patterns.md')}`,
-    `# Methods from the creators we follow\n${readKnowledge(dir, 'skills/sean-reply-handling/references/creator-methods.md')}`,
-    `# From Dulcy's Google Drive SOPs\n${readKnowledge(dir, 'skills/sean-reply-handling/references/drive-findings.md')}`,
-    `# Sales method (objections)\n${readKnowledge(dir, 'skills/cole-sales-closing/references/closers-methods.md')}`,
-    `# Standing rules (newest wins)\n${readKnowledge(dir, 'rules/RULES.md')}\n${readKnowledge(dir, 'rules/client-promise-contract.md')}`,
-  ].join('\n\n---\n\n');
+  const shared = sharedKnowledge(dir);
 
   const claude = ctx.dryRun ? null : createClaude({ apiKey: cfg.anthropicApiKey, model: cfg.claudeModel, baseURL: cfg.anthropicBaseUrl });
   const perClient = new Map<string, { block: string; booking: { times: string[]; link: string } }>();

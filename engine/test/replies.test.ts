@@ -116,7 +116,7 @@ test('approve in Airtable → sent once with client CC; row, learning and Slack 
   assert.equal(sent[0].sender_email_id, 77);
   assert.match(sent[0].message, /<p>Hi Jane,<\/p><p>Tue 2pm ET/);
   const r = tables[EMAILS].recAAAAAAAAAAAAAA;
-  assert.equal(r[RA.state], 'Sent'); assert.equal(r[RA.humanAction], 'None'); assert.equal(r[EF.lastSent], 'Last Email Sent By Dulcy'); assert.equal(r[EF.stage], 'In Conversation');
+  assert.equal(r[RA.state], 'Scheduled', 'interested thread: first follow-up armed'); assert.equal(r[RA.followupType], 'No Response'); assert.ok(r[RA.dueAt]); assert.equal(r[RA.humanAction], 'None'); assert.equal(r[EF.lastSent], 'Last Email Sent By Dulcy'); assert.equal(r[EF.stage], 'In Conversation');
   const learn = Object.values(tables[REPLY_LEARNING])[0];
   assert.equal(learn['Review Status'], 'Approved'); assert.equal(learn['Approved Reply'], 'Hi Jane,\n\nTue 2pm ET or Wed 11am ET?');
   assert.equal(tables[DECISIONS].recD[DF.status], 'Done');
@@ -137,6 +137,57 @@ test('a send that works after an earlier failure closes the Failed decision too'
   assert.equal((bison as any).repliesSent.length, 1);
   assert.equal(tables[DECISIONS].recD[DF.status], 'Done');
   assert.match(posts.at(-1)!.text, /Sent/);
+});
+
+test('follow-ups: sent after our own email; prospect wrote again or a person already followed up → not sent; last one closes the thread', { skip }, async () => {
+  const conf = cfg();
+  const fu = (over: Record<string, unknown> = {}) => row({ [EF.lastSent]: 'Last Email Sent By Dulcy', [RA.draft]: 'Hi Jane, the notes are ready. Tue 2pm ET?', [RA.updatedAt]: '2026-11-26T15:05:00.000Z',
+    [RA.policy]: JSON.stringify({ agent: 'sean', kind: 'followup', followupType: 'No Response', seanFollowupsSent: 0 }), ...over });
+  const ours = { id: 600, from_email_address: 'inbox77@dulcy-mail.com', date_received: '2026-11-24T22:00:00.000Z' };
+  // 1) Our earlier reply is newer than the prospect's message: fine for a follow-up.
+  tables[EMAILS].recAAAAAAAAAAAAAA = fu();
+  (bison as any).threads = { 555: { ...thread(), newer_messages: [ours] } };
+  await repliesTick(db, conf, at(), slack); await settle(conf);
+  assert.equal((bison as any).repliesSent.length, 1);
+  let r = tables[EMAILS].recAAAAAAAAAAAAAA;
+  assert.equal(r[RA.state], 'Scheduled', 'next follow-up armed');
+  assert.equal(JSON.parse(String(r[RA.policy])).seanFollowupsSent, 1);
+  assert.equal(Object.values(tables[REPLY_LEARNING])[0]['Situation'], 'Follow-up');
+  // 2) The prospect wrote after our email → not sent.
+  await db.query('TRUNCATE jobs, steps, receipts, events RESTART IDENTITY CASCADE');
+  tables[EMAILS] = { recBBBBBBBBBBBBBB: fu() };
+  (bison as any).threads = { 555: { ...thread(), newer_messages: [ours, { id: 601, from_email_address: 'jane@acme.com', date_received: '2026-11-25T10:00:00.000Z' }] } };
+  await repliesTick(db, conf, at(), slack); await settle(conf);
+  assert.equal((bison as any).repliesSent.length, 1);
+  assert.match(String(tables[EMAILS].recBBBBBBBBBBBBBB[RA.lastError]), /prospect wrote again/);
+  // 3) Someone followed up by hand after the draft → not sent twice.
+  await db.query('TRUNCATE jobs, steps, receipts, events RESTART IDENTITY CASCADE');
+  tables[EMAILS] = { recCCCCCCCCCCCCCC: fu() };
+  (bison as any).threads = { 555: { ...thread(), newer_messages: [ours, { id: 602, from_email_address: 'inbox77@dulcy-mail.com', date_received: '2026-11-26T18:00:00.000Z' }] } };
+  await repliesTick(db, conf, at(), slack); await settle(conf);
+  assert.equal((bison as any).repliesSent.length, 1);
+  assert.match(String(tables[EMAILS].recCCCCCCCCCCCCCC[RA.lastError]), /already followed up/);
+  // 4) The close-the-loop note (follow-up 4 of 4) → thread complete.
+  await db.query('TRUNCATE jobs, steps, receipts, events RESTART IDENTITY CASCADE');
+  tables[EMAILS] = { recDDDDDDDDDDDDDD: fu({ [RA.policy]: JSON.stringify({ agent: 'sean', kind: 'followup', followupType: 'No Response', seanFollowupsSent: 3 }) }) };
+  tables[DECISIONS] = { recD: { [DF.emailsRecord]: 'recDDDDDDDDDDDDDD', [DF.status]: 'Waiting', [DF.action]: 'Approve Reply', [DF.slackChannel]: 'C1', [DF.slackTs]: 'ts9' } };
+  (bison as any).threads = { 555: { ...thread(), newer_messages: [ours] } };
+  await repliesTick(db, conf, at(), slack); await settle(conf);
+  assert.equal((bison as any).repliesSent.length, 2);
+  assert.equal(tables[EMAILS].recDDDDDDDDDDDDDD[RA.state], 'Thread Complete');
+  assert.match(posts.at(-1)!.text, /last follow-up/);
+});
+
+test('not interested: reply sent, no follow-ups; a follow-up waiting for approval is not closed as "answered"', { skip }, async () => {
+  const conf = cfg();
+  tables[EMAILS].recAAAAAAAAAAAAAA = row({ [EF.leadStatus]: 'Not Interested', [RA.intent]: 'Not Interested' });
+  await repliesTick(db, conf, at(), slack); await settle(conf);
+  assert.equal(tables[EMAILS].recAAAAAAAAAAAAAA[RA.state], 'Sent');
+  assert.equal(tables[EMAILS].recAAAAAAAAAAAAAA[RA.dueAt], null);
+  tables[EMAILS].recBBBBBBBBBBBBBB = row({ [RA.humanAction]: 'None', [EF.lastSent]: 'Last Email Sent By Dulcy', [RA.policy]: JSON.stringify({ kind: 'followup' }) });
+  tables[DECISIONS].recE = { [DF.emailsRecord]: 'recBBBBBBBBBBBBBB', [DF.status]: 'Waiting', [DF.action]: 'Approve Reply', [DF.slackChannel]: 'C1', [DF.slackTs]: 'ts8' };
+  await repliesTick(db, conf, at(), slack);
+  assert.equal(tables[DECISIONS].recE[DF.status], 'Waiting');
 });
 
 test('✅ in Slack presses the same Approve; the thread says it was sent', { skip }, async () => {

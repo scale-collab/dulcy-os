@@ -3,6 +3,8 @@
 //   lock-actions : EmailBison Actions webhook requires header X-Dulcy-Key (value from ACTIONS_KEY)
 //   replier-off  : switch off the old n8n Reply Agent (drafters, follow-up scheduler, sender, reconcile, provision) when Sean goes live
 //   replier-on   : switch them back on (undo)
+//   followup-arm-off : in 'Manual Emails Sent', switch off only the node that arms the old follow-up timer (Sean arms follow-ups now)
+//   followup-arm-on  : switch that node back on (undo)
 // Usage:
 //   read -s -p "n8n API key: " K; echo; docker exec -i -e N8N_API_KEY="$K" -e FIX=placement-30 deploy-engine-1 node --input-type=module - < /opt/dulcy-os/automations/n8n-fix.mjs
 const BASE = process.env.N8N_URL || 'https://n8n.dulcy.io';
@@ -49,4 +51,11 @@ if (FIX === 'placement-30') {
     try { const w = await api('POST', `/workflows/${id}/${verb}`); console.log(`${verb}d: ${w.name ?? id} (active: ${w.active})`); }
     catch (e) { console.log(`could not ${verb} ${id}: ${e.message}`); }
   }
+} else if (FIX === 'followup-arm-off' || FIX === 'followup-arm-on') {
+  const w = await api('GET', '/workflows/ewcunE4ck0jS6IZh');
+  const node = w.nodes.find((x) => x.name === 'Schedule next approval-required follow-up');
+  if (!node) throw new Error('node "Schedule next approval-required follow-up" not found; nothing changed');
+  node.disabled = FIX === 'followup-arm-off';
+  await save(w);
+  console.log(`Done: "${node.name}" in "${w.name}" is now ${node.disabled ? 'OFF' : 'ON'}; the rest of the workflow is unchanged (active: ${w.active}).`);
 } else throw new Error(`unknown FIX ${FIX}`);

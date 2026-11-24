@@ -11,6 +11,7 @@ import { runOnce } from '../src/worker.js';
 import { EMAILS, EF, RA, SETTINGS, REPLY_LEARNING, waitingFormula } from '../src/agents/emailsFields.js';
 import { DECISIONS, DF } from '../src/decisions/fields.js';
 import { clientFileFor } from '../src/agents/knowledge.js';
+import { parsePlan, dueAfter, armFields, allSteps, DEFAULT_PLAN, dueFormula } from '../src/agents/followups.js';
 
 const url = process.env.TEST_DATABASE_URL;
 const skip = !url ? 'TEST_DATABASE_URL not set' : false;
@@ -19,14 +20,15 @@ let db: Db;
 let atServer: http.Server, claudeServer: http.Server, atUrl = '', claudeUrl = '';
 let emails: Record<string, Record<string, unknown>>, decisions: Record<string, Record<string, unknown>>, booked: Record<string, unknown>[], settings: Record<string, unknown>[], formulas: string[];
 let claudeAnswers: Record<string, unknown>[], claudeCalls: any[];
+let due: Record<string, Record<string, unknown>>;
 
 function cfg(over: Partial<Config> = {}): Config {
   return { ...loadConfig({ ENGINE_SECRET: 'x'.repeat(40), DATABASE_URL: url ?? 'postgres://x' } as NodeJS.ProcessEnv),
     airtableApiKey: 'at', airtableBaseUrl: atUrl, anthropicApiKey: 'sk-test', anthropicBaseUrl: claudeUrl, knowledgeDir: REPO,
     dryRun: false, liveStages: ['sean.draft'], ...over };
 }
-async function run(conf: Config) {
-  const q = await enqueue(db, { kind: 'sean.draft', recordId: 'sean', input: {}, dryRun: conf.dryRun && !conf.liveStages.includes('sean.draft'), maxAttempts: 3, deadlineMs: 60_000 });
+async function run(conf: Config, kind = 'sean.draft') {
+  const q = await enqueue(db, { kind, recordId: 'sean', input: {}, dryRun: conf.dryRun && !conf.liveStages.includes('sean.draft'), maxAttempts: 3, deadlineMs: 60_000 });
   for (let i = 0; i < 10; i++) { await runOnce(db, conf); const j = await getJob(db, q.job.id); if (['succeeded', 'failed', 'needs_review'].includes(j!.job.status)) return j!; }
   throw new Error('job did not settle');
 }
@@ -41,6 +43,7 @@ before(async () => {
     res.setHeader('content-type', 'application/json');
     if (req.method === 'GET') {
       const formula = u.searchParams.get('filterByFormula') ?? ''; formulas.push(formula);
+      if (table === EMAILS && /Dulcy Reply Agent Due At/.test(formula)) return res.end(JSON.stringify({ records: Object.entries(due).filter(([, f]) => f[RA.state] === 'Scheduled' && f[RA.dueAt]).map(([id, fields]) => ({ id, fields })) }));
       if (table === EMAILS && /Last Email Sent By Prospect/.test(formula)) return res.end(JSON.stringify({ records: Object.entries(emails).map(([id, fields]) => ({ id, fields })) }));
       if (table === EMAILS) return res.end(JSON.stringify({ records: booked.map((fields, i) => ({ id: `recBooked${i}`, fields })) }));
       if (table === SETTINGS) return res.end(JSON.stringify({ records: settings.map((fields, i) => ({ id: `recSet${i}`, fields })) }));
@@ -51,7 +54,7 @@ before(async () => {
     req.on('end', () => {
       const b = JSON.parse(body);
       const out = b.records.map((r: any) => {
-        if (req.method === 'PATCH') { Object.assign(emails[r.id] ??= {}, r.fields); return r; }
+        if (req.method === 'PATCH') { Object.assign((due[r.id] ? due : emails)[r.id] ??= {}, r.fields); return r; }
         const id = `recDec${String(Object.keys(decisions).length).padStart(11, '0')}`; decisions[id] = r.fields; return { id, fields: r.fields };
       });
       res.end(JSON.stringify({ records: out }));
@@ -72,7 +75,7 @@ before(async () => {
 });
 after(async () => { atServer.close(); claudeServer.close(); if (!skip) await db.end(); });
 beforeEach(async () => {
-  emails = {}; decisions = {}; claudeAnswers = []; claudeCalls = []; booked = []; formulas = []; settings = [{ 'Calendar Link': 'https://calendly.com/client/intro', 'Calendar Settings JSON': '{}' }];
+  emails = {}; due = {}; decisions = {}; claudeAnswers = []; claudeCalls = []; booked = []; formulas = []; settings = [{ 'Calendar Link': 'https://calendly.com/client/intro', 'Calendar Settings JSON': '{}' }];
   if (!skip) await db.query('TRUNCATE jobs, steps, receipts, events, sean_drafts RESTART IDENTITY CASCADE');
 });
 
@@ -166,4 +169,52 @@ test('two offered times are a real choice: another day, or at least 2 hours apar
   assert.match(t[0], /4:00/); assert.match(t[1], /6:30/);
   assert.match(twoTimes(['2026-11-25T21:00:00Z', '2026-11-25T21:05:00Z', '2026-11-26T15:00:00Z'], 'America/New_York')[1], /Thu/);
   assert.equal(twoTimes(['2026-11-25T21:00:00Z', '2026-11-25T21:05:00Z'], 'America/New_York').length, 1, 'no fake second time');
+});
+
+test('follow-up plan: client steps, then close the loop; due dates skip weekends', () => {
+  const p = parsePlan(JSON.stringify({ enabled: true, skipWeekends: true, steps: [{ delay: 1, unit: 'days', message: 'answer the open point' }, { delay: 2, unit: 'days', message: 'one new insight' }] }));
+  assert.deepEqual(p.steps.map((s) => s.delayDays), [1, 2]);
+  assert.equal(allSteps(p).length, 3, 'two plan steps + the close-the-loop note');
+  assert.equal(parsePlan('').steps.length, DEFAULT_PLAN.steps.length, 'no plan saved → default plan');
+  assert.equal(parsePlan('{"enabled":false}').enabled, false);
+  // Friday + 1 business day = Monday 15:00 UTC.
+  assert.equal(dueAfter(new Date('2026-11-27T20:00:00Z'), 1, true), '2026-11-30T15:00:00.000Z');
+  assert.equal(dueAfter(new Date('2026-11-27T20:00:00Z'), 1, false), '2026-11-28T15:00:00.000Z');
+  const now = new Date('2026-11-24T22:00:00Z');
+  assert.equal(armFields(p, 0, now, true)[RA.state], 'Scheduled');
+  assert.equal(armFields(p, 0, now, true)[RA.dueAt], '2026-11-25T15:00:00.000Z');
+  assert.equal(armFields(p, 2, now, true)[RA.state], 'Scheduled', 'close-the-loop note still to come');
+  assert.equal(armFields(p, 3, now, true)[RA.state], 'Thread Complete');
+  assert.equal(armFields(p, 0, now, false)[RA.state], 'Sent', 'not interested → no follow-ups');
+  assert.match(dueFormula(), /NOT\(\{Client Handling\}\)/);
+  assert.match(dueFormula(), /'Not Interested'/);
+});
+
+test('due follow-ups: drafted onto the row + Slack; prospect answered → not a follow-up; plan done → thread complete', { skip }, async () => {
+  const base = thread({ [RA.state]: 'Scheduled', [RA.dueAt]: '2026-11-24T15:00:00.000Z', [RA.followupType]: 'No Response', [EF.lastSent]: 'Last Email Sent By Dulcy', [EF.leadStatus]: 'Interested' });
+  due.recF = { ...base };
+  due.recG = { ...base, [EF.leadName]: 'Gus', [EF.lastSent]: 'Last Email Sent By Prospect' };
+  due.recH = { ...base, [EF.leadName]: 'Hal', [RA.policy]: JSON.stringify({ agent: 'sean', seanFollowupsSent: 4 }) };
+  due.recO = { ...base, [EF.leadName]: 'Ola', [RA.followupType]: 'Out of Office', [EF.lastSent]: 'Last Email Sent By Prospect' };
+  claudeAnswers = [
+    { action: 'reply', intent: 'Interested', reason: 'she asked about cost and never got times', they_said: 'Asked what it costs', draft: 'Hi Jane, the notes are ready. Worth 15 minutes Tue?', question_for_alex: '' },
+    { action: 'reply', intent: 'Out of Office', reason: 'back from leave', they_said: 'Out until today', draft: 'Hi Ola, welcome back. Still keen to look at this?', question_for_alex: '' },
+  ];
+  const j = await run(cfg(), 'sean.followup');
+  assert.equal(j.job.status, 'succeeded', j.job.error ?? '');
+  assert.equal(claudeCalls.length, 2, 'only Jane and Ola need a draft');
+  assert.match(claudeCalls[0].body.system[0].text, /FOLLOW-UP/);
+  assert.match(claudeCalls[0].body.messages[0].content, /Follow-up 1 of up to 4/);
+  assert.equal(due.recF[RA.state], 'Needs Approval');
+  assert.match(String(due.recF[RA.draft]), /notes are ready/);
+  assert.equal(JSON.parse(String(due.recF[RA.policy])).kind, 'followup');
+  assert.equal(due.recG[RA.state], 'Scheduled', 'prospect answered: left for the normal reply drafting');
+  assert.equal(due.recH[RA.state], 'Thread Complete', 'all follow-ups sent');
+  const ds = Object.values(decisions);
+  assert.equal(ds.length, 2);
+  assert.match(String(ds[0][DF.title]), /Follow-up 1 to Jane/);
+  assert.equal(ds[0][DF.action], 'Approve Reply');
+  const again = await run(cfg(), 'sean.followup');
+  assert.match(String(again.job.result.message), /none new/);
+  assert.equal(claudeCalls.length, 2, 'nothing drafted twice');
 });

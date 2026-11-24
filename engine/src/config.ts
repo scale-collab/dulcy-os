@@ -35,6 +35,8 @@ export interface Config {
   seanEveryMin: number;
   seanDays: number;
   seanMaxPerRun: number;
+  /** Sean drafts due follow-ups too (SEAN_FOLLOWUPS=on). Switch on after the old n8n follow-up timer is off. */
+  seanFollowupsOn: boolean;
   /** Dulcy calendar service (client calendars) and its read-only token. */
   calendarUrl: string;
   calendarReaderToken?: string;
@@ -134,6 +136,7 @@ export function loadConfig(env = process.env): Config {
     seanEveryMin: num('SEAN_EVERY_MIN', 0, env),
     seanDays: num('SEAN_DAYS', 14, env),
     seanMaxPerRun: num('SEAN_MAX_PER_RUN', 20, env),
+    seanFollowupsOn: (env.SEAN_FOLLOWUPS || 'off').toLowerCase() === 'on',
     calendarUrl: env.CALENDAR_URL || 'http://dulcy-calendar:8789',
     calendarReaderToken: env.CALENDAR_READER_TOKEN || undefined,
     replySenderOn: (env.REPLY_SENDER || 'off').toLowerCase() === 'on',
