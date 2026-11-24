@@ -25,7 +25,7 @@ import { createOpenAIClient } from '../providers/openai.js';
 import { FILTERGEN_NODES as N } from '../leadlist/legacy/filtergenNodes.js';
 import { runNode, type Items } from '../leadlist/legacy/runNode.js';
 import type { Filters } from '../leadlist/filters.js';
-import { MAX_WIDEN_COUNTS, WIDEN_STEPS, probeDepth, applyLabels, applyModelsAndExamples, modelsText, goalText, labelCoverage, labelsText, sizingText, type Sizing } from '../leadlist/filterSizing.js';
+import { MAX_WIDEN_COUNTS, PROBE_RECORDS, WIDEN_STEPS, probeDepth, applyLabels, applyModelsAndExamples, modelsLines, goalText, labelCoverage, labelsLines, sizingLines, type Sizing } from '../leadlist/filterSizing.js';
 
 interface LeadGoalIn { value?: number; source?: string; inboxes?: number; perDay?: number; campaigns?: string[] }
 interface FilterInput {
@@ -141,7 +141,7 @@ export const filterGenerateStage: Stage = async (ctx) => {
       explicitModels: Array.isArray(start.analysis.business_model) ? start.analysis.business_model as string[] : [],
       savedDomains: Array.isArray(start.analysis.domain) ? start.analysis.domain as string[] : [],
     });
-    const modelsNote = modelsText(Array.isArray(me.filters.business_model) ? me.filters.business_model as string[] : [], me.droppedModels, me.examplesNote);
+    const modelsNote = modelsLines(Array.isArray(me.filters.business_model) ? me.filters.business_model as string[] : [], me.droppedModels, me.examplesNote);
     return { filters: me.filters, modelsNote, summary: String(g0.summary ?? ''), airtableFields: fields, used: labels.used, skipped: labels.skipped, heldBack: labels.heldBack, broaderCategories: labels.broaderCategories, total: cov.total, crossIndustry };
   });
 
@@ -161,8 +161,8 @@ export const filterGenerateStage: Stage = async (ctx) => {
       const probe: Filters = { ...f, relevance: 'MAX_COVERAGE' };
       try {
         const r = await probeDepth(async (offset) => (await ctx.paid({
-          provider: 'discolike', callKey: `filters-depth:${hash(probe)}:${offset}`, units: 1,
-          run: () => disco.discover({ ...probe, offset }, 1), dryRunResult: () => [],
+          provider: 'discolike', callKey: `filters-depth:${hash(probe)}:${offset}`, units: PROBE_RECORDS,
+          run: () => disco.discover({ ...probe, offset }, PROBE_RECORDS), dryRunResult: () => [],
         })).length > 0);
         return { depth: r.depth, capped: r.capped };
       } catch (e) { if (e instanceof WaitError) throw e; s.note = `Search-depth check failed (${String((e as Error).message ?? e).slice(0, 120)}); the size uses the free count only.`; return null; }
@@ -197,13 +197,21 @@ export const filterGenerateStage: Stage = async (ctx) => {
   const keywords: string[] = Array.isArray(f.phrase_match) ? f.phrase_match.map(String) : [];
   const catCount = Array.isArray(f.category) ? f.category.length : 0;
   const subCount = Array.isArray(f.sub_industry) ? f.sub_industry.length : 0;
-  const bmCount = Array.isArray(f.business_model) ? f.business_model.length : 0;
-  const legacySummary = plan.summary
-    .replace(/^\d+ native subindustries;/, `${subCount} native subindustries;`)
-    .replace(/AI retained or rewrote \d+ relevant/, `AI retained or rewrote ${keywords.length} relevant`)
-    .replace(/, \d+ industry groups, and \d+ business-model filters/, `, ${catCount} industry groups, and ${bmCount} business-model filters`)
-    .replace(/generated \d+ lookalike domains/, `generated ${Array.isArray(f.domain) ? f.domain.length : 0} lookalike domains`);
-  const summary = [sizingText(sized.s), labelsText(plan.used, plan.skipped, plan.total, plan.crossIndustry, plan.heldBack), plan.modelsNote, legacySummary].filter(Boolean).join(' ');
+  const legacyText = String(plan.summary ?? '');
+  const cand = legacyText.match(/generated (\d+) keyword candidates/)?.[1];
+  const planBits = [
+    subCount ? `${subCount} sub-industr${subCount === 1 ? 'y' : 'ies'}` : '',
+    catCount ? `${catCount} industr${catCount === 1 ? 'y' : 'ies'}` : '',
+    `${keywords.length} homepage keyword${keywords.length === 1 ? '' : 's'}${cand ? ` (from ${cand} candidates)` : ''}`,
+    `${Array.isArray(f.domain) ? f.domain.length : 0} example site${Array.isArray(f.domain) && f.domain.length === 1 ? '' : 's'}`,
+    `employees ${String(f.employee_range ?? 'any').replace(',', '-')}`,
+  ].filter(Boolean).join(' · ');
+  const summary = [
+    ...sizingLines(sized.s),
+    ...labelsLines(plan.used, plan.skipped, plan.total, plan.crossIndustry, plan.heldBack),
+    'Search plan', ...plan.modelsNote, `• ${planBits}`,
+    'Next: review the plan, then run the first 100 companies.',
+  ].join('\n');
   const airtableFields = {
     ...plan.airtableFields,
     fldC2hZQ3gSqLmi1y: JSON.stringify(f, null, 2),

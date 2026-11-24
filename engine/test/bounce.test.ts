@@ -98,3 +98,21 @@ test('timer: off by default; when on, one job per workspace per slot, never doub
   const n = await db.query(`SELECT count(*)::int AS n FROM jobs WHERE kind = 'bounce.check'`);
   assert.equal(n.rows[0].n, 2);
 });
+
+test('all workspaces (Alex, 2026-11-24): one key checks every workspace it can reach; a pause lands in the right workspace', { skip }, async () => {
+  Object.assign(bison, { workspaces: [{ id: 2, name: 'Dulcy' }, { id: 78, name: 'The Marketing Cartel' }], campaigns: [
+    c(1, 50, 1000, 40),                          // Dulcy: 5% at 40% -> pause
+    { ...c(7, 60, 1000, 50), team: 78 },         // client: 6% at 50% -> pause
+    { ...c(8, 30, 1000, 80), team: 78 },         // client: 3% -> watch
+  ] });
+  const q = await enqueue(db, { kind: 'bounce.check', recordId: 'bounce:all', input: { workspace: 'all' }, dryRun: false, maxAttempts: 3, deadlineMs: 60_000 });
+  const conf = cfg({ dryRun: false, liveStages: ['bounce.check'] });
+  let j: any;
+  for (let i = 0; i < 10; i++) { await runOnce(db, conf); j = await getJob(db, q.job.id); if (['succeeded', 'failed', 'needs_review'].includes(j.job.status)) break; }
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.equal(j.job.result.workspaces, 2);
+  assert.deepEqual(j.job.result.paused.map((p: any) => p.id).sort(), [1, 7]);
+  assert.deepEqual(j.job.result.watch.map((p: any) => p.id), [8]);
+  assert.equal(bison.campaigns.find((x) => x.id === 7)!.status, 'paused', 'the client campaign was paused in its own workspace');
+  assert.match(j.job.result.message, /in 2 workspaces: 2 paused, 1 to watch/);
+});

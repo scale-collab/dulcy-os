@@ -66,10 +66,11 @@ before(async () => {
     const u = new URL(req.url ?? '/', 'http://x');
     disco.key = String(req.headers['x-discolike-key'] ?? '');
     res.setHeader('content-type', 'application/json');
-    if (u.pathname === '/v1/discover' && u.searchParams.get('max_records') === '1') {
-      // Search-depth probe: one company at that offset, or none past the real search depth.
+    if (u.pathname === '/v1/discover' && u.searchParams.get('max_records') === '5') {
+      // Search-depth probe (5 = DiscoLike's minimum): companies at that offset, or none past the real search depth.
+      if (Number(u.searchParams.get('max_records')) < 5) { res.statusCode = 422; return res.end('{"detail":"max_records >= 5"}'); }
       disco.probes.push(u.searchParams);
-      return res.end(JSON.stringify(Number(u.searchParams.get('offset') ?? 0) < disco.depth ? disco.rows(1) : []));
+      return res.end(JSON.stringify(Number(u.searchParams.get('offset') ?? 0) < disco.depth ? disco.rows(5) : []));
     }
     if (u.pathname === '/v1/discover') { disco.calls++; disco.query = u.search; return res.end(JSON.stringify(disco.rows(Number(u.searchParams.get('max_records'))))); }
     if (u.pathname === '/v1/count') { disco.counts.push(u.searchParams); return res.end(JSON.stringify({ count: disco.count(u.searchParams) })); }
@@ -135,11 +136,11 @@ test('generate filters: one 500-company lookalike pull, one AI review, plan buil
   assert.equal(a.fldf9wpMGWg0SebHV, 'Completed');
   assert.equal(a.fldVnH7Pn1PxlZI5b, r.message);
   assert.ok(!('fldhViG7kJ5rKEaa4' in a));
-  assert.match(r.message, /Review them before running the first 100 companies/);
+  assert.match(r.message, /\nNext: review the plan, then run the first 100 companies\.$/);
   // Size: default goal, big enough, no widening.
   assert.deepEqual({ ...r.sizing, counts: undefined }, { leadGoal: 3000, source: 'default', companiesNeeded: 7500, freeCount: 100000, expectedReal: 60000, enough: true, widened: [], counts: undefined, leadsPerCompany: 0.4, countYield: 0.6, findable: 10000, findableCapped: true });
-  assert.match(r.message, /^Goal 3,000 leads \(default\) → needs ~7,500 companies\. Free count 100,000 \(real search reaches 10,000\+\) → expect ~60,000 real\. Big enough/);
-  assert.match(r.message, /Labels used \(either\/or\): HEALTHCARE 100%, MEDSPA_AND_DERMATOLOGY 100%/);
+  assert.match(r.message, /^Size\n• Goal: 3,000 leads \(default\) → needs ~7,500 companies\n• Free count 100,000 \(real search reaches 10,000\+\) → expect ~60,000 real\n• Big enough/);
+  assert.match(r.message, /Labels \(either\/or\)\n• Used: HEALTHCARE 100%, MEDSPA_AND_DERMATOLOGY 100%/);
   assert.equal(disco.counts.length, 1, 'one free count');
   assert.equal(disco.counts[0].get('category'), 'HEALTHCARE');
 });
@@ -159,7 +160,7 @@ test('labels: mixed pet-ecom data (E-COMMERCE 90%, PET_PRODUCTS_BRAND 40%) -> E-
   assert.equal(r.filters.sub_industry, undefined, 'a 40% sub-industry is not a filter, even when the AI picked it');
   assert.deepEqual(r.labels.used, [{ label: 'E-COMMERCE', kind: 'category', coverage: 90 }]);
   assert.ok(r.labels.skipped.some((x: any) => x.label === 'CONSUMER_PRODUCTS/PET_PRODUCTS_BRAND' && x.coverage === 40), JSON.stringify(r.labels.skipped));
-  assert.match(r.message, /Labels used \(either\/or\): E-COMMERCE 90%\. Skipped \(under 60%\): [^.]*PET_PRODUCTS_BRAND 40%/);
+  assert.match(r.message, /• Used: E-COMMERCE 90%\n• Skipped \(under 60%\): [^\n]*PET_PRODUCTS_BRAND 40%/);
   assert.equal(r.filters.employee_range, '11,200', 'snapping rule unchanged');
 });
 
@@ -191,8 +192,8 @@ test('labels: none reaches 60% -> no industry or sub-industry filter at all', { 
   const r = await press('ERP software companies in the US', 'none');
   assert.equal(r.filters.category, undefined);
   assert.equal(r.filters.sub_industry, undefined);
-  assert.match(r.message, /Labels used: none/);
-  assert.match(r.message, /Skipped \(under 60%\): [^.]*MACHINE_SHOP 33%/, 'the AI pick is skipped with its number');
+  assert.match(r.message, /• None used: no industry label/);
+  assert.match(r.message, /Skipped \(under 60%\): [^\n]*MACHINE_SHOP 33%/, 'the AI pick is skipped with its number');
 });
 
 test('labels (unit): coverage counts each company once, score >= 0.5, plain-name sub-industries are qualified', () => {
@@ -219,7 +220,7 @@ test('size goal: from the linked campaign inboxes vs the default 3,000 (a goal, 
   assert.equal(camp.sizing.leadGoal, 280);
   assert.equal(camp.sizing.source, 'campaign');
   assert.equal(camp.sizing.companiesNeeded, 700);
-  assert.match(camp.message, /^Goal 280 leads \(from the linked campaign: 4 inboxes, 60 a day x 14 days ÷ 3 steps\) → needs ~700 companies\./);
+  assert.match(camp.message, /^Size\n• Goal: 280 leads \(from the linked campaign: 4 inboxes, 60 a day x 14 days ÷ 3 steps\) → needs ~700 companies\n/);
   const def = await press(ICP, 'goal-default');
   assert.equal(def.sizing.leadGoal, 3000);
   assert.equal(def.sizing.source, 'default');
@@ -243,7 +244,7 @@ test('auto-widen: one step at a time, size first (keeps the niche), stops as soo
   for (const c of disco.counts) assert.equal(c.get('country'), 'US');
   assert.equal(r.airtableFields.fldG2MXz5lccu7KKU, '1,500');
   assert.deepEqual(JSON.parse(r.airtableFields.fldC2hZQ3gSqLmi1y), f);
-  assert.match(r.message, /Free count 20,000 \(real search reaches 10,000\+\) → expect ~12,000 real\. Widened: widened employee range to 1-500\./);
+  assert.match(r.message, /• Free count 20,000 \(real search reaches 10,000\+\) → expect ~12,000 real\n• Widened: widened employee range to 1-500\n/);
 });
 
 test('auto-widen: after size, a sub-industry gives way to the held-back whole industries, then industries go', { skip }, async () => {
@@ -375,6 +376,7 @@ test('real search depth (Alex, 2026-11-24): the free count says 23,065 but the s
   const r = await press(PET, 'depth');
   assert.ok(disco.probes.length >= 4 && disco.probes.length <= 60, `${disco.probes.length} one-company probes (about 8 per plan checked)`);
   assert.ok(disco.probes.every((p) => p.get('relevance') === 'MAX_COVERAGE'), 'probed as far as Expand can go');
+  assert.ok(disco.probes.every((p) => p.get('max_records') === '5'), "DiscoLike's minimum of 5 records");
   assert.ok(r.sizing.findable >= 1_800 && r.sizing.findable <= 2_000, `findable ${r.sizing.findable}`);
   assert.equal(r.sizing.expectedReal, r.sizing.findable, 'expected real = what the search reaches, not 60% of the count');
   assert.equal(r.sizing.enough, false);

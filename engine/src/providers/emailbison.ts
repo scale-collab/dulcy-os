@@ -108,6 +108,12 @@ export function createBisonClient(o: BisonOptions) {
       const r = await call('GET', `/api/campaigns/${id}`);
       return r?.data ?? r ?? {};
     },
+    /** Every workspace (team) this key can reach: [{id, name}] (live 2026-11-24: the Dulcy key reaches all 35). */
+    async listWorkspaces(): Promise<{ id: number; name: string }[]> {
+      const r = await call('GET', '/api/workspaces');
+      const rows = Array.isArray(r) ? r : Array.isArray(r?.data) ? r.data : [];
+      return rows.map((w: any) => ({ id: Number(w.id), name: String(w.name ?? '') })).filter((w: { id: number }) => Number.isSafeInteger(w.id) && w.id > 0);
+    },
     /** Every campaign in the workspace with EmailBison's own stats (same list the daily sync reads). */
     async listCampaigns(): Promise<any[]> {
       return pages<any>('/api/campaigns');

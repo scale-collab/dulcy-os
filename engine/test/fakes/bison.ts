@@ -68,6 +68,7 @@ export async function startFakeBison(): Promise<FakeBison> {
     const cm = u.pathname.match(/^\/api\/campaigns\/(?:v1\.1\/)?(\d+)\//);
     if (cm) { const c: any = s.campaigns.find((y) => y.id === Number(cm[1])); if (c && (c.team ?? 2) !== team) return json(res, 403, { data: { success: false, message: 'This action is unauthorized. Consider using api-user keys or switch to the workspace this record is on.' } }); }
     let x;
+    if (req.method === 'GET' && u.pathname === '/api/workspaces') return json(res, 200, { data: (s as any).workspaces ?? [{ id: 2, name: 'Dulcy' }] });
     if (req.method === 'GET' && u.pathname === '/api/campaigns') return json(res, 200, page(s.campaigns.filter((c: any) => (c.team ?? 2) === team).map((c: any) => ({ id: c.id, name: c.name, status: c.status ?? 'draft', bounced: c.bounced ?? 0, total_leads_contacted: c.contacted ?? 0, completion_percentage: c.progress ?? 0 })), u));
     if ((x = m(/^\/api\/campaigns\/(\d+)\/resume$/)) && req.method === 'PATCH') {
       const c: any = s.campaigns.find((y) => y.id === Number(x![1]));
