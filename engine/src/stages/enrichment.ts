@@ -56,7 +56,7 @@ export function fallbackPhrases(prompt: string, columns: string[]): Record<strin
   return out;
 }
 /** Fill every still-blank (or "Not Found") requested cell with that variable's fallback phrase. */
-export function fillFallbacks(built: any, prompt: string, variables: { column: string }[]): number {
+export function fillFallbacks(built: any, prompt: string, variables: { column: string }[], report?: Record<string, { used: number; leads: number; phrase: string }>): number {
   const cols = [...new Set(variables.map((v) => String(v.column)))];
   const phrases = fallbackPhrases(prompt, cols);
   let filled = 0;
@@ -66,7 +66,11 @@ export function fillFallbacks(built: any, prompt: string, variables: { column: s
     for (const [col, phrase] of Object.entries(phrases)) {
       const c = rows[0].indexOf(col);
       if (c < 0) continue;
-      for (const row of rows.slice(1)) { if (MISSING.test(String(row[c] ?? '').trim())) { row[c] = phrase; here++; } }
+      const r = report ? (report[col] ??= { used: 0, leads: 0, phrase }) : undefined;
+      for (const row of rows.slice(1)) {
+        if (r) r.leads++;
+        if (MISSING.test(String(row[c] ?? '').trim())) { row[c] = phrase; here++; if (r) r.used++; }
+      }
     }
     if (here && built.tabWritePlan?.[tab]) built.tabWritePlan[tab].shouldWrite = true;
     filled += here;
@@ -195,7 +199,10 @@ export const enrichRunStage: Stage = async (ctx) => {
     try { return (await runNode(R['Build Enriched Sheet Values2'], [wrapBareResults(status, r)], { 'Prepare DiscoGen Request2': [r] }))[0]; }
     catch (e) { throw new PermanentError(`Enrichment: ${String((e as Error).message ?? e)}${resultSample(status)} (task ${task}; not resubmitted)`); }
   }, { timeoutMs: 10 * 60_000 });
-  fillFallbacks(built, String(input.project.fields?.['Custom Variables Requested'] ?? ''), prep.norm.variables ?? []);
+  // Fallback phrases (Alex, 2026-11-21) fill every blank / "Not Found" value; the message says how many (2026-11-24).
+  const fallbackReport: Record<string, { used: number; leads: number; phrase: string }> = {};
+  fillFallbacks(built, String(input.project.fields?.['Custom Variables Requested'] ?? ''), prep.norm.variables ?? [], fallbackReport);
+  const fallbackLines = Object.entries(fallbackReport).map(([col, r]) => `• ${col}: ${(r.leads - r.used).toLocaleString('en-US')} found, ${r.used.toLocaleString('en-US')} use the fallback "${r.phrase}"`);
 
   const ensured = await ctx.step('write', async () => {
     const sheetId = built.sheetId as string;
@@ -221,5 +228,6 @@ export const enrichRunStage: Stage = async (ctx) => {
     const upd = await node('Prepare Enrichment Complete Update2', [{}], { 'Ensure Final Tabs Capacity2': [ensured], 'Mark Enrichment Running2': [{ fields: { 'Processing Started At': startedAt } }] }, { $execution: { id: `engine-job-${ctx.job.id}` } });
     return toFieldIds(upd[0]?.body?.fields ?? {});
   });
-  return { dryRun: false, enrichment: { endpoint, entities, matched: ensured.matchedResults, stillMissing: ensured.missing, wroteTabs: ensured.writeTabs, taskId: task }, airtableFields: fields, message: String(fields[BY_NAME['Last Workflow Message']] ?? 'Enrichment complete.') };
+  const baseMsg = String(fields[BY_NAME['Last Workflow Message']] ?? 'Enrichment complete.');
+  return { dryRun: false, enrichment: { endpoint, entities, matched: ensured.matchedResults, stillMissing: ensured.missing, wroteTabs: ensured.writeTabs, taskId: task, fallbacks: fallbackReport }, airtableFields: fields, message: fallbackLines.length ? `${baseMsg}\nFallbacks:\n${fallbackLines.join('\n')}` : baseMsg };
 };
