@@ -164,3 +164,53 @@ export function sizingText(s: Sizing): string {
   }
   return parts.join(' ');
 }
+
+/**
+ * Business model and example sites get the same "only when it fits" rule as the labels
+ * (live pet e-com test 2026-11-24: the old code took the top-2 models and the 5 most similar
+ * sites with no check: B2B + five pet SHOPS for a pet e-com brand list).
+ *  - business_model: only models on 60%+ of the lookalike companies; an explicit B2B in the
+ *    targeting sentence is always kept.
+ *  - domain (example sites): the list's own examples are always kept. Otherwise only the most
+ *    similar companies that carry a label that passed; no label passed = no example sites.
+ */
+export function applyModelsAndExamples(filters: Filters, rows: any[], opts: { used: LabelShare[]; explicitModels?: string[]; savedDomains?: string[]; taxonomy: string[]; minShare?: number }) {
+  const min = opts.minShare ?? LABEL_MIN_SHARE;
+  const f: Filters = { ...filters };
+  const total = rows.length;
+  const counts = new Map<string, number>();
+  for (const r of rows) for (const m of new Set(scored(r?.business_model).filter(([l, s]) => l.trim() && s >= LABEL_PRESENT_SCORE).map(([l]) => l.trim().toUpperCase()))) counts.set(m, (counts.get(m) ?? 0) + 1);
+  const modelShares = [...counts].map(([label, n]) => ({ label, share: total ? n / total : 0 })).sort((a, b) => b.share - a.share);
+  const proposedModels = listOf(f.business_model).map((x) => x.toUpperCase());
+  const explicit = (opts.explicitModels ?? []).map((x) => String(x).toUpperCase());
+  const keptModels = [...new Set([...explicit, ...proposedModels.filter((m) => (counts.get(m) ?? 0) / (total || 1) >= min)])];
+  if (keptModels.length) f.business_model = keptModels; else delete f.business_model;
+  const droppedModels = proposedModels.filter((m) => !keptModels.includes(m)).map((m) => ({ label: m, share: (counts.get(m) ?? 0) / (total || 1) }));
+
+  const saved = (opts.savedDomains ?? []).filter(Boolean);
+  const proposedDomains = listOf(f.domain);
+  let examples: string[];
+  if (saved.length) examples = saved;
+  else if (!opts.used.length) examples = [];
+  else {
+    const usedCats = new Set(opts.used.filter((x) => x.kind === 'category').map((x) => x.label));
+    const usedSubs = new Set(opts.used.filter((x) => x.kind === 'sub_industry').map((x) => x.label));
+    const fits = (r: any) => {
+      const subs = scored(r?.sub_industry ?? r?.sub_industries).filter(([, s]) => s >= LABEL_PRESENT_SCORE).map(([l]) => qualifySub(l, opts.taxonomy));
+      if (usedSubs.size) return subs.some((s) => s && usedSubs.has(s));
+      return scored(r?.industry_groups).filter(([, s]) => s >= LABEL_PRESENT_SCORE).some(([l]) => usedCats.has(normIndustry(l)));
+    };
+    const clean = (d: unknown) => String(d ?? '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].trim();
+    examples = [...new Set(rows.filter(fits).map((r) => clean(r?.domain)).filter(Boolean))].slice(0, 5);
+  }
+  if (examples.length) f.domain = examples; else delete f.domain;
+  const examplesNote = saved.length ? 'kept the list\'s own example sites' : examples.length ? `${examples.length} example sites, all carrying a label that passed` : proposedDomains.length ? 'no example sites (none of the most similar companies carry a label that passed; the targeting text and keywords target)' : '';
+  return { filters: f, modelShares, droppedModels, examples, examplesNote };
+}
+
+export function modelsText(kept: string[], dropped: { label: string; share: number }[], examplesNote: string): string {
+  const parts: string[] = [];
+  if (dropped.length) parts.push(`Business model: ${kept.length ? kept.join(', ') : 'none'} (skipped under 60%: ${dropped.map((d) => `${d.label} ${Math.round(d.share * 100)}%`).join(', ')}).`);
+  if (examplesNote) parts.push(`Examples: ${examplesNote}.`);
+  return parts.join(' ');
+}
