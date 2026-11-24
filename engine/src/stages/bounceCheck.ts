@@ -9,13 +9,16 @@ import type { Stage } from './index.js';
 import { NeedsReviewError, PermanentError } from '../errors.js';
 import { bisonFor, createBisonClient } from '../providers/emailbison.js';
 import { bounceAction, bounceRate, statsFrom } from '../campaign/bounce.js';
+import { syncCampaignStats } from '../campaign/statsSync.js';
+import { createAirtableClient } from '../providers/airtable.js';
 import { alert } from '../log.js';
 
 type Row = { id: number; name: string; bounce: number; progress: number; note?: string; workspace?: string };
 
 /** One workspace: pause over 4% at 35%+ progress (unless Skip Bounce Pause), list 2.5%+ to watch. */
 async function checkWorkspace(ctx: Parameters<Stage>[0], bison: ReturnType<typeof bisonFor>, label: string, skip: Set<number>) {
-  const active = (await bison.listCampaigns()).map(statsFrom).filter((c) => c.status === 'active');
+  const all = await bison.listCampaigns();
+  const active = all.map(statsFrom).filter((c) => c.status === 'active');
   const paused: Row[] = [], watch: Row[] = [], skippedPause: Row[] = [];
   for (const c of active) {
     const action = bounceAction(c);
@@ -42,7 +45,7 @@ async function checkWorkspace(ctx: Parameters<Stage>[0], bison: ReturnType<typeo
     const still = paused.filter((p) => after.get(p.id) === 'active');
     if (still.length) throw new NeedsReviewError(`pause did not take effect for campaign(s) ${still.map((p) => p.id).join(', ')} (${label}); pause them by hand and investigate`);
   }
-  return { checked: active.length, paused, watch, skippedPause };
+  return { checked: active.length, paused, watch, skippedPause, all };
 }
 
 export const bounceCheckStage: Stage = async (ctx) => {
@@ -66,15 +69,25 @@ export const bounceCheckStage: Stage = async (ctx) => {
 
   let checked = 0;
   const paused: Row[] = [], watch: Row[] = [], skippedPause: Row[] = [], failed: string[] = [];
+  const allRows: any[] = [];
   for (const t of targets) {
     try {
       const r = await checkWorkspace(ctx, t.bison, t.label, skip);
-      checked += r.checked; paused.push(...r.paused); watch.push(...r.watch); skippedPause.push(...r.skippedPause);
+      checked += r.checked; paused.push(...r.paused); watch.push(...r.watch); skippedPause.push(...r.skippedPause); allRows.push(...r.all);
     } catch (e) {
       // One workspace that cannot be read must not stop the others (a pause that did not hold still goes to review).
       if (e instanceof NeedsReviewError || targets.length === 1) throw e;
       failed.push(`${t.label}: ${String((e as Error).message ?? e).slice(0, 120)}`);
     }
+  }
+
+  // Fresh numbers into Airtable Campaigns (all campaigns, paused too). A failed write never stops the check.
+  let stats = { updated: 0, matched: 0 }, statsError = '';
+  if (ctx.cfg.airtableApiKey && allRows.length) {
+    try {
+      const at = createAirtableClient({ apiKey: ctx.cfg.airtableApiKey, baseId: ctx.cfg.airtableBaseId, baseUrl: ctx.cfg.airtableBaseUrl });
+      stats = await syncCampaignStats(at, allRows);
+    } catch (e) { statsError = String((e as Error).message ?? e).slice(0, 200); }
   }
 
   if (paused.length || watch.length || failed.length) {
@@ -88,7 +101,7 @@ export const bounceCheckStage: Stage = async (ctx) => {
   }
   return {
     dryRun: ctx.dryRun, workspace, workspaces: targets.length, checked,
-    paused: ctx.dryRun ? [] : paused, wouldPause: ctx.dryRun ? paused : [], watch, skippedPause, failed,
-    message: `${checked} active campaigns checked${targets.length > 1 ? ` in ${targets.length} workspaces` : ''}: ${paused.length} ${ctx.dryRun ? 'would be paused' : 'paused'}, ${watch.length} to watch${skippedPause.length ? ` (${skippedPause.length} not paused: Skip Bounce Pause ticked)` : ''}${failed.length ? `; ${failed.length} workspace(s) could not be checked` : ''}`,
+    paused: ctx.dryRun ? [] : paused, wouldPause: ctx.dryRun ? paused : [], watch, skippedPause, failed, statsUpdated: stats.updated, statsMatched: stats.matched, statsError,
+    message: `${checked} active campaigns checked${targets.length > 1 ? ` in ${targets.length} workspaces` : ''}: ${paused.length} ${ctx.dryRun ? 'would be paused' : 'paused'}, ${watch.length} to watch${skippedPause.length ? ` (${skippedPause.length} not paused: Skip Bounce Pause ticked)` : ''}${failed.length ? `; ${failed.length} workspace(s) could not be checked` : ''}${stats.updated ? `; Airtable numbers updated on ${stats.updated} campaigns` : ''}${statsError ? `; Airtable numbers not written: ${statsError}` : ''}`,
   };
 };

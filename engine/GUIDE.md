@@ -282,3 +282,11 @@ SSH in: `ssh -o ServerAliveInterval=30 root@178.156.132.86`
 - Dry run until `decision.send_reply` is in LIVE_STAGES.
 
 **Server settings:** `SLACK_BOT_TOKEN` (required), the bot invited to #dulcy-decisions.
+
+## Campaign numbers in Airtable, added 2026-11-24
+
+Every bounce check (every `BOUNCE_CHECK_EVERY_MIN` minutes, all workspaces) also writes each campaign's live EmailBison numbers into Airtable **Campaigns**, matched on **ID**:
+- Emails Sent, Unique Replies, Interested
+- Bounced, Total Leads Contacted, Progress
+
+This covers paused campaigns too, and runs every day of the week. Only records whose numbers changed are written. The bounce check message says how many were updated. A failed write never stops the check. (Before this, two Airtable automations did it Sun–Thu only, so Bounced looked too low.)
