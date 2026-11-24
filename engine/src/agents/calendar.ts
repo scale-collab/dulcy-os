@@ -27,6 +27,8 @@ export function twoTimes(slots: string[], tz = 'America/New_York'): string[] {
   const fmt = (s: string) => `${new Date(s).toLocaleString('en-US', { timeZone: tz, weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })} ${zone}`.trim();
   const first = slots[0];
   if (!first) return [];
-  const second = slots.find((s) => day(s) !== day(first)) ?? slots[1];
-  return [first, second].filter(Boolean).map(fmt);
+  // A real choice: another day if possible, else at least 2 hours later the same day (never 4:00 and 4:05).
+  const t0 = Date.parse(first);
+  const second = slots.find((s) => day(s) !== day(first)) ?? slots.find((s) => Date.parse(s) - t0 >= 2 * 3_600_000);
+  return [first, second].filter((x): x is string => Boolean(x)).map(fmt);
 }

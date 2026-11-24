@@ -77,7 +77,8 @@ beforeEach(async () => {
 });
 
 test('client file found by workspace ID; formula keeps client-handled and closed threads out', () => {
-  assert.match(clientFileFor(REPO, 66)!.name, /Twenty West/i);
+  assert.match(clientFileFor(REPO, 66)!.name, /^Twenty West/i);
+  assert.equal(clientFileFor(REPO, 2)!.name, 'Dulcy');
   assert.match(clientFileFor(REPO, 2)!.name, /Dulcy/i);
   assert.equal(clientFileFor(REPO, 999), null);
   const f = waitingFormula(14);
@@ -155,4 +156,14 @@ test('dry run (not in LIVE_STAGES): Claude not called, no decisions', { skip }, 
   assert.equal(claudeCalls.length, 0);
   assert.equal(Object.keys(decisions).length, 0);
   assert.equal(emails.recA[RA.state], undefined, 'dry run writes nothing to the row');
+});
+
+test('two offered times are a real choice: another day, or at least 2 hours apart', async () => {
+  const { twoTimes } = await import('../src/agents/calendar.js');
+  const sameDay = ['2026-11-25T21:00:00Z', '2026-11-25T21:05:00Z', '2026-11-25T21:30:00Z', '2026-11-25T23:30:00Z'];
+  const t = twoTimes(sameDay, 'America/New_York');
+  assert.equal(t.length, 2);
+  assert.match(t[0], /4:00/); assert.match(t[1], /6:30/);
+  assert.match(twoTimes(['2026-11-25T21:00:00Z', '2026-11-25T21:05:00Z', '2026-11-26T15:00:00Z'], 'America/New_York')[1], /Thu/);
+  assert.equal(twoTimes(['2026-11-25T21:00:00Z', '2026-11-25T21:05:00Z'], 'America/New_York').length, 1, 'no fake second time');
 });
