@@ -272,7 +272,7 @@ SSH in: `ssh -o ServerAliveInterval=30 root@178.156.132.86`
 - one short message: who and what, **Issue**, **Checked**, **Proposed**, then "React ✅ / ❌";
 - the long details go in the thread.
 
-**Deciding:** react ✅ (yes) or ❌ (no) on the message. Only Alex's and Josh's reactions count. ❌ wins if both are there. You can also set Status to **Approved** or **Rejected** in Airtable.
+**Deciding:** the bot pre-adds ✅ and ❌ under each message (needs the `reactions:write` scope); tap one. The bot's own reactions never count. Only Alex's and Josh's reactions count. ❌ wins if both are there. You can also set Status to **Approved** or **Rejected** in Airtable.
 
 **What happens next:** Status becomes Approved, Decided By/At are filled, the action runs, and **Result** plus a thread reply say what happened (Done / Failed). Approved with no action = just recorded.
 

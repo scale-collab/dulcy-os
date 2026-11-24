@@ -30,6 +30,12 @@ export function createSlackClient(o: SlackOptions) {
       const r = await call('chat.postMessage', { channel, text, unfurl_links: false, unfurl_media: false, ...(threadTs ? { thread_ts: threadTs } : {}) });
       return { channel: String(r.channel), ts: String(r.ts) };
     },
+    /** Add the bot's own reaction (needs reactions:write). "already_reacted" is fine. */
+    async react(channel: string, ts: string, name: string): Promise<void> {
+      try { await call('reactions.add', { channel, timestamp: ts, name }); } catch (e) {
+        if (!/already_reacted/.test(String((e as Error).message))) throw e;
+      }
+    },
     async reactions(channel: string, ts: string): Promise<SlackReaction[]> {
       const r = await call('reactions.get', { channel, timestamp: ts, full: true }, true);
       return (r.message?.reactions ?? []).map((x: any) => ({ name: String(x.name), users: (x.users ?? []).map(String) }));
