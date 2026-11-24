@@ -13,55 +13,15 @@ import { createClaude } from '../providers/claude.js';
 import { EMAILS, EF, RA, SETTINGS, val, wsRecordOf } from './emailsFields.js';
 import { clientFileFor } from './knowledge.js';
 import { DraftSchema, type Draft, type Booking, sharedKnowledge, realExamples, bookingFor, bookingForDraft, trimHistory } from './sean.js';
+import { loadSettings, parseSettings, settingsBlock, blockedBy, typeAllowed, type ClientSettings } from './settings.js';
 import { rememberOffered } from './calendar.js';
 import { DECISIONS, DF } from '../decisions/fields.js';
 
-export interface FollowupStep { delayDays: number; guidance: string }
-export interface FollowupPlan { enabled: boolean; skipWeekends: boolean; steps: FollowupStep[] }
-
-/** Used when a client has no plan saved. Alex's rule + Sean's skill: a real reason every time, then close the loop. */
-export const DEFAULT_PLAN: FollowupPlan = {
-  enabled: true, skipWeekends: true,
-  steps: [
-    { delayDays: 2, guidance: 'Pick up the open question or promised next step from the last messages. One short, useful line, then one clear next step (a call).' },
-    { delayDays: 3, guidance: 'Add one genuinely new, true point tied to what the prospect said (no invented proof). End with one easy question.' },
-    { delayDays: 5, guidance: 'Respect their timing: one low-pressure question on whether this is still a priority or when to check back.' },
-  ],
-};
-export const CLOSE_LOOP: FollowupStep = { delayDays: 7, guidance: "Close the loop politely: say you won't keep chasing, leave the door open, and make it easy to reply later (Braun-style breakup, no guilt)." };
-
-/** The client's follow-up plan (Reply Agent settings "Follow-up Plan JSON"), else the default. */
-export function parsePlan(json: string): FollowupPlan {
-  let j: any;
-  try { j = JSON.parse(json || 'null'); } catch { j = null; }
-  if (!j || typeof j !== 'object') return DEFAULT_PLAN;
-  const steps: FollowupStep[] = (Array.isArray(j.steps) ? j.steps : [])
-    .map((x: any) => ({ delayDays: Math.max(1, Number(x?.delay) * (String(x?.unit ?? 'days').startsWith('week') ? 7 : 1) || 1), guidance: String(x?.message ?? '').trim() }))
-    .filter((x: FollowupStep) => x.guidance);
-  return { enabled: j.enabled !== false, skipWeekends: j.skipWeekends !== false, steps: steps.length ? steps : DEFAULT_PLAN.steps };
-}
-
-/** Every follow-up in order: the plan's steps, then the close-the-loop note. */
-export const allSteps = (p: FollowupPlan): FollowupStep[] => [...p.steps, CLOSE_LOOP];
-
-/** Due time `days` business days (or calendar days) after `from`, at 15:00 UTC (morning in the Americas). */
-export function dueAfter(from: Date, days: number, skipWeekends: boolean): string {
-  const d = new Date(from.getTime());
-  let left = Math.max(1, Math.round(days));
-  while (left > 0) {
-    d.setUTCDate(d.getUTCDate() + 1);
-    if (!skipWeekends || (d.getUTCDay() !== 0 && d.getUTCDay() !== 6)) left--;
-  }
-  d.setUTCHours(15, 0, 0, 0);
-  return d.toISOString();
-}
+export { DEFAULT_PLAN, CLOSE_LOOP, parsePlan, allSteps, dueAfter, type FollowupStep, type FollowupPlan } from './followupPlan.js';
+import { DEFAULT_PLAN, parsePlan, allSteps, dueAfter, type FollowupPlan } from './followupPlan.js';
 
 export async function planFor(at: Pick<AirtableClient, 'list'>, wsRec: string): Promise<FollowupPlan> {
-  if (!wsRec) return DEFAULT_PLAN;
-  try {
-    const s = (await at.list(SETTINGS, `{Workspace Record ID}='${wsRec}'`, ['Follow-up Plan JSON'], 1, { byName: true }))[0];
-    return parsePlan(val(s?.fields['Follow-up Plan JSON']));
-  } catch { return DEFAULT_PLAN; }
+  return (await loadSettings(at, wsRec)).plan;
 }
 
 const NO_FOLLOWUP_STATUS = ['Not Interested', 'Do Not Contact', 'Unsubscribed', 'Wrong Person', 'Bounced'];
@@ -130,8 +90,8 @@ export const seanFollowupStage: Stage = async (ctx) => {
   const dir = cfg.knowledgeDir;
   const shared = sharedKnowledge(dir, FOLLOWUP_BRIEF);
   const claude = ctx.dryRun ? null : createClaude({ apiKey: cfg.anthropicApiKey, model: cfg.claudeModel, baseURL: cfg.anthropicBaseUrl });
-  const perClient = new Map<string, { block: string; booking: Booking; plan: FollowupPlan }>();
-  const counts = { reply: 0, skip: 0, ask_alex: 0, answered: 0, complete: 0, noClientFile: 0, seanOff: 0 };
+  const perClient = new Map<string, { block: string; booking: Booking; plan: FollowupPlan; settings: ClientSettings }>();
+  const counts = { reply: 0, skip: 0, ask_alex: 0, answered: 0, complete: 0, noClientFile: 0, clientOff: 0 };
 
   for (const r of todo) {
     const f = r.fields;
@@ -148,15 +108,17 @@ export const seanFollowupStage: Stage = async (ctx) => {
     if (type === 'No Response' && val(f[EF.lastSent]) === 'Last Email Sent By Prospect') { await record('answered', 'prospect wrote after our last email'); counts.answered++; continue; }
     const client = clientFileFor(dir, ws);
     if (!client) { counts.noClientFile++; continue; }
-    if (client.seanOff) { await record('sean_off', `Sean is off for ${client.name}`); counts.seanOff++; continue; }
     if (!perClient.has(String(ws))) {
+      const settings = ctx.dryRun ? parseSettings(null) : await loadSettings(at, wsRec);
       perClient.set(String(ws), {
-        block: [`# Client file: ${client.name}\n${client.text}`, ctx.dryRun ? '' : await realExamples(at, ws, wsRec)].filter(Boolean).join('\n\n'),
-        booking: ctx.dryRun ? { slots: [], tz: 'America/New_York', link: '' } : await bookingFor(cfg, at, wsRec),
-        plan: ctx.dryRun ? DEFAULT_PLAN : await planFor(at, wsRec),
+        block: [`# Client file: ${client.name}\n${client.text}`, settingsBlock(settings, 'followup'), ctx.dryRun ? '' : await realExamples(at, ws, wsRec)].filter(Boolean).join('\n\n'),
+        booking: ctx.dryRun ? { slots: [], tz: 'America/New_York', link: '' } : await bookingFor(cfg, settings, wsRec),
+        plan: settings.plan, settings,
       });
     }
-    const { block, booking, plan } = perClient.get(String(ws))!;
+    const { block, booking, plan, settings } = perClient.get(String(ws))!;
+    const blocked = blockedBy(settings, { weReplied: type === 'No Response' });
+    if (blocked) { await record('client_off', blocked); counts.clientOff++; continue; }
     const steps = allSteps(plan);
     if (!plan.enabled || sent >= steps.length) {
       if (!ctx.dryRun) await at.update(EMAILS, r.id, { [RA.state]: 'Thread Complete', [RA.dueAt]: null, [RA.updatedAt]: new Date().toISOString() });
@@ -186,7 +148,9 @@ export const seanFollowupStage: Stage = async (ctx) => {
 
     await ctx.step(`followup-write:${r.id}:${val(f[RA.dueAt])}`, async () => {
       const replyId = Number(val(f[EF.replyId]));
-      const action = d.action === 'reply' && !(replyId > 0) ? 'ask_alex' : d.action;
+      const typeOff = d.action !== 'skip' && type !== 'No Response' && !typeAllowed(settings, type);
+      if (typeOff) d.reason = `${type} follow-ups are switched off for this client (Inbox Manager → Reply types). ${d.reason}`;
+      const action = typeOff ? 'skip' : d.action === 'reply' && !(replyId > 0) ? 'ask_alex' : d.action;
       const question = action === 'ask_alex' ? (d.question_for_alex || (replyId > 0 ? d.reason : 'No EmailBison reply ID on this thread: send it by hand in EmailBison.')) : '';
       let decisionId = '';
       if (!ctx.dryRun) {
@@ -217,7 +181,7 @@ export const seanFollowupStage: Stage = async (ctx) => {
     });
   }
   return {
-    message: `${recs.length} follow-ups due; ${todo.length} new: ${counts.reply} drafted (Reply Queue + Slack ✅), ${counts.ask_alex} need your input, ${counts.skip} not worth sending (thread closed), ${counts.answered} already answered by the prospect, ${counts.complete} finished${counts.seanOff ? `, ${counts.seanOff} left alone (Sean off for that client)` : ''}${counts.noClientFile ? `, ${counts.noClientFile} skipped (no client file)` : ''}${ctx.dryRun ? ' (dry run: Claude not called, nothing written)' : ''}`,
+    message: `${recs.length} follow-ups due; ${todo.length} new: ${counts.reply} drafted (Reply Queue + Slack ✅), ${counts.ask_alex} need your input, ${counts.skip} not worth sending (thread closed), ${counts.answered} already answered by the prospect, ${counts.complete} finished${counts.clientOff ? `, ${counts.clientOff} left to the client (Inbox Manager settings)` : ''}${counts.noClientFile ? `, ${counts.noClientFile} skipped (no client file)` : ''}${ctx.dryRun ? ' (dry run: Claude not called, nothing written)' : ''}`,
     due: recs.length, ...counts, dryRun: ctx.dryRun,
   };
 };

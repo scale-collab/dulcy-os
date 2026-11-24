@@ -13,6 +13,7 @@ import { EMAILS, EF, RA, INTENTS, SETTINGS, REPLY_LEARNING, waitingFormula, val,
 import { clientFileFor, readKnowledge } from './knowledge.js';
 import { openTimes, pickTwo, fmtSlot, freeSlots, rememberOffered } from './calendar.js';
 import { DECISIONS, DF } from '../decisions/fields.js';
+import { loadSettings, parseSettings, settingsBlock, blockedBy, typeAllowed, type ClientSettings } from './settings.js';
 
 export const DraftSchema = z.object({
   action: z.enum(['reply', 'skip', 'ask_alex']),
@@ -76,16 +77,10 @@ export async function bookingForDraft(db: Parameters<typeof freeSlots>[0], b: Bo
   return { slots, times, text };
 }
 
-export async function bookingFor(cfg: Parameters<typeof openTimes>[0], at: Pick<AirtableClient, 'list'>, wsRec: string): Promise<Booking> {
-  let link = '', disableTimes = false, disableLinks = false;
-  try {
-    const s = (await at.list(SETTINGS, `{Workspace Record ID}='${wsRec}'`, ['Calendar Link', 'Calendar Settings JSON'], 1, { byName: true }))[0];
-    link = val(s?.fields['Calendar Link']);
-    const j = JSON.parse(val(s?.fields['Calendar Settings JSON']) || '{}');
-    disableTimes = j.disableTimes === true; disableLinks = j.disableLinks === true;
-  } catch { /* no settings row: defaults */ }
-  const open = disableTimes ? null : await openTimes(cfg, wsRec);
-  return { slots: open?.slots ?? [], tz: open?.timezone ?? 'America/New_York', link: disableLinks ? '' : link };
+/** Booking options for a workspace from its settings: live slots from the client's connected calendar, else the saved booking link. */
+export async function bookingFor(cfg: Parameters<typeof openTimes>[0], st: ClientSettings, wsRec: string): Promise<Booking> {
+  const open = st.disableTimes ? null : await openTimes(cfg, wsRec);
+  return { slots: open?.slots ?? [], tz: open?.timezone ?? 'America/New_York', link: st.disableLinks ? '' : st.calendarLink };
 }
 
 /** The knowledge every Sean call shares (cached by Claude): brief, skill, playbooks, real data, rules. */
@@ -118,8 +113,8 @@ export const seanDraftStage: Stage = async (ctx) => {
   const shared = sharedKnowledge(dir);
 
   const claude = ctx.dryRun ? null : createClaude({ apiKey: cfg.anthropicApiKey, model: cfg.claudeModel, baseURL: cfg.anthropicBaseUrl });
-  const perClient = new Map<string, { block: string; booking: Booking }>();
-  const counts = { reply: 0, skip: 0, ask_alex: 0, noClientFile: 0, seanOff: 0 };
+  const perClient = new Map<string, { block: string; booking: Booking; settings: ClientSettings }>();
+  const counts = { reply: 0, skip: 0, ask_alex: 0, noClientFile: 0, clientOff: 0 };
 
   for (const r of todo) {
     const f = r.fields;
@@ -128,17 +123,21 @@ export const seanDraftStage: Stage = async (ctx) => {
     const wsRec = wsRecordOf(f);
     const client = clientFileFor(dir, ws);
     if (!client) { counts.noClientFile++; continue; }
-    if (client.seanOff) {
-      await ctx.db.query(`INSERT INTO sean_drafts (email_record, reply_at, action, reason) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING`, [r.id, replyAt, ctx.dryRun ? 'dry_run' : 'sean_off', `Sean is off for ${client.name}`]);
-      counts.seanOff++; continue;
-    }
     if (!perClient.has(String(ws))) {
+      const settings = ctx.dryRun ? parseSettings(null) : await loadSettings(at, wsRec);
       perClient.set(String(ws), {
-        block: [`# Client file: ${client.name}\n${client.text}`, ctx.dryRun ? '' : await realExamples(at, ws, wsRec)].filter(Boolean).join('\n\n'),
-        booking: ctx.dryRun ? { slots: [], tz: 'America/New_York', link: '' } : await bookingFor(cfg, at, wsRec),
+        block: [`# Client file: ${client.name}\n${client.text}`, settingsBlock(settings, 'reply'), ctx.dryRun ? '' : await realExamples(at, ws, wsRec)].filter(Boolean).join('\n\n'),
+        booking: ctx.dryRun ? { slots: [], tz: 'America/New_York', link: '' } : await bookingFor(cfg, settings, wsRec),
+        settings,
       });
     }
-    const { block, booking } = perClient.get(String(ws))!;
+    const { block, booking, settings } = perClient.get(String(ws))!;
+    // The client's own controls in the Inbox Manager: switched off, or the client answers its own replies.
+    const blocked = blockedBy(settings, { weReplied: !!val(f[RA.sentAt]) });
+    if (blocked) {
+      await ctx.db.query(`INSERT INTO sean_drafts (email_record, reply_at, action, reason) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING`, [r.id, replyAt, ctx.dryRun ? 'dry_run' : 'client_off', blocked]);
+      counts.clientOff++; continue;
+    }
     const now = new Date().toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'full', timeStyle: 'short' });
     const offer = await bookingForDraft(ctx.db, booking, wsRec, r.id);
     const varying = `Now: ${now} ET.\n${offer.text}`;
@@ -159,7 +158,9 @@ export const seanDraftStage: Stage = async (ctx) => {
 
     await ctx.step(`write:${r.id}:${replyAt}`, async () => {
       const replyId = Number(val(f[EF.replyId]));
-      const action = d.action === 'reply' && !(replyId > 0) ? 'ask_alex' : d.action;
+      const typeOff = d.action !== 'skip' && !typeAllowed(settings, d.intent);
+      if (typeOff) d.reason = `${d.intent} replies are switched off for this client (Inbox Manager → Reply types). ${d.reason}`;
+      const action = typeOff ? 'skip' : d.action === 'reply' && !(replyId > 0) ? 'ask_alex' : d.action;
       const question = action === 'ask_alex' ? (d.question_for_alex || (replyId > 0 ? d.reason : 'No EmailBison reply ID on this thread: send it by hand in EmailBison.')) : '';
       let decisionId = '';
       if (!ctx.dryRun) {
@@ -194,7 +195,7 @@ export const seanDraftStage: Stage = async (ctx) => {
     });
   }
   return {
-    message: `${recs.length} waiting replies; ${todo.length} new: ${counts.reply} drafted (Reply Queue + Slack ✅), ${counts.ask_alex} need your input, ${counts.skip} no reply needed${counts.seanOff ? `, ${counts.seanOff} left alone (Sean off for that client)` : ''}${counts.noClientFile ? `, ${counts.noClientFile} skipped (no client file for the workspace)` : ''}${ctx.dryRun ? ' (dry run: Claude not called, nothing written)' : ''}`,
+    message: `${recs.length} waiting replies; ${todo.length} new: ${counts.reply} drafted (Reply Queue + Slack ✅), ${counts.ask_alex} need your input, ${counts.skip} no reply needed${counts.clientOff ? `, ${counts.clientOff} left to the client (Inbox Manager settings)` : ''}${counts.noClientFile ? `, ${counts.noClientFile} skipped (no client file for the workspace)` : ''}${ctx.dryRun ? ' (dry run: Claude not called, nothing written)' : ''}`,
     waiting: recs.length, ...counts, dryRun: ctx.dryRun,
   };
 };

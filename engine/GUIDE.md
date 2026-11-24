@@ -301,7 +301,15 @@ This covers paused campaigns too, and runs every day of the week. Only records w
    - that client's real threads that **booked a meeting**;
    - the replies you approved before.
 3. **Times.** Two real open times come from the client's own connected calendar, never a time already offered to another prospect in the last 3 days. If there's none, Sean uses the client's saved booking link.
-   - **Sean off for a client:** a line `Sean: off (why)` at the top of the client's file in `clients/` (today: MJJ, the client answers its own replies; Lead Flo, cancelled). Remove the line to switch him back on.
+   - **Per-client controls (Inbox Manager → Dulcy Reply Agent screen):** Sean follows each client's own settings:
+     - **Enabled** off → Sean drafts nothing for that client (Lead Flo, cancelled).
+     - **Reply Controls → Client reply handoff:** *All replies* = the client answers its own replies, Sean stays out (MJJ). *After first agent reply* = Sean answers once, then the client takes over (no follow-ups).
+     - **Reply types:** only the ticked types get a draft; others are skipped with the reason shown.
+     - **Response Style:** tone, length, agent name, goal, language, templates per reply type, and the **Inbox manager instructions** box (your custom prompt for that client).
+     - **Not-interested reply:** on → one courtesy reply following its instructions; off → no reply.
+     - **Knowledge Base links:** the only links Sean may share (videos, decks). Add the link there and Sean can send it.
+     - **Follow-ups tab:** the plan (steps, delays) and the follow-up instructions box.
+     - **Calendar:** booking link, and the switches to stop offering times or links.
 4. **Where the draft lands.** On the reply's row in Airtable (Reply Queue): Draft, State "Needs Approval", Intent, **Sean Reason**, and **Sean Needs Your Input** when a fact is missing. It is also posted to Slack.
 
 **Approving.**
