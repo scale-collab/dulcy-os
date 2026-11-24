@@ -11,6 +11,8 @@ import type { SlackClient } from '../providers/slack.js';
 import { enqueue } from '../queue.js';
 import { STAGES } from '../stages/index.js';
 import { DECISIONS, DF } from './fields.js';
+import { EMAILS } from '../agents/emailsFields.js';
+import { RA } from '../agents/emailsFields.js';
 
 const YES = new Set(['white_check_mark', 'heavy_check_mark', 'ballot_box_with_check', '+1']);
 const NO = new Set(['x', 'negative_squared_cross_mark', 'no_entry', 'no_entry_sign', '-1']);
@@ -32,7 +34,7 @@ export function decisionMessage(r: AirtableRecord): string {
   return lines.join('\n');
 }
 
-export async function decisionsTick(db: Db, cfg: Config, at: Pick<AirtableClient, 'list' | 'update'>, slack: SlackClient): Promise<{ posted: number; decided: number; started: number; finished: number }> {
+export async function decisionsTick(db: Db, cfg: Config, at: Pick<AirtableClient, 'list' | 'update'>, slack: Pick<SlackClient, 'post' | 'reactions' | 'react'>): Promise<{ posted: number; decided: number; started: number; finished: number }> {
   let posted = 0, decided = 0, started = 0, finished = 0;
   const now = () => new Date().toISOString();
 
@@ -61,12 +63,19 @@ export async function decisionsTick(db: Db, cfg: Config, at: Pick<AirtableClient
     if (!who) continue;
     await at.update(DECISIONS, r.id, { [DF.status]: no ? 'Rejected' : 'Approved', [DF.decidedBy]: NAMES[who] ?? who, [DF.decidedAt]: now() });
     decided++;
+    // Sean's replies: Slack presses the same button as Airtable (one sender, sends once).
+    const emailsRecord = text(r.fields[DF.emailsRecord]);
+    if (text(r.fields[DF.action]) === 'Approve Reply' && emailsRecord) {
+      await at.update(EMAILS, emailsRecord, { [RA.humanAction]: no ? 'Skip' : 'Approve Draft' });
+      if (!no) await at.update(DECISIONS, r.id, { [DF.result]: `Approved in Slack by ${NAMES[who] ?? who}: sending` });
+    }
     if (no) await slack.post(ch, `Stopped. Nothing done (${NAMES[who] ?? who}).`, ts);
   }
 
   // 3 + 4. Approved rows: start the action once, then write its result.
   for (const r of await at.list(DECISIONS, `{Status}='Approved'`, ALL, 50)) {
     const action = text(r.fields[DF.action]);
+    if (action === 'Approve Reply') continue; // the reply sender sends and closes it
     const kind = ACTIONS[action];
     const ch = text(r.fields[DF.slackChannel]), ts = text(r.fields[DF.slackTs]);
     const say = async (msg: string) => { if (ch && ts) await slack.post(ch, msg, ts); };
