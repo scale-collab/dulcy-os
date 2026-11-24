@@ -81,10 +81,16 @@ export function applyLabels(filters: Filters, cov: Coverage, opts: { crossIndust
   const fits = (x: LabelShare) => !opts.crossIndustry && x.share >= min && !(x.kind === 'category' ? negCats.has(x.label) : negSubs.has(x.label) || negCats.has(x.label.split('/')[0]));
   const cats = cov.categories.filter(fits);
   const subs = cov.subIndustries.filter(fits).slice(0, 50);
-  if (subs.length) f.sub_industry = subs.map((x) => x.label);
-  const catList = [...new Set([...cats.map((x) => x.label), ...(cats.length ? subs.map((x) => x.label.split('/')[0]) : [])])];
-  if (catList.length) f.category = catList;
-  const used = [...cats, ...subs];
+  // A sub-industry that fits is the sharpest label: use it on its own (with its parent, which
+  // DiscoLike narrows to it). Other qualifying categories would come in WHOLE (any-of), e.g.
+  // med spas: MEDSPA 97% + CONSUMER_SERVICES 79% = every salon (402k instead of the med spas).
+  // They are held back as the first widening step instead (live test, 2026-11-24).
+  const parents = [...new Set(subs.map((x) => x.label.split('/')[0]))];
+  const usedCats = subs.length ? cats.filter((x) => parents.includes(x.label)) : cats;
+  const broaderCategories = subs.length ? [...new Set([...parents, ...cats.map((x) => x.label)])] : [];
+  if (subs.length) { f.sub_industry = subs.map((x) => x.label); f.category = parents; }
+  else if (cats.length) f.category = cats.map((x) => x.label);
+  const used = [...usedCats, ...subs];
   const usedSet = new Set(used.map((x) => x.label));
   // Skipped: what the old plan picked but does not fit, then the closest near misses.
   const byLabel = new Map(all.map((x) => [x.label, x]));
@@ -95,14 +101,16 @@ export function applyLabels(filters: Filters, cov: Coverage, opts: { crossIndust
     if (!skipped.some((s) => s.label === x.label)) skipped.push(x);
   }
   skipped.sort((a, b) => b.share - a.share);
-  return { filters: f, used, skipped: skipped.slice(0, 5) };
+  const heldBack = subs.length ? cats.filter((x) => !parents.includes(x.label)) : [];
+  return { filters: f, used, skipped: skipped.slice(0, 5), heldBack, broaderCategories };
 }
 
 const short = (x: LabelShare) => (x.kind === 'sub_industry' ? x.label.split('/')[1] ?? x.label : x.label);
 const pc = (x: LabelShare) => `${short(x)} ${Math.round(x.share * 100)}%`;
-export function labelsText(used: LabelShare[], skipped: LabelShare[], total: number, crossIndustry = false): string {
+export function labelsText(used: LabelShare[], skipped: LabelShare[], total: number, crossIndustry = false, heldBack: LabelShare[] = []): string {
   const head = crossIndustry ? 'Cross-industry brief: no industry labels.' : used.length ? `Labels used (either/or): ${used.map(pc).join(', ')}.` : 'Labels used: none (no industry label is on 60% of the lookalike companies; the lookalike text, examples and keywords do the targeting).';
-  return `${head}${skipped.length ? ` Skipped (under 60%): ${skipped.map(pc).join(', ')}.` : ''} (${total} lookalike companies checked.)`;
+  const held = heldBack.length ? ` Held back (whole industries, used only if the list is too small): ${heldBack.map(pc).join(', ')}.` : '';
+  return `${head}${held}${skipped.length ? ` Skipped (under 60%): ${skipped.map(pc).join(', ')}.` : ''} (${total} lookalike companies checked.)`;
 }
 
 /** The next wider employee range (one DiscoLike step each side), or null when it can't widen. */
@@ -117,11 +125,19 @@ export function widerEmployeeRange(range: unknown): string | null {
   return next === `${lo},${hi}` ? null : next;
 }
 
-export interface WidenStep { key: 'sub_industry' | 'category' | 'employee_range' | 'business_model' | 'keywords'; apply: (f: Filters) => { filters: Filters; note: string } | null }
+export interface WidenContext { broaderCategories?: string[] }
+export interface WidenStep { key: 'sub_industry' | 'category' | 'employee_range' | 'business_model' | 'keywords'; apply: (f: Filters, ctx?: WidenContext) => { filters: Filters; note: string } | null }
 const has = (f: Filters, k: string) => listOf(f[k]).length > 0;
-/** Alex's order: (a) sub-industry, (b) industry, (c) size one step each side, (d) business model, (e) top half of the keywords. Never geography. */
+/** Alex's order: (a) sub-industry (-> the whole qualifying industries), (b) industry, (c) size one step each side, (d) business model, (e) top half of the keywords. Never geography. */
 export const WIDEN_STEPS: WidenStep[] = [
-  { key: 'sub_industry', apply: (f) => (has(f, 'sub_industry') ? { filters: (({ sub_industry, ...rest }) => rest)(f), note: 'dropped sub-industry labels' } : null) },
+  { key: 'sub_industry', apply: (f, ctx) => {
+    if (!has(f, 'sub_industry')) return null;
+    const { sub_industry, ...rest } = f;
+    const wider = ctx?.broaderCategories ?? [];
+    return wider.length
+      ? { filters: { ...rest, category: wider }, note: `dropped sub-industry labels (now the whole industries: ${wider.join(', ')})` }
+      : { filters: rest, note: 'dropped sub-industry labels' };
+  } },
   { key: 'category', apply: (f) => (has(f, 'category') ? { filters: (({ category, ...rest }) => rest)(f), note: 'dropped industry labels' } : null) },
   { key: 'employee_range', apply: (f) => { const r = widerEmployeeRange(f.employee_range); return r ? { filters: { ...f, employee_range: r }, note: `widened employee range to ${r.replace(',', '-')}` } : null; } },
   { key: 'business_model', apply: (f) => (has(f, 'business_model') ? { filters: (({ business_model, ...rest }) => rest)(f), note: 'dropped business model' } : null) },

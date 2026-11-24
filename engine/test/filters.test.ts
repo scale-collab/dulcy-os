@@ -157,14 +157,24 @@ test('labels: mixed pet-ecom data (E-COMMERCE 90%, PET_PRODUCTS_BRAND 40%) -> E-
   assert.equal(r.filters.employee_range, '11,200', 'snapping rule unchanged');
 });
 
-test('labels: two that fit are either/or; a sub-industry never overwrites another qualifying industry', { skip }, async () => {
-  disco.rows = (n) => Array.from({ length: n }, (_, i) => labelled(i, [...(i % 10 < 8 ? ['E-COMMERCE'] : []), ...(i % 100 < 72 ? ['CONSUMER_PRODUCTS'] : [])], i % 100 < 72 ? ['CONSUMER_PRODUCTS/PET_PRODUCTS_BRAND'] : []));
+test('labels: two industries that fit are either/or (no sub-industry fits)', { skip }, async () => {
+  disco.rows = (n) => Array.from({ length: n }, (_, i) => labelled(i, [...(i % 10 < 8 ? ['E-COMMERCE'] : []), ...(i % 100 < 72 ? ['CONSUMER_PRODUCTS'] : [])], []));
   const r = await press(PET, 'two');
   assert.deepEqual([...r.filters.category].sort(), ['CONSUMER_PRODUCTS', 'E-COMMERCE']);
   assert.ok(!r.filters.category.some((c: string) => c.startsWith('+')), 'either/or: nothing marked required');
-  assert.deepEqual(r.filters.sub_industry, ['CONSUMER_PRODUCTS/PET_PRODUCTS_BRAND']);
+  assert.equal(r.filters.sub_industry, undefined);
   assert.match(r.message, /E-COMMERCE 80%/);
+});
+
+test('labels: a fitting sub-industry is used on its own; other fitting industries are held back for widening (med spa case)', { skip }, async () => {
+  // Live 2026-11-24: MEDSPA 97% + CONSUMER_SERVICES 79% either/or = 402k (every salon). Sub-industry alone.
+  disco.rows = (n) => Array.from({ length: n }, (_, i) => labelled(i, [...(i % 10 < 8 ? ['E-COMMERCE'] : []), ...(i % 100 < 72 ? ['CONSUMER_PRODUCTS'] : [])], i % 100 < 72 ? ['CONSUMER_PRODUCTS/PET_PRODUCTS_BRAND'] : []));
+  const r = await press(PET, 'sub-alone');
+  assert.deepEqual(r.filters.category, ['CONSUMER_PRODUCTS'], 'only the parent of the sub-industry');
+  assert.deepEqual(r.filters.sub_industry, ['CONSUMER_PRODUCTS/PET_PRODUCTS_BRAND']);
   assert.match(r.message, /PET_PRODUCTS_BRAND 72%/);
+  assert.match(r.message, /Held back \(whole industries, used only if the list is too small\): E-COMMERCE 80%/);
+  assert.deepEqual(r.labels.heldBack.map((x: any) => x.label), ['E-COMMERCE']);
 });
 
 test('labels: none reaches 60% -> no industry or sub-industry filter at all', { skip }, async () => {
@@ -215,7 +225,7 @@ test('auto-widen: one step at a time in Alex\'s order, stops as soon as it is en
   // Labels make it small; the wider size makes it big enough (5,000 -> 3,000 real < 7,500 needed).
   disco.count = (p) => (p.get('category') ? 1_000 : p.get('employee_range') === '1,500' ? 20_000 : 5_000);
   const r = await press(PET, 'widen');
-  assert.deepEqual(r.sizing.widened, ['dropped sub-industry labels', 'dropped industry labels', 'widened employee range to 1-500']);
+  assert.deepEqual(r.sizing.widened, ['dropped sub-industry labels (now the whole industries: CONSUMER_PRODUCTS, E-COMMERCE)', 'dropped industry labels', 'widened employee range to 1-500']);
   assert.equal(disco.counts.length, 4, 'the plan + 3 widen steps');
   assert.deepEqual(r.sizing.counts.map((c: any) => c.freeCount), [1000, 1000, 5000, 20000]);
   assert.equal(r.sizing.freeCount, 20000);
@@ -229,7 +239,7 @@ test('auto-widen: one step at a time in Alex\'s order, stops as soon as it is en
   for (const c of disco.counts) assert.equal(c.get('country'), 'US');
   assert.equal(r.airtableFields.fldG2MXz5lccu7KKU, '1,500');
   assert.deepEqual(JSON.parse(r.airtableFields.fldC2hZQ3gSqLmi1y), f);
-  assert.match(r.message, /Free count 20,000 → expect ~12,000 real\. Widened: dropped sub-industry labels, dropped industry labels, widened employee range to 1-500\./);
+  assert.match(r.message, /Free count 20,000 → expect ~12,000 real\. Widened: dropped sub-industry labels \(now the whole industries: CONSUMER_PRODUCTS, E-COMMERCE\), dropped industry labels, widened employee range to 1-500\./);
   assert.match(r.message, /0 native subindustries;.* 0 industry groups, and 1 business-model filters/);
 });
 

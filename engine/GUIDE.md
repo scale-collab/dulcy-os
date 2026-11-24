@@ -51,6 +51,7 @@ It works the same way for pet e-com, roofers, med spas, manufacturers, jewelry, 
 2. **Industry labels only when they fit.** For every DiscoLike industry and sub-industry label, the engine counts how many of the 500 companies carry it (a label counts when DiscoLike scores it 0.5 or more).
    - **60% or more** of the companies: the label is used as a filter.
    - Several labels at 60%+: they are **either/or** (a company needs any one of them, never all).
+   - **A sub-industry at 60%+ is used on its own** (with its parent industry, which DiscoLike narrows to it). Other industries at 60%+ are **held back**: whole industries come in completely (any-of), e.g. med spas: Medspa 97% + Consumer services 79% gave 402,000 (every salon) instead of the med spas. Held-back industries are the first widening step if the list is too small (live test, 2026-11-24).
    - **None at 60%:** no industry filter at all. The lookalike text, examples and keywords do the targeting.
    - The message shows the numbers, e.g. "Labels used (either/or): E-COMMERCE 90%. Skipped (under 60%): PET_PRODUCTS_BRAND 40%."
    - This replaces the 2026-11-23 "ecom adds E-COMMERCE" rule: E-commerce is used when the companies really are e-commerce (60%+), and skipped otherwise.
