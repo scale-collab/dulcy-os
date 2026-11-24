@@ -67,6 +67,14 @@ export interface Config {
   openAiModel: string;
   /** Model for Generate filters (the old n8n keyword review used gpt-5.6). */
   openAiFilterModel: string;
+  /** Generate filters (Alex, 2026-11-23): lookalike companies pulled for the label analysis (max 1000). */
+  filterAnalysisCompanies: number;
+  /** Generate filters size goal (soft, never a lock): default final leads when no campaign inboxes are linked. */
+  defaultLeadGoal: number;
+  /** Final leads per company (lead goal / this = companies needed). */
+  leadsPerCompany: number;
+  /** Share of DiscoLike's free count that turns out real (Alex: 50-70%). */
+  countYield: number;
   openAiBaseUrl: string;
   /** Airtable token for the engine (server .env only), the base, and how often buttons are checked (0 = off). */
   airtableApiKey?: string;
@@ -122,6 +130,10 @@ export function loadConfig(env = process.env): Config {
     openAiApiKey: env.OPENAI_API_KEY || undefined,
     openAiModel: env.OPENAI_MODEL || 'gpt-5.6-luna',
     openAiFilterModel: env.OPENAI_FILTER_MODEL || 'gpt-5.6',
+    filterAnalysisCompanies: num('FILTER_ANALYSIS_COMPANIES', 500, env),
+    defaultLeadGoal: num('DEFAULT_LEAD_GOAL', 3000, env),
+    leadsPerCompany: num('LEADS_PER_COMPANY', 0.4, env),
+    countYield: num('COUNT_YIELD', 0.6, env),
     openAiBaseUrl: env.OPENAI_BASE_URL || 'https://api.openai.com',
     airtableApiKey: env.AIRTABLE_API_KEY || undefined,
     airtableBaseId: env.AIRTABLE_BASE_ID || 'appxqINt5XKw7a76A',

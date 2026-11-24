@@ -24,7 +24,7 @@ The engine builds lead lists and campaigns. It replaces the old n8n list workflo
 
 | # | Engine Action | What it does | Paid? | What you check |
 |---|---|---|---|---|
-| 0 | **Generate Filters** | Reads the list's ICP and client context and writes DiscoLike search filters (the old n8n "Generate filters"). | Small (20 DiscoLike records + 1 AI call) | The filters look right |
+| 0 | **Generate Filters** | Reads the list's ICP and client context and writes DiscoLike search filters (the old n8n "Generate filters"), checks the plan is big enough for the lead goal and widens it by itself if not. See section 2a. | Small (500 DiscoLike records = about $1, + 1 AI call; the size checks are free) | The filters and the size line in the message look right |
 | 1 | **Run Company Sample** | Pulls up to 100 companies with the filters and checks each one for fit. Shows how many companies match in total. | Yes (up to 100 companies) | Sample quality, then tick the sample approval box |
 | 2 | **Expand Companies** | Grows the approved sample to the **Expansion Target** (number of usable companies). Never pulls the same company twice. | Yes (per company) | Usable count, shortfall if DiscoLike runs out |
 | 2b | **Deep Review Companies** (optional, automatic) | DiscoGen web review of each company against your deep-review prompt. Fails are cut. **Runs by itself** after the sample (first 100) and after each expand (the rest) when "Use DiscoGen Deep Review" is ticked and a prompt is written; there is no separate button. | Yes | AI Company Review tab |
@@ -42,6 +42,39 @@ The engine builds lead lists and campaigns. It replaces the old n8n list workflo
 **Restart Companies** (Company Review, free): start the company list over. The engine first backs up every company, contact and review of the list, then clears them and the sheet tabs, and resets the approvals, counts, verify and QA. Next step: run the first 100 companies again (free if the filters did not change). Emails already checked by MillionVerifier are never paid for again.
 
 **Build Campaign** belongs to the Campaign Center, not the Lead List Center (Alex, 2026-11-23).
+
+### 2a. What Generate Filters does (one press, every niche)
+
+It works the same way for pet e-com, roofers, med spas, manufacturers, jewelry, software, agencies, DTC brands and anything else. Nothing in it is a hard lock: it never fails because a list is small.
+
+1. **Looks at 500 lookalike companies.** One paid DiscoLike search (500 companies, about $1) using only your targeting sentence, example domains if the list has any, country/state, employee range, business model (only when the sentence says B2B) and "no lead-gen sites". The 50 most similar go to the AI keyword review (as before).
+2. **Industry labels only when they fit.** For every DiscoLike industry and sub-industry label, the engine counts how many of the 500 companies carry it (a label counts when DiscoLike scores it 0.5 or more).
+   - **60% or more** of the companies: the label is used as a filter.
+   - Several labels at 60%+: they are **either/or** (a company needs any one of them, never all).
+   - **None at 60%:** no industry filter at all. The lookalike text, examples and keywords do the targeting.
+   - The message shows the numbers, e.g. "Labels used (either/or): E-COMMERCE 90%. Skipped (under 60%): PET_PRODUCTS_BRAND 40%."
+   - This replaces the 2026-11-23 "ecom adds E-COMMERCE" rule: E-commerce is used when the companies really are e-commerce (60%+), and skipped otherwise.
+3. **Size goal (soft).** The **lead goal** is:
+   - with a linked campaign: all its inboxes' daily limits added up x 14 days / 3 email steps (every linked campaign counts, also a Generic/Direct split; each inbox once; an inbox with no daily limit counts 15). Example: 7 inboxes x 15 = 105 a day -> 490 leads.
+   - no campaign (or no inboxes yet): **3,000 leads**.
+   - Companies needed = lead goal / 0.4 (about 0.4 final leads per company). 3,000 leads -> ~7,500 companies.
+   - DiscoLike's free count is an upper bound; **real = about 60%** of it (Alex: 50-70%).
+4. **Auto-widen when too small.** If the expected real companies are fewer than needed, the engine widens **one step at a time**, re-counts (free) and stops as soon as it is enough:
+   1. drop the sub-industry labels,
+   2. drop the industry labels,
+   3. widen the employee range one DiscoLike step on each side (e.g. 11-200 -> 1-500),
+   4. drop the business model,
+   5. keep only the top half of the homepage keywords.
+   - **Country and state are never widened** (geography is the client's choice).
+   - At most 5 extra free counts. If it is still short, the widest version is saved and the message says so. You can still run the sample.
+5. **The message** starts with the result, e.g. "Goal 3,000 leads (default) → needs ~7,500 companies. Free count 18,400 → expect ~11,040 real. Big enough: no widening needed. Labels used (either/or): ... Skipped (under 60%): ...". The same numbers are in the job result (`sizing`, `labels`).
+6. **Dry run** spends nothing: no DiscoLike search, no AI call, no count. It shows what it would pull and the goal.
+
+Unchanged: employee ranges snap to DiscoLike's size steps, "between X and Y" works, exclusions in the sentence, the Airtable fields written.
+
+Settings (server .env, optional): `FILTER_ANALYSIS_COMPANIES` (500, max 1000), `DEFAULT_LEAD_GOAL` (3000), `LEADS_PER_COMPANY` (0.4), `COUNT_YIELD` (0.6).
+
+**Sample fit (Run Company Sample):** 80%+ usable = Passed, 70%+ = Needs Review, under 70% = Failed. These labels are a **warning, never a lock**: a low sample says "Below 80% fit (warning): review before approving". Expand needs only the approval tick, and nothing on the engine blocks Expand or Find Contacts because of the sample status.
 
 ### 2b. Campaign Center (Campaigns table)
 
@@ -181,6 +214,10 @@ SSH in: `ssh -o ServerAliveInterval=30 root@178.156.132.86`
 
 ## 9. Change log
 
+- **2026-11-24:**
+  - **Generate Filters works for every niche** (section 2a, Alex's goal of 2026-11-23): 500 lookalike companies for the analysis (was 20); industry labels only when 60%+ of them carry them (either/or; none = no industry filter); a soft lead goal (campaign inboxes x 14 / 3, else 3,000 leads); auto-widen in a fixed order with free counts, never geography; the message shows the goal, the count, the labels with their numbers and what was widened.
+  - The "ecom adds E-COMMERCE" rule is replaced by the 60% label rule.
+  - A sample under 80% fit now reads as a warning ("Below 80% fit (warning): review before approving"); it never blocks Expand.
 - **2026-11-23:**
   - "ecom", "e-commerce", "DTC", "online store" or "Shopify" in the targeting sentence adds E-commerce as an either/or industry next to the product industry (Alex: or, never and).
   - Employee ranges snap to DiscoLike's size steps (1-10, 11-50, 51-200, 201-500, ...): "10 to 200" = 11-200 (Alex).

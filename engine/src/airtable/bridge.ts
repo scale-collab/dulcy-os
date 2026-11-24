@@ -12,7 +12,7 @@ import type { Config } from '../config.js';
 import type { AirtableClient, AirtableRecord } from '../providers/airtable.js';
 import { enqueue } from '../queue.js';
 import { STAGES } from '../stages/index.js';
-import { BuildInputError, CAMPAIGNS, CF, queueBuild } from './campaignBuild.js';
+import { BuildInputError, CAMPAIGNS, CF, LL, campaignLeadGoal, queueBuild } from './campaignBuild.js';
 import { LEAD_LIST_FIELDS as LIST_NAMES } from '../leadlist/legacy/fieldNames.js';
 import { CAMPAIGN_FIELDS } from '../campaign/campaignFields.js';
 import { createDiscoLikeClient, type DiscoLikeClient } from '../providers/discolike.js';
@@ -227,7 +227,10 @@ export async function buildInput(db: Db, at: AirtableClient, rec: AirtableRecord
       const clientIds = (rec.fields[F.client] as string[] | undefined) ?? [];
       if (clientIds.length !== 1) throw new InputError('link exactly one client to this list first');
       const client = await byName(CLIENTS, clientIds[0], FILTER_CLIENT_FIELDS);
-      return { record, client, action: 'Generate Filters' };
+      // Soft size goal (Alex, 2026-11-23): from the linked campaign's inboxes; none = the engine default.
+      const campaignIds = ((rec.fields[LL.whichCampaign] ?? record.fields['Which Campaign?']) as string[] | undefined ?? []).filter((x) => /^rec[A-Za-z0-9]{14}$/.test(String(x)));
+      const leadGoal = campaignIds.length ? await campaignLeadGoal(at, campaignIds) : null;
+      return { record, client, action: 'Generate Filters', ...(leadGoal ? { leadGoal } : {}) };
     }
     case 'leadlist.sample':
       return { filters: filters(), sampleSize: num(r[F.sampleSize]), ...who };

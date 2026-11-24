@@ -5,7 +5,8 @@
 //  4. live: ONE paid search for up to 100 companies, with a receipt per record and filters
 //     (a re-run never pays again);
 //  5. the fit check in code (no LLM): drop only obvious bad fits, with reasons, then the
-//     sample gate (usable ≥ 80% Passed, ≥ 70% Needs Review, else Failed).
+//     sample gate (usable ≥ 80% Passed, ≥ 70% Needs Review, else Failed). A soft label only:
+//     nothing on the engine blocks Expand or Find Contacts on it (Expand needs the approval tick).
 // Shadow mode: nothing is written to Airtable or Sheets yet.
 import { createHash } from 'node:crypto';
 import type { Stage } from './index.js';
@@ -90,6 +91,8 @@ export const companySampleStage: Stage = async (ctx) => {
     topDropReasons: review.topDropReasons,
     dropped: review.dropped,
     kept: review.kept,
-    message: `sample ${s.status}: Tier 1 ${s.fit}, Tier 2 ${s.maybe}, Cut ${s.drop}; ${s.fit + s.maybe} of ${s.reviewed} usable (${Math.round(s.usableRate * 100)}%); ${countNote}`,
+    // The 80% fit target is a warning, never a lock (Alex, 2026-11-23): Expand needs only the
+    // approval tick. The status label stays Passed / Needs Review / Failed.
+    message: `sample ${s.status === 'Failed' ? 'Below 80% fit (warning): review before approving' : s.status}: Tier 1 ${s.fit}, Tier 2 ${s.maybe}, Cut ${s.drop}; ${s.fit + s.maybe} of ${s.reviewed} usable (${Math.round(s.usableRate * 100)}%); ${countNote}`,
   };
 };

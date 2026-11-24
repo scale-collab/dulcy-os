@@ -19,10 +19,10 @@ import { CAMPAIGN_FIELDS } from '../campaign/campaignFields.js';
 import { campaignSettings, outputCopy, readSequence, sendingLimits } from '../campaign/airtableCopy.js';
 
 export const CAMPAIGNS = 'tblAVAA6uBPaMj28P';
-const EMAIL_ACCOUNTS = 'tblMSOBJ0wMgxSg4l';
+export const EMAIL_ACCOUNTS = 'tblMSOBJ0wMgxSg4l';
 const CLIENTS = 'tblcjRBGJEWh5KgOt';
 export const LL = { whichCampaign: 'fldepbn71awSjmZPV', stage: 'fld8nrebRFL0O8kgj', qa: 'fldUB4WsLi5kq6rUy', finalDirect: 'fldQZJCpTofahmTkl', finalGeneric: 'fld0FHomkh3uyx0FD' };
-const EA = { emailId: 'fldR19WUqSSBVQcPO', workspaceId: 'fldWB4pvEgQ8aYlT2', dailyLimit: 'fldBP1gljUUM44JMk', email: 'fldRYSB93NNdBc4Js' };
+export const EA = { emailId: 'fldR19WUqSSBVQcPO', workspaceId: 'fldWB4pvEgQ8aYlT2', dailyLimit: 'fldBP1gljUUM44JMk', email: 'fldRYSB93NNdBc4Js' };
 const CL = { name: 'fld48x6Yg3v6RP30W', brand: 'fldTHTrYh0GCFeBLG', senderTitle: 'fldIMJnjdGGAPotMW' };
 export const CF = {
   name: CAMPAIGN_FIELDS.Name, status: CAMPAIGN_FIELDS['Campaign Status'], stage: CAMPAIGN_FIELDS['Workflow Stage'], client: CAMPAIGN_FIELDS.Client,
@@ -50,6 +50,25 @@ export function splitSenders(total: number, generic: number, direct: number) {
     return { generic: total - d, direct: d };
   }
   return { generic: generic > 0 ? total : 0, direct: direct > 0 ? total : 0 };
+}
+
+/** Days of sending and sequence steps behind a campaign's lead goal (Alex, 2026-11-23). */
+export const GOAL_DAYS = 14;
+export const GOAL_STEPS = 3;
+/**
+ * Soft lead goal for Generate filters from the campaign(s) linked to a list: the sum of the
+ * linked inboxes' daily limits x 14 days / 3 sequence steps. Every linked campaign counts (two
+ * campaigns, or a Generic/Direct split): the inboxes actually linked, each counted once. An
+ * inbox without a daily limit counts 15 (as Build Campaign does). Null = no inbox linked.
+ */
+export async function campaignLeadGoal(at: AirtableClient, campaignIds: string[]) {
+  const camps = (await Promise.all([...new Set(campaignIds)].map((id) => at.get(CAMPAIGNS, id, [CF.name, CF.accounts])))).filter(Boolean) as AirtableRecord[];
+  const accountIds = [...new Set(camps.flatMap((c) => ids(c.fields[CF.accounts])))];
+  if (!accountIds.length) return null;
+  const accounts = (await Promise.all(accountIds.map((id) => at.get(EMAIL_ACCOUNTS, id, [EA.dailyLimit])))).filter(Boolean) as AirtableRecord[];
+  if (!accounts.length) return null;
+  const perDay = accounts.reduce((sum, a) => sum + (Number(a.fields[EA.dailyLimit]) || 15), 0);
+  return { value: Math.round((perDay * GOAL_DAYS) / GOAL_STEPS), source: 'campaign', inboxes: accounts.length, perDay, campaigns: camps.map((c) => text(c.fields[CF.name])).filter(Boolean) };
 }
 
 export interface PlannedOutput { outputType: 'generic' | 'direct'; recordId: string; name: string; leads: number; senderEmailIds: string[] }

@@ -342,12 +342,27 @@ test('Generate Filters: record and client by field name, plan fields cleared, ke
   const raw = JSON.stringify(j.input);
   for (const secret of ['secret-key-value', 'client-bison-key', 'list-lookup-key']) assert.ok(!raw.includes(secret), 'never read: ' + secret);
   for (const asked of fake.clientFieldsAsked) for (const id of ['fld6bFQolVFg4Ub3N', KEY_FIELD]) assert.ok(!asked.includes(id));
+  assert.ok(!('leadGoal' in j.input), 'no linked campaign: the engine default goal applies');
   await finish(db, j.id, { dryRun: false, airtableFields: { fldC2hZQ3gSqLmi1y: '{"icp_prompt":"x"}', fldG2MXz5lccu7KKU: '11,200', fldf9wpMGWg0SebHV: 'Completed' }, message: 'N keywords. Review them before running the first 100 companies.' });
   await syncResults(db, at());
   assert.equal(rec()[F.filtersJson], '{"icp_prompt":"x"}');
   assert.equal(rec().fldG2MXz5lccu7KKU, '11,200');
   assert.equal(rec()[F.engineStatus], 'Done');
   assert.match(String(rec()[F.workflowMessage]), /Review them before running/);
+});
+
+test('Generate Filters: the soft lead goal comes from the inboxes actually linked (both campaigns of a Generic/Direct split, each inbox once)', { skip }, async () => {
+  campaignReady();
+  const CHILD = 'recCampChild00001';
+  fake.tables[CAMPAIGNS][CHILD] = { [C.Name]: '[Dulcy] Med Spas - Direct Emails', [C['Email Accounts']]: ['recInbox000000001', 'recInbox000000005'] };
+  fake.tables[EA].recInbox000000005 = { fldBP1gljUUM44JMk: 30 };
+  fake.tables[EA].recInbox000000002.fldBP1gljUUM44JMk = null; // no daily limit counts 15, as Build Campaign does
+  Object.assign(rec(), { fldepbn71awSjmZPV: [PARENT, CHILD] });
+  press('Generate Filters');
+  assert.equal(await pollActions(db, cfg(), at()), 1);
+  const j = (await db.query(`SELECT * FROM jobs WHERE record_id=$1 AND kind='leadlist.filters'`, [REC])).rows[0];
+  // 5 inboxes: 15 x 4 + 30 = 90 a day x 14 days / 3 steps = 420 leads.
+  assert.deepEqual(j.input.leadGoal, { value: 420, source: 'campaign', inboxes: 5, perDay: 90, campaigns: ['[Dulcy] Med Spas', '[Dulcy] Med Spas - Direct Emails'] });
 });
 
 test('Restart Companies and Skip Enrichment buttons queue their engine stages', { skip }, async () => {

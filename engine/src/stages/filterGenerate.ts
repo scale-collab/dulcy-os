@@ -1,11 +1,17 @@
-// leadlist.filters: "Generate filters" (the old n8n branch, run unchanged).
-//   1. Validate Action Request2 + Normalize Lead List2 on the list record (by field name);
-//   2. dry-run stops here (it would spend 20 DiscoLike records and one AI call);
-//   3. DiscoLike ICP analysis: discover?icp_prompt=<targeting sentence>&relevance=BALANCED&max_records=20;
-//   4. Prepare AI Keyword Review2 builds the prompt (list + client context + DiscoLike evidence);
-//   5. ONE OpenAI call (n8n's model: gpt-5.6, single message, plain text back);
-//   6. Apply AI Keyword Review2 + Generate Visible Search Plan2 build the plan and the exact
-//      Airtable update n8n saved.
+// leadlist.filters: "Generate filters" (the old n8n branch, plus Alex's 2026-11-23 rules for
+// every niche, all inside the one press, never a hard lock).
+//   1. Validate Action Request2 + Normalize Lead List2 on the list record (by field name); the
+//      sentence's country/state, employee range (snapped) and explicit B2B are read by the copied
+//      plan code;
+//   2. dry run stops here: it reports the plan and the size goal and spends nothing;
+//   3. ONE paid lookalike pull of N companies (default 500, max 1000) with only: icp_text (the
+//      positive targeting sentence), example domains, country/state, employee_range,
+//      business_model, exclude_leadgen;
+//   4. the top 50 by similarity go to the copied AI keyword review (same shape as n8n's 20);
+//   5. ONE OpenAI call; Apply AI Keyword Review2 + Generate Visible Search Plan2 build the plan;
+//   6. labels only when they fit: industry / sub-industry filters only for labels on 60%+ of the
+//      N companies, either/or; none fits = no label filter (filterSizing.ts);
+//   7. soft size goal + auto-widen with the FREE count (max 5 extra counts), never geography.
 // Paid calls are per-press receipts: a retry of the same press never pays twice, and pressing
 // Generate again gives a fresh plan (as in n8n).
 // Not ported: the prior-review feedback (n8n read its own "AI Company Review"/"Expanded
@@ -13,45 +19,102 @@
 // generated plan never stored exclusion IDs in n8n either; they are added when the list runs).
 import { createHash } from 'node:crypto';
 import type { Stage } from './index.js';
-import { PermanentError } from '../errors.js';
+import { PermanentError, WaitError } from '../errors.js';
 import { createDiscoLikeClient } from '../providers/discolike.js';
 import { createOpenAIClient } from '../providers/openai.js';
 import { FILTERGEN_NODES as N } from '../leadlist/legacy/filtergenNodes.js';
 import { runNode, type Items } from '../leadlist/legacy/runNode.js';
+import type { Filters } from '../leadlist/filters.js';
+import { MAX_WIDEN_COUNTS, WIDEN_STEPS, applyLabels, goalText, labelCoverage, labelsText, sizingText, type Sizing } from '../leadlist/filterSizing.js';
 
-interface FilterInput { record: { id: string; fields: Record<string, unknown> }; client: { id: string; fields: Record<string, unknown> }; action?: string }
+interface LeadGoalIn { value?: number; source?: string; inboxes?: number; perDay?: number; campaigns?: string[] }
+interface FilterInput {
+  record: { id: string; fields: Record<string, unknown> }; client: { id: string; fields: Record<string, unknown> }; action?: string;
+  /** Soft goal: a number, or the bridge's {value, source:'campaign', inboxes, perDay}. Default: cfg.defaultLeadGoal. */
+  leadGoal?: number | LeadGoalIn;
+  filterAnalysisCompanies?: number; leadsPerCompany?: number; countYield?: number;
+}
 
+/** Companies the AI keyword review sees (n8n saw 20; its prompt uses the first 10 and the top 20 keywords). */
+const REVIEW_COMPANIES = 50;
 const hash = (v: unknown) => createHash('sha256').update(JSON.stringify(v)).digest('hex').slice(0, 16);
 const legacy = async (name: string, input: Items, earlier: Record<string, Items> = {}) => {
   try { return await runNode(N[name], input, earlier); } catch (e) { throw new PermanentError(String((e as Error).message ?? e)); }
 };
+const TAXONOMY: string[] = (() => {
+  const m = /const NATIVE_SUBINDUSTRIES = (\[[^\]]*\]);/.exec(N['Generate Visible Search Plan2']);
+  return m ? JSON.parse(m[1]) : [];
+})();
+const present = (v: unknown) => v !== undefined && v !== null && v !== '' && (!Array.isArray(v) || v.length > 0);
+const similarity = (r: any) => { const s = Number(r?.similarity ?? r?.similarity_score); return Number.isFinite(s) ? (s > 1 ? s / 100 : s) : -1; };
+const fmt = (x: number) => Math.round(x).toLocaleString('en-US');
+
+/** The positive part of the targeting sentence (as the copied Apply node builds it). */
+function positiveTarget(icp: string): string {
+  return icp.split(/\b(?:exclude|excluding|do not include|avoid|the goal is|our goal is|in order to)\b/i)[0]
+    .replace(/^(?:we\s+(?:are|'re)\s+)?(?:targeting|looking\s+for|seeking)\s+/i, '').trim().replace(/[,:;.-]+$/, '');
+}
 
 export const filterGenerateStage: Stage = async (ctx) => {
   const input = ctx.job.input as unknown as FilterInput;
   if (!input?.record?.id || !input.record.fields) throw new PermanentError('input.record (the Lead List record by field name) is required');
   const action = input.action ?? 'Generate Filters';
+  const companiesToPull = Math.min(1000, Math.max(20, Math.round(Number(input.filterAnalysisCompanies ?? ctx.cfg.filterAnalysisCompanies) || 500)));
+  const lpc = Number(input.leadsPerCompany ?? ctx.cfg.leadsPerCompany) > 0 ? Number(input.leadsPerCompany ?? ctx.cfg.leadsPerCompany) : 0.4;
+  const yieldShare = Number(input.countYield ?? ctx.cfg.countYield) > 0 ? Number(input.countYield ?? ctx.cfg.countYield) : 0.6;
+  const g = typeof input.leadGoal === 'number' ? { value: input.leadGoal, source: 'input' } as LeadGoalIn : input.leadGoal;
+  const fromInput = Number(g?.value) > 0;
+  const goal = {
+    leadGoal: fromInput ? Math.round(Number(g!.value)) : ctx.cfg.defaultLeadGoal,
+    source: fromInput ? String(g!.source ?? 'input') : 'default',
+    sourceNote: fromInput && g!.source === 'campaign' && g!.inboxes
+      ? `from the linked campaign: ${g!.inboxes} inboxes, ${fmt(Number(g!.perDay ?? 0))} a day x 14 days ÷ 3 steps`
+      : fromInput ? 'set on this press' : 'default',
+  };
+  const companiesNeeded = Math.ceil(goal.leadGoal / lpc);
 
   const start = await ctx.step('normalize', async () => {
     const v = await legacy('Validate Action Request2', [{ body: { recordId: input.record.id, action } }]);
     if (!v.length) throw new PermanentError('the old validator stopped this request quietly');
     const norm = await legacy('Normalize Lead List2', [input.record], { 'Validate Action Request2': v });
     const url = await legacy('Build DiscoLike ICP Analysis URL2', [{}], { 'Normalize Lead List2': norm });
-    return { v, norm, icpPrompt: new URL(url[0].discoUrl).searchParams.get('icp_prompt') ?? '' };
+    const icpPrompt = new URL(url[0].discoUrl).searchParams.get('icp_prompt') ?? '';
+    // The sentence's own hard settings (country/state, snapped employee range, explicit B2B),
+    // read by the copied plan code itself so the rules stay the same.
+    let hard: Filters = {};
+    try {
+      const pre = await legacy('Generate Visible Search Plan2', [{ discoRows: [{ domain: 'analysis.invalid' }], lookalikeText: icpPrompt, reviewedKeywords: [], nativeReview: {} }], { 'Normalize Lead List2': norm });
+      hard = pre[0]?.filters ?? {};
+    } catch { /* the full plan reports any problem later */ }
+    const saved = norm[0]?.filters ?? {};
+    const params: Filters = { icp_text: positiveTarget(icpPrompt) || icpPrompt };
+    if (present(saved.domain)) params.domain = saved.domain;
+    for (const k of ['country', 'state', 'employee_range', 'business_model']) if (present(hard[k])) params[k] = hard[k];
+    params.exclude_leadgen = true;
+    return { v, norm, icpPrompt, analysis: params };
   });
 
   if (ctx.dryRun) {
-    return { dryRun: true, plan: { icpPrompt: start.icpPrompt }, wouldSpendCredits: { discolike: 20, openai: 1 }, message: 'dry run: would analyse 20 DiscoLike companies and make one AI call' };
+    return {
+      dryRun: true, plan: { icpPrompt: start.icpPrompt, analysis: { companies: companiesToPull, filters: start.analysis } },
+      sizing: { ...goal, leadsPerCompany: lpc, countYield: yieldShare, companiesNeeded },
+      wouldSpendCredits: { discolike: companiesToPull, openai: 1 },
+      message: `dry run: would pull ${fmt(companiesToPull)} lookalike companies for the label analysis and make one AI call. ${goalText({ ...goal, companiesNeeded })}`,
+    };
   }
 
   const disco = createDiscoLikeClient({ apiKey: ctx.cfg.discoLikeApiKey, baseUrl: ctx.cfg.discoLikeBaseUrl });
-  const rows = await ctx.step('icp-analysis', () => ctx.paid({
-    provider: 'discolike', callKey: `filters-icp:${hash(start.icpPrompt)}`, units: 20,
-    run: () => disco.discover({ icp_prompt: start.icpPrompt, relevance: 'BALANCED' } as any, 20),
+  const pulled = await ctx.step('lookalike-analysis', () => ctx.paid({
+    provider: 'discolike', callKey: `filters-lookalike:${hash(start.analysis)}:${companiesToPull}`, units: companiesToPull,
+    run: () => disco.discover(start.analysis, companiesToPull),
     dryRunResult: () => [],
-  }));
-  if (!rows.length) throw new PermanentError('DiscoLike returned no companies for this targeting sentence. Refine the targeting sentence and generate again.');
+  }), { timeoutMs: 5 * 60_000 });
+  if (!pulled.length) throw new PermanentError('DiscoLike returned no companies for this targeting sentence. Refine the targeting sentence and generate again.');
+  // Most similar first (stable); the AI review gets the top 50.
+  const rows = pulled.map((r: any, i: number) => ({ r, i })).sort((a: any, b: any) => similarity(b.r) - similarity(a.r) || a.i - b.i).map((x: any) => x.r);
+  const reviewRows = rows.slice(0, REVIEW_COMPANIES);
 
-  const prep = await ctx.step('prepare-review', () => legacy('Prepare AI Keyword Review2', rows, { 'Get Linked Client2': [input.client], 'Normalize Lead List2': start.norm }));
+  const prep = await ctx.step('prepare-review', () => legacy('Prepare AI Keyword Review2', reviewRows, { 'Get Linked Client2': [input.client], 'Normalize Lead List2': start.norm }));
   const prompt = String(prep[0]?.keywordReviewPrompt ?? '');
   if (!prompt) throw new PermanentError('the keyword review prompt came out empty');
 
@@ -65,12 +128,67 @@ export const filterGenerateStage: Stage = async (ctx) => {
   const plan = await ctx.step('build-plan', async () => {
     const applied = await legacy('Apply AI Keyword Review2', [reply], { 'Prepare AI Keyword Review2': prep });
     const gen = await legacy('Generate Visible Search Plan2', applied, { 'Normalize Lead List2': start.norm });
-    const g = gen[0] ?? {};
+    const g0 = gen[0] ?? {};
     // n8n also cleared its own Automation Action here; the engine never touches n8n's field.
-    const fields = { ...(g.airtableBody?.fields ?? {}) };
+    const fields = { ...(g0.airtableBody?.fields ?? {}) };
     delete fields.fldhViG7kJ5rKEaa4;
-    return { filters: g.filters, summary: String(g.summary ?? ''), airtableFields: fields, keywords: g.homepageKeywords ?? '', employeeRange: g.employeeRange ?? '' };
+    // Labels only when they fit (coverage over ALL pulled companies, not the review subset).
+    const crossIndustry = applied[0]?.crossIndustry === true;
+    const cov = labelCoverage(rows, TAXONOMY);
+    const labels = applyLabels(g0.filters ?? {}, cov, { crossIndustry });
+    return { filters: labels.filters, summary: String(g0.summary ?? ''), airtableFields: fields, used: labels.used, skipped: labels.skipped, total: cov.total, crossIndustry };
   });
 
-  return { dryRun: false, filters: plan.filters, airtableFields: plan.airtableFields, discoLikeCompanies: rows.length, message: plan.summary || 'search plan generated; review it before running the first 100 companies' };
+  // Soft size goal and auto-widen with the FREE count. Never fails the press.
+  const sized = await ctx.step('sizing', async () => {
+    const counts: { step: string; freeCount: number }[] = [];
+    const s: Sizing = { ...goal, leadsPerCompany: lpc, countYield: yieldShare, companiesNeeded, freeCount: null, expectedReal: null, enough: null, widened: [], counts };
+    let filters: Filters = plan.filters;
+    const count = async (f: Filters): Promise<number | null | 'error'> => {
+      try { const c = await disco.count(f); return c ? c.count : null; } catch (e) { if (e instanceof WaitError) throw e; s.note = `Free count failed (${String((e as Error).message ?? e).slice(0, 120)}), so the size was not checked further.`; return 'error'; }
+    };
+    const first = await count(filters);
+    if (first === null) { s.note = 'Free count not possible for this plan (nothing countable), so the size was not checked.'; return { s, filters }; }
+    if (first === 'error') return { s, filters };
+    counts.push({ step: 'plan', freeCount: first });
+    const set = (c: number) => { s.freeCount = c; s.expectedReal = Math.round(c * yieldShare); s.enough = s.expectedReal >= companiesNeeded; };
+    set(first);
+    let extra = 0;
+    for (const step of WIDEN_STEPS) {
+      if (s.enough || extra >= MAX_WIDEN_COUNTS) break;
+      const w = step.apply(filters);
+      if (!w) continue;
+      extra++;
+      const c = await count(w.filters);
+      if (c === 'error' || c === null) break; // keep the last counted plan
+      filters = w.filters; s.widened.push(w.note); counts.push({ step: w.note, freeCount: c });
+      set(c);
+    }
+    return { s, filters };
+  });
+
+  const f = sized.filters;
+  const keywords: string[] = Array.isArray(f.phrase_match) ? f.phrase_match.map(String) : [];
+  const catCount = Array.isArray(f.category) ? f.category.length : 0;
+  const subCount = Array.isArray(f.sub_industry) ? f.sub_industry.length : 0;
+  const bmCount = Array.isArray(f.business_model) ? f.business_model.length : 0;
+  const legacySummary = plan.summary
+    .replace(/^\d+ native subindustries;/, `${subCount} native subindustries;`)
+    .replace(/AI retained or rewrote \d+ relevant/, `AI retained or rewrote ${keywords.length} relevant`)
+    .replace(/, \d+ industry groups, and \d+ business-model filters/, `, ${catCount} industry groups, and ${bmCount} business-model filters`);
+  const summary = [sizingText(sized.s), labelsText(plan.used, plan.skipped, plan.total, plan.crossIndustry), legacySummary].filter(Boolean).join(' ');
+  const airtableFields = {
+    ...plan.airtableFields,
+    fldC2hZQ3gSqLmi1y: JSON.stringify(f, null, 2),
+    fldG2MXz5lccu7KKU: String(f.employee_range ?? ''),
+    fldydpLzUzAJGLBBJ: keywords.join(', '),
+    fldVnH7Pn1PxlZI5b: summary,
+  };
+  const pct = (x: { label: string; share: number; kind: string }) => ({ label: x.label, kind: x.kind, coverage: Math.round(x.share * 1000) / 10 });
+  return {
+    dryRun: false, filters: f, airtableFields, discoLikeCompanies: pulled.length, reviewedCompanies: reviewRows.length,
+    labels: { used: plan.used.map(pct), skipped: plan.skipped.map(pct), companies: plan.total, minCoverage: 60 },
+    sizing: { leadGoal: sized.s.leadGoal, source: sized.s.source, companiesNeeded, freeCount: sized.s.freeCount, expectedReal: sized.s.expectedReal, enough: sized.s.enough, widened: sized.s.widened, counts: sized.s.counts, leadsPerCompany: lpc, countYield: yieldShare },
+    message: summary || 'search plan generated; review it before running the first 100 companies',
+  };
 };
