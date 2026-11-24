@@ -94,7 +94,7 @@ export const contactsFindStage: Stage = async (ctx) => {
   // DiscoLike retires the legacy contact search and ContraGen on 2026-12-31: from then on a list
   // still set to "DiscoLike" / "DiscoLike + ContraGen" uses the Contacts run instead of failing.
   let switchedFromLegacy = false;
-  if (!input.contactsRun && Date.now() >= Date.parse(ctx.cfg.legacyContactsEnd ?? '2027-01-01T00:00:00Z')) {
+  if (!input.contactsRun && Date.now() >= Date.parse(ctx.cfg.legacyContactsEnd ?? '2026-11-24T00:00:00Z')) {
     input.contactsRun = true; input.contraGen = false; switchedFromLegacy = true;
   }
   const listId = ctx.job.record_id;
