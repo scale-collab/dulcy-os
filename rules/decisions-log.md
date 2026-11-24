@@ -176,3 +176,4 @@ Newest at the bottom. Format: `date | decision | why | who`
 - 2026-11-24 — Alex: yes to clearing the ~250 old OpenAI drafts stuck in Needs Approval (Sean redrafts what still waits); yes to switching off the n8n Reply Agent drafters and sender the moment the engine sender goes live (never both at once).
 - 2026-11-24 — Alex: reply approval lives in Airtable with Slack ✅ as a shortcut; Airtable and Slack must mirror each other (sent/skipped shows in both).
 - 2026-11-24 — Sean v2 built: drafts land on the Emails rows (Reply Queue) + Slack; one engine sender for all workspaces with client CC/BCC; Airtable/Slack mirrored; Reply Learning rows saved as Approved; client calendars through the existing dulcy-calendar service (Google + Calendly already supported there). Off until Alex switches it on.
+- 2026-11-24 — Alex: swapped Scroll Stop's Reply Agent booking link to James's cal.com link; deployed; calendar reader key confirmed on the server.
