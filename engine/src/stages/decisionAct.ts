@@ -7,6 +7,7 @@ import { NeedsReviewError, PermanentError } from '../errors.js';
 import { bisonFor } from '../providers/emailbison.js';
 import { createAirtableClient } from '../providers/airtable.js';
 import { EMAILS, EMAILS_LATEST_REPLY_TIME } from '../decisions/fields.js';
+import { EF } from '../agents/emailsFields.js';
 
 export const sendReplyStage: Stage = async (ctx) => {
   const i = ctx.job.input as Record<string, any>;
@@ -15,8 +16,12 @@ export const sendReplyStage: Stage = async (ctx) => {
 
   if (i.emailsRecordId && i.latestReplyAt && ctx.cfg.airtableApiKey) {
     const at = createAirtableClient({ apiKey: ctx.cfg.airtableApiKey, baseId: ctx.cfg.airtableBaseId, baseUrl: ctx.cfg.airtableBaseUrl });
-    const rec = await at.get(EMAILS, String(i.emailsRecordId), [EMAILS_LATEST_REPLY_TIME]);
+    const rec = await at.get(EMAILS, String(i.emailsRecordId), [EMAILS_LATEST_REPLY_TIME, EF.lastSent]);
     const now = rec?.fields[EMAILS_LATEST_REPLY_TIME];
+    const last = rec?.fields[EF.lastSent];
+    if (String(typeof last === 'object' ? (last as any)?.name : last ?? '') === 'Last Email Sent By Dulcy') {
+      throw new NeedsReviewError('someone already answered this thread from our side (Josh, the client or another tool); nothing sent');
+    }
     if (now && Date.parse(String(now)) > Date.parse(String(i.latestReplyAt)) + 60_000) {
       throw new NeedsReviewError('the prospect wrote again after this draft was made; nothing sent, redraft it');
     }

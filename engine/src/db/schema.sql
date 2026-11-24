@@ -192,3 +192,14 @@ CREATE TABLE IF NOT EXISTS lead_contact_reviews (
   PRIMARY KEY (list_id, email)
 );
 ALTER TABLE lead_contact_reviews ADD COLUMN IF NOT EXISTS prev_tier TEXT;  -- the code-fit tier before the review (for an undo)
+
+-- Sean (inbox agent): one row per prospect reply handled (record + reply time), so a reply is drafted once.
+CREATE TABLE IF NOT EXISTS sean_drafts (
+  email_record TEXT NOT NULL,
+  reply_at     TEXT NOT NULL,
+  action       TEXT NOT NULL,
+  reason       TEXT,
+  decision_id  TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (email_record, reply_at)
+);

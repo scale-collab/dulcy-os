@@ -25,6 +25,18 @@ export interface Config {
   /** Slack user IDs whose ✅/❌ count (default: Alex, Josh). */
   slackApprovers: string[];
   decisionsPollMs: number;
+  /** Claude (agents' drafting). */
+  anthropicApiKey?: string;
+  claudeModel: string;
+  anthropicBaseUrl?: string;
+  /** Repo knowledge (skills, rules, clients) mounted into the container. */
+  knowledgeDir: string;
+  /** Sean (inbox agent): run every N minutes (0 = off), look back N days, at most N drafts per run. */
+  seanEveryMin: number;
+  seanDays: number;
+  seanMaxPerRun: number;
+  calendlyToken?: string;
+  calendlyEventSlug: string;
   /** Max provider units (credits/rows) per job, per provider. */
   capPerJob: number;
   /** Max provider units per day, per provider. */
@@ -112,6 +124,15 @@ export function loadConfig(env = process.env): Config {
     slackDecisionsChannel: env.SLACK_DECISIONS_CHANNEL || 'C0B581HNSMR',
     slackApprovers: (env.SLACK_APPROVERS ?? 'U070Z26377C,U0ADSEJ9SDR').split(',').map((x) => x.trim()).filter(Boolean),
     decisionsPollMs: num('DECISIONS_POLL_MS', 30_000, env),
+    anthropicApiKey: env.ANTHROPIC_API_KEY || undefined,
+    claudeModel: env.CLAUDE_MODEL || 'claude-opus-5-5',
+    anthropicBaseUrl: env.ANTHROPIC_BASE_URL || undefined,
+    knowledgeDir: env.KNOWLEDGE_DIR || '/app/knowledge',
+    seanEveryMin: num('SEAN_EVERY_MIN', 0, env),
+    seanDays: num('SEAN_DAYS', 14, env),
+    seanMaxPerRun: num('SEAN_MAX_PER_RUN', 20, env),
+    calendlyToken: env.CALENDLY_TOKEN || undefined,
+    calendlyEventSlug: env.CALENDLY_EVENT_SLUG || 'outreach-consultation',
     capPerJob: num('CAP_PER_JOB', 100_000, env),
     capPerDay: num('CAP_PER_DAY', 100_000, env),
     legacyContactsEnd: env.LEGACY_CONTACTS_END || '2026-11-24T00:00:00Z', // Alex 2026-11-24: one way only, the Contacts Run

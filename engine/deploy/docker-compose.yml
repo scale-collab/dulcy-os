@@ -9,6 +9,10 @@ services:
     volumes:
       # Key files (e.g. google-sa.json) live here on the server only; never in git.
       - ./secrets:/app/secrets:ro
+      # Repo knowledge for the agents (client files, rules, skills); a git pull updates it, no rebuild.
+      - ../../clients:/app/knowledge/clients:ro
+      - ../../rules:/app/knowledge/rules:ro
+      - ../../skills:/app/knowledge/skills:ro
     environment:
       DATABASE_URL: postgres://engine:${POSTGRES_PASSWORD}@db:5432/engine
       GOOGLE_IMPERSONATE_USER: ${GOOGLE_IMPERSONATE_USER:-scale@dulcy.io}

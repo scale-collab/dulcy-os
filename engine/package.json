@@ -4,7 +4,9 @@
   "private": true,
   "description": "Dulcy lead engine: lead lists and campaigns as safe, resumable jobs. Airtable is the screen.",
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/src/main.js",
@@ -12,7 +14,9 @@
     "migrate": "node dist/src/db/migrate.js"
   },
   "dependencies": {
-    "pg": "^8.13.1"
+    "@anthropic-ai/sdk": "^1.13.0",
+    "pg": "^8.13.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
