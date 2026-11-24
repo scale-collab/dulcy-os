@@ -120,7 +120,7 @@ export function createDiscoLikeClient(o: DiscoLikeOptions) {
     },
     /** Paid: up to maxRecords companies for these filters. Returns the raw rows. */
     async discover(filters: Filters, maxRecords: number): Promise<any[]> {
-      const r = await get(`/v1/discover?${toQuery({ ...filters, max_records: maxRecords, offset: 0 })}`, true);
+      const r = await get(`/v1/discover?${toQuery({ ...filters, max_records: maxRecords, offset: Math.max(0, Math.round(Number((filters as any).offset ?? 0)) || 0) })}`, true);
       if (r.status === 204 || r.body === null) return [];
       const b = r.body;
       const rows = Array.isArray(b) ? b : Array.isArray(b?.data) ? b.data : Array.isArray(b?.results) ? b.results : null;

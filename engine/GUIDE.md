@@ -61,6 +61,7 @@ It works the same way for pet e-com, roofers, med spas, manufacturers, jewelry, 
    - no campaign (or no inboxes yet): **3,000 leads**.
    - Companies needed = lead goal / 0.4 (about 0.4 final leads per company). 3,000 leads -> ~7,500 companies.
    - DiscoLike's free count is an upper bound; **real = about 60%** of it (Alex: 50-70%).
+3b. **Real search depth** (Alex, 2026-11-24). The free count cannot use the targeting text, so it can overstate a lot (pet e-com: 23,065 counted, the search only reached ~2,000). When the count looks big enough, the engine checks how deep the real search goes (as far as Expand can: MAX_COVERAGE) with about 8 one-company test searches (a few cents), and uses the smaller number. The message then says e.g. "Free count 23,065, but the real search only reaches ~2,000 companies → expect ~2,000 real". Searches deeper than 10,000 (the API limit for this check) show "10,000+" and the count decides. Auto-widen uses the same check, so a niche like this widens when it is really short.
 4. **Auto-widen when too small.** If the expected real companies are fewer than needed, the engine widens **one step at a time**, re-counts (free) and stops as soon as it is enough:
    1. widen the employee range one DiscoLike step on each side (e.g. 11-200 -> 1-500): this keeps the niche (jewelry test: 2,969 -> 20,646),
    2. drop the sub-industry labels (the held-back whole industries come in instead),

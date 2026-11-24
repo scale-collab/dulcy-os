@@ -25,7 +25,7 @@ import { createOpenAIClient } from '../providers/openai.js';
 import { FILTERGEN_NODES as N } from '../leadlist/legacy/filtergenNodes.js';
 import { runNode, type Items } from '../leadlist/legacy/runNode.js';
 import type { Filters } from '../leadlist/filters.js';
-import { MAX_WIDEN_COUNTS, WIDEN_STEPS, applyLabels, applyModelsAndExamples, modelsText, goalText, labelCoverage, labelsText, sizingText, type Sizing } from '../leadlist/filterSizing.js';
+import { MAX_WIDEN_COUNTS, WIDEN_STEPS, probeDepth, applyLabels, applyModelsAndExamples, modelsText, goalText, labelCoverage, labelsText, sizingText, type Sizing } from '../leadlist/filterSizing.js';
 
 interface LeadGoalIn { value?: number; source?: string; inboxes?: number; perDay?: number; campaigns?: string[] }
 interface FilterInput {
@@ -147,18 +147,38 @@ export const filterGenerateStage: Stage = async (ctx) => {
 
   // Soft size goal and auto-widen with the FREE count. Never fails the press.
   const sized = await ctx.step('sizing', async () => {
-    const counts: { step: string; freeCount: number }[] = [];
-    const s: Sizing = { ...goal, leadsPerCompany: lpc, countYield: yieldShare, companiesNeeded, freeCount: null, expectedReal: null, enough: null, widened: [], counts };
+    const counts: Sizing['counts'] = [];
+    const s: Sizing = { ...goal, leadsPerCompany: lpc, countYield: yieldShare, companiesNeeded, freeCount: null, expectedReal: null, enough: null, widened: [], counts, findable: null };
     let filters: Filters = plan.filters;
     const count = async (f: Filters): Promise<number | null | 'error'> => {
       try { const c = await disco.count(f); return c ? c.count : null; } catch (e) { if (e instanceof WaitError) throw e; s.note = `Free count failed (${String((e as Error).message ?? e).slice(0, 120)}), so the size was not checked further.`; return 'error'; }
     };
+    // Real search depth (Alex, 2026-11-24): the free count cannot use the targeting text, so it
+    // overstates (pet e-com: 23,065 counted, ~2,000 reachable). Probe the plan as Expand will run
+    // it at most (MAX_COVERAGE), one company per call, only when the count alone looks big enough.
+    const depth = async (f: Filters): Promise<{ depth: number; capped: boolean } | null> => {
+      if (!present(f.icp_text) && !present(f.domain)) return null; // pure filter search: the count is exact
+      const probe: Filters = { ...f, relevance: 'MAX_COVERAGE' };
+      try {
+        const r = await probeDepth(async (offset) => (await ctx.paid({
+          provider: 'discolike', callKey: `filters-depth:${hash(probe)}:${offset}`, units: 1,
+          run: () => disco.discover({ ...probe, offset }, 1), dryRunResult: () => [],
+        })).length > 0);
+        return { depth: r.depth, capped: r.capped };
+      } catch (e) { if (e instanceof WaitError) throw e; s.note = `Search-depth check failed (${String((e as Error).message ?? e).slice(0, 120)}); the size uses the free count only.`; return null; }
+    };
+    const set = async (c: number, f: Filters, step: string) => {
+      const byCount = Math.round(c * yieldShare);
+      const d = byCount >= companiesNeeded ? await depth(f) : null; // short on the count already: no need to pay to check
+      s.freeCount = c; s.findable = d ? d.depth : null; s.findableCapped = d?.capped ?? false;
+      s.expectedReal = d && !d.capped ? Math.min(byCount, d.depth) : byCount;
+      s.enough = s.expectedReal >= companiesNeeded;
+      counts.push({ step, freeCount: c, findable: s.findable });
+    };
     const first = await count(filters);
     if (first === null) { s.note = 'Free count not possible for this plan (nothing countable), so the size was not checked.'; return { s, filters }; }
     if (first === 'error') return { s, filters };
-    counts.push({ step: 'plan', freeCount: first });
-    const set = (c: number) => { s.freeCount = c; s.expectedReal = Math.round(c * yieldShare); s.enough = s.expectedReal >= companiesNeeded; };
-    set(first);
+    await set(first, filters, 'plan');
     let extra = 0;
     for (const step of WIDEN_STEPS) {
       if (s.enough || extra >= MAX_WIDEN_COUNTS) break;
@@ -167,8 +187,8 @@ export const filterGenerateStage: Stage = async (ctx) => {
       extra++;
       const c = await count(w.filters);
       if (c === 'error' || c === null) break; // keep the last counted plan
-      filters = w.filters; s.widened.push(w.note); counts.push({ step: w.note, freeCount: c });
-      set(c);
+      filters = w.filters; s.widened.push(w.note);
+      await set(c, filters, w.note);
     }
     return { s, filters };
   });
@@ -195,7 +215,7 @@ export const filterGenerateStage: Stage = async (ctx) => {
   return {
     dryRun: false, filters: f, airtableFields, discoLikeCompanies: pulled.length, reviewedCompanies: reviewRows.length,
     labels: { used: plan.used.map(pct), heldBack: plan.heldBack.map(pct), skipped: plan.skipped.map(pct), companies: plan.total, minCoverage: 60 },
-    sizing: { leadGoal: sized.s.leadGoal, source: sized.s.source, companiesNeeded, freeCount: sized.s.freeCount, expectedReal: sized.s.expectedReal, enough: sized.s.enough, widened: sized.s.widened, counts: sized.s.counts, leadsPerCompany: lpc, countYield: yieldShare },
+    sizing: { leadGoal: sized.s.leadGoal, source: sized.s.source, companiesNeeded, freeCount: sized.s.freeCount, findable: sized.s.findable ?? null, findableCapped: sized.s.findableCapped ?? false, expectedReal: sized.s.expectedReal, enough: sized.s.enough, widened: sized.s.widened, counts: sized.s.counts, leadsPerCompany: lpc, countYield: yieldShare },
     message: summary || 'search plan generated; review it before running the first 100 companies',
   };
 };

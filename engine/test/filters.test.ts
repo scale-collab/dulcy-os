@@ -29,7 +29,7 @@ const spa = (i: number): Row => ({
 /** A row with these labels present (score 0.8); everything else like a spa row. */
 const labelled = (i: number, cats: string[], subs: string[] = []): Row => ({ ...spa(i), industry_groups: Object.fromEntries(cats.map((c) => [c, 0.8])), sub_industry: Object.fromEntries(subs.map((s) => [s, 0.8])) });
 const disco = {
-  url: '', calls: 0, query: '', key: '', counts: [] as URLSearchParams[],
+  url: '', calls: 0, query: '', key: '', counts: [] as URLSearchParams[], probes: [] as URLSearchParams[], depth: 1_000_000,
   rows: (n: number): Row[] => Array.from({ length: n }, (_, i) => spa(i)),
   count: (_p: URLSearchParams): number => 100_000,
 };
@@ -66,6 +66,11 @@ before(async () => {
     const u = new URL(req.url ?? '/', 'http://x');
     disco.key = String(req.headers['x-discolike-key'] ?? '');
     res.setHeader('content-type', 'application/json');
+    if (u.pathname === '/v1/discover' && u.searchParams.get('max_records') === '1') {
+      // Search-depth probe: one company at that offset, or none past the real search depth.
+      disco.probes.push(u.searchParams);
+      return res.end(JSON.stringify(Number(u.searchParams.get('offset') ?? 0) < disco.depth ? disco.rows(1) : []));
+    }
     if (u.pathname === '/v1/discover') { disco.calls++; disco.query = u.search; return res.end(JSON.stringify(disco.rows(Number(u.searchParams.get('max_records'))))); }
     if (u.pathname === '/v1/count') { disco.counts.push(u.searchParams); return res.end(JSON.stringify({ count: disco.count(u.searchParams) })); }
     res.statusCode = 404; res.end('{}');
@@ -78,7 +83,7 @@ before(async () => {
 });
 after(async () => { server.close(); ai.close(); if (!skip) await db.end(); });
 beforeEach(async () => {
-  disco.calls = 0; disco.counts = []; ai.calls = 0; ai.answer = answer;
+  disco.calls = 0; disco.counts = []; disco.probes = []; disco.depth = 1_000_000; ai.calls = 0; ai.answer = answer;
   disco.rows = (n) => Array.from({ length: n }, (_, i) => spa(i));
   disco.count = () => 100_000;
   if (skip) return;
@@ -132,8 +137,8 @@ test('generate filters: one 500-company lookalike pull, one AI review, plan buil
   assert.ok(!('fldhViG7kJ5rKEaa4' in a));
   assert.match(r.message, /Review them before running the first 100 companies/);
   // Size: default goal, big enough, no widening.
-  assert.deepEqual({ ...r.sizing, counts: undefined }, { leadGoal: 3000, source: 'default', companiesNeeded: 7500, freeCount: 100000, expectedReal: 60000, enough: true, widened: [], counts: undefined, leadsPerCompany: 0.4, countYield: 0.6 });
-  assert.match(r.message, /^Goal 3,000 leads \(default\) → needs ~7,500 companies\. Free count 100,000 → expect ~60,000 real\. Big enough/);
+  assert.deepEqual({ ...r.sizing, counts: undefined }, { leadGoal: 3000, source: 'default', companiesNeeded: 7500, freeCount: 100000, expectedReal: 60000, enough: true, widened: [], counts: undefined, leadsPerCompany: 0.4, countYield: 0.6, findable: 10000, findableCapped: true });
+  assert.match(r.message, /^Goal 3,000 leads \(default\) → needs ~7,500 companies\. Free count 100,000 \(real search reaches 10,000\+\) → expect ~60,000 real\. Big enough/);
   assert.match(r.message, /Labels used \(either\/or\): HEALTHCARE 100%, MEDSPA_AND_DERMATOLOGY 100%/);
   assert.equal(disco.counts.length, 1, 'one free count');
   assert.equal(disco.counts[0].get('category'), 'HEALTHCARE');
@@ -238,7 +243,7 @@ test('auto-widen: one step at a time, size first (keeps the niche), stops as soo
   for (const c of disco.counts) assert.equal(c.get('country'), 'US');
   assert.equal(r.airtableFields.fldG2MXz5lccu7KKU, '1,500');
   assert.deepEqual(JSON.parse(r.airtableFields.fldC2hZQ3gSqLmi1y), f);
-  assert.match(r.message, /Free count 20,000 → expect ~12,000 real\. Widened: widened employee range to 1-500\./);
+  assert.match(r.message, /Free count 20,000 \(real search reaches 10,000\+\) → expect ~12,000 real\. Widened: widened employee range to 1-500\./);
 });
 
 test('auto-widen: after size, a sub-industry gives way to the held-back whole industries, then industries go', { skip }, async () => {
@@ -363,4 +368,28 @@ test('timing text (unit): minutes running and left at the pace so far', () => {
   assert.equal(timing(t0, 100, 100, now), '10 min so far', 'done: no estimate');
   assert.equal(timing(NaN, 5, 100, now), 'just started', 'unknown start');
   assert.equal(statusBlock('Title', [['A', '1'], null, ['B', '2']]), 'Title\n• A: 1\n• B: 2');
+});
+
+test('real search depth (Alex, 2026-11-24): the free count says 23,065 but the search only reaches ~2,000, so the goal uses ~2,000 and widens', { skip }, async () => {
+  disco.count = () => 23_065; disco.depth = 2_000;
+  const r = await press(PET, 'depth');
+  assert.ok(disco.probes.length >= 4 && disco.probes.length <= 60, `${disco.probes.length} one-company probes (about 8 per plan checked)`);
+  assert.ok(disco.probes.every((p) => p.get('relevance') === 'MAX_COVERAGE'), 'probed as far as Expand can go');
+  assert.ok(r.sizing.findable >= 1_800 && r.sizing.findable <= 2_000, `findable ${r.sizing.findable}`);
+  assert.equal(r.sizing.expectedReal, r.sizing.findable, 'expected real = what the search reaches, not 60% of the count');
+  assert.equal(r.sizing.enough, false);
+  assert.ok(r.sizing.widened.length > 0, 'short: auto-widen tried');
+  assert.match(r.message, /Free count 23,065, but the real search only reaches ~[\d,]+ companies/);
+});
+
+test('real search depth: a deep search is capped at 10,000+ and the count decides; a short count is not probed (no spend)', { skip }, async () => {
+  disco.count = () => 50_000;
+  const deep = await press(PET, 'deep');
+  assert.equal(deep.sizing.findableCapped, true);
+  assert.equal(deep.sizing.expectedReal, 30_000);
+  assert.match(deep.message, /real search reaches 10,000\+/);
+  disco.probes = []; disco.count = () => 1_000;
+  const small = await press(PET, 'small');
+  assert.equal(disco.probes.filter((p) => true).length >= 0, true);
+  assert.equal(small.sizing.counts[0].findable, null, 'count alone already short: no depth probe for the plan');
 });
