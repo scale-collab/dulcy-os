@@ -61,9 +61,19 @@ export async function scheduleTick(db: Db, cfg: Config, now = Date.now(), at?: P
   return queued;
 }
 
+/** Sean (inbox agent): one sean.draft job per SEAN_EVERY_MIN slot. Off when 0. */
+export async function seanTick(db: Db, cfg: Config, now = Date.now()): Promise<number> {
+  if (!cfg.seanEveryMin) return 0;
+  const slot = Math.floor(now / (cfg.seanEveryMin * 60_000));
+  const def = STAGES['sean.draft'];
+  const r = await enqueue(db, { kind: 'sean.draft', recordId: 'sean', input: {}, requestId: `sean:${slot}`, dryRun: cfg.dryRun && !cfg.liveStages.includes('sean.draft'), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs });
+  return r.status === 'queued' ? 1 : 0;
+}
+
 export function startScheduler(db: Db, cfg: Config, signal: AbortSignal): void {
-  if (!cfg.bounceCheckEveryMin || cfg.bounceCheckWorkspaces.length === 0) return;
-  const tick = () => { void scheduleTick(db, cfg).catch((e) => console.error(JSON.stringify({ level: 'error', message: 'scheduler tick failed', err: String(e) }))); };
+  if ((!cfg.bounceCheckEveryMin || cfg.bounceCheckWorkspaces.length === 0) && !cfg.seanEveryMin) return;
+  const err = (e: unknown) => console.error(JSON.stringify({ level: 'error', message: 'scheduler tick failed', err: String(e) }));
+  const tick = () => { void scheduleTick(db, cfg).catch(err); void seanTick(db, cfg).catch(err); };
   tick();
   const t = setInterval(tick, 60_000);
   signal.addEventListener('abort', () => clearInterval(t));
