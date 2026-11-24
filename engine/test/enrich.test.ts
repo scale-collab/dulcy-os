@@ -139,3 +139,14 @@ test('Copy-friendly fallback (Alex 2026-11-21): the prompt step asks for one; le
   const g = google.written['sheet-en']['Final Generic'];
   assert.ok(g.slice(1).every((r) => r[g[0].indexOf('City')]), 'no blank city left in Final Generic');
 });
+
+test('fallbacks (unit): blank and "Not Found" values get the FALLBACK phrase; the report counts found vs fallback (2026-11-24)', async () => {
+  const { fillFallbacks } = await import('../src/stages/enrichment.js');
+  const prompt = '# VARIABLE: CITY\n## SCOPE\nThe city.\n## FALLBACK\nIf the value cannot be verified, return exactly: "your area"\n';
+  const built: any = { tabValues: { 'Final Direct': [['Email', 'CITY'], ['a@x.com', 'Miami'], ['b@x.com', ''], ['c@x.com', 'Not Found']] }, tabWritePlan: { 'Final Direct': { shouldWrite: false } } };
+  const report: Record<string, { used: number; leads: number; phrase: string }> = {};
+  assert.equal(fillFallbacks(built, prompt, [{ column: 'CITY' }], report), 2);
+  assert.deepEqual(built.tabValues['Final Direct'].slice(1).map((r: string[]) => r[1]), ['Miami', 'your area', 'your area']);
+  assert.deepEqual(report.CITY, { used: 2, leads: 3, phrase: 'your area' });
+  assert.equal(built.tabWritePlan['Final Direct'].shouldWrite, true, 'the filled values are written to the sheet');
+});
