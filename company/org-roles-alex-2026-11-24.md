@@ -1,6 +1,6 @@
 # Alex's role map (dictated 2026-11-24), raw notes for the agent design
 
-Status: Alex is still dictating (sales side not finished). Agent mapping comes after.
+Status: complete (3 voice memos). Agent mapping proposed in chat 2026-11-24, waiting for Alex's yes.
 
 ## Structure (Alex's "employee pod", designed ~5 years ago)
 - **Founder/CEO (Alex).** Wants an accountability agent: keeps his days productive, tracks how hard he is working, makes sure he misses nothing, across everything.
@@ -22,4 +22,18 @@ Status: Alex is still dictating (sales side not finished). Agent mapping comes a
 - **Automation agent.** Expert in GitHub, Make.com, n8n, coding, and client CRMs (HubSpot, GoHighLevel, Zoho, Close) plus the cold-funnel workflow set up for clients (HTML emails, workflows). Fixes issues on its own and reports: error, proposed fix, why it works, what was tested **with real data**, then asks for approval to go live.
 
 ## Sales side
-- **Head of Sales.** Manages closers, SDRs, appointment setters. Today Alex does all sales himself and wants to stay focused on selling while the company runs. (Alex's message was cut off here.)
+- **Head of Sales.** Manages closers, SDRs, appointment setters. Today Alex does all sales himself and wants to stay focused on selling while the company runs; he can't also do everything else.
+  - Knows Cole Gordon / Closers.io and every other sales asset. Replies and drafts must handle objections like the script does (e.g. "I need to think about it" -> "what do you need to think about?", never "sure, take your time"; the guarantee objection answered as specifically as the script).
+  - Later: role-play/mock calls with Alex. Reviews Alex's sales calls against the frameworks like Jackson Anderson's call reviews (what he said, pacing) and coaches him. Separate from Alex's personal coach.
+- Agents talk to each other and work together through the orchestrator without Alex's manual input.
+
+## Finance
+- **Accountant.** Every purchase goes through it first: looks at cash flow, upcoming credit card bills, statements, new and lost clients, forecast, and says whether the investment makes sense now. Alex can send it any invoice for a yes/no. Weekly Xero reconciliation (Saturdays) came up in the scratched first draft.
+- Personal finance/life: big asterisk, not now. **Claude = business only, ChatGPT = personal.**
+
+## Content
+- **Content agent.** Runs the Content Center workflow in Airtable: finds ideas with real demand (Reddit alone is "stinky"; search social and everywhere), writes scripts, makes Gamma docs to show in videos.
+  - Alex's week: Mon campaigns, Tue meetings, Wed check meetings are fine, Thu meetings, **Fri content day**, Sat-Sun off. By Friday everything for the videos must be ready.
+  - After recording: Alex drops files in a folder -> auto upload to Frame.io -> edited in OpusClip with the right features, in Alex's style (learned from his videos and other cold emailers' videos). Zero obvious mistakes (ChatGPT posted a reel with Alex's face shown twice under a text overlay: unacceptable).
+  - X/LinkedIn posts in Alex's style and the styles he follows; never AI slop.
+

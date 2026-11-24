@@ -94,6 +94,8 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-17] The repurposing counts (2 LinkedIn, 3-5 X, 2 short scripts, 1 carousel per source) are examples, not a weekly quota. No posting cadence is set yet. (Alex)
 
 ## How to work with Alex
+- [2026-11-24] Claude handles business only; ChatGPT handles personal. Nothing personal goes into the agents until Alex says so. (Alex)
+- [2026-11-24] Alex's week: Mon campaigns, Tue and Thu meetings, Wed check meetings, Fri content day, Sat-Sun off. Agents plan around it (content ready by Friday, campaign reviews on Monday). (Alex)
 - [2026-11-20] Until Alex says otherwise, Claude runs the engine end-to-end tests itself on Dulcy's own test lists, including the approval clicks (Company Sample Approved, Contact Sample Approved, QA Passed) and Build Campaign drafts. Never a launch, and never on a client's list. Reason: Alex wants it proven end to end before he tests. (Alex)
 - [2026-11-20] Dulcy agency lists: 1-200 employees is the better default than 1-50. (Alex)
 - [2026-11-18] Claude may merge its own pull requests into `main` without asking each time, only after the tests pass, and tells Alex each time. (Alex)
