@@ -49,13 +49,17 @@ beforeEach(async () => {
   if (!skip) await db.query('TRUNCATE jobs, steps, receipts, events RESTART IDENTITY CASCADE');
 });
 
-test('message: short lines, action named, details not in the main message', () => {
+test('message: blank line between facts, reply drafts quoted, action named, details not in the main message', () => {
   const m = decisionMessage({ id: 'r', fields: reply() });
-  assert.match(m, /^\*Sean · Dulcy:\* Reply to Jane at Acme/);
-  assert.match(m, /\*Issue:\* Jane asked for times/);
-  assert.match(m, /\*On ✅:\* Send Reply/);
+  assert.match(m, /^\*Sean · Dulcy\*\nReply to Jane at Acme\n\n\*Issue:\* Jane asked for times\n\n/);
+  assert.match(m, /\*On ✅:\* Send Reply$/);
   assert.doesNotMatch(m, /React/);
   assert.doesNotMatch(m, /Full thread here/);
+  const r = decisionMessage({ id: 'r', fields: reply({ [DF.action]: 'Approve Reply', [DF.client]: 'Client: Twenty West Media', [DF.fix]: 'Hi Jane,\n\nTue 2pm?' }) });
+  assert.match(r, /^\*Sean · Twenty West Media\*/);
+  assert.match(r, /\*They said:\* Jane asked for times/);
+  assert.match(r, /\*Draft reply:\*\n> Hi Jane,\n> \n> Tue 2pm\?/);
+  assert.match(r, /✅ send it {3}· {3}❌ skip it$/);
 });
 
 test('New → posted once with details in the thread; stranger reactions ignored; ✅ from Alex sends the reply (live)', { skip }, async () => {

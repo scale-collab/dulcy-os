@@ -25,13 +25,17 @@ const text = (v: unknown) => (v === undefined || v === null ? '' : typeof v === 
 /** The Slack message: one fact per line, the long part goes in the thread. */
 export function decisionMessage(r: AirtableRecord): string {
   const f = r.fields;
-  const head = `*${text(f[DF.agent]) || 'Agent'}${text(f[DF.client]) ? ` · ${text(f[DF.client])}` : ''}:* ${text(f[DF.title])}`;
-  const lines = [head];
-  if (text(f[DF.issue])) lines.push(`*Issue:* ${text(f[DF.issue])}`);
-  if (text(f[DF.checked])) lines.push(`*Checked:* ${text(f[DF.checked])}`);
-  if (text(f[DF.fix])) lines.push(`*Proposed:* ${text(f[DF.fix])}`);
-  if (text(f[DF.action]) && text(f[DF.action]) !== 'None') lines.push(`*On ✅:* ${text(f[DF.action])}`);
-  return lines.join('\n');
+  const reply = text(f[DF.action]) === 'Approve Reply';
+  const client = text(f[DF.client]).replace(/^Client:\s*/i, '');
+  const quote = (t: string) => t.split('\n').map((l) => `> ${l}`).join('\n');
+  // One block per fact with a blank line between, so it reads at a glance on a phone.
+  const blocks = [`*${text(f[DF.agent]) || 'Agent'}${client ? ` · ${client}` : ''}*\n${text(f[DF.title])}`];
+  if (text(f[DF.issue])) blocks.push(`*${reply ? 'They said' : 'Issue'}:* ${text(f[DF.issue])}`);
+  if (text(f[DF.checked])) blocks.push(`*${reply ? 'Why' : 'Checked'}:* ${text(f[DF.checked])}`);
+  if (text(f[DF.fix])) blocks.push(reply || text(f[DF.fix]).includes('\n') ? `*${reply ? 'Draft reply' : 'Proposed'}:*\n${quote(text(f[DF.fix]))}` : `*Proposed:* ${text(f[DF.fix])}`);
+  if (reply) blocks.push('✅ send it   ·   ❌ skip it');
+  else if (text(f[DF.action]) && text(f[DF.action]) !== 'None') blocks.push(`*On ✅:* ${text(f[DF.action])}`);
+  return blocks.join('\n\n');
 }
 
 export async function decisionsTick(db: Db, cfg: Config, at: Pick<AirtableClient, 'list' | 'update'>, slack: Pick<SlackClient, 'post' | 'reactions' | 'react'>): Promise<{ posted: number; decided: number; started: number; finished: number }> {
