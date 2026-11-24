@@ -109,6 +109,25 @@ export function createBisonClient(o: BisonOptions) {
       const r = await call('POST', `/api/replies/${replyId}/reply`, { message, reply_all: true, inject_previous_email_body: true, content_type: 'text' }, { write: true });
       return { id: Number(r?.data?.reply?.id ?? 0) };
     },
+    /** The reply with every older and newer message of its thread. */
+    async conversationThread(replyId: number): Promise<{ current_reply: any; newer_messages: any[]; older_messages: any[] }> {
+      const r = await call('GET', `/api/replies/${replyId}/conversation-thread`);
+      return { current_reply: r?.data?.current_reply ?? null, newer_messages: r?.data?.newer_messages ?? [], older_messages: r?.data?.older_messages ?? [] };
+    },
+    async senderEmail(id: number): Promise<{ id: number; email: string }> {
+      const r = await call('GET', `/api/sender-emails/${id}`);
+      return { id: Number(r?.data?.id ?? 0), email: String(r?.data?.email ?? r?.data?.email_address ?? '').toLowerCase() };
+    },
+    /** Reply to the prospect only (the same body the Airtable "Send Email" button sends): one To, explicit CC/BCC. */
+    async replyTo(replyId: number, p: { html: string; senderEmailId: number; to: { name: string; email: string }; cc: string[]; bcc: string[] }): Promise<{ id: number; folder: string }> {
+      const r = await call('POST', `/api/replies/${replyId}/reply`, {
+        inject_previous_email_body: true, message: p.html, sender_email_id: p.senderEmailId, content_type: 'html', reply_all: false,
+        to_emails: [{ name: p.to.name, email_address: p.to.email }],
+        cc_emails: p.cc.map((e) => ({ name: '', email_address: e })), bcc_emails: p.bcc.map((e) => ({ name: '', email_address: e })),
+      }, { write: true });
+      const reply = r?.data?.reply ?? {};
+      return { id: Number(reply.id ?? 0), folder: String(reply.folder ?? reply.status ?? '').toLowerCase() };
+    },
     async getCampaign(id: number): Promise<Record<string, any>> {
       const r = await call('GET', `/api/campaigns/${id}`);
       return r?.data ?? r ?? {};

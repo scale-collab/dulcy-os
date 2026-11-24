@@ -10,6 +10,7 @@ import { bridgeTick } from './airtable/bridge.js';
 import { skipBouncePauseIds } from './airtable/campaignActions.js';
 import { createSlackClient } from './providers/slack.js';
 import { decisionsTick } from './decisions/loop.js';
+import { repliesTick } from './agents/replies.js';
 
 /**
  * EmailBison IDs the bounce check must never pause ("Skip Bounce Pause" ticked in Campaign
@@ -91,6 +92,8 @@ export function startDecisions(db: Db, cfg: Config, signal: AbortSignal): void {
     try {
       const r = await decisionsTick(db, cfg, at, slack);
       if (r.posted || r.decided || r.started || r.finished) console.log(JSON.stringify({ level: 'info', message: 'decisions', ...r }));
+      const p = await repliesTick(db, cfg, at, slack);
+      if (p.queued || p.skipped || p.closed) console.log(JSON.stringify({ level: 'info', message: 'replies', ...p }));
     } catch (e) {
       console.error(JSON.stringify({ level: 'error', message: 'decisions tick failed', err: String(e) }));
     } finally { busy = false; }

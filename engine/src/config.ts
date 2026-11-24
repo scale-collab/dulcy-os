@@ -35,8 +35,11 @@ export interface Config {
   seanEveryMin: number;
   seanDays: number;
   seanMaxPerRun: number;
-  calendlyToken?: string;
-  calendlyEventSlug: string;
+  /** Dulcy calendar service (client calendars) and its read-only token. */
+  calendarUrl: string;
+  calendarReaderToken?: string;
+  /** Engine sends approved replies for every workspace (off until the n8n sender is switched off). */
+  replySenderOn: boolean;
   /** Max provider units (credits/rows) per job, per provider. */
   capPerJob: number;
   /** Max provider units per day, per provider. */
@@ -131,8 +134,9 @@ export function loadConfig(env = process.env): Config {
     seanEveryMin: num('SEAN_EVERY_MIN', 0, env),
     seanDays: num('SEAN_DAYS', 14, env),
     seanMaxPerRun: num('SEAN_MAX_PER_RUN', 20, env),
-    calendlyToken: env.CALENDLY_TOKEN || undefined,
-    calendlyEventSlug: env.CALENDLY_EVENT_SLUG || 'outreach-consultation',
+    calendarUrl: env.CALENDAR_URL || 'http://dulcy-calendar:8789',
+    calendarReaderToken: env.CALENDAR_READER_TOKEN || undefined,
+    replySenderOn: (env.REPLY_SENDER || 'off').toLowerCase() === 'on',
     capPerJob: num('CAP_PER_JOB', 100_000, env),
     capPerDay: num('CAP_PER_DAY', 100_000, env),
     legacyContactsEnd: env.LEGACY_CONTACTS_END || '2026-11-24T00:00:00Z', // Alex 2026-11-24: one way only, the Contacts Run

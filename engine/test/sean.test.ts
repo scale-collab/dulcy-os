@@ -8,7 +8,7 @@ import { createPool, migrate, type Db } from '../src/db/pool.js';
 import { loadConfig, type Config } from '../src/config.js';
 import { enqueue, getJob } from '../src/queue.js';
 import { runOnce } from '../src/worker.js';
-import { EMAILS, EF, waitingFormula } from '../src/agents/emailsFields.js';
+import { EMAILS, EF, RA, SETTINGS, REPLY_LEARNING, waitingFormula } from '../src/agents/emailsFields.js';
 import { DECISIONS, DF } from '../src/decisions/fields.js';
 import { clientFileFor } from '../src/agents/knowledge.js';
 
@@ -17,7 +17,7 @@ const skip = !url ? 'TEST_DATABASE_URL not set' : false;
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 let db: Db;
 let atServer: http.Server, claudeServer: http.Server, atUrl = '', claudeUrl = '';
-let emails: Record<string, Record<string, unknown>>, decisions: Record<string, Record<string, unknown>>;
+let emails: Record<string, Record<string, unknown>>, decisions: Record<string, Record<string, unknown>>, booked: Record<string, unknown>[], settings: Record<string, unknown>[], formulas: string[];
 let claudeAnswers: Record<string, unknown>[], claudeCalls: any[];
 
 function cfg(over: Partial<Config> = {}): Config {
@@ -32,7 +32,7 @@ async function run(conf: Config) {
 }
 const thread = (over: Record<string, unknown> = {}) => ({
   [EF.leadName]: 'Jane Doe', [EF.company]: 'Acme', [EF.subject]: 'Re: idea', [EF.workspace]: '66', [EF.replyId]: '555',
-  [EF.latestReplyAt]: '2026-11-24T15:00:00.000Z', [EF.latestReply]: 'Sounds interesting, what would this cost?', [EF.history]: 'Us: hi\nJane: Sounds interesting', [EF.replyUuid]: 'uuid-1', ...over,
+  [EF.latestReplyAt]: '2026-11-24T15:00:00.000Z', [EF.latestReply]: 'Sounds interesting, what would this cost?', [EF.history]: 'Us: hi\nJane: Sounds interesting', [EF.replyUuid]: 'uuid-1', [RA.clients]: ['recynyHPighsOPpjd'], ...over,
 });
 
 before(async () => {
@@ -40,18 +40,28 @@ before(async () => {
     const u = new URL(req.url ?? '/', 'http://x'); const table = u.pathname.split('/')[3];
     res.setHeader('content-type', 'application/json');
     if (req.method === 'GET') {
-      assert.equal(table, EMAILS);
-      assert.match(u.searchParams.get('filterByFormula') ?? '', /Last Email Sent By Prospect/);
-      return res.end(JSON.stringify({ records: Object.entries(emails).map(([id, fields]) => ({ id, fields })) }));
+      const formula = u.searchParams.get('filterByFormula') ?? ''; formulas.push(formula);
+      if (table === EMAILS && /Last Email Sent By Prospect/.test(formula)) return res.end(JSON.stringify({ records: Object.entries(emails).map(([id, fields]) => ({ id, fields })) }));
+      if (table === EMAILS) return res.end(JSON.stringify({ records: booked.map((fields, i) => ({ id: `recBooked${i}`, fields })) }));
+      if (table === SETTINGS) return res.end(JSON.stringify({ records: settings.map((fields, i) => ({ id: `recSet${i}`, fields })) }));
+      if (table === REPLY_LEARNING) return res.end(JSON.stringify({ records: [] }));
+      return res.end(JSON.stringify({ records: [] }));
     }
     let body = ''; req.on('data', (c) => (body += c));
-    req.on('end', () => { const b = JSON.parse(body); const out = b.records.map((r: any) => { const id = `recDec${String(Object.keys(decisions).length).padStart(11, '0')}`; decisions[id] = r.fields; return { id, fields: r.fields }; }); res.end(JSON.stringify({ records: out })); });
+    req.on('end', () => {
+      const b = JSON.parse(body);
+      const out = b.records.map((r: any) => {
+        if (req.method === 'PATCH') { Object.assign(emails[r.id] ??= {}, r.fields); return r; }
+        const id = `recDec${String(Object.keys(decisions).length).padStart(11, '0')}`; decisions[id] = r.fields; return { id, fields: r.fields };
+      });
+      res.end(JSON.stringify({ records: out }));
+    });
   });
   claudeServer = http.createServer((req, res) => {
     let body = ''; req.on('data', (c) => (body += c));
     req.on('end', () => {
       claudeCalls.push({ headers: req.headers, body: JSON.parse(body) });
-      const answer = claudeAnswers.shift() ?? { action: 'skip', reason: 'none', they_said: '', draft: '', question_for_alex: '' };
+      const answer = claudeAnswers.shift() ?? { action: 'skip', intent: 'Other', reason: 'none', they_said: '', draft: '', question_for_alex: '' };
       res.setHeader('content-type', 'application/json');
       res.end(JSON.stringify({ id: 'msg_1', type: 'message', role: 'assistant', model: 'claude-opus-5-5', content: [{ type: 'text', text: JSON.stringify(answer) }], stop_reason: 'end_turn', stop_details: null, usage: { input_tokens: 10, output_tokens: 10 } }));
     });
@@ -62,7 +72,7 @@ before(async () => {
 });
 after(async () => { atServer.close(); claudeServer.close(); if (!skip) await db.end(); });
 beforeEach(async () => {
-  emails = {}; decisions = {}; claudeAnswers = []; claudeCalls = [];
+  emails = {}; decisions = {}; claudeAnswers = []; claudeCalls = []; booked = []; formulas = []; settings = [{ 'Calendar Link': 'https://calendly.com/client/intro', 'Calendar Settings JSON': '{}' }];
   if (!skip) await db.query('TRUNCATE jobs, steps, receipts, events, sean_drafts RESTART IDENTITY CASCADE');
 });
 
@@ -81,9 +91,9 @@ test('reply → Send Reply decision; ask_alex → no action; skip → nothing; e
   emails.recB = thread({ [EF.leadName]: 'Bob', [EF.replyId]: '556' });
   emails.recC = thread({ [EF.leadName]: 'Cy', [EF.latestReply]: 'Out of office until Monday' });
   claudeAnswers = [
-    { action: 'reply', reason: 'asked about fit', they_said: 'Wants to know more', draft: 'Hi Jane, happy to walk you through it. Does Tue 2pm ET work?', question_for_alex: '' },
-    { action: 'ask_alex', reason: 'price not approved', they_said: 'Asked the price', draft: 'Hi Bob, [GAP: price]', question_for_alex: 'What price can we quote?' },
-    { action: 'skip', reason: 'out of office', they_said: 'OOO', draft: '', question_for_alex: '' },
+    { action: 'reply', intent: 'Interested', reason: 'asked about fit', they_said: 'Wants to know more', draft: 'Hi Jane, happy to walk you through it. Does Tue 2pm ET work?', question_for_alex: '' },
+    { action: 'ask_alex', intent: 'Cost Objection', reason: 'price not approved', they_said: 'Asked the price', draft: 'Hi Bob, [GAP: price]', question_for_alex: 'What price can we quote?' },
+    { action: 'skip', intent: 'Out of Office', reason: 'out of office', they_said: 'OOO', draft: '', question_for_alex: '' },
   ];
   const j = await run(cfg());
   assert.equal(j.job.status, 'succeeded', j.job.error ?? '');
@@ -96,15 +106,27 @@ test('reply → Send Reply decision; ask_alex → no action; skip → nothing; e
   assert.match(req.system[1].text, /Client file: .*Twenty West/i);
   assert.match(req.messages[0].content, /Sounds interesting/);
 
+  // Drafts land on the reply rows (Reply Queue) ...
+  assert.equal(emails.recA[RA.state], 'Needs Approval');
+  assert.equal(emails.recA[RA.draft], 'Hi Jane, happy to walk you through it. Does Tue 2pm ET work?');
+  assert.equal(emails.recA[RA.intent], 'Interested');
+  assert.equal(emails.recA[RA.humanAction], 'None');
+  assert.equal(emails.recA[RA.eventId], 'bison:recynyHPighsOPpjd:555');
+  assert.equal(emails.recA[RA.seanReason], 'asked about fit');
+  assert.equal(emails.recB[RA.seanInput], 'What price can we quote?');
+  assert.equal(emails.recC[RA.state], 'Skipped');
+  assert.equal(emails.recC[RA.draft], '');
+  // ... and in Slack: ✅ presses the same Approve.
   const ds = Object.values(decisions);
   assert.equal(ds.length, 2);
-  const send = ds.find((d) => d[DF.action] === 'Send Reply')!;
+  const send = ds.find((d) => d[DF.action] === 'Approve Reply')!;
   assert.equal(send[DF.agent], 'Sean');
-  assert.equal(send[DF.status], 'New');
-  assert.deepEqual(JSON.parse(String(send[DF.actionInput])), { workspaceId: 66, replyId: 555, message: 'Hi Jane, happy to walk you through it. Does Tue 2pm ET work?', emailsRecordId: 'recA', latestReplyAt: '2026-11-24T15:00:00.000Z' });
+  assert.equal(send[DF.emailsRecord], 'recA');
   const ask = ds.find((d) => d[DF.action] === 'None')!;
   assert.match(String(ask[DF.title]), /Need your input/);
   assert.match(String(ask[DF.checked]), /What price/);
+  // No live calendar: the client's saved booking link is offered.
+  assert.match(claudeCalls[0].body.system.at(-1).text, /calendly\.com\/client\/intro/);
 
   const again = await run(cfg());
   assert.equal(again.job.status, 'succeeded');
@@ -113,16 +135,17 @@ test('reply → Send Reply decision; ask_alex → no action; skip → nothing; e
 
   // The prospect writes again → a new draft for that thread.
   emails.recA[EF.latestReplyAt] = '2026-11-24T18:00:00.000Z';
-  claudeAnswers = [{ action: 'reply', reason: 'r', they_said: 's', draft: 'Hi Jane again', question_for_alex: '' }];
+  claudeAnswers = [{ action: 'reply', intent: 'Interested', reason: 'r', they_said: 's', draft: 'Hi Jane again', question_for_alex: '' }];
   await run(cfg());
   assert.equal(claudeCalls.length, 4);
 });
 
 test('reply with no EmailBison reply ID becomes "need your input" (cannot be sent)', { skip }, async () => {
   emails.recA = thread({ [EF.replyId]: '' });
-  claudeAnswers = [{ action: 'reply', reason: 'r', they_said: 's', draft: 'Hi', question_for_alex: '' }];
+  claudeAnswers = [{ action: 'reply', intent: 'Interested', reason: 'r', they_said: 's', draft: 'Hi', question_for_alex: '' }];
   await run(cfg());
   assert.equal(Object.values(decisions)[0][DF.action], 'None');
+  assert.match(String(emails.recA[RA.seanInput]), /No EmailBison reply ID/);
 });
 
 test('dry run (not in LIVE_STAGES): Claude not called, no decisions', { skip }, async () => {
@@ -131,4 +154,5 @@ test('dry run (not in LIVE_STAGES): Claude not called, no decisions', { skip }, 
   assert.equal(j.job.status, 'succeeded');
   assert.equal(claudeCalls.length, 0);
   assert.equal(Object.keys(decisions).length, 0);
+  assert.equal(emails.recA[RA.state], undefined, 'dry run writes nothing to the row');
 });

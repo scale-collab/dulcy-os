@@ -1,6 +1,8 @@
 // Small n8n fixes through the n8n API (run on the server, keys typed in, never saved).
 //   placement-30 : [Inbox Placement Tests] Check Results runs every 30 min instead of every 1 min
 //   lock-actions : EmailBison Actions webhook requires header X-Dulcy-Key (value from ACTIONS_KEY)
+//   replier-off  : switch off the old n8n Reply Agent (drafters, follow-up scheduler, sender, reconcile, provision) when Sean goes live
+//   replier-on   : switch them back on (undo)
 // Usage:
 //   read -s -p "n8n API key: " K; echo; docker exec -i -e N8N_API_KEY="$K" -e FIX=placement-30 deploy-engine-1 node --input-type=module - < /opt/dulcy-os/automations/n8n-fix.mjs
 const BASE = process.env.N8N_URL || 'https://n8n.dulcy.io';
@@ -40,4 +42,11 @@ if (FIX === 'placement-30') {
   hook.credentials = { ...(hook.credentials ?? {}), httpHeaderAuth: { id: cred.id, name: cred.name } };
   await save(w);
   console.log(`Done: "${w.name}" now refuses calls without the X-Dulcy-Key header (active: ${w.active}).`);
+} else if (FIX === 'replier-off' || FIX === 'replier-on') {
+  const ids = ['DulcyReplyClientPilotV4', 'DulcyClientDraftOnlyV1', 'DulcyPilotSchedulerV4', 'DulcyReplyPilotSenderV4', 'DulcyReplyRecoveryV4', 'X8o_bx_MBS0h0mmrGKas-'];
+  const verb = FIX === 'replier-off' ? 'deactivate' : 'activate';
+  for (const id of ids) {
+    try { const w = await api('POST', `/workflows/${id}/${verb}`); console.log(`${verb}d: ${w.name ?? id} (active: ${w.active})`); }
+    catch (e) { console.log(`could not ${verb} ${id}: ${e.message}`); }
+  }
 } else throw new Error(`unknown FIX ${FIX}`);

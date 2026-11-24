@@ -33,12 +33,14 @@ export function createAirtableClient(o: AirtableOptions) {
 
   return {
     /** Records matching a formula, only the named fields (all pages). */
-    async list(tableId: string, formula: string, fieldIds: string[], maxRecords = 100): Promise<AirtableRecord[]> {
+    async list(tableId: string, formula: string, fieldIds: string[], maxRecords = 100, opts: { byName?: boolean; sortField?: string; sortDesc?: boolean } = {}): Promise<AirtableRecord[]> {
       const out: AirtableRecord[] = [];
       let offset: string | undefined;
       do {
-        const q = new URLSearchParams({ filterByFormula: formula, returnFieldsByFieldId: 'true', pageSize: '100', maxRecords: String(maxRecords) });
+        // byName: fields come back keyed by name (for tables whose field IDs we do not keep).
+        const q = new URLSearchParams({ filterByFormula: formula, returnFieldsByFieldId: opts.byName ? 'false' : 'true', pageSize: '100', maxRecords: String(maxRecords) });
         for (const id of fieldIds) q.append('fields[]', id);
+        if (opts.sortField) { q.set('sort[0][field]', opts.sortField); q.set('sort[0][direction]', opts.sortDesc ? 'desc' : 'asc'); }
         if (offset) q.set('offset', offset);
         const r = await call('GET', `/${tableId}?${q}`);
         out.push(...(r.records ?? []).map((x: any) => ({ id: String(x.id), fields: x.fields ?? {} })));

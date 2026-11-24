@@ -290,3 +290,38 @@ Every bounce check (every `BOUNCE_CHECK_EVERY_MIN` minutes, all workspaces) also
 - Bounced, Total Leads Contacted, Progress
 
 This covers paused campaigns too, and runs every day of the week. Only records whose numbers changed are written. The bounce check message says how many were updated. A failed write never stops the check. (Before this, two Airtable automations did it Sun–Thu only, so Bounced looked too low.)
+
+## Sean: replies drafted for you, approved in Airtable or Slack (2026-11-24)
+
+**What happens:**
+1. **Find.** Every `SEAN_EVERY_MIN` minutes Sean finds interested replies waiting on Dulcy from the last 14 days. It skips threads the client handles, and threads that are booked or closed.
+2. **Draft.** Sean drafts each answer with Claude, using:
+   - your rules, Sean's skill, your Drive SOP findings and the creator methods;
+   - the client's own file;
+   - that client's real threads that **booked a meeting**;
+   - the replies you approved before.
+3. **Times.** Two real open times come from the client's own connected calendar. If there's none, Sean uses the client's saved booking link.
+4. **Where the draft lands.** On the reply's row in Airtable (Reply Queue): Draft, State "Needs Approval", Intent, **Sean Reason**, and **Sean Needs Your Input** when a fact is missing. It is also posted to Slack.
+
+**Approving.**
+- **Airtable:** Human Action = **Approve Draft** (sends the draft) or **Send Edited Reply** (sends Custom Reply).
+- **Slack:** ✅ presses the same Approve. ❌ (or Skip in Airtable) skips.
+
+**Sending.** One sender for every client. It sends once, to the prospect only, with the client's CC/BCC from the Reply Agent settings. It refuses when:
+- the prospect wrote again;
+- the thread has newer messages;
+- our side already answered;
+- a [GAP] marker is left in.
+
+**After sending:**
+- The row shows Sent.
+- Last Email Sent = By Dulcy.
+- A Reply Learning row is saved as **Approved**, and Sean learns from it.
+- The Slack thread says "Sent".
+
+**Always mirrored.** Sent or skipped from either Airtable or Slack shows in both.
+
+**Switches (server .env):**
+- `SEAN_EVERY_MIN` (0 = off) plus `sean.draft` in LIVE_STAGES (otherwise a dry run: Claude is not called).
+- `REPLY_SENDER=on` plus `reply.send` in LIVE_STAGES. Only after the old n8n replier is off (`automations/n8n-fix.mjs`, FIX=replier-off).
+- `CALENDAR_READER_TOKEN` for client calendars.

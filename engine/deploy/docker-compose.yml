@@ -18,7 +18,8 @@ services:
       GOOGLE_IMPERSONATE_USER: ${GOOGLE_IMPERSONATE_USER:-scale@dulcy.io}
     ports:
       - "127.0.0.1:8090:8080"
-    networks: [default, coolify]
+    # n8n's network: reaches the calendar service (dulcy-calendar:8789) for client availability.
+    networks: [default, coolify, n8n]
     labels:
       traefik.enable: "true"
       traefik.docker.network: coolify
@@ -52,3 +53,6 @@ volumes:
 networks:
   coolify:
     external: true
+  n8n:
+    external: true
+    name: jo00woww0kwo840gs0o08wgg
