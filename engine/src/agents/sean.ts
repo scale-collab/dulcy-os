@@ -99,7 +99,7 @@ export const seanDraftStage: Stage = async (ctx) => {
   const max = Number(ctx.job.input.max ?? cfg.seanMaxPerRun) || 20;
 
   const recs = await at.list(EMAILS, waitingFormula(days), [...Object.values(EF), RA.clients, RA.wsRecord], 200);
-  const done = new Set((await ctx.db.query(`SELECT email_record || '|' || reply_at AS k FROM sean_drafts`)).rows.map((r: any) => String(r.k)));
+  const done = new Set((await ctx.db.query(`SELECT email_record || '|' || reply_at AS k FROM sean_drafts WHERE action <> 'dry_run'`)).rows.map((r: any) => String(r.k)));
   const todo = recs.filter((r) => !done.has(`${r.id}|${val(r.fields[EF.latestReplyAt])}`)).slice(0, max);
   if (!todo.length) return { message: `${recs.length} waiting replies, none new`, waiting: recs.length, drafted: 0 };
 
@@ -170,7 +170,7 @@ export const seanDraftStage: Stage = async (ctx) => {
           });
         }
       }
-      await ctx.db.query(`INSERT INTO sean_drafts (email_record, reply_at, action, reason, decision_id) VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING`,
+      await ctx.db.query(`INSERT INTO sean_drafts (email_record, reply_at, action, reason, decision_id) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (email_record, reply_at) DO UPDATE SET action = EXCLUDED.action, reason = EXCLUDED.reason, decision_id = EXCLUDED.decision_id WHERE sean_drafts.action = 'dry_run'`,
         [r.id, replyAt, ctx.dryRun ? 'dry_run' : action, d.reason.slice(0, 500), decisionId || null]);
       counts[action as 'reply' | 'skip' | 'ask_alex']++;
       return { decisionId };

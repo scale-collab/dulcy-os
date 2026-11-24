@@ -122,7 +122,7 @@ export const seanFollowupStage: Stage = async (ctx) => {
 
   const recs = await at.list(EMAILS, dueFormula(), [...Object.values(EF), RA.clients, RA.wsRecord, RA.policy, RA.dueAt, RA.followupType, RA.intent], 200);
   const keyOf = (r: { id: string; fields: Record<string, unknown> }) => `${r.id}|followup:${val(r.fields[RA.dueAt])}`;
-  const done = new Set((await ctx.db.query(`SELECT email_record || '|' || reply_at AS k FROM sean_drafts`)).rows.map((r: any) => String(r.k)));
+  const done = new Set((await ctx.db.query(`SELECT email_record || '|' || reply_at AS k FROM sean_drafts WHERE action <> 'dry_run'`)).rows.map((r: any) => String(r.k)));
   const todo = recs.filter((r) => !done.has(keyOf(r))).slice(0, max);
   if (!todo.length) return { message: `${recs.length} follow-ups due, none new`, due: recs.length, drafted: 0 };
 
@@ -140,7 +140,7 @@ export const seanFollowupStage: Stage = async (ctx) => {
     const policy = policyOf(f);
     const sent = Number(policy.seanFollowupsSent ?? 0) || 0;
     const record = (action: string, reason: string, decisionId = '') => ctx.db.query(
-      `INSERT INTO sean_drafts (email_record, reply_at, action, reason, decision_id) VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING`,
+      `INSERT INTO sean_drafts (email_record, reply_at, action, reason, decision_id) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (email_record, reply_at) DO UPDATE SET action = EXCLUDED.action, reason = EXCLUDED.reason, decision_id = EXCLUDED.decision_id WHERE sean_drafts.action = 'dry_run'`,
       [r.id, `followup:${val(f[RA.dueAt])}`, ctx.dryRun ? 'dry_run' : action, reason.slice(0, 500), decisionId || null]);
 
     // The prospect answered after our last email: that is a reply for Sean's normal drafting, not a follow-up.
