@@ -38,7 +38,7 @@ function match(row: Record<string, unknown>, id: string, f: string): boolean {
   if (/Human Action\}='Approve Draft'/.test(f)) return ['Approve Draft', 'Send Edited Reply'].includes(String(row[RA.humanAction])) && !['Sent', 'Sending', 'Suppressed', 'Thread Complete'].includes(String(row[RA.state]));
   if (/Human Action\}='Skip'/.test(f)) return row[RA.humanAction] === 'Skip';
   const er = /\{Emails Record\}='(rec\w+)'/.exec(f)?.[1];
-  if (er) return row[DF.emailsRecord] === er && (/\{Status\}='Approved'\)?$/.test(f) && !/OR\(/.test(f) ? row[DF.status] === 'Approved' : ['New', 'Waiting', 'Approved'].includes(String(row[DF.status])));
+  if (er) return row[DF.emailsRecord] === er && (/\{Status\}='Approved'\)?$/.test(f) && !/OR\(/.test(f) ? row[DF.status] === 'Approved' : [...f.matchAll(/\{Status\}='(\w+)'/g)].map((m) => m[1]).includes(String(row[DF.status])));
   if (/\{Emails Record\}!=''/.test(f)) return !!row[DF.emailsRecord] && ['New', 'Waiting'].includes(String(row[DF.status]));
   const st = /^\{Status\}='(\w+)'$/.exec(f)?.[1];
   if (st) return row[DF.status] === st;
@@ -126,6 +126,17 @@ test('approve in Airtable → sent once with client CC; row, learning and Slack 
   assert.equal((await repliesTick(db, conf, at(), slack)).queued, 0);
   await settle(conf);
   assert.equal((bison as any).repliesSent.length, 1);
+});
+
+test('a send that works after an earlier failure closes the Failed decision too', { skip }, async () => {
+  tables[EMAILS].recAAAAAAAAAAAAAA = row();
+  tables[DECISIONS].recD = { [DF.emailsRecord]: 'recAAAAAAAAAAAAAA', [DF.status]: 'Failed', [DF.action]: 'Approve Reply', [DF.slackChannel]: 'C1', [DF.slackTs]: 'ts9' };
+  const conf = cfg();
+  assert.equal((await repliesTick(db, conf, at(), slack)).queued, 1);
+  await settle(conf);
+  assert.equal((bison as any).repliesSent.length, 1);
+  assert.equal(tables[DECISIONS].recD[DF.status], 'Done');
+  assert.match(posts.at(-1)!.text, /Sent/);
 });
 
 test('✅ in Slack presses the same Approve; the thread says it was sent', { skip }, async () => {
