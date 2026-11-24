@@ -109,7 +109,7 @@ export function loadConfig(env = process.env): Config {
     slackWebhookUrl: env.SLACK_WEBHOOK_URL || undefined,
     slackBotToken: env.SLACK_BOT_TOKEN || undefined,
     slackBaseUrl: env.SLACK_BASE_URL || 'https://slack.com/api',
-    slackDecisionsChannel: env.SLACK_DECISIONS_CHANNEL || '#dulcy-decisions',
+    slackDecisionsChannel: env.SLACK_DECISIONS_CHANNEL || 'C0B581HNSMR',
     slackApprovers: (env.SLACK_APPROVERS ?? 'U070Z26377C,U0ADSEJ9SDR').split(',').map((x) => x.trim()).filter(Boolean),
     decisionsPollMs: num('DECISIONS_POLL_MS', 30_000, env),
     capPerJob: num('CAP_PER_JOB', 100_000, env),
