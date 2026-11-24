@@ -147,6 +147,8 @@ Not checked by the engine yet (do these yourself before pressing Launch): the **
 
 ## 4. Statuses and what to do
 
+- **Lead List Stage follows the work** (Alex, 2026-11-24): after Generate filters → Targeting, first 100 → Searching, Expand → Source Imported, Find Contacts → Contacts Ready, Verify → Verification, Skip Enrichment → QA, QA passed → Ready. It only moves forward: re-running an earlier step never pulls a list back (e.g. from Ready).
+
 - **While Expand, Find Contacts or Verify runs**, the Engine Message shows a short block, one fact per line, updated as it goes (Alex, 2026-11-24), e.g.:
   ```
   Finding contacts (DiscoLike Contacts Run) · batch 1

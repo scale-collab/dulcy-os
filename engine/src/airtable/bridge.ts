@@ -366,6 +366,15 @@ export function resultFields(kind: string, res: any): Record<string, unknown> {
   return {};
 }
 
+/** Lead List Stage (single select) and its order; the engine moves it forward after each step. */
+const LIST_STAGE = 'fld8nrebRFL0O8kgj';
+const STAGE_ORDER = ['Draft', 'Source & ICP', 'Targeting', 'Searching', 'Source Imported', 'Contacts Ready', 'Verification', 'Enrichment', 'QA', 'Ready', 'Uploaded'];
+export const STAGE_AFTER: Record<string, string> = {
+  'leadlist.filters': 'Targeting', 'leadlist.sample': 'Searching', 'leadlist.expand': 'Source Imported',
+  'leadlist.contacts': 'Contacts Ready', 'leadlist.verify': 'Verification',
+};
+const stageRank = (x: string) => STAGE_ORDER.indexOf(x);
+
 /** Step 4: write progress and results of every job the bridge queued, once per change. */
 export async function syncResults(db: Db, at: AirtableClient): Promise<number> {
   const r = await db.query(
@@ -395,6 +404,13 @@ export async function syncResults(db: Db, at: AirtableClient): Promise<number> {
     if (state === 'Done') {
       const msg = `${j.dry_run ? 'Dry run (nothing spent): ' : ''}${j.result?.message ?? `${j.action} finished`}`;
       Object.assign(fields, resultFields(j.kind, j.result), { [F.processingStatus]: 'Completed', [F.completedAt]: new Date().toISOString(), [F.engineMessage]: msg, [F.workflowMessage]: msg, [F.workflowError]: null });
+      // Lead List Stage follows the work (Alex, 2026-11-24); it only moves forward, never back.
+      const nextStage = !j.result || j.result.dryRun ? undefined : STAGE_AFTER[j.kind]; // real runs only (as resultFields)
+      if (nextStage && !(j.result?.airtableFields && LIST_STAGE in j.result.airtableFields)) {
+        const cur = await at.get(LEAD_LISTS, j.record_id, [LIST_STAGE]).catch(() => null);
+        const now = String((cur?.fields?.[LIST_STAGE] as any)?.name ?? cur?.fields?.[LIST_STAGE] ?? '');
+        if (stageRank(nextStage) > stageRank(now) && !['Failed', 'Archived'].includes(now)) fields[LIST_STAGE] = nextStage;
+      }
       // "Use DiscoGen Deep Review" ticked (Lead List Center checkbox): the deep review runs on its
       // own after the sample (first 100) and after each expand (the rest) (Alex, 2026-11-23).
       if (!j.dry_run && ['leadlist.sample', 'leadlist.expand'].includes(j.kind) && await deepReviewWanted(at, j.record_id)) {
