@@ -28,7 +28,9 @@ let reacts: Record<string, { name: string; users: string[] }[]>;
 const slack = {
   async post(channel: string, text: string, thread?: string) { posts.push({ channel, text, thread }); return { channel: 'C1', ts: thread ?? `ts${posts.length}` }; },
   async reactions(_c: string, ts: string) { return reacts[ts] ?? []; },
+  async react(_c: string, ts: string, name: string) { botReacts.push(`${ts}:${name}`); (reacts[ts] ??= []).push({ name, users: ['UBOT'] }); },
 };
+let botReacts: string[];
 
 function cfg(over: Partial<Config> = {}): Config {
   return { ...loadConfig({ ENGINE_SECRET: 'x'.repeat(40), DATABASE_URL: url ?? 'postgres://x' } as NodeJS.ProcessEnv), emailBisonKeys: { dulcy: bison.key }, emailBisonBaseUrl: bison.url, dryRun: true, liveStages: [], airtableApiKey: undefined, ...over };
@@ -43,7 +45,7 @@ const reply = (over: Record<string, unknown> = {}) => ({
 before(async () => { bison = await startFakeBison(); if (skip) return; db = createPool(url!); await migrate(db); });
 after(async () => { bison.close(); if (!skip) await db.end(); });
 beforeEach(async () => {
-  rows = {}; posts = []; reacts = {}; (bison as any).repliesSent = [];
+  rows = {}; posts = []; reacts = {}; botReacts = []; (bison as any).repliesSent = [];
   if (!skip) await db.query('TRUNCATE jobs, steps, receipts, events RESTART IDENTITY CASCADE');
 });
 
@@ -62,6 +64,9 @@ test('New → posted once with details in the thread; stranger reactions ignored
   assert.equal(rows.rec1[DF.status], 'Waiting');
   assert.equal(posts.length, 2);
   assert.equal(posts[1].thread, 'ts1');
+  assert.deepEqual(botReacts, ['ts1:white_check_mark', 'ts1:x'], 'bot pre-adds ✅ and ❌');
+  await decisionsTick(db, conf, at as any, slack as any);
+  assert.equal(rows.rec1[DF.status], 'Waiting', "the bot's own reactions never decide");
   await decisionsTick(db, conf, at as any, slack as any);
   assert.equal(posts.length, 2, 'never posted twice');
 

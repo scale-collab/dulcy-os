@@ -42,6 +42,11 @@ export async function decisionsTick(db: Db, cfg: Config, at: Pick<AirtableClient
     const m = await slack.post(cfg.slackDecisionsChannel, decisionMessage(r));
     await at.update(DECISIONS, r.id, { [DF.slackChannel]: m.channel, [DF.slackTs]: m.ts, [DF.status]: 'Waiting' });
     if (text(r.fields[DF.details])) await slack.post(m.channel, text(r.fields[DF.details]), m.ts);
+    // Pre-add ✅ and ❌ so a decision is one tap. Only approvers' taps count (the bot's own never do).
+    // Without the reactions:write scope this is skipped; reacting by hand still works.
+    for (const name of ['white_check_mark', 'x']) {
+      try { await slack.react(m.channel, m.ts, name); } catch (e) { console.error(JSON.stringify({ level: 'warn', message: 'could not pre-add reaction (add reactions:write to the Slack app)', err: String(e) })); break; }
+    }
     posted++;
   }
 
