@@ -8,6 +8,16 @@ Last updated: 2026-11-24 (full end-to-end run from Airtable done)
 - **Built today (engine):** Generate filters for every niche (500-company pull, labels only at 60%+, sub-industry alone, soft 3,000-lead goal, auto-widen size first); business model + example sites only when they fit; Expand switches to MAX_COVERAGE when BALANCED runs out; live line-by-line progress (Expand, Contacts, Verify); Lead List Stage follows the steps; contacts = DiscoLike Contacts Run only; ALL CAPS company names fixed at build; Build stops on empty copy variables; QA still needs the copy (Alex's correction).
 - **Server (2026-11-24):** updates installed + reboot, disk 74.5% (n8n keeps 7 days of runs now), keys for phone + PC (via GitHub keys).
 - **Next / open:** 1) Real search-depth check in Generate filters: built 2026-11-24. 2) Fallbacks: already built 2026-11-21 (each variable's FALLBACK section in the enrichment prompt; the engine fills blanks/Not Found); enrichment now reports found vs fallback per variable. 3) Auto-tidy finished lists (keeps the engine DB small). 4) Switch the main pages to the engine versions. 5) Bounce check live (needs the server setting names). 6) n8n memory cap 6144 → 3072 and Hetzner backups (Alex, optional). 7) Old n8n lead tables (~3 GB, used until 2026-11-21): keep 2-4 weeks, then export and remove; maybe import the ~300k old email checks into the engine.
+- **Backlog from Alex (2026-11-24), in his words, to plan with the agents:**
+  - Agents (Riley, Atlas, Sean…) as real triggered agents, not just skills: Decisions loop (Slack ✅/❌ + Airtable log) first.
+  - n8n audit: list every workflow, what is active, what moves to the engine; tag each "engine", "n8n only" or "n8n + engine".
+  - Analytics: daily 3 AM stats sync is fine; check it. Inbox placement tests often fail: check. Bounce counts in Airtable are too low vs EmailBison: investigate. Verifier breakdown stats (share of replies by MillionVerifier / LeadMagic / DiscoLike): check whether still active.
+  - Google Sheet shared with the client at approval: set to Commenter automatically.
+  - Store city, state, zip, country and full address on every lead (for LinkedIn, direct mail and callers later).
+  - Project management table: agents create/update tasks as they work, with the agent (Claude) as owner and status moving with the workflow.
+  - HeyReach: test once Alex reactivates it.
+  - Content center (Sienna): plan with Alex.
+  - LeadMagic slow bulk (19 rows/min): support says bulk jobs have their own queue limits and the priority call does nothing; they ask Alex to message them in-app (signed in) quoting ticket T-1619. Engine option: run single Email Finder calls in parallel (300/min limit) instead of bulk.
 - **To do later:** header auth on the n8n sync-bison-senders webhook; EmailGuard + claims-vs-proof are not automatic launch checks yet; missing company names should be filled from the company list automatically.
 
 ## Done
