@@ -19,7 +19,7 @@ import { createHash } from 'node:crypto';
 import type { Stage } from './index.js';
 import type { JobContext } from '../context.js';
 import { NeedsReviewError, PermanentError, RetryableError, WaitError } from '../errors.js';
-import { timing } from '../leadlist/timing.js';
+import { statusBlock, timing } from '../leadlist/timing.js';
 import { createDiscoLikeClient } from '../providers/discolike.js';
 import { createSheetsClient } from '../providers/google.js';
 import { createOpenAIClient } from '../providers/openai.js';
@@ -188,7 +188,11 @@ export const contactsFindStage: Stage = async (ctx) => {
     await ctx.step(`mirror-${b}`, () => mirrorContacts(ctx.db, sheets, listId));
     const searched = Math.min(plan.domains.length, (i + 1) * batchSize);
     const usable = batches.reduce((n, x) => n + (Number(x.tier1) || 0) + (Number(x.tier2) || 0), 0);
-    await ctx.progress(`Finding contacts: batch ${i + 1} of ${nBatches} done. ${searched.toLocaleString('en-US')} of ${plan.domains.length.toLocaleString('en-US')} companies searched, ${usable.toLocaleString('en-US')} usable contacts so far, ${timing(t0, searched, plan.domains.length)}.`);
+    await ctx.progress(statusBlock(`Finding contacts · batch ${i + 1} of ${nBatches} done`, [
+      ['Companies', `${searched.toLocaleString('en-US')} of ${plan.domains.length.toLocaleString('en-US')} searched`],
+      ['Contacts found', `${usable.toLocaleString('en-US')} usable`],
+      ['Time', timing(t0, searched, plan.domains.length)],
+    ]));
   }
   const contraGen = input.contraGen && !input.contactsRun ? await runContraGen(ctx, listId, input, perCompany, () => profile) : undefined;
   await ctx.step('mirror-final', () => rewriteContactTabs(ctx.db, sheets, listId));
@@ -308,7 +312,12 @@ async function contactsRun(
       const started = Date.parse(String(s?.created_at ?? ''));
       if (Number.isFinite(started) && Date.now() - started > RUN_MAX_WAIT_MS) throw new NeedsReviewError(`DiscoLike Contacts run ${runId} still "${st}" after 10 hours; check it in DiscoLike (Tasks)`);
       const doneCos = Number(s?.companies_processed ?? s?.companies_done ?? s?.progress?.companies_done ?? 0);
-      throw new WaitError(`DiscoLike Contacts run (batch ${r.batch}, ${r.domains.length.toLocaleString('en-US')} companies): ${st || 'running'}, ${doneCos ? `${doneCos.toLocaleString('en-US')} companies done, ` : ''}${Number(s?.contacts_total ?? 0).toLocaleString('en-US')} validated contacts so far, ${timing(started, doneCos, r.domains.length)}`, RUN_POLL_MS);
+      throw new WaitError(statusBlock(`Finding contacts (DiscoLike Contacts Run) · batch ${r.batch}`, [
+        ['Status', st || 'running'],
+        ['Companies', doneCos ? `${doneCos.toLocaleString('en-US')} of ${r.domains.length.toLocaleString('en-US')} done` : `${r.domains.length.toLocaleString('en-US')} sent`],
+        ['Contacts found', `${Number(s?.contacts_total ?? 0).toLocaleString('en-US')} with a checked email`],
+        ['Time', timing(started, doneCos, r.domains.length)],
+      ]), RUN_POLL_MS);
     }
     return { companies: Number(s?.companies_total ?? r.domains.length), contacts: Number(s?.contacts_total ?? 0), spentUsd: String(s?.summary?.spent_usd ?? s?.total_charged_usd ?? ''), stopReason: s?.summary?.stop_reason ?? null };
   }, { timeoutMs: 5 * 60_000 });

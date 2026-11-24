@@ -147,7 +147,15 @@ Not checked by the engine yet (do these yourself before pressing Launch): the **
 
 ## 4. Statuses and what to do
 
-- **While Expand runs**, the Engine Message shows a live line after every batch, e.g. "Expanding: batch 3 done. 1,200 of 10,000 usable (1,250 checked). Running 6 min, about 44 min left." The time left is based on the pace so far (Alex, 2026-11-24).
+- **While Expand, Find Contacts or Verify runs**, the Engine Message shows a short block, one fact per line, updated as it goes (Alex, 2026-11-24), e.g.:
+  ```
+  Finding contacts (DiscoLike Contacts Run) · batch 1
+  • Status: running
+  • Companies: 85 of 100 done
+  • Contacts found: 115 with a checked email
+  • Time: 3 min so far · about 1 min left
+  ```
+  The time left uses the pace so far.
 - **Expand never stops early just because the closer matches ran out:** if the search uses BALANCED (or MAX_RELEVANCE) and DiscoLike runs out before the target, Expand continues on MAX_COVERAGE and the message says "Search widened from BALANCED to MAX_COVERAGE". Every company is still fit-checked (pet e-com test, 2026-11-24: BALANCED stopped at 1,568 of 10,000).
 - **Find Contacts and Verify** show the same kind of line: contacts "batch 4 of 12 done, 2,000 of 6,000 companies searched, 1,450 usable contacts so far, running 9 min, about 18 min left"; Verify "MillionVerifier job …: 40% complete (8,200 emails), running 6 min, about 9 min left" and the same for LeadMagic.
 

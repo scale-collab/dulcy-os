@@ -10,7 +10,7 @@ import { enqueue, getJob } from '../src/queue.js';
 import { runOnce } from '../src/worker.js';
 import { loadConfig, type Config } from '../src/config.js';
 import { startFakeOpenAI, type FakeOpenAI } from './fakes/openai.js';
-import { timing } from '../src/leadlist/timing.js';
+import { statusBlock, timing } from '../src/leadlist/timing.js';
 import { applyLabels, applyModelsAndExamples, labelCoverage, widerEmployeeRange } from '../src/leadlist/filterSizing.js';
 
 const url = process.env.TEST_DATABASE_URL;
@@ -358,8 +358,9 @@ test('business model and example sites (unit): only when they fit (live pet e-co
 
 test('timing text (unit): minutes running and left at the pace so far', () => {
   const t0 = 0, now = 10 * 60_000;
-  assert.equal(timing(t0, 25, 100, now), 'running 10 min, about 30 min left');
-  assert.equal(timing(t0, 0, 100, now), 'running 10 min', 'no progress yet: no estimate');
-  assert.equal(timing(t0, 100, 100, now), 'running 10 min', 'done: no estimate');
-  assert.equal(timing(NaN, 5, 100, now), 'running', 'unknown start');
+  assert.equal(timing(t0, 25, 100, now), '10 min so far · about 30 min left');
+  assert.equal(timing(t0, 0, 100, now), '10 min so far', 'no progress yet: no estimate');
+  assert.equal(timing(t0, 100, 100, now), '10 min so far', 'done: no estimate');
+  assert.equal(timing(NaN, 5, 100, now), 'just started', 'unknown start');
+  assert.equal(statusBlock('Title', [['A', '1'], null, ['B', '2']]), 'Title\n• A: 1\n• B: 2');
 });
