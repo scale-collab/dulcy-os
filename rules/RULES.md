@@ -80,6 +80,7 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-21] Enrichment fallback: a lead the research cannot answer gets a short fallback phrase that fits the email copy (e.g. a city -> "your area"), never a blank or "Not Found". The prompt step writes the phrase into each variable's FALLBACK section; Alex reviews it before Run. Reason: blank values made QA block the whole list (28 of 466 in the first test). (Alex)
 
 ## Replies and inbox
+- [2026-11-24] Draft mode (Alex): only threads waiting on Dulcy are drafted; threads marked Client Handling stay with the client (Twenty West takeover undecided). Dulcy meeting times come from Alex's Calendly. After Alex approves a draft, Claude/the engine sends it from EmailBison. (Alex)
 - [2026-11-17] AI reply drafts are review-only. Josh or Alex approve every outgoing reply. Reply Agent pilot is on for Dulcy only, in Human in the Loop mode. (Reply Agent SOP, Oct 7)
 - [2026-11-17] Respect unsubscribes and stop requests. Never override suppression. (Reply Agent SOP)
 

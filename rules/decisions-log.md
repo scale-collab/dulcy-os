@@ -169,3 +169,4 @@ Newest at the bottom. Format: `date | decision | why | who`
 - 2026-11-24 — Bounce check goes live across all workspaces; Skip Bounce Pause ticked on the 10 flagged campaigns under 6% (Alex: keep them sending while the lists are fixed). 6 campaigns at 6%+ will pause.
 - 2026-11-24 — Alex dictated his full role map (company/org-roles-alex-2026-11-24.md); Claude business-only, GPT personal; weekly rhythm logged.
 - 2026-11-24 — Alex approved 9 active agents (Forge folded into Scribe; Pixel, Lex, Harper parked), Sean + decisions loop first, and Claude drafting replies for his approval on 11-25 while Josh is out.
+- 2026-11-24 — Decisions loop built: Airtable Decisions table + Slack #dulcy-decisions ✅/❌ (Alex, Josh count); first action Send Reply (never twice, stops if the prospect wrote again). Alex: client-handled threads stay with the client; Dulcy times from his Calendly; Claude sends approved replies.

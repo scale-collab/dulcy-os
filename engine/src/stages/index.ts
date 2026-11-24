@@ -14,6 +14,7 @@ import { deepContactsStage } from './deepContacts.js';
 import { automatedQaStage } from './automatedQa.js';
 import { enrichPromptStage, enrichRunStage } from './enrichment.js';
 import { restartStage, skipEnrichStage } from './listControl.js';
+import { sendReplyStage } from './decisionAct.js';
 
 /** A stage = one Airtable action. It returns a small result for the Airtable record. */
 export type Stage = (ctx: JobContext) => Promise<Record<string, unknown>>;
@@ -46,6 +47,7 @@ const selfTest: Stage = async (ctx) => {
 };
 
 export const STAGES: Record<string, StageDef> = {
+  'decision.send_reply': { run: sendReplyStage, deadlineMs: 10 * 60_000, maxAttempts: 3, description: 'Send an approved reply in an EmailBison thread (from the Decisions table). Never sends twice; stops if the prospect wrote again.' },
   'engine.selftest': { run: selfTest, deadlineMs: 5 * 60_000, maxAttempts: 3, description: 'End-to-end check of the engine itself. Spends nothing.' },
   'leadlist.verify': {
     run: verifyStage,
