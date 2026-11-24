@@ -9,6 +9,7 @@
 //    out (shortfall reported), or at the batch limit. Target is clamped to 100-100,000.
 import { createHash } from 'node:crypto';
 import type { Stage } from './index.js';
+import { statusBlock, timing } from '../leadlist/timing.js';
 import { PermanentError } from '../errors.js';
 import { createDiscoLikeClient } from '../providers/discolike.js';
 import { createSheetsClient } from '../providers/google.js';
@@ -74,9 +75,12 @@ export const companyExpandStage: Stage = async (ctx) => {
   // Live timing line (batch, count vs target, minutes running, minutes left at the current pace).
   const t0 = Date.now(); const startUsable = (await listCounts(ctx.db, listId)).usable;
   const tick = async (batchNo: number, c: { usable: number; total: number }) => {
-    const mins = (Date.now() - t0) / 60_000; const gained = c.usable - startUsable;
-    const left = gained > 0 ? Math.max(0, Math.round(((target - c.usable) / gained) * mins)) : null;
-    await ctx.progress(`Expanding: batch ${batchNo} done. ${c.usable.toLocaleString('en-US')} of ${target.toLocaleString('en-US')} usable (${c.total.toLocaleString('en-US')} checked). Running ${Math.round(mins)} min${left !== null ? `, about ${left} min left` : ''}.`);
+    const gained = c.usable - startUsable;
+    await ctx.progress(statusBlock(`Expanding companies · batch ${batchNo} done`, [
+      ['Usable', `${c.usable.toLocaleString('en-US')} of ${target.toLocaleString('en-US')}`],
+      ['Checked', `${c.total.toLocaleString('en-US')} companies`],
+      ['Time', timing(t0, Math.max(0, gained), Math.max(0, gained) + Math.max(0, target - c.usable))],
+    ]));
   };
   let stop: 'target' | 'exhausted' | 'batch-limit' = 'batch-limit';
   // Auto-widen the search depth (Alex, 2026-11-24): BALANCED / MAX_RELEVANCE stop where DiscoLike's
@@ -118,7 +122,7 @@ export const companyExpandStage: Stage = async (ctx) => {
       if (below && (rel === 'BALANCED' || rel === 'MAX_RELEVANCE')) {
         widenedRelevance = await ctx.step(`relevance-widen-${b}`, async () => rel);
         filtersNow = { ...filtersNow, relevance: 'MAX_COVERAGE' };
-        await ctx.progress(`Expanding: DiscoLike ran out of ${rel} matches at batch ${b}; continuing with MAX_COVERAGE (every company is still fit-checked).`);
+        await ctx.progress(statusBlock(`Expanding companies · search widened`, [['Why', `DiscoLike ran out of ${rel} matches at batch ${b}`], ['Now', 'continuing with MAX_COVERAGE (every company is still fit-checked)']]));
         continue;
       }
       stop = 'exhausted'; break;
