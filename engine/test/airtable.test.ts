@@ -181,6 +181,12 @@ test('progress and results are written back once per change', { skip }, async ()
   assert.equal(rec()[F.engineStatus], 'Running');
   assert.equal(rec()[F.processingStatus], 'Running');
   assert.ok(rec()[F.startedAt]);
+  // Live timing line while running (Alex, 2026-11-24): written when it changes, not re-written otherwise.
+  await db.query(`UPDATE jobs SET progress=$2 WHERE id=$1`, [id, 'Expanding: batch 3 done. 1,200 of 10,000 usable. Running 6 min, about 44 min left.']);
+  assert.equal(await syncResults(db, at()), 1);
+  assert.equal(rec()[F.engineStatus], 'Running');
+  assert.match(String(rec()[F.engineMessage]), /batch 3 done.*about 44 min left/);
+  assert.equal(await syncResults(db, at()), 0, 'same line: nothing written');
 
   await snooze(db, id, 60_000, 'MillionVerifier 40% done');
   await syncResults(db, at());

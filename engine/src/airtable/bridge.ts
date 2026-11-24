@@ -377,7 +377,8 @@ export async function syncResults(db: Db, at: AirtableClient): Promise<number> {
     const waiting = j.status === 'queued' && j.progress;
     const state = j.status === 'succeeded' ? 'Done' : j.status === 'failed' ? 'Failed' : j.status === 'needs_review' ? 'Needs Review'
       : j.status === 'running' ? 'Running' : waiting ? 'Waiting' : 'Queued';
-    const key = `${state}|${waiting ? j.progress : ''}`;
+    const live = state === 'Running' && j.progress ? String(j.progress) : '';
+    const key = `${state}|${waiting ? j.progress : live}`;
     if (key === j.written) continue;
     if (j.target_table === CAMPAIGNS) {
       // Build Campaign (from the Lead List or the campaign) vs the other Campaign Center buttons.
@@ -389,6 +390,7 @@ export async function syncResults(db: Db, at: AirtableClient): Promise<number> {
     const fields: Record<string, unknown> = { [F.engineStatus]: state };
     const finished = ['Done', 'Failed', 'Needs Review'].includes(state);
     if (state === 'Running') Object.assign(fields, { [F.processingStatus]: 'Running', ...(j.written?.startsWith('Running') || j.written?.startsWith('Waiting') ? {} : { [F.startedAt]: new Date().toISOString() }) });
+    if (live) Object.assign(fields, { [F.engineMessage]: live, [F.workflowMessage]: live });
     if (state === 'Waiting') Object.assign(fields, { [F.processingStatus]: 'Waiting', [F.engineMessage]: String(j.progress), [F.workflowMessage]: String(j.progress) });
     if (state === 'Done') {
       const msg = `${j.dry_run ? 'Dry run (nothing spent): ' : ''}${j.result?.message ?? `${j.action} finished`}`;

@@ -71,6 +71,13 @@ export const companyExpandStage: Stage = async (ctx) => {
   await ctx.step('mirror-sample', () => mirrorCompanies(ctx.db, sheets, listId));
 
   const maxBatches = Math.min(100, Math.ceil(target / batchSize) * 2 + 2);
+  // Live timing line (batch, count vs target, minutes running, minutes left at the current pace).
+  const t0 = Date.now(); const startUsable = (await listCounts(ctx.db, listId)).usable;
+  const tick = async (batchNo: number, c: { usable: number; total: number }) => {
+    const mins = (Date.now() - t0) / 60_000; const gained = c.usable - startUsable;
+    const left = gained > 0 ? Math.max(0, Math.round(((target - c.usable) / gained) * mins)) : null;
+    await ctx.progress(`Expanding: batch ${batchNo} done. ${c.usable.toLocaleString('en-US')} of ${target.toLocaleString('en-US')} usable (${c.total.toLocaleString('en-US')} checked). Running ${Math.round(mins)} min${left !== null ? `, about ${left} min left` : ''}.`);
+  };
   let stop: 'target' | 'exhausted' | 'batch-limit' = 'batch-limit';
   const batches: Array<Record<string, number>> = [];
   for (let i = 0; i < maxBatches; i++) {
@@ -98,6 +105,7 @@ export const companyExpandStage: Stage = async (ctx) => {
     }, { timeoutMs: 15 * 60_000 });
     batches.push(out);
     await ctx.step(`mirror-${b}`, () => mirrorCompanies(ctx.db, sheets, listId));
+    await tick(b, await listCounts(ctx.db, listId));
     if (out.pulled < out.requested || out.new === 0) { stop = 'exhausted'; break; }
   }
 
