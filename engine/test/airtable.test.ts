@@ -203,7 +203,19 @@ test('progress and results are written back once per change', { skip }, async ()
   assert.equal(rec()[F.companyStatus], 'Passed');
   assert.match(String(rec()[F.companySummary]), /directory: 5/);
   assert.ok(rec()[F.completedAt]);
+  assert.equal(rec()['fld8nrebRFL0O8kgj'], 'Searching', 'Lead List Stage moves forward after the sample');
   assert.equal(await syncResults(db, at()), 0, 'finished jobs are not written again');
+});
+
+test('Lead List Stage only moves forward: a re-run sample never pulls a Ready list back', { skip }, async () => {
+  rec()['fld8nrebRFL0O8kgj'] = 'Ready';
+  press('Run Company Sample');
+  await pollActions(db, cfg(), at());
+  const id = Number(rec()[F.engineJobId]);
+  await finish(db, id, { dryRun: false, sample: { reviewed: 10, tier1: 9, tier2: 1, cut: 0, usableRate: 1, status: 'Passed' }, message: 'sample Passed' });
+  await syncResults(db, at());
+  assert.equal(rec()[F.engineStatus], 'Done');
+  assert.equal(rec()['fld8nrebRFL0O8kgj'], 'Ready');
 });
 
 test('a dry run writes its message only; a failure writes the error', { skip }, async () => {
