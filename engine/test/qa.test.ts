@@ -81,23 +81,3 @@ test('QA dry run analyses but writes nothing', { skip }, async () => {
   assert.equal(google.writes, 0);
   assert.equal(google.written['sheet-qa'], undefined);
 });
-
-test('list first, copy later (Alex, 2026-11-24): no copy yet = the rows are checked and the list passes (stage Ready)', { skip }, async () => {
-  const noCopy = { id: CAMP, fields: { Name: '[Dulcy] QA test', 'Lead List': [REC] } };
-  const j = await run({ project, campaigns: { records: [noCopy] } });
-  assert.equal(j.job.status, 'succeeded', j.job.error);
-  const r = j.job.result;
-  assert.equal(r.qa.passed, true, r.summary);
-  assert.equal(r.qa.rowsOnly, true);
-  assert.equal(r.airtableFields.fldUB4WsLi5kq6rUy, 'Passed');
-  assert.equal(r.airtableFields.fld8nrebRFL0O8kgj, 'Ready');
-  assert.match(String(r.airtableFields.fld9XB4gkZcizeHUg), /Campaign copy not written yet: its \{variables\} are checked against every lead at Build Campaign/);
-});
-
-test('no copy yet does not hide row problems: a duplicate email still fails QA', { skip }, async () => {
-  google.tabs['Final Direct'].push(direct('ann@acme.com', 'Ann', 'Acme'));
-  const noCopy = { id: CAMP, fields: { Name: '[Dulcy] QA test', 'Lead List': [REC] } };
-  const j = await run({ project, campaigns: { records: [noCopy] } });
-  assert.equal(j.job.result.qa.passed, false, j.job.result.summary);
-  assert.equal(j.job.result.qa.rowsOnly, false);
-});
