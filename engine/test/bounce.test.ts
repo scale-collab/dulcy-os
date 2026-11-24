@@ -116,3 +116,23 @@ test('all workspaces (Alex, 2026-11-24): one key checks every workspace it can r
   assert.equal(bison.campaigns.find((x) => x.id === 7)!.status, 'paused', 'the client campaign was paused in its own workspace');
   assert.match(j.job.result.message, /in 2 workspaces: 2 paused, 1 to watch/);
 });
+
+test('stats sync: EmailBison numbers → Airtable Campaigns, only changed records, paused ones too', async () => {
+  const { syncCampaignStats, SF } = await import('../src/campaign/statsSync.js');
+  const recs = [
+    { id: 'recA', fields: { [SF.id]: 601, [SF.bounced]: 10, [SF.sent]: 100, [SF.contacted]: 90, [SF.replies]: 1, [SF.interested]: 0, [SF.progress]: 0.5 } },
+    { id: 'recB', fields: { [SF.id]: 602, [SF.bounced]: 5, [SF.sent]: 50, [SF.contacted]: 40, [SF.replies]: 0, [SF.interested]: 0, [SF.progress]: 0.25 } },
+    { id: 'recC', fields: { [SF.id]: 999 } },
+  ];
+  const writes: { id: string; f: Record<string, unknown> }[] = [];
+  const at = { async list() { return recs; }, async update(_t: string, id: string, f: Record<string, unknown>) { writes.push({ id, f }); } };
+  const r = await syncCampaignStats(at as any, [
+    { id: 601, status: 'paused', bounced: 977, emails_sent: 42295, total_leads_contacted: 14841, unique_replies: 300, interested: 40, completion_percentage: 98.63 },
+    { id: 602, status: 'active', bounced: 5, emails_sent: 50, total_leads_contacted: 40, unique_replies: 0, interested: 0, completion_percentage: 25 },
+  ]);
+  assert.deepEqual(r, { updated: 1, matched: 2 });
+  assert.equal(writes[0].id, 'recA');
+  assert.equal(writes[0].f[SF.bounced], 977);
+  assert.equal(writes[0].f[SF.contacted], 14841);
+  assert.equal(writes[0].f[SF.progress], 0.9863);
+});
