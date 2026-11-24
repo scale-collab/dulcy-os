@@ -67,8 +67,15 @@ export async function seanTick(db: Db, cfg: Config, now = Date.now()): Promise<n
   if (!cfg.seanEveryMin) return 0;
   const slot = Math.floor(now / (cfg.seanEveryMin * 60_000));
   const def = STAGES['sean.draft'];
-  const r = await enqueue(db, { kind: 'sean.draft', recordId: 'sean', input: {}, requestId: `sean:${slot}`, dryRun: cfg.dryRun && !cfg.liveStages.includes('sean.draft'), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs });
-  return r.status === 'queued' ? 1 : 0;
+  const dryRun = cfg.dryRun && !cfg.liveStages.includes('sean.draft');
+  const r = await enqueue(db, { kind: 'sean.draft', recordId: 'sean', input: {}, requestId: `sean:${slot}`, dryRun, maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs });
+  let n = r.status === 'queued' ? 1 : 0;
+  if (cfg.seanFollowupsOn) {
+    const fd = STAGES['sean.followup'];
+    const q = await enqueue(db, { kind: 'sean.followup', recordId: 'sean-followup', input: {}, requestId: `sean-followup:${slot}`, dryRun, maxAttempts: fd.maxAttempts, deadlineMs: fd.deadlineMs });
+    if (q.status === 'queued') n++;
+  }
+  return n;
 }
 
 export function startScheduler(db: Db, cfg: Config, signal: AbortSignal): void {
