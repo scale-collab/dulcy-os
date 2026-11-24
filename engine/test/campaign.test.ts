@@ -85,6 +85,8 @@ test('leads: dedupe, company clean-up, first-name fallback, attribution, copy co
   assert.throws(() => prepareLeads(TAB, { campaignId: 1, outputType: 'direct', tags: ['Country'] }), /blocked/);
   const bad = [HEADER, ['x@y.com', 'MillionVerifier', 'Risky', 'X', 'Y', 'Z', 'z.com', '', '', '', 'direct', '', '']];
   assert.throws(() => prepareLeads(bad, { campaignId: 1, outputType: 'direct', tags: [] }), /not verified Good/);
+  const emptyCity = TAB.map((r, i) => (i === 1 ? r.map((v, k) => (TAB[0][k] === 'City' ? '' : v)) : r));
+  assert.throws(() => prepareLeads(emptyCity, { campaignId: 1, outputType: 'direct', tags: ['CITY'] }), /\{CITY\} \(empty for 1 lead\)/, 'a used variable must be filled for every lead');
   const gen = prepareLeads(TAB, { campaignId: 1, outputType: 'generic', tags: [] });
   assert.equal(gen.rows[0][gen.headers.indexOf('first_name')], 'Acme Roofing', 'generic first name = company');
 });
