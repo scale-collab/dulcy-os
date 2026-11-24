@@ -25,6 +25,8 @@ const legacy = async (name: string, input: Items, earlier: Record<string, Items>
 };
 const BY_NAME = Object.fromEntries(Object.entries(LEAD_LIST_FIELDS).map(([id, name]) => [name, id]));
 const quote = (t: string) => `'${t.replace(/'/g, "''")}'`;
+const COPY_MISSING = /No populated final sequence steps|No current (?:direct|generic) campaign copy contract|validated sequence copy before campaign creation/i;
+const QA_STATUS = 'fldUB4WsLi5kq6rUy', LIST_STAGE = 'fld8nrebRFL0O8kgj', QA_SUMMARY = 'fld9XB4gkZcizeHUg';
 
 export const automatedQaStage: Stage = async (ctx) => {
   const input = ctx.job.input as unknown as QaInput;
@@ -58,7 +60,19 @@ export const automatedQaStage: Stage = async (ctx) => {
   }, { timeoutMs: 10 * 60_000 });
 
   const q = analysis.p;
-  const head = { rows: q.rowCount, passed: q.structuralPass === true, rejected: q.rejectedRows, duplicates: q.duplicateCount, requiredPass: q.requiredPass, deliveryPass: q.deliveryPass, configurationIssues: q.configurationIssues ?? [] };
+  // Alex's order (2026-11-24): the lead list is built first, the copy is written after. When the
+  // ONLY problems are "no copy yet", the rows are checked and the list can pass (stage Ready); the
+  // copy's {variables} are checked against every lead at Build Campaign instead.
+  const issues: string[] = q.configurationIssues ?? [];
+  const copyNotWritten = q.structuralPass !== true && issues.length > 0 && issues.every((m) => COPY_MISSING.test(String(m)))
+    // (the old requiredPass needs a copy contract, so without copy the row checks decide: no
+    // flagged rows, no duplicates, every email verified Good)
+    && q.deliveryPass !== false && !(Number(q.duplicateCount) > 0) && !(Number(q.rejectedRows) > 0);
+  if (copyNotWritten) {
+    q.structuralPass = true;
+    q.summary = `Rows passed QA (${q.rowCount} rows): emails verified Good, required fields present, no duplicates.\nCampaign copy not written yet: its {variables} are checked against every lead at Build Campaign.`;
+  }
+  const head = { rows: q.rowCount, passed: q.structuralPass === true, rowsOnly: copyNotWritten, rejected: q.rejectedRows, duplicates: q.duplicateCount, requiredPass: q.requiredPass, deliveryPass: q.deliveryPass, configurationIssues: q.configurationIssues ?? [] };
   if (ctx.dryRun) return { dryRun: true, qa: head, summary: q.summary, message: `dry run: QA would be ${head.passed ? 'Passed' : 'Failed'} (${head.rows} rows, ${head.rejected} flagged); nothing written` };
 
   const link = await ctx.step('write-review', async () => {
@@ -81,6 +95,7 @@ export const automatedQaStage: Stage = async (ctx) => {
       if (!id) throw new PermanentError(`QA: unknown Lead Lists field "${name}"`);
       byId[id] = v;
     }
+    if (copyNotWritten) Object.assign(byId, { [QA_STATUS]: 'Passed', [LIST_STAGE]: 'Ready', [QA_SUMMARY]: q.summary, fldWDSDICYaL9SQEa: true });
     return byId;
   });
 

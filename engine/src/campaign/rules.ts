@@ -166,6 +166,7 @@ export function prepareLeads(table: string[][], o: { campaignId: number; outputT
   const seen = new Set<string>();
   const rows: string[][] = [];
   let droppedNoEmail = 0, droppedDuplicate = 0, droppedInvalid = 0;
+  const emptyTags: Record<string, number> = {};
   for (const row of table.slice(1)) {
     const email = cell(row, idx.email).toLowerCase();
     if (!email) { droppedNoEmail++; continue; }
@@ -173,6 +174,9 @@ export function prepareLeads(table: string[][], o: { campaignId: number; outputT
     if (seen.has(email)) { droppedDuplicate++; continue; }
     if (statusI >= 0 && cell(row, statusI) && cell(row, statusI).toLowerCase() !== 'good') throw new PermanentError('the lead tab has a row that is not verified Good; only Final tabs can be uploaded');
     seen.add(email);
+    // Every {variable} the copy uses must be filled for this lead (QA checks rows before the copy
+    // exists, so this is where copy and leads meet; Alex, 2026-11-24).
+    for (const [tag, i] of Object.entries(tagIndex)) if (!cell(row, i)) emptyTags[tag] = (emptyTags[tag] ?? 0) + 1;
     const company = cleanCompany(cell(row, idx.company));
     const first = o.outputType === 'generic' ? (company || 'Team') : (cell(row, idx.first_name) || company || 'Team');
     const values: Record<string, string> = {
@@ -189,6 +193,8 @@ export function prepareLeads(table: string[][], o: { campaignId: number; outputT
     values[attribution] = JSON.stringify({ provider, emailType, path, sourceVersion: cell(row, attr('Source Version')), originalResult: cell(row, attr('Original MillionVerifier Result')) || 'Unknown' });
     rows.push(headers.map((h) => values[h] ?? ''));
   }
+  const gaps = Object.entries(emptyTags);
+  if (gaps.length) throw new PermanentError(`the copy uses ${gaps.map(([t, nn]) => `{${t}} (empty for ${nn} lead${nn === 1 ? '' : 's'})`).join(', ')}; fill or remove those leads on the list, rerun QA, then Build Campaign again`);
   if (rows.length === 0) throw new PermanentError('no uploadable leads in the tab');
   const columnsToMap: Record<string, string> = {};
   for (const h of headers) columnsToMap[h] = h;

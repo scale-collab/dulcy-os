@@ -147,6 +147,8 @@ Not checked by the engine yet (do these yourself before pressing Launch): the **
 
 ## 4. Statuses and what to do
 
+- **List first, copy later** (Alex, 2026-11-24): Run QA checks the leads (verified Good, required fields, no duplicates). If the linked campaign has no copy yet, QA still passes on the rows and the list goes to **Ready**; the summary says "Campaign copy not written yet". **Build Campaign** then checks the copy against every lead: each {variable} the copy uses must be a column and filled for every lead, or the build stops and names the variable and how many leads are empty.
+
 - **Lead List Stage follows the work** (Alex, 2026-11-24): after Generate filters → Targeting, first 100 → Searching, Expand → Source Imported, Find Contacts → Contacts Ready, Verify → Verification, Skip Enrichment → QA, QA passed → Ready. It only moves forward: re-running an earlier step never pulls a list back (e.g. from Ready).
 
 - **While Expand, Find Contacts or Verify runs**, the Engine Message shows a short block, one fact per line, updated as it goes (Alex, 2026-11-24), e.g.:
