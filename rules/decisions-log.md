@@ -178,3 +178,4 @@ Newest at the bottom. Format: `date | decision | why | who`
 - 2026-11-24 — Sean v2 built: drafts land on the Emails rows (Reply Queue) + Slack; one engine sender for all workspaces with client CC/BCC; Airtable/Slack mirrored; Reply Learning rows saved as Approved; client calendars through the existing dulcy-calendar service (Google + Calendly already supported there). Off until Alex switches it on.
 - 2026-11-24 — Alex: swapped Scroll Stop's Reply Agent booking link to James's cal.com link; deployed; calendar reader key confirmed on the server.
 - 2026-11-24 — Approvals count only from a real click (Slack ✅ or Airtable Approve), never inferred from chat. 6 replies (Geoffrey, Matthew, Dean, Ana, Claudia, Cindy) were sent after Claude set Approve Draft on Alex's chat message.
+- 2026-11-24 — Alex corrected the line above: approving in Airtable on his chat word was the right call. Rule changed to allow it.
