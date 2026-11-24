@@ -150,6 +150,8 @@ Set **Contact Source** on the list before **Find Contacts**. **Leave it empty fo
 
 ## 4. Statuses and what to do
 
+- **While Expand runs**, the Engine Message shows a live line after every batch, e.g. "Expanding: batch 3 done. 1,200 of 10,000 usable (1,250 checked). Running 6 min, about 44 min left." The time left is based on the pace so far (Alex, 2026-11-24).
+
 | Engine Status | Meaning | What to do |
 |---|---|---|
 | Queued | Picked up, about to start | Nothing |

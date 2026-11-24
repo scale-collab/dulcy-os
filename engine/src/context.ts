@@ -42,6 +42,11 @@ export class JobContext {
   /** Dry-run unless this stage was switched live (LIVE_STAGES) and the job was queued live. */
   get dryRun(): boolean { return this.job.dry_run || (this.cfg.dryRun && !this.cfg.liveStages.includes(this.job.kind)); }
 
+  /** A live progress line while the job runs (shown on the Airtable record; Alex, 2026-11-24). Never fails the job. */
+  async progress(text: string): Promise<void> {
+    try { await this.db.query(`UPDATE jobs SET progress=$2 WHERE id=$1 AND status='running'`, [this.job.id, text.slice(0, 500)]); } catch { /* display only */ }
+  }
+
   log(message: string, data: Record<string, unknown> = {}, level: 'info' | 'warn' | 'error' = 'info') {
     return logEvent(this.db, level, message, data, this.job.id);
   }
