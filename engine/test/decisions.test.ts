@@ -53,7 +53,8 @@ test('message: short lines, action named, details not in the main message', () =
   const m = decisionMessage({ id: 'r', fields: reply() });
   assert.match(m, /^\*Sean · Dulcy:\* Reply to Jane at Acme/);
   assert.match(m, /\*Issue:\* Jane asked for times/);
-  assert.match(m, /React ✅ to do it \(Send Reply\), ❌ to stop\./);
+  assert.match(m, /\*On ✅:\* Send Reply/);
+  assert.doesNotMatch(m, /React/);
   assert.doesNotMatch(m, /Full thread here/);
 });
 

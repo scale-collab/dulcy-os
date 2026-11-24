@@ -269,7 +269,7 @@ SSH in: `ssh -o ServerAliveInterval=30 root@178.156.132.86`
 
 **What it is:** how agents ask Alex. An agent (or anyone) adds a row to Airtable **Decisions** with Status **New**. Within 30 seconds the engine posts it to Alex's Slack decisions channel (ID C0B581HNSMR):
 
-- one short message: who and what, **Issue**, **Checked**, **Proposed**, then "React ✅ / ❌";
+- one short message: who and what, **Issue**, **Checked**, **Proposed**, then what happens on ✅ (if anything);
 - the long details go in the thread.
 
 **Deciding:** the bot pre-adds ✅ and ❌ under each message (needs the `reactions:write` scope); tap one. The bot's own reactions never count. Only Alex's and Josh's reactions count. ❌ wins if both are there. You can also set Status to **Approved** or **Rejected** in Airtable.
