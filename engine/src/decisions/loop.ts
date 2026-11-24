@@ -28,7 +28,7 @@ export function decisionMessage(r: AirtableRecord): string {
   if (text(f[DF.issue])) lines.push(`*Issue:* ${text(f[DF.issue])}`);
   if (text(f[DF.checked])) lines.push(`*Checked:* ${text(f[DF.checked])}`);
   if (text(f[DF.fix])) lines.push(`*Proposed:* ${text(f[DF.fix])}`);
-  lines.push(text(f[DF.action]) && text(f[DF.action]) !== 'None' ? `React ✅ to do it (${text(f[DF.action])}), ❌ to stop.` : 'React ✅ yes, ❌ no.');
+  if (text(f[DF.action]) && text(f[DF.action]) !== 'None') lines.push(`*On ✅:* ${text(f[DF.action])}`);
   return lines.join('\n');
 }
 
