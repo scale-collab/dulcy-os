@@ -155,3 +155,4 @@ Newest at the bottom. Format: `date | decision | why | who`
 - 2026-11-24 — Auto-widen order: employee range first, then sub-industry, industry, business model, keywords. Why: live jewelry test, labels 2,969 at 11-200 vs 20,646 at 1-500; dropping the jewelry label first would add all retail.
 - 2026-11-24 — Generate filters: business model and auto example sites follow the 60% fit rule too (example sites only from companies carrying a passed label; none if no label passed; list's own examples kept). Why: pet e-com press added five pet shops as examples and B2B.
 - 2026-11-24 — Expand shows a live timing line in the Engine Message after each batch (count vs target, minutes running, minutes left). Why: Alex asked for the batch timing tracker the old Airtable flow had.
+- 2026-11-24 — Find Contacts and Verify (MillionVerifier, LeadMagic) show the same live timing line as Expand. Why: Alex asked for it on all long steps.

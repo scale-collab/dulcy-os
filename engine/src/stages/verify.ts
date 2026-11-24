@@ -16,6 +16,7 @@
 import { createHash } from 'node:crypto';
 import type { Stage } from './index.js';
 import { NeedsReviewError, PermanentError, WaitError } from '../errors.js';
+import { timing } from '../leadlist/timing.js';
 import { createMvClient } from '../providers/millionverifier.js';
 import { createLeadMagicClient } from '../providers/leadmagic.js';
 import { leadMagicCandidates, mapLeadMagicRow, type LmCandidate, type LmResult } from '../verify/leadmagic.js';
@@ -170,9 +171,10 @@ export const verifyStage: Stage = async (ctx) => {
     const id = fileId!;
     // Nothing new to send: every result came from earlier checks, no job to wait on.
     if (toSend.length) {
+      const mvStarted = await ctx.step(`mv-started:${id}`, async () => Date.now());
       const info = await mv.fileInfo(id);
       if (RUNNING.includes(info.status)) {
-        throw new WaitError(`MillionVerifier job ${id}: ${info.status}, ${info.percent}% complete`, ctx.cfg.verifyPollMs);
+        throw new WaitError(`MillionVerifier job ${id}: ${info.status}, ${info.percent}% complete (${toSend.length.toLocaleString('en-US')} emails), ${timing(mvStarted, Number(info.percent) || 0, 100)}`, ctx.cfg.verifyPollMs);
       }
       if (info.status === 'wait_starting') {
         // Right after an upload MillionVerifier often shows "waiting to start" for a short while
@@ -228,7 +230,7 @@ export const verifyStage: Stage = async (ctx) => {
         if (['failed', 'canceled', 'cancelled', 'paused'].includes(j.status)) throw new NeedsReviewError(`LeadMagic job ${jobId} is "${j.status}"; check it in LeadMagic. Not resubmitted.`);
         if (j.status !== 'completed' || (j.total > 0 && j.processed < j.total)) {
           if (Date.now() - startedAt > LM_MAX_WAIT_MS) throw new NeedsReviewError(`LeadMagic job ${jobId} still "${j.status}" after 3 hours`);
-          throw new WaitError(`LeadMagic job ${jobId}: ${j.status}, ${j.processed} of ${j.total || todo.length} done`, ctx.cfg.verifyPollMs);
+          throw new WaitError(`LeadMagic job ${jobId}: ${j.status}, ${j.processed} of ${j.total || todo.length} done, ${timing(startedAt, Number(j.processed) || 0, Number(j.total || todo.length))}`, ctx.cfg.verifyPollMs);
         }
         return j;
       });
