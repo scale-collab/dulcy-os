@@ -51,6 +51,7 @@ It works the same way for pet e-com, roofers, med spas, manufacturers, jewelry, 
 2. **Industry labels only when they fit.** For every DiscoLike industry and sub-industry label, the engine counts how many of the 500 companies carry it (a label counts when DiscoLike scores it 0.5 or more).
    - **60% or more** of the companies: the label is used as a filter.
    - Several labels at 60%+: they are **either/or** (a company needs any one of them, never all).
+   - **A sub-industry at 60%+ is used on its own** (with its parent industry, which DiscoLike narrows to it). Other industries at 60%+ are **held back**: whole industries come in completely (any-of), e.g. med spas: Medspa 97% + Consumer services 79% gave 402,000 (every salon) instead of the med spas. Held-back industries are the first widening step if the list is too small (live test, 2026-11-24).
    - **None at 60%:** no industry filter at all. The lookalike text, examples and keywords do the targeting.
    - The message shows the numbers, e.g. "Labels used (either/or): E-COMMERCE 90%. Skipped (under 60%): PET_PRODUCTS_BRAND 40%."
    - This replaces the 2026-11-23 "ecom adds E-COMMERCE" rule: E-commerce is used when the companies really are e-commerce (60%+), and skipped otherwise.
@@ -60,9 +61,9 @@ It works the same way for pet e-com, roofers, med spas, manufacturers, jewelry, 
    - Companies needed = lead goal / 0.4 (about 0.4 final leads per company). 3,000 leads -> ~7,500 companies.
    - DiscoLike's free count is an upper bound; **real = about 60%** of it (Alex: 50-70%).
 4. **Auto-widen when too small.** If the expected real companies are fewer than needed, the engine widens **one step at a time**, re-counts (free) and stops as soon as it is enough:
-   1. drop the sub-industry labels,
-   2. drop the industry labels,
-   3. widen the employee range one DiscoLike step on each side (e.g. 11-200 -> 1-500),
+   1. widen the employee range one DiscoLike step on each side (e.g. 11-200 -> 1-500): this keeps the niche (jewelry test: 2,969 -> 20,646),
+   2. drop the sub-industry labels (the held-back whole industries come in instead),
+   3. drop the industry labels,
    4. drop the business model,
    5. keep only the top half of the homepage keywords.
    - **Country and state are never widened** (geography is the client's choice).

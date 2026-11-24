@@ -136,7 +136,7 @@ export const filterGenerateStage: Stage = async (ctx) => {
     const crossIndustry = applied[0]?.crossIndustry === true;
     const cov = labelCoverage(rows, TAXONOMY);
     const labels = applyLabels(g0.filters ?? {}, cov, { crossIndustry });
-    return { filters: labels.filters, summary: String(g0.summary ?? ''), airtableFields: fields, used: labels.used, skipped: labels.skipped, total: cov.total, crossIndustry };
+    return { filters: labels.filters, summary: String(g0.summary ?? ''), airtableFields: fields, used: labels.used, skipped: labels.skipped, heldBack: labels.heldBack, broaderCategories: labels.broaderCategories, total: cov.total, crossIndustry };
   });
 
   // Soft size goal and auto-widen with the FREE count. Never fails the press.
@@ -156,7 +156,7 @@ export const filterGenerateStage: Stage = async (ctx) => {
     let extra = 0;
     for (const step of WIDEN_STEPS) {
       if (s.enough || extra >= MAX_WIDEN_COUNTS) break;
-      const w = step.apply(filters);
+      const w = step.apply(filters, { broaderCategories: plan.broaderCategories });
       if (!w) continue;
       extra++;
       const c = await count(w.filters);
@@ -176,7 +176,7 @@ export const filterGenerateStage: Stage = async (ctx) => {
     .replace(/^\d+ native subindustries;/, `${subCount} native subindustries;`)
     .replace(/AI retained or rewrote \d+ relevant/, `AI retained or rewrote ${keywords.length} relevant`)
     .replace(/, \d+ industry groups, and \d+ business-model filters/, `, ${catCount} industry groups, and ${bmCount} business-model filters`);
-  const summary = [sizingText(sized.s), labelsText(plan.used, plan.skipped, plan.total, plan.crossIndustry), legacySummary].filter(Boolean).join(' ');
+  const summary = [sizingText(sized.s), labelsText(plan.used, plan.skipped, plan.total, plan.crossIndustry, plan.heldBack), legacySummary].filter(Boolean).join(' ');
   const airtableFields = {
     ...plan.airtableFields,
     fldC2hZQ3gSqLmi1y: JSON.stringify(f, null, 2),
@@ -187,7 +187,7 @@ export const filterGenerateStage: Stage = async (ctx) => {
   const pct = (x: { label: string; share: number; kind: string }) => ({ label: x.label, kind: x.kind, coverage: Math.round(x.share * 1000) / 10 });
   return {
     dryRun: false, filters: f, airtableFields, discoLikeCompanies: pulled.length, reviewedCompanies: reviewRows.length,
-    labels: { used: plan.used.map(pct), skipped: plan.skipped.map(pct), companies: plan.total, minCoverage: 60 },
+    labels: { used: plan.used.map(pct), heldBack: plan.heldBack.map(pct), skipped: plan.skipped.map(pct), companies: plan.total, minCoverage: 60 },
     sizing: { leadGoal: sized.s.leadGoal, source: sized.s.source, companiesNeeded, freeCount: sized.s.freeCount, expectedReal: sized.s.expectedReal, enough: sized.s.enough, widened: sized.s.widened, counts: sized.s.counts, leadsPerCompany: lpc, countYield: yieldShare },
     message: summary || 'search plan generated; review it before running the first 100 companies',
   };
