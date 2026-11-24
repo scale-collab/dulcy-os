@@ -76,7 +76,7 @@ before(async () => {
 });
 after(async () => { atServer.close(); claudeServer.close(); if (!skip) await db.end(); });
 beforeEach(async () => {
-  emails = {}; due = {}; decisions = {}; claudeAnswers = []; claudeCalls = []; booked = []; formulas = []; settings = [{ 'Calendar Link': 'https://calendly.com/client/intro', 'Calendar Settings JSON': '{}' }];
+  emails = {}; due = {}; decisions = {}; claudeAnswers = []; claudeCalls = []; booked = []; formulas = []; settings = [{ 'Enabled': true, 'Calendar Link': 'https://calendly.com/client/intro', 'Calendar Settings JSON': '{}' }];
   if (!skip) await db.query('TRUNCATE jobs, steps, receipts, events, sean_drafts, offered_slots RESTART IDENTITY CASCADE');
 });
 
@@ -241,11 +241,28 @@ test('two prospects are never offered the same open time', { skip }, async () =>
   assert.deepEqual(pickTwo(await freeSlots(db, 'recWS', slots, 'recAdam')), a, 'the same prospect can be offered their own times again');
 });
 
-test('Sean is off for a client whose file says so (MJJ: the client answers its own replies)', { skip }, async () => {
-  emails.recM = thread({ [EF.workspace]: '80' });
+test('the client\'s Inbox Manager settings drive Sean: handoff "All replies" → nothing drafted; tone, length, instructions and links reach the prompt; a switched-off reply type is skipped', { skip }, async () => {
+  emails.recM = thread();
+  settings = [{ 'Enabled': true, 'Reply Handoff Mode': 'All Replies', 'Calendar Link': 'https://calendly.com/client/intro' }];
   const j = await run(cfg());
   assert.equal(j.job.status, 'succeeded');
-  assert.equal(claudeCalls.length, 0);
-  assert.match(String(j.job.result.message), /Sean off/);
+  assert.equal(claudeCalls.length, 0, 'client answers its own replies');
+  assert.match(String(j.job.result.message), /left to the client/);
+  assert.equal(Object.keys(decisions).length, 0);
+
+  await db.query('TRUNCATE jobs, steps, receipts, events, sean_drafts RESTART IDENTITY CASCADE');
+  settings = [{ 'Enabled': true, 'Reply Handoff Mode': 'Disabled', 'Response Tone': 'Direct', 'Response Length': 'Very Brief', 'Agent First Name': 'Ryan', 'Agent Last Name': 'Labrie',
+    'Company Context Override': 'Never mention pricing. Always offer the 2-minute video first.', 'Enabled Reply Types': ['Interested', 'Meeting Request'],
+    'Knowledge Base JSON': JSON.stringify({ enabled: true, assets: [{ description: 'Contractor 2-minute video', url: 'https://sendspark.com/share/abc' }] }), 'Calendar Link': 'https://calendly.com/client/intro' }];
+  claudeAnswers = [{ action: 'reply', intent: 'Cost Objection', reason: 'price question', they_said: 'What does it cost?', draft: 'Hi Jane, it depends.', question_for_alex: '' }];
+  await run(cfg());
+  const system = claudeCalls[0].body.system.map((b: any) => b.text).join('\n');
+  assert.match(system, /Tone: Direct/);
+  assert.match(system, /under 35 words/);
+  assert.match(system, /You write as Ryan Labrie/);
+  assert.match(system, /Never mention pricing/);
+  assert.match(system, /sendspark\.com\/share\/abc/);
+  assert.equal(emails.recM[RA.state], 'Skipped', 'Cost Objection is not an enabled reply type for this client');
+  assert.match(String(emails.recM[RA.seanReason]), /switched off for this client/);
   assert.equal(Object.keys(decisions).length, 0);
 });

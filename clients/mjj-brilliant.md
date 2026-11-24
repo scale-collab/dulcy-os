@@ -1,7 +1,6 @@
 # Client: MJJ Brilliant (Brilliant Jewelers / MJJ Inc.)
 
 Status: active
-Sean: off (the client answers its own replies: Ike works them in the Dulcy ESP; Alex 2026-10-29, Josh tagged "client handling". Sean drafts no replies or follow-ups here.)
 Last updated: 2026-11-17
 Every fact has a source and date in brackets. Unknown = `UNKNOWN`. Never copy facts from another client.
 
