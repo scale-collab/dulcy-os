@@ -18,7 +18,7 @@ import type { Config } from '../config.js';
 import type { AirtableClient, AirtableRecord } from '../providers/airtable.js';
 import { enqueue } from '../queue.js';
 import { STAGES } from '../stages/index.js';
-import { BuildInputError, CAMPAIGNS, CF, LL, SUFFIX, queueBuild } from './campaignBuild.js';
+import { BuildInputError, CAMPAIGNS, CF, LL, SUFFIX, queueBuild, buildQueuedMessage } from './campaignBuild.js';
 import { CAMPAIGN_FIELDS } from '../campaign/campaignFields.js';
 import { outputCopy, readSequence } from '../campaign/airtableCopy.js';
 import { mergeTags } from '../campaign/rules.js';
@@ -261,8 +261,7 @@ async function pressBuild(db: Db, cfg: Config, at: AirtableClient, rec: Airtable
   const { plan, jobs } = await queueBuild(db, cfg, at, list.id, list, press);
   await db.query(`UPDATE airtable_jobs SET campaign_record=$1 WHERE press=$2`, [rec.id, press]);
   const fresh = jobs.filter((j) => j.status === 'queued');
-  const names = plan.outputs.map((o) => `"${o.name}" (${o.leads} leads, ${o.senderEmailIds.length} inboxes)`).join(' and ');
-  const msg = `${fresh.length ? 'Build Campaign queued' : 'Build Campaign already queued'} on the engine (job ${jobs.map((j) => j.id).join(', ')}): ${names}; drafts only, never launched${cfg.dryRun && !cfg.liveStages.includes('campaign.build') ? '; dry run: nothing is created in EmailBison' : ''}`;
+    const msg = buildQueuedMessage(plan, jobs, Boolean(cfg.dryRun && !cfg.liveStages.includes('campaign.build')));
   const progress = { [CF.processing]: 'Running', [CF.message]: msg, [CF.error]: null, [CF.startedAt]: new Date().toISOString(), [CF.completedAt]: null };
   await at.update(CAMPAIGNS, rec.id, { [CE.engineAction]: null, [CE.engineJobId]: jobs.map((j) => j.id).join(', '), [CE.engineMessage]: msg, ...(fresh.length ? { [CE.engineStatus]: 'Queued' } : {}), ...(plan.parent.id === rec.id ? progress : {}) });
   if (plan.parent.id !== rec.id) await at.update(CAMPAIGNS, plan.parent.id, progress);

@@ -168,3 +168,19 @@ export async function queueBuild(db: Db, cfg: Config, at: AirtableClient, listId
   }
   return { plan, jobs };
 }
+
+/**
+ * The "Build Campaign queued" message, one fact per line (Alex, 2026-11-24). Warns when a
+ * campaign has many leads per inbox (it will send slowly), so the senders can be fixed before Launch.
+ */
+export function buildQueuedMessage(plan: { outputs: PlannedOutput[] }, jobs: Array<{ id: number | string; status: string }>, dryRunNote: boolean): string {
+  const fresh = jobs.some((j) => j.status === 'queued');
+  const head = `${fresh ? 'Build Campaign queued' : 'Build Campaign already queued'} (job ${jobs.map((j) => j.id).join(', ')}) · drafts only, never launched${dryRunNote ? ' · dry run: nothing is created in EmailBison' : ''}`;
+  const lines = plan.outputs.map((o) => {
+    const inboxes = o.senderEmailIds.length;
+    return `• ${o.outputType === 'generic' ? 'Generic emails' : 'Direct emails'}: ${o.leads.toLocaleString('en-US')} leads, ${inboxes} inbox${inboxes === 1 ? '' : 'es'}`;
+  });
+  const slow = plan.outputs.filter((o) => o.senderEmailIds.length && o.leads / o.senderEmailIds.length > 300);
+  const warn = slow.map((o) => `⚠ ${o.leads.toLocaleString('en-US')} leads on ${o.senderEmailIds.length} inbox${o.senderEmailIds.length === 1 ? '' : 'es'} (${o.outputType}): this will send slowly; add inboxes in Senders before Launch.`);
+  return [head, ...lines, ...warn].join('\n');
+}
