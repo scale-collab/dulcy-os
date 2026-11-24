@@ -157,5 +157,5 @@ Numbers from Airtable Campaigns (77 linked records), read 2026-11-17. Sent = ema
 ## Reply rules learned (Sean, 2026-11-24)
 - **No gifting-only / no-fee deals.** James to DecoratorsBest (June 2026, Emails recpUNYjQeVu3rxXl): if they need "No Win / No Fee" or can't afford management costs he forwards them to smaller agencies; otherwise he books a call. Scroll Stop runs managed creator campaigns for a management fee. [James, 2026-06]
 - **Never put creators on a brand's PR/application form** and never promise creator shortlists without Scroll Stop's approved asset. May declined Carpe's same form in May 2026 (rechEYRrNvnH5t13R). [Emails 2026-05; client file §8]
-- **Booking link:** James's cal.com link (https://cal.com/james-george-higgins-scrollstop/central-as40ad1731), set 2026-11-12. The Google appointment link in the Reply Agent settings is outdated. [Slack 2026-11-12]
+- **Booking link:** James's cal.com link (https://cal.com/james-george-higgins-scrollstop/central-as40ad1731), set 2026-11-12. Reply Agent settings updated to this link on 2026-11-24 (Alex). [Slack 2026-11-12]
 - Carpe has a better contact: Justin Cruz, VP Growth Marketing (recbm8K3ulaD7G1cD, Interested, asked for case studies).

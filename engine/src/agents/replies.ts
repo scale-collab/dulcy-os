@@ -52,7 +52,9 @@ function slackFor(cfg: Config) { return cfg.slackBotToken ? createSlackClient({ 
 
 /** Close this reply's open Slack decision with a note (sent / skipped / failed), so Slack matches Airtable. */
 export async function mirrorToSlack(at: Pick<AirtableClient, 'list' | 'update'>, slack: Pick<SlackClient, 'post'> | null, emailsRecordId: string, status: 'Done' | 'Rejected' | 'Failed', note: string) {
-  const open = await at.list(DECISIONS, `AND({Emails Record}='${emailsRecordId}',OR({Status}='New',{Status}='Waiting',{Status}='Approved'))`, Object.values(DF), 10);
+  // A later success or skip also closes an earlier Failed decision (e.g. a retry after the draft was fixed).
+  const states = ["{Status}='New'", "{Status}='Waiting'", "{Status}='Approved'", ...(status === 'Failed' ? [] : ["{Status}='Failed'"])];
+  const open = await at.list(DECISIONS, `AND({Emails Record}='${emailsRecordId}',OR(${states.join(',')}))`, Object.values(DF), 10);
   for (const d of open) {
     await at.update(DECISIONS, d.id, { [DF.status]: status, [DF.result]: note });
     const ch = val(d.fields[DF.slackChannel]), ts = val(d.fields[DF.slackTs]);
