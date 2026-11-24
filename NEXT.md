@@ -1,11 +1,14 @@
 # Where we are (update this at the end of every session)
 
-Last updated: 2026-11-23 (Lead List Center + Campaign Center on the engine)
+Last updated: 2026-11-24 (full end-to-end run from Airtable done)
 
-## Now (2026-11-23)
-- **Engine pages live in Airtable (test pages, old pages untouched):** Lead List Center (Engine) `pagBY673DlKSnwt0q` and Campaign Center (Engine) `pagLpw4zkXwDx32I5`. Source in `airtable/custom-elements/*/source.slim.tsx`; Alex pastes code in Airtable's editor (too big for the build tool).
-- **Next:** 1) end-to-end test on a small Dulcy list (Lead List Center: filters, TAM, sample, expand, contacts, Verify, Skip enrichment, QA, Restart); 2) Campaign Center test (Build, Launch, Pause, Update Senders, Top up) on Dulcy's own campaign; 3) switch the main pages to the engine versions; 4) turn the bounce check live (needs the server's EMAILBISON_KEY_/TEAM_/BOUNCE_ setting names from Alex).
-- **To do later:** add a check (header auth) to the n8n sync-bison-senders webhook; spintax, Sync with Bison and Delete still on n8n; remove legacy DiscoLike contact options in early January (Airtable task); EmailGuard + claims-vs-proof are not automatic launch checks yet; missing company names should be filled from the company list automatically.
+## Now (2026-11-24)
+- **End-to-end done from the Airtable pages** on "[Dulcy Free Campaigns] new end to end testttt" (pet e-com): Generate filters → first 100 → Expand (2,011 companies, 1,957 usable) → contacts (1,518) → Verify (1,127 Good: 850 direct + 277 generic) → Skip enrichment → QA Passed (Ready) → spintax (n8n) → Build Campaign → EmailBison drafts **654** (Generic, 277) and **655** (Direct, 850), 1 inbox each, **not launched**. Launch/Pause was tested on 2026-11-23 (campaign 653).
+- **Alex decides:** launch or delete drafts 654/655 (they carry sample copy).
+- **Built today (engine):** Generate filters for every niche (500-company pull, labels only at 60%+, sub-industry alone, soft 3,000-lead goal, auto-widen size first); business model + example sites only when they fit; Expand switches to MAX_COVERAGE when BALANCED runs out; live line-by-line progress (Expand, Contacts, Verify); Lead List Stage follows the steps; contacts = DiscoLike Contacts Run only; ALL CAPS company names fixed at build; Build stops on empty copy variables; QA still needs the copy (Alex's correction).
+- **Server (2026-11-24):** updates installed + reboot, disk 74.5% (n8n keeps 7 days of runs now), keys for phone + PC (via GitHub keys).
+- **Next / open:** 1) Generate filters "real size" probe (the free count overstates when no label fits: pet e-com 23k count vs ~2k findable); waiting for Alex's yes. 2) Fallbacks for missing enrichment variables (e.g. CITY → "your city"); where to set it (Custom Variables Requested?) waiting for Alex. 3) Auto-tidy finished lists (keeps the engine DB small). 4) Switch the main pages to the engine versions. 5) Bounce check live (needs the server setting names). 6) n8n memory cap 6144 → 3072 and Hetzner backups (Alex, optional). 7) Old n8n lead tables (~3 GB, used until 2026-11-21): keep 2-4 weeks, then export and remove; maybe import the ~300k old email checks into the engine.
+- **To do later:** header auth on the n8n sync-bison-senders webhook; EmailGuard + claims-vs-proof are not automatic launch checks yet; missing company names should be filled from the company list automatically.
 
 ## Done
 - Repo is the memory: CLAUDE.md, rules/RULES.md, rules/decisions-log.md, five skills, SOPs, client index, channel evidence, pricing.
