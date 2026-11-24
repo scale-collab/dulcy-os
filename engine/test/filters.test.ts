@@ -220,27 +220,34 @@ test('size goal: from the linked campaign inboxes vs the default 3,000 (a goal, 
   assert.equal(def.sizing.companiesNeeded, 7500);
 });
 
-test('auto-widen: one step at a time in Alex\'s order, stops as soon as it is enough, never touches geography', { skip }, async () => {
+test('auto-widen: one step at a time, size first (keeps the niche), stops as soon as it is enough, never touches geography', { skip }, async () => {
   disco.rows = (n) => Array.from({ length: n }, (_, i) => labelled(i, ['E-COMMERCE', ...(i % 100 < 72 ? ['CONSUMER_PRODUCTS'] : [])], i % 100 < 72 ? ['CONSUMER_PRODUCTS/PET_PRODUCTS_BRAND'] : []));
-  // Labels make it small; the wider size makes it big enough (5,000 -> 3,000 real < 7,500 needed).
-  disco.count = (p) => (p.get('category') ? 1_000 : p.get('employee_range') === '1,500' ? 20_000 : 5_000);
+  // Labels at 11-200 are too small (1,000 -> 600 real < 7,500); one size step each side is enough (live jewelry case).
+  disco.count = (p) => (p.get('employee_range') === '1,500' ? 20_000 : 1_000);
   const r = await press(PET, 'widen');
-  assert.deepEqual(r.sizing.widened, ['dropped sub-industry labels (now the whole industries: CONSUMER_PRODUCTS, E-COMMERCE)', 'dropped industry labels', 'widened employee range to 1-500']);
-  assert.equal(disco.counts.length, 4, 'the plan + 3 widen steps');
-  assert.deepEqual(r.sizing.counts.map((c: any) => c.freeCount), [1000, 1000, 5000, 20000]);
-  assert.equal(r.sizing.freeCount, 20000);
+  assert.deepEqual(r.sizing.widened, ['widened employee range to 1-500']);
+  assert.equal(disco.counts.length, 2, 'the plan + 1 widen step');
+  assert.deepEqual(r.sizing.counts.map((c: any) => c.freeCount), [1000, 20000]);
   assert.equal(r.sizing.expectedReal, 12000);
   assert.equal(r.sizing.enough, true);
   const f = r.filters;
-  assert.equal(f.category, undefined); assert.equal(f.sub_industry, undefined);
+  assert.deepEqual(f.sub_industry, ['CONSUMER_PRODUCTS/PET_PRODUCTS_BRAND'], 'labels kept: the niche stays');
   assert.equal(f.employee_range, '1,500');
-  assert.deepEqual(f.business_model, ['B2C'], 'stopped before dropping the business model');
   assert.deepEqual(f.country, ['US'], 'geography kept');
   for (const c of disco.counts) assert.equal(c.get('country'), 'US');
   assert.equal(r.airtableFields.fldG2MXz5lccu7KKU, '1,500');
   assert.deepEqual(JSON.parse(r.airtableFields.fldC2hZQ3gSqLmi1y), f);
-  assert.match(r.message, /Free count 20,000 → expect ~12,000 real\. Widened: dropped sub-industry labels \(now the whole industries: CONSUMER_PRODUCTS, E-COMMERCE\), dropped industry labels, widened employee range to 1-500\./);
-  assert.match(r.message, /0 native subindustries;.* 0 industry groups, and 1 business-model filters/);
+  assert.match(r.message, /Free count 20,000 → expect ~12,000 real\. Widened: widened employee range to 1-500\./);
+});
+
+test('auto-widen: after size, a sub-industry gives way to the held-back whole industries, then industries go', { skip }, async () => {
+  disco.rows = (n) => Array.from({ length: n }, (_, i) => labelled(i, ['E-COMMERCE', ...(i % 100 < 72 ? ['CONSUMER_PRODUCTS'] : [])], i % 100 < 72 ? ['CONSUMER_PRODUCTS/PET_PRODUCTS_BRAND'] : []));
+  disco.count = (p) => (p.get('sub_industry') ? 1_000 : p.get('category') ? 5_000 : 20_000);
+  const r = await press(PET, 'widen-labels');
+  assert.deepEqual(r.sizing.widened, ['widened employee range to 1-500', 'dropped sub-industry labels (now the whole industries: CONSUMER_PRODUCTS, E-COMMERCE)', 'dropped industry labels']);
+  assert.deepEqual(r.sizing.counts.map((c: any) => c.freeCount), [1000, 1000, 5000, 20000]);
+  assert.equal(r.filters.category, undefined); assert.equal(r.filters.sub_industry, undefined);
+  assert.deepEqual(r.filters.business_model, ['B2C'], 'stopped before dropping the business model');
 });
 
 test('auto-widen: still short after 5 extra counts keeps the widest plan and says so; the press still succeeds', { skip }, async () => {

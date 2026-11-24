@@ -128,8 +128,9 @@ export function widerEmployeeRange(range: unknown): string | null {
 export interface WidenContext { broaderCategories?: string[] }
 export interface WidenStep { key: 'sub_industry' | 'category' | 'employee_range' | 'business_model' | 'keywords'; apply: (f: Filters, ctx?: WidenContext) => { filters: Filters; note: string } | null }
 const has = (f: Filters, k: string) => listOf(f[k]).length > 0;
-/** Alex's order: (a) sub-industry (-> the whole qualifying industries), (b) industry, (c) size one step each side, (d) business model, (e) top half of the keywords. Never geography. */
+/** Order: (a) size one step each side (keeps the niche; live jewelry test 2026-11-24: 2,969 -> 20,646 while dropping the label would add all retail), (b) sub-industry (-> the whole qualifying industries), (c) industry, (d) business model, (e) top half of the keywords. Never geography. */
 export const WIDEN_STEPS: WidenStep[] = [
+  { key: 'employee_range', apply: (f) => { const r = widerEmployeeRange(f.employee_range); return r ? { filters: { ...f, employee_range: r }, note: `widened employee range to ${r.replace(',', '-')}` } : null; } },
   { key: 'sub_industry', apply: (f, ctx) => {
     if (!has(f, 'sub_industry')) return null;
     const { sub_industry, ...rest } = f;
@@ -139,7 +140,6 @@ export const WIDEN_STEPS: WidenStep[] = [
       : { filters: rest, note: 'dropped sub-industry labels' };
   } },
   { key: 'category', apply: (f) => (has(f, 'category') ? { filters: (({ category, ...rest }) => rest)(f), note: 'dropped industry labels' } : null) },
-  { key: 'employee_range', apply: (f) => { const r = widerEmployeeRange(f.employee_range); return r ? { filters: { ...f, employee_range: r }, note: `widened employee range to ${r.replace(',', '-')}` } : null; } },
   { key: 'business_model', apply: (f) => (has(f, 'business_model') ? { filters: (({ business_model, ...rest }) => rest)(f), note: 'dropped business model' } : null) },
   { key: 'keywords', apply: (f) => { const k = Array.isArray(f.phrase_match) ? f.phrase_match : []; if (k.length < 2) return null; const half = k.slice(0, Math.ceil(k.length / 2)); return { filters: { ...f, phrase_match: half }, note: `cut homepage keywords to the top ${half.length}` }; } },
 ];

@@ -61,9 +61,9 @@ It works the same way for pet e-com, roofers, med spas, manufacturers, jewelry, 
    - Companies needed = lead goal / 0.4 (about 0.4 final leads per company). 3,000 leads -> ~7,500 companies.
    - DiscoLike's free count is an upper bound; **real = about 60%** of it (Alex: 50-70%).
 4. **Auto-widen when too small.** If the expected real companies are fewer than needed, the engine widens **one step at a time**, re-counts (free) and stops as soon as it is enough:
-   1. drop the sub-industry labels,
-   2. drop the industry labels,
-   3. widen the employee range one DiscoLike step on each side (e.g. 11-200 -> 1-500),
+   1. widen the employee range one DiscoLike step on each side (e.g. 11-200 -> 1-500): this keeps the niche (jewelry test: 2,969 -> 20,646),
+   2. drop the sub-industry labels (the held-back whole industries come in instead),
+   3. drop the industry labels,
    4. drop the business model,
    5. keep only the top half of the homepage keywords.
    - **Country and state are never widened** (geography is the client's choice).
