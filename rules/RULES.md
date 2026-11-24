@@ -30,6 +30,7 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-23] Default Contact Source is "DiscoLike Contacts Run" (also when the field is empty). The legacy "DiscoLike" and "DiscoLike + ContraGen" run only when picked on purpose (ending 2026-12-31). MillionVerifier always checks the emails after it (DiscoLike's plain "Validated" was 3.5% bad in the live test); LeadMagic runs only when "Use LeadMagic" is ticked (off by default). No verifier-choice options on Verify. No real-send catch-all test for now. Reason: live accuracy test 2026-11-23. (Alex)
 
 ## Campaign health
+- [2026-11-24] **Temporary (Alex):** while the lists are being fixed, campaigns flagged over 4% but **under 6%** keep sending: Skip Bounce Pause was ticked on those 10 (EmailBison 603, 605, 606, 607, 609, 610, 612, 628, 630, 633). 6%+ still pauses (601, 604, 611, 622, 623, 634). Untick them once the list fixes land. Ticked campaigns are not auto-paused even if they pass 6% later, so the watch alert must be read.
 - [2026-11-23] Campaign Center on the engine (Alex): pressing **Launch** is Alex's go-ahead for that campaign (no extra "are you sure" box); the engine still runs every launch check first and refuses with the failing check shown. **Pause** pauses right away, no confirm. The screen's top-up call follows the top-up rule below (reply rate 2%+ and interested 15%+ of replies = top up), not its own older rule, so healthy campaigns stop showing "has issues" just because of bounce. **Inboxes:** never block picking an inbox that is busy in another campaign (Alex builds Monday for a Tuesday launch when the old one ends): show a warning only. **Delete** stays in n8n for now. **"Skip bounce pause" box stays** (for a just-launched campaign where 1 early bounce looks like 10%); the engine's bounce check honours it (no auto-pause when ticked, the watch alert still shows).
 - [2026-11-23] The engine's bounce check pauses for real (switched live): over 4% bounce at 35%+ progress pauses the campaign, over 2.5% = watch, campaigns with Skip Bounce Pause ticked are never paused (still watched). (Alex)
 - [2026-11-18] Bounce auto-pause: pause when bounce is over 4% **and** the campaign is at 35%+ progress. The floor stops early small numbers from pausing it (1 bounce in the first 10 emails = 10%). The check must re-run on every metric refresh, not fire once. Over 2.5% = watch. (Alex)
@@ -79,6 +80,7 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-21] Enrichment fallback: a lead the research cannot answer gets a short fallback phrase that fits the email copy (e.g. a city -> "your area"), never a blank or "Not Found". The prompt step writes the phrase into each variable's FALLBACK section; Alex reviews it before Run. Reason: blank values made QA block the whole list (28 of 466 in the first test). (Alex)
 
 ## Replies and inbox
+- [2026-11-24] Draft mode (Alex): only threads waiting on Dulcy are drafted; threads marked Client Handling stay with the client (Twenty West takeover undecided). Dulcy meeting times come from Alex's Calendly. After Alex approves a draft, Claude/the engine sends it from EmailBison. (Alex)
 - [2026-11-17] AI reply drafts are review-only. Josh or Alex approve every outgoing reply. Reply Agent pilot is on for Dulcy only, in Human in the Loop mode. (Reply Agent SOP, Oct 7)
 - [2026-11-17] Respect unsubscribes and stop requests. Never override suppression. (Reply Agent SOP)
 
@@ -93,6 +95,9 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-17] The repurposing counts (2 LinkedIn, 3-5 X, 2 short scripts, 1 carousel per source) are examples, not a weekly quota. No posting cadence is set yet. (Alex)
 
 ## How to work with Alex
+- [2026-11-24] Agents: 9 active (Ada, Atlas, Scribe with offers, Scout, Sean, Riley, Cole, Ledger, Sienna). Forge folded into Scribe; Pixel, Lex, Harper parked. Start with Sean (draft mode: Alex/Josh approve each reply in Slack until Alex says otherwise) plus the decisions loop. Why: Twenty West is cancelling over reply handling and Josh can't scale. (Alex)
+- [2026-11-24] Claude handles business only; ChatGPT handles personal. Nothing personal goes into the agents until Alex says so. (Alex)
+- [2026-11-24] Alex's week: Mon campaigns, Tue and Thu meetings, Wed check meetings, Fri content day, Sat-Sun off. Agents plan around it (content ready by Friday, campaign reviews on Monday). (Alex)
 - [2026-11-20] Until Alex says otherwise, Claude runs the engine end-to-end tests itself on Dulcy's own test lists, including the approval clicks (Company Sample Approved, Contact Sample Approved, QA Passed) and Build Campaign drafts. Never a launch, and never on a client's list. Reason: Alex wants it proven end to end before he tests. (Alex)
 - [2026-11-20] Dulcy agency lists: 1-200 employees is the better default than 1-50. (Alex)
 - [2026-11-18] Claude may merge its own pull requests into `main` without asking each time, only after the tests pass, and tells Alex each time. (Alex)

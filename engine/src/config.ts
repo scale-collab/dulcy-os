@@ -17,6 +17,14 @@ export interface Config {
   /** true = never call paid providers; every paid step is recorded as dry_run. */
   dryRun: boolean;
   slackWebhookUrl?: string;
+  /** Dulcy Agents bot token (decisions loop: post, read ✅/❌ reactions). */
+  slackBotToken?: string;
+  slackBaseUrl: string;
+  /** Channel the decisions go to (name or ID). */
+  slackDecisionsChannel: string;
+  /** Slack user IDs whose ✅/❌ count (default: Alex, Josh). */
+  slackApprovers: string[];
+  decisionsPollMs: number;
   /** Max provider units (credits/rows) per job, per provider. */
   capPerJob: number;
   /** Max provider units per day, per provider. */
@@ -99,6 +107,11 @@ export function loadConfig(env = process.env): Config {
     // Paid calls stay OFF unless DRY_RUN is explicitly "false".
     dryRun: (env.DRY_RUN ?? 'true').toLowerCase() !== 'false',
     slackWebhookUrl: env.SLACK_WEBHOOK_URL || undefined,
+    slackBotToken: env.SLACK_BOT_TOKEN || undefined,
+    slackBaseUrl: env.SLACK_BASE_URL || 'https://slack.com/api',
+    slackDecisionsChannel: env.SLACK_DECISIONS_CHANNEL || '#dulcy-decisions',
+    slackApprovers: (env.SLACK_APPROVERS ?? 'U070Z26377C,U0ADSEJ9SDR').split(',').map((x) => x.trim()).filter(Boolean),
+    decisionsPollMs: num('DECISIONS_POLL_MS', 30_000, env),
     capPerJob: num('CAP_PER_JOB', 100_000, env),
     capPerDay: num('CAP_PER_DAY', 100_000, env),
     legacyContactsEnd: env.LEGACY_CONTACTS_END || '2026-11-24T00:00:00Z', // Alex 2026-11-24: one way only, the Contacts Run

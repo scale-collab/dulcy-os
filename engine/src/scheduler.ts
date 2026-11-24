@@ -8,6 +8,8 @@ import { STAGES } from './stages/index.js';
 import { createAirtableClient, type AirtableClient } from './providers/airtable.js';
 import { bridgeTick } from './airtable/bridge.js';
 import { skipBouncePauseIds } from './airtable/campaignActions.js';
+import { createSlackClient } from './providers/slack.js';
+import { decisionsTick } from './decisions/loop.js';
 
 /**
  * EmailBison IDs the bounce check must never pause ("Skip Bounce Pause" ticked in Campaign
@@ -64,5 +66,26 @@ export function startScheduler(db: Db, cfg: Config, signal: AbortSignal): void {
   const tick = () => { void scheduleTick(db, cfg).catch((e) => console.error(JSON.stringify({ level: 'error', message: 'scheduler tick failed', err: String(e) }))); };
   tick();
   const t = setInterval(tick, 60_000);
+  signal.addEventListener('abort', () => clearInterval(t));
+}
+
+/** Decisions loop (Slack ✅/❌ ↔ Airtable Decisions). Off without the bot token or the Airtable token. */
+export function startDecisions(db: Db, cfg: Config, signal: AbortSignal): void {
+  if (!cfg.slackBotToken || !cfg.airtableApiKey || !cfg.decisionsPollMs) return;
+  const at = createAirtableClient({ apiKey: cfg.airtableApiKey, baseId: cfg.airtableBaseId, baseUrl: cfg.airtableBaseUrl });
+  const slack = createSlackClient({ token: cfg.slackBotToken, baseUrl: cfg.slackBaseUrl });
+  let busy = false;
+  const tick = async () => {
+    if (busy) return;
+    busy = true;
+    try {
+      const r = await decisionsTick(db, cfg, at, slack);
+      if (r.posted || r.decided || r.started || r.finished) console.log(JSON.stringify({ level: 'info', message: 'decisions', ...r }));
+    } catch (e) {
+      console.error(JSON.stringify({ level: 'error', message: 'decisions tick failed', err: String(e) }));
+    } finally { busy = false; }
+  };
+  void tick();
+  const t = setInterval(() => { void tick(); }, Math.max(10_000, cfg.decisionsPollMs));
   signal.addEventListener('abort', () => clearInterval(t));
 }

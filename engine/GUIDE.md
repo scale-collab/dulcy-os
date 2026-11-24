@@ -264,3 +264,21 @@ SSH in: `ssh -o ServerAliveInterval=30 root@178.156.132.86`
   - Verify keeps enrichment columns.
 - **2026-11-20/21:**
   - Full list path on the engine: filters, sample, expand, contacts, ContraGen, Verify (MillionVerifier + LeadMagic), automated QA, Build Campaign.
+
+## Decisions (Slack ✅/❌), added 2026-11-24
+
+**What it is:** how agents ask Alex. An agent (or anyone) adds a row to Airtable **Decisions** with Status **New**. Within 30 seconds the engine posts it to Slack **#dulcy-decisions**:
+
+- one short message: who and what, **Issue**, **Checked**, **Proposed**, then "React ✅ / ❌";
+- the long details go in the thread.
+
+**Deciding:** react ✅ (yes) or ❌ (no) on the message. Only Alex's and Josh's reactions count. ❌ wins if both are there. You can also set Status to **Approved** or **Rejected** in Airtable.
+
+**What happens next:** Status becomes Approved, Decided By/At are filled, the action runs, and **Result** plus a thread reply say what happened (Done / Failed). Approved with no action = just recorded.
+
+**Actions so far:** **Send Reply**: sends the approved text in the prospect's EmailBison thread (reply-all, right workspace). Action Input: `{"workspaceId": 66, "replyId": 123, "message": "...", "emailsRecordId": "rec…", "latestReplyAt": "…"}`.
+- Never sent twice for one decision.
+- If the prospect wrote again after the draft, nothing is sent: it asks for a redraft.
+- Dry run until `decision.send_reply` is in LIVE_STAGES.
+
+**Server settings:** `SLACK_BOT_TOKEN` (required), the bot invited to #dulcy-decisions.

@@ -104,6 +104,11 @@ export function createBisonClient(o: BisonOptions) {
       return all.filter((c) => String(c.name).trim() === name.trim()).map((c) => ({ ...c, id: Number(c.id) }));
     },
     /** One campaign with its settings (max emails/new leads per day, plain text, tracking). */
+    /** Reply in an existing thread (reply_all picks our sender and the prospect). Returns the new reply's ID. */
+    async sendReply(replyId: number, message: string): Promise<{ id: number }> {
+      const r = await call('POST', `/api/replies/${replyId}/reply`, { message, reply_all: true, inject_previous_email_body: true, content_type: 'text' }, { write: true });
+      return { id: Number(r?.data?.reply?.id ?? 0) };
+    },
     async getCampaign(id: number): Promise<Record<string, any>> {
       const r = await call('GET', `/api/campaigns/${id}`);
       return r?.data ?? r ?? {};
