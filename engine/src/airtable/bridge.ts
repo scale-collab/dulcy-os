@@ -12,7 +12,7 @@ import type { Config } from '../config.js';
 import type { AirtableClient, AirtableRecord } from '../providers/airtable.js';
 import { enqueue } from '../queue.js';
 import { STAGES } from '../stages/index.js';
-import { BuildInputError, CAMPAIGNS, CF, LL, campaignLeadGoal, queueBuild } from './campaignBuild.js';
+import { BuildInputError, CAMPAIGNS, CF, LL, campaignLeadGoal, queueBuild, buildQueuedMessage } from './campaignBuild.js';
 import { LEAD_LIST_FIELDS as LIST_NAMES } from '../leadlist/legacy/fieldNames.js';
 import { CAMPAIGN_FIELDS } from '../campaign/campaignFields.js';
 import { createDiscoLikeClient, type DiscoLikeClient } from '../providers/discolike.js';
@@ -290,8 +290,7 @@ export async function pollActions(db: Db, cfg: Config, at: AirtableClient): Prom
         const { plan, jobs } = await queueBuild(db, cfg, at, rec.id, rec, press);
         const fresh = jobs.filter((j) => j.status === 'queued');
         queued += fresh.length;
-        const names = plan.outputs.map((o) => `"${o.name}" (${o.leads} leads, ${o.senderEmailIds.length} inboxes)`).join(' and ');
-        const msg = `${fresh.length ? 'Build Campaign queued' : 'Build Campaign already queued'} on the engine (job ${jobs.map((j) => j.id).join(', ')}): ${names}; drafts only, never launched${jobs.some((j) => j.status !== 'duplicate_request') && cfg.dryRun && !cfg.liveStages.includes('campaign.build') ? '; dry run: nothing is created in EmailBison' : ''}`;
+        const msg = buildQueuedMessage(plan, jobs, Boolean(jobs.some((j) => j.status !== 'duplicate_request') && cfg.dryRun && !cfg.liveStages.includes('campaign.build')));
         await at.update(LEAD_LISTS, rec.id, { [F.engineAction]: null, [F.engineJobId]: jobs.map((j) => j.id).join(', '), [F.engineMessage]: msg, ...(fresh.length ? { [F.engineStatus]: 'Queued' } : {}) });
         await at.update(CAMPAIGNS, plan.parent.id, { [CF.processing]: 'Running', [CF.message]: msg, [CF.error]: null, [CF.startedAt]: new Date().toISOString(), [CF.completedAt]: null });
         continue;

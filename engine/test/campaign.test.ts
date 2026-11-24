@@ -337,3 +337,15 @@ test('a campaign created while the key pointed at another workspace is caught ri
   const { findCampaignWorkspace } = await import('../src/providers/emailbison.js');
   assert.deepEqual((await findCampaignWorkspace(bison.key, bison.url, 700, [2, 41])).map((f) => f.teamId), [41]);
 });
+
+test('Build Campaign queued message: one line per campaign, warns when many leads share few inboxes (Alex, 2026-11-24)', async () => {
+  const { buildQueuedMessage } = await import('../src/airtable/campaignBuild.js');
+  const msg = buildQueuedMessage({ outputs: [
+    { outputType: 'generic', recordId: 'r1', name: 'X - Generic Emails', leads: 277, senderEmailIds: ['a'] },
+    { outputType: 'direct', recordId: 'r2', name: 'X - Direct Emails', leads: 850, senderEmailIds: ['b'] },
+  ] }, [{ id: 120, status: 'queued' }, { id: 121, status: 'queued' }], false);
+  assert.equal(msg.split('\n')[0], 'Build Campaign queued (job 120, 121) · drafts only, never launched');
+  assert.match(msg, /\n• Generic emails: 277 leads, 1 inbox\n• Direct emails: 850 leads, 1 inbox/);
+  assert.match(msg, /⚠ 850 leads on 1 inbox \(direct\): this will send slowly/);
+  assert.doesNotMatch(msg, /277 leads on 1 inbox/, 'under 300 leads per inbox: no warning');
+});
