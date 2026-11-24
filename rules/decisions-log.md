@@ -163,3 +163,4 @@ Newest at the bottom. Format: `date | decision | why | who`
 - 2026-11-24 — CORRECTION (Alex): QA must fail when there is no copy; the copy proves every lead has its variables. Reverted the rows-only QA pass from earlier today; kept the Build Campaign empty-variable check.
 - 2026-11-24 — Build Campaign fixes ALL CAPS company names to normal capitalisation (mixed case kept, short acronyms kept). Why: Alex — names should read naturally, not 'APPLE'.
 - 2026-11-24 — Enrichment message reports, per variable, how many leads were found vs use the fallback phrase. (The fallback itself exists since 2026-11-21.)
+- 2026-11-24 — Generate Filters measures the real search depth (about 8 one-company probes at MAX_COVERAGE) and sizes the goal and auto-widen on it. Why: free count 23,065 vs ~2,000 findable on pet e-com.

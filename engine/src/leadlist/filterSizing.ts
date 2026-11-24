@@ -147,7 +147,9 @@ export const WIDEN_STEPS: WidenStep[] = [
 const n = (x: number) => Math.round(x).toLocaleString('en-US');
 export interface Sizing {
   leadGoal: number; source: string; sourceNote?: string; leadsPerCompany: number; countYield: number; companiesNeeded: number;
-  freeCount: number | null; expectedReal: number | null; enough: boolean | null; widened: string[]; counts: { step: string; freeCount: number }[]; note?: string;
+  freeCount: number | null; expectedReal: number | null; enough: boolean | null; widened: string[]; counts: { step: string; freeCount: number; findable?: number | null }[]; note?: string;
+  /** How deep DiscoLike's real search goes (MAX_COVERAGE, with the targeting text); null = not probed. */
+  findable?: number | null; findableCapped?: boolean;
 }
 export function goalText(s: Pick<Sizing, 'leadGoal' | 'source' | 'sourceNote' | 'companiesNeeded'>): string {
   return `Goal ${n(s.leadGoal)} leads (${s.sourceNote ?? s.source}) → needs ~${n(s.companiesNeeded)} companies.`;
@@ -156,7 +158,9 @@ export function sizingText(s: Sizing): string {
   const parts = [goalText(s)];
   if (s.freeCount === null) parts.push(s.note ?? 'Free count not available for this plan, so the size was not checked.');
   else {
-    parts.push(`Free count ${n(s.freeCount)} → expect ~${n(s.expectedReal ?? 0)} real.`);
+    if (s.findable !== null && s.findable !== undefined && !s.findableCapped && s.findable < s.freeCount * s.countYield)
+      parts.push(`Free count ${n(s.freeCount)}, but the real search only reaches ~${n(s.findable)} companies (the count cannot use the targeting text) → expect ~${n(s.expectedReal ?? 0)} real.`);
+    else parts.push(`Free count ${n(s.freeCount)}${s.findable != null ? ` (real search reaches ${s.findableCapped ? '10,000+' : `~${n(s.findable)}`})` : ''} → expect ~${n(s.expectedReal ?? 0)} real.`);
     if (s.widened.length) parts.push(`Widened: ${s.widened.join(', ')}.`);
     if (s.enough === false) parts.push(`Still short of the goal (~${n(s.expectedReal ?? 0)} of ~${n(s.companiesNeeded)} companies): kept the widest plan. Geography is never widened automatically; a broader targeting sentence or more areas would add more. This is a goal, not a block: you can still run the sample.`);
     else if (!s.widened.length) parts.push('Big enough: no widening needed.');
@@ -213,4 +217,25 @@ export function modelsText(kept: string[], dropped: { label: string; share: numb
   if (dropped.length) parts.push(`Business model: ${kept.length ? kept.join(', ') : 'none'} (skipped under 60%: ${dropped.map((d) => `${d.label} ${Math.round(d.share * 100)}%`).join(', ')}).`);
   if (examplesNote) parts.push(`Examples: ${examplesNote}.`);
   return parts.join(' ');
+}
+
+/**
+ * How deep DiscoLike's real search goes (Alex, 2026-11-24): the free count ignores the targeting
+ * text, so it can say 23,000 when the search only reaches ~2,000 (pet e-com). `has(offset)` asks
+ * for ONE company at that position (about 1 record each). Steps out 500, 1k, 2k, 4k, 8k, 10k (the
+ * API's offset limit), then narrows to about 10%. About 6-9 calls.
+ */
+export const PROBE_STEPS = [500, 1000, 2000, 4000, 8000, 10000];
+export async function probeDepth(has: (offset: number) => Promise<boolean>): Promise<{ depth: number; capped: boolean; calls: number }> {
+  let calls = 0;
+  const ask = async (o: number) => { calls++; return has(o); };
+  if (!(await ask(0))) return { depth: 0, capped: false, calls };
+  let lo = 0, hi: number | null = null;
+  for (const o of PROBE_STEPS) { if (await ask(o)) lo = o; else { hi = o; break; } }
+  if (hi === null) return { depth: lo, capped: true, calls };
+  while (hi - lo > Math.max(100, Math.round(lo * 0.1))) {
+    const mid = Math.round((lo + hi) / 2);
+    if (await ask(mid)) lo = mid; else hi = mid;
+  }
+  return { depth: lo + 1, capped: false, calls };
 }
