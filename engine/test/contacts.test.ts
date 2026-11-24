@@ -24,7 +24,9 @@ const person = (first: string, title: string, domain: string, extra: Record<stri
 const C = (over: Partial<Contact>): Contact => ({ domain: 'a.com', name: '', first_name: 'A', last_name: 'B', title: '', seniority: '', department: '', email: 'a@a.com', linkedin_url: '', person_country: 'US', person_state: '', company_name: '', ...over });
 
 function cfg(over: Partial<Config> = {}): Config {
-  return { ...loadConfig({ ENGINE_SECRET: 'x'.repeat(40), DATABASE_URL: url ?? 'postgres://x' } as NodeJS.ProcessEnv), discoLikeApiKey: 'k', discoLikeBaseUrl: disco.url, googleKeyFile: google.keyFile, googleImpersonateUser: 'scale@dulcy.io', googleSheetsBaseUrl: google.url, dryRun: true, liveStages: ['leadlist.contacts'], ...over };
+  return { ...loadConfig({ ENGINE_SECRET: 'x'.repeat(40), DATABASE_URL: url ?? 'postgres://x' } as NodeJS.ProcessEnv), discoLikeApiKey: 'k', discoLikeBaseUrl: disco.url, googleKeyFile: google.keyFile, googleImpersonateUser: 'scale@dulcy.io', googleSheetsBaseUrl: google.url, dryRun: true, liveStages: ['leadlist.contacts'],
+    // The old contact paths are retired for real lists (Alex, 2026-11-24); their tests keep the code covered.
+    legacyContactsEnd: '2099-01-01T00:00:00Z', ...over };
 }
 const run = async (input: Record<string, unknown>, c = cfg()) => {
   const q = await enqueue(db, { kind: 'leadlist.contacts', recordId: REC, dryRun: false, input, maxAttempts: 3, deadlineMs: 120_000 });
@@ -304,7 +306,8 @@ test('the Contacts tab always matches the engine exactly: DiscoLike, then Contra
   assert.deepEqual(tab('Contacts (Cut)'), await db_(`tier = 'Cut'`));
 });
 
-test('from 2027-01-01 a list still set to the legacy DiscoLike / ContraGen options uses the Contacts run (never the retired endpoints)', { skip }, async () => {
+test('a list still set to an old option (DiscoLike / ContraGen) uses the Contacts run: retired 2026-11-24, the default config (never the retired endpoints)', { skip }, async () => {
+  assert.equal(loadConfig({ ENGINE_SECRET: 'x'.repeat(40), DATABASE_URL: 'postgres://x' } as NodeJS.ProcessEnv).legacyContactsEnd, '2026-11-24T00:00:00Z', 'retired by default (Alex)');
   const j = await run({ personaDna: PERSONA, contraGen: true }, cfg({ legacyContactsEnd: '2020-01-01T00:00:00Z' }));
   assert.equal(j.job.status, 'succeeded', j.job.error);
   assert.equal(disco.calls, 0, 'no legacy contact search');

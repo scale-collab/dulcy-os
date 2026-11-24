@@ -106,17 +106,14 @@ Not checked by the engine yet (do these yourself before pressing Launch): the **
 
 ---
 
-## 3. Contact Source: which one to pick
+## 3. Contacts: one way only (DiscoLike Contacts Run)
 
-Set **Contact Source** on the list before **Find Contacts**. **Leave it empty for the default.**
+**Since 2026-11-24 there is no choice to make** (Alex: remove the old way). Every list finds contacts with the **DiscoLike Contacts Run**: DiscoLike's database first, then web search for companies with nobody, then a real-time email check. Only people with a checked email are delivered and paid for (1 cent each).
 
-| Option | What happens | When to use |
-|---|---|---|
-| **DiscoLike Contacts Run** (default; also used when the field is empty) | DiscoLike's one-step search: its database first, then web search for companies with nobody, then a real-time email check. Only people with a checked email are delivered and paid for (1 cent each). | Every new list (decided 2026-11-23 after the live accuracy test). |
-| **DiscoLike** (legacy, ends 2026-12-31) | DiscoLike's contact database only, no email check. | Only if picked on purpose. |
-| **DiscoLike + ContraGen** (legacy, ends 2026-12-31) | Database first, then ContraGen web research on companies under 5 usable contacts. | Only if picked on purpose. |
-
-**Ready for 2027:** every DiscoLike endpoint the default path uses stays after 2026-12-31 (company search, count, exclusion lists, ICP review, DiscoGen, Contacts run). From 2027-01-01 a list still set to a legacy option automatically uses the Contacts run instead of failing. If DiscoLike marks any endpoint we use as retiring (Deprecation/Sunset header), the engine logs a warning: "DiscoLike says this endpoint is being retired".
+- The Contact Source dropdown is gone from the Lead List Center page.
+- A list that still has an old value ("DiscoLike", "DiscoLike + ContraGen", "ContraGen") uses the Contacts Run anyway; the message says "Legacy DiscoLike contact options are retired: used the DiscoLike Contacts run".
+- The old code stays in the engine (tested) only so nothing breaks; DiscoLike retires those endpoints on 2026-12-31. `LEGACY_CONTACTS_END` in the server .env would bring them back; don't, unless Alex asks.
+- Every DiscoLike endpoint the engine uses stays after 2026-12-31. If DiscoLike marks one as retiring, the engine logs "DiscoLike says this endpoint is being retired".
 
 **Known limit:** about 28% of Contacts-run people (the ones found on the web, not in DiscoLike's database) have no DiscoLike person ID. Deep Review Contacts and person-level enrichment skip those people (company-level enrichment still works).
 
