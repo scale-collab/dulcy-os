@@ -113,7 +113,28 @@ export function cleanCompany(value: unknown): string {
     if (next === cleaned || !/[\p{L}\p{N}]/u.test(next)) break;
     cleaned = next;
   }
-  return cleaned;
+  return fixAllCaps(cleaned);
+}
+
+/** Short words kept in capitals inside an ALL CAPS name (likely acronyms), except these plain words. */
+const PLAIN_SHORT = new Set(['AND', 'OF', 'THE', 'FOR', 'A', 'AN', 'TO', 'IN', 'ON', 'AT', 'BY', 'CO', 'PET', 'DOG', 'CAT', 'MY', 'OUR', 'NEW', 'BIG', 'TOP', 'ONE', 'ALL']);
+/**
+ * ALL CAPS company names get normal capitalisation (Alex, 2026-11-24): "ACME ROOFING" -> "Acme
+ * Roofing". Names with any lower-case letter stay exactly as written (eBay, iRobot, McDonald's).
+ * In an all-caps name, words of 2-3 letters stay capitals as likely acronyms (ABC, USA), except
+ * plain words such as AND / OF / THE / PET.
+ */
+export function fixAllCaps(name: string): string {
+  const letters = name.replace(/[^\p{L}]/gu, '');
+  if (letters.length < 4 || letters !== letters.toUpperCase()) return name;
+  let first = true;
+  return name.replace(/\p{L}[\p{L}'’]*/gu, (w) => {
+    const isFirst = first; first = false;
+    if (w.length <= 3 && /^\p{Lu}+$/u.test(w) && !PLAIN_SHORT.has(w) && w.length >= 2) return w;
+    const lower = w.toLowerCase();
+    if (!isFirst && ['and', 'of', 'the', 'for', 'a', 'an', 'to', 'in', 'on', 'at', 'by'].includes(lower)) return lower;
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
+  });
 }
 
 export interface PreparedLeads {

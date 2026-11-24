@@ -91,6 +91,19 @@ test('leads: dedupe, company clean-up, first-name fallback, attribution, copy co
   assert.equal(gen.rows[0][gen.headers.indexOf('first_name')], 'Acme Roofing', 'generic first name = company');
 });
 
+test('company names: ALL CAPS gets normal capitalisation; mixed case and acronyms are kept (Alex, 2026-11-24)', () => {
+  assert.equal(cleanCompany('APPLE'), 'Apple');
+  assert.equal(cleanCompany('ACME ROOFING LLC'), 'Acme Roofing');
+  assert.equal(cleanCompany('THE HONEST KITCHEN, INC.'), 'The Honest Kitchen');
+  assert.equal(cleanCompany('ABC PLUMBING AND HEATING'), 'ABC Plumbing and Heating');
+  assert.equal(cleanCompany('PET SUPPLY PLUS'), 'Pet Supply Plus');
+  assert.equal(cleanCompany("O'NEIL'S PET FOOD"), "O'neil's Pet Food");
+  assert.equal(cleanCompany('eBay'), 'eBay', 'mixed case kept');
+  assert.equal(cleanCompany('Open Farm Pet'), 'Open Farm Pet');
+  assert.equal(cleanCompany('IBM'), 'IBM', 'short all-caps name kept');
+  assert.equal(cleanCompany('BARK'), 'Bark');
+});
+
 test('small rules: sender cap, stable schedule, company names', () => {
   assert.equal(senderCap(3000, 2, 15), 100);
   assert.equal(senderCap(3, 2, 15), 1);
