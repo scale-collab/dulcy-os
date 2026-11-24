@@ -14,7 +14,7 @@ export function clientFileFor(dir: string, workspaceId: number): { name: string;
   for (const f of files) {
     const text = readKnowledge(dir, `clients/${f}`);
     const ids = [...text.matchAll(/workspace ID (\d+)/gi)].map((m) => Number(m[1]));
-    if (ids.includes(workspaceId)) return { name: (/^#\s*(.+)$/m.exec(text)?.[1] ?? f.replace(/\.md$/, '')).trim(), text };
+    if (ids.includes(workspaceId)) return { name: (/^#\s*(.+)$/m.exec(text)?.[1] ?? f.replace(/\.md$/, '')).replace(/^Client:\s*/i, '').replace(/\s*\(.*\)\s*$/, '').trim(), text };
   }
   return null;
 }
