@@ -16,7 +16,7 @@ const REC = 'recExpandTest0001';
 let db: pg.Pool;
 let google: FakeGoogle;
 let server: http.Server;
-const disco = { url: '', pool: [] as any[], lists: new Map<string, Set<string>>(), discoverCalls: 0, lastMax: 0 };
+const disco = { url: '', pool: [] as any[], lists: new Map<string, Set<string>>(), discoverCalls: 0, lastMax: 0, balancedCap: Infinity, relevances: [] as string[] };
 
 const co = (i: number) => ({ domain: `co${i}.com`, name: `Co ${i}`, description: i % 10 === 0 ? 'Online directory of suppliers' : 'We manufacture outdoor furniture', keywords: { furniture: 1 }, industry_groups: { MANUFACTURING: 1 } });
 
@@ -58,7 +58,10 @@ before(async () => {
       disco.discoverCalls++;
       const max = Number(u.searchParams.get('max_records')); disco.lastMax = max;
       const ex = new Set(u.searchParams.getAll('exclusion_query_id').flatMap((id) => [...(disco.lists.get(id) ?? [])]));
-      return res.end(JSON.stringify(disco.pool.filter((r) => !ex.has(r.domain)).slice(0, max)));
+      const rel = u.searchParams.get('relevance') ?? ''; disco.relevances.push(rel);
+      // BALANCED stops where the fit estimate drops: only the first balancedCap companies exist for it.
+      const pool = rel === 'BALANCED' ? disco.pool.slice(0, disco.balancedCap) : disco.pool;
+      return res.end(JSON.stringify(pool.filter((r) => !ex.has(r.domain)).slice(0, max)));
     }
     res.statusCode = 404; res.end('{}');
   });
@@ -70,7 +73,7 @@ before(async () => {
 after(async () => { google.close(); server.close(); if (!skip) await db.end(); });
 beforeEach(async () => {
   disco.pool = Array.from({ length: 300 }, (_, i) => co(i + 1));
-  disco.lists = new Map(); disco.discoverCalls = 0;
+  disco.lists = new Map(); disco.discoverCalls = 0; disco.balancedCap = Infinity; disco.relevances = [];
   google.written = {}; google.grid = {}; google.writes = 0; google.creates = 0; google.maxWriteBytes = 0;
   if (!skip) await db.query('TRUNCATE jobs, steps, receipts, events, lead_companies, lead_list_sheets, lead_list_profiles RESTART IDENTITY CASCADE');
 });
@@ -255,4 +258,15 @@ test('skip enrichment: a verified list moves to QA; an unverified list is refuse
   const no = await run('leadlist.skipenrich', { finalDirect: 0, finalGeneric: 0 }, cfg({ liveStages: ['leadlist.skipenrich'] }));
   assert.equal(no.job.status, 'failed');
   assert.match(String(no.job.error), /run Verify first/);
+});
+
+test('BALANCED runs out before the target: Expand continues on MAX_COVERAGE and says so (Alex, 2026-11-24)', { skip }, async () => {
+  disco.balancedCap = 60;
+  await sample();
+  const j = await expand({ target: 100 });
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.ok(disco.relevances.includes('BALANCED') && disco.relevances.includes('MAX_COVERAGE'), disco.relevances.join(','));
+  assert.deepEqual(j.job.result.relevanceWidened, { from: 'BALANCED', to: 'MAX_COVERAGE' });
+  assert.ok(j.job.result.list.usable >= 100, `usable ${j.job.result.list.usable}`);
+  assert.match(j.job.result.message, /^Search widened from BALANCED to MAX_COVERAGE/);
 });

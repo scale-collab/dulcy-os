@@ -79,6 +79,12 @@ export const companyExpandStage: Stage = async (ctx) => {
     await ctx.progress(`Expanding: batch ${batchNo} done. ${c.usable.toLocaleString('en-US')} of ${target.toLocaleString('en-US')} usable (${c.total.toLocaleString('en-US')} checked). Running ${Math.round(mins)} min${left !== null ? `, about ${left} min left` : ''}.`);
   };
   let stop: 'target' | 'exhausted' | 'batch-limit' = 'batch-limit';
+  // Auto-widen the search depth (Alex, 2026-11-24): BALANCED / MAX_RELEVANCE stop where DiscoLike's
+  // fit estimate drops, which can end far below the target (pet e-com: 1,568 of 10,000 while the
+  // free count was 23,000). When that happens, continue on MAX_COVERAGE; the fit check still
+  // reviews every company. Recorded as a step, so a retry takes the same path.
+  let filtersNow: Record<string, unknown> = plan.filters;
+  let widenedRelevance: string | null = null;
   const batches: Array<Record<string, number>> = [];
   for (let i = 0; i < maxBatches; i++) {
     const now = await listCounts(ctx.db, listId);
@@ -93,7 +99,7 @@ export const companyExpandStage: Stage = async (ctx) => {
       const prior = [...new Set([...(await listDomains(ctx.db, listId)), ...excluded])];
       if (prior.length > MAX_PRIOR_DOMAINS) throw new PermanentError(`the list already has ${prior.length} domains to exclude (limit ${MAX_PRIOR_DOMAINS})`);
       const queryId = await disco.exclusionList(`Lead List ${listId} expansion batch ${b}`, prior, ['lead-list-expansion', listId]);
-      const filters = { ...plan.filters, exclusion_query_id: [...new Set([...((plan.filters.exclusion_query_id as string[] | undefined) ?? []), queryId])] };
+      const filters = { ...filtersNow, exclusion_query_id: [...new Set([...((filtersNow.exclusion_query_id as string[] | undefined) ?? []), queryId])] };
       const rows = await ctx.paid({
         scope: 'record', provider: 'discolike', callKey: `expand:${plan.hash}:${b}`, units: want,
         run: () => disco.discover(filters, want),
@@ -106,7 +112,17 @@ export const companyExpandStage: Stage = async (ctx) => {
     batches.push(out);
     await ctx.step(`mirror-${b}`, () => mirrorCompanies(ctx.db, sheets, listId));
     await tick(b, await listCounts(ctx.db, listId));
-    if (out.pulled < out.requested || out.new === 0) { stop = 'exhausted'; break; }
+    if (out.pulled < out.requested || out.new === 0) {
+      const rel = String(filtersNow.relevance ?? '');
+      const below = (await listCounts(ctx.db, listId)).usable < target;
+      if (below && (rel === 'BALANCED' || rel === 'MAX_RELEVANCE')) {
+        widenedRelevance = await ctx.step(`relevance-widen-${b}`, async () => rel);
+        filtersNow = { ...filtersNow, relevance: 'MAX_COVERAGE' };
+        await ctx.progress(`Expanding: DiscoLike ran out of ${rel} matches at batch ${b}; continuing with MAX_COVERAGE (every company is still fit-checked).`);
+        continue;
+      }
+      stop = 'exhausted'; break;
+    }
   }
 
   // Catch-up write: covers a batch saved just before a crash, whatever path a retry took.
@@ -121,8 +137,9 @@ export const companyExpandStage: Stage = async (ctx) => {
     added: { companies: after.total - before.total, usable: after.usable - before.usable },
     batches,
     stoppedBecause: stop,
+    ...(widenedRelevance ? { relevanceWidened: { from: widenedRelevance, to: 'MAX_COVERAGE' } } : {}),
     shortfall,
     sheet: { url: `https://docs.google.com/spreadsheets/d/${sheet.sheetId}`, tab: sheet.tab },
-    message: `${after.usable} usable of ${after.total} companies (Tier 1 ${after.tier1}, Tier 2 ${after.tier2}, Cut ${after.cut}; ${Math.round(after.usableRate * 100)}% usable, ${status})${shortfall ? `; ${shortfall} short of the ${target} target (${stop})` : ''}`,
+    message: `${widenedRelevance ? `Search widened from ${widenedRelevance} to MAX_COVERAGE when the closer matches ran out. ` : ''}${after.usable} usable of ${after.total} companies (Tier 1 ${after.tier1}, Tier 2 ${after.tier2}, Cut ${after.cut}; ${Math.round(after.usableRate * 100)}% usable, ${status})${shortfall ? `; ${shortfall} short of the ${target} target (${stop})` : ''}`,
   };
 };
