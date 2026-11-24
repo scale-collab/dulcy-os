@@ -123,6 +123,17 @@ test('raising the target continues from the last batch with new companies only',
   assert.equal(dupes.rowCount, 0);
 });
 
+test('a sample below 80% fit is a warning only: once approved, Expand runs (Alex, 2026-11-23)', { skip }, async () => {
+  disco.pool = Array.from({ length: 300 }, (_, i) => ({ ...co(i + 1), description: i % 2 ? 'Online directory of suppliers' : 'We manufacture outdoor furniture' }));
+  const s = await sample();
+  assert.equal(s.job.status, 'succeeded', s.job.error);
+  assert.equal(s.job.result.sample.status, 'Failed');
+  assert.match(s.job.result.message, /Below 80% fit \(warning\): review before approving/);
+  const j = await expand({ target: 30 });
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.ok(j.job.result.list.usable >= 30, JSON.stringify(j.job.result.list));
+});
+
 test('DiscoLike runs out: stops and reports the shortfall', { skip }, async () => {
   disco.pool = disco.pool.slice(0, 90);
   await sample();

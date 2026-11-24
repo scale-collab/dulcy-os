@@ -127,6 +127,8 @@ test('a weak sample fails the gate (under 70% usable)', { skip }, async () => {
   fake.rows = [...Array.from({ length: 6 }, (_, i) => co(`dir${i}.com`, 'Online directory of contractors')), ...Array.from({ length: 4 }, (_, i) => co(`r${i}.com`, 'Roofing'))];
   const j = await settle(cfg(), (await queue()).job.id);
   assert.equal(j.job.result.sample.status, 'Failed');
+  // A warning, never a lock (Alex, 2026-11-23): the label stays, the message reads as a warning.
+  assert.match(j.job.result.message, /^sample Below 80% fit \(warning\): review before approving: /);
 });
 
 test('no matching companies or no key: stops before spending', { skip }, async () => {
