@@ -218,3 +218,14 @@ test('due follow-ups: drafted onto the row + Slack; prospect answered → not a 
   assert.match(String(again.job.result.message), /none new/);
   assert.equal(claudeCalls.length, 2, 'nothing drafted twice');
 });
+
+test('a dry run does not use up a follow-up: the live run after it still drafts', { skip }, async () => {
+  due.recF = thread({ [RA.state]: 'Scheduled', [RA.dueAt]: '2026-11-24T15:00:00.000Z', [RA.followupType]: 'No Response', [EF.lastSent]: 'Last Email Sent By Dulcy', [EF.leadStatus]: 'Interested' });
+  await run(cfg({ dryRun: true, liveStages: [] }), 'sean.followup');
+  assert.equal(claudeCalls.length, 0);
+  claudeAnswers = [{ action: 'reply', intent: 'Interested', reason: 'r', they_said: 's', draft: 'Hi Jane, the notes are ready.', question_for_alex: '' }];
+  const j = await run(cfg({ liveStages: ['sean.followup'] }), 'sean.followup');
+  assert.equal(j.job.status, 'succeeded', j.job.error ?? '');
+  assert.equal(claudeCalls.length, 1);
+  assert.equal(due.recF[RA.state], 'Needs Approval');
+});
