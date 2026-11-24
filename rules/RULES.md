@@ -94,6 +94,7 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-17] The repurposing counts (2 LinkedIn, 3-5 X, 2 short scripts, 1 carousel per source) are examples, not a weekly quota. No posting cadence is set yet. (Alex)
 
 ## How to work with Alex
+- [2026-11-24] Agents: 9 active (Ada, Atlas, Scribe with offers, Scout, Sean, Riley, Cole, Ledger, Sienna). Forge folded into Scribe; Pixel, Lex, Harper parked. Start with Sean (draft mode: Alex/Josh approve each reply in Slack until Alex says otherwise) plus the decisions loop. Why: Twenty West is cancelling over reply handling and Josh can't scale. (Alex)
 - [2026-11-24] Claude handles business only; ChatGPT handles personal. Nothing personal goes into the agents until Alex says so. (Alex)
 - [2026-11-24] Alex's week: Mon campaigns, Tue and Thu meetings, Wed check meetings, Fri content day, Sat-Sun off. Agents plan around it (content ready by Friday, campaign reviews on Monday). (Alex)
 - [2026-11-20] Until Alex says otherwise, Claude runs the engine end-to-end tests itself on Dulcy's own test lists, including the approval clicks (Company Sample Approved, Contact Sample Approved, QA Passed) and Build Campaign drafts. Never a launch, and never on a client's list. Reason: Alex wants it proven end to end before he tests. (Alex)
