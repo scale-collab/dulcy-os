@@ -101,6 +101,8 @@ Not checked by the engine yet (do these yourself before pressing Launch): the **
 
 **Top-up numbers** come from the campaign's own fields: reply rate = Unique Replies / Emails Sent, interested rate = Interested / Unique Replies, bounce = Bounced / Emails Sent. No replies yet = no top-up.
 
+**Bounce check across all clients** (2026-11-24): with `BOUNCE_CHECK_WORKSPACES=all` the engine uses the Dulcy key to check **every workspace it can reach** (35 today), one after another, every `BOUNCE_CHECK_EVERY_MIN` minutes. Over 4% at 35%+ progress = paused (when `bounce.check` is in LIVE_STAGES; otherwise report-only), over 2.5% = watch. One Slack alert lists each campaign with its workspace; a workspace that cannot be read is listed, never stops the others.
+
 **Skip Bounce Pause:** when ticked on a campaign, the engine's bounce check never pauses it (for a just-launched campaign where 1 early bounce looks like 10%). It still shows in the watch alert.
 
 **Dry run:** until a button's stage is switched on on the server (LIVE_STAGES), it runs as a dry run: all checks run, nothing changes in EmailBison, and Engine Message starts with "Dry run".

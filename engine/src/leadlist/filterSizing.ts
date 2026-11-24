@@ -107,10 +107,16 @@ export function applyLabels(filters: Filters, cov: Coverage, opts: { crossIndust
 
 const short = (x: LabelShare) => (x.kind === 'sub_industry' ? x.label.split('/')[1] ?? x.label : x.label);
 const pc = (x: LabelShare) => `${short(x)} ${Math.round(x.share * 100)}%`;
-export function labelsText(used: LabelShare[], skipped: LabelShare[], total: number, crossIndustry = false, heldBack: LabelShare[] = []): string {
-  const head = crossIndustry ? 'Cross-industry brief: no industry labels.' : used.length ? `Labels used (either/or): ${used.map(pc).join(', ')}.` : 'Labels used: none (no industry label is on 60% of the lookalike companies; the lookalike text, examples and keywords do the targeting).';
-  const held = heldBack.length ? ` Held back (whole industries, used only if the list is too small): ${heldBack.map(pc).join(', ')}.` : '';
-  return `${head}${held}${skipped.length ? ` Skipped (under 60%): ${skipped.map(pc).join(', ')}.` : ''} (${total} lookalike companies checked.)`;
+/** The labels block of the Generate filters message. */
+export function labelsLines(used: LabelShare[], skipped: LabelShare[], total: number, crossIndustry = false, heldBack: LabelShare[] = []): string[] {
+  const out = ['Labels (either/or)'];
+  if (crossIndustry) out.push('• None: cross-industry brief');
+  else if (used.length) out.push(`• Used: ${used.map(pc).join(', ')}`);
+  else out.push('• None used: no industry label is on 60% of the lookalike companies (the lookalike text, examples and keywords target)');
+  if (heldBack.length) out.push(`• Held back (whole industries, used only if the list is too small): ${heldBack.map(pc).join(', ')}`);
+  if (skipped.length) out.push(`• Skipped (under 60%): ${skipped.map(pc).join(', ')}`);
+  out.push(`• Checked: ${total} lookalike companies`);
+  return out;
 }
 
 /** The next wider employee range (one DiscoLike step each side), or null when it can't widen. */
@@ -154,19 +160,18 @@ export interface Sizing {
 export function goalText(s: Pick<Sizing, 'leadGoal' | 'source' | 'sourceNote' | 'companiesNeeded'>): string {
   return `Goal ${n(s.leadGoal)} leads (${s.sourceNote ?? s.source}) → needs ~${n(s.companiesNeeded)} companies.`;
 }
-export function sizingText(s: Sizing): string {
-  const parts = [goalText(s)];
-  if (s.freeCount === null) parts.push(s.note ?? 'Free count not available for this plan, so the size was not checked.');
-  else {
-    if (s.findable !== null && s.findable !== undefined && !s.findableCapped && s.findable < s.freeCount * s.countYield)
-      parts.push(`Free count ${n(s.freeCount)}, but the real search only reaches ~${n(s.findable)} companies (the count cannot use the targeting text) → expect ~${n(s.expectedReal ?? 0)} real.`);
-    else parts.push(`Free count ${n(s.freeCount)}${s.findable != null ? ` (real search reaches ${s.findableCapped ? '10,000+' : `~${n(s.findable)}`})` : ''} → expect ~${n(s.expectedReal ?? 0)} real.`);
-    if (s.widened.length) parts.push(`Widened: ${s.widened.join(', ')}.`);
-    if (s.enough === false) parts.push(`Still short of the goal (~${n(s.expectedReal ?? 0)} of ~${n(s.companiesNeeded)} companies): kept the widest plan. Geography is never widened automatically; a broader targeting sentence or more areas would add more. This is a goal, not a block: you can still run the sample.`);
-    else if (!s.widened.length) parts.push('Big enough: no widening needed.');
-    if (s.note) parts.push(s.note);
-  }
-  return parts.join(' ');
+/** The size block of the Generate filters message, one fact per line (Alex, 2026-11-24). */
+export function sizingLines(s: Sizing): string[] {
+  const out = ['Size', `• Goal: ${n(s.leadGoal)} leads (${s.sourceNote ?? s.source}) → needs ~${n(s.companiesNeeded)} companies`];
+  if (s.freeCount === null) { out.push(`• ${s.note ?? 'Free count not available for this plan, so the size was not checked.'}`); return out; }
+  if (s.findable !== null && s.findable !== undefined && !s.findableCapped && s.findable < s.freeCount * s.countYield)
+    out.push(`• Free count ${n(s.freeCount)}, but the real search only reaches ~${n(s.findable)} companies (the count cannot use the targeting text) → expect ~${n(s.expectedReal ?? 0)} real`);
+  else out.push(`• Free count ${n(s.freeCount)}${s.findable != null ? ` (real search reaches ${s.findableCapped ? '10,000+' : `~${n(s.findable)}`})` : ''} → expect ~${n(s.expectedReal ?? 0)} real`);
+  if (s.widened.length) out.push(`• Widened: ${s.widened.join(', ')}`);
+  if (s.enough === false) out.push(`• Still short of the goal (~${n(s.expectedReal ?? 0)} of ~${n(s.companiesNeeded)} companies): kept the widest plan. Geography is never widened automatically; a broader targeting sentence or more areas would add more. This is a goal, not a block: you can still run the sample.`);
+  else if (!s.widened.length) out.push('• Big enough: no widening needed');
+  if (s.note) out.push(`• Note: ${s.note}`);
+  return out;
 }
 
 /**
@@ -212,20 +217,23 @@ export function applyModelsAndExamples(filters: Filters, rows: any[], opts: { us
   return { filters: f, modelShares, droppedModels, examples, examplesNote };
 }
 
-export function modelsText(kept: string[], dropped: { label: string; share: number }[], examplesNote: string): string {
-  const parts: string[] = [];
-  if (dropped.length) parts.push(`Business model: ${kept.length ? kept.join(', ') : 'none'} (skipped under 60%: ${dropped.map((d) => `${d.label} ${Math.round(d.share * 100)}%`).join(', ')}).`);
-  if (examplesNote) parts.push(`Examples: ${examplesNote}.`);
-  return parts.join(' ');
+/** Business model and example sites lines (search plan block). */
+export function modelsLines(kept: string[], dropped: { label: string; share: number }[], examplesNote: string): string[] {
+  const out: string[] = [];
+  out.push(`• Business model: ${kept.length ? kept.join(', ') : 'any'}${dropped.length ? ` (skipped under 60%: ${dropped.map((d) => `${d.label} ${Math.round(d.share * 100)}%`).join(', ')})` : ''}`);
+  if (examplesNote) out.push(`• Examples: ${examplesNote}`);
+  return out;
 }
 
 /**
  * How deep DiscoLike's real search goes (Alex, 2026-11-24): the free count ignores the targeting
  * text, so it can say 23,000 when the search only reaches ~2,000 (pet e-com). `has(offset)` asks
  * for ONE company at that position (about 1 record each). Steps out 500, 1k, 2k, 4k, 8k, 10k (the
- * API's offset limit), then narrows to about 10%. About 6-9 calls.
+ * API's offset limit), then narrows to about 10%. About 6-9 calls of 5 records each.
  */
 export const PROBE_STEPS = [500, 1000, 2000, 4000, 8000, 10000];
+/** DiscoLike's smallest discover (max_records >= 5; live 422 with 1, 2026-11-24). */
+export const PROBE_RECORDS = 5;
 export async function probeDepth(has: (offset: number) => Promise<boolean>): Promise<{ depth: number; capped: boolean; calls: number }> {
   let calls = 0;
   const ask = async (o: number) => { calls++; return has(o); };

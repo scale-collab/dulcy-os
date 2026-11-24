@@ -59,6 +59,8 @@ export interface Config {
   /** Bounce check: run every N minutes (0 = off) for these workspaces. */
   bounceCheckEveryMin: number;
   bounceCheckWorkspaces: string[];
+  /** With BOUNCE_CHECK_WORKSPACES=all: the key (EMAILBISON_KEY_<NAME>) used to reach every workspace. */
+  bounceCheckKey: string;
   /** DiscoLike API key (server .env only) and base URL. */
   discoLikeApiKey?: string;
   discoLikeBaseUrl: string;
@@ -125,6 +127,7 @@ export function loadConfig(env = process.env): Config {
     bisonPollMs: num('BISON_POLL_MS', 60_000, env),
     bounceCheckEveryMin: num('BOUNCE_CHECK_EVERY_MIN', 0, env),
     bounceCheckWorkspaces: (env.BOUNCE_CHECK_WORKSPACES ?? '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
+    bounceCheckKey: (env.BOUNCE_CHECK_KEY || 'dulcy').trim().toLowerCase(),
     discoLikeApiKey: env.DISCOLIKE_API_KEY || undefined,
     discoLikeBaseUrl: env.DISCOLIKE_BASE_URL || 'https://api.discolike.com',
     openAiApiKey: env.OPENAI_API_KEY || undefined,
