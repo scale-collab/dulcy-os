@@ -10,7 +10,7 @@ import { enqueue, getJob } from '../src/queue.js';
 import { runOnce } from '../src/worker.js';
 import { loadConfig, type Config } from '../src/config.js';
 import { startFakeOpenAI, type FakeOpenAI } from './fakes/openai.js';
-import { applyLabels, labelCoverage, widerEmployeeRange } from '../src/leadlist/filterSizing.js';
+import { applyLabels, applyModelsAndExamples, labelCoverage, widerEmployeeRange } from '../src/leadlist/filterSizing.js';
 
 const url = process.env.TEST_DATABASE_URL;
 const skip = !url ? 'TEST_DATABASE_URL not set' : false;
@@ -329,4 +329,28 @@ test('generate filters: "ecom" alone no longer forces E-COMMERCE; coverage decid
   assert.match(r.message, /Skipped \(under 60%\): E-COMMERCE 41%/);
   const plain = await press('Medical spas and aesthetic clinics with 1-200 employees in the United States', 'plain');
   assert.ok(!(plain.filters.category ?? []).some((c: string) => /E-COMMERCE/.test(c)), 'no online-selling labels: no E-COMMERCE');
+});
+
+test('business model and example sites (unit): only when they fit (live pet e-com case: no B2B, no pet SHOPS as examples)', () => {
+  const tax = ['RETAIL/PET_STORE', 'CONSUMER_PRODUCTS/PET_PRODUCTS_BRAND'];
+  const rows = Array.from({ length: 10 }, (_, i) => ({
+    domain: i < 5 ? `petshop${i}.com` : `petbrand${i}.com`,
+    industry_groups: i < 5 ? { RETAIL: 0.9 } : { CONSUMER_PRODUCTS: 0.9 },
+    sub_industry: i < 5 ? {} : { 'CONSUMER_PRODUCTS/PET_PRODUCTS_BRAND': 0.9 },
+    business_model: i < 3 ? { B2C: 0.9, B2B: 0.8 } : { B2C: 0.9 },
+  }));
+  const proposed = { business_model: ['B2C', 'B2B'], domain: ['petshop0.com', 'petshop1.com', 'petshop2.com', 'petshop3.com', 'petshop4.com'] };
+  // No label passed: B2B (30%) dropped, B2C (100%) kept, no example sites at all.
+  const none = applyModelsAndExamples(proposed, rows, { used: [], taxonomy: tax });
+  assert.deepEqual(none.filters.business_model, ['B2C']);
+  assert.equal(none.filters.domain, undefined, 'no label passed = no example sites');
+  assert.deepEqual(none.droppedModels.map((d) => d.label), ['B2B']);
+  // A label passed: examples come only from companies carrying it.
+  const used = [{ label: 'CONSUMER_PRODUCTS/PET_PRODUCTS_BRAND', kind: 'sub_industry' as const, share: 0.5, companies: 5 }];
+  const withLabel = applyModelsAndExamples(proposed, rows, { used, taxonomy: tax });
+  assert.deepEqual(withLabel.filters.domain, ['petbrand5.com', 'petbrand6.com', 'petbrand7.com', 'petbrand8.com', 'petbrand9.com']);
+  // An explicit B2B in the sentence and the list's own example sites are always kept.
+  const own = applyModelsAndExamples(proposed, rows, { used: [], taxonomy: tax, explicitModels: ['B2B'], savedDomains: ['myclient.com'] });
+  assert.deepEqual([...(own.filters.business_model as string[])].sort(), ["B2B", "B2C"]);
+  assert.deepEqual(own.filters.domain, ['myclient.com']);
 });

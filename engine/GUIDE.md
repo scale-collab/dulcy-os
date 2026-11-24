@@ -52,6 +52,7 @@ It works the same way for pet e-com, roofers, med spas, manufacturers, jewelry, 
    - **60% or more** of the companies: the label is used as a filter.
    - Several labels at 60%+: they are **either/or** (a company needs any one of them, never all).
    - **A sub-industry at 60%+ is used on its own** (with its parent industry, which DiscoLike narrows to it). Other industries at 60%+ are **held back**: whole industries come in completely (any-of), e.g. med spas: Medspa 97% + Consumer services 79% gave 402,000 (every salon) instead of the med spas. Held-back industries are the first widening step if the list is too small (live test, 2026-11-24).
+   - **Business model and example sites follow the same rule** (live pet e-com test, 2026-11-24): a business model is used only if 60%+ of the companies have it (an explicit "B2B" in the sentence always stays); example sites come only from companies that carry a label that passed, and none are added when no label passed. The list's own example sites are always kept. Before this, the 5 most similar companies were added blindly (five pet shops for a pet e-com brand list) and B2B came in from the top-2 models.
    - **None at 60%:** no industry filter at all. The lookalike text, examples and keywords do the targeting.
    - The message shows the numbers, e.g. "Labels used (either/or): E-COMMERCE 90%. Skipped (under 60%): PET_PRODUCTS_BRAND 40%."
    - This replaces the 2026-11-23 "ecom adds E-COMMERCE" rule: E-commerce is used when the companies really are e-commerce (60%+), and skipped otherwise.
