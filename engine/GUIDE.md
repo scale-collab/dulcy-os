@@ -300,7 +300,8 @@ This covers paused campaigns too, and runs every day of the week. Only records w
    - the client's own file;
    - that client's real threads that **booked a meeting**;
    - the replies you approved before.
-3. **Times.** Two real open times come from the client's own connected calendar. If there's none, Sean uses the client's saved booking link.
+3. **Times.** Two real open times come from the client's own connected calendar, never a time already offered to another prospect in the last 3 days. If there's none, Sean uses the client's saved booking link.
+   - **Sean off for a client:** a line `Sean: off (why)` at the top of the client's file in `clients/` (today: MJJ, the client answers its own replies; Lead Flo, cancelled). Remove the line to switch him back on.
 4. **Where the draft lands.** On the reply's row in Airtable (Reply Queue): Draft, State "Needs Approval", Intent, **Sean Reason**, and **Sean Needs Your Input** when a fact is missing. It is also posted to Slack.
 
 **Approving.**

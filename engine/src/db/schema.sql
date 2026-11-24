@@ -203,3 +203,12 @@ CREATE TABLE IF NOT EXISTS sean_drafts (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (email_record, reply_at)
 );
+
+-- Calendar slots Sean offered, so two prospects are never offered the same time (2026-11-24).
+CREATE TABLE IF NOT EXISTS offered_slots (
+  ws_rec       TEXT NOT NULL,
+  slot         TEXT NOT NULL,
+  email_record TEXT NOT NULL,
+  offered_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (ws_rec, slot, email_record)
+);

@@ -12,7 +12,8 @@ import { createAirtableClient } from '../providers/airtable.js';
 import { createClaude } from '../providers/claude.js';
 import { EMAILS, EF, RA, SETTINGS, val, wsRecordOf } from './emailsFields.js';
 import { clientFileFor } from './knowledge.js';
-import { DraftSchema, type Draft, sharedKnowledge, realExamples, bookingFor, trimHistory } from './sean.js';
+import { DraftSchema, type Draft, type Booking, sharedKnowledge, realExamples, bookingFor, bookingForDraft, trimHistory } from './sean.js';
+import { rememberOffered } from './calendar.js';
 import { DECISIONS, DF } from '../decisions/fields.js';
 
 export interface FollowupStep { delayDays: number; guidance: string }
@@ -129,8 +130,8 @@ export const seanFollowupStage: Stage = async (ctx) => {
   const dir = cfg.knowledgeDir;
   const shared = sharedKnowledge(dir, FOLLOWUP_BRIEF);
   const claude = ctx.dryRun ? null : createClaude({ apiKey: cfg.anthropicApiKey, model: cfg.claudeModel, baseURL: cfg.anthropicBaseUrl });
-  const perClient = new Map<string, { block: string; booking: { times: string[]; link: string }; plan: FollowupPlan }>();
-  const counts = { reply: 0, skip: 0, ask_alex: 0, answered: 0, complete: 0, noClientFile: 0 };
+  const perClient = new Map<string, { block: string; booking: Booking; plan: FollowupPlan }>();
+  const counts = { reply: 0, skip: 0, ask_alex: 0, answered: 0, complete: 0, noClientFile: 0, seanOff: 0 };
 
   for (const r of todo) {
     const f = r.fields;
@@ -147,10 +148,11 @@ export const seanFollowupStage: Stage = async (ctx) => {
     if (type === 'No Response' && val(f[EF.lastSent]) === 'Last Email Sent By Prospect') { await record('answered', 'prospect wrote after our last email'); counts.answered++; continue; }
     const client = clientFileFor(dir, ws);
     if (!client) { counts.noClientFile++; continue; }
+    if (client.seanOff) { await record('sean_off', `Sean is off for ${client.name}`); counts.seanOff++; continue; }
     if (!perClient.has(String(ws))) {
       perClient.set(String(ws), {
         block: [`# Client file: ${client.name}\n${client.text}`, ctx.dryRun ? '' : await realExamples(at, ws, wsRec)].filter(Boolean).join('\n\n'),
-        booking: ctx.dryRun ? { times: [], link: '' } : await bookingFor(cfg, at, wsRec),
+        booking: ctx.dryRun ? { slots: [], tz: 'America/New_York', link: '' } : await bookingFor(cfg, at, wsRec),
         plan: ctx.dryRun ? DEFAULT_PLAN : await planFor(at, wsRec),
       });
     }
@@ -164,7 +166,8 @@ export const seanFollowupStage: Stage = async (ctx) => {
     const n = sent + 1;
 
     const now = new Date().toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'full', timeStyle: 'short' });
-    const varying = `Now: ${now} ET.\n${booking.times.length ? `Times to offer (from the client's own calendar, both free): ${booking.times.join(' or ')}.` : booking.link ? `No live calendar for this client: use this booking link: ${booking.link}` : 'No calendar and no booking link for this client: ask what their week looks like.'}`;
+    const offer = await bookingForDraft(ctx.db, booking, wsRec, r.id);
+    const varying = `Now: ${now} ET.\n${offer.text}`;
     const user = [
       `Follow-up ${n} of up to ${steps.length} (${type}). Step instruction: ${step.guidance}`,
       `Campaign: ${val(f[EF.campaign])}`,
@@ -192,9 +195,10 @@ export const seanFollowupStage: Stage = async (ctx) => {
           [RA.draft]: action === 'skip' ? '' : d.draft, [RA.humanAction]: 'None', [RA.dueAt]: action === 'skip' ? null : val(f[RA.dueAt]),
           [RA.seanReason]: d.reason, [RA.seanInput]: question, [RA.updatedAt]: new Date().toISOString(),
           ...(wsRec ? { [RA.wsRecord]: wsRec } : {}),
-          [RA.policy]: JSON.stringify({ agent: 'sean', kind: 'followup', followupType: type, followupNumber: n, seanFollowupsSent: sent, action, reason: d.reason, they_said: d.they_said, question_for_alex: question, calendarEvidence: { times: booking.times, link: booking.link } }),
+          [RA.policy]: JSON.stringify({ agent: 'sean', kind: 'followup', followupType: type, followupNumber: n, seanFollowupsSent: sent, action, reason: d.reason, they_said: d.they_said, question_for_alex: question, calendarEvidence: { times: offer.times, slots: offer.slots, link: booking.link } }),
         });
         if (action !== 'skip') {
+          if (offer.slots.length) await rememberOffered(ctx.db, wsRec, offer.slots, r.id);
           const who = `${val(f[EF.leadName]) || 'prospect'}${val(f[EF.company]) ? ` at ${val(f[EF.company])}` : ''}`;
           decisionId = await at.create(DECISIONS, {
             [DF.title]: action === 'reply' ? `Follow-up ${n} to ${who}` : `Need your input: follow-up ${n} to ${who}`,
@@ -213,7 +217,7 @@ export const seanFollowupStage: Stage = async (ctx) => {
     });
   }
   return {
-    message: `${recs.length} follow-ups due; ${todo.length} new: ${counts.reply} drafted (Reply Queue + Slack ✅), ${counts.ask_alex} need your input, ${counts.skip} not worth sending (thread closed), ${counts.answered} already answered by the prospect, ${counts.complete} finished${counts.noClientFile ? `, ${counts.noClientFile} skipped (no client file)` : ''}${ctx.dryRun ? ' (dry run: Claude not called, nothing written)' : ''}`,
+    message: `${recs.length} follow-ups due; ${todo.length} new: ${counts.reply} drafted (Reply Queue + Slack ✅), ${counts.ask_alex} need your input, ${counts.skip} not worth sending (thread closed), ${counts.answered} already answered by the prospect, ${counts.complete} finished${counts.seanOff ? `, ${counts.seanOff} left alone (Sean off for that client)` : ''}${counts.noClientFile ? `, ${counts.noClientFile} skipped (no client file)` : ''}${ctx.dryRun ? ' (dry run: Claude not called, nothing written)' : ''}`,
     due: recs.length, ...counts, dryRun: ctx.dryRun,
   };
 };

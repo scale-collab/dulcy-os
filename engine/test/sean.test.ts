@@ -11,6 +11,7 @@ import { runOnce } from '../src/worker.js';
 import { EMAILS, EF, RA, SETTINGS, REPLY_LEARNING, waitingFormula } from '../src/agents/emailsFields.js';
 import { DECISIONS, DF } from '../src/decisions/fields.js';
 import { clientFileFor } from '../src/agents/knowledge.js';
+import { freeSlots, rememberOffered, pickTwo } from '../src/agents/calendar.js';
 import { parsePlan, dueAfter, armFields, allSteps, DEFAULT_PLAN, dueFormula } from '../src/agents/followups.js';
 
 const url = process.env.TEST_DATABASE_URL;
@@ -76,7 +77,7 @@ before(async () => {
 after(async () => { atServer.close(); claudeServer.close(); if (!skip) await db.end(); });
 beforeEach(async () => {
   emails = {}; due = {}; decisions = {}; claudeAnswers = []; claudeCalls = []; booked = []; formulas = []; settings = [{ 'Calendar Link': 'https://calendly.com/client/intro', 'Calendar Settings JSON': '{}' }];
-  if (!skip) await db.query('TRUNCATE jobs, steps, receipts, events, sean_drafts RESTART IDENTITY CASCADE');
+  if (!skip) await db.query('TRUNCATE jobs, steps, receipts, events, sean_drafts, offered_slots RESTART IDENTITY CASCADE');
 });
 
 test('client file found by workspace ID; formula keeps client-handled and closed threads out', () => {
@@ -228,4 +229,23 @@ test('a dry run does not use up a follow-up: the live run after it still drafts'
   assert.equal(j.job.status, 'succeeded', j.job.error ?? '');
   assert.equal(claudeCalls.length, 1);
   assert.equal(due.recF[RA.state], 'Needs Approval');
+});
+
+
+test('two prospects are never offered the same open time', { skip }, async () => {
+  const slots = ['2026-11-25T19:30:00Z', '2026-11-25T21:00:00Z', '2026-11-25T21:30:00Z', '2026-11-26T15:00:00Z'];
+  const a = pickTwo(await freeSlots(db, 'recWS', slots, 'recAdam'));
+  await rememberOffered(db, 'recWS', a, 'recAdam');
+  const b = pickTwo(await freeSlots(db, 'recWS', slots, 'recKara'));
+  assert.equal(a.filter((x) => b.includes(x)).length, 0, `Adam ${a} vs Kara ${b}`);
+  assert.deepEqual(pickTwo(await freeSlots(db, 'recWS', slots, 'recAdam')), a, 'the same prospect can be offered their own times again');
+});
+
+test('Sean is off for a client whose file says so (MJJ: the client answers its own replies)', { skip }, async () => {
+  emails.recM = thread({ [EF.workspace]: '80' });
+  const j = await run(cfg());
+  assert.equal(j.job.status, 'succeeded');
+  assert.equal(claudeCalls.length, 0);
+  assert.match(String(j.job.result.message), /Sean off/);
+  assert.equal(Object.keys(decisions).length, 0);
 });

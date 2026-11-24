@@ -11,7 +11,7 @@ import { createAirtableClient, type AirtableClient } from '../providers/airtable
 import { createClaude } from '../providers/claude.js';
 import { EMAILS, EF, RA, INTENTS, SETTINGS, REPLY_LEARNING, waitingFormula, val, wsRecordOf } from './emailsFields.js';
 import { clientFileFor, readKnowledge } from './knowledge.js';
-import { openTimes, twoTimes } from './calendar.js';
+import { openTimes, pickTwo, fmtSlot, freeSlots, rememberOffered } from './calendar.js';
 import { DECISIONS, DF } from '../decisions/fields.js';
 
 export const DraftSchema = z.object({
@@ -65,7 +65,18 @@ export async function realExamples(at: Pick<AirtableClient, 'list'>, ws: number,
 }
 
 /** Booking options for a workspace: two live times from the client's connected calendar, else the saved booking link. */
-export async function bookingFor(cfg: Parameters<typeof openTimes>[0], at: Pick<AirtableClient, 'list'>, wsRec: string): Promise<{ times: string[]; link: string }> {
+export interface Booking { slots: string[]; tz: string; link: string }
+
+/** The times to offer this prospect (not offered to anyone else lately) and the line for Claude. */
+export async function bookingForDraft(db: Parameters<typeof freeSlots>[0], b: Booking, wsRec: string, emailRecord: string): Promise<{ slots: string[]; times: string[]; text: string }> {
+  const slots = b.slots.length ? pickTwo(await freeSlots(db, wsRec, b.slots, emailRecord), b.tz) : [];
+  const times = slots.map((s) => fmtSlot(s, b.tz));
+  const text = times.length ? `Times to offer (from the client's own calendar, free and not offered to anyone else): ${times.join(' or ')}.`
+    : b.link ? `No open calendar time to offer: use this booking link: ${b.link}` : 'No calendar and no booking link for this client: ask what their week looks like.';
+  return { slots, times, text };
+}
+
+export async function bookingFor(cfg: Parameters<typeof openTimes>[0], at: Pick<AirtableClient, 'list'>, wsRec: string): Promise<Booking> {
   let link = '', disableTimes = false, disableLinks = false;
   try {
     const s = (await at.list(SETTINGS, `{Workspace Record ID}='${wsRec}'`, ['Calendar Link', 'Calendar Settings JSON'], 1, { byName: true }))[0];
@@ -74,7 +85,7 @@ export async function bookingFor(cfg: Parameters<typeof openTimes>[0], at: Pick<
     disableTimes = j.disableTimes === true; disableLinks = j.disableLinks === true;
   } catch { /* no settings row: defaults */ }
   const open = disableTimes ? null : await openTimes(cfg, wsRec);
-  return { times: open ? twoTimes(open.slots, open.timezone) : [], link: disableLinks ? '' : link };
+  return { slots: open?.slots ?? [], tz: open?.timezone ?? 'America/New_York', link: disableLinks ? '' : link };
 }
 
 /** The knowledge every Sean call shares (cached by Claude): brief, skill, playbooks, real data, rules. */
@@ -107,8 +118,8 @@ export const seanDraftStage: Stage = async (ctx) => {
   const shared = sharedKnowledge(dir);
 
   const claude = ctx.dryRun ? null : createClaude({ apiKey: cfg.anthropicApiKey, model: cfg.claudeModel, baseURL: cfg.anthropicBaseUrl });
-  const perClient = new Map<string, { block: string; booking: { times: string[]; link: string } }>();
-  const counts = { reply: 0, skip: 0, ask_alex: 0, noClientFile: 0 };
+  const perClient = new Map<string, { block: string; booking: Booking }>();
+  const counts = { reply: 0, skip: 0, ask_alex: 0, noClientFile: 0, seanOff: 0 };
 
   for (const r of todo) {
     const f = r.fields;
@@ -117,15 +128,20 @@ export const seanDraftStage: Stage = async (ctx) => {
     const wsRec = wsRecordOf(f);
     const client = clientFileFor(dir, ws);
     if (!client) { counts.noClientFile++; continue; }
+    if (client.seanOff) {
+      await ctx.db.query(`INSERT INTO sean_drafts (email_record, reply_at, action, reason) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING`, [r.id, replyAt, ctx.dryRun ? 'dry_run' : 'sean_off', `Sean is off for ${client.name}`]);
+      counts.seanOff++; continue;
+    }
     if (!perClient.has(String(ws))) {
       perClient.set(String(ws), {
         block: [`# Client file: ${client.name}\n${client.text}`, ctx.dryRun ? '' : await realExamples(at, ws, wsRec)].filter(Boolean).join('\n\n'),
-        booking: ctx.dryRun ? { times: [], link: '' } : await bookingFor(cfg, at, wsRec),
+        booking: ctx.dryRun ? { slots: [], tz: 'America/New_York', link: '' } : await bookingFor(cfg, at, wsRec),
       });
     }
     const { block, booking } = perClient.get(String(ws))!;
     const now = new Date().toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'full', timeStyle: 'short' });
-    const varying = `Now: ${now} ET.\n${booking.times.length ? `Times to offer (from the client's own calendar, both free): ${booking.times.join(' or ')}.` : booking.link ? `No live calendar for this client: use this booking link: ${booking.link}` : 'No calendar and no booking link for this client: ask what their week looks like.'}`;
+    const offer = await bookingForDraft(ctx.db, booking, wsRec, r.id);
+    const varying = `Now: ${now} ET.\n${offer.text}`;
     const user = [
       `Campaign: ${val(f[EF.campaign])}`,
       `Prospect: ${val(f[EF.leadName])} at ${val(f[EF.company])}`,
@@ -155,9 +171,10 @@ export const seanDraftStage: Stage = async (ctx) => {
           [RA.seanReason]: d.reason, [RA.seanInput]: question, [RA.updatedAt]: new Date().toISOString(),
           ...(wsRec ? { [RA.wsRecord]: wsRec } : {}),
           ...(eventId ? { [RA.eventId]: eventId, [RA.lastInboundEventId]: eventId } : {}),
-          [RA.policy]: JSON.stringify({ agent: 'sean', action, reason: d.reason, they_said: d.they_said, question_for_alex: question, latestReplyAt: replyAt, calendarEvidence: { times: booking.times, link: booking.link } }),
+          [RA.policy]: JSON.stringify({ agent: 'sean', action, reason: d.reason, they_said: d.they_said, question_for_alex: question, latestReplyAt: replyAt, calendarEvidence: { times: offer.times, slots: offer.slots, link: booking.link } }),
         });
         if (action !== 'skip') {
+          if (offer.slots.length) await rememberOffered(ctx.db, wsRec, offer.slots, r.id);
           const who = `${val(f[EF.leadName]) || 'prospect'}${val(f[EF.company]) ? ` at ${val(f[EF.company])}` : ''}`;
           decisionId = await at.create(DECISIONS, {
             [DF.title]: action === 'reply' ? `Reply to ${who}` : `Need your input: reply to ${who}`,
@@ -177,7 +194,7 @@ export const seanDraftStage: Stage = async (ctx) => {
     });
   }
   return {
-    message: `${recs.length} waiting replies; ${todo.length} new: ${counts.reply} drafted (Reply Queue + Slack ✅), ${counts.ask_alex} need your input, ${counts.skip} no reply needed${counts.noClientFile ? `, ${counts.noClientFile} skipped (no client file for the workspace)` : ''}${ctx.dryRun ? ' (dry run: Claude not called, nothing written)' : ''}`,
+    message: `${recs.length} waiting replies; ${todo.length} new: ${counts.reply} drafted (Reply Queue + Slack ✅), ${counts.ask_alex} need your input, ${counts.skip} no reply needed${counts.seanOff ? `, ${counts.seanOff} left alone (Sean off for that client)` : ''}${counts.noClientFile ? `, ${counts.noClientFile} skipped (no client file for the workspace)` : ''}${ctx.dryRun ? ' (dry run: Claude not called, nothing written)' : ''}`,
     waiting: recs.length, ...counts, dryRun: ctx.dryRun,
   };
 };
