@@ -39,6 +39,10 @@ export interface Config {
   seanFollowupsOn: boolean;
   /** Account health loop (rest / retest / replace) every N minutes (0 = off); only placement tests created after accountHealthFrom. */
   accountHealthEveryMin: number;
+  /** Ada's morning brief: on (ADA_BRIEF=on) posts weekdays at ADA_BRIEF_HOUR ET to ADA_CHANNEL (default Alex's DM). */
+  adaBriefOn: boolean;
+  adaBriefHour: number;
+  adaChannel: string;
   accountHealthFrom: string;
   /** Dulcy calendar service (client calendars) and its read-only token. */
   calendarUrl: string;
@@ -141,6 +145,9 @@ export function loadConfig(env = process.env): Config {
     seanMaxPerRun: num('SEAN_MAX_PER_RUN', 20, env),
     seanFollowupsOn: (env.SEAN_FOLLOWUPS || 'off').toLowerCase() === 'on',
     accountHealthEveryMin: num('ACCOUNT_HEALTH_EVERY_MIN', 0, env),
+    adaBriefOn: (env.ADA_BRIEF || 'off').toLowerCase() === 'on',
+    adaBriefHour: num('ADA_BRIEF_HOUR', 8, env),
+    adaChannel: (env.ADA_CHANNEL || 'U070Z26377C').trim(),
     // Alex 2026-11-25: start from the Friday 2026-11-27 tests (older results are not acted on).
     accountHealthFrom: (env.ACCOUNT_HEALTH_FROM || '2026-11-26T12:00:00.000Z').trim(),
     calendarUrl: env.CALENDAR_URL || 'http://dulcy-calendar:8789',
