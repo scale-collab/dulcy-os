@@ -135,3 +135,9 @@ Format: `- [date] rule. (why / source)`
   - Xero's API and the Xero connector cannot read or reconcile the Reconcile screen (Xero policy).
   - Xero auto-reconcile is not available on Dulcy's plan.
   - Ledger writing entries alongside Xero's own suggestions could create duplicates.
+
+## Friday Xero reconcile: no suggestion means work it out (Alex, 2026-11-25)
+- **Rule:** when Xero has no suggestion for a line, Claude in Chrome works out what it is: the full statement line, how the same payee was coded before, a web lookup of the vendor. It then codes the line using the account guide in `agents/ledger-reconcile-chrome.md`.
+- **When to ask:** only when it truly can't tell what the charge is.
+- **Check:** every such line is listed in the summary, and anything over $500 is flagged ⚠️ for Alex.
+- **Reason:** Alex wants the agent to reconcile, not to stop at every line Xero can't guess. First case: Anthropic, Opus Clip, Grok and Google Cloud → 6050 Software.
