@@ -16,6 +16,8 @@ import { decide, groupByPile, pendingDecisions, type HqAirtable } from './decisi
 import { listTasks, markDone, notYet, quickAdd, validNewTask } from './tasks.js';
 import { agentActivity, agentRuns, agentTasks, finishAgentTask, jobHealth, teamCheck } from './team.js';
 import { canTalkTo, chatTurn, listThreads, readThread, type ChatModel } from './chat.js';
+import { clientDetail, listClients } from './clients.js';
+import { SIGNUP_SENT, addUser, googleSignUp, listUsers, manageUser, pendingCount, signUp } from './users.js';
 
 export interface HqDeps { at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string }
 
@@ -83,7 +85,7 @@ function serveStatic(res: http.ServerResponse, webDir: string, rel: string) {
   res.end(body);
 }
 
-const PUBLIC = new Set(['/hq/api/auth/login', '/hq/api/auth/config', '/hq/api/auth/google/start', '/hq/api/auth/google/callback', '/hq/api/auth/logout']);
+const PUBLIC = new Set(['/hq/api/auth/signup', '/hq/api/auth/login', '/hq/api/auth/config', '/hq/api/auth/google/start', '/hq/api/auth/google/callback', '/hq/api/auth/logout']);
 
 /** Handle an HQ request. Returns false when the path is not HQ's (the engine API handles it). */
 export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
@@ -122,6 +124,12 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         json(res, 200, { user: publicUser(r.user) }, { 'set-cookie': await createSession(db, cfg, r.user.id) });
         return true;
       }
+      if (p === '/hq/api/auth/signup' && req.method === 'POST') {
+        // A request for a login: pending until the owner approves. Never a session; same answer for every email.
+        const r = await signUp(db, await readJson(req, 5_000), clientIp(req));
+        json(res, r.status, r.error ? { error: r.error } : { ok: true, message: r.message });
+        return true;
+      }
       if (p === '/hq/api/auth/logout' && req.method === 'POST') {
         await endSession(db, cfg, req.headers.cookie);
         json(res, 200, { ok: true }, { 'set-cookie': cookie(SESSION_COOKIE, '', 0) });
@@ -129,7 +137,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       }
       if (p === '/hq/api/auth/google/start' && req.method === 'GET') {
         if (!googleOn(cfg)) { json(res, 404, { error: 'Google sign-in is not set up' }); return true; }
-        const g = googleStart(cfg);
+        const g = googleStart(cfg, url.searchParams.get('mode') === 'signup' ? 'signup' : 'login');
         redirect(res, g.location, { 'set-cookie': g.setCookie });
         return true;
       }
@@ -140,6 +148,12 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         const clear = cookie(OAUTH_COOKIE, '', 0, 'Lax');
         const user = g.email ? await userByEmail(db, g.email) : null;
         await db.query(`INSERT INTO hq_login_attempts (email, ip, ok) VALUES ($1,$2,$3)`, [g.email ?? 'google', ip, Boolean(user)]);
+        if (!user && g.email && g.mode === 'signup') {
+          // Sign up with Google: a pending request (or nothing, if the email already has one). Same answer either way.
+          const s = await googleSignUp(db, g.email, ip);
+          redirect(res, `${home(req)}#/login?${s.ok ? `notice=${encodeURIComponent(SIGNUP_SENT)}` : `error=${encodeURIComponent(s.error ?? 'Try again.')}`}`, { 'set-cookie': clear });
+          return true;
+        }
         if (!user) { redirect(res, `${home(req)}#/login?error=${encodeURIComponent(g.error ?? 'That Google account has no HQ access.')}`, { 'set-cookie': clear }); return true; }
         redirect(res, home(req), { 'set-cookie': [clear, await createSession(db, cfg, user.id)] });
         return true;
@@ -151,7 +165,17 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       if (PUBLIC.has(p)) { json(res, 405, { error: 'method not allowed' }); return true; }
       const owner = user.role === 'owner';
 
-      if (p === '/hq/api/me' && req.method === 'GET') { json(res, 200, { user: publicUser(user), google: googleOn(cfg) }); return true; }
+      if (p === '/hq/api/me' && req.method === 'GET') { json(res, 200, { user: publicUser(user), google: googleOn(cfg), ...(owner ? { signups: await pendingCount(db) } : {}) }); return true; }
+
+      // ---- Users (owner only, checked here: members get 403) ----
+      if (p === '/hq/api/users' || p.startsWith('/hq/api/users/')) {
+        if (!owner) { json(res, 403, { error: 'only the owner manages users' }); return true; }
+        if (p === '/hq/api/users' && req.method === 'GET') { json(res, 200, await listUsers(db)); return true; }
+        if (p === '/hq/api/users' && req.method === 'POST') { const r = await addUser(db, user, await readJson(req, 5_000)); json(res, r.status, r.error ? { error: r.error } : { ok: true, id: r.id }); return true; }
+        const um = p.match(/^\/hq\/api\/users\/(\d{1,9})\/(approve|deny|role|disable|enable|password)$/);
+        if (um && req.method === 'POST') { const r = await manageUser(db, user, Number(um[1]), um[2], await readJson(req, 5_000)); json(res, r.status, r.error ? { error: r.error } : { ok: true }); return true; }
+        json(res, 404, { error: 'not found' }); return true;
+      }
 
       if (p === '/hq/api/today' && req.method === 'GET') { json(res, 200, await today(db, needAt(), user)); return true; }
 
@@ -181,6 +205,18 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         if (m[2] === 'not-yet') { await notYet(db, m[1]); json(res, 200, { ok: true }); return true; }
         const r = await markDone(needAt(), m[1]);
         json(res, r.status, r.error ? { error: r.error } : { ok: true });
+        return true;
+      }
+
+      // Clients (Step 2): money is cut server-side for members.
+      if (p === '/hq/api/clients' && req.method === 'GET') {
+        json(res, 200, await listClients(needAt(), db, owner, { all: url.searchParams.get('all') === '1', refresh: url.searchParams.get('refresh') === '1' }));
+        return true;
+      }
+      m = p.match(/^\/hq\/api\/clients\/(rec[A-Za-z0-9]{14})$/);
+      if (m && req.method === 'GET') {
+        const d = await clientDetail(needAt(), db, m[1], owner);
+        if (!d) json(res, 404, { error: 'no such client' }); else json(res, 200, d);
         return true;
       }
 
@@ -282,6 +318,7 @@ async function today(db: Db, at: HqAirtable, user: HqUser) {
   const piles = groupByPile(decisions, owner);
   return {
     user: publicUser(user),
+    ...(owner ? { signups: await pendingCount(db) } : {}),
     brief: briefOut,
     team: teamCheck(health, owner ? decisions : decisions.filter((x) => !OWNER_ONLY.includes(x.agent)), Date.now(), visible),
     decisions: Object.fromEntries(Object.entries(piles).filter(([k]) => owner || k !== 'Money').map(([k, v]) => [k, v.length])),

@@ -5,7 +5,7 @@
 //   KPI), interested → booked rate (the Twenty West lesson), campaign health, and a 🟢/🟡/🔴 with reasons.
 import type { Stage } from '../stages/index.js';
 import { PermanentError } from '../errors.js';
-import { createAirtableClient, type AirtableClient } from '../providers/airtable.js';
+import { createAirtableClient, type AirtableClient, type AirtableRecord } from '../providers/airtable.js';
 import { createSlackClient } from '../providers/slack.js';
 import { EMAILS } from './emailsFields.js';
 import { saveReport, slackReports } from '../hq/reports.js';
@@ -79,28 +79,52 @@ export function writeHealth(d: HealthData): string {
   return lines.join('\n');
 }
 
-export async function gatherHealth(at: Pick<AirtableClient, 'list'>, now: Date): Promise<HealthData> {
+export type HealthRow = AirtableRecord;
+/** Workspace IDs fields Atlas reads (by name). */
+export const HEALTH_WS_FIELDS = ['Name', 'Status', 'Client Type', 'Monthly Fee', 'Months Active', 'Estimated LTV', 'Actual Lifetime Revenue', 'Client Health', 'Calls Booked KPI (Client)', 'Calls Booked KPI (Internal)', 'ID'];
+export interface HealthRows { ws: HealthRow[]; emails: HealthRow[]; campaigns: HealthRow[] }
+
+/** The three Airtable reads behind client health (Workspace IDs, Emails of the last 31 days, active Campaigns). HQ's Clients screen uses the same reads. */
+export async function readHealthRows(at: Pick<AirtableClient, 'list'>, opts: { inactive?: boolean; wsFields?: string[] } = {}): Promise<HealthRows> {
   const [ws, emails, campaigns] = await Promise.all([
-    at.list(WORKSPACES, `{Status}='Active'`, ['Name', 'Status', 'Client Type', 'Monthly Fee', 'Months Active', 'Estimated LTV', 'Actual Lifetime Revenue', 'Client Health', 'Calls Booked KPI (Client)', 'Calls Booked KPI (Internal)', 'ID'], 200, { byName: true }),
+    at.list(WORKSPACES, opts.inactive ? `{Name}!=''` : `{Status}='Active'`, [...new Set([...HEALTH_WS_FIELDS, ...(opts.wsFields ?? [])])], 200, { byName: true }),
     at.list(EMAILS, `OR(IS_AFTER({Latest Reply Time},DATEADD(NOW(),-31,'days')),IS_AFTER({Meeting Booked At},DATEADD(NOW(),-31,'days')),IS_AFTER({Date of Call Booked},DATEADD(NOW(),-31,'days')))`, ['Workspace ID (Bison)', 'Lead Status', 'Latest Reply Time', 'Meeting Booked At', 'Date of Call Booked'], 20000, { byName: true }),
-    at.list(CAMPAIGNS, `{Campaign Status}='Active'`, ['Client', 'Bounced %', 'Progress', 'Campaign Status'], 1000, { byName: true }),
+    at.list(CAMPAIGNS, `{Campaign Status}='Active'`, ['Name', 'Client', 'Bounced %', 'Progress', 'Campaign Status', 'Emails Sent', 'Interested'], 1000, { byName: true }),
   ]);
+  return { ws, emails, campaigns };
+}
+
+export const bisonIdOf = (w: HealthRow) => String(num(w.fields.ID) ?? '');
+export const campaignProgress = (c: HealthRow) => { const p = num(c.fields.Progress) ?? 0; return p > 1 ? p / 100 : p; };
+export const campaignBounce = (c: HealthRow) => num(c.fields['Bounced %']) ?? 0;
+/** Active campaigns linked to any of these workspace records. */
+export const campaignsOf = (wsIds: string[], campaigns: HealthRow[]) => campaigns.filter((c) => (Array.isArray(c.fields.Client) ? c.fields.Client : [c.fields.Client]).map(v).some((id) => wsIds.includes(id)));
+
+/**
+ * One client's health numbers from one or more Workspace IDs records (the same client in two
+ * workspaces counts once: the first record is the main one; results and campaigns add up). Pure.
+ */
+export function clientFrom(group: HealthRow[], rows: Pick<HealthRows, 'emails' | 'campaigns'>, now: Date): Client {
   const t = now.getTime();
   const within = (iso: string, from: number, to: number) => { const x = Date.parse(iso); return Number.isFinite(x) && x >= t - from * DAY && x < t - to * DAY; };
-  const clients: Client[] = ws.filter((w) => !/internal/i.test(v(w.fields['Client Type'])) || /paying/i.test(v(w.fields['Client Type']))).map((w) => {
-    const f = w.fields; const bison = String(num(f.ID) ?? '');
-    const rows = emails.filter((e) => v(e.fields['Workspace ID (Bison)']) === bison && bison !== '');
-    const interested = (a: number, b: number) => rows.filter((e) => INTERESTED.includes(v(e.fields['Lead Status'])) && within(v(e.fields['Latest Reply Time']), a, b)).length;
-    const booked = (a: number, b: number) => rows.filter((e) => within(v(e.fields['Meeting Booked At']) || v(e.fields['Date of Call Booked']), a, b)).length;
-    const own = campaigns.filter((c) => (Array.isArray(c.fields.Client) ? c.fields.Client : [c.fields.Client]).map(v).includes(w.id));
-    const prog = (c: (typeof own)[number]) => { const p = num(c.fields.Progress) ?? 0; return p > 1 ? p / 100 : p; };
-    return {
-      id: w.id, name: v(f.Name), type: v(f['Client Type']), fee: num(f['Monthly Fee']), months: num(f['Months Active']), ltv: num(f['Estimated LTV']), lifetimeRevenue: num(f['Actual Lifetime Revenue']),
-      kpi: num(f['Calls Booked KPI (Client)']) || num(f['Calls Booked KPI (Internal)']), healthField: v(f['Client Health']),
-      interested7: interested(7, 0), interestedPrev7: interested(14, 7), interested30: interested(30, 0), booked7: booked(7, 0), bookedPrev7: booked(14, 7), booked30: booked(30, 0),
-      campaigns: { active: own.length, over4: own.filter((c) => (num(c.fields['Bounced %']) ?? 0) > 4).length, watch: own.filter((c) => { const b = num(c.fields['Bounced %']) ?? 0; return b > 2.5 && b <= 4; }).length, past60: own.filter((c) => prog(c) >= 0.6 && prog(c) < 0.95).length, ending: own.filter((c) => prog(c) >= 0.95).length },
-    };
-  });
+  const w = group[0]; const f = w.fields;
+  const bisons = group.map(bisonIdOf).filter(Boolean);
+  const mine = rows.emails.filter((e) => bisons.includes(v(e.fields['Workspace ID (Bison)'])));
+  const interested = (a: number, b: number) => mine.filter((e) => INTERESTED.includes(v(e.fields['Lead Status'])) && within(v(e.fields['Latest Reply Time']), a, b)).length;
+  const booked = (a: number, b: number) => mine.filter((e) => within(v(e.fields['Meeting Booked At']) || v(e.fields['Date of Call Booked']), a, b)).length;
+  const own = campaignsOf(group.map((x) => x.id), rows.campaigns);
+  const first = (k: string) => group.map((x) => num(x.fields[k])).find((n) => (n ?? 0) > 0);
+  return {
+    id: w.id, name: v(f.Name), type: v(f['Client Type']), fee: num(f['Monthly Fee']) || first('Monthly Fee') || num(f['Monthly Fee']), months: num(f['Months Active']) ?? first('Months Active'), ltv: num(f['Estimated LTV']) ?? first('Estimated LTV'), lifetimeRevenue: num(f['Actual Lifetime Revenue']) ?? first('Actual Lifetime Revenue'),
+    kpi: num(f['Calls Booked KPI (Client)']) || num(f['Calls Booked KPI (Internal)']) || first('Calls Booked KPI (Client)') || first('Calls Booked KPI (Internal)'), healthField: v(f['Client Health']),
+    interested7: interested(7, 0), interestedPrev7: interested(14, 7), interested30: interested(30, 0), booked7: booked(7, 0), bookedPrev7: booked(14, 7), booked30: booked(30, 0),
+    campaigns: { active: own.length, over4: own.filter((c) => campaignBounce(c) > 4).length, watch: own.filter((c) => { const b = campaignBounce(c); return b > 2.5 && b <= 4; }).length, past60: own.filter((c) => campaignProgress(c) >= 0.6 && campaignProgress(c) < 0.95).length, ending: own.filter((c) => campaignProgress(c) >= 0.95).length },
+  };
+}
+
+export async function gatherHealth(at: Pick<AirtableClient, 'list'>, now: Date): Promise<HealthData> {
+  const rows = await readHealthRows(at);
+  const clients: Client[] = rows.ws.filter((w) => !/internal/i.test(v(w.fields['Client Type'])) || /paying/i.test(v(w.fields['Client Type']))).map((w) => clientFrom([w], rows, now));
   return { now, clients };
 }
 

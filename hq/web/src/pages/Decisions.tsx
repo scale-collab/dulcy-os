@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, type Decision, type Pile, type User } from '../api';
-import { Avatar, BackLink, Button, Card, cx, Empty, ErrorBox, ExtLink, go, Icon, Kbd, Label, PageSkeleton, PageTitle, Pill, Progress, setCount, timeAgo } from '../ui';
+import { Avatar, BackLink, Button, Card, clientKey, cx, Empty, ErrorBox, ExtLink, go, Icon, Kbd, Label, PageSkeleton, PageTitle, Pill, Progress, setCount, timeAgo } from '../ui';
 
 const PILES: { key: Pile; who: string; icon: string }[] = [
   { key: 'Replies', who: 'Sean', icon: 'reply' },
@@ -11,7 +11,7 @@ const PILES: { key: Pile; who: string; icon: string }[] = [
 ];
 type Outcome = 'approved' | 'rejected' | 'skipped';
 
-export default function Decisions({ user: _user, pile }: { user: User; pile?: string }) {
+export default function Decisions({ user: _user, pile, client }: { user: User; pile?: string; client?: string }) {
   const [data, setData] = useState<{ piles: Record<string, Decision[]>; order: Pile[] } | null>(null);
   const [error, setError] = useState('');
   const [handled, setHandled] = useState<string[]>([]);
@@ -19,7 +19,7 @@ export default function Decisions({ user: _user, pile }: { user: User; pile?: st
   const [stats, setStats] = useState({ approved: 0, rejected: 0, skipped: 0 });
   const load = useCallback(() => { setError(''); api<{ piles: Record<string, Decision[]>; order: Pile[] }>('/decisions').then((x) => { setData(x); setDecided([]); }).catch((e) => setError(e.message)); }, []);
   useEffect(load, [load]);
-  useEffect(() => { setHandled([]); setStats({ approved: 0, rejected: 0, skipped: 0 }); }, [pile]);
+  useEffect(() => { setHandled([]); setStats({ approved: 0, rejected: 0, skipped: 0 }); }, [pile, client]);
 
   // Cards approved or rejected here leave every pile until the next load.
   const piles = useMemo(() => {
@@ -63,13 +63,15 @@ export default function Decisions({ user: _user, pile }: { user: User; pile?: st
     );
   }
 
-  const source = pile === 'all' ? data.order.flatMap((p) => data.piles[p] ?? []) : data.piles[pile] ?? [];
+  // decisions/<pile>/<client key>: only that client's cards (from a client page).
+  const source = (pile === 'all' ? data.order.flatMap((p) => data.piles[p] ?? []) : data.piles[pile] ?? []).filter((d) => !client || clientKey(d.client) === client);
   const queue = source.filter((d) => !handled.includes(d.id) && !(decided.includes(d.id)));
   const total = source.filter((d) => !decided.includes(d.id) || handled.includes(d.id)).length;
   const done = total - queue.length;
   const current = queue[0];
-  const title = pile === 'all' ? 'All decisions' : pile;
-  const back = <BackLink label="Piles" onClick={() => go('decisions')} />;
+  const clientName = client ? source[0]?.client || client : '';
+  const title = `${pile === 'all' ? 'All decisions' : pile}${client ? ` · ${clientName}` : ''}`;
+  const back = client ? <BackLink label="Client" onClick={() => window.history.back()} /> : <BackLink label="Piles" onClick={() => go('decisions')} />;
 
   if (!current) {
     const any = stats.approved + stats.rejected + stats.skipped > 0;

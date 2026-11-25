@@ -7,6 +7,7 @@ import {
 import { ReportList } from './Reports';
 
 interface TodayData {
+  signups?: number;
   brief: { title: string; body: string; created: string; dryRun: boolean } | null;
   team: TeamLine[];
   decisions: Record<string, number>;
@@ -25,6 +26,7 @@ export default function Today({ user }: { user: User }) {
       setD(x);
       setCount('decisions', Object.values(x.decisions).reduce((a, b) => a + b, 0));
       setCount('doNow', x.tasks.counts.doNow ?? 0);
+      if (x.signups !== undefined) setCount('signups', x.signups);
     }).catch((e) => setError(e.message)).finally(() => setRefreshing(false));
   }, []);
   useEffect(load, [load]);
@@ -57,6 +59,14 @@ export default function Today({ user }: { user: User }) {
         </span>} />
 
       {error && <div className="mb-4"><ErrorBox error={error} retry={load} /></div>}
+
+      {!!d.signups && (
+        <Card onClick={() => go('users')} label={`${d.signups} sign-up waiting`} className="mb-4 flex items-center gap-3 border-accent/40 py-4">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent-ink"><Icon name="userPlus" size={20} /></span>
+          <div className="min-w-0 flex-1"><div className="font-semibold text-fg">{d.signups} sign-up{d.signups === 1 ? '' : 's'} waiting</div><div className="text-sm text-muted">Approve or deny in Users.</div></div>
+          <Icon name="chevronRight" size={18} className="text-faint" />
+        </Card>
+      )}
 
       <DecisionHero waiting={waiting} piles={d.decisions} />
 

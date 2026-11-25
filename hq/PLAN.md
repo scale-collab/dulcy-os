@@ -47,6 +47,14 @@
 - One screen with every client: results (email now; LinkedIn, AI caller and direct mail later), health, money (Alex only) and a note for today.
 - Replaces: Clients & LTV (wrong today: shows 3 active), Email/LinkedIn/AI Employee campaign dashboards, Domain & Inbox Inventory, Email Accounts / Warm Up, Inbox Placement Tests, Spam Center, Buying Domains.
 
+### Step 2 status (2026-11-25): Clients screen built, not deployed
+- **Built:** `engine/src/hq/clients.ts` (API `/hq/api/clients`, `/hq/api/clients/<id>`) and the Clients tab in `hq/web/`. How to use it: `engine/GUIDE.md` → "HQ".
+- **What it shows:** one card per client, worst health first: Atlas's health light and reasons, a 1-2 line note for today, interested / booked (7 and 30 days, vs KPI), replies waiting for approval, active campaigns (bounce watch > 2.5%, pause > 4%, interested per 1,000 sent, 60%+ → plan next, and whether a campaign plan exists). Money (fee, lifetime revenue, receivables) for the owner only, cut on the server. Detail page adds the campaigns table, a data check, the client's decisions (tap → the pile filtered to that client), Atlas's to-do and the Activity Log.
+- **Counting:** active clients by default (Inactive switch for the rest). Workspaces that are one client count once (Twenty West Media + "(Internal)"; Dulcy + Dulcy Free Campaigns). Same Airtable reads and grade as Atlas's Monday report (shared code in `engine/src/agents/atlas.ts`). Airtable reads cached 5 minutes.
+- **Data problems it shows (for Atlas to fix in Airtable):** MJJ Brilliant and The Marketing Cartel have no Client Type and no Monthly Fee (that is why "Clients & LTV" shows 3 active); Twenty West's $2,500 fee, $8,985 revenue and $4,995 owed sit on the inactive record while the active "(Internal)" record has $0.
+- **Also built (Alex, same day):** sign-up requests and a Users page (approve / deny / role / disable / reset / add; owner only). See GUIDE "Sign-up and Users".
+- **Not in Step 2 yet:** LinkedIn, AI caller and direct-mail results; the domain, inbox, warm-up, placement and spam screens.
+
 ## Step 3: Work areas
 - **Campaigns:** the Lead List and Campaign Centers rebuilt without Airtable's size limit, with the Activity log inside each campaign (code ready: `airtable/custom-elements/campaign-center/activity-log.pending.tsx`).
 - **Inbox:** one inbox, per client, replacing New Replies, Follow Ups, Positive Replies, Won/Lost, Meeting Requests and the Reply Agent pages.

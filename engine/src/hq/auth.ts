@@ -17,6 +17,7 @@ export const MAX_FAILS_PER_IP = 20;
 export const FAIL_WINDOW_MIN = 15;
 
 export interface HqUser { id: number; email: string; name: string; role: 'owner' | 'member' }
+export const MIN_PASSWORD = 12;
 
 export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16);
@@ -65,6 +66,7 @@ export async function createSession(db: Db, cfg: Pick<Config, 'hqSessionSecret'>
   const id = randomBytes(32).toString('base64url');
   await db.query(`INSERT INTO hq_sessions (id_hash, user_id, expires_at) VALUES ($1,$2, now() + make_interval(days => $3))`, [sha(id), userId, SESSION_DAYS]);
   await db.query(`DELETE FROM hq_sessions WHERE expires_at < now()`);
+  await db.query(`UPDATE hq_users SET last_login_at=now() WHERE id=$1`, [userId]);
   return cookie(SESSION_COOKIE, signValue(cfg.hqSessionSecret!, id), SESSION_DAYS * 86_400);
 }
 
@@ -74,7 +76,7 @@ export async function sessionUser(db: Db, cfg: Pick<Config, 'hqSessionSecret'>, 
   if (!id) return null;
   const r = await db.query(
     `UPDATE hq_sessions s SET last_seen=now() FROM hq_users u
-     WHERE s.id_hash=$1 AND s.expires_at > now() AND u.id = s.user_id AND NOT u.disabled
+     WHERE s.id_hash=$1 AND s.expires_at > now() AND u.id = s.user_id AND NOT u.disabled AND NOT u.pending
      RETURNING u.id, u.email, u.name, u.role`, [sha(id)]);
   const u = r.rows[0];
   return u ? { id: Number(u.id), email: String(u.email), name: String(u.name || u.email.split('@')[0]), role: u.role === 'owner' ? 'owner' : 'member' } : null;
@@ -90,7 +92,7 @@ export async function endSession(db: Db, cfg: Pick<Config, 'hqSessionSecret'>, c
 export async function loginBlocked(db: Db, email: string, ip: string): Promise<boolean> {
   const r = await db.query(
     `SELECT count(*) FILTER (WHERE email=$1)::int AS by_email, count(*) FILTER (WHERE ip=$2)::int AS by_ip
-     FROM hq_login_attempts WHERE NOT ok AND created_at > now() - make_interval(mins => $3)`, [email, ip, FAIL_WINDOW_MIN]);
+     FROM hq_login_attempts WHERE kind='login' AND NOT ok AND created_at > now() - make_interval(mins => $3)`, [email, ip, FAIL_WINDOW_MIN]);
   return r.rows[0].by_email >= MAX_FAILS_PER_EMAIL || r.rows[0].by_ip >= MAX_FAILS_PER_IP;
 }
 
@@ -100,15 +102,15 @@ export async function recordLogin(db: Db, email: string, ip: string, ok: boolean
 }
 
 export const normEmail = (e: unknown) => String(e ?? '').trim().toLowerCase();
-const firstName = (email: string) => { const n = email.split('@')[0].split(/[._-]/)[0]; return n ? n[0].toUpperCase() + n.slice(1) : email; };
+export const firstName = (email: string) => { const n = email.split('@')[0].split(/[._-]/)[0]; return n ? n[0].toUpperCase() + n.slice(1) : email; };
 
 /** Email + password. Returns the user, or the reason (never says whether the email exists). */
 export async function passwordLogin(db: Db, email: string, password: string, ip: string): Promise<{ user?: HqUser; error?: string; status: number }> {
   const e = normEmail(email);
   if (!e || !password || password.length > 500) return { error: 'Email and password, please.', status: 400 };
   if (await loginBlocked(db, e, ip)) return { error: `Too many tries. Wait ${FAIL_WINDOW_MIN} minutes and try again.`, status: 429 };
-  const u = (await db.query(`SELECT id, email, name, role, password_hash, disabled FROM hq_users WHERE email=$1`, [e])).rows[0];
-  const ok = await verifyPassword(password, u && !u.disabled ? u.password_hash : null);
+  const u = (await db.query(`SELECT id, email, name, role, password_hash, disabled, pending FROM hq_users WHERE email=$1`, [e])).rows[0];
+  const ok = await verifyPassword(password, u && !u.disabled && !u.pending ? u.password_hash : null);
   await recordLogin(db, e, ip, ok);
   if (!ok) return { error: 'That email and password do not match.', status: 401 };
   return { status: 200, user: { id: Number(u.id), email: String(u.email), name: String(u.name || firstName(u.email)), role: u.role === 'owner' ? 'owner' : 'member' } };
@@ -123,7 +125,7 @@ export async function upsertUser(db: Db, email: string, role: 'owner' | 'member'
   const r = await db.query(
     `INSERT INTO hq_users (email, name, role, password_hash) VALUES ($1,$2,$3,$4)
      ON CONFLICT (email) DO UPDATE SET role=EXCLUDED.role, name=COALESCE(NULLIF($2,''), hq_users.name),
-       password_hash=COALESCE(EXCLUDED.password_hash, hq_users.password_hash), disabled=false, updated_at=now()
+       password_hash=COALESCE(EXCLUDED.password_hash, hq_users.password_hash), disabled=false, pending=false, updated_at=now()
      RETURNING (xmax = 0) AS created`, [e, name ?? firstName(e), role, hash]);
   if (password !== null) await db.query(`DELETE FROM hq_sessions WHERE user_id=(SELECT id FROM hq_users WHERE email=$1)`, [e]);
   return { created: Boolean(r.rows[0]?.created) };
@@ -134,19 +136,21 @@ export const googleOn = (cfg: Pick<Config, 'hqGoogleClientId' | 'hqGoogleClientS
 export const googleRedirectUri = (cfg: Pick<Config, 'hqPublicUrl'>) => `${cfg.hqPublicUrl}/hq/api/auth/google/callback`;
 
 /** The Google sign-in address and the short-lived state cookie (SameSite=Lax: Google's redirect back is a cross-site navigation). */
-export function googleStart(cfg: Config): { location: string; setCookie: string } {
+export function googleStart(cfg: Config, mode: 'login' | 'signup' = 'login'): { location: string; setCookie: string } {
   const state = randomBytes(24).toString('base64url');
   const q = new URLSearchParams({ client_id: cfg.hqGoogleClientId!, redirect_uri: googleRedirectUri(cfg), response_type: 'code', scope: 'openid email', state, prompt: 'select_account' });
-  return { location: `${cfg.hqGoogleAuthUrl}?${q}`, setCookie: cookie(OAUTH_COOKIE, signValue(cfg.hqSessionSecret!, `${state}:${Date.now()}`), 600, 'Lax') };
+  return { location: `${cfg.hqGoogleAuthUrl}?${q}`, setCookie: cookie(OAUTH_COOKIE, signValue(cfg.hqSessionSecret!, `${state}:${Date.now()}:${mode}`), 600, 'Lax') };
 }
 
 /** The Google callback: check state, swap the code for the id token (server to Google over TLS), return the verified email. */
-export async function googleFinish(cfg: Config, query: URLSearchParams, cookieHeader: string | undefined, fetchImpl: typeof fetch = fetch): Promise<{ email?: string; error?: string }> {
+export async function googleFinish(cfg: Config, query: URLSearchParams, cookieHeader: string | undefined, fetchImpl: typeof fetch = fetch): Promise<{ email?: string; error?: string; mode: 'login' | 'signup' }> {
   const saved = unsignValue(cfg.hqSessionSecret!, parseCookies(cookieHeader)[OAUTH_COOKIE]);
-  const [state, at] = String(saved ?? '').split(':');
-  if (!state || state !== query.get('state') || Date.now() - Number(at) > 600_000) return { error: 'Sign-in expired. Try again.' };
+  const [state, at, m] = String(saved ?? '').split(':');
+  const mode = m === 'signup' ? 'signup' : 'login';
+  const done = (r: { email?: string; error?: string }) => ({ ...r, mode }) as { email?: string; error?: string; mode: 'login' | 'signup' };
+  if (!state || state !== query.get('state') || Date.now() - Number(at) > 600_000) return done({ error: 'Sign-in expired. Try again.' });
   const code = query.get('code');
-  if (!code) return { error: 'Google sign-in was cancelled.' };
+  if (!code) return done({ error: 'Google sign-in was cancelled.' });
   let tok: any;
   try {
     const res = await fetchImpl(cfg.hqGoogleTokenUrl, {
@@ -155,16 +159,16 @@ export async function googleFinish(cfg: Config, query: URLSearchParams, cookieHe
       signal: AbortSignal.timeout(15_000),
     });
     tok = await res.json();
-    if (!res.ok) return { error: 'Google did not accept the sign-in.' };
-  } catch { return { error: 'Could not reach Google. Try again.' }; }
+    if (!res.ok) return done({ error: 'Google did not accept the sign-in.' });
+  } catch { return done({ error: 'Could not reach Google. Try again.' }); }
   let claims: any;
-  try { claims = JSON.parse(Buffer.from(String(tok.id_token ?? '').split('.')[1] ?? '', 'base64url').toString('utf8')); } catch { return { error: 'Google sent an unreadable answer.' }; }
+  try { claims = JSON.parse(Buffer.from(String(tok.id_token ?? '').split('.')[1] ?? '', 'base64url').toString('utf8')); } catch { return done({ error: 'Google sent an unreadable answer.' }); }
   const issOk = claims?.iss === 'https://accounts.google.com' || claims?.iss === 'accounts.google.com';
-  if (!issOk || claims?.aud !== cfg.hqGoogleClientId || !(Number(claims?.exp) * 1000 > Date.now()) || claims?.email_verified !== true) return { error: 'Google sign-in could not be verified.' };
-  return { email: normEmail(claims.email) };
+  if (!issOk || claims?.aud !== cfg.hqGoogleClientId || !(Number(claims?.exp) * 1000 > Date.now()) || claims?.email_verified !== true) return done({ error: 'Google sign-in could not be verified.' });
+  return done({ email: normEmail(claims.email) });
 }
 
 export async function userByEmail(db: Db, email: string): Promise<HqUser | null> {
-  const u = (await db.query(`SELECT id, email, name, role FROM hq_users WHERE email=$1 AND NOT disabled`, [normEmail(email)])).rows[0];
+  const u = (await db.query(`SELECT id, email, name, role FROM hq_users WHERE email=$1 AND NOT disabled AND NOT pending`, [normEmail(email)])).rows[0];
   return u ? { id: Number(u.id), email: String(u.email), name: String(u.name || firstName(u.email)), role: u.role === 'owner' ? 'owner' : 'member' } : null;
 }
