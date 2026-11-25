@@ -1,34 +1,46 @@
 import { useEffect, useState } from 'react';
 import { api, type AgentCard } from '../api';
-import { AGENT_EMOJI, Card, cx, ErrorBox, go, Loading, PageTitle } from '../ui';
+import { Avatar, Card, cleanLine, cx, ErrorBox, go, Icon, PageSkeleton, PageTitle, StatusDot, teamTone, toneLabel } from '../ui';
 
 export default function Agents() {
   const [agents, setAgents] = useState<AgentCard[] | null>(null);
   const [error, setError] = useState('');
   useEffect(() => { api<{ agents: AgentCard[] }>('/agents').then((r) => setAgents(r.agents)).catch((e) => setError(e.message)); }, []);
-  if (error) return <><PageTitle title="Team" /><ErrorBox error={error} /></>;
-  if (!agents) return <><PageTitle title="Team" /><Loading /></>;
+  const title = <PageTitle title="Team" kicker={agents ? `${agents.length} agents` : 'Agents'} sub="Everyone reports to Ada. Atlas runs Scribe and Scout." />;
+  if (error) return <>{title}<ErrorBox error={error} /></>;
+  if (!agents) return <>{title}<PageSkeleton kind="grid" /></>;
   return (
     <div>
-      <PageTitle title="Team" kicker="Everyone reports to Ada. Atlas runs Scribe and Scout." />
-      <div className="grid gap-2 sm:grid-cols-2">
-        {agents.map((a) => (
-          <Card key={a.name} onClick={() => go(`agents/${a.name}`)} className="p-4">
-            <div className="flex items-start gap-3">
-              <div className="text-2xl leading-none">{AGENT_EMOJI[a.name]}</div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline justify-between gap-2"><div className="font-semibold">{a.name}</div><div className="truncate text-xs text-stone-500 dark:text-stone-400">{a.role}</div></div>
-                <div className="mt-0.5 text-sm text-stone-600 dark:text-stone-300">{a.does}</div>
-                <div className={cx('mt-2 truncate text-xs', a.status?.ok === false ? 'text-amber-700 dark:text-amber-300' : 'text-stone-500 dark:text-stone-400')}>{a.status?.line}</div>
-                <div className="mt-1 flex gap-3 text-xs text-stone-500 dark:text-stone-400">
-                  <span>reports to {a.reportsTo}</span>
-                  {a.waiting > 0 && <span>· {a.waiting} waiting</span>}
-                  {a.openTasks > 0 && <span>· {a.openTasks} to-do</span>}
+      {title}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {agents.map((a) => {
+          const tone = teamTone(a.status?.ok, a.status?.line);
+          return (
+            <Card key={a.name} onClick={() => go(`agents/${a.name}`)} label={`${a.name}, ${a.role}: ${toneLabel[tone]}`} className="group flex flex-col p-5">
+              <div className="flex items-start gap-3">
+                <span className="relative">
+                  <Avatar name={a.name} size="lg" />
+                  <StatusDot tone={tone} className="absolute -bottom-0.5 -right-0.5 h-3 w-3 ring-2 ring-surface" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2"><div className="text-[17px] font-semibold tracking-tight text-fg">{a.name}</div><Icon name="chevronRight" size={18} className="text-faint transition group-hover:translate-x-0.5 group-hover:text-muted" /></div>
+                  <div className="truncate text-sm text-muted">{a.role}</div>
                 </div>
               </div>
-            </div>
-          </Card>
-        ))}
+              <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-fg-2">{a.does}</p>
+              <div className="mt-auto pt-4">
+                <div className={cx('flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs', tone === 'bad' ? 'bg-bad-soft text-bad' : tone === 'warn' ? 'bg-warn-soft text-warn' : 'bg-sunken text-muted')}>
+                  <StatusDot tone={tone} /><span className="truncate">{cleanLine(a.status?.line) || 'No status yet'}</span>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
+                  <span>reports to <span className="font-medium text-fg-2">{a.reportsTo}</span></span>
+                  {a.waiting > 0 && <span className="font-medium text-warn">{a.waiting} waiting</span>}
+                  {a.openTasks > 0 && <span>{a.openTasks} to-do</span>}
+                </div>
+              </div>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
