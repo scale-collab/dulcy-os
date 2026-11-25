@@ -555,3 +555,21 @@ If a Lead List step fails, the plan stops (`stuck`) and you see it on the Lead L
 **See plans:** `campaign-plans`. **Rewrite copy:** `campaign-copy <plan id> "<notes>"`.
 
 **Switch on:** `ATLAS_CAMPAIGNS=on`, and add `atlas.plan,campaign.pipeline,campaign.plan_approved,campaign.contacts_approved,scribe.copy,campaign.copy_approved` to `LIVE_STAGES`.
+
+
+## Riley, systems repair (2026-11-25)
+
+**What it does:**
+- **Every 15 minutes:** the engine puts every failed, stuck (15+ minutes past its lease) or needs-review job into the Airtable **System Issues** table. n8n errors go in too, once `N8N_API_KEY` is set. It's one row per problem: the same error again raises Occurrences. A problem marked Fixed that comes back is reopened.
+- **Every 2 hours, 8 a.m. to 8 p.m. ET:** Riley (a Claude scheduled task, runbook `agents/riley-session.md`):
+  1. works out why each new issue happens;
+  2. prepares the fix: a retry, a PR (not merged), or an exact n8n / Make / Airtable change with a rollback;
+  3. posts one Slack ✅/❌ per issue.
+  Once a day he also sweeps Make and Airtable automation errors, and works one known open issue.
+- **✅ on a Retry:** the engine re-runs the failed job right away.
+- **✅ on any other fix:** Riley makes it live on his next run, checks it worked, and marks it Fixed. For code, he tells you to run the deploy line. n8n changes come as exact steps for you, since the connector can't edit n8n.
+- **❌:** nothing changes.
+
+**Switch on:**
+- `RILEY=on`, and add `riley.collect,riley.apply` to `LIVE_STAGES`.
+- Optional, for n8n errors: `N8N_API_KEY` (n8n → Settings → n8n API → create key) and `N8N_BASE_URL` (default `http://localhost:5678`).

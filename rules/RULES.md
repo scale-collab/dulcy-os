@@ -170,3 +170,9 @@ Format: `- [date] rule. (why / source)`
 ## Clients (Alex, 2026-11-25)
 - **Lead Flo Marketing is no longer an active client.** Airtable Workspace IDs Status = Inactive (set 2026-11-25). Active clients: 5, plus Dulcy.
 - **The Marketing Cartel's Email 1 P.S. result lines are confirmed OK** by Alex with the client.
+
+## Riley: prepare the fix, wait for the ✅ (Alex, 2026-11-25)
+- Riley watches engine jobs, n8n, Make, Airtable automations and the known open issues by himself.
+- For each problem he posts in Slack: why it happens, the prepared fix (a PR, an exact change spec or a retry) and the rollback. **Nothing goes live until Alex's ✅.** This holds until Alex says Riley may fix freely.
+- Read-only checks need no approval. A ✅ on a Retry re-runs the failed engine job. Other fixes are made live by Riley's next scheduled run, then verified.
+- **Reason:** Alex wants the fixes ready for him, and to approve them until he trusts Riley to fix freely.

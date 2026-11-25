@@ -81,6 +81,12 @@ export interface Config {
   fathomBaseUrl: string;
   /** Sienna: Monday content ideas (SIENNA_IDEAS_HOUR) and Thursday scripts for Friday (SIENNA_PREP_HOUR), ET. */
   siennaOn: boolean;
+  /** Riley (RILEY=on): logs failed/stuck engine jobs and n8n errors to System Issues every RILEY_EVERY_MIN. */
+  rileyOn: boolean;
+  rileyEveryMin: number;
+  /** n8n public API (Settings → n8n API) for Riley's error sweep; optional. */
+  n8nApiKey: string;
+  n8nBaseUrl: string;
   siennaIdeasHour: number;
   siennaPrepHour: number;
   siennaChannel: string;
@@ -221,6 +227,10 @@ export function loadConfig(env = process.env): Config {
     fathomApiKey: env.FATHOM_API_KEY || undefined,
     fathomBaseUrl: env.FATHOM_BASE_URL || 'https://api.fathom.ai/external/v1',
     siennaOn: (env.SIENNA || 'off').toLowerCase() === 'on',
+    rileyOn: (env.RILEY || 'off').toLowerCase() === 'on',
+    rileyEveryMin: num('RILEY_EVERY_MIN', 15, env),
+    n8nApiKey: env.N8N_API_KEY || '',
+    n8nBaseUrl: env.N8N_BASE_URL || 'http://localhost:5678',
     siennaIdeasHour: num('SIENNA_IDEAS_HOUR', 10, env),
     siennaPrepHour: num('SIENNA_PREP_HOUR', 10, env),
     siennaChannel: (env.SIENNA_CHANNEL || env.ADA_CHANNEL || 'U070Z26377C').trim(),
