@@ -1,11 +1,12 @@
 // Sienna, content (Alex 2026-11-24/25): Alex's week is Mon campaigns … Fri content day.
 //   • sienna.ideas (Monday): researches what B2B founders and agency owners are asking right now
 //     (web search across YouTube, LinkedIn, X, Reddit, forums; Reddit alone is not enough), then
-//     adds ideas to the Content Center (Content Channels) with Status "Review" for Alex to pick
-//     (tick "Record This Week").
-//   • sienna.prep (Thursday): for every idea ticked "Record This Week" with no script yet, writes a
-//     teleprompter script in Alex's voice, title options, hook options, a thumbnail idea and a
-//     Gamma outline, and sets Production Stage "Script Ready".
+//     adds ideas to the Content Center (Content Channels) with Status "Review" and Idea Decision
+//     "Needs Review" for Alex to approve there (with a recording date).
+//   • sienna.prep (Thursday): for every approved idea recording in the next 8 days with no script
+//     yet (or the old "Record This Week" tick), writes a teleprompter script in Alex's voice, title
+//     options, hook options, a thumbnail idea and a Gamma outline, and sets Production Stage "Script"
+//     (the same stage the Content Center uses; one script writer, Alex 2026-11-25).
 // Drafts only: Sienna never posts, schedules or publishes anything.
 import { z } from 'zod';
 import type { Stage } from '../stages/index.js';
@@ -22,6 +23,7 @@ export const CF = {
   type: 'fldHg1dEikmbBG7JZ', status: 'fldWcMXU2M3xAwYjF', notes: 'fldd38VZyWwchpGjI', stage: 'fldQk3w4PUVrXwYaT', recordThisWeek: 'flddmHkAA7iDy5EQj',
   date: 'fldaLQaUuJz0Afu6h', source: 'fldveCswHhxiscD1I', channel: 'fldpcwymoqz8mtBh9', ytTitle: 'fld3xEJ5687C30cJL', transcript: 'fld13f1hP9c5zAxVS',
   ideaScore: 'fldooc7Qygr1b6Tz5', ideaUrl: 'fldrXemrcvGx4u0Mm', ideaCommunity: 'fld6ZkQRBdCHfV7Qp', ideaReason: 'fldhiGRSmlMdQxHYn', ideaKey: 'fldcSWXaLW8a9NYOq',
+  ideaDecision: 'fld3M7y7fHCbahSxD', recordingDate: 'fldJwxvRX4WxfcASD',
 } as const;
 
 const v = (x: unknown): string => (Array.isArray(x) ? v(x[0]) : x === undefined || x === null ? '' : typeof x === 'object' ? String((x as any).name ?? (x as any).id ?? '') : String(x)).trim();
@@ -94,7 +96,7 @@ export const siennaIdeasStage: Stage = async (ctx) => {
     const key = `sienna:${friday}:${slug(i.title)}`;
     if (existingKeys.has(key) || titles.some((t) => slug(t) === slug(i.title))) continue;
     await ctx.step(`idea:${key}`, async () => at.create(CONTENT, {
-      [CF.title]: i.title, [CF.status]: 'Review', [CF.source]: 'Generated Idea', [CF.channel]: 'Alex Woung', [CF.platform]: ['YouTube'], [CF.style]: 'Long Form', [CF.type]: i.type,
+      [CF.title]: i.title, [CF.status]: 'Review', [CF.ideaDecision]: 'Needs Review', [CF.source]: 'Generated Idea', [CF.channel]: 'Alex Woung', [CF.platform]: ['YouTube'], [CF.style]: 'Long Form', [CF.type]: i.type,
       [CF.date]: friday, [CF.ideaScore]: Math.max(0, Math.min(100, Math.round(i.score))), [CF.ideaUrl]: i.evidence[0]?.url ?? '', [CF.ideaCommunity]: 'Sienna web research', [CF.ideaKey]: key,
       [CF.description]: `**Angle:** ${i.angle}\n\n**Hook:** ${i.hook}\n\n**Pillar:** ${i.pillar}`,
       [CF.ideaReason]: `${i.why_now}\n\nEvidence:\n${i.evidence.map((e) => `- ${e.url}: ${e.signal}`).join('\n')}`,
@@ -103,7 +105,7 @@ export const siennaIdeasStage: Stage = async (ctx) => {
   }
   if (cfg.slackBotToken && made.length) {
     const slack = createSlackClient({ token: cfg.slackBotToken, baseUrl: cfg.slackBaseUrl });
-    const text = `*Sienna: ${made.length} video ideas for Friday ${friday}* (in the Content Center, Status "Review")\n${made.map((m, n) => `${n + 1}. ${m}`).join('\n')}\nTick *Record This Week* on the ones you want. Thursday I'll write the scripts for those.`;
+    const text = `*Sienna: ${made.length} video ideas for Friday ${friday}* (in the Content Center, Status "Review")\n${made.map((m, n) => `${n + 1}. ${m}`).join('\n')}\nApprove the ones you want in the Content Center with a recording date. Thursday I'll write the scripts for those.`;
     await ctx.paid({ callKey: `sienna-ideas-post:${etYmd(now)}`, provider: 'slack', units: 0, scope: 'record', run: () => slack.post(cfg.siennaChannel, text), dryRunResult: () => ({ channel: '', ts: '' }) });
   }
   return { message: `${made.length} ideas added for ${friday}`, ideas: made };
@@ -114,12 +116,21 @@ async function voiceSamples(at: Pick<AirtableClient, 'list'>): Promise<string> {
   return recs.map((r) => `## ${v(r.fields[CF.title])}\n${(v(r.fields[CF.transcript]) || v(r.fields[CF.script])).slice(0, 4000)}`).join('\n\n');
 }
 
+/**
+ * Ideas Sienna writes a script for: approved in the Content Center (Idea Decision = Approved) with a
+ * Recording Date from yesterday to 8 days out, or the old "Record This Week" tick. No script yet.
+ */
+export function prepFormula(): string {
+  return `AND({Script}='',OR({Record This Week},AND({Idea Decision}='Approved',{Recording Date}!='',`
+    + `IS_AFTER({Recording Date},DATEADD(TODAY(),-2,'days')),IS_BEFORE({Recording Date},DATEADD(TODAY(),9,'days')))))`;
+}
+
 export const siennaPrepStage: Stage = async (ctx) => {
   const cfg = ctx.cfg;
   if (!cfg.airtableApiKey) throw new PermanentError('no AIRTABLE_API_KEY on the server');
   const at = createAirtableClient({ apiKey: cfg.airtableApiKey, baseId: cfg.airtableBaseId, baseUrl: cfg.airtableBaseUrl });
-  const picked = await at.list(CONTENT, `AND({Record This Week},{Script}='')`, [CF.title, CF.description, CF.ideaReason, CF.style], 20);
-  if (!picked.length) return { message: 'No ideas ticked "Record This Week" without a script', written: 0 };
+  const picked = await at.list(CONTENT, prepFormula(), [CF.title, CF.description, CF.ideaReason, CF.style], 20);
+  if (!picked.length) return { message: 'No approved ideas recording in the next 8 days without a script', written: 0 };
   if (ctx.dryRun) return { message: `Would write ${picked.length} script(s) (dry run: Claude not called)`, titles: picked.map((r) => v(r.fields[CF.title])) };
   const claude = createClaude({ apiKey: cfg.anthropicApiKey, model: cfg.claudeModel, baseURL: cfg.anthropicBaseUrl });
   const samples = await voiceSamples(at);
@@ -134,7 +145,7 @@ export const siennaPrepStage: Stage = async (ctx) => {
       dryRunResult: () => ({}) as z.infer<typeof Script>,
     });
     await ctx.step(`script:${r.id}`, async () => at.update(CONTENT, r.id, {
-      [CF.script]: s.script, [CF.stage]: 'Script Ready',
+      [CF.script]: s.script, [CF.stage]: 'Script',
       [CF.notes]: `**Title options**\n${s.title_options.map((t) => `- ${t}`).join('\n')}\n\n**Hook options**\n${s.hook_options.map((t) => `- ${t}`).join('\n')}\n\n**Thumbnail:** ${s.thumbnail}\n\n**Gamma outline**\n${s.gamma_outline}\n\n**YouTube description**\n${s.description}\n\n**Check before recording**\n${s.facts_to_check.map((t) => `- ${t}`).join('\n') || '- nothing flagged'}`,
     }));
     done.push(v(f[CF.title]));

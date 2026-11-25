@@ -55,4 +55,5 @@ Read [operations-automation.md](references/operations-automation.md) for idempot
 - Make: "store incomplete executions" is off on all 28 active scenarios.
 - Make reply webhook queue at 650/667 with its scenario off; one EmailBison workspace probably still points at Make.
 - Where the over-4% bounce auto-pause runs: UNKNOWN.
+- Content OS (2026-11-25 audit): the content webhooks (script, YouTube details, thumbnail, OpusClip, distribution) have no auth and spend OpenAI credits; two identical live "[Content OS] Generate Teleprompter Script" workflows (`_kaI9vi79dXsM_EW64egu`, `M6KIF3eRsCf3hQTIK3cNI`): find which one the Content Center calls, propose turning the other off; 17 Content Distribution items "Scheduled" with past dates and no Queue Receipt / Post URL: check whether they posted.
 - Next fixes in `NEXT.md`: Top Up reconcile-one-import, full response-body logging, the 60% "next campaign" flow.
