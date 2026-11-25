@@ -1,6 +1,6 @@
-// Sean, the inbox agent (draft mode, Alex 2026-11-24). Every SEAN_EVERY_MIN minutes:
+// Echo, the inbox agent (draft mode, Alex 2026-11-24). Every SEAN_EVERY_MIN minutes:
 // find interested replies waiting on Dulcy (not client-handled), draft each answer with Claude
-// in Alex's voice from the repo's rules, Sean's skill, the client's own file, that client's real
+// in Alex's voice from the repo's rules, Echo's skill, the client's own file, that client's real
 // threads that booked a meeting and the replies Alex approved before. The draft lands on the
 // reply's own Airtable row (Reply Queue: Approve / Send Edited) and in Slack (✅ = the same Approve).
 // Nothing is sent from here; the reply sender sends after approval.
@@ -28,7 +28,7 @@ export const DraftSchema = z.object({
 });
 export type Draft = z.infer<typeof DraftSchema>;
 
-export const SEAN_BRIEF = `You are Sean, Dulcy's inbox manager. Dulcy is a cold email agency run by Alex. You answer prospects who replied to a cold email campaign, for Dulcy itself or for one of Dulcy's clients (the client file below says whose campaign it is and what is true about them). Your one job: move an interested reply to a booked call, the way Alex would.
+export const SEAN_BRIEF = `You are Echo, Dulcy's inbox manager. Dulcy is a cold email agency run by Alex. You answer prospects who replied to a cold email campaign, for Dulcy itself or for one of Dulcy's clients (the client file below says whose campaign it is and what is true about them). Your one job: move an interested reply to a booked call, the way Alex would.
 
 Decide one action:
 - "reply": the thread needs an answer from us now. Write the full email body in "draft".
@@ -94,7 +94,7 @@ export function sections(md: string, keep: RegExp): string {
 }
 
 /**
- * The knowledge every Sean call shares, first replies and follow-ups alike (cached once by Claude,
+ * The knowledge every Echo call shares, first replies and follow-ups alike (cached once by Claude,
  * Alex 2026-11-25: best replies, no paying to reload what a reply never uses). Focused on email
  * replies: skill, playbooks, real reply data, creator methods, rules, promise contract, and only the
  * sales-method parts a reply needs (beliefs, objections, follow-up). The call-only parts of the sales
@@ -104,10 +104,10 @@ export function sections(md: string, keep: RegExp): string {
 export function sharedKnowledge(dir: string): string {
   const closers = sections(readKnowledge(dir, 'skills/cole-sales-closing/references/closers-methods.md'), /^#{2,3} (2\.1|2\.6|2\.7)\b/);
   return [
-    `# Sean skill\n${readKnowledge(dir, 'skills/sean-reply-handling/SKILL.md')}`,
-    `# Reply decisions\n${readKnowledge(dir, 'skills/sean-reply-handling/references/reply-decision.md')}\n${readKnowledge(dir, 'skills/sean-reply-handling/references/decision-playbook.md')}`,
-    `# What worked before (real reply data)\n${readKnowledge(dir, 'skills/sean-reply-handling/references/historical-patterns.md')}`,
-    `# Methods from the creators we follow\n${readKnowledge(dir, 'skills/sean-reply-handling/references/creator-methods.md')}`,
+    `# Echo skill\n${readKnowledge(dir, 'skills/echo-reply-handling/SKILL.md')}`,
+    `# Reply decisions\n${readKnowledge(dir, 'skills/echo-reply-handling/references/reply-decision.md')}\n${readKnowledge(dir, 'skills/echo-reply-handling/references/decision-playbook.md')}`,
+    `# What worked before (real reply data)\n${readKnowledge(dir, 'skills/echo-reply-handling/references/historical-patterns.md')}`,
+    `# Methods from the creators we follow\n${readKnowledge(dir, 'skills/echo-reply-handling/references/creator-methods.md')}`,
     `# Sales method: beliefs, objections, follow-up\n${closers}`,
     `# Standing rules (newest wins)\n${readKnowledge(dir, 'rules/RULES.md')}\n${readKnowledge(dir, 'rules/client-promise-contract.md')}`,
   ].join('\n\n---\n\n');
@@ -203,13 +203,13 @@ export const seanDraftStage: Stage = async (ctx) => {
         if (auto.auto) {
           // Sent by the engine sender inside the client's office hours; no approval card.
           if (offer.slots.length) await rememberOffered(ctx.db, wsRec, offer.slots, r.id);
-          await logActivity(cfg, { event: `Auto-reply queued: ${val(f[EF.leadName]) || 'prospect'} (${client.name})`, type: 'Approved', agent: 'Sean', details: `Client setting: ${auto.why}. ${d.reason}`, jobId: ctx.job.id });
+          await logActivity(cfg, { event: `Auto-reply queued: ${val(f[EF.leadName]) || 'prospect'} (${client.name})`, type: 'Approved', agent: 'Echo', details: `Client setting: ${auto.why}. ${d.reason}`, jobId: ctx.job.id });
         } else if (action !== 'skip') {
           if (offer.slots.length) await rememberOffered(ctx.db, wsRec, offer.slots, r.id);
           const who = `${val(f[EF.leadName]) || 'prospect'}${val(f[EF.company]) ? ` at ${val(f[EF.company])}` : ''}`;
           decisionId = await at.create(DECISIONS, {
             [DF.title]: action === 'reply' ? `Reply to ${who}` : `Need your input: reply to ${who}`,
-            [DF.agent]: 'Sean', [DF.status]: 'New', [DF.client]: client.name, [DF.emailsRecord]: r.id,
+            [DF.agent]: 'Echo', [DF.status]: 'New', [DF.client]: client.name, [DF.emailsRecord]: r.id,
             [DF.issue]: d.they_said,
             [DF.checked]: action === 'ask_alex' ? `${question} (answer it in Airtable: edit the draft, then Send Edited)` : d.reason,
             [DF.fix]: d.draft,

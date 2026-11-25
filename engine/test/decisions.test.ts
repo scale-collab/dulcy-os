@@ -37,7 +37,7 @@ function cfg(over: Partial<Config> = {}): Config {
 }
 async function settle(conf: Config) { for (let i = 0; i < 10; i++) await runOnce(db, conf); }
 const reply = (over: Record<string, unknown> = {}) => ({
-  [DF.title]: 'Reply to Jane at Acme', [DF.agent]: 'Sean', [DF.client]: 'Dulcy', [DF.status]: 'New',
+  [DF.title]: 'Reply to Jane at Acme', [DF.agent]: 'Echo', [DF.client]: 'Dulcy', [DF.status]: 'New',
   [DF.issue]: 'Jane asked for times', [DF.fix]: 'Offer Tue 2pm or Wed 11am ET', [DF.details]: 'Full thread here',
   [DF.action]: 'Send Reply', [DF.actionInput]: JSON.stringify({ workspaceId: 66, replyId: 123, message: 'Hi Jane, Tue 2pm or Wed 11am ET?' }), ...over,
 });
@@ -51,12 +51,12 @@ beforeEach(async () => {
 
 test('message: blank line between facts, reply drafts quoted, action named, details not in the main message', () => {
   const m = decisionMessage({ id: 'r', fields: reply() });
-  assert.match(m, /^\*Sean · Dulcy\*\nReply to Jane at Acme\n\n\*Issue:\* Jane asked for times\n\n/);
+  assert.match(m, /^\*Echo · Dulcy\*\nReply to Jane at Acme\n\n\*Issue:\* Jane asked for times\n\n/);
   assert.match(m, /\*On ✅:\* Send Reply$/);
   assert.doesNotMatch(m, /React/);
   assert.doesNotMatch(m, /Full thread here/);
   const r = decisionMessage({ id: 'r', fields: reply({ [DF.action]: 'Approve Reply', [DF.client]: 'Client: Twenty West Media', [DF.fix]: 'Hi Jane,\n\nTue 2pm?' }) });
-  assert.match(r, /^\*Sean · Twenty West Media\*/);
+  assert.match(r, /^\*Echo · Twenty West Media\*/);
   assert.match(r, /\*They said:\* Jane asked for times/);
   assert.match(r, /\*Draft reply:\*\n> Hi Jane,\n> \n> Tue 2pm\?/);
   assert.doesNotMatch(r, /send it|skip it/, 'no redundant reaction legend (Alex, 2026-11-25)');

@@ -13,7 +13,7 @@ Turn booked meetings into qualified revenue, not activity. The funnel:
 Find the exact stage that is leaking before prescribing a fix.
 
 ## Who owns what
-- **Sean** gets the prospect from reply to booked meeting. **Cole** takes it from the booked call to the close.
+- **Echo** gets the prospect from reply to booked meeting. **Cole** takes it from the booked call to the close.
 - **Forge** owns the offer and pricing logic; **Atlas** the client facts; **Lex** contract terms; **Ledger** invoicing.
 
 ## How Cole works

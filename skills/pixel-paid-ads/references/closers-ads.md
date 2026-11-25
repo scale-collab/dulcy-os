@@ -4,7 +4,7 @@ Source: Closers.io "Sales Team Accelerator" library (Drive folder 1xlVVl0ckUVUUT
 Format rule: one DOCX per lesson was read (PDF duplicates skipped). The one XLSX was read as extracted text.
 Status: this is external course training from an info-product/coaching business, mostly B2C and coaching offers. It is NOT Dulcy policy or validated performance. Dulcy runs no paid ads today; all spend still needs Alex's explicit OK. Every number below is a **course claim**.
 
-Tags: [Pixel] = paid ads agent, [Sienna] = content/video agent. Other owners noted where relevant (Forge, Lex, Riley, Atlas, Sean, Cole).
+Tags: [Pixel] = paid ads agent, [Sienna] = content/video agent. Other owners noted where relevant (Forge, Lex, Riley, Atlas, Echo, Cole).
 
 ## Lesson inventory
 
@@ -172,12 +172,12 @@ Totals: 24 lesson folders, 24 read (one is a duplicate). 1 is video-only (TikTok
 
 ### YT-8 Funnel + Application Training
 - [Pixel] Funnels: Ad → Opt-in → VSL → Calendly with questions → Thank you; or Ad → Opt-in → VSL → Application → Calendly → Thank you.
-- [Pixel][Sean] Add friction (an application step) only after lead flow is enough. Send qualified leads to booking and unqualified leads to a lead magnet or cheaper product.
+- [Pixel][Echo] Add friction (an application step) only after lead flow is enough. Send qualified leads to booking and unqualified leads to a lead magnet or cheaper product.
 - [Pixel] Test 5-12 application questions. If leads are too few, cut questions. If too many leads are unqualified, add questions.
 
 ### YT-9 Funnel Set Up, Automations & CRM (Legacy)
 - [Riley] It includes all of YT-8, plus: opt-in nurture email, an application-to-Slack alert (the course says grading by hand is best), and Calendly workflows to nurture booked calls.
-- [Cole][Sean] Course target: an **80% show rate** for booked calls.
+- [Cole][Echo] Course target: an **80% show rate** for booked calls.
 - [Riley] Deduplicate the CRM: check for an existing lead (by ID or email) before creating one, and update the existing record if found.
 - [Cole] Use the CRM to move deals forward daily, keep a "hot list" and manage tasks.
 

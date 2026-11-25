@@ -82,8 +82,8 @@ export const STAGES: Record<string, StageDef> = {
   'account.approve_purchase': { run: approvePurchaseStage, deadlineMs: 5 * 60_000, maxAttempts: 3, description: 'On ✅ of a replacement: tick Approve Purchase on the Spam Remediation Queue record.' },
   'bounce.investigate': { run: bounceInvestigateStage, deadlineMs: 2 * 60 * 60_000, maxAttempts: 3, description: 'Bounce agent: read a flagged campaign\'s bounce notices and inboxes, name the cause and one fix, post it as a Slack decision. Changes nothing.' },
   'bounce.fix': { run: bounceFixStage, deadlineMs: 15 * 60_000, maxAttempts: 3, description: 'Bounce agent fix on ✅: remove the named inboxes (if any) and resume the campaign, then tick Skip Bounce Pause.' },
-  'sean.followup': { run: seanFollowupStage, deadlineMs: 30 * 60_000, maxAttempts: 3, description: 'Sean: draft due follow-ups (no answer, back from out of office, check back later) and post each as a Slack decision. Sends nothing.' },
-  'sean.draft': { run: seanDraftStage, deadlineMs: 30 * 60_000, maxAttempts: 3, description: 'Sean: draft answers to interested replies waiting on Dulcy and post each as a Slack decision. Sends nothing.' },
+  'sean.followup': { run: seanFollowupStage, deadlineMs: 30 * 60_000, maxAttempts: 3, description: 'Echo: draft due follow-ups (no answer, back from out of office, check back later) and post each as a Slack decision. Sends nothing.' },
+  'sean.draft': { run: seanDraftStage, deadlineMs: 30 * 60_000, maxAttempts: 3, description: 'Echo: draft answers to interested replies waiting on Dulcy and post each as a Slack decision. Sends nothing.' },
   'decision.send_reply': { run: sendReplyStage, deadlineMs: 10 * 60_000, maxAttempts: 3, description: 'Send an approved reply in an EmailBison thread (from the Decisions table). Never sends twice; stops if the prospect wrote again.' },
   'engine.selftest': { run: selfTest, deadlineMs: 5 * 60_000, maxAttempts: 3, description: 'End-to-end check of the engine itself. Spends nothing.' },
   'leadlist.verify': {

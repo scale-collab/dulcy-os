@@ -158,7 +158,7 @@ Read-only extraction, 2026-11-17. Source: Alex's Drive, Sales Team Accelerator (
 - The rep scores themselves before each 1:1. The leader scores too, then they go through the gaps together. There are rep-notes and leader-notes fields.
 - **This is the closest thing in the module to a call-review grading sheet.** It grades the rep week by week, not one call at a time.
 
-**Setter Ramp** (weekly rubric, weeks 1–5) [Harper] [Sean]
+**Setter Ramp** (weekly rubric, weeks 1–5) [Harper] [Echo]
 - Scores 1–4 on five areas: **Sales Process/Execution, Follow Up/Show Rate, Time Management & Work Ethic, Preparedness, Attitude & Coachability.** It uses the same self-score + leader-score method.
 - At level 4 for Follow Up/Show Rate, the setter knows why each no-show happened, runs a "consistent pre-call text/check-in sequence", and always fills the pre-call form for the closer. This fits Josh's inbox-to-meeting work.
 
@@ -210,7 +210,7 @@ Read-only extraction, 2026-11-17. Source: Alex's Drive, Sales Team Accelerator (
 - Course figure: up to 4k a month. Fold the role into another ops job until volume is high (course: $10–20M a year).
 - Dulcy parallel: this is close to Josh's role plus Riley's automations. Attribution and the daily calendar-capacity report could come from Airtable.
 
-**SC Application Grading System** (sheet) [Cole] [Sean] [Atlas]
+**SC Application Grading System** (sheet) [Cole] [Echo] [Atlas]
 - Two scoring grids. The B2B grid scores **current revenue, lead flow (consults per week), challenge/need, ability to invest, answer quality, vertical**, each 1–4, then averages them.
 - Result: **1 = cancel, 2 = move to setter (triage), 3–4 = approve.**
 - Automatic disqualifiers (score 1): answered "no" to willingness to invest, wrong vertical, certain excluded business models. The second grid (B2C income replacement) adds "obvious incongruence in answer quality".
@@ -241,10 +241,10 @@ Read-only extraction, 2026-11-17. Source: Alex's Drive, Sales Team Accelerator (
 - It has separate product lines for **One-Times** and **MRR** (sold, price, revenue, collected, collected %), with daily, weekly, monthly and quarterly dashboards and a flag for departed reps.
 - **Closest fit to Dulcy's model** (a retainer agency with a discovery call then a proposal or close call). Good base for Dulcy's own sales-pipeline fields in Airtable/Close, owned by Riley.
 
-**Setter Tracking Sheet** (sheet) [Sean] [Harper]
+**Setter Tracking Sheet** (sheet) [Echo] [Harper]
 - Setter funnel fields: leads assigned, total dials, meaningful conversations/triages, meaningful-convo %, sets, convo → set %, sets on calendar, live calls, sets offered, sets closed, show %, offer %, set → close %, show → close %, offer → close %, front-end cash revenue, collected and collection %, revenue and collected per call and per close.
 - It has daily, weekly, monthly and quarterly dashboards per setter and for the team.
-- For Dulcy, the "setter" stage maps to reply → booked meeting (Sean and Josh). Show → close and set → close let Alex see whether a weak result comes from booking quality or from closing.
+- For Dulcy, the "setter" stage maps to reply → booked meeting (Echo and Josh). Show → close and set → close let Alex see whether a weak result comes from booking quality or from closing.
 
 ### Extra linked items read (outside the library, linked from lessons)
 
@@ -279,7 +279,7 @@ Read-only extraction, 2026-11-17. Source: Alex's Drive, Sales Team Accelerator (
 ## 5. Gaps
 
 - **Call-review grading sheet: partial.** The module has no per-call scorecard. The closest is the **Closer Ramp** weekly rubric (6 areas, 1–4), plus the batch-1 Closer Scorecard and Mock Call SOP. A per-call sheet (frame, discovery depth per belief, tie-downs, pitch, objection handling, close attempt, next step booked) would have to be built, possibly in Intro & Onboarding or the 7FSA material.
-- **No-show rebooking script: not found.** The module covers no-show *prevention* (confirmation texts, tie-downs, application order) and says the manager should "hit me up when you have a no show" for coaching. There is no message to rebook a no-show. Check the Lead Generation "Confirmation Emails" lesson and the 10 Day Setter Text Sequence (batch 1), or draft one with Sean.
+- **No-show rebooking script: not found.** The module covers no-show *prevention* (confirmation texts, tie-downs, application order) and says the manager should "hit me up when you have a no show" for coaching. There is no message to rebook a no-show. Check the Lead Generation "Confirmation Emails" lesson and the 10 Day Setter Text Sequence (batch 1), or draft one with Echo.
 - **Spouse/partner objection: not found** in this module. It covers no objection handling at all. Only the batch-1 Belief Ladder "Support" belief prevents it. Use the 7FSA objection Docs outside the library.
 - **No-close follow-up: thin.** The process exists (hot list, CRM follow-up tasks, "your rep can book a follow up with YOU to help the prospect close", a deposits field, payment-plan tags in the EOD) but there is **no follow-up script or cadence**. The 7FSA follow-up week is not in the library.
 - **Not watched:** the linked videos (Recruiting A-Players training video, tracking-system videos, Diagnosing Sales Ruts video, Loom pipeline SOP, commission payout training) and the linked NDA. The leaderboard weighting is UNKNOWN.

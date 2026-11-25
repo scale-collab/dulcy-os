@@ -154,7 +154,7 @@ Numbers from Airtable Campaigns (77 linked records), read 2026-11-17. Sent = ema
 - Google Drive: search for Scroll Stop / GLOBALMEDIAGROUP (titles only; results were lead lists and backups, not read because they hold prospect data), 2026-11-17.
 - Repo: company/client-pricing-and-goals-2026-11-17.md, clients/INDEX.md, rules/RULES.md, sops/drive-export/125-Scroll-Stop-Prompt.md, legacy/jarvis-project/memory/client_memory.md, automations/n8n-live-2026-11-17 ([Scroll Stop] Automation For Booked Meeting), 2026-11-17.
 
-## Reply rules learned (Sean, 2026-11-24)
+## Reply rules learned (Echo, 2026-11-24)
 - **No gifting-only / no-fee deals.** James to DecoratorsBest (June 2026, Emails recpUNYjQeVu3rxXl): if they need "No Win / No Fee" or can't afford management costs he forwards them to smaller agencies; otherwise he books a call. Scroll Stop runs managed creator campaigns for a management fee. [James, 2026-06]
 - **Never put creators on a brand's PR/application form** and never promise creator shortlists without Scroll Stop's approved asset. May declined Carpe's same form in May 2026 (rechEYRrNvnH5t13R). [Emails 2026-05; client file §8]
 - **Booking link:** James's cal.com link (https://cal.com/james-george-higgins-scrollstop/central-as40ad1731), set 2026-11-12. Reply Agent settings updated to this link on 2026-11-24 (Alex). [Slack 2026-11-12]

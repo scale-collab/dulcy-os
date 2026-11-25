@@ -146,7 +146,7 @@ export const replySendStage: Stage = async (ctx) => {
     [EF.lastSent]: 'Last Email Sent By Dulcy',
     ...(['', 'New Interested'].includes(val(f[EF.stage])) ? { [EF.stage]: 'In Conversation' } : {}),
   });
-  // Learning: what Sean drafted vs what went out (approved by a person), read by Sean next time.
+  // Learning: what Echo drafted vs what went out (approved by a person), read by Echo next time.
   // Automatic sends are not a person's approval, so they never become "Reply Alex approved" examples.
   if (policy.auto !== true) try {
     await at.create(REPLY_LEARNING, {

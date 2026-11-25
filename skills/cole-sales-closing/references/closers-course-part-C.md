@@ -7,7 +7,7 @@ How this was done:
 - Every lesson folder in this half holds exactly one DOCX. I read the DOCX text and did not open the PDF twins. Images, linked Google Docs and templates, Skool pages and videos were not opened.
 - 5 lessons in this half were already read in earlier batches, so I skipped them: Cold Email Examples, Cold Email Tech Set Up & Replies, Confirmation Emails, End To End Outbound Sales Manual, Follow Up Email Creatives.
 - Treat all of this as outside training material, not Dulcy policy or proof. Every number marked "course claim" is Closers.io's own claim and has not been checked. None of it can be reused as Dulcy or client proof (rules/RULES.md: never invent or reuse proof).
-- Agent tags: [Atlas] campaigns, [Scout] lists, [Scribe] copy, [Sean] replies and setting, [Sienna] organic content, [Pixel] ads. Where it helps I also tag [Forge] offers, [Cole] sales, [Riley] systems, [Harper] people, [Ledger] finance, [Lex] legal.
+- Agent tags: [Atlas] campaigns, [Scout] lists, [Scribe] copy, [Echo] replies and setting, [Sienna] organic content, [Pixel] ads. Where it helps I also tag [Forge] offers, [Cole] sales, [Riley] systems, [Harper] people, [Ledger] finance, [Lex] legal.
 
 ## 1. Full sorted lesson list (63)
 
@@ -115,7 +115,7 @@ Count for my half: 32 lessons. 5 were read earlier and skipped. 27 were read her
 - Direct vs indirect: B2B and B2-solopreneur are mainly DIRECT ("(audience) - we'll (outcome) in (timeframe) or (guarantee)"); B2C mainly INDIRECT. Advice: write both and test. [Scribe][Pixel]
 - Direct ad structures: A) call-out, offer, 3 key results, restated guarantee, social proof, CTA; B) call-out, offer, proof, CTA. Test long vs short on both booked calls AND lead quality. [Scribe][Pixel]
 - Strong CTA pattern: CTA, restate key benefits, CTA again; and "we have zero incentive to sell you if it won't work" when backed by a guarantee. [Scribe]
-- Application grading: 1-4 scale; 1s and 2s go to setters as triage calls, 3s and 4s to closers' calendars; solo founders take all, then start cancelling 1s/2s if quality is very low. [Sean][Cole]
+- Application grading: 1-4 scale; 1s and 2s go to setters as triage calls, 3s and 4s to closers' calendars; solo founders take all, then start cancelling 1s/2s if quality is very low. [Echo][Cole]
 - Process gates: mandatory template use for review; course rejects obvious ChatGPT copy without feedback. Videos 4x5 (1080x1350) with a banner. [Pixel][Sienna]
 
 ### 5. Application Script Templates — DOCX, text identical to #3 (same title, same 8,377-byte size, same text). Duplicate; no new content.
@@ -137,7 +137,7 @@ Count for my half: 32 lessons. 5 were read earlier and skipped. 27 were read her
 - One campaign per ANGLE (different pain point = different campaign); micro-variations (first line, headline, image) inside an angle. Mirrors Dulcy's rule of one variable per test and separate campaigns per offer/angle. [Pixel][Atlas][Scribe]
 - VSL math (course claims): ads ~20% of P&L (~5x cash ROAS); aim 3-4x upfront cash ROAS and 6-10x contract ROAS early; target CPA 33-50% of upfront cash; 20-25% close rate on LIVE calls; CPA / closes-per-live-call = cost per live call, then halve for no-shows/DQs = cost per BOOKED call. Booked vs live distinction matters. [Atlas][Ledger][Cole]
 - Course claims: ~3% total-lead-to-close, ~10% booking-to-close while cancelling ~70% of applications; "scalable" at 1.5% and 5%. Ignore vanity metrics (CPM, CPC, CPL) as KPIs; optimise to CPA and cost per booked call. [Atlas][Pixel]
-- Common mistakes: weak attribution data feedback; under-budgeting; testing tiny tweaks instead of 4 different big concepts, run ~5 days then cut losers (overspend and cut beats underspend and scale); no opt-in/email follow-up; "not outbound calling the leads"; good VSL but bad ads (ad matters more). [Pixel][Atlas][Sean]
+- Common mistakes: weak attribution data feedback; under-budgeting; testing tiny tweaks instead of 4 different big concepts, run ~5 days then cut losers (overspend and cut beats underspend and scale); no opt-in/email follow-up; "not outbound calling the leads"; good VSL but bad ads (ad matters more). [Pixel][Atlas][Echo]
 
 ### 11. Direct VSL - Ads — DOCX ~6k chars
 - Mostly a duplicate of the "Ad Breakdown" section in #10 (same FB audience bucket, budgeting, YouTube and retargeting notes). [Pixel]
@@ -149,8 +149,8 @@ Count for my half: 32 lessons. 5 were read earlier and skipped. 27 were read her
 ### 12. DM Ads - Overview — DOCX ([UPDATED] DM Ads Training Doc) ~20k chars
 - DM ads send people straight into FB/IG DMs. Fit: B2C or B2-solopreneur, first validation of an offer or paid traffic. NOT for B2B, small-TAM B2B, enterprise, TAM under 10k, or scaling past ~$400k/month (DMs get hard to manage at $100-200k/month spend; course claim). [Pixel][Atlas]
 - Same KPI chain as the application funnel (spend -> leads -> cost per lead -> booked -> cost per booked call -> showed -> closed -> revenue -> cash -> CPA). [Atlas][Pixel]
-- Keyword CTA: "DM me the word SETTERS". Messenger welcome flow: one-word greeting, required auto-reply that admits it is automated ("robot ... the human me will send details shortly") so the follow-up manual message reads as clearly human. [Pixel][Sean]
-- Setter DM rules (strongest part for Dulcy) [Sean]:
+- Keyword CTA: "DM me the word SETTERS". Messenger welcome flow: one-word greeting, required auto-reply that admits it is automated ("robot ... the human me will send details shortly") so the follow-up manual message reads as clearly human. [Pixel][Echo]
+- Setter DM rules (strongest part for Dulcy) [Echo]:
   - Do NOT qualify intent-based leads before offering a call: no rapport yet, finance questions cause drop-off, longer threads lose people.
   - Ask ONE easy qualifying question ("what's your core business/offer?") — it is a micro-commitment and the course says it converts better than sending the link cold.
   - Then offer the link: "What's your week like? I can drop my calendar link here if that's easier..." -> "Here you go: LINK. Will you let me know if you find a time? My availability is tough sometimes..."
@@ -159,7 +159,7 @@ Count for my half: 32 lessons. 5 were read earlier and skipped. 27 were read her
   - Trust the script, but stay human; change one thing at a time and only after ~100 conversations.
   - If the lead asks for info first, offer a quick 5-minute call / triage to get them booked.
 - Course claim: founder scaled the B2B company to $400k/month with only himself in the DMs using this short script.
-- B2B 2-message variant: "Did you find the [solution] you were looking for? Or are you still looking?" -> one qualifier -> link. Directly reusable as a reply-to-interest pattern for Josh/Reply Agent. [Sean][Scribe]
+- B2B 2-message variant: "Did you find the [solution] you were looking for? Or are you still looking?" -> one qualifier -> link. Directly reusable as a reply-to-interest pattern for Josh/Reply Agent. [Echo][Scribe]
 - 5 boosters: VSL as link in bio, 3 pinned "pillar" posts that explain the offer's thesis, daily Reels, regular story CTAs, paid shout-outs. [Sienna]
 - "Overnight" mission-post ad: "I'm looking for (number) (specific people) who want (specific result). DM me XYZ." Credible real photos raise lead quality. Same structure works as a scarcity-framed cold-email opener if the cap is real. [Scribe][Pixel][Sienna]
 - Lead-magnet DM ads only after offer ads fail and the team agrees; they need a longer message sequence. [Pixel][Forge]
@@ -169,23 +169,23 @@ Count for my half: 32 lessons. 5 were read earlier and skipped. 27 were read her
 
 ### 14. DM Ads Setup Worksheet — DOCX ~4k chars (launch checklist)
 - 3 steps: (1) write + film ads, (2) publish + monitor, (3) book calls + close. Every script, video, DM-setting script and application question goes to the account manager for review before use. [Pixel][Atlas]
-- Post-booking stack: calendar link (Calendly/OnceHub) with application questions on it, email + SMS reminders, thank-you page, homework page. "Done is better than perfect": start with a bare calendar link and add automations later. [Riley][Sean]
+- Post-booking stack: calendar link (Calendly/OnceHub) with application questions on it, email + SMS reminders, thank-you page, homework page. "Done is better than perfect": start with a bare calendar link and add automations later. [Riley][Echo]
 - Launch: an "ads launch call" with a specialist who reviews campaign structure; daily tracking sheet; bring numbers to support calls. [Pixel][Atlas]
 - Recommends a professional editor (e.g., Fiverr) for ad video. [Pixel][Sienna]
 
 ### 15. DM Ads Training Doc — DOCX, same title "[UPDATED] DM Ads Training Doc", identical byte size (1,971,147) and identical opening text as #12. Treated as a duplicate (size/title/opening match; full text not re-diffed).
 
 ### 16. DM Setter Scripts — DOCX ~2.6k chars
-- Exactly the "Templates" block from #12 (Biz Op 1-2, Health, Dating note, B2B 1-2). No new content beyond #12. [Sean]
-- Reusable B2B pattern: thank them -> "it's me btw (not a bot)" -> one qualifier (core business/offer) -> "Excellent. I'd love to chat and see if we can help. What's your week looking like? I can drop my calendar link here" -> link + "will you let me know if you find a time?" [Sean][Scribe]
+- Exactly the "Templates" block from #12 (Biz Op 1-2, Health, Dating note, B2B 1-2). No new content beyond #12. [Echo]
+- Reusable B2B pattern: thank them -> "it's me btw (not a bot)" -> one qualifier (core business/offer) -> "Excellent. I'd love to chat and see if we can help. What's your week looking like? I can drop my calendar link here" -> link + "will you let me know if you find a time?" [Echo][Scribe]
 
 ### 17. Easy Button for Content — DOCX ~1k chars
 - Minimum weekly content cadence for a group/community: 1 livestream (casual training + soft CTA), 1 promo for it, 1 recap (with a "2-step" engagement prompt); once a month swap the livestream for a hard-CTA webinar (can be the same every month). [Sienna]
 - Live format choice: FB Live inside the group to migrate an email list; private Zoom webinar to maximise attendance. [Sienna]
-- Course point: the main ROI of the group comes from setters working it (messaging new joins, texting opt-ins, replying to 2-step comments and live-stream CTAs), not from the content itself. Content is the trigger, human follow-up is the conversion. [Sean][Sienna]
+- Course point: the main ROI of the group comes from setters working it (messaging new joins, texting opt-ins, replying to 2-step comments and live-stream CTAs), not from the content itself. Content is the trigger, human follow-up is the conversion. [Echo][Sienna]
 
 ### 18. Email Marketing Templates — DOCX ~10k chars (15-email nurture for an opt-in; B2C biz-opp offer)
-- Sequence shape: E1 deliver the asset + P.S. call offer; E2 "F.W.D: Just making sure you saw this" from a team member with the original quoted below; E3 "LAST REMINDER"; E4 new scarcity angle ("looking for 10 high performers"); E5 forward of E4 from another team member; E6 last reminder + one case study; E7 short personal "Checking in ... ten minutes to chat today or tomorrow?" from a named rep; E8-E14 one story/case study per email; E15 one-line "Still interested in ...?" [Scribe][Sean]
+- Sequence shape: E1 deliver the asset + P.S. call offer; E2 "F.W.D: Just making sure you saw this" from a team member with the original quoted below; E3 "LAST REMINDER"; E4 new scarcity angle ("looking for 10 high performers"); E5 forward of E4 from another team member; E6 last reminder + one case study; E7 short personal "Checking in ... ten minutes to chat today or tomorrow?" from a named rep; E8-E14 one story/case study per email; E15 one-line "Still interested in ...?" [Scribe][Echo]
 - Reusable mechanics: forward-style bumps that quote the original; switching sender to a named teammate; a one-line "still interested?" closer; math-breakdown emails that make a result believable step by step (offer price x commission x calls/day x close rate). [Scribe]
 - Each nurture email = one belief + one proof + one CTA (apply/book). Matches the Belief Ladder approach already in Cole's references. [Scribe][Cole]
 - Course claims inside (Closers.io B2C offer, not reusable): "30-40k/month in net commissions", "$22k in first two days", "$8,300 on day 1"; "average rep takes 50-100 calls to ramp". Several emails add honest caveats (e.g., the fast-result student had prior sales experience; beginners usually start as setters) — a good model for truthful case-study framing. [Scribe][Forge]
@@ -194,9 +194,9 @@ Count for my half: 32 lessons. 5 were read earlier and skipped. 27 were read her
 ### 20. Facebook Group Email Strategy — DOCX ~1.3k chars
 - Same content strategy across group, email and personal profile; email-specific rules: a first email built to get an open and click fast; plain-TEXT emails wherever possible (HTML only when needed). [Scribe][Sienna]
 - After the first 3 emails, send only to openers; 3-4 sends per week depending on the group's content that week (list-hygiene logic similar to protecting deliverability). [Scribe][Riley]
-- CTAs are "reply XYZ" — "info" (direct) or a named training (indirect, 2-step). A setter sits in the founder's inbox and, as soon as a reply lands: (1) replies with the direct or indirect script, (2) calls / texts / leaves voicemail, (3) follows up until a triage call is booked. [Sean]
-- Alternative CTA: "if interested, text this number" that round-robins to all setters. [Sean][Riley]
-- Directly maps to Dulcy's model: reply-based CTAs + Josh/Reply Agent working replies fast, multi-touch, until booked. A linked walkthrough video exists (not watched). [Sean][Atlas]
+- CTAs are "reply XYZ" — "info" (direct) or a named training (indirect, 2-step). A setter sits in the founder's inbox and, as soon as a reply lands: (1) replies with the direct or indirect script, (2) calls / texts / leaves voicemail, (3) follows up until a triage call is booked. [Echo]
+- Alternative CTA: "if interested, text this number" that round-robins to all setters. [Echo][Riley]
+- Directly maps to Dulcy's model: reply-based CTAs + Josh/Reply Agent working replies fast, multi-touch, until booked. A linked walkthrough video exists (not watched). [Echo][Atlas]
 
 ### 21. Facebook Group Positioning — DOCX ~4k chars
 - Funnel being taught: FB ads -> lead magnet/PDF -> thank-you page offers a bonus only inside the free group (course claim: 40-60%+ join rate). [Sienna][Pixel]
@@ -208,7 +208,7 @@ Count for my half: 32 lessons. 5 were read earlier and skipped. 27 were read her
 - Only two links: a video training and an instructions Google Doc. Video only; no readable method content here. [Sienna]
 
 ### 23. Fb Group Content Strategy — DOCX ~5.5k chars
-- Why content: highest-quality leads vs paid inbound, less exposed to ad volatility, supports value-based follow-up of the pipeline; best to run content AND setters together. [Sienna][Sean]
+- Why content: highest-quality leads vs paid inbound, less exposed to ad volatility, supports value-based follow-up of the pipeline; best to run content AND setters together. [Sienna][Echo]
 - "Pipeline equity" = goodwill in your audience not yet tapped. It grows by adding people and giving value; it shrinks with bad content and with every offer made. [Sienna][Atlas]
 - Appointments from content track the number of offers made. 3 buckets: Direct offer (offer clear in first 1-2 lines; most effective, most under-used, burns most equity), Indirect offer (value story ending in a CTA), Non-CTA pure value (builds equity, worst for appointments). [Sienna][Scribe]
 - Steering rule: check closers' calendar volume and audience equity each week. Calendar full -> post more value; calendar light -> push more offers and "pay it back" later. Same logic can steer how hard Dulcy's own content and nurture push for calls. [Sienna][Atlas]
@@ -221,8 +221,8 @@ Count for my half: 32 lessons. 5 were read earlier and skipped. 27 were read her
 
 ### 25. Filling The Facebook Group — DOCX ~2.6k chars
 - Two ways to fill: Other People's Traffic (others' groups, JVs, masterminds, a 5k friends list) only if cash is very tight; otherwise paid ads from day one, even at $10/day. [Sienna][Pixel]
-- Migrating an existing audience: promote a live training that sits inside the group, then personally message everyone who engaged and send the link (course claim: 500-600 members on day 1). [Sienna][Sean]
-- Combine content + outbound calling + messenger setting; with no team, the founder does all three. Course claim: grew to $150-200k/month solo this way. Priority rule: "take the actions that generate sales calls". [Atlas][Sean][Sienna]
+- Migrating an existing audience: promote a live training that sits inside the group, then personally message everyone who engaged and send the link (course claim: 500-600 members on day 1). [Sienna][Echo]
+- Combine content + outbound calling + messenger setting; with no team, the founder does all three. Course claim: grew to $150-200k/month solo this way. Priority rule: "take the actions that generate sales calls". [Atlas][Echo][Sienna]
 
 ### 27. Google VEO 3 Ads Setup — DOCX ~6k chars
 - Method: start from a PROVEN ad already within KPI -> extract a 10-20s hook -> use an LLM prompt to (a) tighten the script and (b) split it into 8-second scenes with fully self-contained, very detailed visual prompts (actor look, wardrobe, setting, lighting, camera angle, motion) -> generate in Google's Veo 3 Flow tool (needs the top-tier subscription; ~100 credits per variation, course note). [Pixel][Sienna]
@@ -255,7 +255,7 @@ Count for my half: 32 lessons. 5 were read earlier and skipped. 27 were read her
 - Authority without bragging: "I wasn't always [credibility]; before [opportunity] I was [just like you]". Use proof that is EXCLUSIVE to the belief you're proving (not just any case study). [Scribe][Sienna]
 - Content steps use Problem -> Reason -> Consequence -> Feature -> Benefit -> Benefit-of-benefit; Us vs Them, Old vs New; end each step with proof. [Scribe]
 - Offer section: 3 pillars of what you do, explicit DISQUALIFIERS ("this is NOT for..."), the three types it IS for, worst case / best case of booking a call, case studies, CTA, FAQ. Disqualifiers + "worst case/best case" also suit cold-email CTAs. [Scribe][Cole][Forge]
-- Funnel extras: thank-you page confirms the appointment, gives the Zoom link, states a no-tolerance no-show policy, sells the "bonus video" and tells them how to prep. [Sean][Riley]
+- Funnel extras: thank-you page confirms the appointment, gives the Zoom link, states a no-tolerance no-show policy, sells the "bonus video" and tells them how to prep. [Echo][Riley]
 - VSL math block is identical to #10 (ROAS, CPA, booked vs live calls); one wording change: "we DQ ~70% of apps" (vs "cancel" in #10). Ads section identical to #32. [Atlas][Pixel]
 
 ### 32. Indirect VSL - Ads — DOCX ~2.6k chars
@@ -266,8 +266,8 @@ Count for my half: 32 lessons. 5 were read earlier and skipped. 27 were read her
 
 ## 3. Most useful for Dulcy (top 8)
 
-1. **Answer an interested reply with one easy question, then offer the calendar link** (DM Ads Overview / DM Setter Scripts). The course says not to ask qualifying questions before offering the call. Ask one low-effort question (for example "what's your core business?"), then "What's your week like? I can drop my link here if easier", then send a bare calendar link. Change one thing at a time, and only after about 100 conversations. This fits Josh's and the Reply Agent's positive-reply flow almost word for word. [Sean]
-2. **Work every reply fast and through more than one channel until it is booked** (Facebook Group Email Strategy). Ask for a reply keyword. A setter watching the inbox answers immediately, then calls, texts or leaves a voicemail, and keeps following up until a triage call is booked. This supports Dulcy's speed-to-reply and multi-touch rules. [Sean][Atlas]
+1. **Answer an interested reply with one easy question, then offer the calendar link** (DM Ads Overview / DM Setter Scripts). The course says not to ask qualifying questions before offering the call. Ask one low-effort question (for example "what's your core business?"), then "What's your week like? I can drop my link here if easier", then send a bare calendar link. Change one thing at a time, and only after about 100 conversations. This fits Josh's and the Reply Agent's positive-reply flow almost word for word. [Echo]
+2. **Work every reply fast and through more than one channel until it is booked** (Facebook Group Email Strategy). Ask for a reply keyword. A setter watching the inbox answers immediately, then calls, texts or leaves a voicemail, and keeps following up until a triage call is booked. This supports Dulcy's speed-to-reply and multi-touch rules. [Echo][Atlas]
 3. **Measure the same stage chain every time, and keep booked calls separate from live calls** (Application Funnel, both VSL Builders). Spend, leads, cost per lead, booked, cost per booked call, showed, show rate, closed, close rate, revenue, cash, CPA. Work backward from target CPA and close rate to a cost per live call, then adjust for no-shows and disqualified calls to get a cost per booked call. Course benchmarks for paid ads: B2B about $100 per application and $400 or less per booked call. Atlas can use these to compare Dulcy's cost per meeting with paid ads (they are course claims, not a promise). [Atlas][Ledger][Cole]
 4. **The "boring but works" contrast angle** (Indirect Hook To Direct Offer, Ad Angles 2 and 4). List the "fancy" channels the buyer has tried (ads, SEO, webinars, content), then offer the simple method that works: a person or system follows up with every lead daily. "Sexy? No. Works? Yes." This fits Dulcy's own done-for-you outbound positioning and its cold-email openers. Use only true, approved Dulcy facts. [Scribe][Forge][Sienna]
 5. **Treat a new angle as a new campaign, and test variations inside one angle** (Direct Lead VSL Builder, Ad Angles Training). A different pain point needs its own campaign. Inside a campaign, vary only small elements such as the first line or headline. Every creative wears out over time, so refresh the angle rather than the offer. Test 4 clearly different concepts, cut the losers after about 5 days, and judge by meetings and lead quality, not by opens or clicks. This lines up with Dulcy's one-variable testing rule. [Atlas][Scribe][Pixel]

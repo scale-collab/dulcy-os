@@ -1,4 +1,4 @@
-# Drafting run (Josh out / Sean draft mode), set up 2026-11-24
+# Drafting run (Josh out / Echo draft mode), set up 2026-11-24
 
 Read-only find, draft, Alex approves each reply, then send. Nothing is sent without Alex's yes per reply.
 

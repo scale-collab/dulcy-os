@@ -226,7 +226,7 @@ test('Google sign-in: only existing HQ users, state checked', { skip }, async ()
 });
 
 // ---------- decisions ----------
-const decision = (over: Record<string, unknown> = {}) => ({ [DF.title]: 'Reply to Jane at Acme', [DF.agent]: 'Sean', [DF.client]: 'Dulcy', [DF.status]: 'Waiting', [DF.issue]: 'Jane asked for times', [DF.checked]: 'Interested', [DF.fix]: 'Hi Jane,\n\nTue 2pm?', [DF.action]: 'Approve Reply', [DF.emailsRecord]: 'recEMAIL000000001', ...over });
+const decision = (over: Record<string, unknown> = {}) => ({ [DF.title]: 'Reply to Jane at Acme', [DF.agent]: 'Echo', [DF.client]: 'Dulcy', [DF.status]: 'Waiting', [DF.issue]: 'Jane asked for times', [DF.checked]: 'Interested', [DF.fix]: 'Hi Jane,\n\nTue 2pm?', [DF.action]: 'Approve Reply', [DF.emailsRecord]: 'recEMAIL000000001', ...over });
 
 test('decisions: piles, approve a reply (Emails first, then the decision), reject, refuse twice', { skip }, async () => {
   tables[DECISIONS] = {
@@ -377,14 +377,14 @@ test('tasks API: boxes from Airtable, done, not yet', { skip }, async () => {
 // ---------- agents ----------
 test('agent mapping: job kinds → agents, agents → piles', () => {
   const cases: [string, string | null][] = [
-    ['sean.draft', 'Sean'], ['sean.followup', 'Sean'], ['reply.send', 'Sean'], ['decision.send_reply', 'Sean'],
+    ['sean.draft', 'Echo'], ['sean.followup', 'Echo'], ['reply.send', 'Echo'], ['decision.send_reply', 'Echo'],
     ['atlas.health', 'Atlas'], ['atlas.plan', 'Atlas'], ['atlas.tasks', 'Atlas'], ['campaign.build', 'Atlas'], ['bounce.check', 'Atlas'], ['bounce.fix', 'Atlas'], ['account.health', 'Atlas'],
     ['scribe.copy', 'Scribe'], ['leadlist.verify', 'Scout'], ['riley.collect', 'Riley'], ['ledger.report', 'Ledger'], ['cole.review', 'Cole'],
     ['sienna.ideas', 'Sienna'], ['ada.brief', 'Ada'], ['engine.selftest', null],
   ];
   for (const [kind, agent] of cases) assert.equal(agentForJob(kind), agent, kind);
   for (const a of AGENT_NAMES) for (const p of jobPatternsFor(a)) assert.equal(agentForJob(p.replace('%', 'x')), a, `${a} pattern ${p}`);
-  assert.equal(pileFor('Sean'), 'Replies');
+  assert.equal(pileFor('Echo'), 'Replies');
   for (const a of ['Atlas', 'Scribe', 'Scout']) assert.equal(pileFor(a), 'Campaigns');
   assert.equal(pileFor('Riley'), 'Fixes');
   assert.equal(pileFor('Ledger'), 'Money');
@@ -806,7 +806,7 @@ test('Google sign-up: a pending request, never a session; Google login refuses i
 });
 
 // ---------- Needs you ----------
-const card = (over: Partial<DecisionCard> = {}): DecisionCard => ({ id: 'recD', title: 'Reply to Jane', agent: 'Sean', client: '', pile: 'Replies', status: 'New', isReply: true, issue: '', checked: '', fix: '', details: '', action: 'Approve Reply', created: '2026-11-25T05:00:00.000Z', threadUrl: '', latestMessage: '', canEdit: true, ...over });
+const card = (over: Partial<DecisionCard> = {}): DecisionCard => ({ id: 'recD', title: 'Reply to Jane', agent: 'Echo', client: '', pile: 'Replies', status: 'New', isReply: true, issue: '', checked: '', fix: '', details: '', action: 'Approve Reply', created: '2026-11-25T05:00:00.000Z', threadUrl: '', latestMessage: '', canEdit: true, ...over });
 const askRow = (over: Partial<Ask> = {}): Ask => ({ id: 1, agent: 'Atlas', title: 'Reply to Pete about Twenty West', why: 'He asked for the October numbers.', steps: '', actionLabel: '', actionUrl: '', priority: 'normal', audience: 'owner', dedupeKey: 'k', created: '2026-11-25T12:00:00.000Z', done: null, doneBy: null, snoozedUntil: null, ...over });
 
 test('needs: one item per pile (never per decision), Riley manual fixes, sign-ups, asks; Do now first', () => {
@@ -831,7 +831,7 @@ test('needs: one item per pile (never per decision), Riley manual fixes, sign-up
   const keys = items.map((i) => i.key);
   assert.deepEqual(keys.filter((k) => k.startsWith('pile:')).sort(), ['pile:Campaigns', 'pile:Fixes', 'pile:Money', 'pile:Other', 'pile:Replies']);
   const replies = items.find((i) => i.key === 'pile:Replies')!;
-  assert.deepEqual([replies.agent, replies.title, replies.count, replies.group, replies.action], ['Sean', '105 replies waiting for your OK', 105, 'now', { label: 'Open Replies', href: 'decisions/Replies' }]);
+  assert.deepEqual([replies.agent, replies.title, replies.count, replies.group, replies.action], ['Echo', '105 replies waiting for your OK', 105, 'now', { label: 'Open Replies', href: 'decisions/Replies' }]);
   assert.match(replies.why, /Oldest 9 h ago/);
   assert.equal(items.find((i) => i.key === 'pile:Fixes')!.count, 1, "the manual fix's decision is covered by the issue card");
   const issue = items.find((i) => i.key === 'issue:recISSUE000000001')!;
@@ -935,8 +935,8 @@ test('asks: addAsk dedupes, validates links; done and snooze routes; CSRF', { sk
 });
 
 test('snooze: tomorrow = 24 h, monday = next Monday 8:00 New York; hidden until then', { skip }, async () => {
-  const x = (await addAsk(db, { agent: 'Sean', title: 'Check the reply rules' })).ask;
-  const y = (await addAsk(db, { agent: 'Sean', title: 'Read the new script' })).ask;
+  const x = (await addAsk(db, { agent: 'Echo', title: 'Check the reply rules' })).ask;
+  const y = (await addAsk(db, { agent: 'Echo', title: 'Read the new script' })).ask;
   tables[ISSUES] = { recISSUE000000001: { [IF.title]: 'Key expired', [IF.status]: 'Waiting for Alex', [IF.fixType]: 'Manual (Alex)' } };
   const { cookie } = await login();
   assert.equal((await call('POST', `/hq/api/asks/${x.id}/snooze`, { body: { until: 'someday' }, cookie })).status, 400);

@@ -393,7 +393,7 @@ Variation (EHR angle), GOOD:
 - BAD: "An innovative solution that helps you with your staffing and recruiting needs and hiring candidates that were never imaginable."
 - GOOD: "A hiring software that helps you get candidates hired faster."
 - Spintax: "{Hi|Hello|Hey}"
-- Reply (not cold copy, Sean): "Are you free Tuesday at 1pm or Wednesday at 3pm?"
+- Reply (not cold copy, Echo): "Are you free Tuesday at 1pm or Wednesday at 3pm?"
 
 ### 4.14 Nick's copy-feedback example (Latam SDR staffing client)
 - Feedback (GOOD practice): "These SDRs are from Latam so they cost $8/hour — that is the core value prop, put it in. Change the CTA to 'Can I send you a few resumes to look at?' Remove the 'you don't pay unless they show' line — client can't offer that."
@@ -773,8 +773,8 @@ RULES.md wins in every case. "Internal" = the doc disagrees with itself. Count: 
 
 **C16. Links in follow-up / proof material (internal; vs RULES reply settings).**
 - Matt Lucero: never links in cold emails. End transcript (reply context): "Here's the link to the funnel we created." Offer checklist CTA option: "send a link". "Dickie" email: "check out [OTHER CLIENT] as an example" (no URL).
-- RULES: unsubscribe link off (2026-11-23); links are only for Sean's replies via each client's "approved links" (2026-11-24). For Scribe: no links in any cold step; the "send a link" CTA means the prospect asks and Sean sends it.
+- RULES: unsubscribe link off (2026-11-23); links are only for Echo's replies via each client's "approved links" (2026-11-24). For Scribe: no links in any cold step; the "send a link" CTA means the prospect asks and Echo sends it.
 
-**Checked, no conflict:** testing (doc "test entire style / free deliverable vs not / 2 versions with different call out angles" fits RULES "2 angles of Email 1 ... never trivial word swaps"); one problem per email; plain text; no signature (doc silent, RULES: none); booking with two specific times (doc "Are you free Tuesday at 1pm or Wednesday at 3pm?" matches RULES 2026-11-17; Sean's area); SEG handling (doc "remove companies with email security" fits RULES bounce method "stop sending to that gateway").
+**Checked, no conflict:** testing (doc "test entire style / free deliverable vs not / 2 versions with different call out angles" fits RULES "2 angles of Email 1 ... never trivial word swaps"); one problem per email; plain text; no signature (doc silent, RULES: none); booking with two specific times (doc "Are you free Tuesday at 1pm or Wednesday at 3pm?" matches RULES 2026-11-17; Echo's area); SEG handling (doc "remove companies with email security" fits RULES bounce method "stop sending to that gateway").
 
 **Missed by `next-campaign-rules.md`** (its §4 is UNKNOWN): the 30–40% flag, the 1,000–2,000-send / first-week kill signal, "clone ... at 2x and 5x the volume", the 30–60-day TAM re-hit with new messaging/offer/copy, the 3–5 campaign / 10k–30k-email baseline, and the 10–20% worse-at-scale adjustment (all in 5.3). Its §1 table is copied correctly from lines 238-297 of this doc.

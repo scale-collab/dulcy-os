@@ -62,7 +62,7 @@ Every fact has a source and date in brackets. Unknown = `UNKNOWN`. Never copy fa
   - Ryan and/or Pete take the call. [Onboarding form "Who takes the sales calls" = "Ryan, Peter"]
   - Twenty West's own process handles no-shows for internal campaigns. [Client Meetings, 2026-05-18]
   - Twenty West uses a GoHighLevel pre-call reminder funnel; Dulcy was asked to fix it. [Client Meetings, 2026-05-25]
-  - Post-booking HTML emails were drafted by Josh (call booked, form-submitted thank-you, follow-ups, final goodbye). [skills/sean-reply-handling/references/drive-findings.md, J7, 2026-05-07]
+  - Post-booking HTML emails were drafted by Josh (call booked, form-submitted thank-you, follow-ups, final goodbye). [skills/echo-reply-handling/references/drive-findings.md, J7, 2026-05-07]
   - Pete's website-form workflow: GHL tags, then a thank-you email with Calendly, then 24h, 1h and at-time reminders, a post-meeting email, and nurture for non-bookers. [Client Meetings, 2026-04-20]
 - **CRM:** GoHighLevel. Calendly contacts sync to GHL. [Client Meetings, 2026-04-20]
 - **Calendar / booking link:**
@@ -302,4 +302,4 @@ Status: saved for now (Alex, 2026-11-25); not started.
 - Slack #twenty-dulcy (C0AQ1FVENSE): last 100 messages (mostly bot booking/AI-hold notices, 2026-10-06 to 11-16). Search "Twenty West" across Slack: 20 results (2026-08-03 to 11-10). 2026-11-17.
 - Google Drive (read in full): "Twenty West Media - Offer Creation Cheat Sheet" (2026-04-02), "Dulcy <> Twenty West Media - 5/19/26 Meeting", "Current Twenty West Scripts" (2026-05-05), "Twenty West Media GPT Scripts" (2026-08-18). Titles only for lead-list sheets (prospect data, not opened). 2026-11-17.
 - Fathom: search "Twenty West" (12 meetings listed); summary read for 2026-09-01 inbox meeting. Others duplicate Client Meetings summaries. 2026-11-17.
-- Repo: company/client-pricing-and-goals-2026-11-17.md; skills/sean-reply-handling/references/drive-findings.md (J3–J7); rules/RULES.md. 2026-11-17.
+- Repo: company/client-pricing-and-goals-2026-11-17.md; skills/echo-reply-handling/references/drive-findings.md (J3–J7); rules/RULES.md. 2026-11-17.

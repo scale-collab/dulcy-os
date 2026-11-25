@@ -31,13 +31,13 @@ export interface Config {
   anthropicBaseUrl?: string;
   /** Repo knowledge (skills, rules, clients) mounted into the container. */
   knowledgeDir: string;
-  /** Sean (inbox agent): run every N minutes (0 = off), look back N days, at most N drafts per run. */
+  /** Echo (inbox agent): run every N minutes (0 = off), look back N days, at most N drafts per run. */
   seanEveryMin: number;
   seanDays: number;
   seanMaxPerRun: number;
   /** SEAN_AUTO_SEND (default on): allow automatic sends where a client's Reply Agent settings ask for them. off = every reply waits for a person. */
   seanAutoSendOn: boolean;
-  /** Sean drafts due follow-ups too (SEAN_FOLLOWUPS=on). Switch on after the old n8n follow-up timer is off. */
+  /** Echo drafts due follow-ups too (SEAN_FOLLOWUPS=on). Switch on after the old n8n follow-up timer is off. */
   seanFollowupsOn: boolean;
   /** Account health loop (rest / retest / replace) every N minutes (0 = off); only placement tests created after accountHealthFrom. */
   accountHealthEveryMin: number;

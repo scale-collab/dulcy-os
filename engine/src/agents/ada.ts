@@ -8,7 +8,7 @@ import { createAirtableClient, type AirtableClient } from '../providers/airtable
 import { createSlackClient } from '../providers/slack.js';
 import { DECISIONS, DF } from '../decisions/fields.js';
 import { EMAILS } from './emailsFields.js';
-import { ACTIVITY } from '../activity.js';
+import { ACTIVITY, canonAgent } from '../activity.js';
 import { ACCOUNTS, QUEUE } from '../stages/accountHealth.js';
 import { saveReport, slackReports } from '../hq/reports.js';
 
@@ -147,11 +147,11 @@ async function gather(at: Pick<AirtableClient, 'list'>, now: Date, weekly: boole
   }
   return {
     now, clientName, purchases: purchases.length, week,
-    decisions: decisions.map((r) => ({ title: v(r.fields[DF.title]), agent: v(r.fields[DF.agent]), created: r.createdTime ?? '' })),
+    decisions: decisions.map((r) => ({ title: v(r.fields[DF.title]), agent: canonAgent(v(r.fields[DF.agent])), created: r.createdTime ?? '' })),
     replies: rows,
     campaigns: campaigns.map((c) => ({ name: v(c.fields.Name), client: clientOf(c.fields.Client) || 'unknown', bounce: num(c.fields['Bounced %']), progress: num(c.fields.Progress), status: v(c.fields['Campaign Status']), changed: v(c.fields['Status Last Modified']) })),
     accounts: accounts.map((a) => ({ stage: v(a.fields['Spam Protocol Stage']) })),
-    activity: activity.map((a) => ({ agent: v(a.fields.Agent), type: v(a.fields.Type), event: v(a.fields.Event) })),
+    activity: activity.map((a) => ({ agent: canonAgent(v(a.fields.Agent)), type: v(a.fields.Type), event: v(a.fields.Event) })),
   };
 }
 

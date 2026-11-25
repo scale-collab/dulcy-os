@@ -1,6 +1,6 @@
 # Creator methods: cold email reply -> booked meeting
 
-Research date: 2026-11-17. For Sean (reply handling).
+Research date: 2026-11-17. For Echo (reply handling).
 
 ## How this was researched (read first)
 - WebSearch, standard mode (one extended query). WebFetch was blocked for outside hosts in this session.
@@ -59,7 +59,7 @@ Research date: 2026-11-17. For Sean (reply handling).
 - No verified pricing-reply method was found for Josh Braun, Nick Abraham, Mitchell Keller, Eric Nowoslawski or Lavender.
 - [Non-creator] Several vendor guides argue the other side: dodging a direct price question hurts trust, so give a range.
   See "where creators disagree".
-- Dulcy rule: never invent prices. Sean may only use pricing that Alex approved for that client.
+- Dulcy rule: never invent prices. Echo may only use pricing that Alex approved for that client.
 
 ## 4. "Not now" / "reach out later"
 **Moves**
@@ -168,7 +168,7 @@ Research date: 2026-11-17. For Sean (reply handling).
 ## Where creators disagree
 1. **Calendar link vs specific times.** Berman: send the link immediately. Abraham (weak attribution) and Lavender: propose
    times, and treat a bare link as the weakest option. SalesBread: ask a question before offering a link. Chatelaine/Reamer: send
-   the invite yourself and let them move it. A sensible blend for Sean (inference, not sourced): 2 specific times + a link as
+   the invite yourself and let them move it. A sensible blend for Echo (inference, not sourced): 2 specific times + a link as
    backup + a question.
 2. **Price over email.** Berman: never quote first over email. Several non-creator vendor guides: answer directly or give a
    range, because dodging hurts trust. No other covered creator was verified on this.
@@ -200,7 +200,7 @@ Research date: 2026-11-17. For Sean (reply handling).
 - Any "X% of positive replies book" or "replies within 1 hour convert at Y%" figure seen during research came from vendor
   blogs, not these creators. Do not use them as benchmarks.
 
-## Short notes for Sean's design (inference from the above, not sourced)
+## Short notes for Echo's design (inference from the above, not sourced)
 - Classify first, then apply one move per reply type. Every draft stays review-only (Josh/Alex approve).
 - Default positive-reply draft: thanks → short answer → 2 times with timezone + backup link → 1-2 questions.
 - Do not send pricing, proof or promises that aren't in the client's approved facts. Price questions are a known gap that Alex has to decide.

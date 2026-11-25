@@ -103,10 +103,10 @@ export function Icon({ name, size = 18, className, strokeWidth = 1.8 }: { name: 
 
 /* ---------- Agents: initial + one colour each ---------- */
 export const AGENT_COLOR: Record<string, string> = {
-  Ada: '#4f46e5', Atlas: '#0369a1', Scribe: '#7c3aed', Scout: '#0f766e', Sean: '#15803d',
+  Ada: '#4f46e5', Atlas: '#0369a1', Scribe: '#7c3aed', Scout: '#0f766e', Echo: '#15803d',
   Riley: '#c2410c', Cole: '#be123c', Ledger: '#a16207', Sienna: '#a21caf',
 };
-const AGENT_FACES = ['Ada', 'Atlas', 'Scribe', 'Scout', 'Sean', 'Riley', 'Cole', 'Ledger', 'Sienna'];
+const AGENT_FACES = ['Ada', 'Atlas', 'Scribe', 'Scout', 'Echo', 'Riley', 'Cole', 'Ledger', 'Sienna'];
 export function Avatar({ name, size = 'md', className, round }: { name: string; size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'; className?: string; round?: boolean }) {
   const s = { xs: 'h-5 w-5 text-[10px] rounded-md', sm: 'h-7 w-7 text-xs rounded-lg', md: 'h-9 w-9 text-sm rounded-[10px]', lg: 'h-11 w-11 text-base rounded-xl', xl: 'h-14 w-14 text-xl rounded-2xl' }[size].replace(/rounded-\S+/, round ? 'rounded-full' : '$&');
   const bg = AGENT_COLOR[name] ?? '#57534e';

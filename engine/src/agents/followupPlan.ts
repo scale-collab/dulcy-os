@@ -2,7 +2,7 @@
 export interface FollowupStep { delayDays: number; guidance: string }
 export interface FollowupPlan { enabled: boolean; skipWeekends: boolean; steps: FollowupStep[] }
 
-/** Used when a client has no plan saved. Alex's rule + Sean's skill: a real reason every time, then close the loop. */
+/** Used when a client has no plan saved. Alex's rule + Echo's skill: a real reason every time, then close the loop. */
 export const DEFAULT_PLAN: FollowupPlan = {
   enabled: true, skipWeekends: true,
   steps: [

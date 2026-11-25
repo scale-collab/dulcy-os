@@ -292,26 +292,26 @@ Every bounce check (every `BOUNCE_CHECK_EVERY_MIN` minutes, all workspaces) also
 
 This covers paused campaigns too, and runs every day of the week. Only records whose numbers changed are written. The bounce check message says how many were updated. A failed write never stops the check. (Before this, two Airtable automations did it Sun–Thu only, so Bounced looked too low.)
 
-## Sean: replies drafted for you, approved in Airtable or Slack (2026-11-24)
+## Echo: replies drafted for you, approved in Airtable or Slack (2026-11-24)
 
 **What happens:**
-1. **Find.** Every `SEAN_EVERY_MIN` minutes Sean finds interested replies waiting on Dulcy from the last 14 days. It skips threads the client handles, and threads that are booked or closed.
-2. **Draft.** Sean drafts each answer with Claude, using:
-   - your rules, Sean's skill, your Drive SOP findings and the creator methods;
+1. **Find.** Every `SEAN_EVERY_MIN` minutes Echo finds interested replies waiting on Dulcy from the last 14 days. It skips threads the client handles, and threads that are booked or closed.
+2. **Draft.** Echo drafts each answer with Claude, using:
+   - your rules, Echo's skill, your Drive SOP findings and the creator methods;
    - the client's own file;
    - that client's real threads that **booked a meeting**;
    - the replies you approved before.
-3. **Times.** Two real open times come from the client's own connected calendar, never a time already offered to another prospect in the last 3 days. If there's none, Sean uses the client's saved booking link.
-   - **Per-client controls (Inbox Manager → Dulcy Reply Agent screen):** Sean follows each client's own settings:
-     - **Enabled** off → Sean drafts nothing for that client (Lead Flo, cancelled).
-     - **Reply Controls → Client reply handoff:** *All replies* = the client answers its own replies, Sean stays out (MJJ). *After first agent reply* = Sean answers once, then the client takes over (no follow-ups).
+3. **Times.** Two real open times come from the client's own connected calendar, never a time already offered to another prospect in the last 3 days. If there's none, Echo uses the client's saved booking link.
+   - **Per-client controls (Inbox Manager → Dulcy Reply Agent screen):** Echo follows each client's own settings:
+     - **Enabled** off → Echo drafts nothing for that client (Lead Flo, cancelled).
+     - **Reply Controls → Client reply handoff:** *All replies* = the client answers its own replies, Echo stays out (MJJ). *After first agent reply* = Echo answers once, then the client takes over (no follow-ups).
      - **Reply types:** only the ticked types get a draft; others are skipped with the reason shown.
      - **Response Style:** tone, length, agent name, goal, language, templates per reply type, and the **Inbox manager instructions** box (your custom prompt for that client).
      - **Not-interested reply:** on → one courtesy reply following its instructions; off → no reply.
-     - **Knowledge Base links:** the only links Sean may share (videos, decks). Add the link there and Sean can send it.
+     - **Knowledge Base links:** the only links Echo may share (videos, decks). Add the link there and Echo can send it.
      - **Follow-ups tab:** the plan (steps, delays) and the follow-up instructions box.
      - **Calendar:** booking link, and the switches to stop offering times or links.
-4. **Where the draft lands.** On the reply's row in Airtable (Reply Queue): Draft, State "Needs Approval", Intent, **Sean Reason**, and **Sean Needs Your Input** when a fact is missing. It is also posted to Slack.
+4. **Where the draft lands.** On the reply's row in Airtable (Reply Queue): Draft, State "Needs Approval", Intent, **Echo Reason**, and **Echo Needs Your Input** when a fact is missing. It is also posted to Slack.
 
 **Approving.**
 - **Airtable:** Human Action = **Approve Draft** (sends the draft) or **Send Edited Reply** (sends Custom Reply).
@@ -326,7 +326,7 @@ This covers paused campaigns too, and runs every day of the week. Only records w
 **After sending:**
 - Interested threads are set to **Scheduled** with a **Due At** (the first follow-up). Not-interested, stop and booked threads show **Sent** and get no follow-ups.
 - Last Email Sent = By Dulcy.
-- A Reply Learning row is saved as **Approved**, and Sean learns from it.
+- A Reply Learning row is saved as **Approved**, and Echo learns from it.
 - The Slack thread says "Sent".
 
 **Always mirrored.** Sent or skipped from either Airtable or Slack shows in both.
@@ -337,12 +337,12 @@ This covers paused campaigns too, and runs every day of the week. Only records w
 - `CALENDAR_READER_TOKEN` for client calendars.
 - `SEAN_FOLLOWUPS=on` for follow-ups (below). Only after the old n8n follow-up timer is off (FIX=followup-arm-off).
 
-### Sean follows each client's send settings (2026-11-25)
-Sean reads every setting on the client's Reply Agent settings row (Inbox Manager → Dulcy Reply Agent).
+### Echo follows each client's send settings (2026-11-25)
+Echo reads every setting on the client's Reply Agent settings row (Inbox Manager → Dulcy Reply Agent).
 - **Default Mode.**
   - *Approval Required* (every client today): every draft waits for your Approve or ✅. Nothing changes from before.
-  - *Auto High Confidence:* Sean sends by itself only when its confidence is at or above **Minimum Auto Confidence** (92% today).
-  - *Autopilot:* Sean sends by itself.
+  - *Auto High Confidence:* Echo sends by itself only when its confidence is at or above **Minimum Auto Confidence** (92% today).
+  - *Autopilot:* Echo sends by itself.
 - **Routing groups (per reply type):** a group's mode wins over the Default Mode. *Do Not Reply* types (Unsubscribe, Hostile) are always skipped.
 - **OOO Mode = Auto Send:** out-of-office replies may go out by themselves.
 - **Always Require Human Review:** the ticked reply types always wait for you, whatever the mode.
@@ -351,16 +351,16 @@ Sean reads every setting on the client's Reply Agent settings row (Inbox Manager
 - **Out-of-office and not-interested first replies** are drafted only for clients that turn them on: out of office when *Out of Office* is a ticked reply type (or OOO Mode = Auto Send); not interested when the Not Interested Nudge is on. An out-of-office reply is one or two lines, no pitch, and the first follow-up waits until the day after their return date.
 - **Office hours** (Timezone, Office Start/End, Exclude Weekends, Exclude US Holidays): automatic sends wait for the client's office hours. Replies you approve go out at once.
 - **Never sent automatically:** a draft that needs your input, has a [GAP] or placeholder, or a client that is switched off. All the sender's checks still run.
-- **What you see:** an automatic send has no ✅ card. It shows in the Activity log ("Auto-reply queued") and the Slack/Airtable thread says "Sent (approved in auto-send, client settings)". It is not saved as a reply you approved, so Sean doesn't learn from its own sends.
+- **What you see:** an automatic send has no ✅ card. It shows in the Activity log ("Auto-reply queued") and the Slack/Airtable thread says "Sent (approved in auto-send, client settings)". It is not saved as a reply you approved, so Echo doesn't learn from its own sends.
 - **Off switch (server .env):** `SEAN_AUTO_SEND=off` → every reply waits for a person, whatever the settings say.
 
-### Sean's follow-ups (2026-11-24)
+### Echo's follow-ups (2026-11-24)
 Your rule: keep following up on a positive reply until they answer or say stop.
 1. **When.** A thread is Scheduled with a Due At after every reply we send. Out-of-office and check-back-later replies keep the return date the old intake gave them.
-2. **Draft.** When Due At passes and the prospect still hasn't answered, Sean drafts the next follow-up. Each one must have a real reason: their open question, the promised next step, or one new true point. Never "just bumping this". Out of office: welcome back + the open point.
+2. **Draft.** When Due At passes and the prospect still hasn't answered, Echo drafts the next follow-up. Each one must have a real reason: their open question, the promised next step, or one new true point. Never "just bumping this". Out of office: welcome back + the open point.
 3. **Approve.** Same as replies: the draft lands on the row (Reply Queue) and in Slack as "Follow-up N to …". ✅ or Approve sends it. Nothing goes out without you.
 4. **How many.** The client's **Follow-up Plan JSON** (Reply Agent settings: steps with a delay and what each should do). No plan saved: 3 follow-ups at 2, 3 and 5 business days. Then one polite close-the-loop note 7 days later, then the thread is marked **Thread Complete**. A plan with `enabled: false` means no follow-ups for that client.
-5. **Stops.** Any answer from the prospect, a stop or unsubscribe, booked/closed, Not Interested, DNC or client-handled. If the prospect wrote, it becomes a normal reply for Sean. If someone already followed up by hand after the draft, the sender refuses to send a second one.
+5. **Stops.** Any answer from the prospect, a stop or unsubscribe, booked/closed, Not Interested, DNC or client-handled. If the prospect wrote, it becomes a normal reply for Echo. If someone already followed up by hand after the draft, the sender refuses to send a second one.
 
 ## Bounce agent (Atlas, 2026-11-25)
 Follows Alex's method (RULES.md 2026-11-25). Over 4% bounce = pause and investigate.
@@ -383,7 +383,7 @@ Alex's rule (RULES.md 2026-11-25). Replaces the n8n "[Email Accounts] Automated 
 4. **Activity log.** Every step (rest, recover, replacement, approval) is written to the Activity Log, linked to the account, its campaigns and the client.
 
 ## Activity log (2026-11-25)
-Airtable table **Activity Log**: one row per step, with When, Agent (Atlas, Sean, Engine…), Type (Detected, Diagnosed, Fixed, Waiting for approval, Approved, Step done, Step failed) and links to Campaign, Lead List, Email Account and Client. Written by: every finished lead list and campaign job (sample, contacts, verify, build, launch, pause, top up…), the bounce check (pauses), the bounce agent (diagnosis and automatic fixes) and the account health loop. Each Campaign and Lead List record has the linked **Activity Log** field; the Campaigns interface has an **Activity Log** page with dropdowns per campaign / lead list / account / client.
+Airtable table **Activity Log**: one row per step, with When, Agent (Atlas, Echo, Engine…), Type (Detected, Diagnosed, Fixed, Waiting for approval, Approved, Step done, Step failed) and links to Campaign, Lead List, Email Account and Client. Written by: every finished lead list and campaign job (sample, contacts, verify, build, launch, pause, top up…), the bounce check (pauses), the bounce agent (diagnosis and automatic fixes) and the account health loop. Each Campaign and Lead List record has the linked **Activity Log** field; the Campaigns interface has an **Activity Log** page with dropdowns per campaign / lead list / account / client.
 
 **Bounce agent, automatic fixes (Alex 2026-11-25):** when one account is the cause, it is rested for a week and the campaign is resumed without waiting for ✅; "too early to judge" resumes too. The Slack post then says "Fixed: …". List, copy, domain and gateway fixes stay proposals.
 
@@ -605,7 +605,7 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
    - Ada's brief: the two key lines first ("Waiting on you" and "Top 3"); tap for the rest.
    - Team check: one line per agent: ✓ ran fine, ⚠️ failed (which job and why), or ⚠️ decisions waiting on you.
    - Reports: every agent report as a short card. Tap one for the full text. A Cole call review opens on the score and the 3 fixes (what you said → what to say instead); the full review and the follow-up draft are one more tap away.
-2. **Decisions:** the same piles as the Daily Run (Replies = Sean; Campaigns = Atlas, Scribe, Scout; Fixes = Riley; Money = Ledger; Other). One card at a time, with a progress bar.
+2. **Decisions:** the same piles as the Daily Run (Replies = Echo; Campaigns = Atlas, Scribe, Scout; Fixes = Riley; Money = Ledger; Other). One card at a time, with a progress bar.
    - **Replies:** what they wrote, a link to the thread, and the draft in a box you can edit.
      - **Send:** sends the draft as it is (the same as ✅ in Slack).
      - **Send edited:** sends your edited text.
@@ -614,7 +614,7 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
    - **Others:** Issue / Checked / Proposed / On approve, then Approve or Reject. The engine then runs the action, exactly as for a ✅ in Slack.
    - **Later** keeps a card for another time. Keys on a computer: A approve (or send), R reject (or skip reply), S later, E edit the reply (Esc to stop editing). The keys are shown under the buttons.
 3. **Needs you** (was "To-do", Alex 2026-11-25: "this is what you need me to do", not another project manager). A short list of only what the agents need from you. Each card: the agent's face, one line, why, and **one** button. "Do now" and "When you can" (two columns on the computer, one list on the phone). The number on the tab counts items, not decisions.
-   - **Decisions:** one card per pile, never one per decision ("Sean: 105 replies waiting for your OK", with the oldest age). The button opens that pile. Replies and Campaigns are "Do now", and so is any pile whose oldest card is a day old.
+   - **Decisions:** one card per pile, never one per decision ("Echo: 105 replies waiting for your OK", with the oldest age). The button opens that pile. Replies and Campaigns are "Do now", and so is any pile whose oldest card is a day old.
    - **Riley's manual fixes:** System Issues in "Waiting for Alex" with Fix Type "Manual (Alex)". The card shows the Why; **See steps** opens the Fix. When you've done it, **Open the decision** and approve it in Fixes so Riley checks it worked (HQ writes nothing to Airtable here). Its decision is not counted again in the Fixes card.
    - **Sign-ups waiting** → Approve (Users).
    - **Asks:** something an agent or a Claude session needs you to do, e.g. "Atlas: reply to Pete about Twenty West", "Setup: publish the Google calendar app" (with steps). **Done** clears it; **Not now** hides it until tomorrow or Monday 8 a.m. (New York).

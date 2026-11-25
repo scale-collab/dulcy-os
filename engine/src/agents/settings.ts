@@ -1,5 +1,5 @@
 // Each client's Reply Agent settings (Airtable "Dulcy Reply Agent Settings", edited in the Inbox
-// Manager → Dulcy Reply Agent screen). Alex 2026-11-24: Sean must follow each client's own
+// Manager → Dulcy Reply Agent screen). Alex 2026-11-24: Echo must follow each client's own
 // controls, not one rule for everyone. One row per workspace, read by field name.
 import type { AirtableClient } from '../providers/airtable.js';
 import { SETTINGS, val } from './emailsFields.js';
@@ -100,7 +100,7 @@ export async function loadSettings(at: Pick<AirtableClient, 'list'>, wsRec: stri
   } catch { return parseSettings(null); }
 }
 
-/** Why Sean must not draft for this thread under the client's settings ('' = go ahead). */
+/** Why Echo must not draft for this thread under the client's settings ('' = go ahead). */
 export function blockedBy(s: ClientSettings, opts: { weReplied: boolean }): string {
   if (!s.enabled) return 'the Reply Agent is switched off for this client (Inbox Manager → Enabled)';
   if (s.handoff === 'All Replies') return 'this client answers its own replies (Inbox Manager → Client reply handoff: All replies)';
@@ -110,7 +110,7 @@ export function blockedBy(s: ClientSettings, opts: { weReplied: boolean }): stri
 
 const LENGTH: Record<string, string> = { 'Very Brief': '1 to 2 sentences, under 35 words', Brief: 'under 60 words', Standard: 'under 120 words' };
 
-/** The client's own controls, written for Sean. Goes in the per-client (cached) prompt block. */
+/** The client's own controls, written for Echo. Goes in the per-client (cached) prompt block. */
 export function settingsBlock(s: ClientSettings, kind: 'reply' | 'followup'): string {
   if (!s.found) return '';
   const lines = ['# This client\'s Reply Agent settings (from the Inbox Manager; follow them, they override the general style where they differ)'];
@@ -139,7 +139,7 @@ export function typeAllowed(s: ClientSettings, intent: string): boolean {
 }
 const REPLY_TYPES = ['Interested', 'Info Request', 'Meeting Request', 'Cost Objection', 'Process Objection', 'Not Interested', 'Out of Office', 'Check Back Later', 'Referred', 'Wrong Person'];
 
-// ---- Automatic sending (Alex 2026-11-25: Sean follows every Reply Agent setting per client) ----
+// ---- Automatic sending (Alex 2026-11-25: Echo follows every Reply Agent setting per client) ----
 // Approval Required is the default everywhere. A draft goes out without a person only when the
 // client's own settings say so, and never past any of these guards.
 
@@ -196,7 +196,7 @@ export function inOfficeHours(o: ClientSettings['office'], now = new Date()): bo
   return p.mins >= hm(o.start, 540) && p.mins < hm(o.end, 1020);
 }
 
-/** Sean drafts a first reply to an out-of-office / not-interested message only when this client turns it on. */
+/** Echo drafts a first reply to an out-of-office / not-interested message only when this client turns it on. */
 export function extraTypeOn(s: ClientSettings, type: 'Out of Office' | 'Not Interested'): boolean {
   if (!s.found || s.routes[type] === 'Do Not Reply') return false;
   if (type === 'Not Interested') return s.notInterested.enabled && (!s.replyTypes.length || s.replyTypes.includes('Not Interested'));

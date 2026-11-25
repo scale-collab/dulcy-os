@@ -7,6 +7,15 @@ import type { Job } from './queue.js';
 import { createAirtableClient, type AirtableClient } from './providers/airtable.js';
 import { campaignRecordsFor } from './airtable/campaignLookup.js';
 
+/** Sean was renamed Echo (Alex, 2026-11-25). Old Airtable rows still say "Sean": read them as Echo. */
+export const OLD_AGENT_NAMES: Record<string, string> = { Sean: 'Echo' };
+export const canonAgent = (a: string): string => OLD_AGENT_NAMES[a] ?? a;
+/** Airtable formula matching an agent by its current or old name. */
+export const agentFormula = (field: string, agent: string): string => {
+  const olds = Object.entries(OLD_AGENT_NAMES).filter(([, n]) => n === agent).map(([o]) => o);
+  return olds.length ? `OR(${[agent, ...olds].map((x) => `{${field}}='${x}'`).join(',')})` : `{${field}}='${agent}'`;
+};
+
 export const ACTIVITY = 'tbl4DK6tEuy2ZEmbP';
 export const AF = {
   event: 'fldglUB3EzzQVC3ZO', when: 'fldZ6krYaZOeCmaxK', agent: 'fldAOwjBYPCrHZmCS', type: 'fldvkg6fn4bH2bkD2', details: 'fldaF3yo6pfSlARXl',
@@ -15,7 +24,7 @@ export const AF = {
 
 export type ActivityType = 'Detected' | 'Diagnosed' | 'Fixed' | 'Waiting for approval' | 'Approved' | 'Step done' | 'Step failed' | 'Info';
 export interface Activity {
-  event: string; type: ActivityType; agent?: 'Atlas' | 'Sean' | 'Scribe' | 'Engine' | 'Riley' | 'Alex' | 'Josh'; details?: string;
+  event: string; type: ActivityType; agent?: 'Atlas' | 'Echo' | 'Scribe' | 'Engine' | 'Riley' | 'Alex' | 'Josh'; details?: string;
   campaignRecordIds?: string[]; bisonCampaignId?: number; leadListRecordIds?: string[]; emailAccountRecordIds?: string[]; clientRecordIds?: string[]; jobId?: string | number;
 }
 

@@ -1,4 +1,4 @@
-// Sean: waiting replies → Claude draft → Decision rows (reply / ask Alex / skip), each reply once.
+// Echo: waiting replies → Claude draft → Decision rows (reply / ask Alex / skip), each reply once.
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
@@ -107,10 +107,10 @@ test('reply → Send Reply decision; ask_alex → no action; skip → nothing; e
   assert.equal(req.model, 'claude-opus-5-5');
   assert.equal(req.fallbacks, 'default');
   assert.ok(req.system[0].cache_control, 'shared instructions are cached');
-  assert.doesNotMatch(req.system[0].text, /You are Sean/, 'the shared library is the same for first replies and follow-ups');
+  assert.doesNotMatch(req.system[0].text, /You are Echo/, 'the shared library is the same for first replies and follow-ups');
   assert.match(req.system[0].text, /Objection/i, 'objection handling is kept');
   assert.doesNotMatch(req.system[0].text, /Google Drive SOPs|Course outline/, 'call-only course parts and old Drive notes are left out');
-  assert.match(req.system[1].text, /You are Sean/);
+  assert.match(req.system[1].text, /You are Echo/);
   assert.match(req.system[2].text, /Client file: .*Twenty West/i);
   assert.match(req.messages[0].content, /Sounds interesting/);
 
@@ -128,7 +128,7 @@ test('reply → Send Reply decision; ask_alex → no action; skip → nothing; e
   const ds = Object.values(decisions);
   assert.equal(ds.length, 2);
   const send = ds.find((d) => d[DF.action] === 'Approve Reply')!;
-  assert.equal(send[DF.agent], 'Sean');
+  assert.equal(send[DF.agent], 'Echo');
   assert.equal(send[DF.emailsRecord], 'recA');
   const ask = ds.find((d) => d[DF.action] === 'None')!;
   assert.match(String(ask[DF.title]), /Need your input/);
@@ -244,7 +244,7 @@ test('two prospects are never offered the same open time', { skip }, async () =>
   assert.deepEqual(pickTwo(await freeSlots(db, 'recWS', slots, 'recAdam')), a, 'the same prospect can be offered their own times again');
 });
 
-test('the client\'s Inbox Manager settings drive Sean: handoff "All replies" → nothing drafted; tone, length, instructions and links reach the prompt; a switched-off reply type is skipped', { skip }, async () => {
+test('the client\'s Inbox Manager settings drive Echo: handoff "All replies" → nothing drafted; tone, length, instructions and links reach the prompt; a switched-off reply type is skipped', { skip }, async () => {
   emails.recM = thread();
   settings = [{ 'Enabled': true, 'Reply Handoff Mode': 'All Replies', 'Calendar Link': 'https://calendly.com/client/intro' }];
   const j = await run(cfg());

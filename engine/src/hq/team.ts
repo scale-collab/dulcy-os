@@ -1,7 +1,7 @@
 // HQ Agents and the team check: each agent's runs (engine jobs), decisions waiting, Activity Log
 // rows, own to-do list and reports; and Ada's one line per agent (✓ ran fine / ⚠️ what's off).
 import type { Db } from '../db/pool.js';
-import { ACTIVITY, AF } from '../activity.js';
+import { ACTIVITY, AF, agentFormula } from '../activity.js';
 import { AGENTS, AGENT_NAMES, agentForJob, jobPatternsFor, type AgentName } from './agents.js';
 import type { DecisionCard, HqAirtable } from './decisions.js';
 
@@ -68,7 +68,7 @@ export function teamCheck(health: Awaited<ReturnType<typeof jobHealth>>, decisio
 
 export interface ActivityRow { id: string; event: string; when: string; type: string; details: string }
 export async function agentActivity(at: Pick<HqAirtable, 'list'>, agent: AgentName, limit = 10): Promise<ActivityRow[]> {
-  const rows = await at.list(ACTIVITY, `{Agent}='${agent}'`, [AF.event, AF.when, AF.agent, AF.type, AF.details], limit, { sortField: AF.when, sortDesc: true });
+  const rows = await at.list(ACTIVITY, agentFormula('Agent', agent), [AF.event, AF.when, AF.agent, AF.type, AF.details], limit, { sortField: AF.when, sortDesc: true });
   const s = (v: unknown) => (v === undefined || v === null ? '' : typeof v === 'object' ? String((v as any).name ?? '') : String(v));
   return rows.map((r) => ({ id: r.id, event: s(r.fields[AF.event]), when: s(r.fields[AF.when]), type: s(r.fields[AF.type]), details: short(s(r.fields[AF.details]), 600) }));
 }

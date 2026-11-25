@@ -11,8 +11,8 @@ function data(over: Partial<BriefData> = {}): BriefData {
   return {
     now, clientName: (ws) => ({ '66': 'Twenty West', '2': 'Dulcy' } as Record<string, string>)[ws] ?? `workspace ${ws}`, purchases: 1,
     decisions: [
-      { title: 'Reply to Jane at Acme', agent: 'Sean', created: h(30) },
-      { title: 'Follow-up 1 to Bob at Beta', agent: 'Sean', created: h(5) },
+      { title: 'Reply to Jane at Acme', agent: 'Echo', created: h(30) },
+      { title: 'Follow-up 1 to Bob at Beta', agent: 'Echo', created: h(5) },
       { title: 'Bounce 5.2% on TW Food: Spam problem: our sending domains', agent: 'Atlas', created: h(2) },
     ],
     replies: [

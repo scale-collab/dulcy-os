@@ -31,7 +31,7 @@ export const wsRecordOf = (f: Record<string, unknown>): string => {
 
 /**
  * Threads where the prospect wrote last, Dulcy owns the thread, in the last N days.
- * Default: interested-type replies. extra = out-of-office and not-interested replies (Sean drafts
+ * Default: interested-type replies. extra = out-of-office and not-interested replies (Echo drafts
  * those only for clients whose Reply Agent settings turn them on, Alex 2026-11-25).
  */
 export function waitingFormula(days: number, extra = false): string {

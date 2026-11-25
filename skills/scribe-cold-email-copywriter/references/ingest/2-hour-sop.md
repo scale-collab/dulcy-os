@@ -102,7 +102,7 @@ Everything below is quoted from the SOP. Where RULES.md overrides it, that is ma
 - "5/ Does replying feel easier than ignoring? (If no → remove friction)" (offer questions, L1373).
 - **Too generic (BAD):** "stand-alone 'Interested?' and 'Worth a chat?'" (99 Archive Recommendations, L3512).
 - CTA bank tiers Hard / Soft / Softest and the Top 16 shortlist are quoted verbatim in section 4.10. Per RULES and Triple Tap, prefer **Softest/Soft**. Hard call asks are only for when a call is the only logical next step.
-- RULES adds: when a prospect replies interested, offer two dated times and no calendar link. That is Sean's job, not Scribe's.
+- RULES adds: when a prospect replies interested, offer two dated times and no calendar link. That is Echo's job, not Scribe's.
 
 ### 1.5 Subject lines
 

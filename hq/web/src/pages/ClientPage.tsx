@@ -64,7 +64,7 @@ export default function ClientPage({ id, user }: { id: string; user: User }) {
         <Stat label="Interested → booked" text={conv === null ? '–' : pct(conv)} tone={conv !== null && c.interested30 >= 10 && conv < 0.2 ? 'warn' : undefined} />
         <Stat label="Replies waiting" n={c.waitingApproval} tone={c.waitingApproval ? 'warn' : undefined}
           action={c.waitingApproval || c.seanWaiting ? <button onClick={() => go(`decisions/Replies/${encodeURIComponent(c.key)}`)} className="mt-1 inline-flex min-h-8 items-center gap-1 text-xs font-semibold text-accent-ink hover:underline">Open replies<Icon name="chevronRight" size={13} /></button> : undefined}
-          sub={c.seanWaiting ? `${c.seanWaiting} Sean decision${c.seanWaiting === 1 ? '' : 's'}` : undefined} />
+          sub={c.seanWaiting ? `${c.seanWaiting} Echo decision${c.seanWaiting === 1 ? '' : 's'}` : undefined} />
       </div>
 
       {owner && c.money && (
