@@ -145,7 +145,7 @@ export const atlasPlanStage: Stage = async (ctx) => {
   const claude = createClaude({ apiKey: cfg.anthropicApiKey, model: cfg.claudeModel, baseURL: cfg.anthropicBaseUrl });
   const plan = await ctx.paid({
     callKey: `atlas-plan:${row.id}`, provider: 'anthropic', units: 1, scope: 'record',
-    run: () => claude.structured(Plan, [PLANNER, [k('skills/atlas-campaign-operator/references/next-campaign-rules.md'), k('skills/atlas-campaign-operator/references/campaign-sop.md'), k('rules/RULES.md')].join('\n\n---\n\n')],
+    run: () => claude.structured(Plan, [PLANNER, [k('skills/atlas-campaign-operator/references/next-campaign-rules.md'), k('skills/atlas-campaign-operator/references/campaign-sop.md'), k('rules/RULES.md'), k('skills/atlas-campaign-operator/references/market-watch.md')].join('\n\n---\n\n')],
       file ? `# Client file: ${file.name}\n${file.text}` : 'No client file in the repo: use only the Airtable offer.', user, 'high'),
     dryRunResult: () => ({}) as PlanT,
   });
