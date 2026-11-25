@@ -1,6 +1,6 @@
 # Client: Lead Flo Marketing
 
-Status: active in Airtable (Workspace ID 68, Status Active) [Airtable Workspace IDs rec recaG8oBGaBKbWlns, read 2026-11-17]. **The client asked to cancel on 2026-11-17** (see section 1).
+Status: **INACTIVE: no longer a client** (Alex, 2026-11-25; Airtable Workspace IDs Status set to Inactive, rec recaG8oBGaBKbWlns, Workspace ID 68). The client asked to cancel on 2026-11-17 (see section 1). Keep this file as history: its scripts and results still teach, its facts are never reused for another client.
 Last updated: 2026-11-17
 Every fact has a source and date in brackets. Unknown = `UNKNOWN`. Never copy facts from another client.
 

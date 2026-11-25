@@ -142,6 +142,12 @@ export async function agentsTick(db: Db, cfg: Config, now = new Date()): Promise
       const r = await enqueue(db, { kind: 'atlas.plan', recordId: `atlas-plan-${id}`, input: { planId: id }, requestId: `atlas-plan:${id}`, dryRun: !live('atlas.plan'), maxAttempts: d.maxAttempts, deadlineMs: d.deadlineMs });
       if (r.status === 'queued') n++;
     }
+    // Copy to write (after approval 1, or a rewrite after feedback): one at a time.
+    for (const p of (await db.query(`SELECT id, copy_round FROM campaign_plans WHERE copy_state='queued' ORDER BY id LIMIT 1`)).rows) {
+      const d = STAGES['scribe.copy'];
+      const r = await enqueue(db, { kind: 'scribe.copy', recordId: `scribe-copy-${p.id}`, input: { planId: Number(p.id) }, requestId: `scribe-copy:${p.id}:${p.copy_round}`, dryRun: !live('scribe.copy'), maxAttempts: d.maxAttempts, deadlineMs: d.deadlineMs });
+      if (r.status === 'queued') n++;
+    }
   }
   if (cfg.coleOn && cfg.fathomApiKey && cfg.coleEveryMin > 0) n += await q('cole.review', `cole:${Math.floor(now.getTime() / (cfg.coleEveryMin * 60_000))}`);
   if (cfg.siennaOn && et.getDay() === 1 && et.getHours() >= cfg.siennaIdeasHour) n += await q('sienna.ideas', `sienna-ideas:${date}`);

@@ -544,6 +544,14 @@ Production Stage becomes "Script Ready". Nothing is posted.
 3. **Presses Run Company Sample** (first 100 companies, about $1) when the filters are done.
 4. **Approval 1 in Slack:** plan + ICP + sample result (fit / not fit). ✅ = sample approved + **Expand Companies** pressed. ❌ = stops; nothing more is spent.
 
-If a Lead List step fails, the plan stops (`stuck`) and you see it on the Lead List record. Nothing is sent or launched in part 1. Copy (part 2) and approval 2 + client approval + launch (part 3) come next.
+5. **After ✅, two things run at once:**
+   - **The list:** Atlas presses each Lead List button in order: Find Contacts (sample of 100 companies; 70%+ usable continues by itself, lower asks you in Slack), Find Contacts (all), Verify and Finalize, Skip Enrichment, then Run Automated QA once the copy is in.
+   - **The copy (Scribe):** reads its full playbook (your SOPs, the Source of Truth, past copy reviews, real scripts we ran with their numbers), the client file, the approved plan and the client's real replies. Writes Email 1 as **2 variants (the 2 angles)** plus the follow-ups. A second pass reviews it like you would and fixes what it finds; code checks the hard rules (30-75 words, 1-3 word subject, no links, no call ask, no banned phrases, only {FIRST_NAME}/{COMPANY}). The copy goes in the Campaign's (Review) fields (Email 1 as "Variant 1 / Variant 2", the Campaign Center format) and the sequence fields. Workflow Stage = Internal Review.
+6. **Approval 2 in Slack:** the full copy + list numbers. ✅ = Atlas presses **Send for approval** (Client Review, 48-business-hour clock); your existing automation emails the client the portal link. ❌ = Scribe waits for your notes: `campaign-copy <plan> "<what to change>"`.
+7. **The client** approves in the portal (or it auto-approves after 48 business hours) → plan is `client_approved`. If the client asks for copy changes, Scribe rewrites with their notes and approval 2 comes back to you. List changes come to you.
 
-**Switch on:** `ATLAS_CAMPAIGNS=on`, and add `atlas.plan,campaign.pipeline,campaign.plan_approved` to `LIVE_STAGES`.
+If a Lead List step fails, the plan stops (`stuck`) and you see it on the Lead List record. Nothing is sent or launched. Build + launch (part 3) come next.
+
+**See plans:** `campaign-plans`. **Rewrite copy:** `campaign-copy <plan id> "<notes>"`.
+
+**Switch on:** `ATLAS_CAMPAIGNS=on`, and add `atlas.plan,campaign.pipeline,campaign.plan_approved,campaign.contacts_approved,scribe.copy,campaign.copy_approved` to `LIVE_STAGES`.

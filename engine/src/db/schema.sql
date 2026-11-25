@@ -270,3 +270,10 @@ CREATE TABLE IF NOT EXISTS campaign_plans (
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- Campaign creation part 2 (Scribe copy, approval 2, client portal), 2026-11-25.
+ALTER TABLE campaign_plans ADD COLUMN IF NOT EXISTS decision2_rec TEXT;
+ALTER TABLE campaign_plans ADD COLUMN IF NOT EXISTS copy JSONB;
+ALTER TABLE campaign_plans ADD COLUMN IF NOT EXISTS copy_state TEXT;
+ALTER TABLE campaign_plans ADD COLUMN IF NOT EXISTS copy_issues JSONB;
+ALTER TABLE campaign_plans ADD COLUMN IF NOT EXISTS copy_round INT NOT NULL DEFAULT 1;
+ALTER TABLE campaign_plans ADD COLUMN IF NOT EXISTS copy_feedback TEXT;

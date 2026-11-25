@@ -4791,11 +4791,11 @@ https://n8n.dulcy.io/webhook/REDACTED_PATH
 
 
 Email account added - Make
-https://hook.us1.make.com/ktrftycn5ax09rxpdkf38xivtr8ohvc9
+[REDACTED Make webhook URL]
 
 
 Email account disconnect - Make
-https://hook.us1.make.com/rxqx17ww5f7o8i1tx7ph5xoy8aa9kjqs
+[REDACTED Make webhook URL]
 
 
 Manual Mark Reply as Interested - Update Airtable (Contact Interested)
@@ -5021,13 +5021,13 @@ $6k
 
 
 LinkedIn Email address
-Patrick@leadflo.marketing
+[REDACTED 2026-11-25: credential removed from the repo]
 
 
 
 
 LinkedIn Password
-Dulcy2026#
+[REDACTED 2026-11-25: credential removed from the repo]
 
 
 
@@ -5045,7 +5045,7 @@ GoHighLevel
 
 
 2FA secret key
-WPDTGMYQMTMA7GOR5IEA54KCDUTBS2TF
+[REDACTED 2026-11-25: credential removed from the repo]
 
 
 
@@ -5146,7 +5146,7 @@ Yes
 
 
 ci_password
-LeadFLOMarketing99$$
+[REDACTED 2026-11-25: credential removed from the repo]
 
 
 
@@ -6011,13 +6011,13 @@ $6k
 
 
 LinkedIn Email address
-Patrick@leadflo.marketing
+[REDACTED 2026-11-25: credential removed from the repo]
 
 
 
 
 LinkedIn Password
-Dulcy2026#
+[REDACTED 2026-11-25: credential removed from the repo]
 
 
 
@@ -6035,7 +6035,7 @@ GoHighLevel
 
 
 2FA secret key
-WPDTGMYQMTMA7GOR5IEA54KCDUTBS2TF
+[REDACTED 2026-11-25: credential removed from the repo]
 
 
 
@@ -6136,7 +6136,7 @@ Yes
 
 
 ci_password
-LeadFLOMarketing99$$
+[REDACTED 2026-11-25: credential removed from the repo]
 
 
 

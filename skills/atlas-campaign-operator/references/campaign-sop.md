@@ -92,3 +92,11 @@ Rules in `rules/RULES.md` win where they differ. The conflicts are listed at the
 | Daily caps | 2,500–10,000 | inboxes × per-inbox limit |
 | Scaling | 100 → 1k → 4k → 10k | the size Alex authorised; default 3,000 |
 | Next-campaign metric | email-to-lead vs agency average | interested ≥15% of replies |
+
+## How the client approves copy (Alex, 2026-11-25)
+
+In the **client portal** (portal.dulcy.io). The managed path, already live:
+1. Campaign Center **Send for approval** sets Workflow Stage = Client Review, Client Review Submitted At = now, Client Review Auto-Approve At = now + 48 weekday hours, and clears Campaign Approval Source.
+2. The Airtable automation "Send campaign for client approval" posts the Slack notice and emails the client the portal link.
+3. The client clicks Approve or Deny in the portal. With no feedback, n8n "[Campaign Center] Auto-Approve Client Review" sets Workflow Stage = Approved after 48 weekday hours (source "Auto-approved after 48 business hours") and copies the (Review) copy into the live copy fields.
+4. Requested changes come back as Client's Feedback / Select Changes → Changes Requested.

@@ -242,6 +242,14 @@ async function main() {
         await createSlackClient({ token: cfg.slackBotToken, baseUrl: cfg.slackBaseUrl }).post(cfg.atlasChannel, text);
         console.log(`\n(posted to ${cfg.atlasChannel})`);
       }
+    } else if (cmd === 'campaign-copy') {
+      // Rewrite a plan's copy with your notes (after ❌ on approval 2, or any time before the client sees it).
+      const id = Number(args[0]); const notes = args.slice(1).filter((a) => !a.startsWith('--')).join(' ').trim();
+      if (!id || !notes) throw new Error('usage: campaign-copy <plan id> "<what to change>"');
+      const r = (await db.query(`UPDATE campaign_plans SET copy_state='queued', copy_round=copy_round+1, copy_feedback=$2, state=CASE WHEN state IN ('copy_rejected','approval2') THEN 'approval2_wait' ELSE state END, updated_at=now() WHERE id=$1 RETURNING state, copy_round`, [id, notes])).rows[0];
+      console.log(r ? `Plan ${id}: Scribe rewrites (round ${r.copy_round}) within a few minutes; approval 2 comes back to Slack.` : `No plan ${id}`);
+    } else if (cmd === 'campaign-plans') {
+      for (const p of (await db.query(`SELECT id, client, state, copy_state, copy_round, plan->>'campaign_name' AS name, updated_at FROM campaign_plans ORDER BY id DESC LIMIT 20`)).rows) console.log(`${p.id} · ${p.client} · ${p.state}${p.copy_state ? ` · copy ${p.copy_state} (round ${p.copy_round})` : ''} · ${p.name ?? ''} · ${new Date(p.updated_at).toISOString().slice(0, 16)}`);
     } else if (cmd === 'agent') {
       const kind = String(args[0] ?? '');
       if (!['atlas.health', 'cole.review', 'sienna.ideas', 'sienna.prep'].includes(kind)) throw new Error('usage: agent <atlas.health|cole.review|sienna.ideas|sienna.prep> [--since=YYYY-MM-DD]');

@@ -17,7 +17,7 @@ import { RA } from '../agents/emailsFields.js';
 const YES = new Set(['white_check_mark', 'heavy_check_mark', 'ballot_box_with_check', '+1']);
 const NO = new Set(['x', 'negative_squared_cross_mark', 'no_entry', 'no_entry_sign', '-1']);
 const NAMES: Record<string, string> = { U070Z26377C: 'Alex', U0ADSEJ9SDR: 'Josh' };
-const ACTIONS: Record<string, string> = { 'Send Reply': 'decision.send_reply', 'Resume Campaign': 'bounce.fix', 'Remove Inboxes and Resume': 'bounce.fix', 'Approve Purchase': 'account.approve_purchase', 'Approve Campaign Plan': 'campaign.plan_approved' };
+const ACTIONS: Record<string, string> = { 'Send Reply': 'decision.send_reply', 'Resume Campaign': 'bounce.fix', 'Remove Inboxes and Resume': 'bounce.fix', 'Approve Purchase': 'account.approve_purchase', 'Approve Campaign Plan': 'campaign.plan_approved', 'Approve Contact Sample': 'campaign.contacts_approved', 'Approve Campaign Copy': 'campaign.copy_approved' };
 const ALL = Object.values(DF);
 
 const text = (v: unknown) => (v === undefined || v === null ? '' : typeof v === 'object' ? String((v as any).name ?? '') : String(v)).trim();
@@ -33,8 +33,8 @@ export function decisionMessage(r: AirtableRecord): string {
   if (text(f[DF.issue])) blocks.push(`*${reply ? 'They said' : 'Issue'}:* ${text(f[DF.issue])}`);
   if (text(f[DF.checked])) blocks.push(`*${reply ? 'Why' : 'Checked'}:* ${text(f[DF.checked])}`);
   if (text(f[DF.fix])) blocks.push(reply || text(f[DF.fix]).includes('\n') ? `*${reply ? 'Draft reply' : 'Proposed'}:*\n${quote(text(f[DF.fix]))}` : `*Proposed:* ${text(f[DF.fix])}`);
-  if (reply) blocks.push('✅ send it   ·   ❌ skip it');
-  else if (text(f[DF.action]) && text(f[DF.action]) !== 'None') blocks.push(`*On ✅:* ${text(f[DF.action])}`);
+  // Reply drafts: no "✅ send it · ❌ skip it" line; the pre-added reactions say it (Alex, 2026-11-25).
+  if (!reply && text(f[DF.action]) && text(f[DF.action]) !== 'None') blocks.push(`*On ✅:* ${text(f[DF.action])}`);
   return blocks.join('\n\n');
 }
 

@@ -9,7 +9,7 @@ If Alex says something new in chat, the newest instruction wins, and you log it 
 - It helps B2B service businesses get more sales opportunities with AI omnichannel outreach.
 - **Channels:** cold email, LinkedIn, direct mail, AI caller.
 - **Right now only cold email works.** LinkedIn and direct mail need system fixes. The AI caller underperforms, and its direction is undecided (maybe replace with humans).
-- **Clients:** 6, plus Dulcy itself (7 campaign owners in total). Do NOT state any larger client count.
+- **Clients:** 5 active, plus Dulcy itself (Lead Flo Marketing went inactive 2026-11-25). Do NOT state any larger client count.
 - **Team:** Alex and **Josh** (VA, inbox manager: keeps replies moving toward booked meetings).
 - **Website:** https://dulcy.io
 
