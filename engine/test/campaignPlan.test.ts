@@ -262,6 +262,43 @@ test('Campaign creation end to end: 60% trigger → Atlas plan → filters → s
   assert.match(String(fin.job.result.message), /client approved \(Auto-approved after 48 business hours\)/);
   assert.equal((await st()).state, 'client_approved');
   assert.equal(claudeCalls.length, 5, 'plan 1 + copy 2 rounds × (draft + review)');
+
+  // 12. Part 3: copy back in place (the auto-approve flow overwrote it with the labelled review text) + spintax requested.
+  const C = tables[CAMPAIGNS][campRec];
+  C[CC.seq[0][0].body] = 'Variant 1\nbroken labelled text';
+  await run('campaign.pipeline');
+  assert.equal(C[CC.seq[0][0].body], B1, 'sequence restored from the approved copy');
+  assert.equal(C[CC.seq[0][1].body], B2);
+  assert.equal(C[CC.workflow], 'Spintax in Progress'); assert.equal(C.fldsvgKf6U5zDOygf, true, 'create_spintax pressed');
+  assert.equal(C[CC.approvalSource], 'Auto-approved after 48 business hours', 'an existing approval source is kept');
+  assert.equal((await db.query('SELECT state FROM campaign_plans WHERE id=1')).rows[0].state, 'spintax');
+  await run('campaign.pipeline');
+  assert.equal((await db.query('SELECT state FROM campaign_plans WHERE id=1')).rows[0].state, 'spintax', 'waits for the spintax step');
+
+  // 13. Spintax done → the client's free healthy inboxes → Build Campaign.
+  C.fldZABZwE9SmnwMv3 = 'Spintax Generated';
+  tables.tblMSOBJ0wMgxSg4l = {
+    recA0000000000001: { flduDcGap2GSsqUia: ['recW0000000000001'], fldR19WUqSSBVQcPO: 11, fldzAnqlrgiM6iIg5: 98 },
+    recA0000000000002: { flduDcGap2GSsqUia: ['recW0000000000001'], fldR19WUqSSBVQcPO: 12, fldJJWRwowtWJhIfg: ['recC0000000000002'] },
+    recA0000000000003: { flduDcGap2GSsqUia: ['recW0000000000001'], fldR19WUqSSBVQcPO: 13, fldzAnqlrgiM6iIg5: 50 },
+    recA0000000000004: { flduDcGap2GSsqUia: ['recX0000000000001'], fldR19WUqSSBVQcPO: 14 },
+  };
+  tables[CAMPAIGNS].recC0000000000002.fldZABZwE9SmnwMv3 = 'Active';
+  await run('campaign.pipeline');
+  assert.deepEqual(C.fldi906rwZ9YOpU64, ['recA0000000000001'], 'only the free, healthy, warmed inbox of this client');
+  assert.equal(C.fldsvWSdSkH8y16wW, 'Build Campaign'); assert.equal(C.flds0oKDXF1XgQUeI, true);
+
+  // 14. Built → Launch Campaign (the launch checks run in that stage) → live.
+  const campaignDone = async (kind: string) => {
+    const q = await enqueue(db, { kind, recordId: `fake-${kind}-${++n}`, input: {}, dryRun: false, maxAttempts: 1, deadlineMs: 60_000 });
+    await db.query(`UPDATE jobs SET status='succeeded' WHERE id=$1`, [q.job.id]);
+    Object.assign(C, { fldsvWSdSkH8y16wW: null, fldBIuY7HML1wycLr: 'Done', fldx3JS89Nu10OjeT: String(q.job.id), fldtsSMcX9XX4h1Vc: 'ok' });
+  };
+  await campaignDone('campaign.build'); await run('campaign.pipeline');
+  assert.equal(C.fldsvWSdSkH8y16wW, 'Launch Campaign');
+  await campaignDone('campaign.launch'); const live = await run('campaign.pipeline');
+  assert.match(String(live.job.result.message), /LIVE/);
+  assert.equal((await db.query('SELECT state FROM campaign_plans WHERE id=1')).rows[0].state, 'live');
 });
 
 test('Copy with a custom variable: the list is enriched for it (Prepare Enrichment Prompt → Run Enrichment → QA)', { skip }, async () => {
@@ -297,6 +334,19 @@ test('A failed planning job sets the plan aside (stops blocking) and a retry reu
   assert.equal(Object.keys(tables[CAMPAIGNS]).length, 1, 'no second Campaign record');
   assert.deepEqual(Object.values(tables[LEAD_LISTS])[0][LL.whichCampaign], ['recC0000000000009']);
   assert.equal(Object.values(tables[LEAD_LISTS])[0][F.engineActionSetAt], undefined, 'never writes the computed Set At field');
+});
+
+test('No free healthy inbox: Atlas asks you, then builds as soon as you pick them', { skip }, async () => {
+  tables[CAMPAIGNS] = { recC0000000000001: { fldZABZwE9SmnwMv3: 'Spintax Generated' } };
+  tables.tblMSOBJ0wMgxSg4l = { recA0000000000009: { flduDcGap2GSsqUia: ['recW0000000000001'], fldR19WUqSSBVQcPO: 0 } };
+  await db.query(`INSERT INTO campaign_plans (trigger_key, ws_rec, client, state, lead_list_rec, campaign_rec, plan, copy) VALUES ('new:a','recW0000000000001','Acme','spintax','recL0000000000001','recC0000000000001',$1,$2)`, [JSON.stringify(PLAN), JSON.stringify(COPY)]);
+  await run('campaign.pipeline');
+  assert.equal((await db.query('SELECT state FROM campaign_plans WHERE id=1')).rows[0].state, 'need_inboxes');
+  assert.match(String(Object.values(tables[DECISIONS])[0][DF.title]), /Pick inboxes/);
+  tables[CAMPAIGNS].recC0000000000001.fldi906rwZ9YOpU64 = ['recA0000000000008'];
+  await run('campaign.pipeline');
+  assert.equal(tables[CAMPAIGNS].recC0000000000001.fldsvWSdSkH8y16wW, 'Build Campaign');
+  assert.equal((await db.query('SELECT state FROM campaign_plans WHERE id=1')).rows[0].state, 'building');
 });
 
 test('Low contact sample asks Alex; ❌ on approval 1 stops the plan', { skip }, async () => {

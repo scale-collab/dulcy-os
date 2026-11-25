@@ -145,6 +145,13 @@ export function copyFields(c: CopyT): Record<string, unknown> {
   return f;
 }
 
+/** Only the sequence fields (Campaign Subject/Body N Version v, variant counts, thread replies): what the build reads. */
+export function sequenceFields(c: CopyT): Record<string, unknown> {
+  const all = copyFields(c);
+  const review = new Set<string>(CC.review.flatMap((x) => [x.subject, x.body]));
+  return Object.fromEntries(Object.entries(all).filter(([k]) => !review.has(k) && k !== CC.workflow));
+}
+
 /** How the copy reads in Slack for approval 2. */
 export function copyText(c: CopyT): string {
   const e1 = c.email1.map((v, i) => `*Email 1 · Variant ${i + 1} (${v.angle})*\nSubject: ${v.subject}\n${v.body}`).join('\n\n');

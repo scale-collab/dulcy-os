@@ -176,3 +176,8 @@ Format: `- [date] rule. (why / source)`
 - For each problem he posts in Slack: why it happens, the prepared fix (a PR, an exact change spec or a retry) and the rollback. **Nothing goes live until Alex's ✅.** This holds until Alex says Riley may fix freely.
 - Read-only checks need no approval. A ✅ on a Retry re-runs the failed engine job. Other fixes are made live by Riley's next scheduled run, then verified.
 - **Reason:** Alex wants the fixes ready for him, and to approve them until he trusts Riley to fix freely.
+
+## Campaign creation, last step: client approval → live (Alex, 2026-11-25)
+- **Inboxes:** Atlas gives a new campaign the client's free healthy inboxes: Healthy or ungraded, connected, not resting or being replaced, warmup 70+ when scored, and not sending in another Active or Uploaded campaign. If none are free, Atlas asks Alex (Daily Run / Slack) and builds as soon as he picks them in Campaign Center.
+- **Launch:** after Build Campaign, Atlas presses Launch Campaign. It goes live by itself when every launch check passes, under the 2026-11-18 exception: copy approved, list Ready + QA Passed, client active, leads in, senders connected. If a check fails, the plan stops and Alex sees why.
+- **Order:** the approved copy goes back into the sequence fields first (the same as the Campaign Center's approve-and-prepare), then the spintax button, then Build, then Launch.
