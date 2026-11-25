@@ -248,6 +248,15 @@ async function main() {
       if (!id || !notes) throw new Error('usage: campaign-copy <plan id> "<what to change>"');
       const r = (await db.query(`UPDATE campaign_plans SET copy_state='queued', copy_round=copy_round+1, copy_feedback=$2, state=CASE WHEN state IN ('copy_rejected','approval2') THEN 'approval2_wait' ELSE state END, updated_at=now() WHERE id=$1 RETURNING state, copy_round`, [id, notes])).rows[0];
       console.log(r ? `Plan ${id}: Scribe rewrites (round ${r.copy_round}) within a few minutes; approval 2 comes back to Slack.` : `No plan ${id}`);
+    } else if (cmd === 'jobs') {
+      // What the engine is doing: running jobs, the queue, and the last 15 that finished.
+      const age = (t: string) => { const m = Math.round((Date.now() - new Date(t).getTime()) / 60_000); return m < 60 ? `${m}m` : `${Math.round(m / 60)}h`; };
+      const run = (await db.query(`SELECT id, kind, updated_at, progress FROM jobs WHERE status='running' ORDER BY id`)).rows;
+      console.log(`Running (${run.length}):`); for (const j of run) console.log(`  ${j.id} ${j.kind} · ${age(j.updated_at)} · ${String(j.progress ?? '').slice(0, 80)}`);
+      const q = (await db.query(`SELECT kind, count(*)::int AS n, min(run_after) AS next FROM jobs WHERE status='queued' GROUP BY kind ORDER BY n DESC`)).rows;
+      console.log(`Queued (${q.reduce((a, x) => a + x.n, 0)}): ${q.map((x) => `${x.kind} ${x.n}`).join(', ') || 'none'}`);
+      for (const j of (await db.query(`SELECT id, kind, status, updated_at, left(coalesce(error, result->>'message', ''), 90) AS msg FROM jobs WHERE status NOT IN ('queued','running') ORDER BY updated_at DESC LIMIT 15`)).rows)
+        console.log(`  ${j.id} ${j.kind} ${j.status} · ${age(j.updated_at)} ago · ${j.msg}`);
     } else if (cmd === 'campaign-plans') {
       for (const p of (await db.query(`SELECT id, client, state, copy_state, copy_round, plan->>'campaign_name' AS name, updated_at FROM campaign_plans ORDER BY id DESC LIMIT 20`)).rows) console.log(`${p.id} · ${p.client} · ${p.state}${p.copy_state ? ` · copy ${p.copy_state} (round ${p.copy_round})` : ''} · ${p.name ?? ''} · ${new Date(p.updated_at).toISOString().slice(0, 16)}`);
     } else if (cmd === 'agent') {

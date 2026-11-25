@@ -141,3 +141,13 @@ test('missing replyId fails clearly', { skip }, async () => {
   assert.equal(rows.rec1[DF.status], 'Failed');
   assert.match(String(rows.rec1[DF.result]), /needs workspaceId, replyId and message/);
 });
+
+test('Reaction polling: fresh decisions every tick, older ones less often (Slack allows ~50 reads a minute)', async () => {
+  const { reactionDue } = await import('../src/decisions/loop.js');
+  const now = Date.now();
+  assert.equal(reactionDue('a', now - 60_000, now, undefined), true, 'never read → read now');
+  assert.equal(reactionDue('b', now - 60_000, now, now - 1_000), true, 'under 2h old → every tick');
+  assert.equal(reactionDue('c', now - 5 * 3_600_000, now, now - 60_000), false, 'a few hours old → every 2 min');
+  assert.equal(reactionDue('c', now - 5 * 3_600_000, now, now - 130_000), true);
+  assert.equal(reactionDue('d', now - 3 * 86_400_000, now, now - 5 * 60_000), false, 'days old → every 10 min');
+});
