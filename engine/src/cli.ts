@@ -43,6 +43,10 @@
 //       (nothing is written). --live creates the entries (only when ledger.prep is in LIVE_STAGES).
 //   ledger-ask "<question>"
 //       Print the yes/no Ledger would give, e.g. ledger-ask "Should I buy Clay $349/mo?" (posts nothing).
+//   atlas-health [--post]
+//       Atlas's client health report now (printed; --post also sends it to Slack).
+//   agent <atlas.health|cole.review|sienna.ideas|sienna.prep> [--since=YYYY-MM-DD]
+//       Run one of the agents now and wait for the result (live only when the stage is in LIVE_STAGES).
 //   mv-compare <recordId> <millionVerifierJobId>
 //       Free: download a MillionVerifier job and compare its verdicts with DiscoLike's own email
 //       check on the list's DiscoLike Contacts-run contacts (counts; emails masked).
@@ -227,6 +231,30 @@ async function main() {
         await new Promise((ok) => setTimeout(ok, 2_000));
         if (t === 149) console.log(`Still running. Check later with: docker compose exec engine node dist/src/cli.js job ${r.job.id}`);
       }
+    } else if (cmd === 'atlas-health') {
+      const { createAirtableClient } = await import('./providers/airtable.js');
+      const A = await import('./agents/atlas.js');
+      const at = createAirtableClient({ apiKey: cfg.airtableApiKey, baseId: cfg.airtableBaseId, baseUrl: cfg.airtableBaseUrl });
+      const text = A.writeHealth(await A.gatherHealth(at, new Date()));
+      console.log(text);
+      if (args.includes('--post')) {
+        const { createSlackClient } = await import('./providers/slack.js');
+        await createSlackClient({ token: cfg.slackBotToken, baseUrl: cfg.slackBaseUrl }).post(cfg.atlasChannel, text);
+        console.log(`\n(posted to ${cfg.atlasChannel})`);
+      }
+    } else if (cmd === 'agent') {
+      const kind = String(args[0] ?? '');
+      if (!['atlas.health', 'cole.review', 'sienna.ideas', 'sienna.prep'].includes(kind)) throw new Error('usage: agent <atlas.health|cole.review|sienna.ideas|sienna.prep> [--since=YYYY-MM-DD]');
+      const def = STAGES[kind];
+      const since = args.find((a) => a.startsWith('--since='))?.split('=')[1];
+      const r = await enqueue(db, { kind, recordId: kind.replace('.', '-'), input: since ? { since: new Date(since).toISOString() } : {}, dryRun: cfg.dryRun && !cfg.liveStages.includes(kind), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs });
+      console.log(`Job ${r.job.id} (${r.job.dry_run ? 'dry run' : 'live'})…`);
+      for (let t = 0; t < 450; t++) {
+        const j = (await db.query(`SELECT status, result, error FROM jobs WHERE id=$1`, [r.job.id])).rows[0];
+        if (['succeeded', 'failed', 'needs_review'].includes(j?.status)) { console.log(j.status === 'succeeded' ? JSON.stringify(j.result, null, 2) : `${j.status}: ${j.error}`); break; }
+        await new Promise((ok) => setTimeout(ok, 2_000));
+        if (t === 449) console.log(`Still running. Check later with: docker compose exec engine node dist/src/cli.js job ${r.job.id}`);
+      }
     } else if (cmd === 'ledger-report' || cmd === 'ledger-ask') {
       const { createXeroClient } = await import('./providers/xero.js');
       const L = await import('./agents/ledger.js');
@@ -250,7 +278,7 @@ async function main() {
         for (const e of d.errors) console.log(`(couldn't read ${e})`);
       }
     } else {
-      throw new Error('commands: xero-connect, ledger-report, ledger-prep, ledger-ask, verify, mv-compare, campaign, topup, senders, bounce, whereis, cleanup-test, cancel, job');
+      throw new Error('commands: atlas-health, agent, xero-connect, ledger-report, ledger-prep, ledger-ask, verify, mv-compare, campaign, topup, senders, bounce, whereis, cleanup-test, cancel, job');
     }
   } finally {
     await db.end();

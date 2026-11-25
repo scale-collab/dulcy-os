@@ -245,3 +245,12 @@ CREATE TABLE IF NOT EXISTS ledger_entries (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Cole: one row per Fathom recording looked at (reviewed, or skipped as not a sales call), so a call is reviewed once.
+CREATE TABLE IF NOT EXISTS cole_reviews (
+  recording_id  TEXT PRIMARY KEY,
+  kind          TEXT NOT NULL,             -- sales | client | internal | other
+  title         TEXT,
+  review        JSONB,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);

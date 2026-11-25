@@ -126,10 +126,24 @@ export async function ledgerTick(db: Db, cfg: Config, now = new Date()): Promise
   return q;
 }
 
+/** Atlas (Mon), Cole (every COLE_EVERY_MIN), Sienna (Mon ideas, Thu scripts). Each is off unless switched on. */
+export async function agentsTick(db: Db, cfg: Config, now = new Date()): Promise<number> {
+  const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const date = `${et.getFullYear()}-${String(et.getMonth() + 1).padStart(2, '0')}-${String(et.getDate()).padStart(2, '0')}`;
+  const live = (k: string) => !(cfg.dryRun && !cfg.liveStages.includes(k));
+  const q = async (kind: string, requestId: string) => { const d = STAGES[kind]; const r = await enqueue(db, { kind, recordId: kind.replace('.', '-'), input: {}, requestId, dryRun: !live(kind), maxAttempts: d.maxAttempts, deadlineMs: d.deadlineMs }); return r.status === 'queued' ? 1 : 0; };
+  let n = 0;
+  if (cfg.atlasOn && et.getDay() === 1 && et.getHours() >= cfg.atlasHour) n += await q('atlas.health', `atlas:${date}`);
+  if (cfg.coleOn && cfg.fathomApiKey && cfg.coleEveryMin > 0) n += await q('cole.review', `cole:${Math.floor(now.getTime() / (cfg.coleEveryMin * 60_000))}`);
+  if (cfg.siennaOn && et.getDay() === 1 && et.getHours() >= cfg.siennaIdeasHour) n += await q('sienna.ideas', `sienna-ideas:${date}`);
+  if (cfg.siennaOn && et.getDay() === 4 && et.getHours() >= cfg.siennaPrepHour) n += await q('sienna.prep', `sienna-prep:${date}`);
+  return n;
+}
+
 export function startScheduler(db: Db, cfg: Config, signal: AbortSignal): void {
-  if ((!cfg.bounceCheckEveryMin || cfg.bounceCheckWorkspaces.length === 0) && !cfg.seanEveryMin && !cfg.accountHealthEveryMin && !cfg.adaBriefOn && !cfg.ledgerOn) return;
+  if ((!cfg.bounceCheckEveryMin || cfg.bounceCheckWorkspaces.length === 0) && !cfg.seanEveryMin && !cfg.accountHealthEveryMin && !cfg.adaBriefOn && !cfg.ledgerOn && !cfg.atlasOn && !cfg.coleOn && !cfg.siennaOn) return;
   const err = (e: unknown) => console.error(JSON.stringify({ level: 'error', message: 'scheduler tick failed', err: String(e) }));
-  const tick = () => { void scheduleTick(db, cfg).catch(err); void seanTick(db, cfg).catch(err); void accountHealthTick(db, cfg).catch(err); void adaTick(db, cfg).catch(err); void ledgerTick(db, cfg).catch(err); };
+  const tick = () => { void scheduleTick(db, cfg).catch(err); void seanTick(db, cfg).catch(err); void accountHealthTick(db, cfg).catch(err); void adaTick(db, cfg).catch(err); void ledgerTick(db, cfg).catch(err); void agentsTick(db, cfg).catch(err); };
   tick();
   const t = setInterval(tick, 60_000);
   signal.addEventListener('abort', () => clearInterval(t));

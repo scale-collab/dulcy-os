@@ -22,6 +22,9 @@ import { accountHealthStage, approvePurchaseStage } from './accountHealth.js';
 import { adaBriefStage } from '../agents/ada.js';
 import { ledgerReportStage, ledgerCheckStage } from '../agents/ledger.js';
 import { ledgerPrepStage } from '../agents/ledgerPrep.js';
+import { atlasHealthStage } from '../agents/atlas.js';
+import { coleReviewStage } from '../agents/cole.js';
+import { siennaIdeasStage, siennaPrepStage } from '../agents/sienna.js';
 import { replySendStage } from '../agents/replies.js';
 
 /** A stage = one Airtable action. It returns a small result for the Airtable record. */
@@ -60,6 +63,10 @@ export const STAGES: Record<string, StageDef> = {
   'ledger.report': { run: ledgerReportStage, deadlineMs: 10 * 60_000, maxAttempts: 2, description: 'Ledger: Saturday money report from Xero (buckets vs 40/30/15/10/5, spend vs the OPEX cap, late invoices, bills due, books health, next payout). Read only.' },
   'ledger.check': { run: ledgerCheckStage, deadlineMs: 5 * 60_000, maxAttempts: 2, description: 'Ledger: answer purchase or invoice questions in the check channel with yes / yes-but / no and the OPEX room. Read only; never pays.' },
   'ledger.prep': { run: ledgerPrepStage, deadlineMs: 15 * 60_000, maxAttempts: 2, description: 'Ledger: prepare Xero reconciliation from Mercury (bucket transfers, processor payouts, invoice payments, spend coded like before); asks in Slack about the rest. Never deletes or moves money.' },
+  'atlas.health': { run: atlasHealthStage, deadlineMs: 10 * 60_000, maxAttempts: 2, description: 'Atlas: Monday client health in Slack (retainer, months, LTV, interested and booked vs KPI, interested → meeting rate, campaign health, 🟢/🟡/🔴 with reasons). Read only.' },
+  'cole.review': { run: coleReviewStage, deadlineMs: 30 * 60_000, maxAttempts: 2, description: 'Cole: review new Fathom sales calls (pacing, stages, objections vs Closers.io, 3 fixes with better lines) + a follow-up email draft in Slack. Draft only.' },
+  'sienna.ideas': { run: siennaIdeasStage, deadlineMs: 20 * 60_000, maxAttempts: 2, description: 'Sienna: Monday web research for video ideas with real demand → Content Center (Status Review). Nothing posted.' },
+  'sienna.prep': { run: siennaPrepStage, deadlineMs: 30 * 60_000, maxAttempts: 2, description: 'Sienna: Thursday scripts, titles, hooks, thumbnail and Gamma outline for ideas ticked Record This Week. Nothing posted.' },
   'account.health': { run: accountHealthStage, deadlineMs: 30 * 60_000, maxAttempts: 3, description: 'Account health loop: placement under 60% → rest 7 days at 0/day; retest → restore, or queue a replacement (1 .com + 2 Google accounts) for approval.' },
   'account.approve_purchase': { run: approvePurchaseStage, deadlineMs: 5 * 60_000, maxAttempts: 3, description: 'On ✅ of a replacement: tick Approve Purchase on the Spam Remediation Queue record.' },
   'bounce.investigate': { run: bounceInvestigateStage, deadlineMs: 15 * 60_000, maxAttempts: 3, description: 'Bounce agent: read a flagged campaign\'s bounce notices and inboxes, name the cause and one fix, post it as a Slack decision. Changes nothing.' },

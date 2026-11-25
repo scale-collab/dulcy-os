@@ -2,6 +2,11 @@
 
 Last updated: 2026-11-24 (full end-to-end run from Airtable done)
 
+
+## Next up (Alex, 2026-11-25)
+1. Switch on and check Atlas, Cole (needs FATHOM_API_KEY) and Sienna (morning list in `reports/morning-2026-11-25.md`).
+2. Then, in the terminal together: **campaign creation**, **inbox management** (Sean AI replier improvements, pinned earlier), and the **Content Center**.
+
 ## Now (2026-11-24)
 - **End-to-end done from the Airtable pages** on "[Dulcy Free Campaigns] new end to end testttt" (pet e-com): Generate filters → first 100 → Expand (2,011 companies, 1,957 usable) → contacts (1,518) → Verify (1,127 Good: 850 direct + 277 generic) → Skip enrichment → QA Passed (Ready) → spintax (n8n) → Build Campaign → EmailBison drafts **654** (Generic, 277) and **655** (Direct, 850), 1 inbox each, **not launched**. Launch/Pause was tested on 2026-11-23 (campaign 653).
 - **Alex decides:** launch or delete drafts 654/655 (they carry sample copy).
