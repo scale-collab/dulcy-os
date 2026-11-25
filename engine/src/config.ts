@@ -65,6 +65,10 @@ export interface Config {
   ledgerOn: boolean;
   /** Atlas: weekly client health (ATLAS=on) on Mondays after ATLAS_HOUR ET, to ATLAS_CHANNEL. */
   atlasOn: boolean;
+  /** Campaign creation (ATLAS_CAMPAIGNS=on): Atlas plans next campaigns every CAMPAIGN_PIPELINE_EVERY_MIN; at most CAMPAIGN_PLANS_MAX_OPEN at once. */
+  atlasCampaignsOn: boolean;
+  campaignPipelineEveryMin: number;
+  campaignPlansMaxOpen: number;
   atlasHour: number;
   atlasChannel: string;
   /** Cole: reviews Alex's sales calls from Fathom (COLE=on + FATHOM_API_KEY) every COLE_EVERY_MIN; at most COLE_MAX_PER_RUN calls a run. */
@@ -204,6 +208,9 @@ export function loadConfig(env = process.env): Config {
     ledgerPrepHour: num('LEDGER_PREP_HOUR', 7, env),
     ledgerPrepWrite: (env.LEDGER_PREP_WRITE || 'off').toLowerCase() === 'on',
     atlasOn: (env.ATLAS || 'off').toLowerCase() === 'on',
+    atlasCampaignsOn: (env.ATLAS_CAMPAIGNS || 'off').toLowerCase() === 'on',
+    campaignPipelineEveryMin: num('CAMPAIGN_PIPELINE_EVERY_MIN', 5, env),
+    campaignPlansMaxOpen: num('CAMPAIGN_PLANS_MAX_OPEN', 2, env),
     atlasHour: num('ATLAS_HOUR', 9, env),
     atlasChannel: (env.ATLAS_CHANNEL || env.ADA_CHANNEL || 'U070Z26377C').trim(),
     coleOn: (env.COLE || 'off').toLowerCase() === 'on',

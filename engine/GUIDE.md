@@ -526,3 +526,24 @@ Production Stage becomes "Script Ready". Nothing is posted.
 **Switch on:** `SIENNA=on`, and add `sienna.ideas,sienna.prep` to `LIVE_STAGES`.
 
 **Run now:** `agent sienna.ideas`, or `agent sienna.prep`.
+
+
+## Campaign creation, part 1: Atlas plans the next campaign (2026-11-25)
+
+**What starts it:** a client's active campaign passes 60% sent, or a paying client has no campaign yet. One new plan per check, at most 2 waiting at once (`CAMPAIGN_PLANS_MAX_OPEN`).
+
+**What happens, by itself:**
+1. **Atlas plans.** Reads the client's offer (Airtable), client file, past campaigns and the last 120 days of interested and objection replies. Picks the move with your SOP numbers (interested per email vs the agency average, campaigns with 500+ sent):
+   - 70%+ of the average → top off with lookalikes;
+   - 60–70% → top off, flagged;
+   - below 60% → same offer, new vertical;
+   - below and locked into one industry → new offer or copy test;
+   - no data yet → first campaign.
+   Writes one thesis (ICP, one pain, dream outcome, proof, structure) with **2 Email-1 angles**. Proof it can't find is written `UNKNOWN: ask Alex`, never made up.
+2. **Creates the Campaign and Lead List records** and presses **Generate Filters**.
+3. **Presses Run Company Sample** (first 100 companies, about $1) when the filters are done.
+4. **Approval 1 in Slack:** plan + ICP + sample result (fit / not fit). ✅ = sample approved + **Expand Companies** pressed. ❌ = stops; nothing more is spent.
+
+If a Lead List step fails, the plan stops (`stuck`) and you see it on the Lead List record. Nothing is sent or launched in part 1. Copy (part 2) and approval 2 + client approval + launch (part 3) come next.
+
+**Switch on:** `ATLAS_CAMPAIGNS=on`, and add `atlas.plan,campaign.pipeline,campaign.plan_approved` to `LIVE_STAGES`.

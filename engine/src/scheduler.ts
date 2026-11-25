@@ -134,6 +134,15 @@ export async function agentsTick(db: Db, cfg: Config, now = new Date()): Promise
   const q = async (kind: string, requestId: string) => { const d = STAGES[kind]; const r = await enqueue(db, { kind, recordId: kind.replace('.', '-'), input: {}, requestId, dryRun: !live(kind), maxAttempts: d.maxAttempts, deadlineMs: d.deadlineMs }); return r.status === 'queued' ? 1 : 0; };
   let n = 0;
   if (cfg.atlasOn && et.getDay() === 1 && et.getHours() >= cfg.atlasHour) n += await q('atlas.health', `atlas:${date}`);
+  if (cfg.atlasCampaignsOn && cfg.campaignPipelineEveryMin > 0) {
+    n += await q('campaign.pipeline', `campaign-pipeline:${Math.floor(now.getTime() / (cfg.campaignPipelineEveryMin * 60_000))}`);
+    // Plans the pipeline started are written one at a time (each is one Claude call).
+    for (const id of (await db.query(`SELECT id FROM campaign_plans WHERE state='planning' ORDER BY id LIMIT 1`)).rows.map((r: any) => Number(r.id))) {
+      const d = STAGES['atlas.plan'];
+      const r = await enqueue(db, { kind: 'atlas.plan', recordId: `atlas-plan-${id}`, input: { planId: id }, requestId: `atlas-plan:${id}`, dryRun: !live('atlas.plan'), maxAttempts: d.maxAttempts, deadlineMs: d.deadlineMs });
+      if (r.status === 'queued') n++;
+    }
+  }
   if (cfg.coleOn && cfg.fathomApiKey && cfg.coleEveryMin > 0) n += await q('cole.review', `cole:${Math.floor(now.getTime() / (cfg.coleEveryMin * 60_000))}`);
   if (cfg.siennaOn && et.getDay() === 1 && et.getHours() >= cfg.siennaIdeasHour) n += await q('sienna.ideas', `sienna-ideas:${date}`);
   if (cfg.siennaOn && et.getDay() === 4 && et.getHours() >= cfg.siennaPrepHour) n += await q('sienna.prep', `sienna-prep:${date}`);
@@ -141,7 +150,7 @@ export async function agentsTick(db: Db, cfg: Config, now = new Date()): Promise
 }
 
 export function startScheduler(db: Db, cfg: Config, signal: AbortSignal): void {
-  if ((!cfg.bounceCheckEveryMin || cfg.bounceCheckWorkspaces.length === 0) && !cfg.seanEveryMin && !cfg.accountHealthEveryMin && !cfg.adaBriefOn && !cfg.ledgerOn && !cfg.atlasOn && !cfg.coleOn && !cfg.siennaOn) return;
+  if ((!cfg.bounceCheckEveryMin || cfg.bounceCheckWorkspaces.length === 0) && !cfg.seanEveryMin && !cfg.accountHealthEveryMin && !cfg.adaBriefOn && !cfg.ledgerOn && !cfg.atlasOn && !cfg.atlasCampaignsOn && !cfg.coleOn && !cfg.siennaOn) return;
   const err = (e: unknown) => console.error(JSON.stringify({ level: 'error', message: 'scheduler tick failed', err: String(e) }));
   const tick = () => { void scheduleTick(db, cfg).catch(err); void seanTick(db, cfg).catch(err); void accountHealthTick(db, cfg).catch(err); void adaTick(db, cfg).catch(err); void ledgerTick(db, cfg).catch(err); void agentsTick(db, cfg).catch(err); };
   tick();

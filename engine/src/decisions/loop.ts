@@ -17,7 +17,7 @@ import { RA } from '../agents/emailsFields.js';
 const YES = new Set(['white_check_mark', 'heavy_check_mark', 'ballot_box_with_check', '+1']);
 const NO = new Set(['x', 'negative_squared_cross_mark', 'no_entry', 'no_entry_sign', '-1']);
 const NAMES: Record<string, string> = { U070Z26377C: 'Alex', U0ADSEJ9SDR: 'Josh' };
-const ACTIONS: Record<string, string> = { 'Send Reply': 'decision.send_reply', 'Resume Campaign': 'bounce.fix', 'Remove Inboxes and Resume': 'bounce.fix', 'Approve Purchase': 'account.approve_purchase' };
+const ACTIONS: Record<string, string> = { 'Send Reply': 'decision.send_reply', 'Resume Campaign': 'bounce.fix', 'Remove Inboxes and Resume': 'bounce.fix', 'Approve Purchase': 'account.approve_purchase', 'Approve Campaign Plan': 'campaign.plan_approved' };
 const ALL = Object.values(DF);
 
 const text = (v: unknown) => (v === undefined || v === null ? '' : typeof v === 'object' ? String((v as any).name ?? '') : String(v)).trim();

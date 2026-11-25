@@ -141,3 +141,18 @@ Format: `- [date] rule. (why / source)`
 - **When to ask:** only when it truly can't tell what the charge is.
 - **Check:** every such line is listed in the summary, and anything over $500 is flagged ⚠️ for Alex.
 - **Reason:** Alex wants the agent to reconcile, not to stop at every line Xero can't guess. First case: Anthropic, Opus Clip, Grok and Google Cloud → 6050 Software.
+
+## Campaign creation by the agents (Alex, 2026-11-25)
+- **When Atlas starts a client's next campaign on its own:** when a running campaign passes 60% sent, and when a new client finishes onboarding.
+- **Two approvals by Alex:**
+  1. The plan: thesis, ICP and the first-100 sample. This comes before credits are spent on the full list.
+  2. The final copy and list, before launch.
+- **Then the client approves the copy,** and only then does it launch.
+- **Reason:** agents do the campaign work. Alex keeps the two decisions that matter, and the client still signs off on what goes out in their name.
+- **Source process:** Alex's "2-Hour Cold Email Campaign SOP" (Drive), summarised in `sops/campaign-sop-summary.md`.
+
+## Cold email copy: proof, ask and testing (Alex, 2026-11-25)
+- **Proof:** at least 1 strong proof per email. More is better, as long as every extra proof is just as strong (no filler proof).
+- **The ask:** a call can be asked for, but not in the cold sequence unless it is the only logical next step. Default to a low-friction ask that needs a one-word reply.
+- **Testing:** one direction per campaign (one thesis), with **2 angles** of Email 1 that test something that makes a real difference: USP, pain point, solution angle and so on. Never trivial word swaps.
+- **Next campaign (top-up vs new angle vs new vertical vs new offer):** follow the rules in Alex's 2-Hour Cold Email Campaign SOP and his cold email doc (summary in `skills/atlas-campaign-operator/references/next-campaign-rules.md`).

@@ -254,3 +254,19 @@ CREATE TABLE IF NOT EXISTS cole_reviews (
   review        JSONB,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Campaign creation (Atlas, 2026-11-25): one row per trigger (campaign past 60%, or a new client).
+-- state: planning → filters → sample → approval1 → approved (→ part 2/3) | rejected | stuck
+CREATE TABLE IF NOT EXISTS campaign_plans (
+  id             SERIAL PRIMARY KEY,
+  trigger_key    TEXT NOT NULL UNIQUE,
+  ws_rec         TEXT NOT NULL,
+  client         TEXT NOT NULL DEFAULT '',
+  state          TEXT NOT NULL,
+  plan           JSONB,
+  lead_list_rec  TEXT,
+  campaign_rec   TEXT,
+  decision_rec   TEXT,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
