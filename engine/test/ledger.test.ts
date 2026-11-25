@@ -58,7 +58,7 @@ test('the Saturday report: buckets, split check, spend vs cap, late invoices, bi
   const d: LedgerData = {
     now, month: parseBankSummary(MONTH), pnl: parsePnl(PNL), errors: [],
     week: parseBankSummary(bankSummary([['Entry Checking', 0, 2500, 2500, 0], ['Fanbasis Holding', 0, 2000, 2000, 0], ['Pay Pal (USD)', 0, 500, 500, 0]])),
-    receivables: [{ contact: 'Twenty West', due: 3000, daysLate: 12 }, { contact: 'Lead Flo', due: 900, daysLate: 3 }],
+    receivables: [{ contact: 'Twenty West', due: 2000, daysLate: 12 }, { contact: 'Twenty West', due: 1000, daysLate: 9 }, { contact: 'Lead Flo', due: 900, daysLate: 3 }],
     bills: [{ contact: 'Cheap Inboxes', due: 120, daysUntil: 2 }, { contact: 'Far Away', due: 50, daysUntil: 40 }],
     books: { unreconciled: 4, lastReconciled: '2026-11-21' },
   };
@@ -74,6 +74,8 @@ test('the Saturday report: buckets, split check, spend vs cap, late invoices, bi
   assert.match(r, /\*Next payout \(2026-11-28\):\* owner \$3,000 · cards \$2,300 · tax→HYSA \$1,500/);
   assert.match(r, /1\. Fix the split: Treasury is off target\./);
   assert.match(r, /Chase Twenty West for \$3,000/);
+  const neg = writeLedgerReport({ now, errors: [], month: parseBankSummary(bankSummary([['Tax Account', 0, 0, 298, -298]])) });
+  assert.match(neg, /tax→HYSA nothing to move \(Xero shows -\$298: check the Tax account is reconciled\)/);
   const broken = writeLedgerReport({ now, errors: ['the Bank Summary (HTTP 403)'] });
   assert.match(broken, /couldn't read the Xero Bank Summary/);
   assert.match(broken, /_couldn't read the Bank Summary \(HTTP 403\)_/);

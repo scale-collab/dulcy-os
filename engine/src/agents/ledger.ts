@@ -133,7 +133,13 @@ export function writeLedgerReport(d: LedgerData): string {
     if (o.cap > 0 && o.spent > o.cap) top.push(`Spend is ${usd(o.spent - o.cap)} over the OPEX cap: grow revenue or cut costs.`);
   }
   if (d.receivables) {
-    const late = d.receivables.filter((r) => r.daysLate > 7 && r.due > 0).sort((a, b) => b.due - a.due);
+    // One line per client: the total that is more than 7 days late, and the oldest invoice's days.
+    const byClient = new Map<string, { contact: string; due: number; daysLate: number }>();
+    for (const r of d.receivables.filter((x) => x.daysLate > 7 && x.due > 0)) {
+      const e = byClient.get(r.contact) ?? { contact: r.contact, due: 0, daysLate: 0 };
+      e.due += r.due; e.daysLate = Math.max(e.daysLate, r.daysLate); byClient.set(r.contact, e);
+    }
+    const late = [...byClient.values()].sort((a, b) => b.due - a.due);
     lines.push(`*Owed to us:* ${late.length ? late.slice(0, 5).map((r) => `${r.contact} ${usd(r.due)} (${r.daysLate} days late)`).join(' · ') + (late.length > 5 ? ` · +${late.length - 5} more` : '') : 'nothing more than 7 days late'}`);
     if (late[0]) top.push(`Chase ${late[0].contact} for ${usd(late[0].due)} (${late[0].daysLate} days late).`);
   } else lines.push("*Owed to us:* couldn't read invoices");
@@ -150,7 +156,7 @@ export function writeLedgerReport(d: LedgerData): string {
   if (d.month) {
     const cards = d.month.filter((b) => CARD.test(b.name)).reduce((a, b) => a + (b.closing < 0 ? -b.closing : 0), 0);
     const owner = find(d.month, BUCKETS[1].match)?.closing; const tax = find(d.month, BUCKETS[2].match)?.closing;
-    lines.push(`*Next payout (${nextPayout(d.now)}):* owner ${owner === undefined ? 'UNKNOWN' : usd(owner)} · cards ${usd(cards)} · tax→HYSA ${tax === undefined ? 'UNKNOWN' : usd(tax)}`);
+    lines.push(`*Next payout (${nextPayout(d.now)}):* owner ${owner === undefined ? 'UNKNOWN' : usd(owner)} · cards ${usd(cards)} · tax→HYSA ${tax === undefined ? 'UNKNOWN' : tax > 0 ? usd(tax) : `nothing to move (Xero shows ${usd(tax)}: check the Tax account is reconciled)`}`);
   }
   for (const e of d.errors) lines.push(`_couldn't read ${e}_`);
   lines.push(`*Top ${Math.min(3, top.length) || 1} for you:* ${top.length ? top.slice(0, 3).map((t, i) => `${i + 1}. ${t}`).join('  ') : '1. Nothing urgent in the books.'}`);
