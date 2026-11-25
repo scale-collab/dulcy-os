@@ -3,7 +3,7 @@
 Order of authority: Alex's chat decisions (editing-style.md section 8) > this brief > the rest of editing-style.md. Not approval to post.
 
 ## Two founder styles (never interchangeable)
-- **Alex Woung Main:** polished full-length founder videos. References: Mitchell Keller, Nick Abraham and one more creator. That name differs between sources ("Nick Seddon" in this brief, "Nik Setting" in Alex's chat): UNKNOWN, ask Alex. Alex's own first Main batch he liked is the closest reference. Borrow clarity, pacing, visual explanation; never another creator's voice or branding.
+- **Alex Woung Main:** polished full-length founder videos. References: Mitchell Keller, Nick Abraham and **Nik Setting** (Alex confirmed 2026-11-25; "Nick Seddon" in the old brief was a misspelling). Alex's own first Main batch he liked is the closest reference. Borrow clarity, pacing, visual explanation; never another creator's voice or branding.
   - Keep his voice: direct, conversational. Trim false starts, retakes, empty pauses, tangents, glitches, repeated points, awkward transitions; keep the setup an example needs.
   - Visuals light and useful, made with **OpusClip's own long-form Graphics/Text / motion graphics** (not Picsart, not generic AI B-roll): a small label, a simple diagram, a real example, a readable crop of a real screen share. The web editor may have controls the connector lacks: check the native editor before saying a feature doesn't exist.
   - Keep genuine demos (spreadsheet, page). On Main portrait Shorts a split is fine when it is **one speaker + a real screen share**; never two copies of the same face or slide.

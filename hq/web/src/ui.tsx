@@ -279,12 +279,8 @@ export function BackLink({ label, onClick }: { label: string; onClick: () => voi
 }
 
 export function Logo({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 64 64" aria-hidden="true" className={cx('shrink-0', className)}>
-      <rect width="64" height="64" rx="16" fill="#111827" />
-      <path d="M21 18h11c8.8 0 15 6 15 14s-6.2 14-15 14H21z" fill="none" stroke="#6ee7b7" strokeWidth="6" strokeLinejoin="round" />
-    </svg>
-  );
+  // The real Dulcy mark (from dulcy.io), served with the app.
+  return <img src={`${import.meta.env.BASE_URL}dulcy-mark.png`} alt="" aria-hidden="true" draggable={false} className={cx('shrink-0 rounded-[22%]', className)} />;
 }
 
 /* ---------- Text helpers ---------- */
