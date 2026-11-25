@@ -312,7 +312,7 @@ export function loadConfig(env = process.env): Config {
     hqGoogleTokenUrl: env.HQ_GOOGLE_TOKEN_URL || 'https://oauth2.googleapis.com/token',
     hqWebDir: env.HQ_WEB_DIR || '/app/hq-web',
     hqChatMaxRounds: num('HQ_CHAT_MAX_ROUNDS', 4, env),
-    hqChatMaxTokens: num('HQ_CHAT_MAX_TOKENS', 2000, env),
+    hqChatMaxTokens: num('HQ_CHAT_MAX_TOKENS', 4000, env),
     slackReportsOn: (env.SLACK_REPORTS || 'on').toLowerCase() !== 'off',
     slackDecisionsOn: (env.SLACK_DECISIONS || 'on').toLowerCase() !== 'off',
   };
