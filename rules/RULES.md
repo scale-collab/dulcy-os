@@ -220,7 +220,7 @@ Format: `- [date] rule. (why / source)`
 - **Also:** the to-do in HQ is "Needs you" (what the agents need from Alex), not another project-management list.
 
 ## How agents report to Alex: Problem → Data → Fix (Alex, 2026-11-25)
-- **Rule:** every summary, report, decision card and agent message is straight to the point, in this order:
+- **Rule (clarified by Alex the same day: a guide, not a form for every message):** the point is no big blocks of text; everything easy to read at a glance. When a summary explains a problem, use this order:
   1. **Problem:** one line, what's wrong or what's needed.
   2. **Data:** the exact numbers that show it (no invented percentages).
   3. **Proposed fix:** what to do, by whom.
