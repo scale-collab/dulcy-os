@@ -50,6 +50,16 @@ export const bounceInvestigateStage: Stage = async (ctx) => {
     const prov = await providersFor(read.map((x) => x.recipient.split('@')[1]?.toLowerCase() ?? ''));
     return read.map((x) => ({ ...x, provider: prov.get(x.recipient.split('@')[1]?.toLowerCase() ?? '') ?? 'Unknown' }));
   });
+  // Step 3 baseline: which mail servers the campaign's leads use (a sample of up to 10 pages of leads).
+  const leadProviders = await ctx.step('lead-providers', async () => {
+    try {
+      const emails = await b.campaignLeadEmailsSample(id, 10);
+      const prov = await providersFor(emails.map((e) => e.split('@')[1] ?? ''));
+      const m: Record<string, number> = {};
+      for (const e of emails) { const p = prov.get(e.split('@')[1] ?? '') ?? 'Unknown'; m[p] = (m[p] ?? 0) + 1; }
+      return m;
+    } catch { return {}; }
+  });
   // Numbers from the bounce check, or read here when run by hand.
   let st = { bounce: Number(i.bounce) || 0, contacted: Number(i.contacted) || 0, bounced: Number(i.bounced) || 0, progress: Number(i.progress) || 0, status: '' };
   if (!st.contacted) {
@@ -58,7 +68,7 @@ export const bounceInvestigateStage: Stage = async (ctx) => {
   }
   if (!i.name) i.name = `campaign ${id}`;
   const paused = i.paused === undefined ? st.status !== 'active' : i.paused !== false;
-  const d = diagnose({ ...st, paused }, inboxes, notices);
+  const d = diagnose({ ...st, paused }, inboxes, notices, new Map(Object.entries(leadProviders)));
   const state = paused ? 'Paused' : 'Still sending (Skip Bounce Pause ticked)';
 
   let decisionId = '';

@@ -61,7 +61,7 @@ const GENERIC = /^(info|contact|office|hello|enquiries|inquiries|sales|admin|sup
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 
 export interface InboxStat { id: string; email: string; status: string; sent: number; bounced: number }
-export interface Bounce { senderId: string; recipient: string; kind: BounceKind; gateway: string; code?: string; spamHint?: 'domain' | 'copy' | ''; provider?: string; sample?: string }
+export interface Bounce { senderId: string; recipient: string; kind: BounceKind; gateway: string; code?: string; spamHint?: 'domain' | 'copy' | ''; provider?: string; sample?: string; urlListed?: boolean }
 
 /** The most telling line of a notice (the one with the SMTP code or the reason), emails masked, max 180 chars. */
 function sampleLine(text: string): string {
@@ -80,6 +80,7 @@ export function readBounce(r: any, ourInboxes: Set<string>): Bounce {
     senderId: String(r?.sender_email_id ?? ''), recipient: leadEmail || found[0] || '', kind, gateway: gatewayOf(text), code: codeOf(text),
     spamHint: kind !== 'blocked' ? '' : DOMAIN_SIGNS.test(text) ? 'domain' : COPY_SIGNS.test(text) ? 'copy' : '',
     sample: sampleLine(text),
+    urlListed: kind === 'blocked' && /a url in this email|surbl|uribl|sophosxl|uri\.|listed .*uri/i.test(text),
   };
 }
 
@@ -99,7 +100,7 @@ const domainOf = (email: string) => String(email ?? '').split('@')[1]?.toLowerCa
 const top = (m: Map<string, number>, k = 4) => [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, k);
 const count = <T>(xs: T[], key: (x: T) => string) => { const m = new Map<string, number>(); for (const x of xs) { const k = key(x); if (k) m.set(k, (m.get(k) ?? 0) + 1); } return m; };
 
-export function diagnose(c: { bounce: number; contacted: number; bounced: number; progress: number; paused?: boolean }, inboxes: InboxStat[], bounces: Bounce[]): Diagnosis {
+export function diagnose(c: { bounce: number; contacted: number; bounced: number; progress: number; paused?: boolean }, inboxes: InboxStat[], bounces: Bounce[], leadProviders?: Map<string, number>): Diagnosis {
   const hold = c.paused === false ? 'Pause it (Skip Bounce Pause is ticked, so it is still sending)' : 'Keep it paused';
   const n = bounces.length;
   const by = (k: BounceKind) => bounces.filter((b) => b.kind === k).length;
@@ -111,7 +112,12 @@ export function diagnose(c: { bounce: number; contacted: number; bounced: number
   const providers = count(bounces, (b) => b.provider ?? '');
   const withProvider = [...providers.values()].reduce((a, b) => a + b, 0);
   const segTop = top(new Map([...providers.entries()].filter(([p]) => isSeg(p))), 1)[0];
-  const stopSendingTo = segTop && withProvider >= 5 && segTop[1] / withProvider >= 0.5 ? segTop[0] : '';
+  // Compare with the share of all leads on that provider: 77% of bounces means little if 77% of the list is there too.
+  const leadTotal = leadProviders ? [...leadProviders.values()].reduce((a, b) => a + b, 0) : 0;
+  const leadShare = (p: string) => (leadTotal >= 50 ? (leadProviders!.get(p) ?? 0) / leadTotal : null);
+  const segLead = segTop ? leadShare(segTop[0]) : null;
+  const overRepresented = segTop ? segLead === null || segTop[1] / withProvider >= 1.5 * segLead : false;
+  const stopSendingTo = segTop && withProvider >= 5 && segTop[1] / withProvider >= 0.5 && overRepresented ? segTop[0] : '';
 
   // Step 2 inputs: blocks by our inbox and by our sending domain.
   const inboxById = new Map(inboxes.map((i) => [i.id, i]));
@@ -124,6 +130,8 @@ export function diagnose(c: { bounce: number; contacted: number; bounced: number
   // A domain is the problem only when its blocks come from 2+ of its inboxes (one inbox alone = that account).
   const inboxesBlockedOn = (d: string) => inboxes.filter((i) => domainOf(i.email) === d && (blocksByInbox.get(i.id) ?? 0) > 0).length;
   const burnedDomains = [...ourDomains].filter((d) => (blocksByDomain.get(d) ?? 0) >= 5 && (blocksByDomain.get(d) ?? 0) >= 3 * fairDomain && inboxesBlockedOn(d) >= 2);
+  const burnedShare = blocked ? burnedInboxes.reduce((a, i) => a + (blocksByInbox.get(i.id) ?? 0), 0) / blocked : 0;
+  const urlListed = blockedOnes.filter((b) => b.urlListed).length;
   const domainHints = blockedOnes.filter((b) => b.spamHint === 'domain').length, copyHints = blockedOnes.filter((b) => b.spamHint === 'copy').length;
   const tlds = count([...ourDomains], (d) => d.split('.').pop() ?? '');
   const mainTld = top(tlds, 1)[0]?.[0] ?? '';
@@ -133,11 +141,13 @@ export function diagnose(c: { bounce: number; contacted: number; bounced: number
     `Bounce ${c.bounce}% (${c.bounced} of ${c.contacted} contacted) at ${c.progress}% progress.`,
     n ? `Step 1, bounce codes (${n} notices read): not found / verification ${bad} (${pct(bad, n)}%), blocked / spam ${blocked} (${pct(blocked, n)}%), mailbox full ${full}, other ${other}. Top codes: ${top(codes).map(([k, v]) => `${k} ×${v}`).join(', ') || 'none readable'}.` : 'No bounce notices found in the bounced folder for this campaign.',
     blocked ? `Step 2, spam blocks: ${domainHints} point at our domain (blacklist / reputation / SPF-DKIM-DMARC), ${copyHints} at the copy (content / links). Blocks by our sending domain: ${top(blocksByDomain).map(([k, v]) => `${k} ${v}`).join(', ') || 'none'} (${ourDomains.size} domains${riskyTld ? `, mostly .${riskyTld}` : ''}). Busiest inbox: ${top(blocksByInbox, 1).map(([k, v]) => `${inboxById.get(k)?.email ?? k} ${v}`).join('') || 'none'}.` : '',
-    withProvider ? `Step 3, where the bounces land: ${top(providers, 6).map(([k, v]) => `${k} ${v} (${pct(v, withProvider)}%)`).join(', ')}.` : '',
+    withProvider ? `Step 3, where the bounces land: ${top(providers, 6).map(([k, v]) => `${k} ${v} (${pct(v, withProvider)}%${leadShare(k) !== null ? ` of bounces vs ${Math.round(leadShare(k)! * 1000) / 10}% of leads` : ''})`).join(', ')}.${segTop && !overRepresented && segTop[1] / withProvider >= 0.5 ? ` ${segTop[0]} gets about its normal share of the list, so it is not singled out.` : ''}` : '',
     n ? `Generic inboxes (info@, sales@…) among the bounces: ${generic} (${pct(generic, n)}%).` : '',
     ...(['blocked', 'bad_address'] as BounceKind[]).map((k) => { const ex = bounces.find((b) => b.kind === k && b.sample); return ex ? `Example ${k === 'blocked' ? 'block' : 'not found'} (${ex.provider ?? '?'}): "${ex.sample}"` : ''; }),
   ].filter(Boolean);
 
+  const urlLine = urlListed ? ` ${urlListed} blocks say a link to our own domain in the email is on a link blacklist (SURBL / URIBL): take links to our sending domains out of the email (signature, website link, tracking).` : '';
+  const domainLine = domainHints >= 5 ? ` Also: ${domainHints} blocks name a blacklist or reputation for our domains: check them in the Spam Center.${urlLine}` : '';
   const segLine = stopSendingTo ? ` Also: ${pct(segTop![1], withProvider)}% of the bounces land on ${stopSendingTo}: stop sending to ${stopSendingTo} recipients (remove those leads before the next send).` : '';
   const base = { facts, removeSenderIds: [] as string[], stopSendingTo };
   if (c.contacted < 150) return { ...base, cause: 'early', headline: 'Too early to judge', fix: `Only ${c.contacted} leads contacted, so a few bounces move the rate a lot. Resume and re-check after 300+ contacted.`, action: 'Resume Campaign' };
@@ -146,13 +156,13 @@ export function diagnose(c: { bounce: number; contacted: number; bounced: number
   // Step 1: verification vs spam.
   if (bad / n >= 0.5 || (bad / n >= 0.4 && bad >= 2 * blocked)) {
     return { ...base, cause: 'verification', headline: 'Verification problem: addresses not found',
-      fix: `${pct(bad, n)}% of bounces are addresses that do not exist (${top(codes, 2).map(([k]) => k).join(', ')}), so it is the list${generic / n >= 0.4 ? ` (mostly generic inboxes: ${pct(generic, n)}%)` : ''}. ${hold}. Re-verify the leads not yet contacted (MillionVerifier) and remove the risky / catch-all ones, then resume.${segLine}`, action: 'None' };
+      fix: `${pct(bad, n)}% of bounces are addresses that do not exist (${top(count(bounces.filter((b) => b.kind === 'bad_address'), (b) => b.code ?? ''), 2).map(([k]) => k).join(', ') || 'no code'}), so it is the list${generic / n >= 0.4 ? ` (mostly generic inboxes: ${pct(generic, n)}%)` : ''}. ${hold}. Re-verify the leads not yet contacted (MillionVerifier) and remove the risky / catch-all ones, then resume.${domainLine}${segLine}`, action: 'None' };
   }
   // Blacklist / reputation blocks across several of our domains = the domains (on one inbox only = that account, below).
   const hintedDomains = new Set(blockedOnes.filter((b) => b.spamHint === 'domain').map((b) => domainOf(inboxById.get(b.senderId)?.email ?? '')).filter(Boolean));
   if ((blocked / n >= 0.4 || blocked > bad) && domainHints / Math.max(1, blocked) >= 0.5 && hintedDomains.size >= 2) {
     return { ...base, cause: 'domain', headline: 'Spam problem: our sending domains (blacklist / reputation)',
-      fix: `${domainHints} of ${blocked} blocks name a blacklist, reputation or SPF/DKIM/DMARC, so the receiving servers distrust our domains${riskyTld ? ` (.${riskyTld})` : ''}. ${hold}. Check the ${ourDomains.size} domains in the Spam Center (blacklists, authentication) and rest or replace the listed ones before resuming.${segLine}`, action: 'None' };
+      fix: `${domainHints} of ${blocked} blocks name a blacklist, reputation or SPF/DKIM/DMARC, so the receiving servers distrust our domains${riskyTld ? ` (.${riskyTld})` : ''}. ${hold}. Check the ${ourDomains.size} domains in the Spam Center (blacklists, authentication) and rest or replace the listed ones before resuming.${urlLine}${segLine}`, action: 'None' };
   }
   if (stopSendingTo && blocked / n >= 0.3) {
     return { ...base, cause: 'gateway', headline: `${stopSendingTo} takes ${pct(segTop![1], withProvider)}% of the bounces`,
@@ -160,13 +170,13 @@ export function diagnose(c: { bounce: number; contacted: number; bounced: number
   }
   if (blocked / n >= 0.4 || blocked > bad) {
     // Step 2: domain, account or copy.
-    if (burnedInboxes.length && burnedInboxes.length <= Math.max(1, Math.floor(inboxes.length * 0.5)) && !burnedDomains.length) {
+    if (burnedInboxes.length && burnedShare >= 0.4 && burnedInboxes.length <= Math.max(1, Math.floor(inboxes.length * 0.5)) && !burnedDomains.length) {
       return { ...base, cause: 'account', headline: `Spam problem: ${burnedInboxes.length} email account${burnedInboxes.length > 1 ? 's' : ''}`, removeSenderIds: burnedInboxes.map((i) => i.id),
         fix: `The blocks come mostly from ${burnedInboxes.map((i) => i.email).join(', ')}. Remove ${burnedInboxes.length > 1 ? 'them' : 'it'} from this campaign (rest and check in the Spam Center), then resume with the other ${inboxes.length - burnedInboxes.length}.${segLine}`, action: 'Remove Inboxes and Resume' };
     }
     if (burnedDomains.length || domainHints / Math.max(1, blocked) >= 0.3 || riskyTld) {
       return { ...base, cause: 'domain', headline: `Spam problem: our sending domain${burnedDomains.length > 1 ? 's' : ''}`,
-        fix: `${burnedDomains.length ? `Blocks cluster on ${burnedDomains.join(', ')}. ` : ''}${domainHints ? `${domainHints} notices name a blacklist, reputation or SPF/DKIM/DMARC. ` : ''}${riskyTld ? `The inboxes send from .${riskyTld} domains, which mail filters distrust. ` : ''}${hold}. Check the domains in the Spam Center (blacklists, authentication)${riskyTld ? ' and plan new .com domains' : ''} before resuming.${segLine}`, action: 'None' };
+        fix: `${burnedDomains.length ? `Blocks cluster on ${burnedDomains.join(', ')}. ` : ''}${domainHints ? `${domainHints} notices name a blacklist, reputation or SPF/DKIM/DMARC. ` : ''}${riskyTld ? `The inboxes send from .${riskyTld} domains, which mail filters distrust. ` : ''}${hold}. Check the domains in the Spam Center (blacklists, authentication)${riskyTld ? ' and plan new .com domains' : ''} before resuming.${urlLine}${segLine}`, action: 'None' };
     }
     return { ...base, cause: 'copy', headline: 'Spam problem: likely the email copy',
       fix: `Blocks are spread over all ${inboxes.length} inboxes and ${ourDomains.size} domains${copyHints ? `, and ${copyHints} notices point at the content` : ''}, so the email itself is the likely cause. ${hold}. Review the copy (links, tracking, spam words, images) and run a placement test before resuming.${segLine}`, action: 'None' };
