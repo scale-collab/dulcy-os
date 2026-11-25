@@ -140,9 +140,34 @@ export const ledgerPrepStage: Stage = async (ctx) => {
   const invoices = (await xero.pages('Invoices', 'Invoices', { Statuses: 'AUTHORISED', summaryOnly: 'true' }, 10))
     .filter((v) => v.Type === 'ACCREC' && Number(v.AmountDue) > 0).map((v) => ({ id: String(v.InvoiceID), contact: String(v.Contact?.Name ?? ''), due: Number(v.AmountDue) }));
   const prior = (await ctx.db.query(`SELECT mercury_id, action FROM ledger_entries`)).rows;
-  const done = new Set(prior.filter((r) => r.action !== 'asked').map((r) => String(r.mercury_id)));
+  const done = new Set(prior.filter((r) => r.action !== 'asked' && r.action !== 'flagged').map((r) => String(r.mercury_id)));
   const askedBefore = new Set(prior.filter((r) => r.action === 'asked').map((r) => String(r.mercury_id)));
   const plan = planPrep({ txns, banks, existing: existingFrom(yearTxns, transfers, payments), invoices, vendorCodes: vendorCodesFrom(yearTxns), done });
+
+  // Checker mode (default, Alex 2026-11-25): never writes to Xero. Lines still not in Xero after
+  // 3 days are flagged once in Slack; Claude in Chrome clicks OK on Xero's suggestions on Fridays.
+  if (!cfg.ledgerPrepWrite && ctx.job.input.write !== true) {
+    const cutoff = now.getTime() - 3 * DAY;
+    const flaggedBefore = new Set(prior.filter((r) => r.action === 'flagged').map((r) => String(r.mercury_id)));
+    let inXero = 0; const stuck: { t: MercuryTxn; hint: string }[] = [];
+    for (const a of plan) {
+      if (a.kind === 'exists') { inXero++; if (!ctx.dryRun) await ctx.db.query(`INSERT INTO ledger_entries (mercury_id, action, detail) VALUES ($1,'exists',$2) ON CONFLICT (mercury_id) DO UPDATE SET action='exists', updated_at=now()`, [a.txn.id, JSON.stringify({ line: line(a.txn) })]); continue; }
+      if (Date.parse(a.txn.postedAt) > cutoff) continue; // give Xero and the Friday run time
+      const hint = a.kind === 'ask' ? a.why : a.kind === 'transfer' ? `should be a transfer ${a.from.name} → ${a.to.name}` : a.kind === 'payment' ? `should be a payment on ${a.invoice.contact}'s invoice` : `should be spend → account ${a.code}`;
+      stuck.push({ t: a.txn, hint });
+    }
+    const fresh = stuck.filter((x) => !flaggedBefore.has(x.t.id));
+    if (!ctx.dryRun) for (const x of fresh) await ctx.db.query(`INSERT INTO ledger_entries (mercury_id, action, detail) VALUES ($1,'flagged',$2) ON CONFLICT (mercury_id) DO UPDATE SET action='flagged', detail=EXCLUDED.detail, updated_at=now()`, [x.t.id, JSON.stringify({ line: line(x.t), hint: x.hint })]);
+    const summary = `${txns.length} Mercury lines checked: ${inXero} in Xero, ${stuck.length} not in Xero after 3+ days (${fresh.length} new)`;
+    if (!ctx.dryRun && cfg.slackBotToken && fresh.length && ctx.job.input.post !== false) {
+      const text = [`*Ledger: not reconciled yet* (${stuck.length} Mercury line${stuck.length === 1 ? '' : 's'} older than 3 days are not in Xero)`,
+        ...fresh.slice(0, 20).map((x) => `• ${line(x.t)}: ${x.hint}`), fresh.length > 20 ? `…and ${fresh.length - 20} more` : '',
+        'Friday: open Xero in Chrome and tell Claude "reconcile Xero" (agents/ledger-reconcile-chrome.md).'].filter(Boolean).join('\n');
+      const slack = createSlackClient({ token: cfg.slackBotToken, baseUrl: cfg.slackBaseUrl });
+      await ctx.paid({ callKey: `ledger-check-post:${etYmd(now)}`, provider: 'slack', units: 0, run: () => slack.post(cfg.ledgerChannel, text), dryRunResult: () => ({ channel: '', ts: '' }) });
+    }
+    return { message: `Reconciliation check: ${summary}`, made: [], asks: stuck.map((x) => `• ${line(x.t)}: ${x.hint}`), failed: [], mercuryLines: txns.length, mode: 'check' };
+  }
 
   const made: string[] = []; const asks: string[] = []; const failed: string[] = []; let exists = 0;
   const record = (id: string, action: string, xeroId: string | null, detail: unknown) => ctx.dryRun ? Promise.resolve() : ctx.db.query(

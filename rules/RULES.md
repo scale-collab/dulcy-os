@@ -126,3 +126,12 @@ Format: `- [date] rule. (why / source)`
 - **When unsure:** lines it can't code are asked about in Slack.
 - **Reason:** Alex wants the agent to do the reconciling. Xero's API cannot tick "reconcile", so Ledger creates exact matches and Xero's auto-reconcile clears them.
 - **Data:** Ledger reads Mercury with a read-only token (`MERCURY_TOKEN`).
+
+## Ledger checks; Claude in Chrome confirms on Fridays (Alex, 2026-11-25)
+- **Supersedes the "Ledger may write to Xero" rule above.** Ledger runs in **checker mode** (`LEDGER_PREP_WRITE=off`) and never writes to Xero.
+- **Every day,** Ledger compares Mercury with Xero and flags, once in Slack, any line still not in Xero after 3 days.
+- **Every Friday,** reconciling is done by **Claude in Chrome**: Alex says "reconcile Xero". The routine is in `agents/ledger-reconcile-chrome.md`. It clicks OK only on Xero's own clear suggestions and skips anything unclear.
+- **Reason:**
+  - Xero's API and the Xero connector cannot read or reconcile the Reconcile screen (Xero policy).
+  - Xero auto-reconcile is not available on Dulcy's plan.
+  - Ledger writing entries alongside Xero's own suggestions could create duplicates.
