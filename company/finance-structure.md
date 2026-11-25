@@ -26,9 +26,9 @@ Rules: money is not moved between accounts. Expenses must fit inside the OPEX 40
 
 ## Spending
 - All payments go on **American Express Business cards** (Platinum, Plus, Gold) and sometimes the **Chase Business Cash Back** card. Not debit cards.
-- These cards are not in Mercury, so the Mercury connector does not show them. Ledger reads them from Xero's bank feeds (UNKNOWN which card feeds are connected).
+- These cards are not in Mercury, so the Mercury connector does not show them. All cards (AmEx Platinum, Plus, Gold and Chase) feed into Xero (Alex, 2026-11-25).
 
-## Twice-monthly manual run (Lucid says "14th & 18th", likely a typo; UNKNOWN exact days)
+## Twice-monthly manual run: the 14th and 28th (Alex, 2026-11-25)
 1. Pay out Owner's Comp.
 2. Pay off the card statement balances.
 3. Pay employees.
