@@ -5,7 +5,7 @@ Owner: **Sienna**. Goal: fluid from idea to posted, with Alex approving ideas an
 ## The week
 - **Friday morning:** Alex records. By then the ideas and scripts must be ready.
 - **Per week (Content Automation Settings):** main channel **Alex Woung** 2 finished videos; secondary **Alex Woung Raw** 4-5.
-- **Ideas to approve:** the videos needed plus a handful more (main 4, Raw 8 at today's settings). Sienna adds them Monday; Alex approves with a recording date; Sienna writes scripts Thursday.
+- **Ideas to approve:** the videos needed plus a handful more (main 4, Raw 8 at today's settings). Sienna adds them Friday morning (for the next Friday); Alex approves with a recording date; Sienna writes scripts Thursday.
 
 ## Sources (Lucid "Content Systems That Don't Drain You")
 Ideas come from all of these (Reddit is one source, not the only one):
@@ -29,5 +29,5 @@ YouTube long form → YouTube Shorts · Instagram Reels / Story sequence · X gi
 4. Folder → Frame.io auto upload; real Gamma docs.
 
 ## Open
-- Agency Ignition: how Sienna can read it (UNKNOWN: public posts only via web search today).
+- Agency Ignition = Alex's Discord. Engine reader built; needs a read-only bot token and the channel IDs on the server.
 - Social comments on Alex's own posts: needs YouTube / Instagram access (UNKNOWN).

@@ -131,7 +131,7 @@ test('Sienna: the coming Friday (ET) and stable idea keys', () => {
   assert.equal(slug('Cold Email in 2027: What Still Works?'), 'cold-email-in-2027-what-still-works');
 });
 
-test('timers: Atlas Monday after its hour; Sienna Monday ideas and Thursday scripts; all off by default', async () => {
+test('timers: Atlas Monday after its hour; Sienna Friday-morning ideas and Thursday scripts; all off by default', async () => {
   const cfg = loadConfig({ ENGINE_SECRET: 'x'.repeat(40), DATABASE_URL: 'postgres://x' } as NodeJS.ProcessEnv);
   assert.equal(await agentsTick(null as any, cfg, new Date('2026-11-30T15:00:00Z')), 0, 'all off');
   assert.equal(await agentsTick(null as any, { ...cfg, atlasOn: true, siennaOn: true }, new Date('2026-12-01T15:00:00Z')), 0, 'Tuesday: nothing');
@@ -258,4 +258,20 @@ test('Sienna idea quota: the week\'s videos plus a handful more (main 2 → 4, R
   assert.equal(ideaQuota(2), 4);
   assert.equal(ideaQuota(5), 8);
   assert.equal(ideaQuota(1), 3);
+});
+
+test('Agency Ignition (Discord): questions from the last 7 days, anonymous, bots and small talk dropped', async () => {
+  const { communityQuestions } = await import('../src/providers/discord.js');
+  const now = new Date('2026-11-27T12:00:00Z');
+  const msgs = [
+    { id: '1', content: 'How do you guys warm up new domains before the first campaign? <@123456> any tips', timestamp: '2026-11-26T10:00:00Z' },
+    { id: '2', content: 'gm', timestamp: '2026-11-26T10:00:00Z' },
+    { id: '3', content: 'What is the best way to price a pay per meeting deal? see https://x.com/a', timestamp: '2026-11-25T10:00:00Z' },
+    { id: '4', content: 'How do I scale past 3 clients without hiring?', timestamp: '2026-11-10T10:00:00Z' },
+    { id: '5', content: 'Reminder: call is at 3pm, anyone joining?', timestamp: '2026-11-26T10:00:00Z', author: { bot: true } },
+  ];
+  const q = communityQuestions(msgs as any, now);
+  assert.equal(q.length, 2);
+  assert.match(q[0], /@someone/);
+  assert.match(q[1], /\[link\]/);
 });

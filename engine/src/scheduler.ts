@@ -153,7 +153,8 @@ export async function agentsTick(db: Db, cfg: Config, now = new Date()): Promise
   if (cfg.hqSessionSecret && cfg.airtableApiKey) n += await q('atlas.tasks', `atlas-tasks:${Math.floor(now.getTime() / (30 * 60_000))}`);
   if (cfg.rileyOn && cfg.rileyEveryMin > 0) n += await q('riley.collect', `riley:${Math.floor(now.getTime() / (cfg.rileyEveryMin * 60_000))}`);
   if (cfg.coleOn && cfg.fathomApiKey && cfg.coleEveryMin > 0) n += await q('cole.review', `cole:${Math.floor(now.getTime() / (cfg.coleEveryMin * 60_000))}`);
-  if (cfg.siennaOn && et.getDay() === 1 && et.getHours() >= cfg.siennaIdeasHour) n += await q('sienna.ideas', `sienna-ideas:${date}`);
+  // Alex 2026-11-25: ideas land Friday morning (for the next Friday's recording); scripts Thursday.
+  if (cfg.siennaOn && et.getDay() === 5 && et.getHours() >= cfg.siennaIdeasHour) n += await q('sienna.ideas', `sienna-ideas:${date}`);
   if (cfg.siennaOn && et.getDay() === 4 && et.getHours() >= cfg.siennaPrepHour) n += await q('sienna.prep', `sienna-prep:${date}`);
   return n;
 }
