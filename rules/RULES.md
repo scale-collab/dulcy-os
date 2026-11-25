@@ -213,3 +213,8 @@ Format: `- [date] rule. (why / source)`
 - **Follow-up:** every interested lead gets a follow-up every 3 days until they book, say no, or are recycled. Replies are answered within 1 hour, weekends included.
 - **Why:** Twenty West: 282 interested → 11 booked; the first reply sent a booking link 102 times and a vague ask 110 times, and 165 leads got no follow-up.
 - **Open:** in the Reply Agent settings only Dulcy's calendar is connected; the other clients are "Not Connected" with times switched off, so Sean falls back to the link. Fix: read each client's shared calendar.
+
+## HQ: built for phone and desktop (Alex, 2026-11-25)
+- **Rule:** every HQ screen is designed and checked on both phone (390 px) and desktop (1440 px), light and dark, before it ships. Big tap targets on phone, no sideways scroll.
+- **Why:** Alex likes the mobile version and uses both.
+- **Also:** the to-do in HQ is "Needs you" (what the agents need from Alex), not another project-management list.
