@@ -343,3 +343,16 @@ Your rule: keep following up on a positive reply until they answer or say stop.
 3. **Approve.** Same as replies: the draft lands on the row (Reply Queue) and in Slack as "Follow-up N to …". ✅ or Approve sends it. Nothing goes out without you.
 4. **How many.** The client's **Follow-up Plan JSON** (Reply Agent settings: steps with a delay and what each should do). No plan saved: 3 follow-ups at 2, 3 and 5 business days. Then one polite close-the-loop note 7 days later, then the thread is marked **Thread Complete**. A plan with `enabled: false` means no follow-ups for that client.
 5. **Stops.** Any answer from the prospect, a stop or unsubscribe, booked/closed, Not Interested, DNC or client-handled. If the prospect wrote, it becomes a normal reply for Sean. If someone already followed up by hand after the draft, the sender refuses to send a second one.
+
+## Bounce agent (Atlas, 2026-11-25)
+Your rule: over 4% bounce = pause and investigate (copy, inboxes, list quality, security gateways).
+1. **When.** Every bounce check. Each campaign it pauses, or flags over 4% with Skip Bounce Pause ticked, goes to the bounce agent (once every 3 days per campaign).
+2. **What it reads.** The campaign's bounce notices in EmailBison (up to 5 pages) and its inboxes (sends and bounces per inbox). Each bounce is sorted: *address does not exist* (list), *blocked / spam / policy* (inboxes or filters), *mailbox full*, other. Security gateways (Mimecast, Proofpoint, Barracuda, Microsoft…) are named.
+3. **Cause + one fix**, posted to Slack as a decision ("Bounce 6% on …: …"):
+   - **A few inboxes are being blocked** → On ✅: those inboxes are removed from the campaign and it resumes.
+   - **Too early to judge** (under 150 contacted) → On ✅: resume.
+   - **The list has bad addresses** → keep paused; re-verify the leads not yet contacted and remove risky ones (proposed, Atlas prepares it).
+   - **A security gateway is filtering** → keep paused; remove those leads or send them plain text (proposed).
+   - **Blocked across all inboxes / mixed** → keep paused; check the Spam Center and the copy.
+4. **After a fix**, Skip Bounce Pause is ticked on the campaign (the bounce % counts every email so far, so it would pause again). The watch alert still shows; untick it when the rate is back under 4%.
+5. **Switch:** `bounce.investigate` and `bounce.fix` in LIVE_STAGES. Without them it runs as a test and posts nothing.

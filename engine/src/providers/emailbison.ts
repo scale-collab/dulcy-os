@@ -219,6 +219,23 @@ export function createBisonClient(o: BisonOptions) {
     /** EmailBison allows sender changes only while the campaign is a draft or paused. */
     removeSenders: (campaignId: number, senderIds: string[]) =>
       call('DELETE', `/api/campaigns/${campaignId}/remove-sender-emails`, { sender_email_ids: senderIds.map(String) }, { write: true }),
+    /** The campaign's inboxes with their (lifetime) send and bounce counts, for the bounce investigation. */
+    async campaignSenderStats(campaignId: number): Promise<{ id: string; email: string; status: string; sent: number; bounced: number; contacted: number }[]> {
+      const rows = await pages<any>(`/api/campaigns/${campaignId}/sender-emails`, 100);
+      const n = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+      return rows.map((x) => ({ id: String(x.id), email: String(x.email ?? '').toLowerCase(), status: String(x.status ?? '').toLowerCase(), sent: n(x.emails_sent_count), bounced: n(x.bounced_count), contacted: n(x.total_leads_contacted_count) }));
+    },
+    /** Bounce notices for a campaign (the "bounced" folder), newest first, at most maxPages pages. */
+    async bouncedReplies(campaignId: number, maxPages = 5): Promise<any[]> {
+      const out: any[] = [];
+      for (let page = 1; page <= maxPages; page++) {
+        const r = await call('GET', `/api/replies?campaign_id=${campaignId}&folder=bounced&page=${page}`);
+        out.push(...unwrapList(r));
+        const last = Number(r?.meta?.last_page ?? 0);
+        if (!(last > page || r?.links?.next)) break;
+      }
+      return out;
+    },
     async campaignSenders(campaignId: number): Promise<BisonSender[]> {
       const rows = await pages<any>(`/api/campaigns/${campaignId}/sender-emails`, 100);
       return rows.map((x) => ({ id: String(x.id), status: String(x.status ?? '').toLowerCase(), email: x.email ? String(x.email) : undefined }));
