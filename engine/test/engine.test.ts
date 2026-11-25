@@ -147,3 +147,7 @@ test('HTTP: unsigned requests are refused; a signed one queues a job', { skip },
 test('every stage has a time limit', () => {
   for (const [k, d] of Object.entries(STAGES)) assert.ok(d.deadlineMs > 0 && d.maxAttempts >= 1, k);
 });
+
+test('bounce.investigate waits up to 2 hours in the queue (jobs queued during a deploy were expiring before they ran)', () => {
+  assert.ok(STAGES['bounce.investigate'].deadlineMs >= 2 * 60 * 60_000);
+});
