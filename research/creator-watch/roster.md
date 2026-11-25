@@ -24,6 +24,9 @@ Also (Alex, 2026-11-25, in chat): stay on top of cold email changes (example: .i
 - Thomas Chavez / Maverick Marketing: https://www.maverickmarketingllc.com/
 - Cody Smith / EmailBison & EmailGuard (deliverability and tool changes): LinkedIn https://ca.linkedin.com/in/cody-smith-%F0%9F%87%A8%F0%9F%87%A6-%F0%9F%A6%AC-49b682332 · X https://x.com/gat0rtheskater · YouTube (EmailBison) https://www.youtube.com/channel/UCHw2Es0h8FsZDdt7x4Ibxwg
 
+**Visual / editing style (Alex, 2026-11-25)**
+- Nik Setting: the caption and visual look Alex wants Sienna to match (clean, minimal, modern). YouTube: search "Nik Setting" (handle UNKNOWN, confirm on first run)
+
 **Also reviewed**
 - Dr. Jay Feldman / Lead Gen Jay: LinkedIn https://www.linkedin.com/in/dr-jay-feldman · YouTube https://www.youtube.com/@leadgenjay
 
