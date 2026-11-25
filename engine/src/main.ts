@@ -12,7 +12,8 @@ const server = createServer(db, cfg);
 server.listen(cfg.port, () => console.log(JSON.stringify({ level: 'info', message: 'engine listening', port: cfg.port, dryRun: cfg.dryRun })));
 
 const stop = new AbortController();
-const loop = workLoop(db, cfg, stop.signal);
+// WORKER_CONCURRENCY parallel loops (claims use FOR UPDATE SKIP LOCKED, one active job per record+kind).
+const loop = Promise.all(Array.from({ length: Math.max(1, Number(process.env.WORKER_CONCURRENCY) || 1) }, () => workLoop(db, cfg, stop.signal)));
 startScheduler(db, cfg, stop.signal);
 startAirtableBridge(db, cfg, stop.signal);
 startDecisions(db, cfg, stop.signal);

@@ -38,6 +38,20 @@ export function decisionMessage(r: AirtableRecord): string {
   return blocks.join('\n\n');
 }
 
+/** Reactions polling budget and schedule: fresh decisions every tick, older ones less often. */
+const REACTION_BUDGET = 20;
+const lastRead = new Map<string, number>();
+let slackBackoffUntil = 0;
+/** Seconds-since-epoch Slack ts → ms timestamp (0 if missing). */
+const tsAge = (ts: string) => (Number(ts) > 0 ? Number(ts) * 1000 : 0);
+export function reactionDue(id: string, postedAt: number, now = Date.now(), seen = lastRead.get(id)): boolean {
+  if (seen === undefined) return true;
+  const age = now - (postedAt || now);
+  const every = age < 2 * 3_600_000 ? 0 : age < 24 * 3_600_000 ? 2 * 60_000 : 10 * 60_000;
+  return now - seen >= every;
+}
+export function _resetReactionPolling() { lastRead.clear(); slackBackoffUntil = 0; }
+
 export async function decisionsTick(db: Db, cfg: Config, at: Pick<AirtableClient, 'list' | 'update'>, slack: Pick<SlackClient, 'post' | 'reactions' | 'react'>): Promise<{ posted: number; decided: number; started: number; finished: number }> {
   let posted = 0, decided = 0, started = 0, finished = 0;
   const now = () => new Date().toISOString();
@@ -57,10 +71,21 @@ export async function decisionsTick(db: Db, cfg: Config, at: Pick<AirtableClient
   }
 
   // 2. Read reactions on Waiting rows. ❌ wins if an approver put both.
-  for (const r of await at.list(DECISIONS, `{Status}='Waiting'`, ALL, 100)) {
+  // Slack allows ~50 reactions.get a minute: read at most REACTION_BUDGET rows a tick, recent ones most
+  // often, and stop (not fail) on a rate limit so approved actions below still start (Alex, 2026-11-25).
+  const waiting = await at.list(DECISIONS, `{Status}='Waiting'`, ALL, 100);
+  const due = waiting.filter((r) => reactionDue(r.id, tsAge(text(r.fields[DF.slackTs]))))
+    .sort((a, b) => (lastRead.get(a.id) ?? 0) - (lastRead.get(b.id) ?? 0)).slice(0, REACTION_BUDGET);
+  for (const r of due) {
     const ch = text(r.fields[DF.slackChannel]), ts = text(r.fields[DF.slackTs]);
     if (!ch || !ts) continue;
-    const reacts = await slack.reactions(ch, ts);
+    if (Date.now() < slackBackoffUntil) break;
+    let reacts;
+    try { reacts = await slack.reactions(ch, ts); } catch (e) {
+      if (/429|rate limit/i.test(String(e))) { slackBackoffUntil = Date.now() + 60_000; break; }
+      throw e;
+    }
+    lastRead.set(r.id, Date.now());
     const by = (set: Set<string>) => reacts.filter((x) => set.has(x.name)).flatMap((x) => x.users).find((u) => cfg.slackApprovers.includes(u));
     const no = by(NO), yes = by(YES);
     const who = no ?? yes;
