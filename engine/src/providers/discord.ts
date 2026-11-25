@@ -1,6 +1,7 @@
 // Discord (read only): recent messages from Alex's Agency Ignition server, a content-idea source for
 // Sienna (Alex 2026-11-25). Bot token in the server .env only (DISCORD_BOT_TOKEN); the bot needs
-// "Read Message History" on the chosen channels and the Message Content intent switched on.
+// View Channels + Read Message History and the Message Content intent switched on. It reads every
+// text channel it can see (or only SIENNA_DISCORD_CHANNELS when set).
 import { PermanentError, RetryableError } from '../errors.js';
 
 export interface DiscordMessage { id: string; content: string; timestamp: string; author?: { bot?: boolean } }
@@ -8,17 +9,30 @@ export interface DiscordMessage { id: string; content: string; timestamp: string
 export function createDiscordClient(o: { token: string; baseUrl?: string; fetchImpl?: typeof fetch }) {
   const f = o.fetchImpl ?? fetch;
   const base = (o.baseUrl ?? 'https://discord.com/api/v10').replace(/\/+$/, '');
+  const get = async (path: string): Promise<any> => {
+    let res: Response;
+    try { res = await f(`${base}${path}`, { headers: { Authorization: `Bot ${o.token}` }, signal: AbortSignal.timeout(30_000) }); }
+    catch { throw new RetryableError('Discord: network error or timeout'); }
+    if (res.status === 401) throw new PermanentError('Discord refused the bot token (HTTP 401)');
+    if (res.status === 403) return null; // no access to this one: skip it
+    if (res.status === 429 || res.status >= 500) throw new RetryableError(`Discord: HTTP ${res.status}`);
+    if (!res.ok) throw new PermanentError(`Discord: HTTP ${res.status}`);
+    return res.json();
+  };
   return {
+    /** Every text / announcement channel in every server the bot was added to (Alex: read them all). */
+    async allChannels(max = 40): Promise<string[]> {
+      const guilds = (await get('/users/@me/guilds')) ?? [];
+      const ids: string[] = [];
+      for (const g of Array.isArray(guilds) ? guilds : []) {
+        const chans = (await get(`/guilds/${encodeURIComponent(String(g.id))}/channels`)) ?? [];
+        for (const c of Array.isArray(chans) ? chans : []) if (c?.type === 0 || c?.type === 5) ids.push(String(c.id));
+      }
+      return ids.slice(0, max);
+    },
     /** The newest messages of one channel (up to 100). */
     async recent(channelId: string, limit = 100): Promise<DiscordMessage[]> {
-      let res: Response;
-      try {
-        res = await f(`${base}/channels/${encodeURIComponent(channelId)}/messages?limit=${Math.min(100, limit)}`, { headers: { Authorization: `Bot ${o.token}` }, signal: AbortSignal.timeout(30_000) });
-      } catch { throw new RetryableError('Discord: network error or timeout'); }
-      if (res.status === 401 || res.status === 403) throw new PermanentError(`Discord refused the bot (HTTP ${res.status}): check the token and the bot's access to channel ${channelId}`);
-      if (res.status === 429 || res.status >= 500) throw new RetryableError(`Discord: HTTP ${res.status}`);
-      if (!res.ok) throw new PermanentError(`Discord: HTTP ${res.status}`);
-      const j = await res.json();
+      const j = await get(`/channels/${encodeURIComponent(channelId)}/messages?limit=${Math.min(100, limit)}`);
       return Array.isArray(j) ? j : [];
     },
   };

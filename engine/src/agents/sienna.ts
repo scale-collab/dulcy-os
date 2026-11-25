@@ -100,10 +100,12 @@ export const siennaIdeasStage: Stage = async (ctx) => {
   const questions = await prospectQuestions(at);
   // Agency Ignition (Alex's Discord): what members asked this week.
   let community = '';
-  if (cfg.discordBotToken && cfg.siennaDiscordChannels.length && !ctx.dryRun) {
+  if (cfg.discordBotToken && !ctx.dryRun) {
     const dc = createDiscordClient({ token: cfg.discordBotToken, baseUrl: cfg.discordBaseUrl });
     const lines: string[] = [];
-    for (const ch of cfg.siennaDiscordChannels) {
+    let chans = cfg.siennaDiscordChannels;
+    if (!chans.length) { try { chans = await dc.allChannels(); } catch (e) { await ctx.log('Discord channels not listed', { err: String((e as Error).message) }, 'warn'); } }
+    for (const ch of chans) {
       try { lines.push(...communityQuestions(await dc.recent(ch), now)); } catch (e) { await ctx.log('Discord channel not read', { channel: ch, err: String((e as Error).message) }, 'warn'); }
     }
     community = lines.slice(0, 40).map((t) => `- ${t}`).join('\n');

@@ -286,3 +286,18 @@ test('Sienna prep runs every 30 minutes when Sienna is on (scripts right after a
   const r = await db.query(`SELECT request_id FROM jobs WHERE kind='sienna.prep' ORDER BY id`);
   assert.equal(r.rows.length, 2, 'one job per half hour');
 });
+
+test('Agency Ignition: the bot reads every text channel it can see; a channel it cannot read is skipped', async () => {
+  const { createDiscordClient } = await import('../src/providers/discord.js');
+  const routes: Record<string, [number, unknown]> = {
+    '/users/@me/guilds': [200, [{ id: '1' }]],
+    '/guilds/1/channels': [200, [{ id: '10', type: 0 }, { id: '11', type: 2 }, { id: '12', type: 5 }, { id: '13', type: 4 }, { id: '14', type: 0 }]],
+    '/channels/14/messages?limit=100': [403, {}],
+    '/channels/10/messages?limit=100': [200, [{ id: 'm', content: 'How do you warm up domains?', timestamp: '2026-11-26T10:00:00Z' }]],
+  };
+  const fetchImpl = (async (url: string) => { const p = url.replace('https://discord.com/api/v10', ''); const [st, body] = routes[p] ?? [404, {}]; return new Response(JSON.stringify(body), { status: st }); }) as unknown as typeof fetch;
+  const dc = createDiscordClient({ token: 't', fetchImpl });
+  assert.deepEqual(await dc.allChannels(), ['10', '12', '14'], 'text + announcement channels only');
+  assert.equal((await dc.recent('14')).length, 0, 'no access = skipped, not an error');
+  assert.equal((await dc.recent('10')).length, 1);
+});
