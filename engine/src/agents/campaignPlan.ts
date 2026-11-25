@@ -25,7 +25,7 @@ import { LEAD_LISTS, F, FILTER_CLIENT_FIELDS } from '../airtable/bridge.js';
 const CAMPAIGNS = 'tblAVAA6uBPaMj28P';
 const LL = { whichCampaign: 'fldepbn71awSjmZPV' } as const;
 import { logActivity } from '../activity.js';
-import { CC, copyText, enrichmentRequest, type CopyT } from './scribe.js';
+import { CC, copyText, enrichmentRequest, sequenceFields, type CopyT } from './scribe.js';
 /** Lead List "Custom Variables Requested" (plain-English enrichment request). */
 const LL_CUSTOM_VARS = 'fldTYRjTrpVW27tmG';
 
@@ -94,7 +94,7 @@ Follow Alex's rules exactly (next-campaign rules and campaign SOP below; RULES.m
 export interface PlanRow { id: number; trigger_key: string; ws_rec: string; client: string; state: string; lead_list_rec: string | null; campaign_rec: string | null; decision_rec: string | null; plan: PlanT | null }
 const OPEN = ['planning', 'filters', 'sample', 'approval1'];
 /** Every state the pipeline still moves on. Ends: client_approved (build + launch next), rejected, copy_rejected, stuck. */
-const ACTIVE = ['planning', 'filters', 'sample', 'approval1', 'expand', 'contacts_sample', 'approval_contacts', 'contacts', 'verify', 'enrich', 'enrich_prompt', 'enrich_run', 'qa', 'approval2', 'approval2_wait', 'client_review'];
+const ACTIVE = ['planning', 'filters', 'sample', 'approval1', 'expand', 'contacts_sample', 'approval_contacts', 'contacts', 'verify', 'enrich', 'enrich_prompt', 'enrich_run', 'qa', 'approval2', 'approval2_wait', 'client_review', 'client_approved', 'spintax', 'need_inboxes', 'building', 'launching'];
 const WAITING: Record<string, true> = { approval1: true, approval_contacts: true, approval2: true };
 /** The Lead List job each state waits for. */
 const STEPS: Record<string, { after: string }> = {
@@ -233,6 +233,8 @@ export const campaignPipelineStage: Stage = async (ctx) => {
       }
       continue;
     }
+    // After the client approves (Alex 2026-11-25): copy back in place → spintax → free healthy inboxes → Build → Launch.
+    if (LAUNCH_STATES.has(r.state)) { if (r.campaign_rec && r.copy) await advanceLaunch(ctx, at, r, setState, say); continue; }
     if (r.state === 'approval2_wait') { // copy rewrite after client feedback → approval 2 again
       if (r.copy_state === 'ready') { if (!ctx.dryRun) await postApproval2(ctx, at, r); say('rewritten copy → approval 2 posted'); }
       continue;
@@ -363,4 +365,100 @@ export const copyApprovedStage: Stage = async (ctx) => {
 
 export async function plansDue(db: Db): Promise<number[]> {
   return (await db.query(`SELECT id FROM campaign_plans WHERE state='planning'`)).rows.map((r) => Number(r.id));
+}
+
+// ---------- Part 3: from client approval to live (Alex 2026-11-25: free healthy inboxes; auto-launch when every launch check passes) ----------
+const LAUNCH_STATES = new Set(['client_approved', 'spintax', 'need_inboxes', 'building', 'launching']);
+/** Campaigns fields for the Campaign Center buttons and the build (kept here: importing campaignActions would loop). */
+const CX = {
+  status: 'fldZABZwE9SmnwMv3', accounts: 'fldi906rwZ9YOpU64', createSpintax: 'fldsvgKf6U5zDOygf', automationRequest: 'fldKZKnaFMiAHrDEE',
+  runsOnEngine: 'flds0oKDXF1XgQUeI', engineAction: 'fldsvWSdSkH8y16wW', engineStatus: 'fldBIuY7HML1wycLr', engineJobId: 'fldx3JS89Nu10OjeT', engineMessage: 'fldtsSMcX9XX4h1Vc',
+} as const;
+const ACCOUNTS = 'tblMSOBJ0wMgxSg4l';
+const AX = { client: 'flduDcGap2GSsqUia', status: 'fldzPjNciWil86nkI', emailStatus: 'fldvyAN2hm6gmfG86', spamStage: 'fldkK0KB2ttWIqKul', campaigns: 'fldJJWRwowtWJhIfg', emailId: 'fldR19WUqSSBVQcPO', warmup: 'fldzAnqlrgiM6iIg5' } as const;
+const SPINTAX_WAIT_MS = 3 * 3_600_000;
+const linkIds = (x: unknown): string[] => (Array.isArray(x) ? x.map((v) => (typeof v === 'string' ? v : String((v as { id?: string })?.id ?? ''))).filter(Boolean) : []);
+
+/** The client's inboxes that are Healthy (or not yet graded), connected, not resting/being replaced, warmed (70+ when scored), and not sending in another active campaign. */
+export async function freeInboxes(at: Pick<AirtableClient, 'list'>, wsRec: string, thisCampaign: string): Promise<string[]> {
+  const rows = await at.list(ACCOUNTS, `AND(OR({Status}='Healthy',{Status}=''),LOWER({email_status})='connected',OR({Spam Protocol Stage}='',{Spam Protocol Stage}='Monitoring',{Spam Protocol Stage}='Recovered'))`,
+    [AX.client, AX.status, AX.emailStatus, AX.spamStage, AX.campaigns, AX.emailId, AX.warmup], 3000);
+  const mine = rows.filter((r) => linkIds(r.fields[AX.client]).includes(wsRec) && Number(val(r.fields[AX.emailId])) > 0)
+    .filter((r) => { const w = Number(val(r.fields[AX.warmup])); return !(w > 0 && w < 70); });
+  const linked = [...new Set(mine.flatMap((r) => linkIds(r.fields[AX.campaigns])).filter((id) => id !== thisCampaign))];
+  const busy = new Set<string>();
+  for (let i = 0; i < linked.length; i += 50) {
+    const part = linked.slice(i, i + 50);
+    const live = await at.list(CAMPAIGNS, `AND(OR(${part.map((id) => `RECORD_ID()='${id}'`).join(',')}),OR({Campaign Status}='Active',{Campaign Status}='Uploaded'))`, [CX.status], 50);
+    for (const c of live) busy.add(c.id);
+  }
+  return mine.filter((r) => !linkIds(r.fields[AX.campaigns]).some((id) => busy.has(id))).map((r) => r.id);
+}
+
+async function advanceLaunch(ctx: Parameters<Stage>[0], at: AirtableClient, r: PlanRowX, setState: (s: string) => Promise<void>, say: (s: string) => void) {
+  const camp = r.campaign_rec!;
+  const name = r.plan?.campaign_name ?? camp;
+  const c = await at.get(CAMPAIGNS, camp, [CX.status, CX.accounts, CX.engineAction, CX.engineStatus, CX.engineJobId, CX.engineMessage, CC.workflow, CC.approvalSource]);
+  if (!c) return;
+  const press = async (action: string, extra: Record<string, unknown> = {}) => { if (!ctx.dryRun) await at.update(CAMPAIGNS, camp, { ...extra, [CX.runsOnEngine]: true, [CX.engineAction]: action }); };
+  const engineDone = async (kind: string): Promise<'wait' | 'done' | 'failed'> => {
+    if (val(c.fields[CX.engineAction])) return 'wait';
+    const st = val(c.fields[CX.engineStatus]);
+    const jobKind = (await ctx.db.query('SELECT kind FROM jobs WHERE id = $1', [Number(String(val(c.fields[CX.engineJobId])).split(',')[0]) || 0])).rows[0]?.kind;
+    if (jobKind !== kind) return 'wait';
+    return st === 'Done' ? 'done' : ['Failed', 'Needs Review'].includes(st) ? 'failed' : 'wait';
+  };
+  const stuck = async (msg: string) => { if (!ctx.dryRun) await ctx.db.query(`UPDATE campaign_plans SET state='stuck', plan_error=$2, updated_at=now() WHERE id=$1`, [r.id, msg.slice(0, 1000)]); say(msg.slice(0, 200)); };
+  switch (r.state) {
+    case 'client_approved': {
+      // The Campaign Center's "approve and prepare sequence": the approved copy into the sequence fields (Email 1 as 2 variants),
+      // the approval recorded, then the spintax button (create_spintax), exactly as the page does it.
+      if (!ctx.dryRun) await at.update(CAMPAIGNS, camp, {
+        ...sequenceFields(r.copy!),
+        ...(val(c.fields[CC.approvalSource]) ? {} : { [CC.approvalSource]: 'Client approved' }),
+        [CC.workflow]: 'Spintax in Progress', [CX.createSpintax]: true,
+        [CX.automationRequest]: JSON.stringify({ kind: 'spintax', label: 'Generate and validate spintax', requestedAt: new Date().toISOString(), baselineStatus: val(c.fields[CX.status]), baselineBisonId: '' }),
+      });
+      await setState('spintax'); say('client approved → copy in place, spintax requested'); return;
+    }
+    case 'spintax': {
+      if (val(c.fields[CX.status]) !== 'Spintax Generated') {
+        const since = (await ctx.db.query('SELECT updated_at FROM campaign_plans WHERE id=$1', [r.id])).rows[0]?.updated_at;
+        if (since && Date.now() - new Date(since).getTime() > SPINTAX_WAIT_MS) await stuck('spintax not done after 3 hours: stopped (see the Campaign)');
+        return;
+      }
+      const chosen = linkIds(c.fields[CX.accounts]).length ? linkIds(c.fields[CX.accounts]) : await freeInboxes(at, r.ws_rec, camp);
+      if (!chosen.length) {
+        if (!ctx.dryRun) {
+          const dec = await at.create(DECISIONS, { [DF.title]: `Pick inboxes: ${name}`, [DF.agent]: 'Atlas', [DF.status]: 'New', [DF.client]: r.client,
+            [DF.issue]: 'The client approved the copy and spintax is done, but the client has no free healthy inboxes (all are resting, disconnected, or sending in another active campaign).',
+            [DF.checked]: 'Email Accounts for this client: Healthy or ungraded, connected, not resting/replacing, warmup 70+, not in an Active/Uploaded campaign.',
+            [DF.fix]: 'Select the inboxes on the Campaign in Campaign Center (Email Accounts). Atlas builds and launches as soon as they are there.', [DF.action]: 'None', [DF.details]: `Plan ${r.id}, Campaign ${camp}.` });
+          await ctx.db.query(`UPDATE campaign_plans SET state='need_inboxes', decision2_rec=$2, updated_at=now() WHERE id=$1`, [r.id, dec]);
+        }
+        say('no free healthy inboxes → asked you'); return;
+      }
+      await press('Build Campaign', linkIds(c.fields[CX.accounts]).length ? {} : { [CX.accounts]: chosen });
+      await setState('building'); say(`spintax done → ${chosen.length} inbox(es) → Build Campaign`); return;
+    }
+    case 'need_inboxes': {
+      const picked = linkIds(c.fields[CX.accounts]);
+      if (!picked.length) return;
+      await press('Build Campaign'); await setState('building'); say(`inboxes picked (${picked.length}) → Build Campaign`); return;
+    }
+    case 'building': {
+      const d = await engineDone('campaign.build');
+      if (d === 'wait') return;
+      if (d === 'failed') { await stuck(`build failed: ${val(c.fields[CX.engineMessage])}`); return; }
+      await press('Launch Campaign'); await setState('launching'); say('built in EmailBison → Launch Campaign (launch checks run first)'); return;
+    }
+    case 'launching': {
+      const d = await engineDone('campaign.launch');
+      if (d === 'wait') return;
+      if (d === 'failed') { await stuck(`launch refused: ${val(c.fields[CX.engineMessage])}`); return; }
+      await setState('live');
+      await logActivity(ctx.cfg, { event: `Campaign live: ${name}`, type: 'Step done', agent: 'Atlas', details: `Planned, approved twice by Alex, approved by the client, built and launched. ${val(c.fields[CX.engineMessage]).slice(0, 500)}`, campaignRecordIds: [camp], jobId: ctx.job.id }, at);
+      say('LIVE'); return;
+    }
+  }
 }

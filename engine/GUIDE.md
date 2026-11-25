@@ -548,13 +548,13 @@ Production Stage becomes "Script Ready". Nothing is posted.
    - **The list:** Atlas presses each Lead List button in order: Find Contacts (sample of 100 companies; 70%+ usable continues by itself, lower asks you in Slack), Find Contacts (all), Verify and Finalize, then (once the copy is in) **Prepare Enrichment Prompt + Run Enrichment** when the copy uses custom variables (at most 2, e.g. {KEYWORD}, each with a fallback), otherwise Skip Enrichment, then Run Automated QA.
    - **The copy (Scribe):** reads its playbook (`skills/scribe-cold-email-copywriter/references/playbook.md`: your SOPs, the Source of Truth, your course docs and copy audits, the 2026 house style, and the results of 410 real campaigns), the top/bottom 10 campaigns, every script already run for that client, the client file, the approved plan and the client's real replies. Writes Email 1 as **2 variants (the 2 angles)** plus the follow-ups. A second pass reviews it like you would and fixes what it finds; code checks the hard rules (30-75 words, 1-3 word subject, no links, no call ask, no banned phrases, only {FIRST_NAME}/{COMPANY}). The copy goes in the Campaign's (Review) fields (Email 1 as "Variant 1 / Variant 2", the Campaign Center format) and the sequence fields. Workflow Stage = Internal Review.
 6. **Approval 2 in Slack:** the full copy + list numbers. ✅ = Atlas presses **Send for approval** (Client Review, 48-business-hour clock); your existing automation emails the client the portal link. ❌ = Scribe waits for your notes: `campaign-copy <plan> "<what to change>"`.
-7. **The client** approves in the portal (or it auto-approves after 48 business hours) → plan is `client_approved`. If the client asks for copy changes, Scribe rewrites with their notes and approval 2 comes back to you. List changes come to you.
+7. **The client** approves in the portal (or it auto-approves after 48 business hours). Then, by itself: the approved copy goes back into the sequence fields → **spintax** (the same button) → the client's **free healthy inboxes** (Healthy or ungraded, connected, not resting, warmup 70+, not in another Active/Uploaded campaign; none free = it asks you) → **Build Campaign** → **Launch Campaign**, which goes live only if every launch check passes. Plan state `live` = done. If the client asks for copy changes, Scribe rewrites with their notes and approval 2 comes back to you. List changes come to you.
 
-If a Lead List step fails, the plan stops (`stuck`) and you see it on the Lead List record. Nothing is sent or launched. Build + launch (part 3) come next.
+If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`). Retry a set-aside plan with `campaign-plan-retry <id>`.
 
 **See plans:** `campaign-plans`. **Rewrite copy:** `campaign-copy <plan id> "<notes>"`.
 
-**Switch on:** `ATLAS_CAMPAIGNS=on`, and add `atlas.plan,campaign.pipeline,campaign.plan_approved,campaign.contacts_approved,scribe.copy,campaign.copy_approved` to `LIVE_STAGES`.
+**Switch on:** `ATLAS_CAMPAIGNS=on`, and add `atlas.plan,campaign.pipeline,campaign.plan_approved,campaign.contacts_approved,scribe.copy,campaign.copy_approved` to `LIVE_STAGES` (plus `campaign.build` and `campaign.launch`, already live).
 
 
 ## Riley, systems repair (2026-11-25)
