@@ -25,7 +25,7 @@ import { LEAD_LISTS, F, FILTER_CLIENT_FIELDS } from '../airtable/bridge.js';
 const CAMPAIGNS = 'tblAVAA6uBPaMj28P';
 const LL = { whichCampaign: 'fldepbn71awSjmZPV' } as const;
 import { logActivity } from '../activity.js';
-import { CC, copyText, enrichmentRequest, sequenceFields, type CopyT } from './scribe.js';
+import { CC, copyText, enrichmentRequest, sequenceFields, reviewSequenceFields, type CopyT } from './scribe.js';
 /** Lead List "Custom Variables Requested" (plain-English enrichment request). */
 const LL_CUSTOM_VARS = 'fldTYRjTrpVW27tmG';
 
@@ -372,7 +372,7 @@ const LAUNCH_STATES = new Set(['client_approved', 'spintax', 'need_inboxes', 'bu
 /** Campaigns fields for the Campaign Center buttons and the build (kept here: importing campaignActions would loop). */
 const CX = {
   status: 'fldZABZwE9SmnwMv3', accounts: 'fldi906rwZ9YOpU64', createSpintax: 'fldsvgKf6U5zDOygf', automationRequest: 'fldKZKnaFMiAHrDEE',
-  runsOnEngine: 'flds0oKDXF1XgQUeI', engineAction: 'fldsvWSdSkH8y16wW', engineStatus: 'fldBIuY7HML1wycLr', engineJobId: 'fldx3JS89Nu10OjeT', engineMessage: 'fldtsSMcX9XX4h1Vc',
+  runsOnEngine: 'flds0oKDXF1XgQUeI', processing: 'fldCebt3IMI8ZxdQq', engineAction: 'fldsvWSdSkH8y16wW', engineStatus: 'fldBIuY7HML1wycLr', engineJobId: 'fldx3JS89Nu10OjeT', engineMessage: 'fldtsSMcX9XX4h1Vc',
 } as const;
 const ACCOUNTS = 'tblMSOBJ0wMgxSg4l';
 const AX = { client: 'flduDcGap2GSsqUia', status: 'fldzPjNciWil86nkI', emailStatus: 'fldvyAN2hm6gmfG86', spamStage: 'fldkK0KB2ttWIqKul', campaigns: 'fldJJWRwowtWJhIfg', emailId: 'fldR19WUqSSBVQcPO', warmup: 'fldzAnqlrgiM6iIg5' } as const;
@@ -398,7 +398,7 @@ export async function freeInboxes(at: Pick<AirtableClient, 'list'>, wsRec: strin
 async function advanceLaunch(ctx: Parameters<Stage>[0], at: AirtableClient, r: PlanRowX, setState: (s: string) => Promise<void>, say: (s: string) => void) {
   const camp = r.campaign_rec!;
   const name = r.plan?.campaign_name ?? camp;
-  const c = await at.get(CAMPAIGNS, camp, [CX.status, CX.accounts, CX.engineAction, CX.engineStatus, CX.engineJobId, CX.engineMessage, CC.workflow, CC.approvalSource]);
+  const c = await at.get(CAMPAIGNS, camp, [CX.status, CX.accounts, CX.engineAction, CX.engineStatus, CX.engineJobId, CX.engineMessage, CX.processing, CC.workflow, CC.approvalSource, ...CC.review.flatMap((x) => [x.subject, x.body])]);
   if (!c) return;
   const press = async (action: string, extra: Record<string, unknown> = {}) => { if (!ctx.dryRun) await at.update(CAMPAIGNS, camp, { ...extra, [CX.runsOnEngine]: true, [CX.engineAction]: action }); };
   const engineDone = async (kind: string): Promise<'wait' | 'done' | 'failed'> => {
@@ -413,8 +413,11 @@ async function advanceLaunch(ctx: Parameters<Stage>[0], at: AirtableClient, r: P
     case 'client_approved': {
       // The Campaign Center's "approve and prepare sequence": the approved copy into the sequence fields (Email 1 as 2 variants),
       // the approval recorded, then the spintax button (create_spintax), exactly as the page does it.
+      // Refresh copy: from the review copy as approved (any number of variants, edits kept); Scribe's copy if the review fields are empty.
+      const fromReview = reviewSequenceFields(CC.review.map((x) => ({ subject: val(c.fields[x.subject]), body: val(c.fields[x.body]) })));
+      const seq = fromReview.counts[1] ? fromReview.fields : sequenceFields(r.copy!);
       if (!ctx.dryRun) await at.update(CAMPAIGNS, camp, {
-        ...sequenceFields(r.copy!),
+        ...seq,
         ...(val(c.fields[CC.approvalSource]) ? {} : { [CC.approvalSource]: 'Client approved' }),
         [CC.workflow]: 'Spintax in Progress', [CX.createSpintax]: true,
         [CX.automationRequest]: JSON.stringify({ kind: 'spintax', label: 'Generate and validate spintax', requestedAt: new Date().toISOString(), baselineStatus: val(c.fields[CX.status]), baselineBisonId: '' }),
@@ -422,6 +425,8 @@ async function advanceLaunch(ctx: Parameters<Stage>[0], at: AirtableClient, r: P
       await setState('spintax'); say('client approved → copy in place, spintax requested'); return;
     }
     case 'spintax': {
+      // The spintax workflow's own QA held it back: stop now and show why (not after 3 hours).
+      if (/needs review/i.test(val(c.fields[CX.processing])) && val(c.fields[CC.workflow]) === 'Internal Review') { await stuck('spintax QA needs review: see Workflow Error on the Campaign, fix the copy, then campaign-plan-retry'); return; }
       if (val(c.fields[CX.status]) !== 'Spintax Generated') {
         const since = (await ctx.db.query('SELECT updated_at FROM campaign_plans WHERE id=$1', [r.id])).rows[0]?.updated_at;
         if (since && Date.now() - new Date(since).getTime() > SPINTAX_WAIT_MS) await stuck('spintax not done after 3 hours: stopped (see the Campaign)');
@@ -455,7 +460,18 @@ async function advanceLaunch(ctx: Parameters<Stage>[0], at: AirtableClient, r: P
     case 'launching': {
       const d = await engineDone('campaign.launch');
       if (d === 'wait') return;
-      if (d === 'failed') { await stuck(`launch refused: ${val(c.fields[CX.engineMessage])}`); return; }
+      if (d === 'failed') {
+        // Leads still loading into EmailBison is normal right after a build: press Launch again (every 15 min, 8 tries).
+        const tries = Number((await ctx.db.query('SELECT launch_tries FROM campaign_plans WHERE id=$1', [r.id])).rows[0]?.launch_tries ?? 0);
+        if (/no leads|leads/i.test(val(c.fields[CX.engineMessage])) && tries < 8) {
+          const last = (await ctx.db.query('SELECT updated_at FROM campaign_plans WHERE id=$1', [r.id])).rows[0]?.updated_at;
+          if (last && Date.now() - new Date(last).getTime() < 15 * 60_000) return;
+          await press('Launch Campaign');
+          if (!ctx.dryRun) await ctx.db.query('UPDATE campaign_plans SET launch_tries=launch_tries+1, updated_at=now() WHERE id=$1', [r.id]);
+          say(`leads still loading into EmailBison → launch again (try ${tries + 2})`); return;
+        }
+        await stuck(`launch refused: ${val(c.fields[CX.engineMessage])}`); return;
+      }
       await setState('live');
       await logActivity(ctx.cfg, { event: `Campaign live: ${name}`, type: 'Step done', agent: 'Atlas', details: `Planned, approved twice by Alex, approved by the client, built and launched. ${val(c.fields[CX.engineMessage]).slice(0, 500)}`, campaignRecordIds: [camp], jobId: ctx.job.id }, at);
       say('LIVE'); return;

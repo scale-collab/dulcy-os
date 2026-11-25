@@ -13,7 +13,7 @@ import { recommendMove, leadListFields, approvalText, CP, type CampaignStat, typ
 import { LEAD_LISTS, F } from '../src/airtable/bridge.js';
 import { CAMPAIGNS, LL } from '../src/airtable/campaignBuild.js';
 import { DECISIONS, DF } from '../src/decisions/fields.js';
-import { lintCopy, copyFields, words, CC, type CopyT } from '../src/agents/scribe.js';
+import { lintCopy, copyFields, words, CC, parseVariants, reviewSequenceFields, type CopyT } from '../src/agents/scribe.js';
 import { addWeekdayHours } from '../src/agents/campaignPlan.js';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
@@ -89,6 +89,15 @@ test('Scribe writes the Campaign Center format: Email 1 as Variant 1 / Variant 2
   assert.equal(f[CC.seq[0][1].body], B2); assert.equal(f[CC.variants[0]], '2');
   assert.equal(f[CC.thread[2]], true); assert.equal(f[CC.seq[1][0].subject], ''); assert.equal(f[CC.workflow], 'Internal Review');
   assert.equal(f[CC.seq[3][0].body], undefined, 'no step 4 written when Scribe wrote 3 emails');
+});
+
+test('Refresh copy: any number of review variants (3 here), labels stripped, counts set; plain copy = 1 variant', () => {
+  assert.deepEqual(parseVariants('Variant 1\nfirst\n\nVariant 2: second\n\nVariant 3 - third'), ['first', 'second', 'third']);
+  assert.deepEqual(parseVariants('just one email, mentions a variant 2 in passing'), ['just one email, mentions a variant 2 in passing']);
+  const r = reviewSequenceFields([{ subject: 'Variant 1: a\nVariant 2: b\nVariant 3: c', body: 'Variant 1\nx\n\nVariant 2\ny\n\nVariant 3\nz' }, { subject: '', body: 'follow up' }, { subject: '', body: '' }, { subject: '', body: '' }]);
+  assert.deepEqual(r.counts.slice(1, 3), [3, 1]);
+  assert.equal(r.fields.fldaioqEyiX4R0cFe, 'c', 'Campaign Subject 1 Version 3'); assert.equal(r.fields.fldYltiXCNiZ4hY7c, 'z', 'Campaign Body 1 Version 3');
+  assert.equal(r.fields[CC.variants[0]], '3'); assert.equal(r.fields[CC.seq[1][0].body], 'follow up');
 });
 
 test('Client review clock: 48 weekday hours (Friday noon → Tuesday noon)', () => {

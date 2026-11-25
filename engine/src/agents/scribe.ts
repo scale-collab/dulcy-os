@@ -19,6 +19,7 @@ import path from 'node:path';
 import { readKnowledge, clientFileFor } from './knowledge.js';
 import { EMAILS, EF, val } from './emailsFields.js';
 import { FILTER_CLIENT_FIELDS } from '../airtable/bridge.js';
+import { CAMPAIGN_FIELDS } from '../campaign/campaignFields.js';
 import { logActivity } from '../activity.js';
 import type { PlanRow, PlanT } from './campaignPlan.js';
 
@@ -143,6 +144,42 @@ export function copyFields(c: CopyT): Record<string, unknown> {
     f[CC.variants[k]] = '1'; f[CC.thread[s.step]] = s.thread_reply;
   }
   return f;
+}
+
+/**
+ * The Campaign Center's "Refresh copy" (prepareSequenceFromReview), in code: each step's review copy split on
+ * line-start "Variant 1 / Variant 2 / …" labels (any number up to 10, as the page does; two or more labels needed),
+ * written to Campaign Subject/Body N Version v plus "Number of variants - Step N". Respects any edit Alex or the
+ * client made to the review copy.
+ */
+export function parseVariants(raw: string): string[] {
+  const src = String(raw ?? '').replace(/\r\n?/g, '\n').trim();
+  if (!src) return [];
+  // [ \t] (not \s) so a label line never swallows the email's first line or its blank lines.
+  const marks = [...src.matchAll(/^(?:\[[ \t]*)?variant[ \t]+(10|[1-9]|[A-J])(?:[ \t]*\])?[ \t]*(?:(?::|[-–—])[ \t]*)?(.*)$/gim)];
+  if (marks.length < 2) return [src];
+  return marks.map((m, i) => {
+    const end = (m.index ?? 0) + m[0].length; const next = marks[i + 1]?.index ?? src.length;
+    const inline = String(m[2] ?? '').trim(); const rest = src.slice(end, next).replace(/^\n/, '').trimEnd();
+    return (inline ? `${inline}\n${rest}` : rest).trim();
+  });
+}
+export function reviewSequenceFields(review: { subject: string; body: string }[]): { fields: Record<string, unknown>; counts: number[] } {
+  const fields: Record<string, unknown> = {}; const counts: number[] = [];
+  review.forEach((r, i) => {
+    const step = i + 1; const bodies = parseVariants(r.body); const subjects = parseVariants(r.subject);
+    if (!bodies.length) return;
+    const n = Math.min(10, bodies.length);
+    for (let v = 1; v <= n; v++) {
+      const subjectId = CAMPAIGN_FIELDS[`Campaign Subject ${step} Version ${v}`] ?? (step === 4 && v === 1 ? CAMPAIGN_FIELDS['Campaign Email 4 Subject'] : undefined);
+      const bodyId = CAMPAIGN_FIELDS[`Campaign Body ${step} Version ${v}`];
+      if (!bodyId) throw new Error(`Email ${step} has variant ${v} but no "Campaign Body ${step} Version ${v}" field`);
+      fields[bodyId] = bodies[v - 1];
+      if (subjectId) fields[subjectId] = subjects.length > 1 ? (subjects[v - 1] ?? '') : (subjects[0] ?? '');
+    }
+    fields[CC.variants[i]] = String(n); counts[step] = n;
+  });
+  return { fields, counts };
 }
 
 /** Only the sequence fields (Campaign Subject/Body N Version v, variant counts, thread replies): what the build reads. */
