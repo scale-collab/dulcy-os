@@ -180,6 +180,7 @@ export const scribeCopyStage: Stage = async (ctx) => {
     `# Real results across every campaign we ran (agency averages, A/B tests, patterns)\n${k(`${PERF}/analysis.md`)}`,
     `# The top 10 and bottom 10 campaigns, full copy\n${k(`${PERF}/top-bottom.md`)}`,
     `# Standing rules (newest wins)\n${k('rules/RULES.md')}\n${k('rules/client-promise-contract.md')}`,
+    `# Recent learnings from creators and the market (claims, not benchmarks; rules and client facts win)\n${k('skills/scribe-cold-email-copywriter/references/creator-learnings.md')}`,
   ].join('\n\n---\n\n');
   const user = [
     `Client: ${row.client}. Campaign: ${plan.campaign_name}.`,
