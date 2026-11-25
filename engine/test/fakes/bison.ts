@@ -149,7 +149,8 @@ export async function startFakeBison(): Promise<FakeBison> {
       if (s.resetLimitsOnSenderAttach) c.settings = { ...(c.settings ?? {}), max_emails_per_day: 2500, max_new_leads_per_day: 2500 };
       return json(res, 200, { data: { success: true } });
     }
-    if ((x = m(/^\/api\/campaigns\/(\d+)\/sender-emails$/))) return json(res, 200, page(camp(x[1]).senders.map((id) => ({ id: Number(id), status: s.senderStatus(id), email: s.senderEmail(id) })), u));
+    if ((x = m(/^\/api\/campaigns\/(\d+)\/sender-emails$/))) return json(res, 200, page(camp(x[1]).senders.map((id) => ({ id: Number(id), status: s.senderStatus(id), email: s.senderEmail(id), ...(((s as any).senderStats ?? {})[id] ?? {}) })), u));
+    if (req.method === 'GET' && u.pathname === '/api/replies' && u.searchParams.get('folder') === 'bounced') return json(res, 200, page((((s as any).bounces ?? {})[u.searchParams.get('campaign_id') ?? ''] ?? []), u));
     return json(res, 404, { message: 'not found' });
   });
   await new Promise<void>((r) => server.listen(0, () => r()));
