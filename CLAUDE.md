@@ -58,7 +58,7 @@ Airtable (operating system: Campaign Center, Lead List Center, projects, CRM) ·
 | Where we left off, next steps | `NEXT.md` |
 | Standing rules and corrections | `rules/RULES.md` |
 | Why we decided things | `rules/decisions-log.md` |
-| Company facts, channel status, goals | `company/` |
+| Company facts, channel status, goals, finance structure (`company/finance-structure.md`) | `company/` |
 | One file per client | `clients/` |
 | Specialist skills (also linked at `.claude/skills/` so Claude Code loads them) | `skills/` |
 | Sub-agents (one per specialist, read-only) | `.claude/agents/` |

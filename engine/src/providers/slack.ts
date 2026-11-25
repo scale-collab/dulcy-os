@@ -4,6 +4,7 @@ import { PermanentError, RetryableError } from '../errors.js';
 
 export interface SlackOptions { token?: string; baseUrl?: string; timeoutMs?: number; fetchImpl?: typeof fetch }
 export interface SlackReaction { name: string; users: string[] }
+export interface SlackMessage { ts: string; user: string; text: string; threadTs?: string; bot: boolean; files: string[] }
 
 export function createSlackClient(o: SlackOptions) {
   const f = o.fetchImpl ?? fetch;
@@ -35,6 +36,12 @@ export function createSlackClient(o: SlackOptions) {
       try { await call('reactions.add', { channel, timestamp: ts, name }); } catch (e) {
         if (!/already_reacted/.test(String((e as Error).message))) throw e;
       }
+    },
+    /** Top-level messages in a channel since `oldest` (needs channels:history or groups:history). */
+    async history(channel: string, oldest: string, limit = 200): Promise<SlackMessage[]> {
+      const r = await call('conversations.history', { channel, oldest, limit }, true);
+      return (r.messages ?? []).map((m: any) => ({ ts: String(m.ts), user: String(m.user ?? ''), text: String(m.text ?? ''), threadTs: m.thread_ts ? String(m.thread_ts) : undefined,
+        bot: Boolean(m.bot_id) || (m.subtype !== undefined && m.subtype !== 'file_share' && m.subtype !== 'thread_broadcast'), files: (m.files ?? []).map((x: any) => String(x.name ?? '')) }));
     },
     async reactions(channel: string, ts: string): Promise<SlackReaction[]> {
       const r = await call('reactions.get', { channel, timestamp: ts, full: true }, true);
