@@ -12,7 +12,7 @@ import { runOnce } from '../src/worker.js';
 import { grade, writeHealth, gatherHealth, type Client } from '../src/agents/atlas.js';
 import { parseMeeting, type FathomMeeting } from '../src/providers/fathom.js';
 import { pacing, obviouslyInternal, writeReview, type ReviewT } from '../src/agents/cole.js';
-import { nextFriday, slug, CONTENT, CF } from '../src/agents/sienna.js';
+import { nextFriday, slug, prepFormula, CONTENT, CF } from '../src/agents/sienna.js';
 import { agentsTick } from '../src/scheduler.js';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
@@ -240,7 +240,15 @@ test('Sienna end to end: Monday research → ideas in Content Center (Review); T
   const p = await run('sienna.prep');
   assert.equal(p.job.status, 'succeeded', p.job.error ?? '');
   assert.equal(tables[CONTENT][id][CF.script], 'Line one.\nLine two.');
-  assert.equal(tables[CONTENT][id][CF.stage], 'Script Ready');
+  assert.equal(tables[CONTENT][id][CF.stage], 'Script');
   assert.match(String(tables[CONTENT][id][CF.notes]), /Check before recording\*\*\n- the 50% number/);
   assert.match(posts.at(-1)!.text, /Friday is ready/);
+});
+
+test('Sienna writes scripts for ideas approved in the Content Center with a recording date soon (not only the old tick)', () => {
+  const f = prepFormula();
+  assert.match(f, /\{Idea Decision\}='Approved'/);
+  assert.match(f, /\{Recording Date\}/);
+  assert.match(f, /\{Record This Week\}/);
+  assert.match(f, /\{Script\}=''/);
 });

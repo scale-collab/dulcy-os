@@ -524,13 +524,13 @@ All three are **off until switched on**, and **post only when their stage is in 
 **Monday (`SIENNA_IDEAS_HOUR`, default 10 AM ET):**
 - Claude **searches the web** (YouTube views and comments, LinkedIn, X, Reddit, forums; not Reddit alone) for what B2B agency owners and founders are asking now.
 - It then adds **2 × your weekly video count** ideas to the Content Center:
-  - Status "Review", source "Generated Idea";
+  - Status "Review", Idea Decision "Needs Review", source "Generated Idea" (so they show in the Content Center's idea queue);
   - an Idea Score;
   - the evidence URLs and why it's rising now, in the qualification reason.
 - Ideas that duplicate an existing title are skipped. You get a Slack list.
-- **Pick the ones you want by ticking "Record This Week".**
+- **Pick the ones you want: approve them in the Content Center with a recording date** (the old "Record This Week" tick still works).
 
-**Thursday (`SIENNA_PREP_HOUR`, default 10 AM ET):** every ticked idea without a script gets:
+**Thursday (`SIENNA_PREP_HOUR`, default 10 AM ET):** every approved idea recording in the next 8 days without a script gets (Production Stage "Script", the same stage the screen uses):
 - a teleprompter **script** in your voice, learned from your recent transcripts;
 - 3 titles and 3 hooks;
 - a thumbnail idea;
