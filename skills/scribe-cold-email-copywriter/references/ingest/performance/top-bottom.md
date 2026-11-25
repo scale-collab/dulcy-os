@@ -9,7 +9,21 @@ Ranked on interested per 1,000 emails sent, 500+ sent. Where a top-10 or bottom-
 ### #1 · Slogan Social · [Slogan Social] North America OV
 EB id 133 · created 2025-06-03 · status Inactive · **3,817 sent, 265 replies, 80 interested = 20.96 per 1,000 (12.60x agency avg)** · contacted 2,236 · bounced 25 · meetings 12
 
-**Email 1 copy: UNKNOWN.** Not stored in Airtable (no Sequence Analytics rows, no copy fields), and the campaign sits in an EmailBison workspace this session could not open (switching needs a workspace key or a POST). Do not reconstruct it from memory.
+**Email 1 copy, recovered from EmailBison 2026-11-25** (variant A of 5; 2-step sequence) · subject `{Looking for influencers?|Searching for influencers?|Need influencers?}`
+```
+{Hey|Hi|Hello} {FIRST_NAME},
+
+I {noticed|saw|realized} {COMPANY} {works with|partners with|uses} influencer talent to {highlight|showcase|promote} the best of {PERSONAL}
+
+{We’ve worked with|We’ve helped|Our team has supported} {brands like|companies such as|teams at} DoorDash, Meta, and Amazon Prime Video to {run|manage|execute} influencer campaigns with exclusive talent {in|across} the lifestyle, beauty, food, and fashion {spaces|industries}. Would it be helpful if I sent over some influencers from our exclusive talent roster?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+Aaron Sculthorp
+Slogan Social
+
+P.S. or {tell me to pound sand|you can tell me to buzz off}.
+```
+Full sequence with every step and variant: `scripts/slogan-social.md`, section "Recovered from EmailBison 2026-11-25", EB 133. Per-variant stats: UNKNOWN (POST-only in EmailBison).
 
 ### #2 · Juiced Digital Agency · [Juiced Digital] Gyms, 1-500 - USA, Discolike (Direct Offer)
 EB id 501 · created 2026-06-02 · status Inactive · **931 sent, 71 replies, 14 interested = 15.04 per 1,000 (9.04x agency avg)** · contacted 931 · bounced 41 · meetings 0 · SMALL SAMPLE
@@ -80,12 +94,43 @@ P.S. If you're already booked up, tell me to go pound sand...
 ### #4 · Dulcy Free Campaigns · [Clear River] Free Campaign - CPG MI
 EB id 212 · created 2025-10-08 · status Inactive · **547 sent, 27 replies, 6 interested = 10.97 per 1,000 (6.60x agency avg)** · contacted 256 · bounced 31 · meetings 0 · SMALL SAMPLE
 
-**Email 1 copy: UNKNOWN.** Not stored in Airtable (no Sequence Analytics rows, no copy fields), and the campaign sits in an EmailBison workspace this session could not open (switching needs a workspace key or a POST). Do not reconstruct it from memory.
+**Email 1 copy, recovered from EmailBison 2026-11-25** (variant A of 3; 3-step sequence) · subject `{RESTAURANT} - yes or no?`
+```
+{Hi|Hey} {FIRST_NAME},
+
+Could I put together a free retail sell-in sheet for one of your products, the kind you’d use to pitch to store buyers or distributors here in Michigan? It's at no expense to you.
+
+We’re a small creative team in Midland, and for over 60 years we’ve been helping Michigan food and beverage brands look great in front of retailers.
+
+Since you’re in {CITY}, happy to walk you through it over lunch sometime this week, my treat.
+
+--
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Look forward to meeting you|Best},
+{Alex Woung|Alexander Woung}
+BDR {at|@} Clear River
+https://clear-river.com/
+[phone redacted]
+```
+Full sequence with every step and variant: `scripts/dulcy-free-campaigns.md`, section "Recovered from EmailBison 2026-11-25", EB 212. Per-variant stats: UNKNOWN (POST-only in EmailBison).
 
 ### #5 · Slogan Social · [Slogan Social] Influencer Positions Direct
 EB id 162 · created 2025-06-26 · status Inactive · **3,505 sent, 127 replies, 34 interested = 9.70 per 1,000 (5.83x agency avg)** · contacted 1,947 · bounced 17 · meetings 5
 
-**Email 1 copy: UNKNOWN.** Not stored in Airtable (no Sequence Analytics rows, no copy fields), and the campaign sits in an EmailBison workspace this session could not open (switching needs a workspace key or a POST). Do not reconstruct it from memory.
+**Email 1 copy, recovered from EmailBison 2026-11-25** (variant A of 3; 2-step sequence) · subject `{Looking for influencers?|Searching for influencers?|Need influencers?}`
+```
+{Hey|Hi|Hello} {FIRST_NAME},
+
+I {noticed|saw|realized} {COMPANY} {works with|partners with|uses} influencer talent to {highlight|showcase|promote} the best of {PERSONAL}
+
+{We’ve worked with|We’ve helped|Our team has supported} {brands like|companies such as|teams at} DoorDash, Meta, and Amazon Prime Video to {run|manage|execute} influencer campaigns with exclusive talent {in|across} the lifestyle, beauty, food, and fashion {spaces|industries}. Would it be helpful if I sent over some influencers from our exclusive talent roster?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+Mason Lee
+Slogan Social
+
+P.S. or tell me to pound sand.
+```
+Full sequence with every step and variant: `scripts/slogan-social.md`, section "Recovered from EmailBison 2026-11-25", EB 162. Per-variant stats: UNKNOWN (POST-only in EmailBison).
 
 ### #6 · Twenty West Media · [Twenty West Media (Internal)] Skincare & Haircare Brands, ChatGPT Shopping Questions, USA, DiscoLike (Direct Offer) - Generic Emails
 EB id 597 · created 2026-10-01 · status Inactive · **6,453 sent, 181 replies, 61 interested = 9.45 per 1,000 (5.68x agency avg)** · contacted 2,336 · bounced 185 · meetings 7
@@ -488,7 +533,22 @@ Director, Twenty West Media
 ### #367 · TargetonStar · [TargetonStar] SEO Agencies, 3-50 Emply - USA/CA, Clutch (Likihood)
 EB id 431 · created 2026-04-16 · status Inactive · **12,783 sent, 12 replies, 0 interested = 0.00 per 1,000 (0.00x agency avg)** · contacted 4,447 · bounced 57 · meetings 0
 
-**Email 1 copy: UNKNOWN.** Not stored in Airtable (no Sequence Analytics rows, no copy fields), and the campaign sits in an EmailBison workspace this session could not open (switching needs a workspace key or a POST). Do not reconstruct it from memory.
+**Email 1 copy, recovered from EmailBison 2026-11-25** (variant A of 3; 3-step sequence) · **LOSER: keep as evidence of what not to do** · subject `{our leads|our seo| our clients}`
+```
+{Hi|Hello|Hey} {FIRST_NAME},
+
+When an SEO client {wants|needs|is looking for} more leads, do you usually {keep pushing for|focus on getting|continue driving} more {traffic|visitors|site visits} or {go back after|follow up on|revisit} the leads and customers they already {paid to acquire|invested in|brought in}?
+
+I can {run|launch|set up} a reactivation campaign for you guys for free, just so you can {see|understand|experience} how it works.
+
+Can I {send over|share|provide} what that campaign would {look like|entail}?
+
+{Best regards|Kind regards|Warm regards|Cheers|Sincerely|Thank youlThanks},
+{SENDER_FULL_NAME}
+Co-Founder, TargetOnStar
+[phone redacted]
+```
+Full sequence with every step and variant: `scripts/targetonstar.md`, section "Recovered from EmailBison 2026-11-25", EB 431. Per-variant stats: UNKNOWN (POST-only in EmailBison).
 
 ### #366 · TargetonStar · [TargetonStar] Web Design Agencies, 3-50 Emply - USA/CA, Clutch (Likihood)
 EB id 432 · created 2026-04-16 · status Inactive · **12,037 sent, 27 replies, 0 interested = 0.00 per 1,000 (0.00x agency avg)** · contacted 4,059 · bounced 74 · meetings 0
@@ -852,7 +912,21 @@ Director, Twenty West Media
 ### #358 · Retail Media Group · [RMG] - Real Estate
 EB id 305 · created 2025-11-21 · status Inactive · **4,806 sent, 61 replies, 0 interested = 0.00 per 1,000 (0.00x agency avg)** · contacted 1,829 · bounced 26 · meetings 0
 
-**Email 1 copy: UNKNOWN.** Not stored in Airtable (no Sequence Analytics rows, no copy fields), and the campaign sits in an EmailBison workspace this session could not open (switching needs a workspace key or a POST). Do not reconstruct it from memory.
+**Email 1 copy, recovered from EmailBison 2026-11-25** (variant A of 1; 3-step sequence) · **LOSER: keep as evidence of what not to do** · subject `{Active buyers in {CITY}|Touring activity this week|Audience gap}`
+```
+{Hey|Hi|Hello} {FIRST_NAME},
+
+Quick one, would it be {okay|alright|acceptable} if I {pull together|assemble|put together} a free list of ~1,000 real active homebuyers near {CITY}?
+
+These are people {currently visiting open houses|touring neighbourhoods|checking out competing developments}, basically the buyers Meta {can’t see|doesn’t surface|misses entirely}.
+
+It’s at no expense to you. {Mind if I put it together?|Want me to compile it?|Should I prepare it for you?}
+
+{Best regards|Warm regards|Kind regards},
+Sumaan Khan
+RMG
+```
+Full sequence with every step and variant: `scripts/retail-media-group.md`, section "Recovered from EmailBison 2026-11-25", EB 305. Per-variant stats: UNKNOWN (POST-only in EmailBison).
 
 *(added: bottom position 11, because some bottom-10 campaigns have no stored copy)*
 
@@ -958,3 +1032,10 @@ Alpha Software
   - Step 3 (1 variant; 1,035 sent, 0 interested = 0.00/1k) · subject `Re: Quick question {FIRST_NAME}` · ~67 words · opens: " However, we'd be happy to build a mobile workflow for you so your team can compare against paper, especially useful for QA, sanitation, audits, safety, and pro" · ask: "Should I send this to you or someone on QA or Operations?"
   - Step 4 (1 variant; 1,023 sent, 0 interested = 0.00/1k) · subject `Re: Quick question {FIRST_NAME}` · ~36 words · opens: "{FIRST_NAME},  Last email over here." · ask: "none"
 
+
+## Update 2026-11-25 (EmailBison recovery)
+
+- The 5 top/bottom entries that had "copy UNKNOWN" now show their real email 1 (variant A), read from EmailBison: #1 Slogan Social EB 133, #4 Clear River EB 212, #5 Slogan Social EB 162, #358 RMG EB 305 (LOSER), #367 TargetonStar EB 431 (LOSER). Full sequences sit in each client's file under "Recovered from EmailBison 2026-11-25". Shop Innovator #9's missing subject was not in scope and is still UNKNOWN.
+- What the recovered top entries share: email 1 is short (69 words for Slogan Social, 91 for Clear River), names one concrete thing the sender will hand over (a talent shortlist; a free sell-in sheet over lunch), and ends with a low-pressure "or tell me to pound sand" P.S.
+- What the recovered bottom entries share: a free offer the prospect has to imagine using on someone else (TargetonStar: "a reactivation campaign for your SEO clients", 12,783 sent, 0 interested) or an abstract audience product (RMG: "a free list of ~1,000 real active homebuyers", 4,806 sent, 0 interested).
+- New strong performer with copy now known: Scroll Stop's April 2026 Beauty wave (EB 428, 21,914 sent, 161 interested = 7.35/1k), together with Apps 4.60/1k (EB 426) and Sports 3.82/1k (EB 427). See analysis.md U1.

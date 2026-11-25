@@ -317,3 +317,40 @@ Sequence Analytics, every step of every 500+ sent campaign with per-step data:
 - **{VARIABLE} in subject:** 2026 2.75 with vs 1.95 without, but all years 1.59 vs 1.81. Mixed.
 - **Links in Email 1:** 0.54 per 1,000 with a link (8 camps, 57,354 sent) vs 1.77 without. Few campaigns, but consistent with deliverability advice. Avoid links in Email 1.
 
+
+## Update 2026-11-25 (EmailBison recovery)
+
+**What changed.** Copy for 141 of the 186 "copy UNKNOWN" campaigns (917,585 of 1,566,726 emails) was read straight from EmailBison (read-only GET on each campaign's sequence steps, one client workspace at a time). 4 more (Visionair EB 165, 108, 81, 63; 68,892 emails) already had their copy in `visionair-ai.md`. 6 campaigns that were missing from the earlier record altogether were also found and added (Visionair EB 548, 30, 29; TwoTreesPPC EB 35, 25, 24; 18,864 emails). Each client file now ends with a section "Recovered from EmailBison 2026-11-25"; every recovered row in the old UNKNOWN table is marked.
+
+**Still UNKNOWN: 41 campaigns, 580,249 emails.** 32 are Dulcy's own 2025 to early-2026 campaigns (MISS G550, APPC E53, CPPC G63, Apollo Agencies, Agency Vista/Clay/Clutch direct offers, the Jan 2025 "500 Leads (Google)" 5.65/1k, "Clutch Free Leads (Google)" 5.17/1k, "3 Outbound Ideas" 3.06/1k). They are in no workspace that was listed: the Dulcy workspace now holds only 16 campaigns (EB 586 to 652) and a GET on EB 175 returns 404, so they look deleted from EmailBison too. Ask Alex whether another copy exists (ChatGPT history, Google Drive) before treating them as lost. The other 9 are still in EmailBison but were skipped as near-duplicates or under 500 sent (Snowball 166, 203, 221, 241; Unleashed 282; Visimpact 164; LuckyDiem 222; Alpha 308; Shop Innovator 421).
+
+**Per-step and per-variant stats: still UNKNOWN for the recovered campaigns.** EmailBison serves them only through a POST stats call, which was not authorised. All numbers below are campaign totals.
+
+**Caveat.** These patterns compare different clients, lists and years, so treat them as directional. Each one names the client it came from; the facts and proof belong to that client only.
+
+### U1. Scroll Stop April 2026 wave: a 47-word "I've got creators" opener beat their 2025 copy about 9x (Strong)
+EB 428, 426, 427 (Beauty, Apps, Sports; DiscoLike lists): **48,829 sent, 277 interested = 5.67/1k.** Step 1 is about 47 words: "I've got a {couple|few|handful} of creators in the {beauty|...} space who've been part of campaigns driving 1M+ views, would love to see if they're a good fit to promote {COMPANY}. Worth a chat?" plus "P.S. Or tell me to pound sand...". Step 2 adds one named result per vertical (Glaze Hair 33,000+ clicks; Match Masters 5,000+ downloads; Castore just under 40k in sales) and offers "2 creators we'd look at first". Step 3 is a "you or someone else?" bump with the 250k+ creators and guaranteed-results line.
+Their 2025 "Use influencer marketing for {COMPANY}" family (EB 233, 380, 357, 268: long spintax, generic "loyalty and acquisition" benefit, 350% YoY claim) got **20,125 sent, 13 interested = 0.65/1k**. The same April copy re-sent to a "$10M+" list in June (EB 490) fell to 2.88/1k; reuse decays (see P7).
+
+### U2. A "tell me to pound sand" style P.S. again travels with the winners (Medium, confounded)
+Recovered campaigns with a sign-off like "or tell me to pound sand / kick rocks / buzz off / I'll leave the table": **37 campaigns, 181,617 sent, 3.20/1k**. Without it: **104 campaigns, 735,968 sent, 1.24/1k**. This confirms P4, but most of the top campaigns also share short openers and a concrete offer, so the P.S. is not proven on its own.
+
+### U3. Short first emails beat long ones (Medium)
+Step 1 variant A at 75 words or fewer (first spin option counted): **59 campaigns, 389,377 sent, 2.08/1k**. Longer: **82 campaigns, 528,208 sent, 1.30/1k**. Clearest single-client case: Amazon Consultancy's one-sentence "If we could help {COMPANY} rank products like your {PRODUCT} on page 1 on Amazon for {KEYWORD}, would that be worth a chat?" (EB 89 3.38/1k, EB 85 2.34/1k) against their longer white-paper version (EB 152 1.82/1k, EB 105 2.05/1k).
+
+### U4. Hard money-back or "we work for free until" guarantees did worse, not better (Medium)
+Campaigns whose copy leans on a guarantee ("you pay nothing", "we work for free until", "we send you $1,500", "it's on the house"): **18 campaigns, 99,922 sent, 0.88/1k** against **1.72/1k** for the rest. Losers to keep as evidence: Adverio's "guarantee 10-20% growth in 90 days or we work for free" sequences (EB 100 0.33/1k, EB 110 0.67/1k); Digital Neighbor's "100+ prospective clients in 60 days or we send you $1,500" (EB 118, 0.70/1k). Digital Neighbor's best was the opposite: a plain "you guys handle {CASE}, right?" opener with a restaurant P.S. (EB 91, 2.80/1k).
+
+### U5. Same copy, different list: segment moves results 3x to 6x (Strong)
+- Slogan Social: identical "exclusive talent roster" email (DoorDash, Meta, Amazon Prime Video proof) got **20.96/1k** on the North America list (EB 133) but **3.67/1k** on CMOs (EB 177).
+- Inlight Insight: identical "Not selling anything, just hoping to get your POV" opener got **3.15/1k** on consultancies (EB 128) against **0.70/1k** on SaaS (EB 127) and **0.63/1k** on financial services (EB 129).
+Lesson for Scribe: before rewriting copy that underperforms, check whether the same copy already worked on another list.
+
+### U6. Dulcy's free campaigns for prospects (2025): the local "free sample + lunch, my treat" offer led (Weak: small samples)
+Run in the Dulcy Free Campaigns workspace on behalf of prospects; the facts belong to those prospects (Clear River, PN Digital, Great Impressions, Just Digital), not to Dulcy. Clear River (Midland, Michigan creative team): "Could I put together a free retail sell-in sheet for one of your products... Since you're in {CITY}, happy to walk you through it over lunch sometime this week, my treat." got **10.97/1k on CPG (EB 212, 547 sent)** and **3.60/1k on manufacturing (EB 211, 556 sent)**. The same offer to healthcare got 0 from 110 sent. PN Digital's AI-search and roofing map offers (EB 238 0.65/1k, EB 300 0.60/1k) and the Just Digital med spa "free campaign" emails (EB 294 0.00/1k, EB 336 0.81/1k) were losers. Note: Dulcy's own Jan 2025 free-list campaigns (EB 38, 39, 22) are still UNKNOWN (deleted, see above).
+
+### U7. White-paper "interview" openers were middling overall (Weak)
+15 recovered white-paper/interview step-1 campaigns: **97,881 sent, 1.26/1k** against 1.68/1k for the rest. Range is wide: TwoTreesPPC Education white paper 2.06/1k (EB 158) and KNR luxury fashion (French) 4.16/1k on 722 sent (EB 155), but TwoTreesPPC Software 0.26/1k (EB 134) and Snowball SaaS 0.39/1k (EB 157). The format depends on the market; don't default to it.
+
+### U8. Direct mail and "AI website" pitches stayed at the bottom whatever the copy (Strong, confirms P9)
+Snowball Print Marketing, 6 recovered direct-mail sequences: 0.21 to 0.67/1k (EB 244, 173, 172, 200, 220, 157). Their single best (EB 202, 1.69/1k) was a one-email white-paper ask, so its per-email rate is not comparable with the 3-step ones. TargetonStar "free reactivation campaign for your SEO clients" (EB 431): 12,783 sent, 0 interested.
