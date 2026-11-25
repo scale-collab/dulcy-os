@@ -417,13 +417,17 @@ test('diagnose mode: a saved job that no longer matches the sheet is explained, 
 // ---------- LeadMagic fallback ----------
 import { mapLeadMagicRow, leadMagicCandidates } from '../src/verify/leadmagic.js';
 
-const lmFake = { url: '', submits: 0, lastSubmit: {} as any, key: '', statusCalls: 0, pendingPolls: 1, answers: {} as Record<string, any> };
+const lmFake = { url: '', singles: [] as any[], submits: 0, lastSubmit: {} as any, key: '', statusCalls: 0, pendingPolls: 1, answers: {} as Record<string, any> };
 let lmServer: http.Server;
 before(async () => {
   lmServer = http.createServer(async (req, res) => {
     const chunks: Buffer[] = []; for await (const c of req) chunks.push(c as Buffer);
     lmFake.key = String(req.headers['x-api-key'] ?? '');
     res.setHeader('content-type', 'application/json');
+    if (req.url === '/email-finder' && req.method === 'POST') {
+      const b = JSON.parse(Buffer.concat(chunks).toString()); lmFake.singles.push(b);
+      return res.end(JSON.stringify(lmFake.answers[`${b.first_name} ${b.last_name}`] ?? { email: null, status: 'not_found', message: 'Email not found' }));
+    }
     if (req.url === '/bulk/submit' && req.method === 'POST') {
       lmFake.submits++; lmFake.lastSubmit = JSON.parse(Buffer.concat(chunks).toString());
       res.statusCode = 202;
@@ -446,9 +450,9 @@ before(async () => {
 });
 after(() => { lmServer.close(); });
 
-const lmCfg = () => cfg({ leadMagicApiKey: 'lm-key', leadMagicBaseUrl: lmFake.url });
+const lmCfg = (over: Partial<Config> = {}) => cfg({ leadMagicApiKey: 'lm-key', leadMagicBaseUrl: lmFake.url, leadMagicMode: 'bulk', ...over });
 const resetLm = async () => {
-  Object.assign(lmFake, { submits: 0, lastSubmit: {}, key: '', statusCalls: 0, pendingPolls: 1, answers: { 'Cy Ra': { email: 'cy@gamma.com', email_status: 'valid', first_name: 'Cy', last_name: 'Ra', domain: 'gamma.com' } } });
+  Object.assign(lmFake, { singles: [], submits: 0, lastSubmit: {}, key: '', statusCalls: 0, pendingPolls: 1, answers: { 'Cy Ra': { email: 'cy@gamma.com', email_status: 'valid', first_name: 'Cy', last_name: 'Ra', domain: 'gamma.com' } } });
   await db.query('TRUNCATE lead_lm_results');
 };
 
@@ -497,4 +501,35 @@ test('verify without "Use LeadMagic Fallback" never calls LeadMagic', { skip }, 
   assert.equal(j.job.status, 'succeeded', j.job.error);
   assert.equal(lmFake.submits, 0);
   assert.equal(j.job.result.leadMagic, undefined);
+});
+
+test('verify + LeadMagic single mode (default): one call per person, several at once, same rules; nobody looked up twice', { skip }, async () => {
+  await resetLm();
+  const c = lmCfg({ leadMagicMode: 'single', leadMagicConcurrency: 5, leadMagicPerMin: 300 });
+  const q = await enqueueVerify({ rows: ROWS, leadMagic: true });
+  const j = await runUntilSettled(c, q.job.id);
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.equal(lmFake.submits, 0, 'no bulk job');
+  assert.deepEqual(lmFake.singles.map((b) => b.first_name).sort(), ['Bo', 'Cy']);
+  assert.equal(j.job.result.leadMagic.recovered, 1);
+  assert.equal(j.job.result.leadMagic.mode, 'single');
+  assert.deepEqual(j.job.result.counts, { good: 4, risky: 1, bad: 1, pending: 0, held: 0, sent: 5 });
+  const again = await enqueueVerify({ rows: ROWS, leadMagic: true });
+  const ja = await runUntilSettled(c, again.job.id);
+  assert.equal(ja.job.status, 'succeeded', ja.job.error);
+  assert.equal(lmFake.singles.length, 2, 'no second lookup');
+});
+
+test('LeadMagic single mode pacing: never over the per-minute rate; an error stays Risky, a refused key stops', async () => {
+  const { findAllSingle } = await import('../src/verify/leadmagic.js');
+  const { PermanentError } = await import('../src/errors.js');
+  const cands = Array.from({ length: 6 }, (_, i) => ({ key: `k${i}`, row: {}, originalEmail: '', body: { first_name: `F${i}`, last_name: 'L', domain: 'x.com' } }));
+  const starts: number[] = [];
+  const out = await findAllSingle(cands as any, async (b) => { starts.push(Date.now()); if (b.first_name === 'F2') throw new Error('timeout'); return { email: `${b.first_name.toLowerCase()}@x.com`, email_status: 'valid' }; }, { concurrency: 6, perMin: 600, isFatal: (e) => e instanceof PermanentError });
+  assert.equal(out.length, 6);
+  assert.equal(out.filter((r) => r.verdict === 'Good').length, 5);
+  assert.match(out.find((r) => r.key === 'k2')!.detail, /provider_error/);
+  starts.sort((a, b) => a - b);
+  assert.ok(starts[5] - starts[0] >= 450, 'calls are spaced (600/min = 100 ms apart)');
+  await assert.rejects(findAllSingle(cands as any, async () => { throw new PermanentError('LeadMagic refused the key (HTTP 401)'); }, { concurrency: 2, perMin: 6000, isFatal: (e) => e instanceof PermanentError }), /refused the key/);
 });

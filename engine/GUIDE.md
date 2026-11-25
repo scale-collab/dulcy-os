@@ -121,6 +121,7 @@ Not checked by the engine yet (do these yourself before pressing Launch): the **
 **Known limit:** about 28% of Contacts-run people (the ones found on the web, not in DiscoLike's database) have no DiscoLike person ID. Deep Review Contacts and person-level enrichment skip those people (company-level enrichment still works).
 
 **Verify stays the same for every option:** MillionVerifier checks every email ("just making sure"), and **LeadMagic runs only when "Use LeadMagic" is ticked** (off by default).
+- **LeadMagic speed (2026-11-25):** the engine sends one Email Finder lookup per person, about 40 at a time and at most 250 a minute (LeadMagic's limit is 300). About 14,000 people take about an hour, not 12 (LeadMagic's bulk queue ran at ~19 rows a minute, ticket T-1619). Same credits. A lookup that errors stays Risky and is not retried; a refused key or no credits stops the job, and the answers so far are kept. Server switches: `LEADMAGIC_MODE=bulk` goes back to the bulk queue; `LEADMAGIC_CONCURRENCY`, `LEADMAGIC_PER_MIN`.
 
 **What the live test showed (2026-11-23, 518 companies, 383 contacts, MillionVerifier on 366):**
 - DiscoLike "Validated" (201): 82% good, 15% risky, **3.5% bad**. That's why MillionVerifier stays.

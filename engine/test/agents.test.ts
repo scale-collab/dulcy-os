@@ -252,3 +252,10 @@ test('Sienna writes scripts for ideas approved in the Content Center with a reco
   assert.match(f, /\{Record This Week\}/);
   assert.match(f, /\{Script\}=''/);
 });
+
+test('Sienna idea quota: the week\'s videos plus a handful more (main 2 → 4, Raw 5 → 8)', async () => {
+  const { ideaQuota } = await import('../src/agents/sienna.js');
+  assert.equal(ideaQuota(2), 4);
+  assert.equal(ideaQuota(5), 8);
+  assert.equal(ideaQuota(1), 3);
+});

@@ -77,3 +77,33 @@ export function mapLeadMagicRow(c: LmCandidate, r: any): LmResult {
   if (GOOD_DETAILS.includes(detail) && EMAIL.test(email)) return { key: c.key, verdict: 'Good', email, detail };
   return risky(detail || 'not_found', email);
 }
+
+/**
+ * Single mode (Alex 2026-11-25): one Email Finder call per person, several at once, kept under the
+ * per-minute limit. A call that errors stays Risky and is never retried automatically; a refused key
+ * or no credits stops everything (results so far are returned on the error as .partial).
+ */
+export async function findAllSingle(cands: LmCandidate[], find: (b: FinderRow) => Promise<any>, opts: { concurrency: number; perMin: number; isFatal: (e: unknown) => boolean }): Promise<LmResult[]> {
+  const out: LmResult[] = [];
+  const gap = 60_000 / Math.max(1, opts.perMin);
+  let next = 0, slot = 0, fatal: unknown = null;
+  const worker = async () => {
+    while (next < cands.length && !fatal) {
+      const c = cands[next++];
+      const now = Date.now();
+      slot = Math.max(now, slot + gap);
+      const wait = slot - now;
+      if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+      if (fatal) break;
+      try {
+        out.push(mapLeadMagicRow(c, { status: 'success', http_status_code: 200, lm_output: await find(c.body) }));
+      } catch (e) {
+        if (opts.isFatal(e)) { fatal = e; break; }
+        out.push({ key: c.key, verdict: 'Risky', email: '', detail: `provider_error: ${String((e as Error)?.message ?? e).slice(0, 200)}` });
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.max(1, Math.min(opts.concurrency, cands.length)) }, worker));
+  if (fatal) { (fatal as any).partial = out; throw fatal; }
+  return out;
+}

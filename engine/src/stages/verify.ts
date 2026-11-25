@@ -19,7 +19,7 @@ import { NeedsReviewError, PermanentError, WaitError } from '../errors.js';
 import { statusBlock, timing } from '../leadlist/timing.js';
 import { createMvClient } from '../providers/millionverifier.js';
 import { createLeadMagicClient } from '../providers/leadmagic.js';
-import { leadMagicCandidates, mapLeadMagicRow, type LmCandidate, type LmResult } from '../verify/leadmagic.js';
+import { leadMagicCandidates, mapLeadMagicRow, findAllSingle, type LmCandidate, type LmResult } from '../verify/leadmagic.js';
 import { createSheetsClient } from '../providers/google.js';
 import { sheetIdFrom, loadSheetRows, type SheetSource } from '../sources/sheet.js';
 import {
@@ -211,7 +211,7 @@ export const verifyStage: Stage = async (ctx) => {
   // LeadMagic fallback (after MillionVerifier; direct contacts only; each person once).
   let lmCands: LmCandidate[] = [];
   let lmKnown: LmResult[] = [];
-  let lmInfo: { candidates: number; alreadyLookedUp: number; sent: number; recovered: number; jobId?: string; wouldSpend?: number } | undefined;
+  let lmInfo: { candidates: number; alreadyLookedUp: number; sent: number; recovered: number; jobId?: string; wouldSpend?: number; mode?: string } | undefined;
   if (input.leadMagic && opts.includeDirect && !input.diagnose) {
     lmCands = await ctx.step('lm-candidates', async () => leadMagicCandidates(set, results));
     const keys = lmCands.map((c) => c.key);
@@ -220,7 +220,35 @@ export const verifyStage: Stage = async (ctx) => {
     const todo = lmCands.filter((c) => !done.has(c.key));
     lmInfo = { candidates: lmCands.length, alreadyLookedUp: before.length, sent: 0, recovered: 0 };
     if (todo.length && ctx.dryRun) lmInfo.wouldSpend = todo.length;
-    else if (todo.length) {
+    else if (todo.length && ctx.cfg.leadMagicMode === 'single') {
+      // One call per person, many at once, near the per-minute limit (bulk ran at ~19 rows/min, ticket T-1619).
+      const lm = createLeadMagicClient({ apiKey: ctx.cfg.leadMagicApiKey, baseUrl: ctx.cfg.leadMagicBaseUrl, timeoutMs: 60_000 });
+      const save = (list: LmResult[]) => list.length ? ctx.db.query(
+        `INSERT INTO lead_lm_results (list_id, key, verdict, email, detail, job_id)
+         SELECT $1, k, v, e, d, $2 FROM unnest($3::text[], $4::text[], $5::text[], $6::text[]) AS u(k, v, e, d) ON CONFLICT DO NOTHING`,
+        [ctx.job.record_id, 'single', list.map((x) => x.key), list.map((x) => x.verdict), list.map((x) => x.email), list.map((x) => x.detail)]) : Promise.resolve();
+      const CHUNK = 500;
+      for (let i = 0; i < todo.length; i += CHUNK) {
+        const part = todo.slice(i, i + CHUNK);
+        const ck = createHash('sha256').update(part.map((c) => c.key).sort().join('\n')).digest('hex').slice(0, 16);
+        await ctx.step(`lm-single:${ck}`, () => ctx.paid({
+          scope: 'record', provider: 'leadmagic', callKey: `finder1:${ck}`, units: part.length,
+          run: async () => {
+            // After a restart, people already answered are not paid for again.
+            const saved = new Set((await ctx.db.query(`SELECT key FROM lead_lm_results WHERE list_id=$1 AND key = ANY($2::text[])`, [ctx.job.record_id, part.map((c) => c.key)])).rows.map((x) => x.key as string));
+            const rest = part.filter((c) => !saved.has(c.key));
+            try {
+              const got = await findAllSingle(rest, (b) => lm.findOne(b), { concurrency: ctx.cfg.leadMagicConcurrency, perMin: ctx.cfg.leadMagicPerMin, isFatal: (e) => e instanceof PermanentError || e instanceof NeedsReviewError });
+              await save(got);
+              return { looked: got.length, good: got.filter((x) => x.verdict === 'Good').length };
+            } catch (e) { await save(((e as any)?.partial ?? []) as LmResult[]); throw e; }
+          },
+          dryRunResult: () => ({ looked: 0, good: 0 }),
+        }), { timeoutMs: 20 * 60_000 });
+        lmInfo.sent += part.length;
+      }
+      lmInfo.mode = 'single';
+    } else if (todo.length) {
       const lm = createLeadMagicClient({ apiKey: ctx.cfg.leadMagicApiKey, baseUrl: ctx.cfg.leadMagicBaseUrl });
       const key = createHash('sha256').update(todo.map((c) => c.key).sort().join('\n')).digest('hex').slice(0, 16);
       const jobId = await ctx.step('lm-submit', () => ctx.paid({
