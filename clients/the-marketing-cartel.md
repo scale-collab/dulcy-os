@@ -112,7 +112,7 @@ Source keys used below:
   - Vertical case studies.
   - The thesis notes Cartel's published ITI case study reports "doubled organic traffic within a year". [CMP thesis, Vocational]
 - Claims we must NOT make (until verified):
-  - **Review copy risk (flag to Alex):** Email 1 P.S. lines contain proof claims that the theses themselves say are unverified: [CMP Script Copy Email 1 (Review), read 2026-11-17]
+  - **P.S. proof lines confirmed OK by Alex with the client (2026-11-25).** Earlier note: Email 1 P.S. lines contain proof claims that the theses themselves say are unverified: [CMP Script Copy Email 1 (Review), read 2026-11-17]
     - Vocational: ITI "doubled their enrollments from google/ai search". The thesis says the ITI proof is doubled organic traffic, "not a promise of doubled enrollments".
     - Hair: "booked consultations rose from 15 to 24 monthly in 30 days". Source: `UNKNOWN`.
     - Rehab: "admissions rose from 31 to 46 over 6 months". The thesis says "We do not yet have a verified numerical rehab case study".
@@ -209,7 +209,7 @@ What worked / what didn't:
 
 ## 9. Open issues and next steps
 - Bounce: all 5 sending campaigns are over 4% (4.42%–7.44%). Under the rules they must be paused and investigated. Only Rehab Generic shows Inactive. Owner: Atlas / Riley. Needs Alex's decision.
-- Unverified proof in the Email 1 P.S. lines (ITI "doubled enrollments", hair 15 to 24, rehab 31 to 46). Confirm with Wilbur and John or remove. Check whether this text is live. Owner: Scribe / Atlas, with Alex approval.
+- ~~Unverified proof in the Email 1 P.S. lines~~ **Resolved: Alex confirmed with the client that the P.S. lines (ITI "doubled enrollments", hair 15 to 24, rehab 31 to 46) are OK to use** (Alex, 2026-11-25).
 - Downtime credit amount and the failed renewal charge: `UNKNOWN`. Owner: Ledger, then Alex.
 - PPC billing: Billing Ready is false. The first billable call was a No Show; whether it is billable is `UNKNOWN`. The agreement's billable definition is "booked from approved list unless disputed with video".
 - Free-month offer terms not finalized (services, ad-spend exclusion, minimum budget, capacity, post-month-1 price). [OBD]

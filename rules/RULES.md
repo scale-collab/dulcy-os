@@ -156,3 +156,17 @@ Format: `- [date] rule. (why / source)`
 - **The ask:** a call can be asked for, but not in the cold sequence unless it is the only logical next step. Default to a low-friction ask that needs a one-word reply.
 - **Testing:** one direction per campaign (one thesis), with **2 angles** of Email 1 that test something that makes a real difference: USP, pain point, solution angle and so on. Never trivial word swaps.
 - **Next campaign (top-up vs new angle vs new vertical vs new offer):** follow the rules in Alex's 2-Hour Cold Email Campaign SOP and his cold email doc (summary in `skills/atlas-campaign-operator/references/next-campaign-rules.md`).
+
+## Cold email copy: offer what we can do, without the delivery fine print (Alex, 2026-11-25)
+- **Offer what we can genuinely do, and keep the copy about whether they want it.** Steps needed to deliver (access, logins, setup) belong in the reply or the call, not in the cold email. Example: "I can run {COMPANY} through Profit Compass for free" is fine, even though it needs Shopify and ads access.
+- **Still never lie:** no invented results, numbers, customers, guarantees or assets that don't exist. State a condition only when it changes the deal for the prospect (they pay something, it's paid vs free).
+- **Don't get stuck on small nuances.** Scribe and the reviewer flag real truth problems, not every qualifier.
+- **Reason:** Alex: the cold email asks whether they want it; over-qualifying kills the offer.
+
+## EmailBison: Claude may switch workspaces (Alex, 2026-11-25)
+- The EmailBison MCP connection uses an admin key. Claude may switch workspaces with it (`POST /api/workspaces/v1.1/switch-workspace`) to read campaigns, copy and stats, and must switch back to the primary workspace (Visionair AI, team 4) afterwards.
+- Research stays read-only: the switch is the only non-GET call allowed for it. EmailBison holds the full campaign history (some Dulcy campaigns were deleted from Airtable).
+
+## Clients (Alex, 2026-11-25)
+- **Lead Flo Marketing is no longer an active client.** Airtable Workspace IDs Status = Inactive (set 2026-11-25). Active clients: 5, plus Dulcy.
+- **The Marketing Cartel's Email 1 P.S. result lines are confirmed OK** by Alex with the client.
