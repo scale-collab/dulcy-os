@@ -4,6 +4,7 @@ import type { Db } from './db/pool.js';
 import type { Config } from './config.js';
 import { enqueue, getJob } from './queue.js';
 import { STAGES } from './stages/index.js';
+import { createHqHandler, type HqDeps } from './hq/server.js';
 
 /**
  * Requests are signed: header `x-dulcy-timestamp` (ms since epoch) and
@@ -40,7 +41,8 @@ async function readBody(req: http.IncomingMessage, limit = 10_000_000): Promise<
   return Buffer.concat(chunks).toString('utf8');
 }
 
-export function createServer(db: Db, cfg: Config) {
+export function createServer(db: Db, cfg: Config, hqDeps: HqDeps = {}) {
+  const hq = createHqHandler(db, cfg, hqDeps);
   return http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url ?? '/', 'http://local');
@@ -48,6 +50,8 @@ export function createServer(db: Db, cfg: Config) {
         await db.query('SELECT 1');
         return send(res, 200, { ok: true, dryRun: cfg.dryRun });
       }
+      // Dulcy HQ: /hq/* on any host, everything on HQ_HOST (the engine's signed API is not reachable there).
+      if (await hq(req, res, url)) return;
 
       // Everything else needs a valid signature (GETs sign an empty body).
       const body = req.method === 'POST' ? await readBody(req) : '';

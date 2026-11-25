@@ -1,0 +1,13 @@
+# The engine image is built from the repo root (engine/deploy/docker-compose.yml). Only the engine
+# and the HQ web app go into the build; everything else (clients, rules, secrets, history) stays out.
+*
+!engine
+!hq/web
+engine/node_modules
+engine/dist
+engine/deploy
+engine/.env
+hq/web/node_modules
+hq/web/dist
+**/.env
+**/*.pem

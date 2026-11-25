@@ -47,6 +47,10 @@
 //       Atlas's client health report now (printed; --post also sends it to Slack).
 //   agent <atlas.health|cole.review|sienna.ideas|sienna.prep> [--since=YYYY-MM-DD]
 //       Run one of the agents now and wait for the result (live only when the stage is in LIVE_STAGES).
+//   hq-user <email> [--role=owner|member] [--name=Alex] [--password-stdin] [--google-only]
+//       Create or update a Dulcy HQ login. Asks for the password twice (nothing is shown or printed);
+//       --password-stdin reads it from stdin instead; --google-only = no password (Google sign-in only).
+//       Setting a new password signs that person out everywhere.
 //   mv-compare <recordId> <millionVerifierJobId>
 //       Free: download a MillionVerifier job and compare its verdicts with DiscoLike's own email
 //       check on the list's DiscoLike Contacts-run contacts (counts; emails masked).
@@ -54,6 +58,17 @@ import { loadConfig } from './config.js';
 import { createPool, migrate } from './db/pool.js';
 import { enqueue, getJob } from './queue.js';
 import { STAGES } from './stages/index.js';
+
+/** Ask for a secret on the terminal without echoing it. */
+async function askHidden(question: string): Promise<string> {
+  const readline = await import('node:readline');
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: true });
+  let asking = true;
+  (rl as any)._writeToOutput = (s: string) => { if (!asking || s === question) process.stdout.write(s); };
+  try {
+    return await new Promise<string>((resolve) => rl.question(question, (a) => { asking = false; process.stdout.write('\n'); resolve(a); }));
+  } finally { rl.close(); }
+}
 
 function flag(args: string[], name: string): string | undefined {
   const i = args.indexOf(name);
@@ -66,7 +81,26 @@ async function main() {
   const db = createPool(cfg.databaseUrl);
   try {
     await migrate(db);
-    if (cmd === 'verify') {
+    if (cmd === 'hq-user') {
+      const email = args[0] ?? '';
+      const opt = (n: string) => args.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3);
+      const role = (opt('role') ?? 'member').toLowerCase();
+      if (!email || email.startsWith('--') || (role !== 'owner' && role !== 'member')) throw new Error('usage: hq-user <email> [--role=owner|member] [--name=Alex] [--password-stdin] [--google-only]');
+      let password: string | null = null;
+      if (!args.includes('--google-only')) {
+        if (args.includes('--password-stdin')) {
+          const chunks: Buffer[] = []; for await (const c of process.stdin) chunks.push(c as Buffer);
+          password = Buffer.concat(chunks).toString('utf8').replace(/\r?\n$/, '');
+        } else {
+          if (!process.stdin.isTTY) throw new Error('no terminal to ask for the password: use --password-stdin');
+          password = await askHidden('New HQ password (12+ characters): ');
+          if (password !== await askHidden('Same password again: ')) throw new Error('the two passwords are different; nothing changed');
+        }
+      }
+      const { upsertUser } = await import('./hq/auth.js');
+      const r = await upsertUser(db, email, role as 'owner' | 'member', password, opt('name'));
+      console.log(`${r.created ? 'Created' : 'Updated'} HQ login ${email.toLowerCase()} (${role}${password === null ? ', Google sign-in only' : ', password set'}).`);
+    } else if (cmd === 'verify') {
       const recordId = args[0];
       const sheet = flag(args, '--sheet');
       if (!recordId || !/^rec[A-Za-z0-9]{14}$/.test(recordId) || !sheet) throw new Error('usage: verify <recordId> --sheet <link or id> [--direct] [--generic] [--footprint200] [--mv-job <id>] [--expect good=N,risky=N,bad=N]');
@@ -300,7 +334,7 @@ async function main() {
         for (const e of d.errors) console.log(`(couldn't read ${e})`);
       }
     } else {
-      throw new Error('commands: jobs, job, campaign-plans, campaign-plan-retry, campaign-copy, atlas-health, agent, xero-connect, ledger-report, ledger-prep, ledger-ask, verify, mv-compare, campaign, topup, senders, bounce, whereis, cleanup-test, cancel');
+      throw new Error('commands: hq-user, jobs, job, campaign-plans, campaign-plan-retry, campaign-copy, atlas-health, agent, xero-connect, ledger-report, ledger-prep, ledger-ask, verify, mv-compare, campaign, topup, senders, bounce, whereis, cleanup-test, cancel');
     }
   } finally {
     await db.end();

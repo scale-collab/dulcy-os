@@ -149,6 +149,8 @@ export async function agentsTick(db: Db, cfg: Config, now = new Date()): Promise
       if (r.status === 'queued') n++;
     }
   }
+  // HQ: Atlas's own to-do list (campaigns past 60%), every 30 minutes while HQ is on.
+  if (cfg.hqSessionSecret && cfg.airtableApiKey) n += await q('atlas.tasks', `atlas-tasks:${Math.floor(now.getTime() / (30 * 60_000))}`);
   if (cfg.rileyOn && cfg.rileyEveryMin > 0) n += await q('riley.collect', `riley:${Math.floor(now.getTime() / (cfg.rileyEveryMin * 60_000))}`);
   if (cfg.coleOn && cfg.fathomApiKey && cfg.coleEveryMin > 0) n += await q('cole.review', `cole:${Math.floor(now.getTime() / (cfg.coleEveryMin * 60_000))}`);
   if (cfg.siennaOn && et.getDay() === 1 && et.getHours() >= cfg.siennaIdeasHour) n += await q('sienna.ideas', `sienna-ideas:${date}`);
@@ -157,7 +159,7 @@ export async function agentsTick(db: Db, cfg: Config, now = new Date()): Promise
 }
 
 export function startScheduler(db: Db, cfg: Config, signal: AbortSignal): void {
-  if ((!cfg.bounceCheckEveryMin || cfg.bounceCheckWorkspaces.length === 0) && !cfg.seanEveryMin && !cfg.accountHealthEveryMin && !cfg.adaBriefOn && !cfg.ledgerOn && !cfg.atlasOn && !cfg.atlasCampaignsOn && !cfg.rileyOn && !cfg.coleOn && !cfg.siennaOn) return;
+  if ((!cfg.bounceCheckEveryMin || cfg.bounceCheckWorkspaces.length === 0) && !cfg.seanEveryMin && !cfg.accountHealthEveryMin && !cfg.adaBriefOn && !cfg.ledgerOn && !cfg.atlasOn && !cfg.atlasCampaignsOn && !cfg.rileyOn && !cfg.coleOn && !cfg.siennaOn && !cfg.hqSessionSecret) return;
   const err = (e: unknown) => console.error(JSON.stringify({ level: 'error', message: 'scheduler tick failed', err: String(e) }));
   const tick = () => { void scheduleTick(db, cfg).catch(err); void seanTick(db, cfg).catch(err); void accountHealthTick(db, cfg).catch(err); void adaTick(db, cfg).catch(err); void ledgerTick(db, cfg).catch(err); void agentsTick(db, cfg).catch(err); };
   tick();

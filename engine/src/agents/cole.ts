@@ -10,6 +10,7 @@ import { createFathomClient, type FathomMeeting } from '../providers/fathom.js';
 import { createClaude } from '../providers/claude.js';
 import { createSlackClient } from '../providers/slack.js';
 import { readKnowledge } from './knowledge.js';
+import { saveReport, slackReports } from '../hq/reports.js';
 
 const DAY = 86_400_000;
 
@@ -120,7 +121,15 @@ export const coleReviewStage: Stage = async (ctx) => {
     const user = `${head.split('\n\nTranscript start:')[0]}\n\nPacing measured from the transcript: Alex talked ${Math.round(p.alexShare * 100)}% of the words; longest uninterrupted stretch ${p.longestRunWords} words at ${p.longestRunAt}; Alex asked ${p.alexQuestions} questions, the prospect ${p.otherQuestions}; ${p.minutes} minutes.\n\nFull transcript:\n${transcriptText(m)}`;
     const r = await ctx.paid({ callKey: `cole-review:${m.id}`, provider: 'anthropic', units: 1, run: () => claude.structured(Review, [RULES, method, framework], '', user, 'high'), dryRunResult: () => ({}) as ReviewT });
     const msg = writeReview(m, c, p, r);
-    if (slack) {
+    // HQ card: the score and the 3 fixes first, the full review behind a tap.
+    const fixes = (r.fix ?? []).slice(0, 3).map((f) => ({ t: f.t, said: f.said, better: f.better, why: f.why }));
+    await saveReport(ctx.db, {
+      agent: 'Cole', kind: 'call_review', title: `Call review: ${c.prospect || 'prospect'}${c.company ? ` (${c.company})` : ''}`,
+      summary: `Score ${Math.min(10, Math.max(1, Math.round(r.score)))}/10 · ${r.verdict}`, body: `${msg.main}\n\n${msg.draft}`, link: m.url,
+      data: { score: Math.min(10, Math.max(1, Math.round(r.score))), verdict: r.verdict, temperature: r.deal_temperature, fixes, nextStep: r.next_step, drill: r.drill, followUp: r.follow_up_email, pacing: p },
+      jobId: ctx.job.id, dedupeKey: `cole:${m.id}`,
+    });
+    if (slack && slackReports(cfg)) {
       const posted = await ctx.paid({ callKey: `cole-post:${m.id}`, provider: 'slack', units: 0, run: () => slack.post(cfg.coleChannel, msg.main), dryRunResult: () => ({ channel: '', ts: '' }) });
       await ctx.paid({ callKey: `cole-draft:${m.id}`, provider: 'slack', units: 0, run: () => slack.post(posted.channel, msg.draft, posted.ts), dryRunResult: () => ({ channel: '', ts: '' }) });
     }

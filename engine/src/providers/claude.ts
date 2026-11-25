@@ -65,6 +65,26 @@ export function createClaude(o: ClaudeOptions) {
       if (!res || res.stop_reason === 'refusal') throw new PermanentError('Claude declined the research request');
       return res.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text').map((b) => b.text).join('\n').trim();
     },
+    /**
+     * One request of a tool-use chat (HQ chat): the caller runs the tool loop and passes the whole
+     * response content back on the next request. stable = cached system blocks (max 3).
+     */
+    async chatTurn(stable: string[], varying: string, messages: Anthropic.Beta.BetaMessageParam[], tools: Anthropic.Beta.BetaTool[], maxTokens: number): Promise<Anthropic.Beta.BetaMessage> {
+      const system = [
+        ...stable.filter(Boolean).slice(0, 3).map((text) => ({ type: 'text' as const, text, cache_control: { type: 'ephemeral' as const, ttl: '1h' as const } })),
+        ...(varying ? [{ type: 'text' as const, text: varying }] : []),
+      ];
+      try {
+        return await client.beta.messages.create({
+          model: o.model, max_tokens: maxTokens, betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default',
+          output_config: { effort: 'low' }, system, messages, ...(tools.length ? { tools } : {}),
+        } as any) as Anthropic.Beta.BetaMessage;
+      } catch (e) {
+        if (e instanceof Anthropic.RateLimitError || e instanceof Anthropic.InternalServerError || e instanceof Anthropic.APIConnectionError) throw new RetryableError(`Claude: ${(e as Error).message}`);
+        if (e instanceof Anthropic.APIError) throw new PermanentError(`Claude refused the request: ${e.status} ${e.message}`.slice(0, 300));
+        throw e;
+      }
+    },
   };
 }
 export type Claude = ReturnType<typeof createClaude>;

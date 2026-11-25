@@ -14,6 +14,7 @@ import type { JobContext } from '../context.js';
 import { NeedsReviewError, PermanentError, WaitError } from '../errors.js';
 import { bisonFor, type BisonClient } from '../providers/emailbison.js';
 import { alert } from '../log.js';
+import { saveReport } from '../hq/reports.js';
 
 export interface ControlTarget { campaignId: number; recordId?: string; name?: string; outputType?: 'direct' | 'generic'; senderEmailIds?: string[] }
 interface ControlInput { campaignRecordId?: string; name?: string; workspace: string; workspaceId?: number; targets: ControlTarget[] }
@@ -155,6 +156,7 @@ export const campaignLaunchStage: Stage = async (ctx) => {
   });
   const failed = checked.list.filter((c) => !c.pass);
   if (failed.length) {
+    await saveReport(ctx.db, { agent: 'Atlas', kind: 'launch_refused', title: `Launch refused: ${input.name ?? input.campaignRecordId} (nothing launched)`, body: failed.map((c) => `• ${c.check}: ${c.detail}`).join('\n'), urgent: true, dryRun: ctx.dryRun, jobId: ctx.job.id, dedupeKey: `launch-refused:${ctx.job.id}` });
     await alert(ctx.cfg.slackWebhookUrl, `:no_entry: Launch refused for "${input.name ?? input.campaignRecordId}" (nothing launched). Failed: ${failed.map((c) => `${c.check} (${c.detail})`).join('; ')}`);
     throw new PermanentError(`launch refused, nothing was launched. Failed check${failed.length > 1 ? 's' : ''}: ${failed.map((c) => c.check).join(', ')}\n${report(checked.list)}`);
   }

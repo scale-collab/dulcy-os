@@ -10,6 +10,7 @@ import { DECISIONS, DF } from '../decisions/fields.js';
 import { EMAILS } from './emailsFields.js';
 import { ACTIVITY } from '../activity.js';
 import { ACCOUNTS, QUEUE } from '../stages/accountHealth.js';
+import { saveReport, slackReports } from '../hq/reports.js';
 
 const CAMPAIGNS = 'tblAVAA6uBPaMj28P';
 const WORKSPACES = 'tblcjRBGJEWh5KgOt';
@@ -148,6 +149,14 @@ export const adaBriefStage: Stage = async (ctx) => {
   const now = new Date();
   const weekly = ctx.job.input.weekly === true || new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' })).getDay() === 5;
   const text = writeBrief(await gather(at, now, weekly));
+  // HQ keeps every brief (Today shows the latest); Slack only while SLACK_REPORTS=on.
+  const lines = text.split('\n');
+  await saveReport(ctx.db, {
+    agent: 'Ada', kind: 'brief', title: lines[0].replace(/\*/g, ''), body: lines.slice(1).join('\n'),
+    summary: [lines.find((l) => l.startsWith('*Waiting on you:*')), lines.find((l) => l.startsWith('*Top '))].filter(Boolean).join('\n'),
+    data: { weekly }, dryRun: ctx.dryRun, jobId: ctx.job.id, dedupeKey: `ada:${ctx.job.id}`,
+  });
+  if (!slackReports(cfg)) return { message: 'Brief saved to HQ (Slack reports off)', text };
   if (ctx.dryRun || !cfg.slackBotToken) return { message: `Brief written (not posted${ctx.dryRun ? ': dry run' : ': no Slack token'})`, text };
   const slack = createSlackClient({ token: cfg.slackBotToken, baseUrl: cfg.slackBaseUrl });
   const to = String(ctx.job.input.channel ?? cfg.adaChannel ?? ALEX);
