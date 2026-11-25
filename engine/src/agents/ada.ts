@@ -112,6 +112,8 @@ async function gather(at: Pick<AirtableClient, 'list'>, now: Date, weekly: boole
     at.list(WORKSPACES, `{ID}!=''`, ['ID', 'Name'], 200, { byName: true }).catch(() => []),
   ]);
   const names = new Map(workspaces.map((w) => [String(num(w.fields.ID)), v(w.fields.Name)]));
+  const byRecord = new Map(workspaces.map((w) => [w.id, v(w.fields.Name)]));
+  const clientOf = (x: unknown) => { const id = v(x); return byRecord.get(id) ?? (id.startsWith('rec') ? 'unknown client' : id) ?? 'unknown'; };
   const rows = replies.map((r) => ({ ws: v(r.fields['Workspace ID (Bison)']), status: v(r.fields['Lead Status']), state: v(r.fields['Dulcy Reply Agent State']), sentAt: v(r.fields['Dulcy Reply Agent Sent At']), repliedAt: v(r.fields['Latest Reply Time']), bookedAt: v(r.fields['Meeting Booked At']) }));
   const clientName = (ws: string) => names.get(ws) ?? (ws ? `workspace ${ws}` : 'unknown');
   let week: BriefData['week'];
@@ -133,7 +135,7 @@ async function gather(at: Pick<AirtableClient, 'list'>, now: Date, weekly: boole
     now, clientName, purchases: purchases.length, week,
     decisions: decisions.map((r) => ({ title: v(r.fields[DF.title]), agent: v(r.fields[DF.agent]), created: r.createdTime ?? '' })),
     replies: rows,
-    campaigns: campaigns.map((c) => ({ name: v(c.fields.Name), client: v(c.fields.Client) || 'unknown', bounce: num(c.fields['Bounced %']), progress: num(c.fields.Progress), status: v(c.fields['Campaign Status']), changed: v(c.fields['Status Last Modified']) })),
+    campaigns: campaigns.map((c) => ({ name: v(c.fields.Name), client: clientOf(c.fields.Client) || 'unknown', bounce: num(c.fields['Bounced %']), progress: num(c.fields.Progress), status: v(c.fields['Campaign Status']), changed: v(c.fields['Status Last Modified']) })),
     accounts: accounts.map((a) => ({ stage: v(a.fields['Spam Protocol Stage']) })),
     activity: activity.map((a) => ({ agent: v(a.fields.Agent), type: v(a.fields.Type), event: v(a.fields.Event) })),
   };
