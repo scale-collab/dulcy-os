@@ -101,10 +101,11 @@ None of the 5 creators show the same face twice. When they split, the second pan
 - Slop metadata: "#Closing技巧" (TqRR5QdMQg); off-topic "#EventRentalBusiness" (iM0facmmBM) and "#CreatorMarketing #EcommerceMarketing" (fLwyIL47Iy); overstated titles ("Get 7x More Qualified Sales Meetings", "Create 100 Ad Creatives in 2 Days").
 - Screen recordings too small to read in a split (P3111218YtWd aotsR6pqas).
 
-## 8. Open questions for Alex
-1. Should the QR / "Learn more on our socials" end card ever appear? Default here: never.
-2. Long-form: burned-in captions or YouTube captions only?
-3. Raw clip length, and should Raw keep filler words?
-4. Keyword highlight colour (a Dulcy brand hex), or keep it off?
-5. Uppercase captions (current) or sentence case (most creators)?
-6. May Sienna create the "Alex Woung" brand template with the settings in section 3?
+## 8. Alex's decisions (2026-11-25; these win over anything above)
+1. **QR / "Learn more on our socials" end card: never.**
+2. **Burned-in captions on long-form: only on Alex Woung Raw.** Main-channel long-form uses YouTube captions only (no burned-in text). Shorts/Reels always have burned-in captions.
+3. **Raw:** keep his natural filler and pace (cut only dead air over 1 s, false starts and retakes); clips 30-90 s. (Default; Alex had not decided.)
+4. **Keyword highlight: off.**
+5. **Caption look: like Nik Setting's videos** (clean, minimal, modern). Before the first edit Sienna studies a few of his recent Shorts and long-form for free (YouTube page, transcript, stills; no vidIQ) and writes the exact look here (case, size, position, font weight, motion). Until then: sentence case, white, subtle shadow, lower-middle, 1-4 words, no emoji.
+6. **"Alex Woung" OpusClip template: yes.** OpusClip's tools can't create templates, so Sienna writes the exact settings and Alex (or Sienna in the app via Chrome) saves it once; until then she applies the settings per clip.
+7. **No vidIQ** (Alex doesn't pay for it). Study creators from free pages, transcripts and stills.
