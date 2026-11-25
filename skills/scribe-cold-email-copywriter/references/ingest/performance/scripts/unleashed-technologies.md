@@ -1000,7 +1000,308 @@ Unleashed Technologies
 
 | Campaign | EB id | Created | Sent | Replies | Interested | Per 1,000 |
 |---|---:|---|---:|---:|---:|---:|
-| [Unleashed Technologies] DTC (owner, cmo, founder, etc) | 273 | 2025-11-14 | 9,753 | 84 | 3 | 0.31 |
+| [Unleashed Technologies] DTC (owner, cmo, founder, etc) **[copy recovered 2026-11-25, see below]** | 273 | 2025-11-14 | 9,753 | 84 | 3 | 0.31 |
 | [Unleashed Technologies] DTC (cto, technology, it, etc) | 282 | 2025-11-14 | 8,928 | 74 | 1 | 0.11 |
-| [Unleashed Technologies] Non-profit (Washington, D.C) Whitepaper OV | 180 | 2025-07-25 | 4,848 | 120 | 3 | 0.62 |
+| [Unleashed Technologies] Non-profit (Washington, D.C) Whitepaper OV **[copy recovered 2026-11-25, see below]** | 180 | 2025-07-25 | 4,848 | 120 | 3 | 0.62 |
+
+## Recovered from EmailBison 2026-11-25
+
+Source: EmailBison API, read-only GET `/api/campaigns/v1.1/{id}/sequence-steps` after switching into this client's workspace (admin key, authorised by Alex 2026-11-25). HTML converted to plain text; spintax kept exactly as written (including typos and broken braces). Sender and personal phone numbers and email addresses are redacted. Campaign totals come from the earlier record (Airtable sync) where it had them; bounce counts and status come from the EmailBison campaign list.
+
+*Facts and proof in these scripts belong to this client only. Never reuse them for another client.*
+
+Verdict key (interested per 1,000 sent, 500+ sent): WINNER at or above 2.5 · above average 1.5 to 2.49 · below average 0.7 to 1.49 · LOSER under 0.7 (keep as evidence of what not to do).
+
+#### EB 273 · [Unleashed Technologies] DTC (owner, cmo, founder, etc)
+EmailBison status `paused` · created 2025-11-14 · **9,753 sent, 84 replies, 3 interested = 0.31 per 1,000** · bounced 66 (0.7%) · verdict: **LOSER: evidence of what not to do**
+Replaces the "copy UNKNOWN" row for this EB id in the table above.
+Per-step / per-variant stats: UNKNOWN (EmailBison only serves them via a POST stats call, which was not authorised).
+
+**Step 1 variant A** · subject `check this out {FIRST_NAME}` · wait 2d
+```
+{Hi|Hello|Hey} {FIRST_NAME},
+
+{We recently helped a few DTC brands rebuild their online store foundations|Our team recently worked with several DTC brands to modernize their eCommerce foundations|We’ve helped multiple DTC companies overhaul their online store architecture}, {checkout sped up, order errors dropped, and revenue lifted almost immediately|resulting in faster checkout, fewer order issues, and an immediate lift in revenue|leading to quicker checkout times, reduced errors, and near-instant revenue gains}.
+
+{Most leaders don’t realize how much money slow systems quietly drain|Many leaders underestimate how much slow, outdated systems silently cost them|A lot of teams don’t realize how much profit gets lost to slow or unstable systems}. {Outdated catalog tools delay launches, frustrate customers, and shrink repeat sales|Legacy catalog tools slow down releases, hurt customer experience, and reduce repeat purchases|Old catalog systems create launch delays, annoy buyers, and weaken reorders}.
+
+Would you be open to chatting about how it all works?
+
+{I can show you how a modern eCommerce setup pays for itself in months, not years|I’d be happy to walk you through how modernizing your eCommerce stack returns value in months—not years|We can go over how a modern eCommerce foundation delivers ROI within months rather than years}.
+
+{Best|Kind regards|Warm regards},
+{SENDER_FULL_NAME}
+Unleashed Technologies
+```
+**Step 1 variant B** · subject `check this out {FIRST_NAME}`
+```
+{Hi|Hello|Hey} {FIRST_NAME},
+
+{We’ve helped brands rebuild their eCommerce foundations so pages load faster, checkout converts better, and sales stop leaking|Our team has helped brands modernize their eCommerce foundations to improve load speeds, boost checkout conversion, and prevent revenue leaks|We’ve supported brands in rebuilding their eCommerce architecture to speed up pages, strengthen checkout performance, and capture lost sales}.
+
+{When BSN Sports’ system started slowing growth, we rebuilt their platform end-to-end|When BSN Sports began hitting platform limits that slowed growth, we rebuilt their system from the ground up|For BSN Sports, growth was being limited by legacy systems, so we completely rebuilt their platform}. {Their new eCommerce experience now powers billions in annual sales|That rebuilt experience now supports billions in yearly revenue|Today, the new platform handles billions in annual sales with ease}.
+
+{Happy to show how the same modernization approach could support {COMPANY}'s growth targets|I’d be glad to walk through how this modernization approach could help {COMPANY} hit its growth goals}
+
+Want me to walk you through how it works?
+
+{Best|Kind regards|Warm regards},
+{SENDER_FULL_NAME}
+Unleashed Technologies
+
+P.S. {No catch, just a quick look at how better infrastructure drives better revenue.|No strings attached, simply a quick look at how stronger infrastructure boosts revenue.|No catch, just a short view of how modern architecture improves revenue performance.}
+```
+**Step 1 variant C** · subject `check this out {FIRST_NAME}`
+```
+{Hi|Hello|Hey} {FIRST_NAME},
+
+{We’ve been helping DTC brands clean up their eCommerce stack|We’ve been working with DTC brands to modernize their eCommerce systems|Our team has been helping DTC companies streamline their eCommerce architecture}, {faster pages, smoother checkout, fewer lost sales|speeding up pages, improving checkout flow, and reducing lost revenue|boosting site speed, stabilizing checkout, and recovering otherwise lost sales}.
+
+{BSN Sports ran into bottlenecks that started impacting revenue|BSN Sports hit performance bottlenecks that began hurting revenue|BSN Sports reached a point where platform bottlenecks were affecting sales}. {After we rebuilt their platform, it now handles billions in transactions without breaking a sweat|Once we rebuilt their platform, it started handling billions in transactions effortlessly|The rebuilt platform now processes billions in orders with ease and stability}.
+
+If you’re curious, I can walk you through how we’d streamline {COMPANY}’s setup. Would that be helpful?
+
+{Best|Kind regards|Warm regards},
+{SENDER_FULL_NAME}
+
+P.S. {No catch, just a quick peek at what’s helping brands stay competitive.|No strings attached, simply a quick look at what's helping brands stay competitive.|No catch, just a short preview of what’s keeping modern brands competitive.}
+```
+**Step 2 variant A** · subject `let me know what you think` · wait 3d
+```
+{Hi|Hello|Hey} {FIRST_NAME},
+
+{I recorded a quick video|I put together a short video|I made a brief walkthrough} showing how {brands like {COMPANY}|companies similar to {COMPANY}|teams like yours} {increased repeat orders|boosted repeat purchases|lifted reorders} simply by {fixing the checkout experience and tightening up their operational systems|improving checkout flow and strengthening their operational setup|optimizing checkout and cleaning up their backend operations}.
+
+{No new hires, no big replatform|No added headcount and no major replatform|No extra staff and no heavy replatform required}, {just smarter automation that eliminated costly errors and freed their team to focus on growth|just better automation that removed expensive errors and gave their team time back|just streamlined automation that cut out costly mistakes and let the team focus on scaling}.
+
+Would you be open to a conversation about how it works?
+
+{Best|Kind regards|Warm regards},
+{SENDER_FULL_NAME}
+Unleashed Technologies
+```
+**Step 3 variant A** · subject `you or {COLLEAGUE}?` · wait 1d
+```
+{Hi|Hello|Hey} {FIRST_NAME},
+
+{A lot of DTC brands we work with used to fight the same issue|Many DTC teams we partner with ran into the same difficulties|Most DTC brands we support struggled with similar issues}: {too many systems, too many manual tasks, and revenue slipping through the cracks|multiple disconnected systems, heavy manual work, and revenue quietly leaking away|fragmented tools, repetitive manual tasks, and revenue loss they couldn’t fully trace}.
+
+{After modernizing their eCommerce platforms|Once we helped modernize their eCommerce architecture|After updating their underlying eCommerce foundation}, {they shortened the sales cycle, improved conversions, and won back hours every week for higher-value work|sales cycles got faster, conversion rates improved, and teams reclaimed hours each week|they sped up sales, lifted conversion rates, and gained back valuable time for more impactful work}.
+
+Would you or {COLLEAGUE} be better to discuss this with?
+
+{Best|Kind regards|Warm regards},
+{SENDER_FULL_NAME}
+Unleashed Technologies
+```
+
+#### EB 180 · [Unleashed Technologies] Non-profit (Washington, D.C) Whitepaper OV
+EmailBison status `paused` · created 2025-07-25 · **4,848 sent, 120 replies, 3 interested = 0.62 per 1,000** · bounced 9 (0.2%) · verdict: **LOSER: evidence of what not to do**
+Replaces the "copy UNKNOWN" row for this EB id in the table above.
+Per-step / per-variant stats: UNKNOWN (EmailBison only serves them via a POST stats call, which was not authorised).
+
+**Step 1 variant A** · subject `Interview <> {FIRST_NAME}` · wait 2d
+```
+Hi {FIRST_NAME}, my colleague {Beata|Eric} came across your company on LinkedIn and suggested I reach out.
+
+We’ve been speaking with {TITLE}s in the non-profit space for a white paper on Top 5 Ways Associations Are Future-Proofing Their Websites in 2025.
+
+We’ve already interviewed a few peers in your space and got some strong insights. We’re especially interested in how teams like yours are adapting, not looking for polished answers, just real-world input and a way of showing how you can make more with less.
+
+Would an e-meet make sense next week to share your perspective and hear what others are doing?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks},
+{SENDER_FULL_NAME}
+Unleashed Technologies | https://www.unleashed-technologies.com/
+
+P.S. Totally fine to keep your company anonymous if you prefer.
+```
+**Step 1 variant B** · subject `Interview <> {FIRST_NAME}`
+```
+Hi {FIRST_NAME}, my colleague {Beata|Eric} came across your company on LinkedIn and suggested I reach out.
+
+We’ve been speaking with {TITLE}s in the non-profit space for a white paper on How Non-Profits Are Using AI to Streamline Digital Engagement.
+
+We’ve already interviewed a few peers in your space and got some strong insights. We’re especially interested in how teams like yours are adapting, not looking for polished answers, just real-world input and a way of showing how you can make more with less.
+
+Would an e-meet make sense next week to share your perspective and hear what others are doing?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks},
+{SENDER_FULL_NAME}
+Unleashed Technologies | https://www.unleashed-technologies.com/
+
+P.S. Totally fine to keep your company anonymous if you prefer.
+```
+**Step 1 variant C** · subject `Interview <> {FIRST_NAME}`
+```
+Hi {FIRST_NAME}, my colleague {Beata|Eric} came across your company on LinkedIn and suggested I reach out.
+
+We’ve been speaking with {TITLE}s in the non-profit space for a white paper on What Association Leaders Are Getting Right About Tech Strategy in 2025.
+
+We’ve already interviewed a few peers in your space and got some strong insights. We’re especially interested in how teams like yours are adapting, not looking for polished answers, just real-world input and a way of showing how you can make more with less.
+
+Would an e-meet make sense next week to share your perspective and hear what others are doing?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks},
+{SENDER_FULL_NAME}
+Unleashed Technologies | https://www.unleashed-technologies.com/
+
+P.S. Totally fine to keep your company anonymous if you prefer.
+```
+**Step 1 variant D** · subject `Interview <> {FIRST_NAME}`
+```
+Hi {FIRST_NAME}, my colleague {Beata|Eric} came across your company on LinkedIn and suggested I reach out.
+
+We’ve been speaking with {TITLE}s in the non-profit space for a white paper on How Associations Are Replacing Outdated CMS Systems Without Disruption.
+
+We’ve already interviewed a few peers in your space and got some strong insights. We’re especially interested in how teams like yours are adapting, not looking for polished answers, just real-world input and a way of showing how you can make more with less.
+
+Would an e-meet make sense next week to share your perspective and hear what others are doing?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks},
+{SENDER_FULL_NAME}
+Unleashed Technologies | https://www.unleashed-technologies.com/
+
+P.S. Totally fine to keep your company anonymous if you prefer.
+```
+**Step 1 variant E** · subject `Interview <> {FIRST_NAME}`
+```
+Hi {FIRST_NAME}, my colleague {Beata|Eric} came across your company on LinkedIn and suggested I reach out.
+
+We’ve been speaking with {TITLE}s in the non-profit space for a white paper on Top 5 Website Mistakes That Drive Away New Members.
+
+We’ve already interviewed a few peers in your space and got some strong insights. We’re especially interested in how teams like yours are adapting, not looking for polished answers, just real-world input and a way of showing how you can make more with less.
+
+Would an e-meet make sense next week to share your perspective and hear what others are doing?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks},
+{SENDER_FULL_NAME}
+Unleashed Technologies | https://www.unleashed-technologies.com/
+
+P.S. Totally fine to keep your company anonymous if you prefer.
+```
+**Step 1 variant F** · subject `Interview <> {FIRST_NAME}`
+```
+Hi {FIRST_NAME}, my colleague {Beata|Eric} came across your company on LinkedIn and suggested I reach out.
+
+We’ve been speaking with {TITLE}s in the non-profit space for a white paper on Why Outsourced Dev Teams Are Becoming Essential for Associations in 2025.
+
+We’ve already interviewed a few peers in your space and got some strong insights. We’re especially interested in how teams like yours are adapting, not looking for polished answers, just real-world input and a way of showing how you can make more with less.
+
+Would an e-meet make sense next week to share your perspective and hear what others are doing?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks},
+{SENDER_FULL_NAME}
+Unleashed Technologies | https://www.unleashed-technologies.com/
+
+P.S. Totally fine to keep your company anonymous if you prefer.
+```
+**Step 1 variant G** · subject `Interview <> {FIRST_NAME}`
+```
+Hi {FIRST_NAME}, my colleague {Beata|Eric} came across your company on LinkedIn and suggested I reach out.
+
+We’ve been speaking with {TITLE}s in the non-profit space for a white paper on How Membership-Based Orgs Are Using Digital to Boost Retention.
+
+We’ve already interviewed a few peers in your space and got some strong insights. We’re especially interested in how teams like yours are adapting, not looking for polished answers, just real-world input and a way of showing how you can make more with less.
+
+Would an e-meet make sense next week to share your perspective and hear what others are doing?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks},
+{SENDER_FULL_NAME}
+Unleashed Technologies | https://www.unleashed-technologies.com/
+
+P.S. Totally fine to keep your company anonymous if you prefer.
+```
+**Step 1 variant H** · subject `Interview <> {FIRST_NAME}`
+```
+Hi {FIRST_NAME}, my colleague {Beata|Eric} came across your company on LinkedIn and suggested I reach out.
+
+We’ve been speaking with {TITLE}s in the non-profit space for a white paper on What We Learned From 10 Interviews With Association Tech Leaders.
+
+We’ve already interviewed a few peers in your space and got some strong insights. We’re especially interested in how teams like yours are adapting, not looking for polished answers, just real-world input and a way of showing how you can make more with less.
+
+Would an e-meet make sense next week to share your perspective and hear what others are doing?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks},
+{SENDER_FULL_NAME}
+Unleashed Technologies | https://www.unleashed-technologies.com/
+
+P.S. Totally fine to keep your company anonymous if you prefer.
+```
+**Step 1 variant I** · subject `Interview <> {FIRST_NAME}`
+```
+Hi {FIRST_NAME}, my colleague {Beata|Eric} came across your company on LinkedIn and suggested I reach out.
+
+We’ve been speaking with {TITLE}s in the non-profit space for a white paper on Top 5 Tools Associations Are Using to Replace Internal Web Staff.
+
+We’ve already interviewed a few peers in your space and got some strong insights. We’re especially interested in how teams like yours are adapting, not looking for polished answers, just real-world input and a way of showing how you can make more with less.
+
+Would an e-meet make sense next week to share your perspective and hear what others are doing?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks},
+{SENDER_FULL_NAME}
+Unleashed Technologies | https://www.unleashed-technologies.com/
+
+P.S. Totally fine to keep your company anonymous if you prefer.
+```
+**Step 1 variant J** · subject `Interview <> {FIRST_NAME}`
+```
+Hi {FIRST_NAME}, my colleague {Beata|Eric} came across your company on LinkedIn and suggested I reach out.
+
+We’ve been speaking with {TITLE}s in the non-profit space for a white paper on How Non-Profits Are Doing More With Less (Tech Edition).
+
+We’ve already interviewed a few peers in your space and got some strong insights. We’re especially interested in how teams like yours are adapting, not looking for polished answers, just real-world input and a way of showing how you can make more with less.
+
+Would an e-meet make sense next week to share your perspective and hear what others are doing?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks},
+{SENDER_FULL_NAME}
+Unleashed Technologies | https://www.unleashed-technologies.com/
+
+P.S. Totally fine to keep your company anonymous if you prefer.
+```
+**Step 2 variant A** · subject `Re: Interview <> {FIRST_NAME}` · wait 3d
+```
+Hey {FIRST_NAME},
+
+I wanted to share a few insights from other leaders we’ve interviewed, thought you’d find this interesting:
+
+- One association reduced site support tickets by 40% after a Content Management System rebuild that made content editing easier for staff.
+
+- Another org improved member retention after building an onboarding microsite that walked users through key benefits.
+
+- One team cut web publishing delays in half after working with an outsourced dev partner for updates + Quality Assurance.
+
+Would it be helpful if I sent over a walkthrough on what others are doing here?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks},
+{SENDER_FULL_NAME}
+Unleashed Technologies | https://www.unleashed-technologies.com/
+```
+**Step 3 variant A** · subject `Re: Interview <> {FIRST_NAME}` · wait 1d, same thread
+```
+Hi {FIRST_NAME},
+
+Wasn’t sure if I should send this to {COLLEAGUE}.
+
+I reached out a couple of days ago about a white paper we’re putting together on how non-profits are updating their digital platforms for 2025, with a big focus on things like:
+
+- Associations are investing in CMS platforms that are easier for non-technical staff, while meeting accessibility standards for all users.
+
+- Modular content blocks are replacing static page templates to help launch campaigns faster.
+
+- More orgs are offloading dev tasks to partners to stay responsive without expanding internal teams.
+
+One theme that’s come up: many teams are looking to outsource parts of development and strategy, not just to save money, but to finally get more attention in this AI environment.
+
+Mind if I send over more info to see if it’s worth a quick conversation?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks},
+{SENDER_FULL_NAME}
+Unleashed Technologies | https://www.unleashed-technologies.com/
+```
+
+### Still copy UNKNOWN after this pass
+
+- EB 282 · [Unleashed Technologies] DTC (cto, technology, it, etc) · 8,928 sent · 1 interested · 0.11/1k · reason: listed in EmailBison but sequence not fetched this pass (near-duplicate template or under 500 sent; still readable)
 

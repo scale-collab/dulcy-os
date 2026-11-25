@@ -1992,7 +1992,233 @@ EB id 611 · created 2026-11-03 · Inactive · 8,287 sent · 262 replies · 46 i
 
 | Campaign | EB id | Created | Sent | Replies | Interested | Per 1,000 |
 |---|---:|---|---:|---:|---:|---:|
-| [Twenty West Media] Landscaping, 1-200 Emply - USA, Discolike (Offer Validation) | 442 | 2026-04-23 | 7,737 | 100 | 24 | 3.10 |
-| [Twenty West Media] Roofers, 1-200 Emply - USA, Discolike (Direct Offer) | 441 | 2026-04-23 | 3,095 | 52 | 5 | 1.62 |
-| [Twenty West Media] Pool Builders/Installers, 1-200 Employee - USA, Discolike (Offer Validation) - Direct Emails | 468 | 2026-06-06 | 1,756 | 27 | 1 | 0.57 |
+| [Twenty West Media] Landscaping, 1-200 Emply - USA, Discolike (Offer Validation) **[copy recovered 2026-11-25, see below]** | 442 | 2026-04-23 | 7,737 | 100 | 24 | 3.10 |
+| [Twenty West Media] Roofers, 1-200 Emply - USA, Discolike (Direct Offer) **[copy recovered 2026-11-25, see below]** | 441 | 2026-04-23 | 3,095 | 52 | 5 | 1.62 |
+| [Twenty West Media] Pool Builders/Installers, 1-200 Employee - USA, Discolike (Offer Validation) - Direct Emails **[copy recovered 2026-11-25, see below]** | 468 | 2026-06-06 | 1,756 | 27 | 1 | 0.57 |
+
+## Recovered from EmailBison 2026-11-25
+
+Source: EmailBison API, read-only GET `/api/campaigns/v1.1/{id}/sequence-steps` after switching into this client's workspace (admin key, authorised by Alex 2026-11-25). HTML converted to plain text; spintax kept exactly as written (including typos and broken braces). Sender and personal phone numbers and email addresses are redacted. Campaign totals come from the earlier record (Airtable sync) where it had them; bounce counts and status come from the EmailBison campaign list.
+
+*Facts and proof in these scripts belong to this client only. Never reuse them for another client.*
+
+Verdict key (interested per 1,000 sent, 500+ sent): WINNER at or above 2.5 · above average 1.5 to 2.49 · below average 0.7 to 1.49 · LOSER under 0.7 (keep as evidence of what not to do).
+
+#### EB 442 · [Twenty West Media] Landscaping, 1-200 Emply - USA, Discolike (Offer Validation)
+EmailBison status `paused` · created 2026-04-23 · **7,737 sent, 100 replies, 24 interested = 3.10 per 1,000** · bounced 148 (1.9%) · verdict: **WINNER**
+Replaces the "copy UNKNOWN" row for this EB id in the table above.
+Per-step / per-variant stats: UNKNOWN (EmailBison only serves them via a POST stats call, which was not authorised).
+
+**Step 1 variant A** · subject `{landscaping inquries|landscaping jobs|landscaping}` · wait 2d
+```
+{Is filling|Has filling} your job pipeline in {CITY} been {harder than|as tough as} pulling a 10-year-old root ball out of dry soil?
+
+When a homeowner {decides they want landscaping work done|is ready to get landscaping work done}, Google says 76% {call someone|reach out} within 24 hours. The first name they see in {CITY} gets the call.
+
+I've helped landscaping contractors go from slow months to 20-55 leads a month by {making them first|getting them to the top}.
+
+{Mind if I send over|Want to see} how we did it?
+
+--
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+Director, Twenty West Media
+twentywestmedia(.)com
+
+{PS}
+```
+**Step 1 variant B** · subject `{landscaping inquries|landscaping jobs|landscaping}` · same thread, INACTIVE variant (switched off)
+```
+{Is filling|Has filling} your job pipeline in {CITY} been {harder than|as tough as} pulling a 10-year-old root ball out of dry soil?
+
+When a homeowner {decides they want landscaping work done|is ready to get landscaping work done}, Google says 76% {call someone|reach out} within 24 hours. The first name they see in {CITY} gets the call.
+
+I've helped landscaping contractors go from slow months to 20-55 leads a month by {making them first|getting them to the top}.
+
+World's worst idea to discuss further?
+
+--
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+Director, Twenty West Media
+twentywestmedia(.)com
+
+{PS}
+```
+**Step 1 variant C** · subject `{landscaping inquries|landscaping jobs|landscaping}` · same thread
+```
+{Is filling|Has filling} your job pipeline in {CITY} been {harder than|as tough as} pulling a 10-year-old root ball out of dry soil?
+
+When a homeowner {decides they want landscaping work done|is ready to get landscaping work done}, Google says 76% {call someone|reach out} within 24 hours. The first name they see in {CITY} gets the call.
+
+I've helped landscaping contractors go from slow months to 20-55 leads a month by {making them first|getting them to the top}.
+
+World's worst idea to discuss further?
+
+--
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+Director, Twenty West Media
+twentywestmedia(.)com
+
+{PS}
+```
+**Step 1 variant D** · subject `{landscaping inquries|landscaping jobs|landscaping}` · same thread
+```
+{Is filling|Has filling} your job pipeline in {CITY} been {harder than|as tough as} pulling a 10-year-old root ball out of dry soil?
+
+When a homeowner {decides they want landscaping work done|is ready to get landscaping work done}, Google says 76% {call someone|reach out} within 24 hours. The first name they see in {CITY} gets the call.
+
+I've helped landscaping contractors go from slow months to 20-55 leads a month by {making them first|getting them to the top}.
+
+{Want me to send over a 2-minute video on how it works?|Can I share a quick 2-minute video explaining how this works?}
+
+--
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+Director, Twenty West Media
+twentywestmedia(.)com
+
+{PS}
+```
+**Step 2 variant A** · subject `Re: {landscaping inquries|landscaping jobs|landscaping}` · wait 1d, same thread
+```
+I realized that sounded a bit {vague|unclear|general} so to add some {context|details|clarity}:
+
+- I can find exactly which jobs in {CITY} are going to your competitors before you get a chance to quote
+
+- I make sure {COMPANY} is the first {name|business} homeowners see when they're {ready|prepared|set} to hire
+
+- Contractors we work with go from {chasing work|pursuing jobs|seeking projects} to {turning jobs down|declining work|rejecting projects} in 90 days
+
+Want me to send over a quick video showing how it works?
+
+--
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+Director, Twenty West Media
+twentywestmedia(.)com
+
+{PS}
+```
+
+#### EB 441 · [Twenty West Media] Roofers, 1-200 Emply - USA, Discolike (Direct Offer)
+EmailBison status `paused` · created 2026-04-23 · **3,095 sent, 52 replies, 5 interested = 1.62 per 1,000** · bounced 28 (0.9%) · verdict: **above average**
+Replaces the "copy UNKNOWN" row for this EB id in the table above.
+Per-step / per-variant stats: UNKNOWN (EmailBison only serves them via a POST stats call, which was not authorised).
+
+**Step 1 variant A** · subject `roofing` · wait 2d
+```
+{You're|Looks like you're} running ads on Facebook right now, are they bringing in {real roofing jobs|consistent roofing work} or mostly tire kickers?
+
+Roofers we {work with|help} picked up an extra 20-55 leads a month just by {fixing a few small things|making a few tweaks} in their ads.
+
+I {took a look at|went through} yours and put together some notes. {Want me to send them over|Mind if I send them your way}?
+
+--
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+Director, Twenty West Media
+
+{P.S|P.s.|p.s.} or tell me to pound sand if you'd like..
+```
+**Step 1 variant B** · subject `roofing` · same thread
+```
+{You're|You are} running ads on Facebook {right now|at the moment|currently}, {are they bringing in|do they generate} {consistent|steady|regular} roofing jobs or are {some months better than others|there variations in performance each month}?
+
+Roofers {we work with|that we collaborate with|we partner with} {picked up|gained|secured} an extra 20-55 leads a month {just by fixing|simply by adjusting|merely by improving} a few small things in their ads.
+
+I {took a look at|reviewed|checked out} yours and {put together|compiled|made} some notes. {Want me to send them over?|Shall I send them your way?|Would you like me to share them with you?}
+
+--
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+Director, Twenty West Media
+twentywestmedia(.)com
+
+{P.S|P.s.|p.s.} or tell me to pound sand if you'd like..
+```
+**Step 1 variant C** · subject `roofing` · same thread
+```
+{You're|You are} running ads on Facebook {right now|currently|at the moment}, {are they actually bringing in|are they really getting|are they truly generating} enough roofing jobs to {keep your crew busy|stay busy|keep your team occupied}?
+
+Roofers {we work with|we've worked with|our clients} {picked up|gained|collected} an {extra|additional|extraordinary} 20-55 leads a month just by {fixing|adjusting|tweaking} a few small things in their ads.
+
+I {took a look at|reviewed|checked out} yours and {put together some notes|made some notes|compiled some feedback}. {Want me to send them over?|Should I send them to you?|Would you like me to send them?}
+
+--
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+Director, Twenty West Media
+twentywestmedia(.)com
+
+{P.S|P.s.|p.s.} or tell me to pound sand if you'd like..
+```
+**Step 2 variant A** · subject `Re: roofing` · wait 1d, same thread
+```
+Happy to {give you a quick call|call you quickly|offer a brief call|ring you shortly}.
+
+Is {PHONE} the {best|right|most convenient|correct} number to {reach you|contact you|get hold of you}?
+
+--
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+Director, Twenty West Media
+twentywestmedia(.)com
+
+{P.S|P.s.|p.s.} or tell me to pound sand if you'd like..
+```
+
+#### EB 468 · [Twenty West Media] Pool Builders/Installers, 1-200 Employee - USA, Discolike (Offer Validation) - Direct Emails
+EmailBison status `paused` · created 2026-06-06 · **1,756 sent, 27 replies, 1 interested = 0.57 per 1,000** · bounced 16 (0.9%) · verdict: **LOSER: evidence of what not to do**
+Replaces the "copy UNKNOWN" row for this EB id in the table above.
+Per-step / per-variant stats: UNKNOWN (EmailBison only serves them via a POST stats call, which was not authorised).
+
+**Step 1 variant A** · subject `pool question` · wait 2d
+```
+{CITY} {Are you following up with the estimates that don’t turn into jobs?|What happens to the estimates that don't turn into projects?|Do you have a way of staying in touch with homeowners who get an estimate but don’t move forward?}
+
+{We build social media campaigns for contractors that keep your company in front of homeowners before and after they request a quote.|We run social media campaigns that keep your company visible while homeowners are deciding who to hire.|We build campaigns that keep your company top-of-mind throughout the buying process.} We’ve {worked with over 100 contractors and generated more than 3,000 leads using this approach|helped 100+ contractors generate over 3,000 leads with this approach|used this same approach to generate more than 3,000 leads across 100+ contractors}.
+
+Could I put together a complimentary small-scale campaign so you can see what kind of results it might generate?
+
+--
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+Director, Twenty West Media
+Quebec, CA
+
+{P.s.|p.s.|P.S.} If you’re already booked solid, just tell me to jump in the deep end...
+```
+**Step 2 variant A** · subject `Re: pool question` · wait 2d, same thread
+```
+{Happy to give you a quick ring.|Happy to go over it quickly.}
+
+Is {PHONE} the ideal number to reach you on?
+--
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+Director, Twenty West Media
+Quebec, CA
+
+{P.s.|p.s.|P.S.} If you’re already booked solid, just tell me to jump in the deep end...
+```
+**Step 3 variant A** · subject `re: re: pool question` · wait 1d
+```
+{Wasn’t sure if I should send this to you or to someone else.|Not sure if you’re the right person for this, but figured I’d ask.|Wasn’t sure if this should go to you or someone else.}
+
+{CITY} Figured you probably {see homeowners get an estimate, disappear, then end up going with someone else.|run into homeowners who request a quote, go quiet, and hire someone else.|have homeowners ask for a proposal, disappear, and move forward with another contractor.}
+
+We’ve {worked with 100+ contractors on ways to bring some of those opportunities back|helped 100+ contractors recover some of those opportunities|worked with over 100 contractors on staying in front of homeowners who haven’t made a decision yet} by {staying in front of homeowners while they’re still deciding.|keeping their company visible while homeowners review options.|making sure homeowners continue seeing them while weighing their options.}
+
+{Can I shoot you some more info on how it works?|Open to seeing how it works?|Want me to send over some more information?|Mind if I send over a little more information?}
+
+--
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+Director, Twenty West Media
+Quebec, CA
+
+{P.s.|p.s.|P.S.} If you’re already booked solid, just tell me to jump in the deep end...
+```
 

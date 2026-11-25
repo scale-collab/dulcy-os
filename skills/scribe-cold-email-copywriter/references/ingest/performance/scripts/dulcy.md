@@ -1517,7 +1517,7 @@ Dulcy
 | [Dulcy] Clutch PPC - 7-75 empl, USA/UK/CA (Milkbox) - A-Leads (Lead Magnet) | 359 | 2026-01-27 | 6,011 | 64 | 2 | 0.33 |
 | Copy of [Dulcy] Clutch Video Production Agencies Direct Offer | 306 | 2025-11-29 | 5,921 | 111 | 4 | 0.68 |
 | [Dulcy] 500 Leads (Google) | 39 | 2025-01-18 | 5,486 | 91 | 31 | 5.65 |
-| [TargetonStar] SEO & Web Design Agencies (Direct) - Version 2 copy | 247 | 2025-11-06 | 5,399 | 65 | 6 | 1.11 |
+| [TargetonStar] SEO & Web Design Agencies (Direct) - Version 2 copy **[TargetonStar campaign (ran in the TargetonStar workspace); copy recovered 2026-11-25 into targetonstar.md]** | 247 | 2025-11-06 | 5,399 | 65 | 6 | 1.11 |
 | [Dulcy] Clutch Free Leads (Google) | 38 | 2025-01-18 | 4,833 | 67 | 25 | 5.17 |
 | [Dulcy] Influencer Marketing Agencies, 5-50, USA - A-leads  (LEAD MAGNET) | 341 | 2025-12-31 | 4,684 | 113 | 8 | 1.71 |
 | [Dulcy] 3 Outbound Ideas (Google) | 22 | 2025-01-18 | 4,577 | 80 | 14 | 3.06 |
@@ -1529,3 +1529,41 @@ Dulcy
 | [Dulcy] Clay Marketing Agencies Direct Offer | 275 | 2025-11-12 | 1,495 | 24 | 2 | 1.34 |
 | [Dulcy] 3 Outbound Ideas (Other) | 34 | 2025-01-18 | 1,197 | 100 | 1 | 0.84 |
 
+## Recovered from EmailBison 2026-11-25
+
+Nothing recovered for this client in this pass.
+
+### Still copy UNKNOWN after this pass
+
+- EB 175 · [DULCY] MISS G550 · 61,468 sent · 148 interested · 2.41/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 103 · Copy of [DULCY] GF + AV PPC Leads · 56,480 sent · 88 interested · 1.56/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 117 · [DULCY] APPC E53 · 53,390 sent · 146 interested · 2.73/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 243 · [DULCY] Apollo Agencies US/UK/CA · 51,593 sent · 26 interested · 0.50/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 367 · [Dulcy] Broad Agencies - 7-75 empl, USA/UK/CA - A-Leads (Direct Offer) · 48,481 sent · 47 interested · 0.97/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 280 · [Dulcy] Agency Vista Direct Offer · 33,634 sent · 32 interested · 0.95/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 284 · [Dulcy] Clay Marketing Agencies Direct Offer (NC) · 30,422 sent · 41 interested · 1.35/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 214 · [DULCY] Advertising Agencies (Campaign) · 29,045 sent · 23 interested · 0.79/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 178 · [DULCY] Advertising Agencies (Leads) · 28,961 sent · 41 interested · 1.42/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 340 · Copy of [Dulcy] Clay Marketing Agencies Direct Offer (NC) · 28,494 sent · 27 interested · 0.95/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 445 · [Dulcy] Digital Marketing Agencies, 5-75 Employ, USA/UK/CA, Clutch [Lead Magnet] · 16,644 sent · 14 interested · 0.84/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 53 · [DULCY] CPPC G63 · 15,912 sent · 71 interested · 4.46/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 372 · [Dulcy] Digital Marketing Agencies - 5-75 empl, USA/UK/CA - GoodFirms (Lead Magnet w/Thread) · 12,872 sent · 7 interested · 0.54/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 278 · [Dulcy] Clutch SSM Agencies Direct Offer · 8,696 sent · 9 interested · 1.03/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 102 · Copy of [DULCY] Clutch PPC CE · 7,685 sent · 11 interested · 1.43/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 104 · Copy of [DULCY] Clutch PPC Leads · 7,615 sent · 24 interested · 3.15/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 370 · [Dulcy] Content Agencies - 5-75 empl, USA/UK/CA - A-Leads (OV- Loom, Direct, Lead Magnet) · 7,032 sent · 10 interested · 1.42/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 69 · [DULCY] Funded Saas CE · 6,617 sent · 9 interested · 1.36/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 257 · [DULCY] SaaS Companies US/UK/CA · 6,112 sent · 1 interested · 0.16/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 359 · [Dulcy] Clutch PPC - 7-75 empl, USA/UK/CA (Milkbox) - A-Leads (Lead Magnet) · 6,011 sent · 2 interested · 0.33/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 306 · Copy of [Dulcy] Clutch Video Production Agencies Direct Offer · 5,921 sent · 4 interested · 0.68/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 39 · [Dulcy] 500 Leads (Google) · 5,486 sent · 31 interested · 5.65/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 38 · [Dulcy] Clutch Free Leads (Google) · 4,833 sent · 25 interested · 5.17/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 341 · [Dulcy] Influencer Marketing Agencies, 5-50, USA - A-leads  (LEAD MAGNET) · 4,684 sent · 8 interested · 1.71/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 22 · [Dulcy] 3 Outbound Ideas (Google) · 4,577 sent · 14 interested · 3.06/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 66 · [DULCY] Business Loans Leads · 4,322 sent · 7 interested · 1.62/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 67 · [DULCY] Business Loans CE · 4,078 sent · 5 interested · 1.23/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 54 · [DULCY] GFPPC Hyper C63S · 2,983 sent · 11 interested · 3.69/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 279 · [Dulcy] Clutch Video Production Agencies Direct Offer · 2,817 sent · 1 interested · 0.35/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 337 · [Dulcy] Influencer Marketing Agencies, 5-50, USA - A-leads  (DIRECT) · 1,616 sent · 2 interested · 1.24/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 275 · [Dulcy] Clay Marketing Agencies Direct Offer · 1,495 sent · 2 interested · 1.34/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too
+- EB 34 · [Dulcy] 3 Outbound Ideas (Other) · 1,197 sent · 1 interested · 0.84/1k · reason: not in any EmailBison workspace listed (Dulcy workspace now holds only 16 campaigns, ids 586-652); GET on EB 175 returned 404, so these look deleted from EmailBison too

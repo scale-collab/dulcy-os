@@ -570,5 +570,61 @@ RMG Advertising
 
 | Campaign | EB id | Created | Sent | Replies | Interested | Per 1,000 |
 |---|---:|---|---:|---:|---:|---:|
-| [RMG] - Real Estate | 305 | 2025-11-21 | 4,806 | 61 | 0 | 0.00 |
+| [RMG] - Real Estate **[copy recovered 2026-11-25, see below]** | 305 | 2025-11-21 | 4,806 | 61 | 0 | 0.00 |
+
+## Recovered from EmailBison 2026-11-25
+
+Source: EmailBison API, read-only GET `/api/campaigns/v1.1/{id}/sequence-steps` after switching into this client's workspace (admin key, authorised by Alex 2026-11-25). HTML converted to plain text; spintax kept exactly as written (including typos and broken braces). Sender and personal phone numbers and email addresses are redacted. Campaign totals come from the earlier record (Airtable sync) where it had them; bounce counts and status come from the EmailBison campaign list.
+
+*Facts and proof in these scripts belong to this client only. Never reuse them for another client.*
+
+Verdict key (interested per 1,000 sent, 500+ sent): WINNER at or above 2.5 · above average 1.5 to 2.49 · below average 0.7 to 1.49 · LOSER under 0.7 (keep as evidence of what not to do).
+
+#### EB 305 · [RMG] - Real Estate
+EmailBison status `UNKNOWN` · created 2025-11-21 · **4,806 sent, 61 replies, 0 interested = 0.00 per 1,000** · bounced UNKNOWN (UNKNOWN) · verdict: **LOSER: evidence of what not to do**
+Replaces the "copy UNKNOWN" row for this EB id in the table above.
+Per-step / per-variant stats: UNKNOWN (EmailBison only serves them via a POST stats call, which was not authorised).
+
+**Step 1 variant A** · subject `{Active buyers in {CITY}|Touring activity this week|Audience gap}` · wait 3d
+```
+{Hey|Hi|Hello} {FIRST_NAME},
+
+Quick one, would it be {okay|alright|acceptable} if I {pull together|assemble|put together} a free list of ~1,000 real active homebuyers near {CITY}?
+
+These are people {currently visiting open houses|touring neighbourhoods|checking out competing developments}, basically the buyers Meta {can’t see|doesn’t surface|misses entirely}.
+
+It’s at no expense to you. {Mind if I put it together?|Want me to compile it?|Should I prepare it for you?}
+
+{Best regards|Warm regards|Kind regards},
+Sumaan Khan
+RMG
+```
+**Step 2 variant A** · subject `Re: {Better buyers exist|Real time buyer data|Audience signal}` · wait 3d, same thread
+```
+{Hi|Hey} {FIRST_NAME},
+
+Just wanted to {see|check|ask} if you had a moment to look at the audience sample I mentioned.
+
+In about {10–15 minutes|a quick 10 minutes|a short walkthrough}, we can show you exactly how we use real-world behaviour {open house visits|neighbourhood activity|competitor traffic} to cut CPA by {50–85%|as much as 85%|a significant margin}, and walk you through where platform audiences {leak|waste spend|misallocate budget}.
+
+{Would you like me to send over a bit more info?|Want me to share more details?|Should I forward more information?}
+
+{Best regards|Warm regards|Kind regards},
+Sumaan Khan
+RMG
+```
+**Step 3 variant A** · subject `Re: {Better buyers exist|Real time buyer data|Audience signal}` · wait 1d, same thread
+```
+{Hey|Hi} {FIRST_NAME},
+
+{Wasn’t sure if I should send this your way|Figured I’d share this in case it’s useful|Thought this might be relevant}, but we just helped a developer in {CITY} drop CPA by {over 70%|around 70%|more than 70%} by targeting buyers who are {actively touring homes|physically visiting properties|in-market based on real-world behaviour} instead of relying on broad Meta interest buckets.
+
+If seeing the same real-world buyer snapshot for your market would help, I can share it.
+
+{Would you like me to send it over?|Want me to forward it?|Should I share it with you?}
+
+{Best regards|Warm regards|Kind regards},
+Sumaan Khan
+RMG
+```
 

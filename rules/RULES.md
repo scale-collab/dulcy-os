@@ -139,7 +139,7 @@ Format: `- [date] rule. (why / source)`
 ## Friday Xero reconcile: no suggestion means work it out (Alex, 2026-11-25)
 - **Rule:** when Xero has no suggestion for a line, Claude in Chrome works out what it is: the full statement line, how the same payee was coded before, a web lookup of the vendor. It then codes the line using the account guide in `agents/ledger-reconcile-chrome.md`.
 - **When to ask:** only when it truly can't tell what the charge is.
-- **Check:** every such line is listed in the summary, and anything over $500 is flagged ⚠️ for Alex.
+- **Check:** every such line is listed in the summary, and anything over $1,000 is flagged ⚠️ for Alex to glance at afterwards. **No amount cap** (Alex, 2026-11-25): the amount doesn't change the process; a line waits for Alex only when it's unclear (new payee that can't be worked out, wrong-looking code, refund/chargeback, Tax/Profit account).
 - **Reason:** Alex wants the agent to reconcile, not to stop at every line Xero can't guess. First case: Anthropic, Opus Clip, Grok and Google Cloud → 6050 Software.
 
 ## Campaign creation by the agents (Alex, 2026-11-25)

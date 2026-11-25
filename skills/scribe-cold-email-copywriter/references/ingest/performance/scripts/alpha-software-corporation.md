@@ -520,3 +520,10 @@ EB id 384 · created 2026-02-12 · Completed · 13,424 sent · 64 replies · 4 i
 |---|---:|---|---:|---:|---:|---:|
 | [Alpha Software] HVAC Manufacturing (small sample) | 308 | 2025-12-12 | 422 | 3 | 0 | 0.00 |
 
+## Recovered from EmailBison 2026-11-25
+
+Nothing recovered for this client in this pass.
+
+### Still copy UNKNOWN after this pass
+
+- EB 308 · [Alpha Software] HVAC Manufacturing (small sample) · 422 sent · 0 interested · 0.00/1k · reason: workspace not listed this pass; sequence not fetched

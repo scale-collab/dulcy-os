@@ -115,4 +115,4 @@ Track the client's meaningful progression: relevant replies, asset requests, act
 
 Do not declare a winner from a handful of early replies or a creator's benchmark. Note sparse data, delayed outcomes and uneven delivery. Preserve promising concepts while the agreed observation window is incomplete. Poor booking after many asset requests may be offer/intent/ownership/fulfillment, not wording; send that diagnosis to Atlas/Scribe reply decisions rather than adding pressure.
 
-If an opt-out line is included, use clear literal wording suitable for the client; reject idioms that obscure how to stop contact. A complaint about tone informs copy quality but never cancels the recipient’s stop request.
+The system adds the opt-out P.S. ("or tell me to pound sand if you'd like..", Alex's standing choice and a proven winner, RULES 2026-11-20/23); Scribe writes no other opt-out line. A complaint about tone informs copy quality but never cancels the recipient’s stop request.

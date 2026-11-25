@@ -696,3 +696,10 @@ P.S. or tell me to pound sand…
 |---|---:|---|---:|---:|---:|---:|
 | [Shop Innovator] Outsite furniture, Apollo, US - 1 - 10 (Only Video and walk trhu) (small sample) | 421 | 2026-03-12 | 494 | 0 | 0 | 0.00 |
 
+## Recovered from EmailBison 2026-11-25
+
+Nothing recovered for this client in this pass.
+
+### Still copy UNKNOWN after this pass
+
+- EB 421 · [Shop Innovator] Outsite furniture, Apollo, US - 1 - 10 (Only Video and walk trhu) (small sample) · 494 sent · 0 interested · 0.00/1k · reason: workspace not listed this pass; sequence not fetched
