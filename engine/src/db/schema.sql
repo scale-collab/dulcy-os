@@ -280,3 +280,101 @@ ALTER TABLE campaign_plans ADD COLUMN IF NOT EXISTS copy_feedback TEXT;
 ALTER TABLE campaign_plans ADD COLUMN IF NOT EXISTS plan_round INT NOT NULL DEFAULT 1;
 ALTER TABLE campaign_plans ADD COLUMN IF NOT EXISTS plan_error TEXT;
 ALTER TABLE campaign_plans ADD COLUMN IF NOT EXISTS launch_tries INT NOT NULL DEFAULT 0;
+
+-- ---------- Dulcy HQ (the private web app), 2026-11-25 ----------
+-- Logins. Passwords are scrypt hashes (never stored or printed in clear). role: owner | member.
+CREATE TABLE IF NOT EXISTS hq_users (
+  id             SERIAL PRIMARY KEY,
+  email          TEXT NOT NULL UNIQUE,      -- lower case
+  name           TEXT NOT NULL DEFAULT '',  -- first name, written as Decided By
+  password_hash  TEXT,                      -- NULL = Google sign-in only
+  role           TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('owner','member')),
+  disabled       BOOLEAN NOT NULL DEFAULT false,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- Sessions: the cookie holds a random id (signed); only its sha256 is kept here, so a database
+-- copy cannot be used to log in. Logging out deletes the row.
+CREATE TABLE IF NOT EXISTS hq_sessions (
+  id_hash     TEXT PRIMARY KEY,
+  user_id     INT NOT NULL REFERENCES hq_users(id) ON DELETE CASCADE,
+  expires_at  TIMESTAMPTZ NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_seen   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- Login attempts, for the rate limit (failed tries per email and per address in 15 minutes).
+CREATE TABLE IF NOT EXISTS hq_login_attempts (
+  id          BIGSERIAL PRIMARY KEY,
+  email       TEXT NOT NULL,
+  ip          TEXT NOT NULL,
+  ok          BOOLEAN NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS hq_login_attempts_recent ON hq_login_attempts (created_at);
+
+-- Every report an agent writes (brief, client health, call review, money report, ideas...).
+-- Shown in HQ; posted to Slack only while SLACK_REPORTS=on (urgent alerts always post).
+CREATE TABLE IF NOT EXISTS hq_reports (
+  id          BIGSERIAL PRIMARY KEY,
+  agent       TEXT NOT NULL,              -- Ada, Atlas, Cole, Ledger, Sienna, Riley...
+  kind        TEXT NOT NULL,              -- brief | client_health | call_review | money_report | ...
+  title       TEXT NOT NULL,
+  summary     TEXT NOT NULL DEFAULT '',   -- 1-2 lines for the card
+  body        TEXT NOT NULL DEFAULT '',   -- full text (markdown)
+  link        TEXT,
+  data        JSONB,                      -- structured extras (e.g. a call review's score and 3 fixes)
+  urgent      BOOLEAN NOT NULL DEFAULT false,
+  dry_run     BOOLEAN NOT NULL DEFAULT false,
+  job_id      BIGINT,
+  dedupe_key  TEXT UNIQUE,                -- the same report is saved once (job retries)
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS hq_reports_agent ON hq_reports (agent, created_at DESC);
+
+-- Chat with Ada and the agents. A thread is a person ↔ one agent, or Ada ↔ an agent (ask_agent).
+CREATE TABLE IF NOT EXISTS hq_chat_threads (
+  id             BIGSERIAL PRIMARY KEY,
+  user_id        INT REFERENCES hq_users(id) ON DELETE SET NULL,
+  agent          TEXT NOT NULL,
+  asked_by       TEXT NOT NULL DEFAULT 'user',   -- 'user' or the asking agent ('Ada')
+  parent_id      BIGINT REFERENCES hq_chat_threads(id) ON DELETE SET NULL,
+  title          TEXT NOT NULL DEFAULT '',
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS hq_chat_threads_agent ON hq_chat_threads (agent, updated_at DESC);
+CREATE TABLE IF NOT EXISTS hq_chat_messages (
+  id          BIGSERIAL PRIMARY KEY,
+  thread_id   BIGINT NOT NULL REFERENCES hq_chat_threads(id) ON DELETE CASCADE,
+  role        TEXT NOT NULL CHECK (role IN ('user','assistant')),
+  author      TEXT NOT NULL,               -- 'Alex', 'Ada', 'Atlas'...
+  text        TEXT NOT NULL,
+  sources     JSONB NOT NULL DEFAULT '[]', -- what the answer was read from
+  tools       JSONB NOT NULL DEFAULT '[]', -- tool calls made (name, input, short result)
+  usage       JSONB,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS hq_chat_messages_thread ON hq_chat_messages (thread_id, id);
+
+-- Each agent's own to-do list (the Airtable Tasks table has no Agent field; kept here instead).
+CREATE TABLE IF NOT EXISTS hq_agent_tasks (
+  id          BIGSERIAL PRIMARY KEY,
+  agent       TEXT NOT NULL,
+  title       TEXT NOT NULL,
+  due_date    DATE,
+  status      TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','done')),
+  client      TEXT NOT NULL DEFAULT '',
+  link        TEXT,
+  notes       TEXT NOT NULL DEFAULT '',
+  source_key  TEXT UNIQUE,                 -- a generator makes one task per source (e.g. plan-next:<campaign>)
+  done_note   TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  done_at     TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS hq_agent_tasks_open ON hq_agent_tasks (agent, status, due_date);
+
+-- "Done?" questions answered "not yet": not asked again for that task until quiet_until.
+CREATE TABLE IF NOT EXISTS hq_task_checks (
+  task_id     TEXT PRIMARY KEY,
+  quiet_until TIMESTAMPTZ NOT NULL
+);

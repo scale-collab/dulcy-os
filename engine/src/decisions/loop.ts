@@ -59,6 +59,8 @@ export async function decisionsTick(db: Db, cfg: Config, at: Pick<AirtableClient
   // 1. Post New rows. A row that already has a Slack TS was posted (the status write was lost): never post twice.
   for (const r of await at.list(DECISIONS, `{Status}='New'`, ALL, 20)) {
     if (text(r.fields[DF.slackTs])) { await at.update(DECISIONS, r.id, { [DF.status]: 'Waiting' }); continue; }
+    // SLACK_DECISIONS=off: decided in HQ (or Airtable) only; nothing is posted (rows without a Slack TS skip the reactions read).
+    if (cfg.slackDecisionsOn === false) { await at.update(DECISIONS, r.id, { [DF.status]: 'Waiting' }); continue; }
     const m = await slack.post(cfg.slackDecisionsChannel, decisionMessage(r));
     await at.update(DECISIONS, r.id, { [DF.slackChannel]: m.channel, [DF.slackTs]: m.ts, [DF.status]: 'Waiting' });
     if (text(r.fields[DF.details])) await slack.post(m.channel, text(r.fields[DF.details]), m.ts);

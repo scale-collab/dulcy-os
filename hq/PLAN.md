@@ -24,6 +24,25 @@
    - answers cite where they came from; if an agent isn't sure, it says "here's what I found" and flags a person (EmailBison-help style).
 5. **Agent to-do lists:** each agent's own tasks with deadlines (e.g. "GMG campaign at 60% → plan next, due Fri"). Ada watches them.
 
+### Step 1 status (2026-11-25): built, not deployed
+- **Built:** in the engine (`engine/src/hq/`) and `hq/web/`. How to use it and switch it on: `engine/GUIDE.md` → "HQ".
+- **Login:** email + password, plus optional Google sign-in for existing HQ users. Alex creates his login on the server with `hq-user`.
+- **Screens:** Today (first things, Ada's brief, team check, reports), Decisions, To-do (Eisenhower + Start mode), Team (agent cards and pages), Chat.
+- **Decisions:**
+  - Reply cards are editable: Send / Send edited / Skip reply. HQ presses the Emails row's buttons; the engine's reply sender sends.
+  - Other decisions write exactly what the Daily Run writes.
+- **Reports:** agents' reports are saved for HQ. `SLACK_REPORTS` and `SLACK_DECISIONS` (both `on` for now) turn the Slack copies off. Urgent alerts always go to Slack.
+- **Agent to-do lists:** kept in HQ's own table, not in Airtable (no Agent field was added). One generator so far: Atlas, "Plan next campaign" at 60%+.
+- **Josh:** the `member` role is ready (no Money). His login is Step 4.
+- **Left for Alex:**
+  1. Add the `hq` DNS record.
+  2. Set `HQ_SESSION_SECRET`.
+  3. Deploy.
+  4. Run `hq-user`.
+  5. Optional: set up Google sign-in.
+  6. When HQ works: set `SLACK_REPORTS=off` and `SLACK_DECISIONS=off`.
+- **Not in Step 1:** Ada's brief has no calendar yet; chat can't change anything (read only by design); the other agents' to-do generators come later.
+
 ## Step 2: Clients
 - One screen with every client: results (email now; LinkedIn, AI caller and direct mail later), health, money (Alex only) and a note for today.
 - Replaces: Clients & LTV (wrong today: shows 3 active), Email/LinkedIn/AI Employee campaign dashboards, Domain & Inbox Inventory, Email Accounts / Warm Up, Inbox Placement Tests, Spam Center, Buying Domains.

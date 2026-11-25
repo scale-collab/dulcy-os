@@ -16,6 +16,7 @@ import { createAirtableClient, type AirtableClient } from '../providers/airtable
 import { DECISIONS, DF } from '../decisions/fields.js';
 import { logActivity } from '../activity.js';
 import { alert } from '../log.js';
+import { saveReport, slackReports } from '../hq/reports.js';
 
 export const PLACEMENT = 'tblGjv6A5r7md3kxX';
 export const PT = {
@@ -171,13 +172,15 @@ export const accountHealthStage: Stage = async (ctx) => {
 
   if (!ctx.dryRun && (out.rested.length || out.recovered.length || out.replace.length || out.failed.length)) {
     const list = (xs: string[]) => xs.slice(0, 15).map((x) => `• ${x}`).join('\n') + (xs.length > 15 ? `\n…and ${xs.length - 15} more` : '');
-    await alert(cfg.slackWebhookUrl, [
+    const lines = [
       `Account health (Atlas), ${tests.length} placement test${tests.length === 1 ? '' : 's'} read:`,
       out.rested.length ? `:zzz: Rested 7 days (under ${PASS_SCORE}%), daily limit 0:\n${list(out.rested)}` : '',
       out.recovered.length ? `:white_check_mark: Recovered, limit restored:\n${list(out.recovered)}` : '',
       out.replace.length ? `:shopping_trolley: Failed the retest, replacement waiting for your ✅ (Decisions):\n${list(out.replace)}` : '',
       out.failed.length ? `:grey_question: Could not process:\n${list(out.failed)}` : '',
-    ].filter(Boolean).join('\n'));
+    ].filter(Boolean);
+    await saveReport(ctx.db, { agent: 'Atlas', kind: 'account_health', title: `Account health: ${out.rested.length} rested, ${out.recovered.length} recovered, ${out.replace.length} to replace`, body: lines.slice(1).join('\n'), jobId: ctx.job.id, dedupeKey: `account-health:${ctx.job.id}` });
+    if (slackReports(cfg)) await alert(cfg.slackWebhookUrl, lines.join('\n'));
   }
   return {
     ...out, dryRun: ctx.dryRun,

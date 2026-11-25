@@ -9,6 +9,7 @@
 import type { Stage } from '../stages/index.js';
 import type { Db } from '../db/pool.js';
 import { PermanentError } from '../errors.js';
+import { saveReport, slackReports } from '../hq/reports.js';
 import { createXeroClient, type XeroClient } from '../providers/xero.js';
 import { createSlackClient, type SlackMessage } from '../providers/slack.js';
 import { createMercuryClient, type MercuryClient } from '../providers/mercury.js';
@@ -290,6 +291,9 @@ export const ledgerReportStage: Stage = async (ctx) => {
   const now = new Date();
   const merc = cfg.mercuryToken ? createMercuryClient({ token: cfg.mercuryToken, baseUrl: cfg.mercuryBaseUrl }) : undefined;
   const text = writeLedgerReport(await gatherLedger(xeroFor(ctx.db, cfg), now, merc, ctx.db));
+  const lines = text.split('\n');
+  await saveReport(ctx.db, { agent: 'Ledger', kind: 'money_report', title: lines[0].replace(/\*/g, ''), body: lines.slice(1).join('\n'), dryRun: ctx.dryRun, jobId: ctx.job.id, dedupeKey: `ledger:${ctx.job.id}` });
+  if (!slackReports(cfg)) return { message: 'Ledger report saved to HQ (Slack reports off)', text };
   if (ctx.dryRun || !cfg.slackBotToken || ctx.job.input.post === false) return { message: `Ledger report written (not posted${ctx.dryRun ? ': dry run' : !cfg.slackBotToken ? ': no Slack token' : ''})`, text };
   const slack = createSlackClient({ token: cfg.slackBotToken, baseUrl: cfg.slackBaseUrl });
   const to = String(ctx.job.input.channel ?? cfg.ledgerChannel);

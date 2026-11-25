@@ -169,6 +169,22 @@ export interface Config {
   airtablePollMs: number;
   /** EmailBison key name (EMAILBISON_KEY_<NAME>) used for Airtable campaign builds; it is switched to the inboxes' workspace on every call. */
   emailBisonBuildWorkspace: string;
+  /** Dulcy HQ (the private web app): its host name, the session-cookie key (HQ is off without it),
+   *  optional Google sign-in, where the built web files are, and the chat cost guard. */
+  hqHost: string;
+  hqPublicUrl: string;
+  hqSessionSecret?: string;
+  hqGoogleClientId?: string;
+  hqGoogleClientSecret?: string;
+  hqGoogleAuthUrl: string;
+  hqGoogleTokenUrl: string;
+  hqWebDir: string;
+  hqChatMaxRounds: number;
+  hqChatMaxTokens: number;
+  /** on (default): agent reports also post to Slack. off: they only go to HQ. Urgent alerts always post. */
+  slackReportsOn: boolean;
+  /** on (default): new Decisions are posted to Slack for ✅/❌. off: they are decided in HQ (or Airtable) only. */
+  slackDecisionsOn: boolean;
 }
 
 export function loadConfig(env = process.env): Config {
@@ -290,5 +306,17 @@ export function loadConfig(env = process.env): Config {
     airtableBaseUrl: env.AIRTABLE_BASE_URL || 'https://api.airtable.com',
     airtablePollMs: num('AIRTABLE_POLL_MS', 30_000, env),
     emailBisonBuildWorkspace: (env.EMAILBISON_BUILD_WORKSPACE || 'dulcy').toLowerCase(),
+    hqHost: (env.HQ_HOST || 'hq.dulcy.io').trim().toLowerCase(),
+    hqPublicUrl: (env.HQ_PUBLIC_URL || `https://${(env.HQ_HOST || 'hq.dulcy.io').trim().toLowerCase()}`).replace(/\/+$/, ''),
+    hqSessionSecret: (env.HQ_SESSION_SECRET ?? '').length >= 32 ? env.HQ_SESSION_SECRET : undefined,
+    hqGoogleClientId: env.HQ_GOOGLE_CLIENT_ID || undefined,
+    hqGoogleClientSecret: env.HQ_GOOGLE_CLIENT_SECRET || undefined,
+    hqGoogleAuthUrl: env.HQ_GOOGLE_AUTH_URL || 'https://accounts.google.com/o/oauth2/v2/auth',
+    hqGoogleTokenUrl: env.HQ_GOOGLE_TOKEN_URL || 'https://oauth2.googleapis.com/token',
+    hqWebDir: env.HQ_WEB_DIR || '/app/hq-web',
+    hqChatMaxRounds: num('HQ_CHAT_MAX_ROUNDS', 4, env),
+    hqChatMaxTokens: num('HQ_CHAT_MAX_TOKENS', 4000, env),
+    slackReportsOn: (env.SLACK_REPORTS || 'on').toLowerCase() !== 'off',
+    slackDecisionsOn: (env.SLACK_DECISIONS || 'on').toLowerCase() !== 'off',
   };
 }

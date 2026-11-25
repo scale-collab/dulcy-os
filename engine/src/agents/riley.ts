@@ -15,6 +15,7 @@ import { PermanentError } from '../errors.js';
 import { createAirtableClient, type AirtableClient } from '../providers/airtable.js';
 import { val } from './emailsFields.js';
 import { logActivity } from '../activity.js';
+import { saveReport } from '../hq/reports.js';
 
 export const ISSUES = 'tblZvXQongRlV0vsl';
 export const IF = {
@@ -108,6 +109,9 @@ export const rileyCollectStage: Stage = async (ctx) => {
   if (cfg.n8nApiKey) { try { found.push(...await n8nProblems(cfg.n8nBaseUrl, cfg.n8nApiKey, since)); } catch (e) { n8nNote = ` (n8n not read: ${(e as Error).message})`; } }
   if (ctx.dryRun) return { message: `Would log ${found.length} problem(s) to System Issues (dry run)${n8nNote}` };
   const r = found.length ? await upsertIssues(at, found) : { opened: [], repeated: 0 };
+  if (r.opened.length) await saveReport(ctx.db, { agent: 'Riley', kind: 'system_issues', title: `Riley: ${r.opened.length} new system issue${r.opened.length === 1 ? '' : 's'}`,
+    summary: r.opened.slice(0, 2).join(' · '), body: `${r.opened.map((x) => `• ${x}`).join('\n')}\n\nRiley prepares a fix for each one and asks you in Decisions (Fixes).${r.repeated ? `\n${r.repeated} repeat(s) of known issues.` : ''}`,
+    jobId: ctx.job.id, dedupeKey: `riley:${ctx.job.id}` });
   return { message: `${found.length} problem(s): ${r.opened.length} new issue(s)${r.opened.length ? ` (${r.opened.slice(0, 5).join('; ')})` : ''}, ${r.repeated} repeat(s)${n8nNote}` };
 };
 

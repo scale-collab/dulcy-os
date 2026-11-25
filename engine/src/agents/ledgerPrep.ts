@@ -9,6 +9,7 @@
 // Never deletes, voids or edits; never moves money. Each Mercury line is handled once (ledger_entries).
 import type { Stage } from '../stages/index.js';
 import { PermanentError } from '../errors.js';
+import { saveReport, slackReports } from '../hq/reports.js';
 import { createXeroClient } from '../providers/xero.js';
 import { createMercuryClient, plainName, type MercuryTxn } from '../providers/mercury.js';
 import { createSlackClient } from '../providers/slack.js';
@@ -159,10 +160,15 @@ export const ledgerPrepStage: Stage = async (ctx) => {
     const fresh = stuck.filter((x) => !flaggedBefore.has(x.t.id));
     if (!ctx.dryRun) for (const x of fresh) await ctx.db.query(`INSERT INTO ledger_entries (mercury_id, action, detail) VALUES ($1,'flagged',$2) ON CONFLICT (mercury_id) DO UPDATE SET action='flagged', detail=EXCLUDED.detail, updated_at=now()`, [x.t.id, JSON.stringify({ line: line(x.t), hint: x.hint })]);
     const summary = `${txns.length} Mercury lines checked: ${inXero} in Xero, ${stuck.length} not in Xero after 3+ days (${fresh.length} new)`;
-    if (!ctx.dryRun && cfg.slackBotToken && fresh.length && ctx.job.input.post !== false) {
-      const text = [`*Ledger: not reconciled yet* (${stuck.length} Mercury line${stuck.length === 1 ? '' : 's'} older than 3 days are not in Xero)`,
-        ...fresh.slice(0, 20).map((x) => `• ${line(x.t)}: ${x.hint}`), fresh.length > 20 ? `…and ${fresh.length - 20} more` : '',
-        'Friday: open Xero in Chrome and tell Claude "reconcile Xero" (agents/ledger-reconcile-chrome.md).'].filter(Boolean).join('\n');
+    const checkText = () => [`*Ledger: not reconciled yet* (${stuck.length} Mercury line${stuck.length === 1 ? '' : 's'} older than 3 days are not in Xero)`,
+      ...fresh.slice(0, 20).map((x) => `• ${line(x.t)}: ${x.hint}`), fresh.length > 20 ? `…and ${fresh.length - 20} more` : '',
+      'Friday: open Xero in Chrome and tell Claude "reconcile Xero" (agents/ledger-reconcile-chrome.md).'].filter(Boolean).join('\n');
+    if (!ctx.dryRun && fresh.length) {
+      const [title, ...rest] = checkText().split('\n');
+      await saveReport(ctx.db, { agent: 'Ledger', kind: 'reconcile_check', title: title.replace(/\*/g, ''), body: rest.join('\n'), summary: summary, jobId: ctx.job.id, dedupeKey: `ledger-check:${ctx.job.id}` });
+    }
+    if (!ctx.dryRun && cfg.slackBotToken && fresh.length && ctx.job.input.post !== false && slackReports(cfg)) {
+      const text = checkText();
       const slack = createSlackClient({ token: cfg.slackBotToken, baseUrl: cfg.slackBaseUrl });
       await ctx.paid({ callKey: `ledger-check-post:${etYmd(now)}`, provider: 'slack', units: 0, run: () => slack.post(cfg.ledgerChannel, text), dryRunResult: () => ({ channel: '', ts: '' }) });
     }
@@ -192,7 +198,11 @@ export const ledgerPrepStage: Stage = async (ctx) => {
     }
   }
   const summary = `${made.length} ${ctx.dryRun ? 'would be created' : 'created'}, ${exists} already in Xero, ${asks.length} new question${asks.length === 1 ? '' : 's'}, ${failed.length} refused by Xero`;
-  if (!ctx.dryRun && cfg.slackBotToken && (made.length || asks.length || failed.length) && ctx.job.input.post !== false) {
+  if (!ctx.dryRun && (made.length || asks.length || failed.length)) {
+    await saveReport(ctx.db, { agent: 'Ledger', kind: 'reconcile_prep', title: 'Ledger: reconciliation prep', summary, body: [made.length ? `Ready to reconcile in Xero: ${made.length} entr${made.length === 1 ? 'y' : 'ies'}\n${made.map((m) => `• ${m}`).join('\n')}` : '',
+      asks.length ? `**I need you for these:**\n${asks.join('\n')}` : '', failed.length ? `**Xero refused:**\n${failed.join('\n')}` : ''].filter(Boolean).join('\n\n'), jobId: ctx.job.id, dedupeKey: `ledger-prep:${ctx.job.id}` });
+  }
+  if (!ctx.dryRun && cfg.slackBotToken && (made.length || asks.length || failed.length) && ctx.job.input.post !== false && slackReports(cfg)) {
     const text = [`*Ledger: reconciliation prep* (${summary})`,
       made.length ? `Ready to reconcile in Xero (auto-reconcile should clear these): ${made.length} entr${made.length === 1 ? 'y' : 'ies'}` : '',
       asks.length ? `*I need you for these:*\n${asks.slice(0, 15).join('\n')}${asks.length > 15 ? `\n…and ${asks.length - 15} more` : ''}\nCode them in Xero once; next time I'll copy how you did it.` : '',

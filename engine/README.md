@@ -130,4 +130,5 @@ Docker build and start confirmed on the server 2026-11-18 (`/health` returned ok
 - `src/stages/`: one file per stage (`engine.selftest`, `verify.ts`).
 - `src/verify/rules.ts`: verification rules (pure, tested).
 - `src/providers/millionverifier.ts`: MillionVerifier bulk API client (paid upload vs free checks).
-- `src/db/schema.sql`: tables `jobs`, `steps`, `receipts`, `events`.
+- `src/db/schema.sql`: tables `jobs`, `steps`, `receipts`, `events` (and the agents' and HQ's tables).
+- `src/hq/`: Dulcy HQ (the private web app's API at `/hq/api`, served on `HQ_HOST` too): `auth.ts` (logins, sessions, Google), `server.ts` (routes, CSRF, static files), `decisions.ts`, `tasks.ts` (Eisenhower), `team.ts` (runs, team check), `chat.ts` (read-only tools, ask_agent), `reports.ts` (`hq_reports`, the `SLACK_REPORTS` switch), `generators.ts` (agent to-do lists). The web app is `../hq/web`; the Docker build (repo root context) builds both. User guide: `GUIDE.md` → HQ.

@@ -12,6 +12,7 @@ import { bounceAction, bounceRate, statsFrom } from '../campaign/bounce.js';
 import { syncCampaignStats } from '../campaign/statsSync.js';
 import { createAirtableClient } from '../providers/airtable.js';
 import { alert } from '../log.js';
+import { saveReport, slackReports } from '../hq/reports.js';
 import { enqueue } from '../queue.js';
 import { logActivity } from '../activity.js';
 import { STAGES } from './index.js';
@@ -123,7 +124,11 @@ export const bounceCheckStage: Stage = async (ctx) => {
       watch.length ? `:eyes: Watch, bounce over 2.5%:\n${watch.map(fmt).join('\n')}` : '',
       failed.length ? `:grey_question: Could not check:\n${failed.map((f) => `• ${f}`).join('\n')}` : '',
     ].filter(Boolean);
-    await alert(ctx.cfg.slackWebhookUrl, `Bounce check, ${workspace === 'all' ? `${targets.length} workspaces` : `workspace ${workspace}`}:\n${lines.join('\n')}`);
+    const head = `Bounce check, ${workspace === 'all' ? `${targets.length} workspaces` : `workspace ${workspace}`}`;
+    // Urgent (always Slack): a campaign paused for bounces. Watch lists only while SLACK_REPORTS=on.
+    const urgent = paused.length > 0 && !ctx.dryRun;
+    if (paused.length) await saveReport(ctx.db, { agent: 'Atlas', kind: 'bounce_check', title: `${head}: ${paused.length} ${ctx.dryRun ? 'would be paused' : 'paused'}`, body: lines.join('\n'), urgent, dryRun: ctx.dryRun, jobId: ctx.job.id, dedupeKey: `bounce:${ctx.job.id}` });
+    if (urgent || failed.length || slackReports(ctx.cfg)) await alert(ctx.cfg.slackWebhookUrl, `${head}:\n${lines.join('\n')}`);
   }
   return {
     dryRun: ctx.dryRun, workspace, workspaces: targets.length, checked,
