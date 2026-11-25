@@ -69,11 +69,12 @@
   --ink-fg: #ffffff;
   --ink-hover: #34322d;
 
-  --accent: #047857;
+  /* Dulcy purple (#4305ED, from the logo). Status greens stay green. */
+  --accent: #4305ed;
   --accent-fg: #ffffff;
-  --accent-hover: #065f46;
-  --accent-soft: #e3f4ec;
-  --accent-ink: #046c4e;
+  --accent-hover: #3604c2;
+  --accent-soft: #eeeafe;
+  --accent-ink: #3a04cc;
 
   --good: #046c4e;
   --good-soft: #e3f4ec;
@@ -101,7 +102,7 @@
       --line: #25272d; --line-strong: #353840;
       --fg: #ededeb; --fg-2: #cfceca; --muted: #a09f9a; --faint: #74736f;
       --ink: #ededeb; --ink-fg: #121316; --ink-hover: #d6d5d1;
-      --accent: #34d399; --accent-fg: #04291c; --accent-hover: #6ee7b7; --accent-soft: rgb(52 211 153 / 0.13); --accent-ink: #6ee7b7;
+      --accent: #5b2bf0; --accent-fg: #ffffff; --accent-hover: #6e45f3; --accent-soft: rgb(124 92 255 / 0.16); --accent-ink: #b3a3ff;
       --good: #6ee7b7; --good-soft: rgb(52 211 153 / 0.13);
       --warn: #fcc76a; --warn-soft: rgb(247 144 9 / 0.15);
       --bad: #fda29b; --bad-soft: rgb(240 68 56 / 0.15); --bad-line: rgb(240 68 56 / 0.4);
@@ -117,7 +118,7 @@
     --line: #25272d; --line-strong: #353840;
     --fg: #ededeb; --fg-2: #cfceca; --muted: #a09f9a; --faint: #74736f;
     --ink: #ededeb; --ink-fg: #121316; --ink-hover: #d6d5d1;
-    --accent: #34d399; --accent-fg: #04291c; --accent-hover: #6ee7b7; --accent-soft: rgb(52 211 153 / 0.13); --accent-ink: #6ee7b7;
+    --accent: #5b2bf0; --accent-fg: #ffffff; --accent-hover: #6e45f3; --accent-soft: rgb(124 92 255 / 0.16); --accent-ink: #b3a3ff;
     --good: #6ee7b7; --good-soft: rgb(52 211 153 / 0.13);
     --warn: #fcc76a; --warn-soft: rgb(247 144 9 / 0.15);
     --bad: #fda29b; --bad-soft: rgb(240 68 56 / 0.15); --bad-line: rgb(240 68 56 / 0.4);
