@@ -1,6 +1,21 @@
 # Where we are (update this at the end of every session)
 
-Last updated: 2026-11-24 (full end-to-end run from Airtable done)
+Last updated: 2026-11-25 evening
+
+## Done 2026-11-25 (live on the server)
+- **Inbox replier (Sean):** every per-client Reply Agent setting honoured (send modes, confidence, max automatic, always-review types, OOO, nudge, office hours); out-of-office / not-interested first replies only where the client turns them on. All 8 clients still Approval Required.
+- **Dulcy HQ (hq.dulcy.io):** Today, Decisions (reply edit + send), To-do, Team, Chat, reports; redesign, Dulcy logo, Dulcy purple. Slack still on (SLACK_REPORTS / SLACK_DECISIONS) until Alex trusts HQ.
+- **Content (Sienna):** ideas Friday 7 AM for both channels (main 4, Raw 8) from web research, prospect questions and Agency Ignition (Discord bot reads 38 channels; quiet server); scripts/hooks/titles/thumbnail idea/Gamma outline within 30 min of approval; editing style guide + GPT brief; scheduled "Sienna: video editor" every 2 h 8 AM-8 PM (check → fix → reject → Needs Review; never posts).
+- **LeadMagic:** parallel single Email Finder calls (bulk ran ~19 rows/min; ticket T-1619 sent to the team).
+
+## Next (proposed order)
+1. Watch the first live campaign plans (GMG, Twenty West) through approvals; part 3 (spintax → inboxes → build → launch) has never run live.
+2. Check Sienna's first editor runs (first 2026-11-25 4:39 PM ET) and tune the rules from what Alex approves/rejects.
+3. Content steps left: repurposing pack in Alex's voice (X, LinkedIn, Reddit, blog/newsletter); proof of posting (Published/Failed + URL; 17 old "Scheduled" items unconfirmed); real thumbnails + Gamma docs on approval; folder → Frame.io auto upload.
+4. HQ Step 2: Clients screen (replaces the wrong Clients & LTV), then Step 3 work areas (Campaigns with Activity log, one Inbox, Sales, Content), Step 4 Josh login + client portal. Then switch Slack reports/decisions off.
+5. Riley known issues: content webhooks without auth, duplicate teleprompter workflow, ~100 n8n webhooks without auth, keys in n8n/Airtable scripts.
+6. Friday 2026-11-27: compare the GPT vs Claude creator watch, then switch the GPT task off. Saturday: first account-health check.
+- Open with Alex: Lead Flo LinkedIn password + 2FA change (found in old SOPs); copy of the 32 deleted Dulcy campaigns if he has it; Outbound Funnel Math re-record (with GPT, then Sienna).
 
 
 ## Daily Run page (built 2026-11-25)
