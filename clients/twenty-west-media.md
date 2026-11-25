@@ -6,7 +6,7 @@ Status: active. Two Airtable/EmailBison workspaces exist:
 
 Both records share Slack channel #twenty-dulcy (C0AQ1FVENSE) and onboarding record #30. [Airtable Workspace IDs, 2026-11-17]
 
-Last updated: 2026-11-17
+Last updated: 2026-11-25
 Every fact has a source and date in brackets. Unknown = `UNKNOWN`. Never copy facts from another client.
 
 **What "external" and "internal" mean.** Calls in Apr–May 2026 describe two streams:
@@ -240,6 +240,29 @@ Human talk mostly happens on calls and Discord. The Slack channel is mostly bot 
 - [2026-10-21] **12-day lead outage** (server crash from the new AI replier). Pipeline "bone dry"; Twenty West considered layoffs. Free video/reel offer rejected. Run 3 parallel campaigns at 4,500 emails/day. Updates via Discord. Pete proposed a closer partnership, to be revisited later. [Client Meetings]
 - [2026-11-10] Lead slowdown: Pete reported 3–4 leads/day vs a 15–20 target. Sending fell from about 4,500 to 2,400/day; 190 sending accounts active. 150 **.info** domains renew on "April 13" (year not stated) at $25 vs $3: Pete to disable auto-renew in Porkbun; Alex to buy and warm .com replacements over the holidays. New campaigns to launch at about 60% completion of current ones. [Client Meetings]
 - [2026-11-16] Latest booking notice (Local Contractors Preferred Quote Preview). Three top-up lead sheets created 2026-11-16. [Slack #twenty-dulcy; Drive file list]
+
+### 2026-11-25: diagnosis and plan sent to Pete (Alex, in Slack)
+Context: on the 2026-11-24 call Pete paused spend (the retainer "doesn't math out": 0 bookings that week, 2 the week before), called the leads cold ("they only want the video"), and proposed pay per qualified booking (he needs 20 bookings/month; "I'll take 100 if they show and land in my 20% close bucket"). Ryan: a stage is missing after the video. Alex proposed taking the replies back in-house. [Fathom "Dulcy Meeting" 2026-11-24, https://fathom.video/calls/911261441]
+Engagement as Alex describes it: $3,000/month for campaigns, interested leads and booking them in. Dulcy fell behind on replies early, so Twenty West hired their VA Bea to email and call leads. Dulcy sends the first reply (the video, Dulcy runs the video system), then the lead goes to Twenty West via Discord. [Alex, chat 2026-11-25] (Section 1's fee figures conflict; see section 9.)
+
+**What the data showed (Airtable Emails, workspace 66, thread histories, last 30 days):**
+- 282 interested → we replied to 268 (median 2.1 h; 47 waited over 24 h, 41 of them arrived Fri-Sun, about 46 h on weekends) → 165 got our first reply and then no follow-up email for 3+ days → 11 booked.
+- 34 prospects replied back and were never answered in the inbox (median 12.5 days, up to 22).
+- Our first (video) reply asked for "a quick 10-15 minute chat sometime this week" 110 times and sent a booking page link 102 times; two specific times almost never.
+- 115 first replies were held because the video wasn't ready.
+- Food & Beverage: 83 interested, 1 booked. 6 of 8 campaigns over 4% bounce.
+- Phone calls by Bea are not visible to us (asked Pete for her call log).
+
+**Plan sent (Alex's own edit):**
+1. Dulcy takes the replies back fully, first reply to booked call.
+2. Every reply within 1 hour, weekends included.
+3. Two specific times in every reply, never a booking link.
+4. Follow-up every 3 days until they book, say no, or are recycled.
+5. This week: work the backlog, the 34 unanswered first, then the 165 cold, each with two specific times.
+6. The video goes out with the first reply, never held back (made before the campaign launches).
+7. Campaigns: pause the 6 high-bounce campaigns, rebuild them on fresh domains over Christmas, change the Food & Beverage offer.
+Check-in at the end of Q4: if bookings don't move, discuss the pay-per-qualified-booking setup Pete suggested.
+Status: saved for now (Alex, 2026-11-25); not started.
 
 ## 8. Preferences and rules for this client
 - Send invoices by email, not Discord. [2026-04-20]
