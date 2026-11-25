@@ -13,6 +13,8 @@ import { recommendMove, leadListFields, approvalText, CP, type CampaignStat, typ
 import { LEAD_LISTS, F } from '../src/airtable/bridge.js';
 import { CAMPAIGNS, LL } from '../src/airtable/campaignBuild.js';
 import { DECISIONS, DF } from '../src/decisions/fields.js';
+import { lintCopy, copyFields, words, CC, type CopyT } from '../src/agents/scribe.js';
+import { addWeekdayHours } from '../src/agents/campaignPlan.js';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const url = process.env.TEST_DATABASE_URL;
@@ -58,6 +60,39 @@ test('Approval 1 text: the plan, the sample result and the questions', () => {
   assert.match(a.checked, /First 100 companies: 81 fit, 19 not \(81%\)\.\nMostly roofers\nSample sheet: https:\/\/sheet/);
   assert.match(a.checked, /Questions for you: Which client result/);
   assert.match(a.fix, /❌ = stop here; nothing more is spent/);
+});
+
+const B1 = 'Hi {FIRST_NAME},\n\nMost roofers in your area lose a job every time a call goes to voicemail after 5pm.\n\nWe set up a system that answers and books those calls for {COMPANY} within a minute, so no lead goes cold.\n\nWorth a look?';
+const B2 = 'Hi {FIRST_NAME},\n\nWhen a homeowner calls three roofers, the first one to answer usually gets the job.\n\nWe help {COMPANY} answer every call in under a minute, day or night, without hiring another person for the phones.\n\nOpen to seeing how?';
+const COPY: CopyT = {
+  email1: [{ angle: 'Missed calls', subject: 'missed calls', body: B1 }, { angle: 'Speed to lead', subject: 'first to answer', body: B2 }],
+  followups: [
+    { step: 2, purpose: 'clarify', thread_reply: true, subject: '', body: 'Hi {FIRST_NAME}, the short version: every call to {COMPANY} gets answered and booked, even at night. Want the details?' },
+    { step: 3, purpose: 'value', thread_reply: true, subject: '', body: 'Last one from me, {FIRST_NAME}. If missed calls are not a problem at {COMPANY}, no worries at all. If they are, reply yes and I will send the details.' },
+  ],
+  claims: [{ claim: 'answers in under a minute', source: 'offer' }], questions_for_alex: [], notes: 'Tests pain (missed calls) vs solution (speed).',
+};
+
+test('Scribe rule checks: clean copy passes; length, links, call ask, subject, spintax, unknown variables and the 2-angle rule are caught', () => {
+  assert.deepEqual(lintCopy(COPY), []);
+  assert.ok(words(B1) >= 30 && words(B1) <= 75);
+  const bad: CopyT = { ...COPY, email1: [{ angle: 'a', subject: 'Quick question for you?', body: 'Hi {FIRST_NAME}, see https://x.com; want to book a call? {Hi|Hello} {CITY}' }], followups: [{ ...COPY.followups[0], body: 'Just following up on my last note.' }] };
+  const p = lintCopy(bad).join('\n');
+  for (const re of [/needs exactly 2 angles/, /words \(30-75\)/, /subject "Quick question for you\?" is 4 words/, /has punctuation/, /a link/, /a semicolon/, /spintax/, /unknown variable \{CITY\}/, /asks for a call/, /Email 2: has "following up"/]) assert.match(p, re);
+  assert.deepEqual(lintCopy({ ...bad, email1: COPY.email1, followups: [] }, { allowCall: true, variables: ['CITY'] }), [], 'call ask allowed when it is the only logical step; custom variables when the list has them');
+});
+
+test('Scribe writes the Campaign Center format: Email 1 as Variant 1 / Variant 2, sequence fields, thread replies, Internal Review', () => {
+  const f = copyFields(COPY);
+  assert.equal(f[CC.review[0].subject], 'Variant 1: missed calls\nVariant 2: first to answer');
+  assert.match(String(f[CC.review[0].body]), /^Variant 1\nHi \{FIRST_NAME\},[\s\S]*\n\nVariant 2\nHi \{FIRST_NAME\},/);
+  assert.equal(f[CC.seq[0][1].body], B2); assert.equal(f[CC.variants[0]], '2');
+  assert.equal(f[CC.thread[2]], true); assert.equal(f[CC.seq[1][0].subject], ''); assert.equal(f[CC.workflow], 'Internal Review');
+  assert.equal(f[CC.seq[3][0].body], undefined, 'no step 4 written when Scribe wrote 3 emails');
+});
+
+test('Client review clock: 48 weekday hours (Friday noon → Tuesday noon)', () => {
+  assert.equal(addWeekdayHours(new Date('2026-11-27T12:00:00Z'), 48).toISOString(), '2026-12-01T12:00:00.000Z');
 });
 
 // ---------- End to end ----------
@@ -161,13 +196,87 @@ test('Campaign creation end to end: 60% trigger → Atlas plan → filters → s
   assert.match(String(dec[DF.checked]), /First 100 companies: 81 fit, 19 not \(81%\)/);
   assert.equal((await db.query('SELECT state FROM campaign_plans WHERE id=1')).rows[0].state, 'approval1');
 
-  // 5. ✅ → sample approved, Expand Companies pressed.
+  // 5. ✅ → sample approved, Expand Companies pressed, Scribe queued.
   const ok = await run('campaign.plan_approved', { planId: 1 });
   assert.equal(ok.job.status, 'succeeded', ok.job.error ?? '');
   assert.equal(tables[LEAD_LISTS][listRec][F.sampleApproved], true);
   assert.equal(tables[LEAD_LISTS][listRec][F.engineAction], 'Expand Companies');
-  assert.equal((await db.query('SELECT state FROM campaign_plans WHERE id=1')).rows[0].state, 'approved');
-  assert.equal(claudeCalls.length, 1, 'one Claude call for the whole plan');
+  const st = async () => (await db.query('SELECT state, copy_state, copy_round FROM campaign_plans WHERE id=1')).rows[0];
+  assert.deepEqual(await st(), { state: 'expand', copy_state: 'queued', copy_round: 1 });
+
+  // 6. Scribe drafts, the reviewer pass fixes, the copy lands on the Campaign.
+  claudeAnswers = [COPY, { issues: ['Email 3 was too long'], copy: COPY }];
+  const sc = await run('scribe.copy', { planId: 1 });
+  assert.equal(sc.job.status, 'succeeded', sc.job.error ?? '');
+  assert.match(String(sc.job.result.message), /1 fixed by review, all rule checks pass/);
+  const sys = claudeCalls[1].system.map((b: any) => b.text).join('\n');
+  assert.match(sys, /Scribe playbook/); assert.match(sys, /Standing rules/);
+  assert.match(JSON.stringify(claudeCalls[1].messages), /Missed calls \(tests pain point\)/, 'Scribe writes from the approved plan');
+  assert.match(JSON.stringify(claudeCalls[2].messages), /Draft to review/);
+  assert.equal(tables[CAMPAIGNS][campRec][CC.workflow], 'Internal Review');
+  assert.equal(tables[CAMPAIGNS][campRec][CC.seq[0][0].body], B1);
+  assert.equal((await st()).copy_state, 'ready');
+
+  // 7. The list path: contacts sample (85% usable → continues by itself), all contacts, verify, skip enrichment, QA.
+  await bridgeDone(listRec, 'leadlist.expand'); await run('campaign.pipeline');
+  assert.equal(tables[LEAD_LISTS][listRec][F.engineAction], 'Find Contacts');
+  await bridgeDone(listRec, 'leadlist.contacts', { [F.contactFitRate]: '85%' }); await run('campaign.pipeline');
+  assert.equal(tables[LEAD_LISTS][listRec][F.contactApproved], true); assert.equal(tables[LEAD_LISTS][listRec][F.engineAction], 'Find Contacts');
+  await bridgeDone(listRec, 'leadlist.contacts'); await run('campaign.pipeline');
+  assert.equal(tables[LEAD_LISTS][listRec][F.engineAction], 'Verify and Finalize');
+  await bridgeDone(listRec, 'leadlist.verify', { [F.leads]: 2400, [F.finalDirect]: 2000, [F.finalGeneric]: 400, [F.verifyGood]: 2300, [F.verifyRisky]: 100 }); await run('campaign.pipeline');
+  assert.equal(tables[LEAD_LISTS][listRec][F.engineAction], 'Skip Enrichment');
+  await bridgeDone(listRec, 'leadlist.skipenrich'); await run('campaign.pipeline');
+  assert.equal(tables[LEAD_LISTS][listRec][F.engineAction], 'Run Automated QA');
+  await bridgeDone(listRec, 'leadlist.qa'); await run('campaign.pipeline');
+
+  // 8. Approval 2: copy + list in Slack.
+  const dec2 = Object.values(tables[DECISIONS]).find((d) => d[DF.action] === 'Approve Campaign Copy')!;
+  assert.equal(dec2[DF.agent], 'Scribe');
+  assert.match(String(dec2[DF.checked]), /List: 2400 leads \(2000 direct, 400 generic; 2300 good, 100 risky emails\)\. QA passed\./);
+  assert.match(String(dec2[DF.checked]), /\*Email 1 · Variant 2 \(Speed to lead\)\*\nSubject: first to answer/);
+  assert.equal((await st()).state, 'approval2');
+
+  // 9. ✅ → Client Review in the portal with the 48-hour clock.
+  const ca = await run('campaign.copy_approved', { planId: 1 });
+  assert.equal(ca.job.status, 'succeeded', ca.job.error ?? '');
+  const camp2 = tables[CAMPAIGNS][campRec];
+  assert.equal(camp2[CC.workflow], 'Client Review'); assert.equal(camp2[CC.approvalSource], '');
+  assert.ok(new Date(String(camp2[CC.autoApproveAt])).getTime() - new Date(String(camp2[CC.submittedAt])).getTime() >= 48 * 3600_000);
+
+  // 10. Client asks for copy changes in the portal → Scribe rewrites with the notes → approval 2 again.
+  Object.assign(camp2, { [CC.workflow]: 'Changes Requested', [CC.clientFeedback]: ['Request Changes'], [CC.selectChanges]: ['Copy'], [CC.reviewFeedback]: ['Mention we work with roofers in Texas'] });
+  await run('campaign.pipeline');
+  assert.deepEqual(await st(), { state: 'approval2_wait', copy_state: 'queued', copy_round: 2 });
+  claudeAnswers = [COPY, { issues: [], copy: COPY }];
+  await run('scribe.copy', { planId: 1 });
+  assert.match(JSON.stringify(claudeCalls[3].messages), /Mention we work with roofers in Texas/);
+  await run('campaign.pipeline');
+  assert.equal(Object.values(tables[DECISIONS]).filter((d) => d[DF.action] === 'Approve Campaign Copy').length, 2);
+  await run('campaign.copy_approved', { planId: 1 });
+
+  // 11. Client approves (or 48h auto-approve) → client_approved (build + launch is part 3).
+  Object.assign(tables[CAMPAIGNS][campRec], { [CC.workflow]: 'Approved', [CC.approvalSource]: 'Auto-approved after 48 business hours' });
+  const fin = await run('campaign.pipeline');
+  assert.match(String(fin.job.result.message), /client approved \(Auto-approved after 48 business hours\)/);
+  assert.equal((await st()).state, 'client_approved');
+  assert.equal(claudeCalls.length, 5, 'plan 1 + copy 2 rounds × (draft + review)');
+});
+
+test('Low contact sample asks Alex; ❌ on approval 1 stops the plan', { skip }, async () => {
+  tables[LEAD_LISTS] = { recL0000000000001: { [F.engineStatus]: 'Done' }, recL0000000000002: {} };
+  await db.query(`INSERT INTO campaign_plans (trigger_key, ws_rec, client, state, lead_list_rec, campaign_rec, plan) VALUES ('new:a','recW0000000000001','Acme','contacts_sample','recL0000000000001','recC0000000000001',$1), ('new:b','recW0000000000001','Acme','approval1','recL0000000000002','recC0000000000001',$1)`, [JSON.stringify(PLAN)]);
+  tables[DECISIONS] = { recD0000000000001: { [DF.status]: 'Rejected' } };
+  await db.query(`UPDATE campaign_plans SET decision_rec='recD0000000000001' WHERE id=2`);
+  await bridgeDone('recL0000000000001', 'leadlist.contacts', { [F.contactFitRate]: '52%' });
+  await run('campaign.pipeline');
+  const rows = (await db.query('SELECT state FROM campaign_plans ORDER BY id')).rows.map((r) => r.state);
+  assert.deepEqual(rows, ['approval_contacts', 'rejected']);
+  const ask = Object.values(tables[DECISIONS]).find((d) => d[DF.action] === 'Approve Contact Sample')!;
+  assert.match(String(ask[DF.issue]), /Only 52% of the sample contacts are usable \(needs 70%\)/);
+  const ok = await run('campaign.contacts_approved', { planId: 1 });
+  assert.equal(ok.job.status, 'succeeded', ok.job.error ?? '');
+  assert.equal(tables[LEAD_LISTS].recL0000000000001[F.contactApproved], true);
 });
 
 test('A failed Lead List step stops the plan (stuck) and posts nothing', { skip }, async () => {

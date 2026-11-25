@@ -25,6 +25,7 @@ import { LEAD_LISTS, F, FILTER_CLIENT_FIELDS } from '../airtable/bridge.js';
 const CAMPAIGNS = 'tblAVAA6uBPaMj28P';
 const LL = { whichCampaign: 'fldepbn71awSjmZPV' } as const;
 import { logActivity } from '../activity.js';
+import { CC, copyText, type CopyT } from './scribe.js';
 
 const WORKSPACES = 'tblcjRBGJEWh5KgOt';
 const CAMPAIGN_THESIS = 'fldlixHfhzrd7nuSc';
@@ -90,6 +91,15 @@ Follow Alex's rules exactly (next-campaign rules and campaign SOP below; RULES.m
 // ---------- Plans table ----------
 export interface PlanRow { id: number; trigger_key: string; ws_rec: string; client: string; state: string; lead_list_rec: string | null; campaign_rec: string | null; decision_rec: string | null; plan: PlanT | null }
 const OPEN = ['planning', 'filters', 'sample', 'approval1'];
+/** Every state the pipeline still moves on. Ends: client_approved (build + launch next), rejected, copy_rejected, stuck. */
+const ACTIVE = ['planning', 'filters', 'sample', 'approval1', 'expand', 'contacts_sample', 'approval_contacts', 'contacts', 'verify', 'enrich', 'qa', 'approval2', 'approval2_wait', 'client_review'];
+const WAITING: Record<string, true> = { approval1: true, approval_contacts: true, approval2: true };
+/** The Lead List job each state waits for. */
+const STEPS: Record<string, { after: string }> = {
+  filters: { after: 'leadlist.filters' }, sample: { after: 'leadlist.sample' }, expand: { after: 'leadlist.expand' }, contacts_sample: { after: 'leadlist.contacts' },
+  contacts: { after: 'leadlist.contacts' }, verify: { after: 'leadlist.verify' }, enrich: { after: 'leadlist.skipenrich' }, qa: { after: 'leadlist.qa' },
+};
+interface PlanRowX extends PlanRow { decision2_rec: string | null; copy: CopyT | null; copy_state: string | null; copy_issues: { reviewer?: string[]; left?: string[] } | null; copy_round: number }
 
 /** Lead list record fields for a plan (the same fields Alex fills on the Lead List Center screen). */
 export function leadListFields(p: PlanT, wsRec: string, campaignRec: string): Record<string, unknown> {
@@ -180,44 +190,152 @@ export const campaignPipelineStage: Stage = async (ctx) => {
       if (id) out.push(`plan ${id} started for ${next.client} (${next.key})`);
     } else if (next) out.push(`would start a plan for ${next.client} (${next.key})`);
   }
-  // 2. Advance open plans by reading their Lead List record (the bridge runs the buttons).
-  const rows = (await ctx.db.query(`SELECT * FROM campaign_plans WHERE state = ANY($1) ORDER BY id`, [OPEN])).rows as PlanRow[];
+  // 2. Advance active plans by reading their Lead List record (the bridge runs the buttons).
+  const rows = (await ctx.db.query(`SELECT * FROM campaign_plans WHERE state = ANY($1) ORDER BY id`, [ACTIVE])).rows as PlanRowX[];
   for (const r of rows) {
     if (r.state === 'planning' || !r.lead_list_rec || !r.plan) continue;
-    const ll = await at.get(LEAD_LISTS, r.lead_list_rec, [F.engineStatus, F.engineAction, F.engineJobId, F.companyGood, F.companyBad, F.companyFitRate, F.companySummary, F.sheetLink]);
+    const say = (s: string) => out.push(`plan ${r.id}: ${s}`);
+    const setState = async (state: string, extra = '') => { if (!ctx.dryRun) await ctx.db.query(`UPDATE campaign_plans SET state=$2${extra}, updated_at=now() WHERE id=$1`, [r.id, state]); };
+    // Waiting on a ✅/❌: a ❌ ends the plan (approval 2 ❌: the copy waits for Alex's notes).
+    if (WAITING[r.state]) {
+      const dec = r.state === 'approval2' ? r.decision2_rec : r.decision_rec;
+      const d = dec ? await at.get(DECISIONS, dec, [DF.status]) : null;
+      if (val(d?.fields[DF.status]) === 'Rejected') { await setState(r.state === 'approval2' ? 'copy_rejected' : 'rejected'); say(r.state === 'approval2' ? 'copy ❌: waiting for your notes (campaign-copy <plan> "<notes>")' : '❌: stopped, nothing more is spent'); }
+      continue;
+    }
+    // With the client: read the portal answer on the Campaign.
+    if (r.state === 'client_review') {
+      if (!r.campaign_rec) continue;
+      const c = await at.get(CAMPAIGNS, r.campaign_rec, [CC.workflow, CC.clientFeedback, CC.selectChanges, CC.reviewFeedback, CC.additionalContext, CC.approvalSource]);
+      const wf = val(c?.fields[CC.workflow]); const fb = val(c?.fields[CC.clientFeedback]);
+      if (wf === 'Approved' || /approve campaign/i.test(fb)) { await setState('client_approved'); say(`client approved (${val(c?.fields[CC.approvalSource]) || 'portal'})`); }
+      else if (wf === 'Changes Requested' || /request changes/i.test(fb)) {
+        const notes = [`Area: ${val(c?.fields[CC.selectChanges]) || 'Copy'}`, val(c?.fields[CC.reviewFeedback]), val(c?.fields[CC.additionalContext])].filter(Boolean).join('\n');
+        if (!/copy|entire/i.test(val(c?.fields[CC.selectChanges]) || 'copy')) { await setState('stuck'); say(`client asked for list changes (${notes.replace(/\n/g, ' · ')}): over to you`); continue; }
+        if (!ctx.dryRun) await ctx.db.query(`UPDATE campaign_plans SET state='approval2_wait', copy_state='queued', copy_round=copy_round+1, copy_feedback=$2, updated_at=now() WHERE id=$1`, [r.id, notes.slice(0, 4000)]);
+        say('client asked for copy changes → Scribe rewrites, then approval 2 again');
+      }
+      continue;
+    }
+    if (r.state === 'approval2_wait') { // copy rewrite after client feedback → approval 2 again
+      if (r.copy_state === 'ready') { if (!ctx.dryRun) await postApproval2(ctx, at, r); say('rewritten copy → approval 2 posted'); }
+      continue;
+    }
+    const ll = await at.get(LEAD_LISTS, r.lead_list_rec, [F.engineStatus, F.engineAction, F.engineJobId, F.companyGood, F.companyBad, F.companyFitRate, F.companySummary, F.sheetLink, F.contactGood, F.contactBad, F.contactFitRate, F.contactSummary, F.leads, F.finalDirect, F.finalGeneric, F.verifyGood, F.verifyRisky, F.verifyBad, F.engineMessage]);
     if (!ll) continue;
     const st = val(ll.fields[F.engineStatus]); const pending = !!val(ll.fields[F.engineAction]);
     if (pending || !['Done', 'Failed', 'Needs Review'].includes(st)) continue;
-    const jobKind = (await ctx.db.query('SELECT kind FROM jobs WHERE id = $1', [Number(String(val(ll.fields[F.engineJobId])).split(',')[0]) || 0])).rows[0]?.kind;
-    if (st !== 'Done') { if (!ctx.dryRun) await ctx.db.query(`UPDATE campaign_plans SET state='stuck', updated_at=now() WHERE id=$1`, [r.id]); out.push(`plan ${r.id}: ${jobKind ?? 'step'} ${st}, stopped (see the Lead List)`); continue; }
-    if (r.state === 'filters' && jobKind === 'leadlist.filters') {
-      if (!ctx.dryRun) { await at.update(LEAD_LISTS, r.lead_list_rec, { [F.engineAction]: 'Run Company Sample', [F.engineActionSetAt]: new Date().toISOString() }); await ctx.db.query(`UPDATE campaign_plans SET state='sample', updated_at=now() WHERE id=$1`, [r.id]); }
-      out.push(`plan ${r.id}: filters done → first 100 sample`);
-    } else if (r.state === 'sample' && jobKind === 'leadlist.sample') {
-      const a = approvalText(r.plan, { good: num(ll.fields[F.companyGood]), bad: num(ll.fields[F.companyBad]), fitRate: val(ll.fields[F.companyFitRate]), summary: val(ll.fields[F.companySummary]), sheet: val(ll.fields[F.sheetLink]) });
-      if (!ctx.dryRun) {
-        const dec = await at.create(DECISIONS, { [DF.title]: a.title, [DF.agent]: 'Atlas', [DF.status]: 'New', [DF.client]: r.client, [DF.issue]: a.issue, [DF.checked]: a.checked, [DF.fix]: a.fix, [DF.details]: `Lead List ${r.lead_list_rec}, Campaign ${r.campaign_rec}. Plan ${r.id}.`, [DF.action]: 'Approve Campaign Plan', [DF.actionInput]: JSON.stringify({ planId: r.id }) });
-        await ctx.db.query(`UPDATE campaign_plans SET state='approval1', decision_rec=$2, updated_at=now() WHERE id=$1`, [r.id, dec]);
+    const jobKind = (await ctx.db.query('SELECT kind FROM jobs WHERE id = $1', [Number(String(val(ll.fields[F.engineJobId])).split(',')[0]) || 0])).rows[0]?.kind as string | undefined;
+    const step = STEPS[r.state];
+    if (!step) continue;
+    if (st !== 'Done' && (jobKind === undefined || jobKind === step.after)) { await setState('stuck'); say(`${jobKind ?? 'step'} ${st}, stopped (see the Lead List: ${val(ll.fields[F.engineMessage]).slice(0, 200)})`); continue; }
+    if (jobKind !== step.after) continue; // the bridge has not finished this plan's step yet
+    const press = async (action: string, extra: Record<string, unknown> = {}) => { if (!ctx.dryRun) await at.update(LEAD_LISTS, r.lead_list_rec!, { ...extra, [F.engineAction]: action, [F.engineActionSetAt]: new Date().toISOString() }); };
+    switch (r.state) {
+      case 'filters': await press('Run Company Sample'); await setState('sample'); say('filters done → first 100 sample'); break;
+      case 'sample': {
+        const a = approvalText(r.plan, { good: num(ll.fields[F.companyGood]), bad: num(ll.fields[F.companyBad]), fitRate: val(ll.fields[F.companyFitRate]), summary: val(ll.fields[F.companySummary]), sheet: val(ll.fields[F.sheetLink]) });
+        if (!ctx.dryRun) {
+          const dec = await at.create(DECISIONS, { [DF.title]: a.title, [DF.agent]: 'Atlas', [DF.status]: 'New', [DF.client]: r.client, [DF.issue]: a.issue, [DF.checked]: a.checked, [DF.fix]: a.fix, [DF.details]: `Lead List ${r.lead_list_rec}, Campaign ${r.campaign_rec}. Plan ${r.id}.`, [DF.action]: 'Approve Campaign Plan', [DF.actionInput]: JSON.stringify({ planId: r.id }) });
+          await ctx.db.query(`UPDATE campaign_plans SET state='approval1', decision_rec=$2, updated_at=now() WHERE id=$1`, [r.id, dec]);
+        }
+        say('sample done → approval 1 posted'); break;
       }
-      out.push(`plan ${r.id}: sample done → approval 1 posted`);
+      case 'expand': await press('Find Contacts'); await setState('contacts_sample'); say('companies expanded → contact sample'); break;
+      case 'contacts_sample': {
+        const rate = pctNum(val(ll.fields[F.contactFitRate]));
+        if (rate !== undefined && rate >= CONTACT_OK) { await press('Find Contacts', { [F.contactApproved]: true }); await setState('contacts'); say(`contact sample ${rate}% usable → all contacts`); }
+        else {
+          if (!ctx.dryRun) {
+            const dec = await at.create(DECISIONS, { [DF.title]: `Contact sample low: ${r.plan.campaign_name}`, [DF.agent]: 'Atlas', [DF.status]: 'New', [DF.client]: r.client,
+              [DF.issue]: `Only ${rate ?? 'UNKNOWN'}% of the sample contacts are usable (needs ${CONTACT_OK}%).`, [DF.checked]: `${num(ll.fields[F.contactGood])} usable, ${num(ll.fields[F.contactBad])} cut.\n${val(ll.fields[F.contactSummary]).slice(0, 600)}`,
+              [DF.fix]: '✅ = find all contacts anyway. ❌ = stop; fix the titles on the Lead List first.', [DF.details]: `Plan ${r.id}, Lead List ${r.lead_list_rec}.`, [DF.action]: 'Approve Contact Sample', [DF.actionInput]: JSON.stringify({ planId: r.id }) });
+            await ctx.db.query(`UPDATE campaign_plans SET state='approval_contacts', decision_rec=$2, updated_at=now() WHERE id=$1`, [r.id, dec]);
+          }
+          say(`contact sample ${rate ?? '?'}% usable → asked you`);
+        }
+        break;
+      }
+      case 'contacts': await press('Verify and Finalize'); await setState('verify'); say('contacts found → verify'); break;
+      case 'verify': await press('Skip Enrichment'); await setState('enrich'); say(`verified (${num(ll.fields[F.leads])} leads) → QA next`); break;
+      case 'enrich':
+        if (r.copy_state !== 'ready') { say('list ready, waiting for the copy'); break; }
+        await press('Run Automated QA'); await setState('qa'); say('list + copy ready → automated QA'); break;
+      case 'qa': if (!ctx.dryRun) await postApproval2(ctx, at, r, { leads: num(ll.fields[F.leads]), direct: num(ll.fields[F.finalDirect]), generic: num(ll.fields[F.finalGeneric]), good: num(ll.fields[F.verifyGood]), risky: num(ll.fields[F.verifyRisky]), sheet: val(ll.fields[F.sheetLink]) }); say('QA passed → approval 2 posted'); break;
     }
   }
-  const planning = (await ctx.db.query(`SELECT id FROM campaign_plans WHERE state='planning'`)).rows.map((r) => Number(r.id));
+  const planning = (await ctx.db.query(`SELECT id FROM campaign_plans WHERE state='planning'`)).rows.map((x) => Number(x.id));
   return { message: out.length ? out.join('; ') : 'Nothing to do', planning };
 };
 
-/** ✅ on approval 1: approve the sample and press Expand Companies (contacts and verify follow from the Lead List screen). */
+const pctNum = (s: string) => { const m = /(\d+(?:\.\d+)?)/.exec(s); return m ? Number(m[1]) : undefined; };
+/** Contact sample usable % at which Atlas continues by itself (below it: asks Alex). */
+const CONTACT_OK = 70;
+
+interface ListFacts { leads: number; direct: number; generic: number; good: number; risky: number; sheet: string }
+/** Approval 2: the final copy + the list. ✅ sends it to the client portal. */
+export function approval2Text(p: PlanT, copy: CopyT, issues: { reviewer?: string[]; left?: string[] } | null, list?: ListFacts): { title: string; issue: string; checked: string; fix: string } {
+  return {
+    title: `Approve copy + list: ${p.campaign_name}`,
+    issue: copy.notes,
+    checked: `${list ? `List: ${list.leads} leads (${list.direct} direct, ${list.generic} generic; ${list.good} good, ${list.risky} risky emails). QA passed.${list.sheet ? ` Sheet: ${list.sheet}` : ''}\n\n` : ''}${copyText(copy)}`
+      + `${issues?.left?.length ? `\n\n⚠️ Still flagged: ${issues.left.join(' · ')}` : ''}${copy.questions_for_alex.length ? `\n\nQuestions for you: ${copy.questions_for_alex.join(' · ')}` : ''}`,
+    fix: '✅ = send to the client portal for approval (auto-approves after 48 business hours). ❌ = Scribe waits for your notes.',
+  };
+}
+async function postApproval2(ctx: Parameters<Stage>[0], at: AirtableClient, r: PlanRowX, list?: ListFacts) {
+  const a = approval2Text(r.plan!, r.copy!, r.copy_issues, list);
+  const dec = await at.create(DECISIONS, { [DF.title]: a.title, [DF.agent]: 'Scribe', [DF.status]: 'New', [DF.client]: r.client, [DF.issue]: a.issue, [DF.checked]: a.checked, [DF.fix]: a.fix,
+    [DF.details]: `Campaign ${r.campaign_rec}, Lead List ${r.lead_list_rec}. Plan ${r.id}, copy round ${r.copy_round}.`, [DF.action]: 'Approve Campaign Copy', [DF.actionInput]: JSON.stringify({ planId: r.id }) });
+  await ctx.db.query(`UPDATE campaign_plans SET state='approval2', decision2_rec=$2, updated_at=now() WHERE id=$1`, [r.id, dec]);
+}
+
+/** ✅ on approval 1: approve the sample and press Expand Companies; Scribe starts the copy at the same time. */
 export const planApprovedStage: Stage = async (ctx) => {
   const cfg = ctx.cfg; const i = ctx.job.input as { planId: number };
   const at = createAirtableClient({ apiKey: cfg.airtableApiKey, baseId: cfg.airtableBaseId, baseUrl: cfg.airtableBaseUrl });
-  const r = (await ctx.db.query('SELECT * FROM campaign_plans WHERE id=$1', [i.planId])).rows[0] as PlanRow | undefined;
+  const r = (await ctx.db.query('SELECT * FROM campaign_plans WHERE id=$1', [i.planId])).rows[0] as PlanRowX | undefined;
   if (!r?.lead_list_rec) throw new PermanentError(`campaign plan ${i.planId} not found or has no lead list`);
   if (r.state !== 'approval1') return { message: `Plan ${r.id} is ${r.state}; nothing to do` };
   if (ctx.dryRun) return { message: `Would approve the sample and press Expand Companies on ${r.plan?.campaign_name ?? r.lead_list_rec} (dry run)` };
   await ctx.step('expand', () => at.update(LEAD_LISTS, r.lead_list_rec!, { [F.sampleApproved]: true, [F.engineAction]: 'Expand Companies', [F.engineActionSetAt]: new Date().toISOString() }));
-  await ctx.db.query(`UPDATE campaign_plans SET state='approved', updated_at=now() WHERE id=$1`, [r.id]);
-  await logActivity(cfg, { event: `Campaign plan approved: ${r.plan?.campaign_name ?? ''}`, type: 'Step done', agent: 'Atlas', details: 'Sample approved; Expand Companies pressed.', jobId: ctx.job.id }, at);
-  return { message: `Approved: ${r.plan?.campaign_name ?? ''}. Expand Companies pressed (the full list builds next; the copy comes in part 2).` };
+  await ctx.db.query(`UPDATE campaign_plans SET state='expand', copy_state='queued', updated_at=now() WHERE id=$1`, [r.id]);
+  await logActivity(cfg, { event: `Campaign plan approved: ${r.plan?.campaign_name ?? ''}`, type: 'Step done', agent: 'Atlas', details: 'Sample approved; Expand Companies pressed; Scribe is writing the copy.', jobId: ctx.job.id }, at);
+  return { message: `Approved: ${r.plan?.campaign_name ?? ''}. Expand Companies pressed; the full list builds and Scribe writes the copy.` };
+};
+
+/** ✅ on a low contact sample: approve it and find all contacts. */
+export const contactsApprovedStage: Stage = async (ctx) => {
+  const cfg = ctx.cfg; const i = ctx.job.input as { planId: number };
+  const at = createAirtableClient({ apiKey: cfg.airtableApiKey, baseId: cfg.airtableBaseId, baseUrl: cfg.airtableBaseUrl });
+  const r = (await ctx.db.query('SELECT * FROM campaign_plans WHERE id=$1', [i.planId])).rows[0] as PlanRowX | undefined;
+  if (!r?.lead_list_rec) throw new PermanentError(`campaign plan ${i.planId} not found`);
+  if (r.state !== 'approval_contacts') return { message: `Plan ${r.id} is ${r.state}; nothing to do` };
+  if (ctx.dryRun) return { message: 'Would approve the contact sample and find all contacts (dry run)' };
+  await ctx.step('contacts', () => at.update(LEAD_LISTS, r.lead_list_rec!, { [F.contactApproved]: true, [F.engineAction]: 'Find Contacts', [F.engineActionSetAt]: new Date().toISOString() }));
+  await ctx.db.query(`UPDATE campaign_plans SET state='contacts', updated_at=now() WHERE id=$1`, [r.id]);
+  return { message: 'Contact sample approved; finding all contacts.' };
+};
+
+/** Weekday hours from `start` (the Campaign Center's own 48-hour client review clock). */
+export function addWeekdayHours(start: Date, hours: number): Date {
+  const d = new Date(start); let left = hours;
+  while (left > 0) { d.setUTCHours(d.getUTCHours() + 1); const day = d.getUTCDay(); if (day !== 0 && day !== 6) left--; }
+  return d;
+}
+/** ✅ on approval 2: "Send for approval" (same fields as the Campaign Center button); the existing automation emails the client the portal link. */
+export const copyApprovedStage: Stage = async (ctx) => {
+  const cfg = ctx.cfg; const i = ctx.job.input as { planId: number };
+  const at = createAirtableClient({ apiKey: cfg.airtableApiKey, baseId: cfg.airtableBaseId, baseUrl: cfg.airtableBaseUrl });
+  const r = (await ctx.db.query('SELECT * FROM campaign_plans WHERE id=$1', [i.planId])).rows[0] as PlanRowX | undefined;
+  if (!r?.campaign_rec) throw new PermanentError(`campaign plan ${i.planId} not found`);
+  if (r.state !== 'approval2') return { message: `Plan ${r.id} is ${r.state}; nothing to do` };
+  if (ctx.dryRun) return { message: `Would send ${r.plan?.campaign_name} to the client portal (dry run)` };
+  const now = new Date();
+  await ctx.step('client-review', () => at.update(CAMPAIGNS, r.campaign_rec!, { [CC.workflow]: 'Client Review', [CC.submittedAt]: now.toISOString(), [CC.autoApproveAt]: addWeekdayHours(now, 48).toISOString(), [CC.approvalSource]: '' }));
+  await ctx.db.query(`UPDATE campaign_plans SET state='client_review', updated_at=now() WHERE id=$1`, [r.id]);
+  await logActivity(cfg, { event: `Sent for client approval: ${r.plan?.campaign_name ?? ''}`, type: 'Step done', agent: 'Atlas', details: 'Client Review in the portal; auto-approves after 48 business hours.', campaignRecordIds: [r.campaign_rec], jobId: ctx.job.id }, at);
+  return { message: `Sent to the client portal: ${r.plan?.campaign_name ?? ''} (auto-approves after 48 business hours)` };
 };
 
 export async function plansDue(db: Db): Promise<number[]> {
