@@ -346,7 +346,7 @@ Your rule: keep following up on a positive reply until they answer or say stop.
 
 ## Bounce agent (Atlas, 2026-11-25)
 Your rule: over 4% bounce = pause and investigate (copy, inboxes, list quality, security gateways).
-1. **When.** Every bounce check. Each campaign it pauses, or flags over 4% with Skip Bounce Pause ticked, goes to the bounce agent (once every 3 days per campaign).
+1. **When.** Every bounce check. Each campaign it pauses, or flags over 4% with Skip Bounce Pause ticked, goes to the bounce agent (once every 3 days per campaign). Campaigns already paused with bounce over 4% at 35%+ are looked at once.
 2. **What it reads.** The campaign's bounce notices in EmailBison (up to 5 pages) and its inboxes (sends and bounces per inbox). Each bounce is sorted: *address does not exist* (list), *blocked / spam / policy* (inboxes or filters), *mailbox full*, other. Security gateways (Mimecast, Proofpoint, Barracuda, Microsoft…) are named.
 3. **Cause + one fix**, posted to Slack as a decision ("Bounce 6% on …: …"):
    - **A few inboxes are being blocked** → On ✅: those inboxes are removed from the campaign and it resumes.
