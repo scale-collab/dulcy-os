@@ -192,3 +192,8 @@ Format: `- [date] rule. (why / source)`
 - **Atlas owns client facts being right:** active clients, MRR/LTV and the client list must match reality (e.g. MJJ and The Marketing Cartel are active).
 - **Atlas answers client and campaign questions when asked.** The old Jarvis didn't answer pings.
 - **Riley also checks once overnight** (4 a.m. ET).
+
+## Sean follows each client's Reply Agent settings (Alex, 2026-11-25)
+- **Rule:** Sean honors every send setting per client: Default Mode, routing groups, OOO Mode, Minimum Auto Confidence, Max Automatic Replies, Always Require Human Review, Not Interested Nudge and office hours.
+- **Approval Required stays the default.** A reply goes out without a person only where that client's own settings say so, inside the client's office hours, and never with a gap, a question for Alex, or past the sender's checks.
+- **Why:** Alex asked for the inbox replier to work per client, with the settings he already set in the Inbox Manager, instead of one rule for everyone.
