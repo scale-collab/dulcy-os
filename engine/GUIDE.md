@@ -521,8 +521,9 @@ All three are **off until switched on**, and **post only when their stage is in 
 
 **Run now:** `docker compose exec engine node dist/src/cli.js agent cole.review`
 
-### Sienna: content (Monday ideas, Thursday scripts)
-**Monday (`SIENNA_IDEAS_HOUR`, default 10 AM ET):**
+### Sienna: content (Friday ideas, Thursday scripts)
+**Friday morning (`SIENNA_IDEAS_HOUR`, default 7 AM ET), ideas for the next Friday:**
+- Sources: web research (Reddit is one of many), Dulcy's own prospect questions (last 30 days) and **Agency Ignition** (your Discord: last 7 days of the channels in `SIENNA_DISCORD_CHANNELS`, needs `DISCORD_BOT_TOKEN`). Ideas for both channels: the week's videos plus spares (main 4, Raw 8 today).
 - Claude **searches the web** (YouTube views and comments, LinkedIn, X, Reddit, forums; not Reddit alone) for what B2B agency owners and founders are asking now.
 - It then adds **2 × your weekly video count** ideas to the Content Center:
   - Status "Review", Idea Decision "Needs Review", source "Generated Idea" (so they show in the Content Center's idea queue);

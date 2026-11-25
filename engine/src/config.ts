@@ -92,6 +92,10 @@ export interface Config {
   siennaIdeasHour: number;
   siennaPrepHour: number;
   siennaChannel: string;
+  /** Discord bot token (Agency Ignition server, read only) and the channel IDs Sienna reads for ideas. */
+  discordBotToken?: string;
+  siennaDiscordChannels: string[];
+  discordBaseUrl?: string;
   ledgerReportHour: number;
   ledgerChannel: string;
   ledgerCheckEveryMin: number;
@@ -255,8 +259,10 @@ export function loadConfig(env = process.env): Config {
     rileyEveryMin: num('RILEY_EVERY_MIN', 15, env),
     n8nApiKey: env.N8N_API_KEY || '',
     n8nBaseUrl: env.N8N_BASE_URL || 'http://localhost:5678',
-    siennaIdeasHour: num('SIENNA_IDEAS_HOUR', 10, env),
+    siennaIdeasHour: num('SIENNA_IDEAS_HOUR', 7, env),
     siennaPrepHour: num('SIENNA_PREP_HOUR', 10, env),
+    discordBotToken: env.DISCORD_BOT_TOKEN || undefined,
+    siennaDiscordChannels: (env.SIENNA_DISCORD_CHANNELS || '').split(',').map((x) => x.trim()).filter((x) => /^\d+$/.test(x)),
     siennaChannel: (env.SIENNA_CHANNEL || env.ADA_CHANNEL || 'U070Z26377C').trim(),
     ledgerOn: (env.LEDGER || 'off').toLowerCase() === 'on',
     ledgerReportHour: num('LEDGER_REPORT_HOUR', 9, env),
