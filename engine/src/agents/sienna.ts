@@ -3,7 +3,7 @@
 //     (web search across YouTube, LinkedIn, X, Reddit, forums; Reddit alone is not enough), then
 //     adds ideas to the Content Center (Content Channels) with Status "Review" and Idea Decision
 //     "Needs Review" for Alex to approve there (with a recording date).
-//   • sienna.prep (Thursday): for every approved idea recording in the next 8 days with no script
+//   • sienna.prep (every 30 min): for every idea Alex approved in the last 14 days with no script
 //     yet (or the old "Record This Week" tick), writes a teleprompter script in Alex's voice, title
 //     options, hook options, a thumbnail idea and a Gamma outline, and sets Production Stage "Script"
 //     (the same stage the Content Center uses; one script writer, Alex 2026-11-25).
@@ -160,8 +160,12 @@ async function voiceSamples(at: Pick<AirtableClient, 'list'>): Promise<string> {
  * Recording Date from yesterday to 8 days out, or the old "Record This Week" tick. No script yet.
  */
 export function prepFormula(): string {
-  return `AND({Script}='',OR({Record This Week},AND({Idea Decision}='Approved',{Recording Date}!='',`
-    + `IS_AFTER({Recording Date},DATEADD(TODAY(),-2,'days')),IS_BEFORE({Recording Date},DATEADD(TODAY(),9,'days')))))`;
+  // Alex 2026-11-25: as soon as he approves an idea, Sienna prepares it (script, hooks, titles,
+  // thumbnail idea, Gamma outline) so everything is ready for Friday morning. Only ideas approved in
+  // the last 14 days (old approvals never get a surprise script) and not recorded in the past.
+  return `AND({Script}='',OR({Record This Week},AND({Idea Decision}='Approved',`
+    + `IS_AFTER(LAST_MODIFIED_TIME({Idea Decision}),DATEADD(NOW(),-14,'days')),`
+    + `OR({Recording Date}='',IS_AFTER({Recording Date},DATEADD(TODAY(),-2,'days'))))))`;
 }
 
 export const siennaPrepStage: Stage = async (ctx) => {
@@ -196,7 +200,7 @@ export const siennaPrepStage: Stage = async (ctx) => {
   if (cfg.slackBotToken && done.length && slackReports(cfg)) {
     const slack = createSlackClient({ token: cfg.slackBotToken, baseUrl: cfg.slackBaseUrl });
     const text = scriptsText;
-    await ctx.paid({ callKey: `sienna-prep-post:${etYmd(new Date())}`, provider: 'slack', units: 0, scope: 'record', run: () => slack.post(cfg.siennaChannel, text), dryRunResult: () => ({ channel: '', ts: '' }) });
+    await ctx.paid({ callKey: `sienna-prep-post:${ctx.job.id}`, provider: 'slack', units: 0, scope: 'record', run: () => slack.post(cfg.siennaChannel, text), dryRunResult: () => ({ channel: '', ts: '' }) });
   }
   return { message: `${done.length} script(s) written`, titles: done };
 };

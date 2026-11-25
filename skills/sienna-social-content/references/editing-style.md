@@ -104,7 +104,7 @@ None of the 5 creators show the same face twice. When they split, the second pan
 ## 8. Alex's decisions (2026-11-25; these win over anything above)
 1. **QR / "Learn more on our socials" end card: never.**
 2. **Burned-in captions on long-form: only on Alex Woung Raw.** Main-channel long-form uses YouTube captions only (no burned-in text). Shorts/Reels always have burned-in captions.
-3. **Raw:** keep his natural filler and pace (cut only dead air over 1 s, false starts and retakes); clips 30-90 s. (Default; Alex had not decided.)
+3. **Raw:** cut the filler words (um, uh, false starts, retakes) and dead air over 1 s, but keep his natural pace (no jump-cut rhythm, normal pauses stay). `removeFiller: true`. Clips 30-90 s.
 4. **Keyword highlight: off.**
 5. **Caption look: like Nik Setting's videos** (clean, minimal, modern). Before the first edit Sienna studies a few of his recent Shorts and long-form for free (YouTube page, transcript, stills; no vidIQ) and writes the exact look here (case, size, position, font weight, motion). Until then: sentence case, white, subtle shadow, lower-middle, 1-4 words, no emoji.
 6. **"Alex Woung" OpusClip template: yes.** OpusClip's tools can't create templates, so Sienna writes the exact settings and Alex (or Sienna in the app via Chrome) saves it once; until then she applies the settings per clip.

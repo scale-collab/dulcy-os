@@ -4,7 +4,7 @@ Alex: "ideally Sienna can edit all the content herself and just show me the fina
 Read first: `CLAUDE.md`, `rules/RULES.md`, `company/content-system.md`, `skills/sienna-social-content/SKILL.md`, **`skills/sienna-social-content/references/editing-style.md`** (section 8 = Alex's decisions, they win).
 
 ## Scope and hard limits
-- Only Alex Woung business content (channels "Alex Woung" and "Alex Woung Raw"). Never touch the "Dulcifyz" gaming projects.
+- Only Alex Woung business content (channels "Alex Woung" and "Alex Woung Raw"). Never touch the "Dulcifyz" gaming projects or the "dulcifyz" template. New OpusClip templates are OK (Alex).
 - Sienna edits clips in OpusClip and updates Airtable. She **never posts, schedules, exports to a social account, publishes or deletes** anything. Alex approves every final video.
 - No vidIQ. No paid tools beyond the OpusClip processing the flow already does.
 - OpusClip API hours: the plan includes 15 hours a month (used up for November; resets on the 1st). If OpusClip starts refusing jobs, stop and tell Alex.

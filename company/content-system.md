@@ -5,7 +5,7 @@ Owner: **Sienna**. Goal: fluid from idea to posted, with Alex approving ideas an
 ## The week
 - **Friday morning:** Alex records. By then the ideas and scripts must be ready.
 - **Per week (Content Automation Settings):** main channel **Alex Woung** 2 finished videos; secondary **Alex Woung Raw** 4-5.
-- **Ideas to approve:** the videos needed plus a handful more (main 4, Raw 8 at today's settings). Sienna adds them Friday morning (for the next Friday); Alex approves with a recording date; Sienna writes scripts Thursday.
+- **Ideas to approve:** the videos needed plus a handful more (main 4, Raw 8 at today's settings). Sienna adds them Friday morning (for the next Friday); as soon as Alex approves one, Sienna writes its script, hooks, titles, thumbnail idea and Gamma outline (checked every 30 min), so all is ready for Friday morning.
 
 ## Sources (Lucid "Content Systems That Don't Drain You")
 Ideas come from all of these (Reddit is one source, not the only one):
