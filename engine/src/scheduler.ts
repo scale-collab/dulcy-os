@@ -155,7 +155,8 @@ export async function agentsTick(db: Db, cfg: Config, now = new Date()): Promise
   if (cfg.coleOn && cfg.fathomApiKey && cfg.coleEveryMin > 0) n += await q('cole.review', `cole:${Math.floor(now.getTime() / (cfg.coleEveryMin * 60_000))}`);
   // Alex 2026-11-25: ideas land Friday morning (for the next Friday's recording); scripts Thursday.
   if (cfg.siennaOn && et.getDay() === 5 && et.getHours() >= cfg.siennaIdeasHour) n += await q('sienna.ideas', `sienna-ideas:${date}`);
-  if (cfg.siennaOn && et.getDay() === 4 && et.getHours() >= cfg.siennaPrepHour) n += await q('sienna.prep', `sienna-prep:${date}`);
+  // Scripts as soon as Alex approves an idea (every 30 min), so Friday morning is ready.
+  if (cfg.siennaOn) n += await q('sienna.prep', `sienna-prep:${date}:${et.getHours()}:${et.getMinutes() < 30 ? 0 : 30}`);
   return n;
 }
 

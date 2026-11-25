@@ -521,7 +521,7 @@ All three are **off until switched on**, and **post only when their stage is in 
 
 **Run now:** `docker compose exec engine node dist/src/cli.js agent cole.review`
 
-### Sienna: content (Friday ideas, Thursday scripts)
+### Sienna: content (Friday ideas, scripts as soon as you approve)
 **Friday morning (`SIENNA_IDEAS_HOUR`, default 7 AM ET), ideas for the next Friday:**
 - Sources: web research (Reddit is one of many), Dulcy's own prospect questions (last 30 days) and **Agency Ignition** (your Discord: last 7 days of the channels in `SIENNA_DISCORD_CHANNELS`, needs `DISCORD_BOT_TOKEN`). Ideas for both channels: the week's videos plus spares (main 4, Raw 8 today).
 - Claude **searches the web** (YouTube views and comments, LinkedIn, X, Reddit, forums; not Reddit alone) for what B2B agency owners and founders are asking now.
@@ -532,7 +532,7 @@ All three are **off until switched on**, and **post only when their stage is in 
 - Ideas that duplicate an existing title are skipped. You get a Slack list.
 - **Pick the ones you want: approve them in the Content Center with a recording date** (the old "Record This Week" tick still works).
 
-**Thursday (`SIENNA_PREP_HOUR`, default 10 AM ET):** every approved idea recording in the next 8 days without a script gets (Production Stage "Script", the same stage the screen uses):
+**As soon as you approve an idea** (checked every 30 minutes; ideas approved in the last 14 days, not recorded yet), it gets (Production Stage "Script", the same stage the screen uses):
 - a teleprompter **script** in your voice, learned from your recent transcripts;
 - 3 titles and 3 hooks;
 - a thumbnail idea;

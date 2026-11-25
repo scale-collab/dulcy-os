@@ -131,10 +131,10 @@ test('Sienna: the coming Friday (ET) and stable idea keys', () => {
   assert.equal(slug('Cold Email in 2027: What Still Works?'), 'cold-email-in-2027-what-still-works');
 });
 
-test('timers: Atlas Monday after its hour; Sienna Friday-morning ideas and Thursday scripts; all off by default', async () => {
+test('timers: Atlas Monday after its hour; all off by default', async () => {
   const cfg = loadConfig({ ENGINE_SECRET: 'x'.repeat(40), DATABASE_URL: 'postgres://x' } as NodeJS.ProcessEnv);
   assert.equal(await agentsTick(null as any, cfg, new Date('2026-11-30T15:00:00Z')), 0, 'all off');
-  assert.equal(await agentsTick(null as any, { ...cfg, atlasOn: true, siennaOn: true }, new Date('2026-12-01T15:00:00Z')), 0, 'Tuesday: nothing');
+  assert.equal(await agentsTick(null as any, { ...cfg, atlasOn: true }, new Date('2026-12-01T15:00:00Z')), 0, 'Tuesday: nothing');
   assert.equal(await agentsTick(null as any, { ...cfg, coleOn: true }, new Date('2026-12-01T15:00:00Z')), 0, 'Cole needs a Fathom key');
 });
 
@@ -249,6 +249,7 @@ test('Sienna writes scripts for ideas approved in the Content Center with a reco
   const f = prepFormula();
   assert.match(f, /\{Idea Decision\}='Approved'/);
   assert.match(f, /\{Recording Date\}/);
+  assert.match(f, /LAST_MODIFIED_TIME\(\{Idea Decision\}\)/, 'only ideas approved recently');
   assert.match(f, /\{Record This Week\}/);
   assert.match(f, /\{Script\}=''/);
 });
@@ -274,4 +275,14 @@ test('Agency Ignition (Discord): questions from the last 7 days, anonymous, bots
   assert.equal(q.length, 2);
   assert.match(q[0], /@someone/);
   assert.match(q[1], /\[link\]/);
+});
+
+test('Sienna prep runs every 30 minutes when Sienna is on (scripts right after approval)', { skip }, async () => {
+  const cfg = { ...loadConfig({ ENGINE_SECRET: 'x'.repeat(40), DATABASE_URL: url ?? 'postgres://x' } as NodeJS.ProcessEnv), siennaOn: true };
+  await agentsTick(db, cfg, new Date('2026-12-01T15:10:00Z'));
+  await agentsTick(db, cfg, new Date('2026-12-01T15:20:00Z'));
+  await db.query(`UPDATE jobs SET status='succeeded' WHERE kind='sienna.prep'`);
+  await agentsTick(db, cfg, new Date('2026-12-01T15:40:00Z'));
+  const r = await db.query(`SELECT request_id FROM jobs WHERE kind='sienna.prep' ORDER BY id`);
+  assert.equal(r.rows.length, 2, 'one job per half hour');
 });
