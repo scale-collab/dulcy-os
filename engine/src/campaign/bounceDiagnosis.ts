@@ -8,7 +8,7 @@
 
 export type BounceKind = 'bad_address' | 'blocked' | 'mailbox_full' | 'other';
 
-const BAD = /(does not exist|doesn'?t exist|no such user|user unknown|unknown user|recipient (address )?rejected|address rejected|invalid (recipient|address|mailbox)|mailbox (unavailable|not found|does not exist)|account (has been )?disabled|no mailbox|not a valid|5\.1\.1|5\.1\.10|5\.4\.1|recipient not found|undeliverable address|address couldn'?t be found|no longer (with|available)|unrouteable|domain not found|host not found|nxdomain|5\.1\.2)/i;
+const BAD = /(does not exist|doesn'?t exist|no such user|user unknown|unknown user|recipient (address )?rejected|address rejected|invalid (recipient|address|mailbox)|mailbox (unavailable|not found|does not exist)|account (has been )?disabled|no mailbox|not a valid|5\.1\.1|5\.1\.10|5\.4\.1|recipient not found|undeliverable address|address couldn'?t be found|no longer (with|available)|unrouteable|unable to route|no route|domain not found|host not found|nxdomain|5\.1\.2|4\.4\.4|5\.4\.4)/i;
 const BLOCKED = /(blocked|block list|blocklist|blacklist|spam|policy|reputation|denied|5\.7\.\d|not authorized|rejected (for|due to|by)|message rejected|refused|banned|listed (on|in|at)|spf|dkim|dmarc|access denied|content rejected|sender rejected|poor reputation|too many)/i;
 const FULL = /(mailbox (is )?full|quota|over quota|storage|insufficient (system )?storage|5\.2\.2|4\.2\.2)/i;
 /** Spam blocks that point at our sending domain (its reputation, blacklists, authentication). */
@@ -61,7 +61,14 @@ const GENERIC = /^(info|contact|office|hello|enquiries|inquiries|sales|admin|sup
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 
 export interface InboxStat { id: string; email: string; status: string; sent: number; bounced: number }
-export interface Bounce { senderId: string; recipient: string; kind: BounceKind; gateway: string; code?: string; spamHint?: 'domain' | 'copy' | ''; provider?: string }
+export interface Bounce { senderId: string; recipient: string; kind: BounceKind; gateway: string; code?: string; spamHint?: 'domain' | 'copy' | ''; provider?: string; sample?: string }
+
+/** The most telling line of a notice (the one with the SMTP code or the reason), emails masked, max 180 chars. */
+function sampleLine(text: string): string {
+  const lines = String(text ?? '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const pick = lines.find((l) => /\b[45]\.\d{1,3}\.\d{1,3}\b|\b[45]\d\d[ -]/.test(l) && l.length > 12) ?? lines.find((l) => BLOCKED.test(l) || BAD.test(l)) ?? '';
+  return pick.replace(/[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+\.[A-Za-z]{2,})/g, '***@$1').slice(0, 180);
+}
 
 /** One bounce notice → who bounced, from which of our inboxes, the code and why. */
 export function readBounce(r: any, ourInboxes: Set<string>): Bounce {
@@ -72,6 +79,7 @@ export function readBounce(r: any, ourInboxes: Set<string>): Bounce {
   return {
     senderId: String(r?.sender_email_id ?? ''), recipient: leadEmail || found[0] || '', kind, gateway: gatewayOf(text), code: codeOf(text),
     spamHint: kind !== 'blocked' ? '' : DOMAIN_SIGNS.test(text) ? 'domain' : COPY_SIGNS.test(text) ? 'copy' : '',
+    sample: sampleLine(text),
   };
 }
 
@@ -127,6 +135,7 @@ export function diagnose(c: { bounce: number; contacted: number; bounced: number
     blocked ? `Step 2, spam blocks: ${domainHints} point at our domain (blacklist / reputation / SPF-DKIM-DMARC), ${copyHints} at the copy (content / links). Blocks by our sending domain: ${top(blocksByDomain).map(([k, v]) => `${k} ${v}`).join(', ') || 'none'} (${ourDomains.size} domains${riskyTld ? `, mostly .${riskyTld}` : ''}). Busiest inbox: ${top(blocksByInbox, 1).map(([k, v]) => `${inboxById.get(k)?.email ?? k} ${v}`).join('') || 'none'}.` : '',
     withProvider ? `Step 3, where the bounces land: ${top(providers, 6).map(([k, v]) => `${k} ${v} (${pct(v, withProvider)}%)`).join(', ')}.` : '',
     n ? `Generic inboxes (info@, sales@…) among the bounces: ${generic} (${pct(generic, n)}%).` : '',
+    ...(['blocked', 'bad_address'] as BounceKind[]).map((k) => { const ex = bounces.find((b) => b.kind === k && b.sample); return ex ? `Example ${k === 'blocked' ? 'block' : 'not found'} (${ex.provider ?? '?'}): "${ex.sample}"` : ''; }),
   ].filter(Boolean);
 
   const segLine = stopSendingTo ? ` Also: ${pct(segTop![1], withProvider)}% of the bounces land on ${stopSendingTo}: stop sending to ${stopSendingTo} recipients (remove those leads before the next send).` : '';
@@ -138,6 +147,12 @@ export function diagnose(c: { bounce: number; contacted: number; bounced: number
   if (bad / n >= 0.5 || (bad / n >= 0.4 && bad >= 2 * blocked)) {
     return { ...base, cause: 'verification', headline: 'Verification problem: addresses not found',
       fix: `${pct(bad, n)}% of bounces are addresses that do not exist (${top(codes, 2).map(([k]) => k).join(', ')}), so it is the list${generic / n >= 0.4 ? ` (mostly generic inboxes: ${pct(generic, n)}%)` : ''}. ${hold}. Re-verify the leads not yet contacted (MillionVerifier) and remove the risky / catch-all ones, then resume.${segLine}`, action: 'None' };
+  }
+  // Blacklist / reputation blocks across several of our domains = the domains (on one inbox only = that account, below).
+  const hintedDomains = new Set(blockedOnes.filter((b) => b.spamHint === 'domain').map((b) => domainOf(inboxById.get(b.senderId)?.email ?? '')).filter(Boolean));
+  if ((blocked / n >= 0.4 || blocked > bad) && domainHints / Math.max(1, blocked) >= 0.5 && hintedDomains.size >= 2) {
+    return { ...base, cause: 'domain', headline: 'Spam problem: our sending domains (blacklist / reputation)',
+      fix: `${domainHints} of ${blocked} blocks name a blacklist, reputation or SPF/DKIM/DMARC, so the receiving servers distrust our domains${riskyTld ? ` (.${riskyTld})` : ''}. ${hold}. Check the ${ourDomains.size} domains in the Spam Center (blacklists, authentication) and rest or replace the listed ones before resuming.${segLine}`, action: 'None' };
   }
   if (stopSendingTo && blocked / n >= 0.3) {
     return { ...base, cause: 'gateway', headline: `${stopSendingTo} takes ${pct(segTop![1], withProvider)}% of the bounces`,

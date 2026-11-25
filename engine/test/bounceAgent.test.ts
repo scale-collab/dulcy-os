@@ -89,6 +89,12 @@ test('Alex\'s method: step 1 codes (verification vs spam), step 2 domain / accou
   assert.match(both.fix, /stop sending to Custom mail server/);
 
   assert.equal(diagnose({ ...c, contacted: 100, bounced: 6 }, inboxes, mk(10, () => ({}))).action, 'Resume Campaign');
+  // Live MJJ 603: blacklist blocks across many of our domains, and 77% landing on custom servers → domain first, gateway as the second fix.
+  const mjj = diagnose(c, inboxes, mk(10, (i) => ({ spamHint: 'domain', provider: i < 8 ? 'Custom mail server' : 'Google' })));
+  assert.equal(mjj.cause, 'domain');
+  assert.match(mjj.fix, /stop sending to Custom mail server/);
+  // Live TMC 633: 4.4.4 (no route to the domain) is a dead address.
+  assert.equal(classifyBounce('450 4.4.4 Unable to route the message'), 'bad_address');
 });
 
 test('bounce check → bounce agent: the paused campaign is investigated once and the cause + fix comes back', { skip }, async () => {
