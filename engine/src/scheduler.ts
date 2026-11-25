@@ -87,10 +87,22 @@ export async function accountHealthTick(db: Db, cfg: Config, now = Date.now()): 
   return r.status === 'queued' ? 1 : 0;
 }
 
+/** Ada's brief: once per weekday at ADA_BRIEF_HOUR ET (the day is the request id, so it never posts twice). */
+export async function adaTick(db: Db, cfg: Config, now = new Date()): Promise<number> {
+  if (!cfg.adaBriefOn) return 0;
+  const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const day = et.getDay();
+  if (day === 0 || day === 6 || et.getHours() < cfg.adaBriefHour) return 0;
+  const def = STAGES['ada.brief'];
+  const date = `${et.getFullYear()}-${String(et.getMonth() + 1).padStart(2, '0')}-${String(et.getDate()).padStart(2, '0')}`;
+  const r = await enqueue(db, { kind: 'ada.brief', recordId: 'ada', input: {}, requestId: `ada:${date}`, dryRun: cfg.dryRun && !cfg.liveStages.includes('ada.brief'), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs });
+  return r.status === 'queued' ? 1 : 0;
+}
+
 export function startScheduler(db: Db, cfg: Config, signal: AbortSignal): void {
-  if ((!cfg.bounceCheckEveryMin || cfg.bounceCheckWorkspaces.length === 0) && !cfg.seanEveryMin && !cfg.accountHealthEveryMin) return;
+  if ((!cfg.bounceCheckEveryMin || cfg.bounceCheckWorkspaces.length === 0) && !cfg.seanEveryMin && !cfg.accountHealthEveryMin && !cfg.adaBriefOn) return;
   const err = (e: unknown) => console.error(JSON.stringify({ level: 'error', message: 'scheduler tick failed', err: String(e) }));
-  const tick = () => { void scheduleTick(db, cfg).catch(err); void seanTick(db, cfg).catch(err); void accountHealthTick(db, cfg).catch(err); };
+  const tick = () => { void scheduleTick(db, cfg).catch(err); void seanTick(db, cfg).catch(err); void accountHealthTick(db, cfg).catch(err); void adaTick(db, cfg).catch(err); };
   tick();
   const t = setInterval(tick, 60_000);
   signal.addEventListener('abort', () => clearInterval(t));

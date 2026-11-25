@@ -368,3 +368,13 @@ Alex's rule (RULES.md 2026-11-25). Replaces the n8n "[Email Accounts] Automated 
 Airtable table **Activity Log**: one row per step, with When, Agent (Atlas, Sean, Engine…), Type (Detected, Diagnosed, Fixed, Waiting for approval, Approved, Step done, Step failed) and links to Campaign, Lead List, Email Account and Client. Written by: every finished lead list and campaign job (sample, contacts, verify, build, launch, pause, top up…), the bounce check (pauses), the bounce agent (diagnosis and automatic fixes) and the account health loop. Each Campaign and Lead List record has the linked **Activity Log** field; the Campaigns interface has an **Activity Log** page with dropdowns per campaign / lead list / account / client.
 
 **Bounce agent, automatic fixes (Alex 2026-11-25):** when one account is the cause, it is rested for a week and the campaign is resumed without waiting for ✅; "too early to judge" resumes too. The Slack post then says "Fixed: …". List, copy, domain and gateway fixes stay proposals.
+
+## Ada, the morning brief (2026-11-25)
+Every weekday at `ADA_BRIEF_HOUR` (default 8 AM ET) the engine posts one brief to `ADA_CHANNEL` (default Alex's Slack DM, from the Dulcy Agents bot). Read only. Spec: `agents/ada-morning-brief.md`.
+- **Waiting on you:** open decisions (replies / follow-ups, bounce, purchases) and the oldest one.
+- **Overnight (24 h):** new interested replies per client, meetings booked, replies sent, drafts waiting.
+- **Campaigns:** over 4%, watch (2.5-4%), paused in 24 h, past 60% (plan the next one), almost done.
+- **Accounts:** resting, to replace, purchases waiting.
+- **Agents:** steps per agent from the Activity Log.
+- **Top 3** things only Alex can unblock. **Fridays:** weekly scorecard per client (interested, booked, sent; this week vs last).
+- Switch: `ADA_BRIEF=on` and `ada.brief` in LIVE_STAGES. Today's calendar is not in v1 (the engine has no calendar read yet).
