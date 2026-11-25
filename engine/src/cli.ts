@@ -277,25 +277,25 @@ async function main() {
         console.log(`\n(posted to ${cfg.atlasChannel})`);
       }
     } else if (cmd === 'discord-check') {
-      // Read-only: can Sienna's bot see Agency Ignition? Per channel: messages this week, empty ones, questions. No Claude, no posting.
+      // Read-only: can Sienna's bot see Agency Ignition? Per channel: messages in 30 days, empty ones, questions. No Claude, no posting.
       if (!cfg.discordBotToken) throw new Error('no DISCORD_BOT_TOKEN in the server .env');
       const D = await import('./providers/discord.js');
       const dc = D.createDiscordClient({ token: cfg.discordBotToken, baseUrl: cfg.discordBaseUrl });
       const listed = await dc.channelList(100);
       const chans = cfg.siennaDiscordChannels.length ? listed.filter((c) => cfg.siennaDiscordChannels.includes(c.id)) : listed;
       console.log(`Servers: ${[...new Set(listed.map((c) => c.server))].join(', ') || 'none'}. Text channels the bot can see: ${chans.length}.`);
-      const since = Date.now() - 7 * 86_400_000; let total = 0, empty = 0, questions = 0;
+      const since = Date.now() - 30 * 86_400_000; let total = 0, empty = 0, questions = 0, anyText = 0, fetched = 0;
       for (const c of chans) {
         const msgs = await dc.recent(c.id);
         const week = msgs.filter((m) => !m.author?.bot && Date.parse(m.timestamp) >= since);
         const blank = week.filter((m) => !String(m.content ?? '').trim()).length;
-        const q = D.communityQuestions(msgs, new Date()).length;
-        total += week.length; empty += blank; questions += q;
-        console.log(`- #${c.name}: ${msgs.length ? `${week.length} messages this week (${blank} with no text), ${q} questions` : 'no access or empty'}`);
+        const q = D.communityQuestions(msgs, new Date(), 30).length;
+        total += week.length; empty += blank; questions += q; fetched += msgs.length; anyText += msgs.filter((m) => String(m.content ?? '').trim()).length;
+        if (msgs.length) console.log(`- #${c.name}: ${week.length} messages in 30 days (${blank} with no text), ${q} questions`);
       }
-      if (total && empty === total) console.log('All messages came back without text: turn on MESSAGE CONTENT INTENT (Developer Portal → Bot → Privileged Gateway Intents → Save), then run this again.');
-      else if (!total) console.log('No messages this week in the channels it can see.');
-      else console.log(`OK: ${questions} questions this week for Sienna.`);
+      if (fetched >= 20 && !anyText) console.log(`Message text is hidden (0 of ${fetched} recent messages have text): turn on MESSAGE CONTENT INTENT (Developer Portal → Bot → Privileged Gateway Intents → Save), then run this again.`);
+      else if (fetched) console.log(`Message text is readable (${anyText} of ${fetched} recent messages have text).`);
+      console.log(total ? `${total} messages in the last 30 days; ${questions} questions for Sienna.` : 'No messages in the last 30 days in the channels it can see.');
       if (chans.length <= 1) console.log('Only 1 channel visible: give the bot (or its role) View Channel + Read Message History on the other channels, or on the whole server.');
     } else if (cmd === 'campaign-copy') {
       // Rewrite a plan's copy with your notes (after ❌ on approval 2, or any time before the client sees it).
