@@ -59,7 +59,8 @@ test('message: blank line between facts, reply drafts quoted, action named, deta
   assert.match(r, /^\*Sean · Twenty West Media\*/);
   assert.match(r, /\*They said:\* Jane asked for times/);
   assert.match(r, /\*Draft reply:\*\n> Hi Jane,\n> \n> Tue 2pm\?/);
-  assert.match(r, /✅ send it {3}· {3}❌ skip it$/);
+  assert.doesNotMatch(r, /send it|skip it/, 'no redundant reaction legend (Alex, 2026-11-25)');
+  assert.match(r, /Tue 2pm\?$/);
 });
 
 test('New → posted once with details in the thread; stranger reactions ignored; ✅ from Alex sends the reply (live)', { skip }, async () => {

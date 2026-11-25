@@ -33,8 +33,8 @@ export function decisionMessage(r: AirtableRecord): string {
   if (text(f[DF.issue])) blocks.push(`*${reply ? 'They said' : 'Issue'}:* ${text(f[DF.issue])}`);
   if (text(f[DF.checked])) blocks.push(`*${reply ? 'Why' : 'Checked'}:* ${text(f[DF.checked])}`);
   if (text(f[DF.fix])) blocks.push(reply || text(f[DF.fix]).includes('\n') ? `*${reply ? 'Draft reply' : 'Proposed'}:*\n${quote(text(f[DF.fix]))}` : `*Proposed:* ${text(f[DF.fix])}`);
-  if (reply) blocks.push('✅ send it   ·   ❌ skip it');
-  else if (text(f[DF.action]) && text(f[DF.action]) !== 'None') blocks.push(`*On ✅:* ${text(f[DF.action])}`);
+  // Reply drafts: no "✅ send it · ❌ skip it" line; the pre-added reactions say it (Alex, 2026-11-25).
+  if (!reply && text(f[DF.action]) && text(f[DF.action]) !== 'None') blocks.push(`*On ✅:* ${text(f[DF.action])}`);
   return blocks.join('\n\n');
 }
 

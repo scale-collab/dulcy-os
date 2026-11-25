@@ -205,3 +205,4 @@ Newest at the bottom. Format: `date | decision | why | who`
 - 2026-11-25: Alex: cold copy offers what we can genuinely do and asks whether they want it; delivery prerequisites (access, setup) stay out of the cold email (Profit Compass example). No lies, but don't get hung up on nuance. Marketing Cartel P.S. lines confirmed OK.
 - 2026-11-25: Alex: Lead Flo Marketing is no longer an active client; set to Inactive in Airtable (Workspace IDs rec recaG8oBGaBKbWlns). Active clients now 5 + Dulcy.
 - 2026-11-25: Alex: Claude may switch EmailBison workspaces with the admin MCP key (read campaigns/copy; switch back to team 4 after). EmailBison holds the full campaign history.
+- 2026-11-25: Alex: Slack reply drafts no longer show the "✅ send it · ❌ skip it" line; the reactions already say it.
