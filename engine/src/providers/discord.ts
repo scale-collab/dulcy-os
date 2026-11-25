@@ -22,13 +22,17 @@ export function createDiscordClient(o: { token: string; baseUrl?: string; fetchI
   return {
     /** Every text / announcement channel in every server the bot was added to (Alex: read them all). */
     async allChannels(max = 40): Promise<string[]> {
+      return (await this.channelList(max)).map((c) => c.id);
+    },
+    /** Same, with names (for the check command). */
+    async channelList(max = 40): Promise<{ id: string; name: string; server: string }[]> {
       const guilds = (await get('/users/@me/guilds')) ?? [];
-      const ids: string[] = [];
+      const out: { id: string; name: string; server: string }[] = [];
       for (const g of Array.isArray(guilds) ? guilds : []) {
         const chans = (await get(`/guilds/${encodeURIComponent(String(g.id))}/channels`)) ?? [];
-        for (const c of Array.isArray(chans) ? chans : []) if (c?.type === 0 || c?.type === 5) ids.push(String(c.id));
+        for (const c of Array.isArray(chans) ? chans : []) if (c?.type === 0 || c?.type === 5) out.push({ id: String(c.id), name: String(c.name ?? ''), server: String(g.name ?? '') });
       }
-      return ids.slice(0, max);
+      return out.slice(0, max);
     },
     /** The newest messages of one channel (up to 100). */
     async recent(channelId: string, limit = 100): Promise<DiscordMessage[]> {
