@@ -108,7 +108,7 @@ export function leadListFields(p: PlanT, wsRec: string, campaignRec: string): Re
   return {
     [F.name]: p.campaign_name, [F.client]: [wsRec], [F.icp]: p.targeting, [F.thesis]: thesisText(p), [F.personaDna]: p.persona,
     [F.sampleSize]: 100, [F.expansionTarget]: Math.max(300, Math.round(p.lead_goal / 4)), [F.includeDirect]: true, [F.includeGeneric]: true,
-    [F.runsOnEngine]: true, [LL.whichCampaign]: [campaignRec], [F.engineAction]: 'Generate Filters', [F.engineActionSetAt]: new Date().toISOString(),
+    [F.runsOnEngine]: true, [LL.whichCampaign]: [campaignRec], [F.engineAction]: 'Generate Filters',
   };
 }
 
@@ -152,7 +152,14 @@ export const atlasPlanStage: Stage = async (ctx) => {
     dryRunResult: () => ({}) as PlanT,
   });
   plan.angles = plan.angles.slice(0, 2);
-  const campaignRec = await ctx.step('campaign', () => at.create(CAMPAIGNS, { [CP.name]: plan.campaign_name, [CP.client]: [row.ws_rec], [CP.thesis]: thesisText(plan) }));
+  // A retry reuses the Campaign record an earlier attempt already made (same plan, same name, same client).
+  const campaignRec = await ctx.step('campaign', async () => {
+    if (row.campaign_rec) return row.campaign_rec;
+    const same = (await at.list(CAMPAIGNS, `{Name}='${plan.campaign_name.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`, [CP.client], 5)).find((c) => JSON.stringify(c.fields[CP.client] ?? '').includes(row.ws_rec));
+    const id = same?.id ?? await at.create(CAMPAIGNS, { [CP.name]: plan.campaign_name, [CP.client]: [row.ws_rec], [CP.thesis]: thesisText(plan) });
+    await ctx.db.query(`UPDATE campaign_plans SET campaign_rec=$2, updated_at=now() WHERE id=$1`, [row.id, id]);
+    return id;
+  });
   const listRec = await ctx.step('leadlist', () => at.create(LEAD_LISTS, leadListFields(plan, row.ws_rec, campaignRec)));
   await ctx.db.query(`UPDATE campaign_plans SET state='filters', plan=$2, campaign_rec=$3, lead_list_rec=$4, updated_at=now() WHERE id=$1`, [row.id, JSON.stringify(plan), campaignRec, listRec]);
   await logActivity(cfg, { event: `Next campaign planned: ${plan.campaign_name}`, type: 'Step done', agent: 'Atlas', details: thesisText(plan), jobId: ctx.job.id }, at);
@@ -191,6 +198,13 @@ export const campaignPipelineStage: Stage = async (ctx) => {
       const id = (await ctx.db.query(`INSERT INTO campaign_plans (trigger_key, ws_rec, client, state) VALUES ($1,$2,$3,'planning') ON CONFLICT (trigger_key) DO NOTHING RETURNING id`, [next.key, next.ws, next.client])).rows[0]?.id;
       if (id) out.push(`plan ${id} started for ${next.client} (${next.key})`);
     } else if (next) out.push(`would start a plan for ${next.client} (${next.key})`);
+  }
+  // 1b. A plan whose planning job failed is set aside (stuck) so it stops blocking new plans; retry with campaign-plan-retry.
+  for (const p of (await ctx.db.query(`SELECT p.id, p.plan_round, j.error FROM campaign_plans p
+      JOIN LATERAL (SELECT status, error FROM jobs WHERE kind='atlas.plan' AND record_id='atlas-plan-' || p.id ORDER BY id DESC LIMIT 1) j ON true
+      WHERE p.state='planning' AND j.status='failed'`)).rows) {
+    if (!ctx.dryRun) await ctx.db.query(`UPDATE campaign_plans SET state='stuck', plan_error=$2, updated_at=now() WHERE id=$1`, [p.id, String(p.error ?? '').slice(0, 1000)]);
+    out.push(`plan ${p.id}: planning failed, set aside (${String(p.error ?? '').slice(0, 120)})`);
   }
   // 2. Advance active plans by reading their Lead List record (the bridge runs the buttons).
   const rows = (await ctx.db.query(`SELECT * FROM campaign_plans WHERE state = ANY($1) ORDER BY id`, [ACTIVE])).rows as PlanRowX[];
@@ -232,7 +246,7 @@ export const campaignPipelineStage: Stage = async (ctx) => {
     if (!step) continue;
     if (st !== 'Done' && (jobKind === undefined || jobKind === step.after)) { await setState('stuck'); say(`${jobKind ?? 'step'} ${st}, stopped (see the Lead List: ${val(ll.fields[F.engineMessage]).slice(0, 200)})`); continue; }
     if (jobKind !== step.after) continue; // the bridge has not finished this plan's step yet
-    const press = async (action: string, extra: Record<string, unknown> = {}) => { if (!ctx.dryRun) await at.update(LEAD_LISTS, r.lead_list_rec!, { ...extra, [F.engineAction]: action, [F.engineActionSetAt]: new Date().toISOString() }); };
+    const press = async (action: string, extra: Record<string, unknown> = {}) => { if (!ctx.dryRun) await at.update(LEAD_LISTS, r.lead_list_rec!, { ...extra, [F.engineAction]: action }); };
     switch (r.state) {
       case 'filters': await press('Run Company Sample'); await setState('sample'); say('filters done → first 100 sample'); break;
       case 'sample': {
@@ -307,7 +321,7 @@ export const planApprovedStage: Stage = async (ctx) => {
   if (!r?.lead_list_rec) throw new PermanentError(`campaign plan ${i.planId} not found or has no lead list`);
   if (r.state !== 'approval1') return { message: `Plan ${r.id} is ${r.state}; nothing to do` };
   if (ctx.dryRun) return { message: `Would approve the sample and press Expand Companies on ${r.plan?.campaign_name ?? r.lead_list_rec} (dry run)` };
-  await ctx.step('expand', () => at.update(LEAD_LISTS, r.lead_list_rec!, { [F.sampleApproved]: true, [F.engineAction]: 'Expand Companies', [F.engineActionSetAt]: new Date().toISOString() }));
+  await ctx.step('expand', () => at.update(LEAD_LISTS, r.lead_list_rec!, { [F.sampleApproved]: true, [F.engineAction]: 'Expand Companies' }));
   await ctx.db.query(`UPDATE campaign_plans SET state='expand', copy_state='queued', updated_at=now() WHERE id=$1`, [r.id]);
   await logActivity(cfg, { event: `Campaign plan approved: ${r.plan?.campaign_name ?? ''}`, type: 'Step done', agent: 'Atlas', details: 'Sample approved; Expand Companies pressed; Scribe is writing the copy.', jobId: ctx.job.id }, at);
   return { message: `Approved: ${r.plan?.campaign_name ?? ''}. Expand Companies pressed; the full list builds and Scribe writes the copy.` };
@@ -321,7 +335,7 @@ export const contactsApprovedStage: Stage = async (ctx) => {
   if (!r?.lead_list_rec) throw new PermanentError(`campaign plan ${i.planId} not found`);
   if (r.state !== 'approval_contacts') return { message: `Plan ${r.id} is ${r.state}; nothing to do` };
   if (ctx.dryRun) return { message: 'Would approve the contact sample and find all contacts (dry run)' };
-  await ctx.step('contacts', () => at.update(LEAD_LISTS, r.lead_list_rec!, { [F.contactApproved]: true, [F.engineAction]: 'Find Contacts', [F.engineActionSetAt]: new Date().toISOString() }));
+  await ctx.step('contacts', () => at.update(LEAD_LISTS, r.lead_list_rec!, { [F.contactApproved]: true, [F.engineAction]: 'Find Contacts' }));
   await ctx.db.query(`UPDATE campaign_plans SET state='contacts', updated_at=now() WHERE id=$1`, [r.id]);
   return { message: 'Contact sample approved; finding all contacts.' };
 };

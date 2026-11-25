@@ -137,9 +137,9 @@ export async function agentsTick(db: Db, cfg: Config, now = new Date()): Promise
   if (cfg.atlasCampaignsOn && cfg.campaignPipelineEveryMin > 0) {
     n += await q('campaign.pipeline', `campaign-pipeline:${Math.floor(now.getTime() / (cfg.campaignPipelineEveryMin * 60_000))}`);
     // Plans the pipeline started are written one at a time (each is one Claude call).
-    for (const id of (await db.query(`SELECT id FROM campaign_plans WHERE state='planning' ORDER BY id LIMIT 1`)).rows.map((r: any) => Number(r.id))) {
+    for (const { id, plan_round: round } of (await db.query(`SELECT id, plan_round FROM campaign_plans WHERE state='planning' ORDER BY id LIMIT 1`)).rows as { id: number; plan_round: number }[]) {
       const d = STAGES['atlas.plan'];
-      const r = await enqueue(db, { kind: 'atlas.plan', recordId: `atlas-plan-${id}`, input: { planId: id }, requestId: `atlas-plan:${id}`, dryRun: !live('atlas.plan'), maxAttempts: d.maxAttempts, deadlineMs: d.deadlineMs });
+      const r = await enqueue(db, { kind: 'atlas.plan', recordId: `atlas-plan-${id}`, input: { planId: Number(id) }, requestId: `atlas-plan:${id}:${round}`, dryRun: !live('atlas.plan'), maxAttempts: d.maxAttempts, deadlineMs: d.deadlineMs });
       if (r.status === 'queued') n++;
     }
     // Copy to write (after approval 1, or a rewrite after feedback): one at a time.

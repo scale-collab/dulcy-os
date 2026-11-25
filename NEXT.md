@@ -3,6 +3,15 @@
 Last updated: 2026-11-24 (full end-to-end run from Airtable done)
 
 
+## Daily Run page (built 2026-11-25)
+- Project Management interface → **Daily Run** (page pag4oy80YbYDAOj4C, custom element blk5lFNbkRRBFd7gF; Riley can rebuild from `airtable/custom-elements/daily-run/README.md`).
+- Step 1: pick a pile (Replies · Campaigns · Fixes · Money · Other) or "Do them all"; one card at a time; Approve / Reject / Skip (keys A/R/S); progress bar. Approve = same as ✅ in Slack (Status Approved; Sean replies also press Approve Draft on the Emails row so the engine sends once).
+- Step 2: "Start my day": Tasks table one at a time (overdue → due today → in progress, then priority); Start (timer) / Pause / Complete / Skip. Modelled on James Higgins's "Single Action" feed (call 2026-10-22).
+
+## Project ideas (Alex, 2026-11-25, later)
+- **Own CRM** (move off Close?): not needed now; James built his in Lovable + Railway.
+- **Client portal, vibe-coded**: the free portal plan was taken away and now costs money; rebuild it ourselves (Lovable/Softr-free stack TBD).
+
 ## Next up (Alex, 2026-11-25)
 1. Switch on and check Atlas, Cole (needs FATHOM_API_KEY) and Sienna (morning list in `reports/morning-2026-11-25.md`).
 2. Then, in the terminal together: **campaign creation**, **inbox management** (Sean AI replier improvements, pinned earlier), and the **Content Center**.
