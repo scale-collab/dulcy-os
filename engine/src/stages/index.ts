@@ -23,6 +23,8 @@ import { adaBriefStage } from '../agents/ada.js';
 import { ledgerReportStage, ledgerCheckStage } from '../agents/ledger.js';
 import { ledgerPrepStage } from '../agents/ledgerPrep.js';
 import { atlasHealthStage } from '../agents/atlas.js';
+// Loaded on use: campaignPlan imports the Lead List bridge, which imports this file (import loop).
+const plan = () => import('../agents/campaignPlan.js');
 import { coleReviewStage } from '../agents/cole.js';
 import { siennaIdeasStage, siennaPrepStage } from '../agents/sienna.js';
 import { replySendStage } from '../agents/replies.js';
@@ -64,6 +66,9 @@ export const STAGES: Record<string, StageDef> = {
   'ledger.check': { run: ledgerCheckStage, deadlineMs: 5 * 60_000, maxAttempts: 2, description: 'Ledger: answer purchase or invoice questions in the check channel with yes / yes-but / no and the OPEX room. Read only; never pays.' },
   'ledger.prep': { run: ledgerPrepStage, deadlineMs: 15 * 60_000, maxAttempts: 2, description: 'Ledger: prepare Xero reconciliation from Mercury (bucket transfers, processor payouts, invoice payments, spend coded like before); asks in Slack about the rest. Never deletes or moves money.' },
   'atlas.health': { run: atlasHealthStage, deadlineMs: 10 * 60_000, maxAttempts: 2, description: 'Atlas: Monday client health in Slack (retainer, months, LTV, interested and booked vs KPI, interested → meeting rate, campaign health, 🟢/🟡/🔴 with reasons). Read only.' },
+  'atlas.plan': { run: async (ctx) => (await plan()).atlasPlanStage(ctx), deadlineMs: 15 * 60_000, maxAttempts: 2, description: 'Atlas: plan a client\'s next campaign (move from the SOP, thesis, 2 angles), create the Lead List + Campaign records, press Generate Filters. Nothing sent.' },
+  'campaign.pipeline': { run: async (ctx) => (await plan()).campaignPipelineStage(ctx), deadlineMs: 5 * 60_000, maxAttempts: 1, description: 'Campaign creation: start plans (campaign past 60%, new client), press Run Company Sample after the filters, post approval 1 after the sample.' },
+  'campaign.plan_approved': { run: async (ctx) => (await plan()).planApprovedStage(ctx), deadlineMs: 5 * 60_000, maxAttempts: 2, description: 'Approval 1 ✅: approve the company sample and press Expand Companies.' },
   'cole.review': { run: coleReviewStage, deadlineMs: 30 * 60_000, maxAttempts: 2, description: 'Cole: review new Fathom sales calls (pacing, stages, objections vs Closers.io, 3 fixes with better lines) + a follow-up email draft in Slack. Draft only.' },
   'sienna.ideas': { run: siennaIdeasStage, deadlineMs: 20 * 60_000, maxAttempts: 2, description: 'Sienna: Monday web research for video ideas with real demand → Content Center (Status Review). Nothing posted.' },
   'sienna.prep': { run: siennaPrepStage, deadlineMs: 30 * 60_000, maxAttempts: 2, description: 'Sienna: Thursday scripts, titles, hooks, thumbnail and Gamma outline for ideas ticked Record This Week. Nothing posted.' },

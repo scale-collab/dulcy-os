@@ -155,4 +155,4 @@ Format: `- [date] rule. (why / source)`
 - **Proof:** at least 1 strong proof per email. More is better, as long as every extra proof is just as strong (no filler proof).
 - **The ask:** a call can be asked for, but not in the cold sequence unless it is the only logical next step. Default to a low-friction ask that needs a one-word reply.
 - **Testing:** one direction per campaign (one thesis), with **2 angles** of Email 1 that test something that makes a real difference: USP, pain point, solution angle and so on. Never trivial word swaps.
-- **Next campaign (top-up vs new angle vs new vertical vs new offer):** follow the rules in Alex's 2-Hour Cold Email Campaign SOP and his cold email doc (summary in `sops/next-campaign-rules.md`).
+- **Next campaign (top-up vs new angle vs new vertical vs new offer):** follow the rules in Alex's 2-Hour Cold Email Campaign SOP and his cold email doc (summary in `skills/atlas-campaign-operator/references/next-campaign-rules.md`).
