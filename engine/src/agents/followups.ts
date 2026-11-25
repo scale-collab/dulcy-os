@@ -144,7 +144,7 @@ export const seanFollowupStage: Stage = async (ctx) => {
     const d: Draft = await ctx.paid({
       callKey: `followup:${r.id}:${val(f[RA.dueAt])}`, provider: 'anthropic', units: 1,
       run: () => claude!.structured(DraftSchema, [shared, FOLLOWUP_BRIEF, block], varying, user),
-      dryRunResult: () => ({ action: 'skip', intent: 'Other', reason: 'dry run: Claude not called', they_said: '', draft: '', question_for_alex: '', confidence: 0 }),
+      dryRunResult: () => ({ action: 'skip', intent: 'Other', reason: 'dry run: Claude not called', they_said: '', draft: '', question_for_alex: '', confidence: 0, follow_up_on: '' }),
     });
 
     await ctx.step(`followup-write:${r.id}:${val(f[RA.dueAt])}`, async () => {

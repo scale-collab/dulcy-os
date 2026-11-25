@@ -29,11 +29,28 @@ export const wsRecordOf = (f: Record<string, unknown>): string => {
   return String(fromLink || val(f[RA.wsRecord]) || '');
 };
 
-/** Interested threads where the prospect wrote last, Dulcy owns the thread, in the last N days. */
-export function waitingFormula(days: number): string {
+/**
+ * Threads where the prospect wrote last, Dulcy owns the thread, in the last N days.
+ * Default: interested-type replies. extra = out-of-office and not-interested replies (Sean drafts
+ * those only for clients whose Reply Agent settings turn them on, Alex 2026-11-25).
+ */
+export function waitingFormula(days: number, extra = false): string {
   const any = (field: string, vals: string[]) => `OR(${vals.map((v) => `{${field}}='${v}'`).join(',')})`;
+  const types = extra
+    ? `OR(${any('Lead Status', ['Out Of Office', 'Not Interested'])},${any('Dulcy Reply Agent Intent', ['Out of Office', 'Not Interested'])})`
+    : `OR(${any('Lead Status', ['Interested', 'Meeting Request', 'Info Request', 'Information Request'])},${any('Dulcy Reply Agent Intent', ['Interested', 'Info Request', 'Meeting Request', 'Cost Objection', 'Process Objection'])})`;
   return `AND({Last Email Sent}='Last Email Sent By Prospect',NOT({Client Handling}),NOT({DNC}),{Reply Ownership}!='Handoff',`
     + `IS_AFTER({Latest Reply Time},DATEADD(NOW(),-${Math.max(1, Math.floor(days))},'days')),`
-    + `OR(${any('Lead Status', ['Interested', 'Meeting Request', 'Info Request', 'Information Request'])},${any('Dulcy Reply Agent Intent', ['Interested', 'Info Request', 'Meeting Request', 'Cost Objection', 'Process Objection'])}),`
+    + `${types},`
     + `NOT(${any('Pipeline Stage', ['Booked Meeting', 'Completed Meeting', 'Closed Deal', 'Closed -- Not Moving Forward', 'Lost'])}))`;
+}
+
+/** Out-of-office / not-interested type of a thread ('' = an interested-type thread). */
+export function extraTypeOf(f: Record<string, unknown>): '' | 'Out of Office' | 'Not Interested' {
+  const intent = val(f[RA.intent]), status = val(f[EF.leadStatus]);
+  if (['Interested', 'Info Request', 'Meeting Request', 'Cost Objection', 'Process Objection'].includes(intent)) return '';
+  if (['Interested', 'Meeting Request', 'Info Request', 'Information Request'].includes(status) && !intent) return '';
+  if (intent === 'Out of Office' || status === 'Out Of Office') return 'Out of Office';
+  if (intent === 'Not Interested' || status === 'Not Interested') return 'Not Interested';
+  return '';
 }
