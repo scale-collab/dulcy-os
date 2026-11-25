@@ -2491,12 +2491,445 @@ Director, Scroll Stop
 
 | Campaign | EB id | Created | Sent | Replies | Interested | Per 1,000 |
 |---|---:|---|---:|---:|---:|---:|
-| [Scroll Stop] Beauty - US/UK, DiscoLike (Direct Offer) | 428 | 2026-04-14 | 21,914 | 567 | 161 | 7.35 |
-| [Scroll Stop] Apps - US/UK, DiscoLike (Direct Offer) | 426 | 2026-04-14 | 16,959 | 332 | 78 | 4.60 |
-| [Scroll Stop] Beauty OV2 (May) | 233 | 2025-09-25 | 12,642 | 292 | 6 | 0.47 |
-| [Scroll Stop] Sports - US/UK, DiscoLike (Direct Offer) | 427 | 2026-04-14 | 9,956 | 188 | 38 | 3.82 |
-| [Scroll Stop] Beauty - $10M+, US/UK, DiscoLike (Direct Offer) *post-.infosubrl | 490 | 2026-06-15 | 7,628 | 126 | 22 | 2.88 |
-| [Scroll Stop] Beauty Seasonal campaing (May) | 380 | 2026-02-11 | 6,333 | 80 | 7 | 1.11 |
-| [Scroll Stop] Spring Campaign -  Beauty (May) | 357 | 2026-01-30 | 962 | 27 | 0 | 0.00 |
-| [Scroll Stop] Tech - Smart Home Control (Hugh) (small sample) | 268 | 2025-11-07 | 188 | 1 | 0 | 0.00 |
+| [Scroll Stop] Beauty - US/UK, DiscoLike (Direct Offer) **[copy recovered 2026-11-25, see below]** | 428 | 2026-04-14 | 21,914 | 567 | 161 | 7.35 |
+| [Scroll Stop] Apps - US/UK, DiscoLike (Direct Offer) **[copy recovered 2026-11-25, see below]** | 426 | 2026-04-14 | 16,959 | 332 | 78 | 4.60 |
+| [Scroll Stop] Beauty OV2 (May) **[copy recovered 2026-11-25, see below]** | 233 | 2025-09-25 | 12,642 | 292 | 6 | 0.47 |
+| [Scroll Stop] Sports - US/UK, DiscoLike (Direct Offer) **[copy recovered 2026-11-25, see below]** | 427 | 2026-04-14 | 9,956 | 188 | 38 | 3.82 |
+| [Scroll Stop] Beauty - $10M+, US/UK, DiscoLike (Direct Offer) *post-.infosubrl **[copy recovered 2026-11-25, see below]** | 490 | 2026-06-15 | 7,628 | 126 | 22 | 2.88 |
+| [Scroll Stop] Beauty Seasonal campaing (May) **[copy recovered 2026-11-25, see below]** | 380 | 2026-02-11 | 6,333 | 80 | 7 | 1.11 |
+| [Scroll Stop] Spring Campaign -  Beauty (May) **[copy recovered 2026-11-25, see below]** | 357 | 2026-01-30 | 962 | 27 | 0 | 0.00 |
+| [Scroll Stop] Tech - Smart Home Control (Hugh) (small sample) **[copy recovered 2026-11-25, see below]** | 268 | 2025-11-07 | 188 | 1 | 0 | 0.00 |
+
+## Recovered from EmailBison 2026-11-25
+
+Source: EmailBison API, read-only GET `/api/campaigns/v1.1/{id}/sequence-steps` after switching into this client's workspace (admin key, authorised by Alex 2026-11-25). HTML converted to plain text; spintax kept exactly as written (including typos and broken braces). Sender and personal phone numbers and email addresses are redacted. Campaign totals come from the earlier record (Airtable sync) where it had them; bounce counts and status come from the EmailBison campaign list.
+
+*Facts and proof in these scripts belong to this client only. Never reuse them for another client.*
+
+Verdict key (interested per 1,000 sent, 500+ sent): WINNER at or above 2.5 · above average 1.5 to 2.49 · below average 0.7 to 1.49 · LOSER under 0.7 (keep as evidence of what not to do).
+
+#### EB 428 · [Scroll Stop] Beauty - US/UK, DiscoLike (Direct Offer)
+EmailBison status `archived` · created 2026-04-14 · **21,914 sent, 567 replies, 161 interested = 7.35 per 1,000** · bounced 329 (1.5%) · verdict: **WINNER**
+Replaces the "copy UNKNOWN" row for this EB id in the table above.
+Per-step / per-variant stats: UNKNOWN (EmailBison only serves them via a POST stats call, which was not authorised).
+
+**Step 1 variant A** · subject `{our creators|influencers|creators}` · wait 2d
+```
+Hi {FIRST_NAME}, I’ve got a {couple|few|handful} of creators in the {beauty|cosmetic|skincare} space who’ve been part of campaigns driving 1M+ views, would love to see if they're a good fit to promote {COMPANY}.
+
+Worth a chat?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+SCROLL STOP
+
+P.S. Or tell me to pound sand...
+```
+**Step 2 variant A** · subject `Re: {our creators|influencers|creators}` · wait 2d, same thread
+```
+Asked because we’ve run {influencer|creator} campaigns for Glaze Hair that generated 33,000+ clicks.
+
+Want me to send over {a couple|2|two} creators we’d look at first for {COMPANY}?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+SCROLL STOP
+
+P.S. Or tell me to pound sand...
+```
+**Step 3 variant A** · subject `Re: {our creators|influencers|creators}` · wait 1d, same thread
+```
+Not sure if this should go to you or someone else.
+
+I {reached out|contacted you} {a few days ago|recently} because we {run|manage} influencer campaigns with access to {250k+|over 250,000} creators, and usually build them around {guaranteed results|performance guarantees} rather than just {paying for posts|paying per post}.
+
+Is this you, or {someone else|should I reach someone else}?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+SCROLL STOP
+
+P.S. Or tell me to pound sand...
+```
+
+#### EB 426 · [Scroll Stop] Apps - US/UK, DiscoLike (Direct Offer)
+EmailBison status `archived` · created 2026-04-14 · **16,959 sent, 332 replies, 78 interested = 4.60 per 1,000** · bounced 137 (0.8%) · verdict: **WINNER**
+Replaces the "copy UNKNOWN" row for this EB id in the table above.
+Per-step / per-variant stats: UNKNOWN (EmailBison only serves them via a POST stats call, which was not authorised).
+
+**Step 1 variant A** · subject `{our creators|influencers|creators}` · wait 2d
+```
+Hi {FIRST_NAME}, I’ve got {a couple of|a few|some|several} creators in the mobile app space who’ve been part of campaigns driving {5,000+|over 5,000|more than 5,000| upwards of 5,000} installs, would love to see if they're a good fit to promote {COMPANY}.
+
+Worth a chat?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+SCROLL STOP
+
+P.S. Or tell me to pound sand...
+```
+**Step 2 variant A** · subject `Re: {our creators|influencers|creators}` · wait 2d, same thread
+```
+Asked because we’ve {run|executed|managed} creator campaigns for Match Masters that {drove|generated|resulted in} 5,000+ downloads.
+
+Want me to send over {2|a couple of|a few} creators we’d {look at|consider|focus on} first if the goal was installs for {COMPANY}?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+SCROLL STOP
+
+P.S. Or tell me to pound sand...
+```
+**Step 3 variant A** · subject `Re: {our creators|influencers|creators}` · wait 1d, same thread
+```
+Not sure if this should go to you or someone else.
+
+I {reached out|contacted you} {a few days ago|recently} because we {run|manage} influencer campaigns with access to {250k+|over 250,000} creators, and usually build them around {guaranteed results|performance guarantees} rather than just {paying for posts|paying per post}.
+
+Is this you, or {someone else|should I reach someone else}?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+SCROLL STOP
+
+P.S. Or tell me to pound sand...
+```
+
+#### EB 233 · [Scroll Stop] Beauty OV2 (May)
+EmailBison status `archived` · created 2025-09-25 · **12,642 sent, 292 replies, 6 interested = 0.47 per 1,000** · bounced 320 (2.5%) · verdict: **LOSER: evidence of what not to do**
+Replaces the "copy UNKNOWN" row for this EB id in the table above.
+Per-step / per-variant stats: UNKNOWN (EmailBison only serves them via a POST stats call, which was not authorised).
+
+**Step 1 variant A** · subject `Use influencer marketing for {COMPANY}` · wait 2d
+```
+{Hi|Hey|Hello} {FIRST_NAME},
+
+{I noticed|I saw|I came across the fact that} {COMPANY} {works with|collaborates with|partners with} creators to show the best of {PERSONAL}.
+
+{Quite a few|Many|A number of|Several} beauty/cosmetic brands we work with have been {using|leveraging|tapping into} influencer storytelling not just for {awareness|brand visibility|exposure}, but to {create stronger customer loyalty|build deeper loyalty|strengthen retention|increase customer commitment} and {more efficient new customer growth|drive sustainable growth|achieve more cost-effective acquisition|boost new customer acquisition efficiency}.
+
+Is it worth sending over some ideas for {COMPANY}?
+
+{Best regards|Sincerely|Thank you|Thanks|Cheers},
+May Rowland
+SCROll STOP
+
+P.S. We always offer a guarantee around ROI and traffic outcomes to our clients. Just ask!
+```
+**Step 1 variant B** · subject `Use influencer marketing for {COMPANY}`
+```
+{Hi|Hey|Hello} {FIRST_NAME},
+
+I {noticed|saw|came across} that {COMPANY} is {all about|focused on|centered around} staying true to {PERSONAL}.
+
+{Quite a few|Many|A number of|Several} beauty/cosmetic brands we work with have been {using|leveraging|tapping into} influencer storytelling not just for {awareness|brand visibility|exposure}, but to {create stronger customer loyalty|build deeper loyalty|strengthen retention|increase customer commitment} and {more efficient new customer growth|drive sustainable growth|achieve more cost-effective acquisition|boost new customer acquisition efficiency}.
+
+Is it worth sending over some ideas for {COMPANY}?
+
+{Best regards|Sincerely|Thank you|Thanks|Cheers},
+May Rowland
+SCROll STOP
+
+P.S. We always offer a guarantee around ROI and traffic outcomes to our clients. Just ask!
+```
+**Step 2 variant A** · subject `Re: Use influencer marketing for {COMPANY}` · wait 3d, same thread
+```
+{Hi|Hey|Hello} {FIRST_NAME},
+
+I reached out a few days ago and {wanted to share|thought I’d pass along|wanted to highlight} something we’ve {seen work|found effective|seen success with} for beauty/cosmetic brands {looking to improve|aiming to boost|focused on increasing} repeat purchases.
+
+{Reusing|Repurposing|Leveraging} creator content in retargeting ads has {enabled|helped|allowed|empowered} clients to {turn|convert|transform} {one-time beauty buyers|first-time beauty customers|single-purchase shoppers|initial buyers} into loyal customers, {one saw 350% YoY growth after shifting budget this way|one brand achieved 350% year-over-year growth by reallocating budget to this strategy|a client even grew 350% YoY by investing more into this approach|one company reported 350% annual growth after focusing budget here}.
+
+Should I send over a few ideas for {COMPANY}, or would {COLLEAGUE} be the right person?
+
+{Best regards|Sincerely|Thank you|Thanks|Cheers},
+May Rowland
+SCROll STOP
+
+P.S. Let me know if now's not the right time.
+```
+**Step 3 variant A** · subject `Re: Use influencer marketing for {COMPANY}` · wait 1d, same thread
+```
+{Hi|Hey|Hello} {FIRST_NAME}, wasn’t sure if I should send this to you or {COLLEAGUE}.
+
+We’ve been {sketching|drafting|outlining|mapping out|pulling together} some {quick-win|easy-to-implement|practical|actionable} ideas for {COMPANY}, {showing how|highlighting how|demonstrating how|focused on how|illustrating how} influencer content can {serve as both|act as both|work as both|double as} {acquisition material for new buyers|a tool to attract new customers|assets to drive first-time purchases|content for new customer acquisition} and {retargeting assets for loyalty campaigns|resources for retention campaigns|content to strengthen loyalty|material for ongoing engagement|assets to boost repeat purchases}.
+
+Should I send them to you, or would {COLLEAGUE} be better?
+
+{Best regards|Sincerely|Thank you|Thanks|Cheers},
+May Rowland
+SCROll STOP
+```
+
+#### EB 427 · [Scroll Stop] Sports - US/UK, DiscoLike (Direct Offer)
+EmailBison status `archived` · created 2026-04-14 · **9,956 sent, 188 replies, 38 interested = 3.82 per 1,000** · bounced 71 (0.7%) · verdict: **WINNER**
+Replaces the "copy UNKNOWN" row for this EB id in the table above.
+Per-step / per-variant stats: UNKNOWN (EmailBison only serves them via a POST stats call, which was not authorised).
+
+**Step 1 variant A** · subject `{our creators|influencers|creators}` · wait 2d
+```
+Hi {FIRST_NAME}, I’ve got {a couple of|a few|some} creators in the sports space who’ve been part of {campaigns driving|campaigns generating} 1M+ views, would love to see if they're a good fit to promote {COMPANY}.
+
+Worth a chat?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+SCROLL STOP
+
+P.S. Or tell me to pound sand...
+```
+**Step 2 variant A** · subject `Re: {our creators|influencers|creators}` · wait 2d, same thread
+```
+{Asked|Inquired|Wondering} because we’ve {run|done|managed} creator campaigns for Castore that {generated|brought in|resulted in} just under 40k in sales.
+
+Want me to send over 2 creators we’d {look at|consider|select} for {COMPANY}?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+SCROLL STOP
+
+P.S. Or tell me to pound sand...
+```
+**Step 3 variant A** · subject `Re: {our creators|influencers|creators}` · wait 1d, same thread
+```
+Not sure if this should go to you or someone else.
+
+I {reached out|contacted you} {a few days ago|recently} because we {run|manage} influencer campaigns with access to {250k+|over 250,000} creators, and usually build them around {guaranteed results|performance guarantees} rather than just {paying for posts|paying per post}.
+
+Is this you, or {someone else|should I reach someone else}?
+
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+SCROLL STOP
+
+P.S. Or tell me to pound sand...
+```
+
+#### EB 490 · [Scroll Stop] Beauty - $10M+, US/UK, DiscoLike (Direct Offer) *post-.infosubrl
+EmailBison status `archived` · created 2026-06-15 · **7,628 sent, 126 replies, 22 interested = 2.88 per 1,000** · bounced 162 (2.1%) · verdict: **WINNER**
+Replaces the "copy UNKNOWN" row for this EB id in the table above.
+Per-step / per-variant stats: UNKNOWN (EmailBison only serves them via a POST stats call, which was not authorised).
+
+**Step 1 variant A** · subject `{our creators|influencers|creators}` · wait 2d
+```
+Hi {FIRST_NAME}, I’ve got a {couple|few|handful} of creators in the {beauty|cosmetic|skincare} space who’ve been part of campaigns driving 1M+ views, would love to see if they're a good fit to promote {COMPANY}.
+
+Worth a chat?
+
+--
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+SCROLL STOP
+
+P.S. Or tell me to pound sand...
+```
+**Step 2 variant A** · subject `re: {our creators|influencers|creators}` · wait 2d
+```
+Asked because we’ve run {influencer|creator} campaigns for Glaze Hair that generated 33,000+ clicks.
+
+Want me to send over {a couple|2|two} creators we’d look at first for {COMPANY}?
+
+--
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+SCROLL STOP
+
+P.S. Or tell me to pound sand...
+```
+**Step 3 variant A** · subject `re: re: {our creators|influencers|creators}` · wait 1d
+```
+Not sure if this should go to you or someone else.
+
+I {reached out|contacted you} {a few days ago|recently} because we {run|manage} influencer campaigns with access to {250k+|over 250,000} creators, and usually build them around {guaranteed results|performance guarantees} rather than just {paying for posts|paying per post}.
+
+Is this you, or {someone else|should I reach someone else}?
+
+--
+{Best regards|Kind regards|Warm regards|Sincerely|Thank you|Thanks|Yours truly|With best wishes|Best wishes|Warm wishes},
+{SENDER_FULL_NAME}
+SCROLL STOP
+
+P.S. Or tell me to pound sand...
+```
+
+#### EB 380 · [Scroll Stop] Beauty Seasonal campaing (May)
+EmailBison status `archived` · created 2026-02-11 · **6,333 sent, 80 replies, 7 interested = 1.11 per 1,000** · bounced 103 (1.6%) · verdict: **below average**
+Replaces the "copy UNKNOWN" row for this EB id in the table above.
+Per-step / per-variant stats: UNKNOWN (EmailBison only serves them via a POST stats call, which was not authorised).
+
+**Step 1 variant A** · subject `Use influencer marketing for {COMPANY}` · wait 2d
+```
+{Hi|Hey|Hello} {FIRST_NAME},
+
+{I noticed|I saw|I came across the fact that} {COMPANY} {works with|collaborates with|partners with} creators to show the best of {PERSONAL}.
+
+{Quite a few|Many|A number of|Several} beauty/cosmetic brands we work with have been {using|leveraging|tapping into} influencer storytelling not just for {awareness|brand visibility|exposure}, but to {create stronger customer loyalty|build deeper loyalty|strengthen retention|increase customer commitment} and {more efficient new customer growth|drive sustainable growth|achieve more cost-effective acquisition|boost new customer acquisition efficiency}.
+
+Is it worth sending over some ideas for {COMPANY}?
+
+{Best regards|Sincerely|Thank you|Thanks|Cheers},
+May Rowland
+SCROll STOP
+
+P.S. We always offer a guarantee around ROI and traffic outcomes to our clients. Just ask!
+```
+**Step 1 variant B** · subject `Use influencer marketing for {COMPANY}`
+```
+{Hi|Hey|Hello} {FIRST_NAME},
+
+I {noticed|saw|came across} that {COMPANY} is {all about|focused on|centered around} staying true to {PERSONAL}.
+
+{Quite a few|Many|A number of|Several} beauty/cosmetic brands we work with have been {using|leveraging|tapping into} influencer storytelling not just for {awareness|brand visibility|exposure}, but to {create stronger customer loyalty|build deeper loyalty|strengthen retention|increase customer commitment} and {more efficient new customer growth|drive sustainable growth|achieve more cost-effective acquisition|boost new customer acquisition efficiency}.
+
+Is it worth sending over some ideas for {COMPANY}?
+
+{Best regards|Sincerely|Thank you|Thanks|Cheers},
+May Rowland
+SCROll STOP
+
+P.S. We always offer a guarantee around ROI and traffic outcomes to our clients. Just ask!
+```
+**Step 2 variant A** · subject `Re: Use influencer marketing for {COMPANY}` · wait 3d, same thread
+```
+{Hi|Hey|Hello} {FIRST_NAME},
+
+I reached out a few days ago and {wanted to share|thought I’d pass along|wanted to highlight} something we’ve {seen work|found effective|seen success with} for beauty/cosmetic brands {looking to improve|aiming to boost|focused on increasing} repeat purchases.
+
+{Reusing|Repurposing|Leveraging} creator content in retargeting ads has {enabled|helped|allowed|empowered} clients to {turn|convert|transform} {one-time beauty buyers|first-time beauty customers|single-purchase shoppers|initial buyers} into loyal customers, {one saw 350% YoY growth after shifting budget this way|one brand achieved 350% year-over-year growth by reallocating budget to this strategy|a client even grew 350% YoY by investing more into this approach|one company reported 350% annual growth after focusing budget here}.
+
+Should I send over a few ideas for {COMPANY}, or would {COLLEAGUE} be the right person?
+
+{Best regards|Sincerely|Thank you|Thanks|Cheers},
+May Rowland
+SCROll STOP
+
+P.S. Let me know if now's not the right time.
+```
+**Step 3 variant A** · subject `Re: Use influencer marketing for {COMPANY}` · wait 1d, same thread
+```
+{Hi|Hey|Hello} {FIRST_NAME}, wasn’t sure if I should send this to you or {COLLEAGUE}.
+
+We’ve been {sketching|drafting|outlining|mapping out|pulling together} some {quick-win|easy-to-implement|practical|actionable} ideas for {COMPANY}, {showing how|highlighting how|demonstrating how|focused on how|illustrating how} influencer content can {serve as both|act as both|work as both|double as} {acquisition material for new buyers|a tool to attract new customers|assets to drive first-time purchases|content for new customer acquisition} and {retargeting assets for loyalty campaigns|resources for retention campaigns|content to strengthen loyalty|material for ongoing engagement|assets to boost repeat purchases}.
+
+Should I send them to you, or would {COLLEAGUE} be better?
+
+{Best regards|Sincerely|Thank you|Thanks|Cheers},
+May Rowland
+SCROll STOP
+```
+
+#### EB 357 · [Scroll Stop] Spring Campaign -  Beauty (May)
+EmailBison status `archived` · created 2026-01-30 · **962 sent, 27 replies, 0 interested = 0.00 per 1,000** · bounced 55 (5.7%) · verdict: **LOSER: evidence of what not to do**
+Replaces the "copy UNKNOWN" row for this EB id in the table above.
+Per-step / per-variant stats: UNKNOWN (EmailBison only serves them via a POST stats call, which was not authorised).
+
+**Step 1 variant A** · subject `Use influencer marketing for {COMPANY}` · wait 2d
+```
+{Hi|Hey|Hello} {FIRST_NAME},
+
+{I noticed you handle marketing|I saw that you manage marketing|I came across your role in marketing} and wanted to {ask how|see how|learn how} beauty brands typically {approach|plan|think about} spring campaigns.
+
+{From what we see|In our experience|We’ve found that} spring campaigns often {perform better|see stronger results|drive better engagement} when creators are {brought in early|involved early on|looped in early}, {before ads and visuals are finalized|before creative is locked in|prior to finalizing ads and visuals}. {Creators often help shape|They frequently help inform|Creators tend to influence} the {words, hooks, and visuals|messaging, hooks, and visuals|copy, hooks, and creative} that {end up working best|ultimately perform best|drive the strongest results}.
+
+Are creators helping guide messaging early for spring, or do they usually come in after things are set?
+
+{Best regards|Sincerely|Thank you|Thanks|Cheers},
+May Rowland
+SCROll STOP
+```
+**Step 1 variant B** · subject `Use influencer marketing for {COMPANY}`
+```
+{Hi|Hey|Hello} {FIRST_NAME},
+
+{When planning spring campaigns|As you plan spring campaigns|In the process of planning spring campaigns}, which tends to be {harder|more difficult} to change once things are {in motion|underway}: {the creative idea itself|the core creative idea} or {the messaging around it|the messaging that supports it}?
+
+{I’m asking because|I ask because|The reason I ask is that} creator involvement {seems to affect|often affects|tends to impact} those two {very differently|in very different ways} depending on {when it happens|when that involvement happens|the timing of that involvement}.
+
+{Best regards|Sincerely|Thank you|Thanks|Cheers},
+May Rowland
+SCROll STOP
+
+P.S. We have more than 32k worldwide creators specifically for the Beauty Industry so ideas and resources are never an issue.
+```
+**Step 2 variant A** · subject `Re: Use influencer marketing for {COMPANY}` · wait 3d, same thread
+```
+{Hi|Hey|Hello} {FIRST_NAME},
+
+{In creator-led spring campaigns|With creator-led spring campaigns|When running creator-led spring campaigns}, we {often see|frequently see|tend to see} a {different|new|unexpected} creator angle {outperform|perform better|win out} once content {hits feed|goes live|is live in feed}. {The challenge is|The tricky part is|The main challenge is} knowing which angle that will be {before paid spend scales|before scaling paid spend|ahead of paid spend scaling}.
+
+Do you already have a way to identify which creator-led hook is most likely to outperform before paid spend scales?
+
+{Best regards|Sincerely|Thank you|Thanks|Cheers},
+May Rowland
+SCROll STOP
+```
+**Step 3 variant A** · subject `Re: Use influencer marketing for {COMPANY}` · wait 1d, same thread
+```
+{Hi|Hey|Hello} {FIRST_NAME},
+
+If you want, I can put together a free beauty creator blueprint: potential creators, concepts, and content ideas tailored to your next launch.
+
+To help me get this ready, all I need is 10 min to organize what’s best for {COMPANY}.
+
+Would you or {COLLEAGUE} be better to talk further?
+
+{Best regards|Sincerely|Thank you|Thanks|Cheers},
+May Rowland
+SCROll STOP
+```
+
+#### EB 268 · [Scroll Stop] Tech - Smart Home Control (Hugh) (small sample)
+EmailBison status `archived` · created 2025-11-07 · **188 sent, 1 replies, 0 interested = 0.00 per 1,000** · bounced 3 (1.6%) · verdict: **small sample, no verdict**
+Replaces the "copy UNKNOWN" row for this EB id in the table above.
+Per-step / per-variant stats: UNKNOWN (EmailBison only serves them via a POST stats call, which was not authorised).
+
+**Step 1 variant A** · subject `Use influencer marketing for {COMPANY}` · wait 2d
+```
+{Hi|Hey|Hello} {FIRST_NAME},
+
+I noticed that {COMPANY} is all about staying true to {PERSONAL}.
+
+Many {Smart Home|Home Tech} brands we work with have been {using|leveraging|tapping into} influencer storytelling not just for {awareness|brand visibility|reach}, but to {drive|build|inspire} stronger {loyalty|customer connection|retention}. We actually {work with|collaborate with|partner with} {250,000|250K|over 200,000} {content creators|influencers} across all categories, and some dedicate themselves to your specific {industry|market|sector}.
+
+Is it worth sending over some ideas for {COMPANY}?
+
+{Best regards|Sincerely|Thank you|Thanks|Cheers},
+{SENDER_FULL_NAME}
+SCROll STOP
+
+P.S. We always offer a guarantee around ROI and traffic outcomes to our clients. Just ask!
+```
+**Step 1 variant B** · subject `Use influencer marketing for {COMPANY}`
+```
+{Hi|Hey|Hello} {FIRST_NAME},You build a Smart Home. We build Smart Marketing Strategies for Smart Home brands.We have over 200,000 Creators globally, and specific ones who use smart home functions.Every size, cost, niche & geo. If I could learn a little more about your goals, I could let you know the types of strategies we recommend and the type of guarantees we can offer. Are you open to a quick chat?{Best regards|Sincerely|Thank you|Thanks|Cheers},
+{SENDER_FULL_NAME}SCROll STOP
+```
+**Step 2 variant A** · subject `Re: Use influencer marketing for {COMPANY}` · wait 3d
+```
+{Hi|Hey|Hello} {FIRST_NAME},
+
+{I reached out|I got in touch} a few days ago and {wanted to share|thought I’d share|wanted to show you} something we’ve {seen work|found effective|noticed really working} for brands in the Smart Home space that are {looking to improve|trying to build|focused on strengthening} {trust and credibility|brand trust and authenticity|consumer confidence} while {standing out|differentiating themselves|making an impact} in a {crowded|competitive|busy} market.
+
+{Repurposing|Turning|Transforming} creator content into {retargeting ads|performance ads|paid campaigns} has {helped brands|enabled companies|allowed businesses to} {turn one-time buyers into long-term customers|convert new buyers into repeat customers|build lasting customer relationships}; one brand even {grew 350 peercent YoY|achieved 350 peercent year-over-year growth|expanded by 350 percent in a single year} by {shifting budget into this approach|redirecting spend toward this strategy|focusing more budget on this tactic}.
+
+Would you like me to share the breakdown of how that worked?
+
+{Best regards|Sincerely|Thank you|Thanks|Cheers},
+{SENDER_FULL_NAME}SCROll STOP
+
+P.S. We work with over 250k content creators, and for your niche, we have a dedicated list.
+```
+**Step 3 variant A** · subject `Re: Use influencer marketing for {COMPANY}` · wait 1d, same thread
+```
+{Hi|Hey|Hello} {FIRST_NAME}, wasn’t sure if I should send this to you or {COLLEAGUE}.
+
+We’ve been sketching some quick-win ideas for {COMPANY} specifically, showing how influencer content can double as an acquisition tool for new shoppers and retargeting material to re-engage past buyers.
+
+Should I send them to you, or would {COLLEAGUE} be better?
+
+{Best regards|Sincerely|Thank you|Thanks|Cheers},
+{SENDER_FULL_NAME}
+SCROll STOP
+```
 

@@ -454,7 +454,173 @@ Andrew
 
 | Campaign | EB id | Created | Sent | Replies | Interested | Per 1,000 |
 |---|---:|---|---:|---:|---:|---:|
-| [LuckyDiem] DTC brands (Direct) | 198 | 2025-08-11 | 11,381 | 190 | 3 | 0.26 |
-| Copy of Copy of [LuckyDiem] CDLX campaign (LD's copy) | 320 | 2025-12-11 | 3,345 | 52 | 1 | 0.30 |
+| [LuckyDiem] DTC brands (Direct) **[copy recovered 2026-11-25, see below]** | 198 | 2025-08-11 | 11,381 | 190 | 3 | 0.26 |
+| Copy of Copy of [LuckyDiem] CDLX campaign (LD's copy) **[copy recovered 2026-11-25, see below]** | 320 | 2025-12-11 | 3,345 | 52 | 1 | 0.30 |
 | [LuckyDiem] CDLX campaign (LD's copy) (small sample) | 222 | 2025-11-04 | 178 | 4 | 0 | 0.00 |
+
+## Recovered from EmailBison 2026-11-25
+
+Source: EmailBison API, read-only GET `/api/campaigns/v1.1/{id}/sequence-steps` after switching into this client's workspace (admin key, authorised by Alex 2026-11-25). HTML converted to plain text; spintax kept exactly as written (including typos and broken braces). Sender and personal phone numbers and email addresses are redacted. Campaign totals come from the earlier record (Airtable sync) where it had them; bounce counts and status come from the EmailBison campaign list.
+
+*Facts and proof in these scripts belong to this client only. Never reuse them for another client.*
+
+Verdict key (interested per 1,000 sent, 500+ sent): WINNER at or above 2.5 · above average 1.5 to 2.49 · below average 0.7 to 1.49 · LOSER under 0.7 (keep as evidence of what not to do).
+
+#### EB 198 · [LuckyDiem] DTC brands (Direct)
+EmailBison status `paused` · created 2025-08-11 · **11,381 sent, 190 replies, 3 interested = 0.26 per 1,000** · bounced 67 (0.6%) · verdict: **LOSER: evidence of what not to do**
+Replaces the "copy UNKNOWN" row for this EB id in the table above.
+Per-step / per-variant stats: UNKNOWN (EmailBison only serves them via a POST stats call, which was not authorised).
+
+**Step 1 variant A** · subject `using card linked offers?` · wait 2d
+```
+Hi {FIRST_NAME},
+
+My colleague Serene came across {COMPANY} on LinkedIn and thought it’d be worth reaching out.
+
+We’ve been speaking with brands with a strong DTC presence, and they are adding 100+ new customers/month using card-linked offers presented to over 200M cardholders, without touching paid social. (no media spend, no new tech)
+
+No contracts, no tech. Just CPA-based revenue from verified cardholders.
+
+Is this worth exploring for {COMPANY}?
+
+Best,
+Andrew Landis
+LuckyDiem | luckydiem.com
+
+P.S. Your offers could show up inside many of the top banking apps without needing a single ad dollar.
+```
+**Step 1 variant B** · subject `using card linked offers?`
+```
+Hi {FIRST_NAME},
+
+My colleague Serene came across {COMPANY} on LinkedIn and thought it’d be worth reaching out.
+
+We’ve been speaking with brands with a strong DTC presence, and they are adding 100+ new customers/month using card-linked offers presented to over 200M cardholders, without touching paid social. (no media spend, no new tech)
+
+No contracts, no tech. Just CPA-based revenue from verified cardholders.
+
+Would you be open to a demo?
+
+Best,
+Andrew Landis
+LuckyDiem | luckydiem.com
+
+P.S. Your offers could show up inside many of the top banking apps without needing a single ad dollar.
+```
+**Step 1 variant C** · subject `using card linked offers?`
+```
+Hi {FIRST_NAME},
+
+My colleague Serene came across {COMPANY} on LinkedIn and thought it’d be worth reaching out.
+
+We’ve been speaking with brands with a strong DTC presence, and they are adding 100+ new customers/month using card-linked offers presented to over 200M cardholders, without touching paid social. (no media spend, no new tech)
+
+No contracts, no tech. Just CPA-based revenue from verified cardholders.
+
+Would you like to take a look?
+
+Best,
+Andrew Landis
+LuckyDiem | luckydiem.com
+
+P.S. Your offers could show up inside many of the top banking apps without needing a single ad dollar.
+```
+**Step 2 variant A** · subject `Re: using card linked offers?` · wait 3d, same thread
+```
+Hi {FIRST_NAME},
+
+Most brands are paying for clicks or impressions. Our partners only pay when a verified purchase is made, tracked through Visa, Mastercard, and Amex card data (no impressions or clicks).
+
+If results-based growth is something worth exploring for {COMPANY}, would you be interested in speaking?
+
+Best,
+Andrew Landis
+LuckyDiem | luckydiem.com
+
+P.S. 100 percent of consumers have opted into these platforms; you’re likely missing buyers already seeing your competitors.
+```
+**Step 3 variant A** · subject `Re: using card linked offers?` · wait 1d, same thread
+```
+Hey {FIRST_NAME},
+
+Wasn’t sure if I should send this to {COLLEAGUE}.
+
+We’re helping DTC brands like {COMPANY}  increase average spend amount by 30 to 40 percent and lower the cost of bringing in new customers, just by shifting a small slice of their budget into card-linked offers.
+
+Would {COLLEAGUE} be best to discuss this with?
+
+Best,
+Andrew Landis
+LuckyDiem | luckydiem.com
+```
+
+#### EB 320 · Copy of Copy of [LuckyDiem] CDLX campaign (LD's copy)
+EmailBison status `paused` · created 2025-12-11 · **3,345 sent, 52 replies, 1 interested = 0.30 per 1,000** · bounced 53 (1.6%) · verdict: **LOSER: evidence of what not to do**
+Replaces the "copy UNKNOWN" row for this EB id in the table above.
+Per-step / per-variant stats: UNKNOWN (EmailBison only serves them via a POST stats call, which was not authorised).
+
+**Step 1 variant A** · subject `Quick thought on Cardlytics ROI` · wait 2d
+```
+Hi {FIRST_NAME},
+
+{Curious|I’m curious|Just wondering}, are you seeing any {meaningful|notable|measurable|real} lift from your {OFFER} Cardlytics campaign, or is that {primarily|mainly|mostly|just} for {new|first-time|prospective} customers?
+
+In our experience, ROI {often|typically|usually|generally} {climbs|increases|improves|rises} {faster|more quickly|at a stronger rate} with {other|alternative|different} {offer constructs|promotion types|deal structures|incentive formats}.
+
+Worth a quick chat next week to compare notes?
+
+{Best regards|Kind regards|Warm regards|Cheers|Sincerely|Thank you|Thanks},
+{SENDER_FULL_NAME}
+LuckyDiem
+```
+**Step 2 variant A** · subject `A Smarter way to CLO` · wait 3d
+```
+Hi {FIRST_NAME},
+
+Since you’re already {running|live on|using|working with} CLO {with|through|via} Cardlytics, you know the channel {works|delivers|drives results|performs}. {However|That said|At the same time|But}, what we’re {seeing|hearing|noticing|finding} is {brands|marketers|advertisers|partners} {want|are looking for|are asking for|increasingly need} {better|stronger|improved|more efficient} economics {+|and|as well as} {unified|integrated|connected|cross-partner} data {across multiple partners|across their partnerships|from all providers|spanning various networks}, and that’s exactly where LuckyDiem is {outperforming|excelling|winning|leading the way}.
+
+Would you be open to a 15-min call to see how we’re helping brands like {COMPANY} get more from CLO?
+
+{Best regards|Kind regards|Warm regards|Cheers|Sincerely|Thank you|Thanks},
+{SENDER_FULL_NAME}
+LuckyDiem
+```
+**Step 3 variant A** · subject `A Smarter way to CLO` · wait 3d
+```
+Hi {FIRST_NAME},
+
+Brands like Nike, Disney+, Food Lion, and Motel 6 are seeing 20 to 50x ROAS from LuckyDiem-powered CLO campaigns. The reason: we’re not just another publisher, we’re a full network with over 500M connect cards with one contract, no channel conflict, and scale across all major platforms.
+
+Would you like me to share our deck to learn more?
+
+{Best regards|Kind regards|Warm regards|Cheers|Sincerely|Thank you|Thanks},
+{SENDER_FULL_NAME}
+LuckyDiem
+```
+**Step 4 variant A** · subject `Why CEOs and CFOs love CLO` · wait 3d
+```
+Hi {FIRST_NAME},
+
+CLO is winning C-suites over because it protects full-price sales, and cashback is booked as marketing spend, not a discount. That means cleaner P&L, predictable ROI, and happier investors.
+
+Should I send you a quick breakdown of how brands are framing CLO to finance teams?
+
+{Best regards|Kind regards|Warm regards|Cheers|Sincerely|Thank you|Thanks},
+{SENDER_FULL_NAME}
+LuckyDiem
+```
+**Step 5 variant A** · subject `Fill CLO gaps Cardlytics can’t` · wait 1d
+```
+Hi {FIRST_NAME},
+
+LuckyDiem has a network of 500M+ linked cards. If you’re aiming for more efficiency + visibility in CLO, we are happy to send over a deck for you to learn more. Just let us know.
+
+{Best regards|Kind regards|Warm regards|Cheers|Sincerely|Thank you|Thanks},
+{SENDER_FULL_NAME}
+LuckyDiem
+```
+
+### Still copy UNKNOWN after this pass
+
+- EB 222 · [LuckyDiem] CDLX campaign (LD's copy) (small sample) · 178 sent · 0 interested · 0.00/1k · reason: listed in EmailBison but sequence not fetched this pass (near-duplicate template or under 500 sent; still readable)
 

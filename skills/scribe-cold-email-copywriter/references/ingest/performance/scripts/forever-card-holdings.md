@@ -904,6 +904,140 @@ forevercard.io
 
 | Campaign | EB id | Created | Sent | Replies | Interested | Per 1,000 |
 |---|---:|---|---:|---:|---:|---:|
-| [Forever Card Holdings] SaaS comapnies - Direct | 226 | 2025-09-03 | 7,916 | 29 | 3 | 0.38 |
-| [Forever Card Holdings] Real State OV Direct | 186 | 2025-09-02 | 6,026 | 20 | 2 | 0.33 |
+| [Forever Card Holdings] SaaS comapnies - Direct **[copy recovered 2026-11-25, see below]** | 226 | 2025-09-03 | 7,916 | 29 | 3 | 0.38 |
+| [Forever Card Holdings] Real State OV Direct **[copy recovered 2026-11-25, see below]** | 186 | 2025-09-02 | 6,026 | 20 | 2 | 0.33 |
+
+## Recovered from EmailBison 2026-11-25
+
+Source: EmailBison API, read-only GET `/api/campaigns/v1.1/{id}/sequence-steps` after switching into this client's workspace (admin key, authorised by Alex 2026-11-25). HTML converted to plain text; spintax kept exactly as written (including typos and broken braces). Sender and personal phone numbers and email addresses are redacted. Campaign totals come from the earlier record (Airtable sync) where it had them; bounce counts and status come from the EmailBison campaign list.
+
+*Facts and proof in these scripts belong to this client only. Never reuse them for another client.*
+
+Verdict key (interested per 1,000 sent, 500+ sent): WINNER at or above 2.5 · above average 1.5 to 2.49 · below average 0.7 to 1.49 · LOSER under 0.7 (keep as evidence of what not to do).
+
+#### EB 226 · [Forever Card Holdings] SaaS comapnies - Direct
+EmailBison status `UNKNOWN` · created 2025-09-03 · **7,916 sent, 29 replies, 3 interested = 0.38 per 1,000** · bounced UNKNOWN (UNKNOWN) · verdict: **LOSER: evidence of what not to do**
+Replaces the "copy UNKNOWN" row for this EB id in the table above.
+Per-step / per-variant stats: UNKNOWN (EmailBison only serves them via a POST stats call, which was not authorised).
+
+**Step 1 variant A** · subject `Our new meetings` · wait 2d
+```
+{Hi|Hello|Hey} {FIRST_NAME},
+
+I noticed {COMPANY} sells into the {TARGET AUDIENCE} space through LinkedIn.
+
+Have you ever thought of using physical greeting cards with video to break into accounts and get meetings with VPs?
+
+{Best regards|Kind regards|Warm regards|Cheers|All the best|Sincerely|Thank you|Thanks},
+Andrew McAuliffe
+Founder of ForeverCard
+```
+**Step 1 variant B** · subject `More on standing out in SaaS` · INACTIVE variant (switched off)
+```
+{Hi|Hello|Hey} {FIRST_NAME},
+
+I noticed {COMPANY} sells into {TARGET AUDIENCE}, we're aware it's a noisy space.
+
+I was wondering if you have ever heard of or used mailed greeting cards with video to break into accounts and get meetings with VPs? It’s a powerful addition to any cold outreach sequence.
+
+If you're open, I can explain how this tactic is helping leaders in the SaaS industry break through the digital noise and perform 10-100x higher than other methods.
+
+{Best regards|Kind regards|Warm regards|Cheers|All the best|Sincerely|Thank you|Thanks},
+Andrew McAuliffe
+Founder of ForeverCard
+```
+**Step 2 variant A** · subject `Re: More on standing out in SaaS` · wait 3d, same thread
+```
+{Hi|Hello|Hey} {FIRST_NAME},
+
+I reached out a few days ago about mailed greeting cards with video.
+
+They work for {COMPANY} because you send a 30-60 second video delivered as a physical card, it lands on their desk, instead of getting buried in an inbox.
+
+You can use them for Account-Based Marketing (ABM) & Cold Outreach (Primary), re-engaging stale opportunities in the pipeline, and onboarding new enterprise clients. While it's not a silver bullet, teams testing it are seeing strong engagement, and it's definitely something most people aren’t trying yet.
+
+Is this something you’d be open to learning about?
+
+{Best regards|Kind regards|Warm regards|Cheers|All the best|Sincerely|Thank you|Thanks},
+Andrew McAuliffe
+Founder of ForeverCard
+```
+**Step 3 variant A** · subject `{COLLEAGUE}?` · wait 1d
+```
+{Hi|Hello|Hey} {FIRST_NAME},
+
+Wasn’t sure if I should send this to {COLLEAGUE}.
+
+Regardless, I thought the ideas on how SaaS companies and leaders are using ForeverCard to book meetings with hard-to-reach decision-makers might be useful.
+
+Would {COLLEAGUE} be best to talk further about mailed greeting cards with video?
+
+{Best regards|Kind regards|Warm regards|Cheers|All the best|Sincerely|Thank you|Thanks},
+Andrew McAuliffe
+Founder of ForeverCard
+```
+
+#### EB 186 · [Forever Card Holdings] Real State OV Direct
+EmailBison status `UNKNOWN` · created 2025-09-02 · **6,026 sent, 20 replies, 2 interested = 0.33 per 1,000** · bounced UNKNOWN (UNKNOWN) · verdict: **LOSER: evidence of what not to do**
+Replaces the "copy UNKNOWN" row for this EB id in the table above.
+Per-step / per-variant stats: UNKNOWN (EmailBison only serves them via a POST stats call, which was not authorised).
+
+**Step 1 variant A** · subject `More on standing out in your area` · wait 2d
+```
+Hi {FIRST_NAME},
+
+{I just noticed|I saw|I realized} {COMPANY} is in the real estate space. I was wondering if you have ever {heard of|tried|considered} or used mailed greeting cards with video to win listings from expired listings,{FSBOs|owners selling on their own}, or reconnect with past leads?
+
+If you'd like, I can explain how this tactic is helping agents and brokers break through the digital noise and {performing 10–100x better than|delivering results 10–100x higher than} other outreach methods.
+
+{Best regards|Kind regards|Warm regards|Cheers|All the best|Sincerely|Thank you|Thanks},
+Andrew McAuliffe
+Founder of ForeverCard
+```
+**Step 2 variant A** · subject `Re: More on standing out in your area` · wait 3d, same thread
+```
+Hi {FIRST_NAME},
+
+{I reached out|I got in touch} {a few days ago|recently|last week} about mailed greeting cards with video.
+
+They {work well for|are effective for|make sense for|are a good fit for} {COMPANY} because you {send|share|deliver} a 30–60 second video {inside a physical card|packaged as a physical card|delivered as a physical card}, so it {lands directly on their desk|arrives right on their desk|shows up physically on their desk} instead of {getting buried in|being lost in|slipping into} an inbox.
+
+You can {use|leverage|send} them for {open houses|follow-ups|event invitations|booking appointments}, and while it’s not a silver bullet, teams {testing|trying|piloting} it are seeing {strong|solid|great|positive} engagement, and it’s {definitely something most people aren’t trying yet|still a channel most people haven’t tapped into|a unique approach few are using}.
+
+Is this something you’d be open to learning about?
+
+{Best regards|Kind regards|Warm regards|Cheers|All the best|Sincerely|Thank you|Thanks},
+Andrew McAuliffe
+Founder of ForeverCard
+```
+**Step 2 variant B** · subject `Re: More on standing out in your area` · wait 3d, same thread
+```
+Hi {FIRST_NAME},
+
+{I reached out|I got in touch} {a few days ago|recently|last week} about mailed greeting cards with video.
+
+They {work well for|are effective for|make sense for|are a good fit for} {COMPANY} because you {send|share|deliver} a 30–60 second video {inside a physical card|packaged as a physical card|delivered as a physical card}, so it {lands directly on their desk|arrives right on their desk|shows up physically on their desk} instead of {getting buried in|being lost in|slipping into} an inbox.
+
+You can {use|leverage|send} them for {open houses|follow-ups|event invitations|booking appointments}, and while it’s not a silver bullet, teams {testing|trying|piloting} it are seeing {strong|solid|great|positive} engagement, and it’s {definitely something most people aren’t trying yet|still a channel most people haven’t tapped into|a unique approach few are using}.
+
+Would you be open to learning more?
+
+{Best regards|Kind regards|Warm regards|Cheers|All the best|Sincerely|Thank you|Thanks},
+Andrew McAuliffe
+Founder of ForeverCard
+```
+**Step 3 variant A** · subject `{COLLEAGUE}?` · wait 1d
+```
+Hey {FIRST_NAME},
+
+{I wasn’t sure if I should|Not sure whether to|I was debating if I should} send this to {COLLEAGUE}.
+
+{Either way|Regardless|In any case}, I thought the {ideas|examples|strategies} on how real estate {firms|companies|agents} are using ForeverCard for {prospecting|lead generation|client outreach}, {recruiting|hiring|attracting talent}, and {follow-up|staying in touch|nurturing relationships} might be {useful|helpful|worth sharing}.
+
+Would {COLLEAGUE} be best to talk further about mailed greeting cards with video?
+
+{Best regards|Kind regards|Warm regards|Cheers|All the best|Sincerely|Thank you|Thanks},
+Andrew McAuliffe
+Founder of ForeverCard
+```
 
