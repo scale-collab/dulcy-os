@@ -1495,38 +1495,38 @@ Dulcy
 
 | Campaign | EB id | Created | Sent | Replies | Interested | Per 1,000 |
 |---|---:|---|---:|---:|---:|---:|
-| [DULCY] MISS G550 | 175 | 2025-07-01 | 61,468 | 1,959 | 148 | 2.41 |
-| Copy of [DULCY] GF + AV PPC Leads | 103 | 2025-03-28 | 56,480 | 608 | 88 | 1.56 |
-| [DULCY] APPC E53 | 117 | 2025-04-21 | 53,390 | 753 | 146 | 2.73 |
-| [DULCY] Apollo Agencies US/UK/CA  | 243 | 2025-10-06 | 51,593 | 478 | 26 | 0.50 |
-| [Dulcy] Broad Agencies - 7-75 empl, USA/UK/CA - A-Leads (Direct Offer) | 367 | 2026-03-05 | 48,481 | 564 | 47 | 0.97 |
-| [Dulcy] Agency Vista Direct Offer | 280 | 2025-11-14 | 33,634 | 858 | 32 | 0.95 |
-| [Dulcy] Clay Marketing Agencies Direct Offer (NC) | 284 | 2025-11-14 | 30,422 | 550 | 41 | 1.35 |
-| [DULCY] Advertising Agencies (Campaign) | 214 | 2025-08-21 | 29,045 | 400 | 23 | 0.79 |
-| [DULCY] Advertising Agencies (Leads) | 178 | 2025-08-20 | 28,961 | 438 | 41 | 1.42 |
-| Copy of [Dulcy] Clay Marketing Agencies Direct Offer (NC) | 340 | 2025-12-30 | 28,494 | 471 | 27 | 0.95 |
-| [Dulcy] Digital Marketing Agencies, 5-75 Employ, USA/UK/CA, Clutch [Lead Magnet] | 445 | 2026-04-24 | 16,644 | 271 | 14 | 0.84 |
-| [DULCY] CPPC G63 | 53 | 2025-01-28 | 15,912 | 228 | 71 | 4.46 |
-| [Dulcy] Digital Marketing Agencies - 5-75 empl, USA/UK/CA - GoodFirms (Lead Magnet w/Thread) | 372 | 2026-01-27 | 12,872 | 106 | 7 | 0.54 |
-| [Dulcy] Clutch SSM Agencies Direct Offer | 278 | 2025-11-12 | 8,696 | 142 | 9 | 1.03 |
-| Copy of [DULCY] Clutch PPC CE | 102 | 2025-03-28 | 7,685 | 74 | 11 | 1.43 |
-| Copy of [DULCY] Clutch PPC Leads | 104 | 2025-03-28 | 7,615 | 123 | 24 | 3.15 |
-| [Dulcy] Content Agencies - 5-75 empl, USA/UK/CA - A-Leads (OV- Loom, Direct, Lead Magnet) | 370 | 2026-01-27 | 7,032 | 98 | 10 | 1.42 |
-| [DULCY] Funded Saas CE | 69 | 2025-03-28 | 6,617 | 65 | 9 | 1.36 |
-| [DULCY] SaaS Companies US/UK/CA | 257 | 2025-11-13 | 6,112 | 43 | 1 | 0.16 |
-| [Dulcy] Clutch PPC - 7-75 empl, USA/UK/CA (Milkbox) - A-Leads (Lead Magnet) | 359 | 2026-01-27 | 6,011 | 64 | 2 | 0.33 |
-| Copy of [Dulcy] Clutch Video Production Agencies Direct Offer | 306 | 2025-11-29 | 5,921 | 111 | 4 | 0.68 |
-| [Dulcy] 500 Leads (Google) | 39 | 2025-01-18 | 5,486 | 91 | 31 | 5.65 |
+| [DULCY] MISS G550 **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 175 | 2025-07-01 | 61,468 | 1,959 | 148 | 2.41 |
+| Copy of [DULCY] GF + AV PPC Leads **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 103 | 2025-03-28 | 56,480 | 608 | 88 | 1.56 |
+| [DULCY] APPC E53 **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 117 | 2025-04-21 | 53,390 | 753 | 146 | 2.73 |
+| [DULCY] Apollo Agencies US/UK/CA **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 243 | 2025-10-06 | 51,593 | 478 | 26 | 0.50 |
+| [Dulcy] Broad Agencies - 7-75 empl, USA/UK/CA - A-Leads (Direct Offer) **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 367 | 2026-03-05 | 48,481 | 564 | 47 | 0.97 |
+| [Dulcy] Agency Vista Direct Offer **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 280 | 2025-11-14 | 33,634 | 858 | 32 | 0.95 |
+| [Dulcy] Clay Marketing Agencies Direct Offer (NC) **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 284 | 2025-11-14 | 30,422 | 550 | 41 | 1.35 |
+| [DULCY] Advertising Agencies (Campaign) **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 214 | 2025-08-21 | 29,045 | 400 | 23 | 0.79 |
+| [DULCY] Advertising Agencies (Leads) **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 178 | 2025-08-20 | 28,961 | 438 | 41 | 1.42 |
+| Copy of [Dulcy] Clay Marketing Agencies Direct Offer (NC) **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 340 | 2025-12-30 | 28,494 | 471 | 27 | 0.95 |
+| [Dulcy] Digital Marketing Agencies, 5-75 Employ, USA/UK/CA, Clutch [Lead Magnet] **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 445 | 2026-04-24 | 16,644 | 271 | 14 | 0.84 |
+| [DULCY] CPPC G63 **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 53 | 2025-01-28 | 15,912 | 228 | 71 | 4.46 |
+| [Dulcy] Digital Marketing Agencies - 5-75 empl, USA/UK/CA - GoodFirms (Lead Magnet w/Thread) **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 372 | 2026-01-27 | 12,872 | 106 | 7 | 0.54 |
+| [Dulcy] Clutch SSM Agencies Direct Offer **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 278 | 2025-11-12 | 8,696 | 142 | 9 | 1.03 |
+| Copy of [DULCY] Clutch PPC CE **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 102 | 2025-03-28 | 7,685 | 74 | 11 | 1.43 |
+| Copy of [DULCY] Clutch PPC Leads **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 104 | 2025-03-28 | 7,615 | 123 | 24 | 3.15 |
+| [Dulcy] Content Agencies - 5-75 empl, USA/UK/CA - A-Leads (OV- Loom, Direct, Lead Magnet) **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 370 | 2026-01-27 | 7,032 | 98 | 10 | 1.42 |
+| [DULCY] Funded Saas CE **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 69 | 2025-03-28 | 6,617 | 65 | 9 | 1.36 |
+| [DULCY] SaaS Companies US/UK/CA **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 257 | 2025-11-13 | 6,112 | 43 | 1 | 0.16 |
+| [Dulcy] Clutch PPC - 7-75 empl, USA/UK/CA (Milkbox) - A-Leads (Lead Magnet) **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 359 | 2026-01-27 | 6,011 | 64 | 2 | 0.33 |
+| Copy of [Dulcy] Clutch Video Production Agencies Direct Offer **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 306 | 2025-11-29 | 5,921 | 111 | 4 | 0.68 |
+| [Dulcy] 500 Leads (Google) **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 39 | 2025-01-18 | 5,486 | 91 | 31 | 5.65 |
 | [TargetonStar] SEO & Web Design Agencies (Direct) - Version 2 copy **[TargetonStar campaign (ran in the TargetonStar workspace); copy recovered 2026-11-25 into targetonstar.md]** | 247 | 2025-11-06 | 5,399 | 65 | 6 | 1.11 |
-| [Dulcy] Clutch Free Leads (Google) | 38 | 2025-01-18 | 4,833 | 67 | 25 | 5.17 |
-| [Dulcy] Influencer Marketing Agencies, 5-50, USA - A-leads  (LEAD MAGNET) | 341 | 2025-12-31 | 4,684 | 113 | 8 | 1.71 |
-| [Dulcy] 3 Outbound Ideas (Google) | 22 | 2025-01-18 | 4,577 | 80 | 14 | 3.06 |
-| [DULCY] Business Loans Leads | 66 | 2025-03-27 | 4,322 | 88 | 7 | 1.62 |
-| [DULCY] Business Loans CE | 67 | 2025-03-27 | 4,078 | 84 | 5 | 1.23 |
-| [DULCY] GFPPC Hyper C63S | 54 | 2025-01-29 | 2,983 | 64 | 11 | 3.69 |
-| [Dulcy] Clutch Video Production Agencies Direct Offer | 279 | 2025-11-12 | 2,817 | 43 | 1 | 0.35 |
-| [Dulcy] Influencer Marketing Agencies, 5-50, USA - A-leads  (DIRECT) | 337 | 2025-12-31 | 1,616 | 74 | 2 | 1.24 |
-| [Dulcy] Clay Marketing Agencies Direct Offer | 275 | 2025-11-12 | 1,495 | 24 | 2 | 1.34 |
+| [Dulcy] Clutch Free Leads (Google) **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 38 | 2025-01-18 | 4,833 | 67 | 25 | 5.17 |
+| [Dulcy] Influencer Marketing Agencies, 5-50, USA - A-leads  (LEAD MAGNET) **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 341 | 2025-12-31 | 4,684 | 113 | 8 | 1.71 |
+| [Dulcy] 3 Outbound Ideas (Google) **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 22 | 2025-01-18 | 4,577 | 80 | 14 | 3.06 |
+| [DULCY] Business Loans Leads **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 66 | 2025-03-27 | 4,322 | 88 | 7 | 1.62 |
+| [DULCY] Business Loans CE **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 67 | 2025-03-27 | 4,078 | 84 | 5 | 1.23 |
+| [DULCY] GFPPC Hyper C63S **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 54 | 2025-01-29 | 2,983 | 64 | 11 | 3.69 |
+| [Dulcy] Clutch Video Production Agencies Direct Offer **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 279 | 2025-11-12 | 2,817 | 43 | 1 | 0.35 |
+| [Dulcy] Influencer Marketing Agencies, 5-50, USA - A-leads  (DIRECT) **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 337 | 2025-12-31 | 1,616 | 74 | 2 | 1.24 |
+| [Dulcy] Clay Marketing Agencies Direct Offer **[copy recovered 2026-11-25 from reply threads, see `dulcy-recovered.md`]** | 275 | 2025-11-12 | 1,495 | 24 | 2 | 1.34 |
 | [Dulcy] 3 Outbound Ideas (Other) | 34 | 2025-01-18 | 1,197 | 100 | 1 | 0.84 |
 
 ## Recovered from EmailBison 2026-11-25

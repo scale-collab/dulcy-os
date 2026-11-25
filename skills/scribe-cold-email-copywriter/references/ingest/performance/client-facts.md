@@ -8,7 +8,7 @@ Every fact below belongs only to the client it sits under. A number that worked 
 - Offer in use: **free list of 1,000 prospect contacts matched to the prospect's ICP** (names, emails, companies, LinkedIn). Delivered after a short targeting call as a Google Sheet. Turnaround and capacity: UNKNOWN; don't promise one.
 - Approved proof (published on dulcy.io, not audited): Digital Force $25,000 MRR added in 21 days; Visionair AI $30,000 MRR in 4 weeks; Twenty West Media 781 interested leads in 5 months. Use only as proof of Dulcy's outbound work.
 - Must NOT say: any guarantee ("20 meetings or money back" conflicts with the agreements); "300+ clients" or any client count above 6 + Dulcy; "average 20+ opportunities"; "dozen agencies"; website stats; "5x reply rates"; SOC 2/GDPR/HIPAA; that LinkedIn, direct mail or the AI caller work.
-- Copy evidence: Dulcy's best stored-copy campaign is "Florida Marketing Agencies (Direct Offer)" (7.62/1k, small). The free-list campaigns from 2025 have no stored copy.
+- Copy evidence: Dulcy's best stored-copy campaign is "Florida Marketing Agencies (Direct Offer)" (7.62/1k, small). The 2025 free-list campaigns were deleted from EmailBison; their copy was rebuilt from reply threads on 2026-11-25 in `scripts/dulcy-recovered.md` (the lookalike "1,000 leads similar to {CASESTUDY}" one-liner: 76 booked meetings across 10 campaigns). Its proof lines are mostly NOT approved; check that file's list first.
 
 #### Global Media Group / Scroll Stop · source `clients/global-media-group-scroll-stop.md`
 - Offer: performance influencer campaigns via their creator network. Front ends on record: free influencer list, campaign plan, storyboard pack, KPI plan, launch blueprint.
