@@ -496,6 +496,30 @@ function CampaignReviewPanel({record, field, name}: {record: AnyRecord; field: A
   </section>;
 }
 
+// "Activity log" (Alex 2026-11-25): this campaign's history from the Activity Log, inside the Analytics tab
+// (not a separate page). Newest first, plain words, details on tap.
+type ActivityRow = {id: string; when: number; agent: string; type: string; event: string; details: string};
+function ActivityPanel({rows}: {rows: ActivityRow[] | null}) {
+  const [open, setOpen] = useState<string | null>(null);
+  const [limit, setLimit] = useState(15);
+  if (rows === null) return null;
+  const tone = (t: string) => /failed/i.test(t) ? 'bg-red-50 text-red-700 border-red-200' : /fixed|approved|done/i.test(t) ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : /waiting/i.test(t) ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-gray-600 border-gray-200';
+  return <section className="mt-6 space-y-3">
+    <div><h3 className="text-base font-semibold text-gray-900">Activity log</h3><p className="mt-1 text-sm text-gray-500">Everything the agents and the engine did on this campaign and its lead list, newest first.</p></div>
+    {!rows.length && <div className="rounded-xl border border-gray-200 bg-slate-50 p-6 text-center text-sm text-gray-500">Nothing logged yet for this campaign.</div>}
+    {!!rows.length && <ol className="space-y-2">{rows.slice(0, limit).map(row => <li key={row.id} className="rounded-xl border border-gray-200 bg-white p-3">
+      <button onClick={() => setOpen(open === row.id ? null : row.id)} className="flex w-full items-start gap-3 text-left">
+        <span className="w-24 shrink-0 text-xs tabular-nums text-gray-500">{row.when ? new Date(row.when).toLocaleString(undefined, {month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'}) : ''}</span>
+        <span className="min-w-0 flex-1"><span className="block text-sm font-medium text-gray-900">{row.event}</span>
+          <span className="mt-1 flex flex-wrap gap-1 text-[10px] font-semibold"><span className="rounded-full border border-purple-200 bg-purple-50 px-2 py-0.5 text-purple-700">{row.agent || 'Engine'}</span>{row.type && <span className={`rounded-full border px-2 py-0.5 ${tone(row.type)}`}>{row.type}</span>}</span></span>
+        {row.details && <span className="text-xs text-purple-700">{open === row.id ? 'Hide' : 'Details'}</span>}
+      </button>
+      {open === row.id && row.details && <div className="mt-2 whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-xs leading-5 text-gray-700">{row.details}</div>}
+    </li>)}</ol>}
+    {rows.length > limit && <button onClick={() => setLimit(limit + 25)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-slate-50">Show older ({rows.length - limit} more)</button>}
+  </section>;
+}
+
 function VerificationPerformancePanel({record, field}: {record: AnyRecord; field: AnyField | null}) {
   const [provider, setProvider] = useState('All');
   const [emailType, setEmailType] = useState('All');
@@ -535,6 +559,7 @@ function getCustomProperties(base: ReturnType<typeof useBase>) {
     {key: 'leadListsTable', label: 'Lead lists', type: 'table' as const, defaultValue: byName('lead lists')},
     {key: 'clientsTable', label: 'Clients', type: 'table' as const, defaultValue: byName('workspace ids')},
     {key: 'emailAccountsTable', label: 'Email accounts', type: 'table' as const, defaultValue: byName('email accounts')},
+    {key: 'activityTable', label: 'Activity log', type: 'table' as const, defaultValue: byName('activity log')},
     ...field('emailsSentField', 'Emails sent field', 'Emails Sent'), ...field('repliesDataField', 'Replies data field', 'Unique Replies Data'),
     ...field('bouncesDataField', 'Bounces data field', 'Bounced Data'), ...field('interestedDataField', 'Interested data field', 'Interested Data'),
     ...field('meetingsDataField', 'Meetings data field', 'Meetings Booked Data'),
@@ -566,6 +591,8 @@ function CampaignCenter(): React.ReactElement {
   const leadListRecords = rows(useRecords(leadListsTable ?? campaignsTable), Boolean(leadListsTable));
   const clientRecords = rows(useRecords(clientsTable ?? campaignsTable), Boolean(clientsTable));
   const safeEmailAccountRecords = rows(useRecords(emailAccountsTable ?? campaignsTable), Boolean(emailAccountsTable));
+  const activityTable = (props.activityTable as AnyTable | undefined) ?? base.tables.find(table => table.id === 'tbl4DK6tEuy2ZEmbP');
+  const activityRecords = rows(useRecords(activityTable ?? campaignsTable), Boolean(activityTable));
   const campaignsRef = useRef<AnyRecord[]>(campaigns);
   campaignsRef.current = campaigns;
 
@@ -901,6 +928,16 @@ function CampaignCenter(): React.ReactElement {
         sampleStatus: sent >= 2000 ? 'Ideal' : sent >= 1000 ? 'Okay' : 'Not ideal'};
     })
     .sort((a, b) => a.step - b.step || a.variant.localeCompare(b.variant)), [selected, sequenceAnalytics, sequenceAnalyticsFields]);
+  const relatedActivity = useMemo((): ActivityRow[] | null => {
+    if (!selected || !activityTable) return null;
+    const f = (id: string) => activityTable.getFieldIfExists(id) as AnyField | null;
+    const [campaignLink, listLink, when, agent, type, event, details] = ['fld8Y7XpBp1TkBBHR', 'fldGDAB3nxnq0aFZi', 'fldZ6krYaZOeCmaxK', 'fldAOwjBYPCrHZmCS', 'fldvkg6fn4bH2bkD2', 'fldglUB3EzzQVC3ZO', 'fldaF3yo6pfSlARXl'].map(f);
+    const lists = campaignLeadListLinkField ? linkedIds(selected, campaignLeadListLinkField) : [];
+    return activityRecords
+      .filter(record => (campaignLink && linkedIds(record, campaignLink).includes(selected.id)) || (listLink && linkedIds(record, listLink).some(id => lists.includes(id))))
+      .map(record => ({id: record.id, when: new Date(textValue(record, when) || 0).getTime() || 0, agent: textValue(record, agent), type: textValue(record, type), event: textValue(record, event) || 'Step', details: textValue(record, details)}))
+      .sort((a, b) => b.when - a.when);
+  }, [selected, activityTable, activityRecords, campaignLeadListLinkField]);
   const sequenceAnalyticsLeader = useMemo(() => [...relatedSequenceAnalytics].sort((a, b) => b.interestedRate - a.interestedRate || b.replyRate - a.replyRate || b.sent - a.sent)[0] ?? null, [relatedSequenceAnalytics]);
   const sequenceAnalyticsTotals = relatedSequenceAnalytics.reduce((t, row) => ({sent: t.sent + row.sent, replies: t.replies + row.replies, interested: t.interested + row.interested, bounces: t.bounces + row.bounces}), {sent: 0, replies: 0, interested: 0, bounces: 0});
 
@@ -1709,6 +1746,7 @@ function CampaignCenter(): React.ReactElement {
                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs leading-5 text-blue-800"><strong>How to read this:</strong> interested rate (interested ÷ replies) picks the winner; reply rate adds context and the sample badge stops an early call.</div>
               </>}
             </section>
+            <ActivityPanel key={`activity-${selected.id}`} rows={relatedActivity}/>
           </div>}
         </div>
       </aside>}

@@ -181,3 +181,12 @@ Format: `- [date] rule. (why / source)`
 - **Inboxes:** Atlas gives a new campaign the client's free healthy inboxes: Healthy or ungraded, connected, not resting or being replaced, warmup 70+ when scored, and not sending in another Active or Uploaded campaign. If none are free, Atlas asks Alex (Daily Run / Slack) and builds as soon as he picks them in Campaign Center.
 - **Launch:** after Build Campaign, Atlas presses Launch Campaign. It goes live by itself when every launch check passes, under the 2026-11-18 exception: copy approved, list Ready + QA Passed, client active, leads in, senders connected. If a check fails, the plan stops and Alex sees why.
 - **Order:** the approved copy goes back into the sequence fields first (the same as the Campaign Center's approve-and-prepare), then the spintax button, then Build, then Launch.
+
+## How the agents work with Alex (Alex, 2026-11-25)
+- **Alex talks to Ada only.** Ada directs the agents (Atlas directs Scribe and Scout). Each agent reports to Ada daily; Ada reports to Alex.
+- **Ada's morning brief includes a team check:** one line per agent saying whether it did its job, and what's off.
+- **Less Slack.** Alex wants one calm screen, card by card, not blocks of text and many DMs. Slack is for urgent items only. Everything else goes to the central screen (Daily Run now; a private "HQ" later).
+- **Privacy:** Josh can see Airtable. Money (MRR, LTV, finance) and content are Alex-only.
+- **Atlas owns client facts being right:** active clients, MRR/LTV and the client list must match reality (e.g. MJJ and The Marketing Cartel are active).
+- **Atlas answers client and campaign questions when asked.** The old Jarvis didn't answer pings.
+- **Riley also checks once overnight** (4 a.m. ET).
