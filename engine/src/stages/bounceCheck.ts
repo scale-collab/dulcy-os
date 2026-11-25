@@ -47,7 +47,10 @@ async function checkWorkspace(ctx: Parameters<Stage>[0], bison: ReturnType<typeo
     const still = paused.filter((p) => after.get(p.id) === 'active');
     if (still.length) throw new NeedsReviewError(`pause did not take effect for campaign(s) ${still.map((p) => p.id).join(', ')} (${label}); pause them by hand and investigate`);
   }
-  return { checked: active.length, paused, watch, skippedPause, all };
+  // Campaigns already paused (by hand or earlier) with bounce over 4% at 35%+: investigated once, ever.
+  const pausedHigh: Row[] = all.map(statsFrom).filter((c) => c.status === 'paused' && bounceAction(c) === 'pause')
+    .map((c) => ({ id: c.id, name: c.name, bounce: bounceRate(c), progress: c.progress, workspace: label, teamId, contacted: c.contacted, bounced: c.bounced }));
+  return { checked: active.length, paused, watch, skippedPause, all, pausedHigh };
 }
 
 export const bounceCheckStage: Stage = async (ctx) => {
@@ -70,12 +73,12 @@ export const bounceCheckStage: Stage = async (ctx) => {
   }
 
   let checked = 0;
-  const paused: Row[] = [], watch: Row[] = [], skippedPause: Row[] = [], failed: string[] = [];
+  const paused: Row[] = [], watch: Row[] = [], skippedPause: Row[] = [], pausedHigh: Row[] = [], failed: string[] = [];
   const allRows: any[] = [];
   for (const t of targets) {
     try {
       const r = await checkWorkspace(ctx, t.bison, t.label, skip, t.teamId);
-      checked += r.checked; paused.push(...r.paused); watch.push(...r.watch); skippedPause.push(...r.skippedPause); allRows.push(...r.all);
+      checked += r.checked; pausedHigh.push(...r.pausedHigh); paused.push(...r.paused); watch.push(...r.watch); skippedPause.push(...r.skippedPause); allRows.push(...r.all);
     } catch (e) {
       // One workspace that cannot be read must not stop the others (a pause that did not hold still goes to review).
       if (e instanceof NeedsReviewError || targets.length === 1) throw e;
@@ -86,11 +89,14 @@ export const bounceCheckStage: Stage = async (ctx) => {
   // The bounce agent (Atlas): investigate each paused or over-4% campaign once every 3 days and post the cause + fix to Slack.
   let investigating = 0;
   const window = Math.floor(Date.now() / (3 * 86_400_000));
-  for (const r of [...paused, ...skippedPause]) {
+  const justPaused = new Set(paused.map((r) => r.id));
+  const toInvestigate = [...paused.map((r) => ({ r, key: String(window) })), ...skippedPause.map((r) => ({ r, key: String(window) })),
+    ...pausedHigh.filter((r) => !justPaused.has(r.id)).map((r) => ({ r, key: 'once' }))];
+  for (const { r, key } of toInvestigate) {
     if (!r.teamId) continue;
     const def = STAGES['bounce.investigate'];
     const q = await enqueue(ctx.db, {
-      kind: 'bounce.investigate', recordId: `bounce-investigate:${r.id}`, requestId: `bounce-investigate:${r.teamId}:${r.id}:${window}`,
+      kind: 'bounce.investigate', recordId: `bounce-investigate:${r.id}`, requestId: `bounce-investigate:${r.teamId}:${r.id}:${key}`,
       input: { teamId: r.teamId, campaignId: r.id, name: r.name, workspaceName: targets.find((t) => t.teamId === r.teamId)?.name ?? '', bounce: r.bounce, progress: r.progress, contacted: r.contacted, bounced: r.bounced, paused: !r.note },
       dryRun: ctx.cfg.dryRun && !ctx.cfg.liveStages.includes('bounce.investigate'), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs,
     });
