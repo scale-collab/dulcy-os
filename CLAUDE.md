@@ -44,7 +44,7 @@ Airtable (operating system: Campaign Center, Lead List Center, projects, CRM) ·
 3. Never invent client proof, results, prices or promises. Never reuse one client's facts for another.
 4. Bounce rate: over 2.5% = watch. Over 4% = campaign is paused and must be investigated.
 5. Work in small steps and commit often. Never run long unbounded jobs that burn credits.
-6. Answer Alex simply: result first, exact numbers, short done/left lists. No invented percentages of completion.
+6. Answer Alex simply: result first, exact numbers, short done/left lists. No invented percentages of completion. Agent reports and decision cards follow **Problem → Data → Proposed fix → Why** (RULES.md, 2026-11-25).
 
 ## Remembering (this is the point of this repo)
 - When Alex corrects you or sets a rule, add it to `rules/RULES.md` with the date and the reason, and add a line to `rules/decisions-log.md`. Do it in the same session.

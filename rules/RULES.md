@@ -218,3 +218,13 @@ Format: `- [date] rule. (why / source)`
 - **Rule:** every HQ screen is designed and checked on both phone (390 px) and desktop (1440 px), light and dark, before it ships. Big tap targets on phone, no sideways scroll.
 - **Why:** Alex likes the mobile version and uses both.
 - **Also:** the to-do in HQ is "Needs you" (what the agents need from Alex), not another project-management list.
+
+## How agents report to Alex: Problem → Data → Fix (Alex, 2026-11-25)
+- **Rule:** every summary, report, decision card and agent message is straight to the point, in this order:
+  1. **Problem:** one line, what's wrong or what's needed.
+  2. **Data:** the exact numbers that show it (no invented percentages).
+  3. **Proposed fix:** what to do, by whom.
+  4. **Why:** the data that supports the fix.
+  Plus one action (button or question) if Alex has to do something. No walls of text.
+- **Why:** Alex wants everything super simple and up to date, so he can act fast.
+- **Target:** HQ in daily use next week (the systems exist; HQ is the visual layer on top).
