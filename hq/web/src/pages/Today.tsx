@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, type Report, type Task, type TeamLine, type User } from '../api';
+import { api, type Need, type NeedCounts, type Report, type TeamLine, type User } from '../api';
 import {
-  Avatar, Button, Card, cleanLine, cx, dueLabel, ErrorBox, go, Icon, IconButton, Inline, Markdown, PageSkeleton, PageTitle, SectionHeader,
+  Avatar, Button, Card, cleanLine, cx, ErrorBox, go, Icon, IconButton, Inline, Markdown, PageSkeleton, PageTitle, SectionHeader,
   setCount, StatusDot, teamTone, timeAgo, toneLabel, type Tone,
 } from '../ui';
 import { ReportList } from './Reports';
+import { NeedFace, whoLabel } from './Needs';
 
 interface TodayData {
   signups?: number;
   brief: { title: string; body: string; created: string; dryRun: boolean } | null;
   team: TeamLine[];
   decisions: Record<string, number>;
-  tasks: { doNow: Task[]; counts: Record<string, number>; doneQuestions: number };
+  needs: { top: Need[]; counts: NeedCounts; errors: string[] };
   reports: Report[];
 }
 export const PILE_ICON: Record<string, string> = { Replies: 'reply', Campaigns: 'megaphone', Fixes: 'wrench', Money: 'dollar', Other: 'layers' };
@@ -25,7 +26,7 @@ export default function Today({ user }: { user: User }) {
     api<TodayData>('/today').then((x) => {
       setD(x);
       setCount('decisions', Object.values(x.decisions).reduce((a, b) => a + b, 0));
-      setCount('doNow', x.tasks.counts.doNow ?? 0);
+      setCount('needs', x.needs.counts.total);
       if (x.signups !== undefined) setCount('signups', x.signups);
     }).catch((e) => setError(e.message)).finally(() => setRefreshing(false));
   }, []);
@@ -45,7 +46,7 @@ export default function Today({ user }: { user: User }) {
   if (!d) return <><PageTitle kicker={date} title={`${hello}, ${first}.`} right={actions} /><PageSkeleton kind="today" /></>;
 
   const waiting = Object.values(d.decisions).reduce((a, b) => a + b, 0);
-  const doNow = d.tasks.counts.doNow ?? 0;
+  const needYou = d.needs.counts.total;
   const off = d.team.filter((t) => t.ok === false);
 
   return (
@@ -53,20 +54,12 @@ export default function Today({ user }: { user: User }) {
       <PageTitle kicker={date} title={`${hello}, ${first}.`} right={actions}
         sub={<span className="mt-1 flex flex-wrap items-center gap-2">
           <Stat n={waiting} label={waiting === 1 ? 'decision' : 'decisions'} tone={waiting ? 'warn' : 'good'} />
-          <Stat n={doNow} label="do now" tone={doNow ? 'warn' : 'good'} />
+          <Stat n={needYou} label={needYou === 1 ? 'needs you' : 'need you'} tone={needYou ? 'warn' : 'good'} />
           <Stat n={off.length} label={off.length === 1 ? 'agent needs a look' : 'agents need a look'} tone={off.length ? 'bad' : 'good'} />
           <button onClick={load} aria-label="Refresh" className="-my-2 grid h-11 w-11 place-items-center rounded-xl text-muted hover:bg-hover hover:text-fg sm:hidden"><Icon name="refresh" size={17} className={refreshing ? 'animate-spin' : undefined} /></button>
         </span>} />
 
       {error && <div className="mb-4"><ErrorBox error={error} retry={load} /></div>}
-
-      {!!d.signups && (
-        <Card onClick={() => go('users')} label={`${d.signups} sign-up waiting`} className="mb-4 flex items-center gap-3 border-accent/40 py-4">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent-ink"><Icon name="userPlus" size={20} /></span>
-          <div className="min-w-0 flex-1"><div className="font-semibold text-fg">{d.signups} sign-up{d.signups === 1 ? '' : 's'} waiting</div><div className="text-sm text-muted">Approve or deny in Users.</div></div>
-          <Icon name="chevronRight" size={18} className="text-faint" />
-        </Card>
-      )}
 
       <DecisionHero waiting={waiting} piles={d.decisions} />
 
@@ -79,7 +72,7 @@ export default function Today({ user }: { user: User }) {
           </section>
         </div>
         <div className="order-first min-w-0 space-y-6 lg:order-none">
-          <DoNow tasks={d.tasks.doNow} count={doNow} doneQuestions={d.tasks.doneQuestions} />
+          <NeedsNow items={d.needs.top} counts={d.needs.counts} />
           <TeamCheck team={d.team} />
         </div>
       </div>
@@ -103,7 +96,7 @@ function DecisionHero({ waiting, piles }: { waiting: number; piles: Record<strin
       <Card className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-accent-soft text-accent-ink"><Icon name="check" size={24} strokeWidth={2.4} /></span>
         <div className="min-w-0 flex-1"><div className="text-lg font-semibold tracking-tight">You're all clear</div><div className="text-sm text-muted">No decisions waiting on you. The agents will add cards here when they need you.</div></div>
-        <Button onClick={() => go('tasks')} icon="grid">Open to-do</Button>
+        <Button onClick={() => go('needs')} icon="bell">Needs you</Button>
       </Card>
     );
   }
@@ -219,34 +212,32 @@ function BriefBlock({ s, big }: { s: BriefSection; big?: boolean }) {
   );
 }
 
-function DoNow({ tasks, count, doneQuestions }: { tasks: Task[]; count: number; doneQuestions: number }) {
+/** The top 3 of "Needs you": tap one to do it (a route), or open the list. */
+function NeedsNow({ items, counts }: { items: Need[]; counts: NeedCounts }) {
+  const open = (n: Need) => (n.action && !/^https:\/\//i.test(n.action.href) ? go(n.action.href) : go('needs'));
   return (
     <Card className="p-0">
       <div className="flex items-center justify-between px-5 pb-2 pt-4">
-        <h2 className="flex items-center gap-2 text-sm font-semibold"><Icon name="flag" size={16} className="text-muted" />Do now</h2>
-        <span className="tabular text-xs font-medium text-muted">{count} urgent + important</span>
+        <h2 className="flex items-center gap-2 text-sm font-semibold"><Icon name="bell" size={16} className="text-muted" />Do now</h2>
+        <span className="tabular text-xs font-medium text-muted">{counts.total ? `${counts.total} need${counts.total === 1 ? 's' : ''} you` : 'all clear'}</span>
       </div>
-      {tasks.length ? (
+      {items.length ? (
         <ul className="px-2">
-          {tasks.map((t) => (
-            <li key={t.id}>
-              <button onClick={() => go('tasks')} className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-hover">
-                <span aria-hidden="true" className="h-4 w-4 shrink-0 rounded-full border-2 border-line-strong" />
+          {items.map((n) => (
+            <li key={n.key}>
+              <button onClick={() => open(n)} className="flex min-h-14 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-hover">
+                <NeedFace n={n} size="sm" />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[15px] text-fg">{t.name}</span>
-                  {(t.due || t.client) && <span className={cx('block truncate text-xs', t.overdue ? 'font-medium text-bad' : 'text-muted')}>{[t.due ? dueLabel(t.due) : '', t.client].filter(Boolean).join(' · ')}</span>}
+                  <span className="block text-[15px] leading-snug text-fg"><span className="font-semibold">{whoLabel(n)}:</span> {n.title}</span>
+                  {n.why && <span className="mt-0.5 block truncate text-xs text-muted">{n.why}</span>}
                 </span>
+                <Icon name="chevronRight" size={16} className="text-faint" />
               </button>
             </li>
           ))}
         </ul>
-      ) : <div className="px-5 pb-2 text-sm text-muted">Nothing urgent and important.</div>}
-      {doneQuestions > 0 && (
-        <button onClick={() => go('tasks')} className="mx-5 mt-1 flex min-h-11 items-center gap-1.5 text-sm font-medium text-accent-ink">
-          {doneQuestions} task{doneQuestions === 1 ? '' : 's'} may be done already<Icon name="arrowRight" size={15} />
-        </button>
-      )}
-      <div className="border-t border-line p-3"><Button onClick={() => go('tasks')} className="w-full" icon="grid">Open to-do</Button></div>
+      ) : <div className="flex items-center gap-2 px-5 pb-3 text-sm text-muted"><Icon name="check" size={15} />Nothing needs you right now.</div>}
+      <div className="border-t border-line p-3"><Button onClick={() => go('needs')} className="w-full" icon="bell">{counts.total > items.length ? `See all ${counts.total}` : 'Open Needs you'}</Button></div>
     </Card>
   );
 }

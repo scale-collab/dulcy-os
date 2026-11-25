@@ -24,6 +24,10 @@ import { decisionsTick } from '../src/decisions/loop.js';
 import type { ChatModel } from '../src/hq/chat.js';
 import { clientKey, groupWorkspaces, noteFor, _resetClientsCache } from '../src/hq/clients.js';
 import { ACTIVITY, AF } from '../src/activity.js';
+import { addAsk, cleanActionUrl, type Ask } from '../src/hq/asks.js';
+import { aggregateNeeds } from '../src/hq/needs.js';
+import type { DecisionCard } from '../src/hq/decisions.js';
+import { ISSUES, IF } from '../src/agents/riley.js';
 
 const url = process.env.TEST_DATABASE_URL;
 const skip = !url ? 'TEST_DATABASE_URL not set' : false;
@@ -96,7 +100,7 @@ after(async () => { if (!skip) { server.close(); await db.end(); } fs.rmSync(web
 beforeEach(async () => {
   tables = {}; writes = []; modelCalls = []; script = []; _resetClientCache(); _resetClientsCache();
   if (skip) return;
-  await db.query('TRUNCATE hq_users, hq_sessions, hq_login_attempts, hq_user_events, hq_reports, hq_chat_threads, hq_chat_messages, hq_agent_tasks, hq_task_checks, campaign_plans, jobs, steps, receipts, events RESTART IDENTITY CASCADE');
+  await db.query('TRUNCATE hq_users, hq_sessions, hq_login_attempts, hq_user_events, hq_reports, hq_chat_threads, hq_chat_messages, hq_agent_tasks, hq_task_checks, hq_asks, hq_needs_quiet, campaign_plans, jobs, steps, receipts, events RESTART IDENTITY CASCADE');
   await upsertUser(db, 'Alex@dulcy.io', 'owner', PW, 'Alex');
 });
 
@@ -799,4 +803,159 @@ test('Google sign-up: a pending request, never a session; Google login refuses i
     s = await start('signup');
     assert.ok(sessionCookie(await call('GET', `/hq/api/auth/google/callback?code=alex&state=${s.state}`, { cookie: s.oauth })));
   } finally { port = saved; g.close(); }
+});
+
+// ---------- Needs you ----------
+const card = (over: Partial<DecisionCard> = {}): DecisionCard => ({ id: 'recD', title: 'Reply to Jane', agent: 'Sean', client: '', pile: 'Replies', status: 'New', isReply: true, issue: '', checked: '', fix: '', details: '', action: 'Approve Reply', created: '2026-11-25T05:00:00.000Z', threadUrl: '', latestMessage: '', canEdit: true, ...over });
+const askRow = (over: Partial<Ask> = {}): Ask => ({ id: 1, agent: 'Atlas', title: 'Reply to Pete about Twenty West', why: 'He asked for the October numbers.', steps: '', actionLabel: '', actionUrl: '', priority: 'normal', audience: 'owner', dedupeKey: 'k', created: '2026-11-25T12:00:00.000Z', done: null, doneBy: null, snoozedUntil: null, ...over });
+
+test('needs: one item per pile (never per decision), Riley manual fixes, sign-ups, asks; Do now first', () => {
+  const decisions = [
+    ...Array.from({ length: 105 }, (_, i) => card({ id: `recR${String(i).padStart(13, '0')}`, created: new Date(Date.parse('2026-11-25T06:00:00.000Z') + i * 60_000).toISOString() })),
+    card({ id: 'recCAMP0000000001', agent: 'Atlas', pile: 'Campaigns', title: 'Bounce 4.6% on Fleet Ops', isReply: false }),
+    card({ id: 'recFIX00000000001', agent: 'Riley', pile: 'Fixes', title: 'Apply the n8n fix', isReply: false }),
+    card({ id: 'recFIXMANUAL00001', agent: 'Riley', pile: 'Fixes', title: 'Riley: renew the key', isReply: false }),
+    card({ id: 'recMONEY000000001', agent: 'Ledger', pile: 'Money', title: 'Buy 2 inboxes', isReply: false }),
+    card({ id: 'recSIENNA00000001', agent: 'Sienna', pile: 'Other', title: 'Script ready', isReply: false }),
+  ];
+  const issues = [{ id: 'recISSUE000000001', title: 'EmailBison key expired', why: 'The API key was rotated on Nov 24. Every sync since fails with 401.', fix: '1. Open EmailBison settings\n2. Copy the new key', decision: 'recFIXMANUAL00001', seen: '2026-11-25T09:00:00.000Z' }];
+  const asks = [
+    askRow({ id: 1 }),
+    askRow({ id: 2, agent: 'Setup', title: 'Publish the Google calendar app', priority: 'high', steps: '1. Open the console', audience: 'everyone' }),
+    askRow({ id: 3, title: 'Done one', done: '2026-11-25T10:00:00.000Z' }),
+    askRow({ id: 4, title: 'Snoozed one', snoozedUntil: '2026-11-26T15:00:00.000Z' }),
+    askRow({ id: 5, title: 'Snooze ended', snoozedUntil: '2026-11-25T14:00:00.000Z' }),
+  ];
+  const now = Date.parse('2026-11-25T15:00:00.000Z');
+  const items = aggregateNeeds({ owner: true, decisions, issues, signups: 1, asks, now });
+  const keys = items.map((i) => i.key);
+  assert.deepEqual(keys.filter((k) => k.startsWith('pile:')).sort(), ['pile:Campaigns', 'pile:Fixes', 'pile:Money', 'pile:Other', 'pile:Replies']);
+  const replies = items.find((i) => i.key === 'pile:Replies')!;
+  assert.deepEqual([replies.agent, replies.title, replies.count, replies.group, replies.action], ['Sean', '105 replies waiting for your OK', 105, 'now', { label: 'Open Replies', href: 'decisions/Replies' }]);
+  assert.match(replies.why, /Oldest 9 h ago/);
+  assert.equal(items.find((i) => i.key === 'pile:Fixes')!.count, 1, "the manual fix's decision is covered by the issue card");
+  const issue = items.find((i) => i.key === 'issue:recISSUE000000001')!;
+  assert.deepEqual([issue.agent, issue.title, issue.why, issue.action, issue.link?.href, issue.canDone, issue.canSnooze], ['Riley', 'EmailBison key expired', 'The API key was rotated on Nov 24.', null, 'decisions/Fixes', false, true]);
+  assert.match(issue.steps, /Copy the new key/);
+  assert.equal(items.find((i) => i.key === 'signups')!.action?.href, 'users');
+  assert.deepEqual(keys.filter((k) => k.startsWith('ask:')).sort(), ['ask:1', 'ask:2', 'ask:5'], 'done and snoozed asks are gone; an ended snooze is back');
+  assert.equal(items.find((i) => i.key === 'ask:2')!.icon, 'sparkles', 'a label, not an agent, gets an icon');
+  // Order: every "now" before every "later"; replies first.
+  assert.equal(keys[0], 'pile:Replies');
+  const groups = items.map((i) => i.group);
+  assert.deepEqual(groups, [...groups].sort((a, b) => (a === b ? 0 : a === 'now' ? -1 : 1)));
+  assert.equal(items.find((i) => i.key === 'ask:1')!.group, 'later');
+  assert.equal(items.find((i) => i.key === 'ask:2')!.group, 'now');
+  // Resolved = gone: no decisions, no issues, no asks.
+  assert.deepEqual(aggregateNeeds({ owner: true, decisions: [], issues: [], signups: 0, asks: [], now }), []);
+  // "Not now" on the issue.
+  assert.ok(!aggregateNeeds({ owner: true, decisions, issues, signups: 0, asks: [], now, quiet: new Set(['issue:recISSUE000000001']) }).some((i) => i.kind === 'issue'));
+});
+
+test('needs: a member gets only the piles they can act on; no money, content, Riley manual fixes or sign-ups', () => {
+  const decisions = [card(), card({ id: 'recMONEY000000001', agent: 'Ledger', pile: 'Money' }), card({ id: 'recSIENNA00000001', agent: 'Sienna', pile: 'Other' })];
+  const issues = [{ id: 'recISSUE000000001', title: 'Key expired', why: '', fix: '', decision: '', seen: '' }];
+  const asks = [askRow({ id: 1 }), askRow({ id: 2, audience: 'everyone', title: 'For Josh' }), askRow({ id: 3, agent: 'Ledger', audience: 'everyone', title: 'Money ask' })];
+  const items = aggregateNeeds({ owner: false, decisions, issues, signups: 3, asks });
+  assert.deepEqual(items.map((i) => i.key), ['pile:Replies', 'ask:2']);
+});
+
+test('needs API: owner and member views, Riley issues from System Issues, Today shows the top 3', { skip }, async () => {
+  tables[DECISIONS] = {
+    recREPLY000000001: decision(), recREPLY000000002: decision({ [DF.title]: 'Reply to Bo' }),
+    recMONEY000000001: decision({ [DF.agent]: 'Ledger', [DF.action]: 'Approve Purchase', [DF.emailsRecord]: '', _created: new Date().toISOString() }),
+  };
+  tables[ISSUES] = {
+    recISSUE000000001: { [IF.title]: 'Xero login expired', [IF.status]: 'Waiting for Alex', [IF.fixType]: 'Manual (Alex)', [IF.why]: 'The Xero refresh token expired. Ledger cannot read.', [IF.fix]: 'Run xero-connect on the server.', [IF.decision]: 'recDEC00000000001' },
+    recISSUE000000002: { [IF.title]: 'Retry me', [IF.status]: 'Waiting for Alex', [IF.fixType]: 'Retry' },
+    recISSUE000000003: { [IF.title]: 'Fixed already', [IF.status]: 'Fixed', [IF.fixType]: 'Manual (Alex)' },
+  };
+  await db.query(`INSERT INTO hq_users (email, name, role, pending, disabled, requested_at) VALUES ('new@x.io','New','member',true,true,now())`);
+  await addAsk(db, { agent: 'atlas', title: 'Reply to Pete about Twenty West', why: 'He asked twice.', actionUrl: '#/clients', actionLabel: 'Open clients' });
+  await addAsk(db, { agent: 'Setup', title: 'Publish the Google calendar app', steps: '1. Open console\n2. Publish', priority: 'high', audience: 'everyone' });
+  assert.equal((await call('GET', '/hq/api/needs')).status, 401, 'needs a session');
+
+  const { cookie } = await login();
+  const r = await call('GET', '/hq/api/needs', { cookie });
+  assert.equal(r.status, 200);
+  const keys = r.body.items.map((i: any) => i.key);
+  assert.deepEqual([...keys].sort(), ['ask:1', 'ask:2', 'issue:recISSUE000000001', 'pile:Money', 'pile:Replies', 'signups']);
+  assert.equal(r.body.items.find((i: any) => i.key === 'pile:Replies').title, '2 replies waiting for your OK');
+  assert.equal(r.body.items.find((i: any) => i.key === 'ask:1').action.href, 'clients', 'stored as a relative HQ route');
+  assert.equal(r.body.items.find((i: any) => i.key === 'ask:1').agent, 'Atlas');
+  assert.deepEqual(r.body.counts, { total: 6, now: 4, later: 2 });
+  assert.deepEqual(r.body.errors, []);
+  const t = await call('GET', '/hq/api/today', { cookie });
+  assert.equal(t.body.needs.top.length, 3);
+  assert.equal(t.body.needs.top[0].key, 'pile:Replies');
+  assert.equal(t.body.needs.counts.total, 6);
+  assert.equal(t.body.tasks, undefined, 'Today no longer reads the Airtable to-do');
+
+  await upsertUser(db, 'josh@dulcy.io', 'member', 'josh long password 1', 'Josh');
+  const j = await login('josh@dulcy.io', 'josh long password 1');
+  const mr = await call('GET', '/hq/api/needs', { cookie: j.cookie });
+  assert.deepEqual(mr.body.items.map((i: any) => i.key).sort(), ['ask:2', 'pile:Replies']);
+  assert.ok(!JSON.stringify(mr.body).includes('Xero'), 'nothing of the owner-only items in the answer');
+  assert.equal((await call('POST', '/hq/api/asks/1/done', { body: {}, cookie: j.cookie })).status, 404, "a member cannot touch the owner's ask");
+  assert.equal((await call('POST', '/hq/api/needs/issue/recISSUE000000001/snooze', { body: { until: 'tomorrow' }, cookie: j.cookie })).status, 404);
+  assert.equal((await call('GET', '/hq/api/asks', { cookie: j.cookie })).body.asks.length, 1);
+  // Resolved in Airtable = gone from HQ.
+  tables[ISSUES].recISSUE000000001[IF.status] = 'Applied';
+  tables[DECISIONS] = {};
+  const after = await call('GET', '/hq/api/needs', { cookie });
+  assert.deepEqual(after.body.items.map((i: any) => i.key).sort(), ['ask:1', 'ask:2', 'signups']);
+  assert.equal(writes.length, 0, 'Needs you never writes Airtable');
+});
+
+test('asks: addAsk dedupes, validates links; done and snooze routes; CSRF', { skip }, async () => {
+  const a = await addAsk(db, { agent: 'Atlas', title: 'Reply to Pete about Twenty West' });
+  const b = await addAsk(db, { agent: 'atlas', title: 'Reply to Pete about Twenty West', why: 'changed' });
+  assert.deepEqual([a.created, b.created, b.ask.id, b.ask.why], [true, false, a.ask.id, ''], 'same agent + title = the same ask, unchanged');
+  const c = await addAsk(db, { agent: 'Atlas', title: 'Reply to Pete about Twenty West', dedupeKey: 'pete:2' });
+  assert.equal(c.created, true, 'another key is another ask');
+  assert.equal((await db.query(`SELECT count(*)::int AS n FROM hq_asks`)).rows[0].n, 2);
+  for (const bad of ['javascript:alert(1)', 'http://example.com', '//evil.example/x', 'data:text/html,x', 'https://', 'decisions/ Replies']) {
+    await assert.rejects(addAsk(db, { agent: 'Atlas', title: `bad ${bad}`, actionUrl: bad }), /action link/, bad);
+  }
+  assert.equal(cleanActionUrl('#/decisions/Replies'), 'decisions/Replies');
+  assert.equal(cleanActionUrl('/users'), 'users');
+  assert.equal(cleanActionUrl('https://console.cloud.google.com/apis'), 'https://console.cloud.google.com/apis');
+  await assert.rejects(addAsk(db, { agent: 'Atlas', title: '' }), /title/);
+  await assert.rejects(addAsk(db, { agent: '<b>', title: 'x' }), /agent/);
+  assert.equal((await addAsk(db, { agent: 'Ledger', title: 'Approve the card', audience: 'everyone' })).ask.audience, 'owner', 'money stays owner-only');
+  // Dedupe survives done: the same key does not come back.
+  const { cookie } = await login();
+  assert.equal((await call('POST', `/hq/api/asks/${a.ask.id}/done`, { body: {}, origin: 'https://evil.example', cookie })).status, 403, 'CSRF');
+  assert.equal((await call('POST', `/hq/api/asks/${a.ask.id}/done`, { body: {}, cookie })).status, 200);
+  assert.equal((await call('POST', `/hq/api/asks/${a.ask.id}/done`, { body: {}, cookie })).status, 409, 'already done');
+  assert.equal((await db.query(`SELECT done_by FROM hq_asks WHERE id=$1`, [a.ask.id])).rows[0].done_by, 'Alex');
+  assert.equal((await addAsk(db, { agent: 'Atlas', title: 'Reply to Pete about Twenty West' })).created, false);
+  assert.ok(!(await call('GET', '/hq/api/needs', { cookie })).body.items.some((i: any) => i.key === `ask:${a.ask.id}`), 'done = gone');
+  assert.equal((await call('POST', '/hq/api/asks/999/done', { body: {}, cookie })).status, 404);
+});
+
+test('snooze: tomorrow = 24 h, monday = next Monday 8:00 New York; hidden until then', { skip }, async () => {
+  const x = (await addAsk(db, { agent: 'Sean', title: 'Check the reply rules' })).ask;
+  const y = (await addAsk(db, { agent: 'Sean', title: 'Read the new script' })).ask;
+  tables[ISSUES] = { recISSUE000000001: { [IF.title]: 'Key expired', [IF.status]: 'Waiting for Alex', [IF.fixType]: 'Manual (Alex)' } };
+  const { cookie } = await login();
+  assert.equal((await call('POST', `/hq/api/asks/${x.id}/snooze`, { body: { until: 'someday' }, cookie })).status, 400);
+  const t = await call('POST', `/hq/api/asks/${x.id}/snooze`, { body: { until: 'tomorrow' }, cookie });
+  assert.equal(t.status, 200);
+  assert.ok(Math.abs(Date.parse(t.body.until) - Date.now() - 86_400_000) < 60_000);
+  const m = await call('POST', `/hq/api/asks/${y.id}/snooze`, { body: { until: 'monday' }, cookie });
+  const mon = new Date(m.body.until);
+  assert.equal(mon.toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'long' }), 'Monday');
+  assert.equal(mon.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' }), '8:00 AM');
+  assert.ok(mon.getTime() > Date.now() && mon.getTime() - Date.now() <= 8 * 86_400_000);
+  assert.equal((await call('POST', '/hq/api/needs/issue/recISSUE000000001/snooze', { body: { until: 'tomorrow' }, cookie })).status, 200);
+  let keys = (await call('GET', '/hq/api/needs', { cookie })).body.items.map((i: any) => i.key);
+  assert.deepEqual(keys, [], 'both asks and the issue are quiet');
+  // When the snooze ends they come back.
+  await db.query(`UPDATE hq_asks SET snoozed_until = now() - interval '1 minute'`);
+  await db.query(`UPDATE hq_needs_quiet SET quiet_until = now() - interval '1 minute'`);
+  keys = (await call('GET', '/hq/api/needs', { cookie })).body.items.map((i: any) => i.key).sort();
+  assert.deepEqual(keys, [`ask:${x.id}`, `ask:${y.id}`, 'issue:recISSUE000000001']);
+  assert.equal((await call('POST', `/hq/api/asks/${x.id}/done`, { body: {}, cookie })).status, 200);
+  assert.equal((await call('POST', `/hq/api/asks/${x.id}/snooze`, { body: { until: 'tomorrow' }, cookie })).status, 409, 'a done ask cannot be snoozed');
 });

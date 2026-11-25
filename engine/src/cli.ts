@@ -51,6 +51,13 @@
 //       Create or update a Dulcy HQ login. Asks for the password twice (nothing is shown or printed);
 //       --password-stdin reads it from stdin instead; --google-only = no password (Google sign-in only).
 //       Setting a new password signs that person out everywhere.
+//   ask add --agent=Atlas --title="Reply to Pete about Twenty West" [--why="..."] [--steps="1. ...\n2. ..." | --steps-stdin]
+//           [--action-label=Open] [--action-url=decisions/Replies | https://...] [--priority=high|normal]
+//           [--for=owner|everyone] [--key=<dedupe key>]
+//       Ask Alex (or, with --for=everyone, members too) to do one thing; it shows on HQ "Needs you".
+//       The same key (default: agent + title) never adds a second one. --priority=high = "Do now".
+//   ask list [--all]      Open asks (--all: done and snoozed too).
+//   ask done <id>         Mark an ask done.
 //   mv-compare <recordId> <millionVerifierJobId>
 //       Free: download a MillionVerifier job and compare its verdicts with DiscoLike's own email
 //       check on the list's DiscoLike Contacts-run contacts (counts; emails masked).
@@ -100,6 +107,30 @@ async function main() {
       const { upsertUser } = await import('./hq/auth.js');
       const r = await upsertUser(db, email, role as 'owner' | 'member', password, opt('name'));
       console.log(`${r.created ? 'Created' : 'Updated'} HQ login ${email.toLowerCase()} (${role}${password === null ? ', Google sign-in only' : ', password set'}).`);
+    } else if (cmd === 'ask') {
+      // "Needs you" asks: something an agent or a Claude session needs Alex (or a member) to do.
+      const [sub, ...rest] = args;
+      const opt = (n: string) => rest.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3);
+      const A = await import('./hq/asks.js');
+      if (sub === 'add') {
+        let steps = opt('steps')?.replace(/\\n/g, '\n');
+        if (rest.includes('--steps-stdin')) { const chunks: Buffer[] = []; for await (const c of process.stdin) chunks.push(c as Buffer); steps = Buffer.concat(chunks).toString('utf8'); }
+        const r = await A.addAsk(db, {
+          agent: opt('agent') ?? '', title: opt('title') ?? '', why: opt('why'), steps, actionLabel: opt('action-label'), actionUrl: opt('action-url'),
+          priority: (opt('priority') ?? 'normal') as 'high' | 'normal', audience: (opt('for') ?? 'owner') as 'owner' | 'everyone', dedupeKey: opt('key'),
+        });
+        console.log(`${r.created ? 'Added' : 'Already there (same key), unchanged:'} ask ${r.ask.id}: ${r.ask.agent}: ${r.ask.title}${r.ask.done ? ` (done ${r.ask.done.slice(0, 10)})` : ''}`);
+      } else if (sub === 'list') {
+        const list = await A.listAsks(db, { all: rest.includes('--all') });
+        if (!list.length) console.log('No open asks.');
+        for (const a of list) console.log(`${a.id}\t${a.done ? 'done' : a.snoozedUntil && Date.parse(a.snoozedUntil) > Date.now() ? 'not now' : a.priority === 'high' ? 'do now' : 'when you can'}\t${a.agent}: ${a.title}${a.audience === 'everyone' ? '\t(everyone)' : ''}`);
+      } else if (sub === 'done') {
+        const id = Number(rest[0]);
+        if (!Number.isInteger(id) || id <= 0) throw new Error('usage: ask done <id>');
+        console.log(await A.finishAsk(db, id, 'CLI') ? `Ask ${id} done.` : `Ask ${id} not found or already done.`);
+      } else {
+        throw new Error('usage: ask add --agent=Atlas --title="Reply to Pete about Twenty West" [--why=...] [--steps=... | --steps-stdin] [--action-label=Open] [--action-url=decisions/Replies|https://...] [--priority=high|normal] [--for=owner|everyone] [--key=...]\n       ask list [--all]\n       ask done <id>');
+      }
     } else if (cmd === 'verify') {
       const recordId = args[0];
       const sheet = flag(args, '--sheet');
@@ -355,7 +386,7 @@ async function main() {
         for (const e of d.errors) console.log(`(couldn't read ${e})`);
       }
     } else {
-      throw new Error('commands: hq-user, discord-check, jobs, job, campaign-plans, campaign-plan-retry, campaign-copy, atlas-health, agent, xero-connect, ledger-report, ledger-prep, ledger-ask, verify, mv-compare, campaign, topup, senders, bounce, whereis, cleanup-test, cancel');
+      throw new Error('commands: hq-user, ask, discord-check, jobs, job, campaign-plans, campaign-plan-retry, campaign-copy, atlas-health, agent, xero-connect, ledger-report, ledger-prep, ledger-ask, verify, mv-compare, campaign, topup, senders, bounce, whereis, cleanup-test, cancel');
     }
   } finally {
     await db.end();

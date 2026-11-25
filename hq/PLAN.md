@@ -27,7 +27,7 @@
 ### Step 1 status (2026-11-25): built, not deployed
 - **Built:** in the engine (`engine/src/hq/`) and `hq/web/`. How to use it and switch it on: `engine/GUIDE.md` → "HQ".
 - **Login:** email + password, plus optional Google sign-in for existing HQ users. Alex creates his login on the server with `hq-user`.
-- **Screens:** Today (first things, Ada's brief, team check, reports), Decisions, To-do (Eisenhower + Start mode), Team (agent cards and pages), Chat.
+- **Screens:** Today (first things, Ada's brief, team check, reports), Decisions, To-do (Eisenhower + Start mode; replaced in the menu by "Needs you", below), Team (agent cards and pages), Chat.
 - **Decisions:**
   - Reply cards are editable: Send / Send edited / Skip reply. HQ presses the Emails row's buttons; the engine's reply sender sends.
   - Other decisions write exactly what the Daily Run writes.
@@ -42,6 +42,14 @@
   5. Optional: set up Google sign-in.
   6. When HQ works: set `SLACK_REPORTS=off` and `SLACK_DECISIONS=off`.
 - **Not in Step 1:** Ada's brief has no calendar yet; chat can't change anything (read only by design); the other agents' to-do generators come later.
+
+### "Needs you" replaces To-do (Alex, 2026-11-25): built, not deployed
+- Alex: "the to-do shouldn't be like another project management, more like 'this is what you need me to do'".
+- **What it shows:** only what the agents need from the person signed in, each with the agent's face, one line, why and one action; "Do now" and "When you can".
+  - Decisions as one item per pile (never per decision), Riley's System Issues in "Waiting for Alex" + "Manual (Alex)" (steps from the Fix; done = approve its decision), sign-ups (owner), and asks (`hq_asks`: `addAsk()` in `engine/src/hq/asks.ts` or the CLI `ask add`). Done / Not now (tomorrow or Monday) on asks and issues.
+  - Items leave by themselves when resolved. Members get only what they can act on.
+- **Where:** `engine/src/hq/needs.ts` (API `/hq/api/needs`, `/hq/api/asks/<id>/done|snooze`, `/hq/api/needs/issue/<rec>/snooze`), `hq/web/src/pages/Needs.tsx`. Today's "Do now" card shows the top 3. The Eisenhower page stays at `#/tasks`, out of the menu.
+- **Not yet:** Atlas's to-dos are not included (none is assigned to a person); no agent calls `addAsk` on its own yet (asks come from the CLI or a Claude session).
 
 ## Step 2: Clients
 - One screen with every client: results (email now; LinkedIn, AI caller and direct mail later), health, money (Alex only) and a note for today.

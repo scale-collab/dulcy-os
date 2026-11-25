@@ -397,3 +397,33 @@ CREATE TABLE IF NOT EXISTS hq_task_checks (
   task_id     TEXT PRIMARY KEY,
   quiet_until TIMESTAMPTZ NOT NULL
 );
+
+-- "Needs you" (2026-11-25): things an agent or a Claude session asks Alex (or a member) to do,
+-- e.g. "Atlas: reply to Pete about Twenty West", "Setup: publish the Google calendar app".
+-- Added with addAsk() (engine/src/hq/asks.ts) or the CLI `ask add`; one row per dedupe_key.
+-- Gone from HQ once done_at is set; hidden until snoozed_until. audience 'owner' = only owners
+-- see it; 'everyone' = members too (never for Ledger or Sienna: money and content are owner-only).
+CREATE TABLE IF NOT EXISTS hq_asks (
+  id            BIGSERIAL PRIMARY KEY,
+  agent         TEXT NOT NULL,
+  title         TEXT NOT NULL,
+  why           TEXT NOT NULL DEFAULT '',
+  steps         TEXT NOT NULL DEFAULT '',
+  action_label  TEXT NOT NULL DEFAULT '',
+  action_url    TEXT NOT NULL DEFAULT '',     -- a relative HQ route (decisions/Replies) or an https:// link
+  priority      TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('high','normal')),
+  audience      TEXT NOT NULL DEFAULT 'owner' CHECK (audience IN ('owner','everyone')),
+  dedupe_key    TEXT NOT NULL UNIQUE,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  done_at       TIMESTAMPTZ,
+  done_by       TEXT,
+  snoozed_until TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS hq_asks_open ON hq_asks (created_at DESC) WHERE done_at IS NULL;
+
+-- "Not now" on a Needs-you item that lives elsewhere (a Riley System Issue): hidden until quiet_until.
+CREATE TABLE IF NOT EXISTS hq_needs_quiet (
+  item_key    TEXT PRIMARY KEY,               -- e.g. issue:rec...
+  quiet_until TIMESTAMPTZ NOT NULL,
+  set_by      TEXT NOT NULL DEFAULT ''
+);

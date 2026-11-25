@@ -19,6 +19,8 @@ import { agentActivity, agentRuns, agentTasks, finishAgentTask, jobHealth, teamC
 import { canTalkTo, chatTurn, listThreads, readThread, type ChatModel } from './chat.js';
 import { clientDetail, listClients } from './clients.js';
 import { SIGNUP_SENT, addUser, googleSignUp, listUsers, manageUser, pendingCount, signUp } from './users.js';
+import { askVisible, finishAsk, getAsk, isSnooze, listAsks, quietItem, snoozeAsk } from './asks.js';
+import { loadNeeds, needCounts } from './needs.js';
 
 export interface HqDeps { at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string }
 
@@ -194,6 +196,37 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         return true;
       }
 
+      // Needs you: what the agents need from this person (one item per Decisions pile, Riley's manual fixes, sign-ups, asks).
+      if (p === '/hq/api/needs' && req.method === 'GET') {
+        const n = await loadNeeds(db, at, user);
+        json(res, 200, { items: n.items, counts: needCounts(n.items), errors: n.errors });
+        return true;
+      }
+      m = p.match(/^\/hq\/api\/needs\/issue\/(rec[A-Za-z0-9]{14})\/snooze$/);
+      if (m && req.method === 'POST') {
+        if (!owner) { json(res, 404, { error: 'not found' }); return true; }
+        const b = await readJson(req, 2_000);
+        if (!isSnooze(b.until)) { json(res, 400, { error: 'until must be tomorrow or monday' }); return true; }
+        json(res, 200, { ok: true, until: await quietItem(db, `issue:${m[1]}`, b.until, user.name) });
+        return true;
+      }
+      if (p === '/hq/api/asks' && req.method === 'GET') {
+        const all = owner && url.searchParams.get('all') === '1';
+        json(res, 200, { asks: (await listAsks(db, { all })).filter((a) => askVisible(a, owner)) });
+        return true;
+      }
+      m = p.match(/^\/hq\/api\/asks\/(\d{1,12})\/(done|snooze)$/);
+      if (m && req.method === 'POST') {
+        const a = await getAsk(db, Number(m[1]));
+        if (!a || !askVisible(a, owner)) { json(res, 404, { error: 'not found' }); return true; }
+        if (a.done) { json(res, 409, { error: 'already done' }); return true; }
+        if (m[2] === 'done') { json(res, 200, { ok: await finishAsk(db, a.id, user.name) }); return true; }
+        const b = await readJson(req, 2_000);
+        if (!isSnooze(b.until)) { json(res, 400, { error: 'until must be tomorrow or monday' }); return true; }
+        json(res, 200, { ok: true, until: await snoozeAsk(db, a.id, b.until) });
+        return true;
+      }
+
       if (p === '/hq/api/tasks' && req.method === 'GET') { json(res, 200, await listTasks(needAt(), db)); return true; }
       if (p === '/hq/api/tasks' && req.method === 'POST') {
         const t = validNewTask(await readJson(req));
@@ -300,12 +333,12 @@ async function reports(db: Db, owner: boolean, agent: AgentName | null, limit: n
   return r.rows.map((x) => reportOut(x));
 }
 
-/** Today: Ada's latest brief, the team check, latest reports, decisions per pile, the top of the to-do. */
+/** Today: Ada's latest brief, the team check, latest reports, decisions per pile, the top 3 of "Needs you". */
 async function today(db: Db, at: HqAirtable, user: HqUser) {
   const owner = user.role === 'owner';
   const visible = AGENT_NAMES.filter((a) => canTalkTo(user, a));
-  const [decisions, health, tasks, brief, recent] = await Promise.all([
-    pendingDecisions(at), jobHealth(db), listTasks(at, db),
+  const [decisions, health, brief, recent] = await Promise.all([
+    pendingDecisions(at), jobHealth(db),
     db.query(`SELECT * FROM hq_reports WHERE kind='brief' ORDER BY id DESC LIMIT 1`).then((r) => r.rows[0] ?? null),
     reports(db, owner, null, 8),
   ]);
@@ -317,13 +350,14 @@ async function today(db: Db, at: HqAirtable, user: HqUser) {
     if (t) { const [first, ...rest] = t.split('\n'); briefOut = { title: first.replace(/\*/g, ''), body: slackToMarkdown(rest.join('\n')), created: new Date(j.updated_at).toISOString(), dryRun: j.dry_run }; }
   }
   const piles = groupByPile(decisions, owner);
+  const needs = await loadNeeds(db, at, user, { decisions });
   return {
     user: publicUser(user),
     ...(owner ? { signups: await pendingCount(db) } : {}),
     brief: briefOut,
     team: teamCheck(health, owner ? decisions : decisions.filter((x) => !OWNER_ONLY.includes(x.agent)), Date.now(), visible),
     decisions: Object.fromEntries(Object.entries(piles).filter(([k]) => owner || k !== 'Money').map(([k, v]) => [k, v.length])),
-    tasks: { doNow: tasks.boxes.doNow.slice(0, 3), counts: Object.fromEntries(Object.entries(tasks.boxes).map(([k, v]) => [k, v.length])), doneQuestions: tasks.doneQuestions.length },
+    needs: { top: needs.items.slice(0, 3), counts: needCounts(needs.items), errors: needs.errors },
     reports: recent,
   };
 }

@@ -82,6 +82,8 @@ const ICONS: Record<string, ReactNode> = {
   trendUp: P('m22 7-8.5 8.5-5-5L2 17M16 7h6v6'),
   trendDown: P('m22 17-8.5-8.5-5 5L2 7M16 17h6v-6'),
   key: P('M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4'),
+  bell: P('M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0'),
+  list: P('M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01'),
 };
 
 /* ---------- Clients ---------- */
@@ -331,7 +333,7 @@ export function ExtLink({ href, children, className }: { href: string; children:
 
 function inline(text: string, key = ''): ReactNode[] {
   const out: ReactNode[] = [];
-  const re = /\*\*([^*]+)\*\*|\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s)]+)|\*([^*\s][^*]*)\*/g;
+  const re = /\*\*([^*]+)\*\*|\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s)]+)|\*([^*\s][^*]*)\*|`([^`]+)`/g;
   let last = 0, m: RegExpExecArray | null, i = 0;
   while ((m = re.exec(text))) {
     if (m.index > last) out.push(text.slice(last, m.index));
@@ -340,6 +342,7 @@ function inline(text: string, key = ''): ReactNode[] {
     else if (m[2]) out.push(<ExtLink key={k} href={m[3]}>{m[2]}</ExtLink>);
     else if (m[4]) out.push(<ExtLink key={k} href={m[4]}>{m[4].replace(/^https?:\/\//, '').slice(0, 40)}</ExtLink>);
     else if (m[5]) out.push(<em key={k}>{m[5]}</em>);
+    else if (m[6]) out.push(<code key={k} className="rounded-md border border-line bg-surface px-1 py-px font-mono text-[0.9em] text-fg">{m[6]}</code>);
     last = re.lastIndex;
   }
   if (last < text.length) out.push(text.slice(last));
