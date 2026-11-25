@@ -14,7 +14,7 @@ export interface AgentInfo {
   manages: AgentName[];
   /** Skill file (under KNOWLEDGE_DIR) used as the chat system prompt. */
   skill: string;
-  /** Money and finance are owner-only (Alex, 2026-11-25): members do not see this agent. */
+  /** Money and content are owner-only (Alex, 2026-11-25): members do not see this agent, its reports or chats. */
   ownerOnly?: boolean;
 }
 
@@ -27,8 +27,11 @@ export const AGENTS: Record<AgentName, AgentInfo> = {
   Riley: { name: 'Riley', role: 'Automation and fixes', does: 'Watches the systems, finds why things break and prepares the fix for your OK.', reportsTo: 'Ada', manages: [], skill: 'skills/riley-systems-repair/SKILL.md' },
   Cole: { name: 'Cole', role: 'Sales', does: 'Reviews your sales calls: score, 3 fixes with better lines, a follow-up draft.', reportsTo: 'Ada', manages: [], skill: 'skills/cole-sales-closing/SKILL.md' },
   Ledger: { name: 'Ledger', role: 'Accountant', does: 'Money report, purchase yes/no, and Xero reconciliation checks. Read only.', reportsTo: 'Ada', manages: [], skill: 'skills/ledger-finance/SKILL.md', ownerOnly: true },
-  Sienna: { name: 'Sienna', role: 'Content', does: 'Finds video ideas with real demand and writes the scripts. Posts nothing.', reportsTo: 'Ada', manages: [], skill: 'skills/sienna-social-content/SKILL.md' },
+  Sienna: { name: 'Sienna', role: 'Content', does: 'Finds video ideas with real demand and writes the scripts. Posts nothing.', reportsTo: 'Ada', manages: [], skill: 'skills/sienna-social-content/SKILL.md', ownerOnly: true },
 };
+
+/** Agents only the owner sees (money: Ledger; content: Sienna). */
+export const OWNER_ONLY: string[] = Object.values(AGENTS).filter((a) => a.ownerOnly).map((a) => a.name);
 
 export const isAgent = (x: unknown): x is AgentName => typeof x === 'string' && (AGENT_NAMES as readonly string[]).includes(x);
 

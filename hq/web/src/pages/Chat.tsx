@@ -5,7 +5,7 @@ import { AGENT_EMOJI, Button, cx, ErrorBox, go, Label, Markdown, timeAgo } from 
 const AGENTS = ['Ada', 'Atlas', 'Scribe', 'Scout', 'Sean', 'Riley', 'Cole', 'Ledger', 'Sienna'];
 
 export default function Chat({ user, agent, threadId }: { user: User; agent: string; threadId?: number }) {
-  const agents = AGENTS.filter((a) => user.role === 'owner' || a !== 'Ledger');
+  const agents = AGENTS.filter((a) => user.role === 'owner' || (a !== 'Ledger' && a !== 'Sienna'));
   const name = agents.find((a) => a.toLowerCase() === agent.toLowerCase()) ?? 'Ada';
   const [threads, setThreads] = useState<Thread[]>([]);
   const [thread, setThread] = useState<{ id: number; agent: string; askedBy: string; parentId: number | null; messages: ChatMessage[]; children: { id: number; agent: string; title: string }[] } | null>(null);

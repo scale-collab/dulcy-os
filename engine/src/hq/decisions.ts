@@ -6,7 +6,7 @@
 import type { AirtableClient, AirtableRecord } from '../providers/airtable.js';
 import { DECISIONS, DF } from '../decisions/fields.js';
 import { EMAILS, RA } from '../agents/emailsFields.js';
-import { PILES, pileFor, type Pile } from './agents.js';
+import { OWNER_ONLY, PILES, pileFor, type Pile } from './agents.js';
 
 export type HqAirtable = Pick<AirtableClient, 'list' | 'get' | 'create' | 'update'>;
 
@@ -50,7 +50,7 @@ export async function pendingDecisions(at: Pick<HqAirtable, 'list'>): Promise<De
 
 export function groupByPile(cards: DecisionCard[], canSeeMoney: boolean): Record<Pile, DecisionCard[]> {
   const out = Object.fromEntries(PILES.map((p) => [p, [] as DecisionCard[]])) as Record<Pile, DecisionCard[]>;
-  for (const c of cards) if (canSeeMoney || c.pile !== 'Money') out[c.pile].push(c);
+  for (const c of cards) if (canSeeMoney || (c.pile !== 'Money' && !OWNER_ONLY.includes(c.agent))) out[c.pile].push(c);
   if (!canSeeMoney) delete (out as Partial<Record<Pile, DecisionCard[]>>).Money;
   return out;
 }
@@ -68,7 +68,7 @@ export async function decide(at: Pick<HqAirtable, 'get' | 'update'>, id: string,
   const r = await at.get(DECISIONS, id, FIELDS);
   if (!r) return { status: 404, error: 'decision not found' };
   const card = toCard(r);
-  if (!opts.canSeeMoney && card.pile === 'Money') return { status: 403, error: 'only the owner decides money' };
+  if (!opts.canSeeMoney && (card.pile === 'Money' || OWNER_ONLY.includes(card.agent))) return { status: 403, error: 'only the owner decides money and content' };
   if (!PENDING.includes(card.status)) return { status: 409, error: `already ${card.status || 'decided'}` };
   const emailRec = text(r.fields[DF.emailsRecord]);
   let edited = verdict === 'edited' ? String(opts.editedText ?? '').replace(/\r\n/g, '\n').trim() : '';

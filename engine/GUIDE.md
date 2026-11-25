@@ -4,7 +4,7 @@ How the Dulcy lead engine works from start to finish, in plain words.
 **Keep this file current:** every engine change updates this guide in the same pull request (rule 2026-11-23).
 Technical details for developers are in `README.md`.
 
-Last updated: 2026-11-23
+Last updated: 2026-11-25 (HQ Step 1)
 
 ---
 
@@ -573,3 +573,87 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
 **Switch on:**
 - `RILEY=on`, and add `riley.collect,riley.apply` to `LIVE_STAGES`.
 - Optional, for n8n errors: `N8N_API_KEY` (n8n → Settings → n8n API → create key) and `N8N_BASE_URL` (default `http://localhost:5678`).
+
+## HQ: your private app, Step 1 "Today" (2026-11-25)
+
+**What it is:** one calm screen at **https://hq.dulcy.io**, on the phone or the computer. It runs inside the engine (same server, same code), and Airtable stays the database. Only people with an HQ login get in. Plan: `hq/PLAN.md`.
+
+**The five tabs:**
+1. **Today**
+   - First things: how many decisions wait on you, and the top "Do now" task.
+   - Ada's brief: the two key lines first ("Waiting on you" and "Top 3"); tap for the rest.
+   - Team check: one line per agent: ✓ ran fine, ⚠️ failed (which job and why), or ⚠️ decisions waiting on you.
+   - Reports: every agent report as a short card. Tap one for the full text. A Cole call review opens on the score and the 3 fixes (what you said → what to say instead); the full review and the follow-up draft are one more tap away.
+2. **Decisions:** the same piles as the Daily Run (Replies = Sean; Campaigns = Atlas, Scribe, Scout; Fixes = Riley; Money = Ledger; Other). One card at a time, with a progress bar.
+   - **Replies:** what they wrote, a link to the thread, and the draft in a box you can edit.
+     - **Send:** sends the draft as it is (the same as ✅ in Slack).
+     - **Send edited:** sends your edited text.
+     - **Skip reply:** nothing is sent.
+     - The engine's reply sender sends it from the right inbox and closes the card. HQ only presses the buttons on the Emails row (Human Action, and Custom Reply for an edit).
+   - **Others:** Issue / Checked / Proposed / On approve, then Approve or Reject. The engine then runs the action, exactly as for a ✅ in Slack.
+   - **Later** keeps a card for another time. Keys on a computer: A approve, R reject, S later.
+3. **To-do** (Airtable Tasks, open ones only). It's sorted into four boxes:
+   - **Do now:** urgent and important.
+   - **Schedule:** important.
+   - **Delegate:** urgent, not important.
+   - **Later / drop:** the rest.
+   - **Urgent** means overdue, due today or tomorrow, or Priority Urgent. **Important** means Priority Urgent or High, or Client Facing.
+   - A task sitting in Review/QA for 7+ days asks "Done already?". Answer **Not yet** and it won't ask again for 7 days.
+   - **Add a task** at the top. **▶ Start** gives you one task at a time with a timer, like the Daily Run.
+4. **Team:** one card per agent: what it does, who it reports to, its status, decisions waiting and its own to-do list. Open one to see:
+   - its to-do list (tick to finish);
+   - decisions waiting from it;
+   - its reports;
+   - its Activity Log rows;
+   - its engine runs.
+5. **Chat:** talk to Ada (default) or any agent. History is saved per agent.
+   - Chat is **read only**: agents look things up in Airtable and the engine and say where the answer came from. Nothing is sent or changed from chat.
+   - When an agent isn't sure, it says "Here's what I found" and who should handle it.
+   - Ada can ask another agent for you. That conversation is saved: tap "Read Ada ↔ Atlas" under her answer, or History → "Ada's conversations with the team".
+   - Cost: each answer makes at most 5 calls (4 look-up rounds) with capped length (`HQ_CHAT_MAX_ROUNDS`, `HQ_CHAT_MAX_TOKENS`).
+
+**Agent to-do lists:** kept in HQ (the Airtable Tasks table has no Agent field). For now one generator fills them, every 30 minutes:
+- A running campaign past 60% sent gives Atlas "Plan next campaign for <client>", due in 3 days.
+- It is skipped if a campaign plan already exists, and the task closes itself when the plan starts.
+
+**Less Slack:**
+- Every report (Ada's brief, Atlas health, Cole reviews, Ledger, Sienna, Riley, account health, bounce pauses, refused launches) is saved in HQ.
+- `SLACK_REPORTS=on` (default) still posts reports to Slack too. Set `off` once HQ works for you: then they go to HQ only. Urgent alerts always go to Slack (a campaign paused for bounces, a refused launch, a failed engine job).
+- `SLACK_DECISIONS=on` (default) still posts decisions to Slack for ✅/❌. Set `off` to decide in HQ only. Keep `SLACK_BOT_TOKEN` set: the decisions loop still needs it to run.
+
+**Who can see what:**
+- `owner` (you) sees everything.
+- `member` (Josh later) never sees money or content (Alex, 2026-11-25): no Money pile, and nothing from Ledger or Sienna (cards, decisions, chats, reports). A member sees only their own chats.
+
+**Safety:**
+- Passwords are stored as scrypt hashes and never printed.
+- Logins are a signed, httpOnly, Secure, SameSite=Strict cookie (30 days; signing out ends it).
+- 5 wrong passwords for one email (or 20 from one address) lock logins for 15 minutes.
+- Every change needs a request from the HQ page itself (cross-site requests are refused). No key ever goes to the browser.
+- The engine's signed job API is not reachable on hq.dulcy.io.
+
+### Switch HQ on (Alex, once)
+1. **DNS:** where dulcy.io's DNS is managed, add an **A record**: name `hq`, value = the server's IP (the same IP as the `engine` record), proxy off / DNS only.
+2. **Settings:** in `engine/deploy/.env` on the server, add:
+   - `HQ_HOST=hq.dulcy.io`
+   - `HQ_SESSION_SECRET=` followed by a long random string. Make one with `openssl rand -base64 48`.
+   - Keep `ANTHROPIC_API_KEY` (chat) and `AIRTABLE_API_KEY` (data), as now.
+3. **Deploy:** `bash engine/deploy/deploy.sh`. The image build also builds the HQ app (no Node needed on the server). The last lines say "Engine is up." and "HQ is up."
+4. **Your login:** `cd engine/deploy && docker compose exec engine node dist/src/cli.js hq-user alex@dulcy.io --role=owner --name=Alex`. It asks for the password twice (12+ characters) and shows nothing as you type. Run it again any time to change the password; that signs you out everywhere.
+5. Open **https://hq.dulcy.io** and sign in. Traefik gets the HTTPS certificate by itself; the first load can take a minute after the DNS record exists.
+
+### Optional: "Sign in with Google"
+1. Go to console.cloud.google.com, pick (or create) a project, then **APIs & Services**.
+2. **OAuth consent screen:**
+   - choose **Internal** (only @dulcy.io accounts);
+   - app name "Dulcy HQ", your email as support contact;
+   - scopes: just `openid` and `email`.
+3. **Credentials** → **Create credentials** → **OAuth client ID**:
+   - type: **Web application**;
+   - **Authorized redirect URI:** `https://hq.dulcy.io/hq/api/auth/google/callback`.
+4. Put the two values in `.env` as `HQ_GOOGLE_CLIENT_ID` and `HQ_GOOGLE_CLIENT_SECRET`, then deploy again.
+5. The Google button appears on the sign-in page. It only lets in emails that already have an HQ login (step 4 above). To make one for Google sign-in only, use `--google-only`.
+
+### Server commands
+- `hq-user <email> --role=owner|member [--name=Josh] [--password-stdin] [--google-only]`: create or update a login.
+- Local development: `npm run build:hq` in `engine/` builds the app to `hq/web/dist`. Start the engine with `HQ_WEB_DIR=../hq/web/dist`, then open http://localhost:8080/hq/. Or run `npm run dev` in `hq/web`; it sends API calls to the engine on :8080.

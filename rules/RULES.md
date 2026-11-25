@@ -192,3 +192,13 @@ Format: `- [date] rule. (why / source)`
 - **Atlas owns client facts being right:** active clients, MRR/LTV and the client list must match reality (e.g. MJJ and The Marketing Cartel are active).
 - **Atlas answers client and campaign questions when asked.** The old Jarvis didn't answer pings.
 - **Riley also checks once overnight** (4 a.m. ET).
+
+## Reports and reply approvals move to HQ (Alex, 2026-11-25)
+- **Reports:** every agent report (Ada's brief, Atlas health, Cole call reviews, Ledger, Sienna, Riley) is saved to HQ and read there as a short card that opens the full text. A Cole review shows the score and the 3 fixes first.
+- **Slack switches:**
+  - `SLACK_REPORTS` and `SLACK_DECISIONS` stay `on` until HQ is live. Then Alex turns them `off`.
+  - Urgent alerts keep going to Slack either way: a campaign paused for bounces, a refused launch, a failed engine job.
+- **Reply approvals:** Sean's reply cards are approved in HQ.
+  - The draft can be edited. The buttons are Send, Send edited, and Skip.
+  - HQ only presses the Emails row's buttons (Human Action, and Custom Reply for an edit). The engine's reply sender sends.
+- **Reason:** Alex: "I want to move off of Slack for these because it's just too much."

@@ -12,7 +12,7 @@ import { readKnowledge } from '../agents/knowledge.js';
 import { CP } from '../agents/campaignPlan.js';
 import { EMAILS, val } from '../agents/emailsFields.js';
 import { ACTIVITY, AF } from '../activity.js';
-import { AGENTS, AGENT_NAMES, agentByName, jobPatternsFor, type AgentName } from './agents.js';
+import { AGENTS, AGENT_NAMES, OWNER_ONLY, agentByName, jobPatternsFor, type AgentName } from './agents.js';
 import { pendingDecisions, type HqAirtable } from './decisions.js';
 import { clientNames, listTasks } from './tasks.js';
 import { agentTasks } from './team.js';
@@ -44,7 +44,7 @@ function guide(agent: AgentName, asked: boolean): string {
     '- End with one line "Sources: ..." naming what you read (the tool and table, e.g. "Airtable Campaigns, engine jobs").',
     '- If the data does not answer the question or you are not sure, start with "Here\'s what I found:", give what you found, and say who should handle it (one agent from the roster, or Alex / Josh).',
     '- From chat you cannot send, launch, pause, spend credits, delete or change anything. If asked to, say exactly what would be done and that it needs the owner\'s approval in Decisions or the right screen.',
-    '- Never reveal keys, tokens or passwords. Money and finance only for the owner.',
+    '- Never reveal keys, tokens or passwords. Money, finance and content only for the owner.',
     agent === 'Ada' && !asked ? '- You run the team. When a question is clearly another agent\'s area, ask them with ask_agent (at most 2 per answer), then give one short answer and say who answered.' : '',
     `Team (all report to Ada; Atlas manages Scribe and Scout):\n${roster}`].filter(Boolean).join('\n');
 }
@@ -86,7 +86,7 @@ async function runTool(deps: ChatDeps, name: string, input: any, ctx: { asks: nu
       return { source: 'Airtable Campaigns', data: out, note: `${out.length} campaigns` };
     }
     case 'pending_decisions': {
-      const all = (await pendingDecisions(needAt(deps.at))).filter((d) => canSeeMoney(user) || d.pile !== 'Money').filter((d) => !agentArg || d.agent === agentArg);
+      const all = (await pendingDecisions(needAt(deps.at))).filter((d) => canSeeMoney(user) || (d.pile !== 'Money' && !OWNER_ONLY.includes(d.agent))).filter((d) => !agentArg || d.agent === agentArg);
       return { source: 'Airtable Decisions', data: all.slice(0, 40).map((d) => ({ title: d.title, agent: d.agent, client: d.client, pile: d.pile, issue: d.issue.slice(0, 200), created: d.created })), note: `${all.length} waiting` };
     }
     case 'open_tasks': {
@@ -124,16 +124,16 @@ async function runTool(deps: ChatDeps, name: string, input: any, ctx: { asks: nu
       const r = await db.query(`SELECT id, kind, status, updated_at, dry_run, left(COALESCE(result->>'message', error, progress, ''), 300) AS message FROM jobs
         WHERE ($1::text[] IS NULL OR kind LIKE ANY($1)) AND ($2::text IS NULL OR status=$2) ORDER BY id DESC LIMIT $3`,
         [agentArg ? jobPatternsFor(agentArg) : null, input?.status ?? null, limit]);
-      const rows = r.rows.filter((x) => canSeeMoney(user) || !String(x.kind).startsWith('ledger.'));
+      const rows = r.rows.filter((x) => canSeeMoney(user) || !['ledger.', 'sienna.'].some((p) => String(x.kind).startsWith(p)));
       return { source: 'Engine jobs', data: rows.map((x) => ({ id: Number(x.id), kind: x.kind, status: x.status, at: new Date(x.updated_at).toISOString(), dry_run: x.dry_run, message: x.message })), note: `${rows.length} jobs` };
     }
     case 'agent_todo': {
-      const t = (await agentTasks(db, agentArg ?? undefined)).filter((x) => canSeeMoney(user) || x.agent !== 'Ledger');
+      const t = (await agentTasks(db, agentArg ?? undefined)).filter((x) => canSeeMoney(user) || !OWNER_ONLY.includes(x.agent));
       return { source: 'HQ agent to-do lists', data: t.map((x) => ({ agent: x.agent, title: x.title, due: x.due, client: x.client, notes: x.notes })), note: `${t.length} open` };
     }
     case 'agent_reports': {
       const limit = Math.min(10, Math.max(1, Number(input?.limit) || 5));
-      const r = await db.query(`SELECT id, agent, kind, title, summary, created_at FROM hq_reports WHERE ($1::text IS NULL OR agent=$1) AND ($2 OR agent <> 'Ledger') ORDER BY id DESC LIMIT $3`, [agentArg, canSeeMoney(user), limit]);
+      const r = await db.query(`SELECT id, agent, kind, title, summary, created_at FROM hq_reports WHERE ($1::text IS NULL OR agent=$1) AND ($2 OR NOT (agent = ANY($4))) ORDER BY id DESC LIMIT $3`, [agentArg, canSeeMoney(user), limit, OWNER_ONLY]);
       return { source: 'HQ reports', data: r.rows.map((x) => ({ id: Number(x.id), agent: x.agent, kind: x.kind, title: x.title, summary: x.summary, at: new Date(x.created_at).toISOString() })), note: `${r.rows.length} reports` };
     }
     case 'ask_agent': {

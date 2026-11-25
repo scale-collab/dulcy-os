@@ -8,7 +8,7 @@ import path from 'node:path';
 import type { Db } from '../db/pool.js';
 import type { Config } from '../config.js';
 import { createAirtableClient } from '../providers/airtable.js';
-import { AGENTS, AGENT_NAMES, PILES, agentByName, type AgentName } from './agents.js';
+import { AGENTS, AGENT_NAMES, OWNER_ONLY, PILES, agentByName, type AgentName } from './agents.js';
 import {
   OAUTH_COOKIE, SESSION_COOKIE, cookie, createSession, endSession, googleFinish, googleOn, googleStart, passwordLogin, sessionUser, userByEmail, type HqUser,
 } from './auth.js';
@@ -209,7 +209,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       m = p.match(/^\/hq\/api\/reports\/(\d+)$/);
       if (m && req.method === 'GET') {
         const r = (await db.query(`SELECT * FROM hq_reports WHERE id=$1`, [Number(m[1])])).rows[0];
-        if (!r || (!owner && r.agent === 'Ledger')) { json(res, 404, { error: 'not found' }); return true; }
+        if (!r || (!owner && OWNER_ONLY.includes(r.agent))) { json(res, 404, { error: 'not found' }); return true; }
         json(res, 200, { report: reportOut(r, true) });
         return true;
       }
@@ -259,7 +259,7 @@ function reportOut(r: any, full = false) {
 
 async function reports(db: Db, owner: boolean, agent: AgentName | null, limit: number) {
   const r = await db.query(`SELECT id, agent, kind, title, summary, link, urgent, dry_run, created_at, data FROM hq_reports
-    WHERE ($1::text IS NULL OR agent=$1) AND ($2 OR agent <> 'Ledger') ORDER BY id DESC LIMIT $3`, [agent, owner, limit]);
+    WHERE ($1::text IS NULL OR agent=$1) AND ($2 OR NOT (agent = ANY($4))) ORDER BY id DESC LIMIT $3`, [agent, owner, limit, OWNER_ONLY]);
   return r.rows.map((x) => reportOut(x));
 }
 
@@ -283,7 +283,7 @@ async function today(db: Db, at: HqAirtable, user: HqUser) {
   return {
     user: publicUser(user),
     brief: briefOut,
-    team: teamCheck(health, decisions, Date.now(), visible),
+    team: teamCheck(health, owner ? decisions : decisions.filter((x) => !OWNER_ONLY.includes(x.agent)), Date.now(), visible),
     decisions: Object.fromEntries(Object.entries(piles).filter(([k]) => owner || k !== 'Money').map(([k, v]) => [k, v.length])),
     tasks: { doNow: tasks.boxes.doNow.slice(0, 3), counts: Object.fromEntries(Object.entries(tasks.boxes).map(([k, v]) => [k, v.length])), doneQuestions: tasks.doneQuestions.length },
     reports: recent,

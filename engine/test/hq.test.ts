@@ -299,7 +299,7 @@ test('approved in HQ â†’ the decisions loop starts the action (same as a Slack â
   assert.equal(posts.length, 0, 'nothing posted with SLACK_DECISIONS=off');
 });
 
-test('members never see or decide Money', { skip }, async () => {
+test('members never see or decide money or content', { skip }, async () => {
   await upsertUser(db, 'josh@dulcy.io', 'member', 'josh long password 1', 'Josh');
   tables[DECISIONS] = { recMONEY000000001: decision({ [DF.agent]: 'Ledger', [DF.action]: 'Approve Purchase', [DF.emailsRecord]: '' }) };
   const { cookie } = await login('josh@dulcy.io', 'josh long password 1');
@@ -308,7 +308,11 @@ test('members never see or decide Money', { skip }, async () => {
   assert.ok(!list.body.order.includes('Money'));
   assert.equal((await call('POST', '/hq/api/decisions/recMONEY000000001', { body: { verdict: 'approve' }, cookie })).status, 403);
   assert.equal((await call('GET', '/hq/api/agents/Ledger', { cookie })).status, 404);
-  assert.ok(!(await call('GET', '/hq/api/agents', { cookie })).body.agents.some((a: any) => a.name === 'Ledger'));
+  assert.ok(!(await call('GET', '/hq/api/agents', { cookie })).body.agents.some((a: any) => a.name === 'Ledger' || a.name === 'Sienna'), 'money and content are owner-only');
+  assert.equal((await call('GET', '/hq/api/agents/Sienna', { cookie })).status, 404);
+  await saveReport(db, { agent: 'Sienna', kind: 'content_ideas', title: 'Ideas', body: 'x', dedupeKey: 'sienna:t' });
+  assert.equal((await call('GET', '/hq/api/reports', { cookie })).body.reports.length, 0);
+  assert.equal((await call('POST', '/hq/api/chat', { body: { agent: 'Sienna', message: 'hi' }, cookie })).status, 403);
 });
 
 // ---------- Eisenhower ----------
