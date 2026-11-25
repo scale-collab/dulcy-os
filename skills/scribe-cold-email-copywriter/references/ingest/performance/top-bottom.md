@@ -1039,3 +1039,20 @@ Alpha Software
 - What the recovered top entries share: email 1 is short (69 words for Slogan Social, 91 for Clear River), names one concrete thing the sender will hand over (a talent shortlist; a free sell-in sheet over lunch), and ends with a low-pressure "or tell me to pound sand" P.S.
 - What the recovered bottom entries share: a free offer the prospect has to imagine using on someone else (TargetonStar: "a reactivation campaign for your SEO clients", 12,783 sent, 0 interested) or an abstract audience product (RMG: "a free list of ~1,000 real active homebuyers", 4,806 sent, 0 interested).
 - New strong performer with copy now known: Scroll Stop's April 2026 Beauty wave (EB 428, 21,914 sent, 161 interested = 7.35/1k), together with Apps 4.60/1k (EB 426) and Sports 3.82/1k (EB 427). See analysis.md U1.
+
+## Recovered Dulcy campaigns (from reply threads)
+
+Added 2026-11-25. Copy of Dulcy's 32 deleted EmailBison campaigns, rebuilt from the Airtable reply threads (31 covered; EB 34 "3 Outbound Ideas (Other)" still UNKNOWN). Full copy and per-block counts: `scripts/dulcy-recovered.md`. Dulcy-only facts; never reuse for another client.
+
+- **One variant clearly stands out: the 2025 lookalike one-liner.** 427 reply threads quoting it, 269 positive, 76 booked meetings across 10 campaigns. It was the first touch of Dulcy's four best-booking campaigns: APPC E53 (39 booked, 53,390 sent), MISS G550 (33 booked, 61,468 sent), CPPC G63 (19 booked, 15,912 sent, 1.19 booked per 1,000) and GF + AV PPC Leads (14 booked).
+```
+{FIRST_NAME} - could I send over 1,000 ideal customer leads similar to {CASESTUDY} (full name, email, company name, linkedin, etc.) for you to use in any outbound marketing efforts? It’s at no cost to you. Just let me know if you’d want to see it.
+--
+Warm wishes,
+Alexander Woung
+Dulcy
+p.s. or tell me to pound sand if you'd like..
+```
+  Subjects rotated `similar to {CASESTUDY}` / `Leads similar to {CASESTUDY}?` / `More clients like {CASESTUDY}?`. Its step-2 bump ("I reached out a couple of days ago about building {COMPANY} a list with 1,000 ideal prospects...", own thread, subject `{FIRST_NAME}?` or `quick question`) added 70 positive and 15 booked.
+- Best booked rate per send: "[Dulcy] Clutch Free Leads (Google)", Dec 2024, "I was on Clutch and saw you helped {CASESTUDY} in their marketing efforts.. Would it be fine if I put together a free lead list with one thousand ideal prospects for {COMPANY}?": 11 booked from 4,833 sent (2.28 per 1,000). Small sample (20 threads).
+- Caution: the same one-liner booked only 0.14 per 1,000 in Apollo Agencies (Oct 2025), and every Nov 2025 to Apr 2026 Dulcy campaign with 5,000+ sent booked 0 to 0.36 per 1,000. List and era matter as much as the words. Counts are reply threads, not sends, and several recovered claims are not approved (see the file's "NOT approved" list).

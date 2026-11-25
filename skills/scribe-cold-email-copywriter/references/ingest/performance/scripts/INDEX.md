@@ -1,6 +1,7 @@
 # Scripts we ran, one file per client
 
 - Dulcy (current) · 60 campaigns with sends · 739,256 sent · 1,170 interested = 1.58/1k → `dulcy.md` (78 KB)
+- Dulcy recovered (deleted EmailBison campaigns, copy rebuilt from Airtable reply threads 2026-11-25) · 31 of the 32 deleted campaigns + 1 extra · 559,976 sent · 5,283 reply threads, 864 positive, 209 booked · 88 copy blocks with per-block counts → `dulcy-recovered.md` (92 KB)
 - Dulcy Free Campaigns (current) · 11 campaigns with sends · 23,724 sent · 24 interested = 1.01/1k → `dulcy-free-campaigns.md` (4 KB)
 - Global Media Group / Scroll Stop (current) · 65 campaigns with sends · 447,719 sent · 915 interested = 2.04/1k → `global-media-group-scroll-stop.md` (138 KB)
 - Human Marketing (current) · 9 campaigns with sends · 44,242 sent · 48 interested = 1.08/1k → `human-marketing.md` (30 KB)
