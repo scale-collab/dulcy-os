@@ -257,8 +257,13 @@ async function main() {
       console.log(`Queued (${q.reduce((a, x) => a + x.n, 0)}): ${q.map((x) => `${x.kind} ${x.n}`).join(', ') || 'none'}`);
       for (const j of (await db.query(`SELECT id, kind, status, updated_at, left(coalesce(error, result->>'message', ''), 90) AS msg FROM jobs WHERE status NOT IN ('queued','running') ORDER BY updated_at DESC LIMIT 15`)).rows)
         console.log(`  ${j.id} ${j.kind} ${j.status} · ${age(j.updated_at)} ago · ${j.msg}`);
+    } else if (cmd === 'campaign-plan-retry') {
+      // Run a set-aside (stuck) plan's planning again; it reuses the Campaign record and the Claude answer it already has.
+      const id = Number(args[0]); if (!id) throw new Error('usage: campaign-plan-retry <plan id>');
+      const r = (await db.query(`UPDATE campaign_plans SET state='planning', plan_round=plan_round+1, plan_error=NULL, updated_at=now() WHERE id=$1 AND state IN ('stuck','planning') RETURNING plan_round`, [id])).rows[0];
+      console.log(r ? `Plan ${id}: planning again (round ${r.plan_round}) within a minute.` : `Plan ${id} is not stuck.`);
     } else if (cmd === 'campaign-plans') {
-      for (const p of (await db.query(`SELECT id, client, state, copy_state, copy_round, plan->>'campaign_name' AS name, updated_at FROM campaign_plans ORDER BY id DESC LIMIT 20`)).rows) console.log(`${p.id} · ${p.client} · ${p.state}${p.copy_state ? ` · copy ${p.copy_state} (round ${p.copy_round})` : ''} · ${p.name ?? ''} · ${new Date(p.updated_at).toISOString().slice(0, 16)}`);
+      for (const p of (await db.query(`SELECT id, client, state, copy_state, copy_round, plan->>'campaign_name' AS name, plan_error, updated_at FROM campaign_plans ORDER BY id DESC LIMIT 20`)).rows) console.log(`${p.id} · ${p.client} · ${p.state}${p.copy_state ? ` · copy ${p.copy_state} (round ${p.copy_round})` : ''} · ${p.name ?? ''} · ${new Date(p.updated_at).toISOString().slice(0, 16)}${p.plan_error ? `\n    ${String(p.plan_error).slice(0, 200)}` : ''}`);
     } else if (cmd === 'agent') {
       const kind = String(args[0] ?? '');
       if (!['atlas.health', 'cole.review', 'sienna.ideas', 'sienna.prep'].includes(kind)) throw new Error('usage: agent <atlas.health|cole.review|sienna.ideas|sienna.prep> [--since=YYYY-MM-DD]');
@@ -295,7 +300,7 @@ async function main() {
         for (const e of d.errors) console.log(`(couldn't read ${e})`);
       }
     } else {
-      throw new Error('commands: atlas-health, agent, xero-connect, ledger-report, ledger-prep, ledger-ask, verify, mv-compare, campaign, topup, senders, bounce, whereis, cleanup-test, cancel, job');
+      throw new Error('commands: jobs, job, campaign-plans, campaign-plan-retry, campaign-copy, atlas-health, agent, xero-connect, ledger-report, ledger-prep, ledger-ask, verify, mv-compare, campaign, topup, senders, bounce, whereis, cleanup-test, cancel');
     }
   } finally {
     await db.end();

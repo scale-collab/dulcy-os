@@ -115,7 +115,8 @@ before(async () => {
         if (req.method === 'GET') {
           const f = u.searchParams.get('filterByFormula') ?? '';
           const id = /RECORD_ID\(\)='(rec\w+)'/.exec(f)?.[1];
-          const list = Object.entries(rows).filter(([rid]) => !id || rid === id);
+          const name = /\{Name\}='((?:\\'|[^'])*)'/.exec(f)?.[1]?.replace(/\\'/g, "'");
+          const list = Object.entries(rows).filter(([rid, r]) => (!id || rid === id) && (name === undefined || r[CP.name] === name));
           return res.end(JSON.stringify({ records: list.map(([rid, fields]) => ({ id: rid, fields })) }));
         }
         const b = JSON.parse(raw || '{}');
@@ -278,6 +279,24 @@ test('Copy with a custom variable: the list is enriched for it (Prepare Enrichme
   await bridgeDone('recL0000000000001', 'leadlist.enrich'); await run('campaign.pipeline');
   assert.equal(ll[F.engineAction], 'Run Automated QA');
   assert.equal((await db.query('SELECT state FROM campaign_plans WHERE id=1')).rows[0].state, 'qa');
+});
+
+test('A failed planning job sets the plan aside (stops blocking) and a retry reuses the Campaign it already made', { skip }, async () => {
+  tables[CAMPAIGNS] = { recC0000000000009: { [CP.name]: PLAN.campaign_name, [CP.client]: ['recW0000000000001'] } };
+  await db.query(`INSERT INTO campaign_plans (trigger_key, ws_rec, client, state) VALUES ('new:x','recW0000000000001','Acme','planning')`);
+  const q = await enqueue(db, { kind: 'atlas.plan', recordId: 'atlas-plan-1', input: { planId: 1 }, dryRun: false, maxAttempts: 1, deadlineMs: 60_000 });
+  await db.query(`UPDATE jobs SET status='failed', error='Airtable refused the request: HTTP 422' WHERE id=$1`, [q.job.id]);
+  const p = await run('campaign.pipeline');
+  assert.match(String(p.job.result.message), /plan 1: planning failed, set aside/);
+  assert.equal((await db.query('SELECT state FROM campaign_plans WHERE id=1')).rows[0].state, 'stuck');
+  await db.query(`UPDATE campaign_plans SET state='planning', plan_round=plan_round+1 WHERE id=1`); // campaign-plan-retry
+  tables[WS] = { recW0000000000001: { Name: 'Acme', fld48x6Yg3v6RP30W: 'Acme', ID: 7 } };
+  claudeAnswers = [PLAN];
+  const a = await run('atlas.plan', { planId: 1 });
+  assert.equal(a.job.status, 'succeeded', a.job.error ?? '');
+  assert.equal(Object.keys(tables[CAMPAIGNS]).length, 1, 'no second Campaign record');
+  assert.deepEqual(Object.values(tables[LEAD_LISTS])[0][LL.whichCampaign], ['recC0000000000009']);
+  assert.equal(Object.values(tables[LEAD_LISTS])[0][F.engineActionSetAt], undefined, 'never writes the computed Set At field');
 });
 
 test('Low contact sample asks Alex; ❌ on approval 1 stops the plan', { skip }, async () => {
