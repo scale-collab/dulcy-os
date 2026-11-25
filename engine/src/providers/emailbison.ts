@@ -225,6 +225,17 @@ export function createBisonClient(o: BisonOptions) {
       const n = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : 0);
       return rows.map((x) => ({ id: String(x.id), email: String(x.email ?? '').toLowerCase(), status: String(x.status ?? '').toLowerCase(), sent: n(x.emails_sent_count), bounced: n(x.bounced_count), contacted: n(x.total_leads_contacted_count) }));
     },
+    /** A sample of the campaign's lead emails (first pages only), for where-the-bounces-land comparisons. */
+    async campaignLeadEmailsSample(campaignId: number, maxPages = 10): Promise<string[]> {
+      const out: string[] = [];
+      for (let page = 1; page <= maxPages; page++) {
+        const r = await call('GET', `/api/campaigns/${campaignId}/leads?page=${page}`);
+        out.push(...unwrapList(r).map((x: any) => String(x?.email ?? x?.lead?.email ?? '').toLowerCase()).filter(Boolean));
+        const last = Number(r?.meta?.last_page ?? 0);
+        if (!(last > page || r?.links?.next)) break;
+      }
+      return out;
+    },
     /** Bounce notices for a campaign (the "bounced" folder), newest first, at most maxPages pages. */
     async bouncedReplies(campaignId: number, maxPages = 5): Promise<any[]> {
       const out: any[] = [];

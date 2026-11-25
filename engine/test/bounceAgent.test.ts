@@ -93,6 +93,19 @@ test('Alex\'s method: step 1 codes (verification vs spam), step 2 domain / accou
   const mjj = diagnose(c, inboxes, mk(10, (i) => ({ spamHint: 'domain', provider: i < 8 ? 'Custom mail server' : 'Google' })));
   assert.equal(mjj.cause, 'domain');
   assert.match(mjj.fix, /stop sending to Custom mail server/);
+  // Step 3 is judged against the list: 77% of bounces on custom servers means nothing if 75% of the leads are there.
+  const many = mk(10, (i) => ({ kind: 'bad_address', provider: i < 7 ? 'Custom mail server' : 'Google' }));
+  assert.equal(diagnose(c, inboxes, many, new Map([['Custom mail server', 75], ['Google', 25]])).stopSendingTo, '');
+  assert.equal(diagnose(c, inboxes, many, new Map([['Custom mail server', 30], ['Google', 70]])).stopSendingTo, 'Custom mail server');
+  // Live TW 612: blocks spread 7/7/6/5 over 25 one-inbox domains is not "2 accounts".
+  const tw = Array.from({ length: 25 }, (_, k) => ({ id: String(100 + k), email: `r@tw${k}.info`, status: 'connected', sent: 1000, bounced: 30 }));
+  const spread612 = Array.from({ length: 51 }, (_, i) => ({ senderId: String(100 + (i < 14 ? (i < 7 ? 0 : 1) : 2 + (i % 23))), recipient: `x${i}@y.com`, kind: 'blocked' as const, gateway: '', provider: 'Microsoft 365' }));
+  const d612 = diagnose(c, tw, spread612);
+  assert.notEqual(d612.cause, 'account');
+  assert.equal(d612.cause, 'domain', '.info domains');
+  // A link blacklist (SURBL) hit says to take links to our domains out of the email.
+  const surbl = Array.from({ length: 10 }, (_, i) => ({ senderId: String(11 + (i % 4)), recipient: `u${i}@y.com`, kind: 'blocked' as const, gateway: '', provider: 'Custom mail server', spamHint: 'domain' as const, urlListed: true }));
+  assert.match(diagnose(c, inboxes, surbl).fix, /take links to our sending domains out of the email/);
   // Live TMC 633: 4.4.4 (no route to the domain) is a dead address.
   assert.equal(classifyBounce('450 4.4.4 Unable to route the message'), 'bad_address');
 });
