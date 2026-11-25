@@ -54,6 +54,12 @@ export interface Config {
   xeroIdentityUrl: string;
   xeroApiUrl: string;
   /** Ledger: Saturday report at LEDGER_REPORT_HOUR ET to LEDGER_CHANNEL (LEDGER=on); purchase yes/no every LEDGER_CHECK_EVERY_MIN in LEDGER_CHECK_CHANNEL. */
+  /** Mercury read-only token: live balances and the transactions Ledger prepares for Xero. */
+  mercuryToken?: string;
+  mercuryBaseUrl: string;
+  /** Ledger prepares reconciliation for Mercury lines from this date (YYYY-MM-DD), daily at LEDGER_PREP_HOUR ET. */
+  ledgerPrepFrom: string;
+  ledgerPrepHour: number;
   ledgerOn: boolean;
   ledgerReportHour: number;
   ledgerChannel: string;
@@ -167,12 +173,16 @@ export function loadConfig(env = process.env): Config {
     xeroClientId: env.XERO_CLIENT_ID || undefined,
     xeroClientSecret: env.XERO_CLIENT_SECRET || undefined,
     xeroRedirectUri: env.XERO_REDIRECT_URI || 'http://localhost:8765/callback',
-    // New Xero apps (after 2026-03-02) only take granular scopes. Read only.
-    xeroScopes: env.XERO_SCOPES || 'offline_access accounting.invoices.read accounting.banktransactions.read accounting.reports.banksummary.read accounting.reports.profitandloss.read accounting.reports.aged.read accounting.contacts.read accounting.settings.read',
+    // New Xero apps (after 2026-03-02) only take granular scopes. Writes: bank transactions/transfers, payments, contacts (Alex 2026-11-25: Ledger prepares reconciliation; never deletes).
+    xeroScopes: env.XERO_SCOPES || 'offline_access accounting.invoices.read accounting.banktransactions accounting.payments accounting.contacts accounting.reports.banksummary.read accounting.reports.profitandloss.read accounting.reports.aged.read accounting.settings.read',
     xeroTenantName: env.XERO_TENANT_NAME || 'Dulcy Media',
     xeroLoginUrl: env.XERO_LOGIN_URL || 'https://login.xero.com/identity/connect/authorize',
     xeroIdentityUrl: env.XERO_IDENTITY_URL || 'https://identity.xero.com',
     xeroApiUrl: env.XERO_API_URL || 'https://api.xero.com',
+    mercuryToken: env.MERCURY_TOKEN || undefined,
+    mercuryBaseUrl: env.MERCURY_BASE_URL || 'https://api.mercury.com/api/v1',
+    ledgerPrepFrom: (env.LEDGER_PREP_FROM || '2026-11-01').trim(),
+    ledgerPrepHour: num('LEDGER_PREP_HOUR', 7, env),
     ledgerOn: (env.LEDGER || 'off').toLowerCase() === 'on',
     ledgerReportHour: num('LEDGER_REPORT_HOUR', 9, env),
     ledgerChannel: (env.LEDGER_CHANNEL || env.ADA_CHANNEL || 'U070Z26377C').trim(),

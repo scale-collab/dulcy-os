@@ -151,7 +151,7 @@ test('one-time login picks Dulcy Media, then the token refreshes and the new ref
   const link = new URL(await xeroAuthorizeUrl(db, cfg));
   assert.equal(link.searchParams.get('redirect_uri'), 'http://localhost:8765/callback');
   assert.match(String(link.searchParams.get('scope')), /^offline_access .*accounting\.reports\.banksummary\.read/);
-  assert.doesNotMatch(String(link.searchParams.get('scope')), /accounting\.transactions\b|\.write|accounting\.reports\.read/, 'read-only granular scopes');
+  assert.doesNotMatch(String(link.searchParams.get('scope')), /accounting\.transactions\b|accounting\.reports\.read|accounting\.settings(?!\.read)/, 'granular scopes only; settings stay read-only');
   await assert.rejects(xeroFinishLogin(db, cfg, 'http://localhost:8765/callback?code=abc&state=wrong'), /does not match/);
   const r = await xeroFinishLogin(db, cfg, `http://localhost:8765/callback?code=abc&state=${link.searchParams.get('state')}`);
   assert.equal(r.tenant, 'Dulcy Media'); assert.deepEqual(r.others, ['Demo Company (US)']);

@@ -234,3 +234,14 @@ CREATE TABLE IF NOT EXISTS ledger_checks (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (channel, ts)
 );
+
+-- Ledger reconciliation prep: one row per Mercury transaction it handled (created in Xero, found
+-- already there, or asked about), so nothing is ever entered twice.
+CREATE TABLE IF NOT EXISTS ledger_entries (
+  mercury_id  TEXT PRIMARY KEY,
+  action      TEXT NOT NULL,             -- transfer | payment | spend | exists | asked
+  xero_id     TEXT,
+  detail      JSONB,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);

@@ -414,3 +414,35 @@ Every weekday at `ADA_BRIEF_HOUR` (default 8 AM ET) the engine posts one brief t
 **Try a question without posting:** `ledger-ask "Should I buy Clay $349/mo?"`.
 
 **If Xero says "invalid_grant":** the login has expired (60 days unused, or the app was disconnected). Run `xero-connect` again.
+
+### Ledger reconciles (2026-11-25)
+**Why it works this way:** Xero's API cannot tick "reconcile" (Xero's own rule). So every morning (`LEDGER_PREP_HOUR`, default 7 AM ET) Ledger reads Mercury and **creates the exact entry each line needs in Xero**. Xero's auto-reconcile then matches the bank-feed line to it, or you click OK once.
+
+**What each Mercury line becomes:**
+- **Transfer between buckets** (Entry → OPEX and so on): a Xero bank transfer.
+- **Payout from Commas/Fanbasis, PayPal, Wise, Stripe, Whop or GoCardless**: a transfer from that clearing account (for example Fanbasis Holding → Entry Checking).
+- **A client paying exactly an open invoice**: a payment on that invoice, so it shows as paid.
+- **Money out to a payee you coded before**: spend with the same account code.
+- **Everything else, asked in Slack once:**
+  - AmEx payments (which card?);
+  - new payees;
+  - deposits that match no invoice.
+
+  Code those in Xero once, and next time Ledger copies how you did it.
+
+**Safety:**
+- Ledger never deletes, voids or edits.
+- A line already in Xero (same account, same amount, within 3 days) is left alone.
+- Every line is handled once (`ledger_entries` table), and Xero's Idempotency-Key stops duplicates on a retry.
+
+**Cards (AmEx, Chase):** the API can't see them. Use Xero's auto-reconcile plus bank rules.
+
+**Setup:**
+1. Add `MERCURY_TOKEN` (Read Only) to `.env` and deploy.
+2. Run `xero-connect` again. Ledger now asks Xero for write permissions; click Allow.
+3. Preview, which writes nothing: `docker compose exec engine node dist/src/cli.js ledger-prep`
+4. Do it for real:
+   - add `ledger.prep` to `LIVE_STAGES` and deploy;
+   - run `ledger-prep --live` once, or wait for the daily run (needs `LEDGER=on`).
+
+**The Saturday report** now shows cash, money in and the split **live from Mercury**, plus how many reconciliation questions are still open.

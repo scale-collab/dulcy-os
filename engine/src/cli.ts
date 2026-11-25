@@ -38,6 +38,9 @@
 //       address and run xero-connect again with it in quotes.
 //   ledger-report [--post]
 //       Ledger's Saturday money report now (printed; --post also sends it to Slack).
+//   ledger-prep [--live]
+//       Reconciliation prep from Mercury into Xero. Without --live it only shows what it would create
+//       (nothing is written). --live creates the entries (only when ledger.prep is in LIVE_STAGES).
 //   ledger-ask "<question>"
 //       Print the yes/no Ledger would give, e.g. ledger-ask "Should I buy Clay $349/mo?" (posts nothing).
 //   mv-compare <recordId> <millionVerifierJobId>
@@ -205,13 +208,33 @@ async function main() {
         const r = await x.xeroFinishLogin(db, cfg, args.join(' '));
         console.log(`Connected to Xero: ${r.tenant}${r.others.length ? ` (also allowed, not used: ${r.others.join(', ')})` : ''}. Ledger can read the books now.`);
       }
+    } else if (cmd === 'ledger-prep') {
+      const def = STAGES['ledger.prep'];
+      const liveRun = args.includes('--live') && !(cfg.dryRun && !cfg.liveStages.includes('ledger.prep'));
+      const r = await enqueue(db, { kind: 'ledger.prep', recordId: 'ledger-prep', input: { post: liveRun }, dryRun: !liveRun, maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs });
+      console.log(liveRun ? 'Creating entries in Xero…' : 'Preview only (nothing is written)…');
+      for (let t = 0; t < 150; t++) {
+        const j = (await db.query(`SELECT status, result, error FROM jobs WHERE id=$1`, [r.job.id])).rows[0];
+        if (['succeeded', 'failed', 'needs_review'].includes(j?.status)) {
+          if (j.status !== 'succeeded') { console.log(`${j.status}: ${j.error}`); break; }
+          const res = j.result;
+          console.log(res.message);
+          if (res.made?.length) console.log(`\n${liveRun ? 'Created' : 'Would create'}:\n${res.made.map((x: string) => `  ${x}`).join('\n')}`);
+          if (res.asks?.length) console.log(`\nNeeds you:\n${res.asks.join('\n')}`);
+          if (res.failed?.length) console.log(`\nXero refused:\n${res.failed.join('\n')}`);
+          break;
+        }
+        await new Promise((ok) => setTimeout(ok, 2_000));
+      }
     } else if (cmd === 'ledger-report' || cmd === 'ledger-ask') {
       const { createXeroClient } = await import('./providers/xero.js');
       const L = await import('./agents/ledger.js');
       const xero = createXeroClient(db, cfg);
       const now = new Date();
       if (cmd === 'ledger-report') {
-        const text = L.writeLedgerReport(await L.gatherLedger(xero, now));
+        const { createMercuryClient } = await import('./providers/mercury.js');
+        const merc = cfg.mercuryToken ? createMercuryClient({ token: cfg.mercuryToken, baseUrl: cfg.mercuryBaseUrl }) : undefined;
+        const text = L.writeLedgerReport(await L.gatherLedger(xero, now, merc, db));
         console.log(text);
         if (args.includes('--post')) {
           const { createSlackClient } = await import('./providers/slack.js');
@@ -226,7 +249,7 @@ async function main() {
         for (const e of d.errors) console.log(`(couldn't read ${e})`);
       }
     } else {
-      throw new Error('commands: xero-connect, ledger-report, ledger-ask, verify, mv-compare, campaign, topup, senders, bounce, whereis, cleanup-test, cancel, job');
+      throw new Error('commands: xero-connect, ledger-report, ledger-prep, ledger-ask, verify, mv-compare, campaign, topup, senders, bounce, whereis, cleanup-test, cancel, job');
     }
   } finally {
     await db.end();

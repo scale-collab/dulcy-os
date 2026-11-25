@@ -96,6 +96,22 @@ export function createXeroClient(db: Db, cfg: XeroCfg, f: typeof fetch = fetch) 
     if (!res.ok) throw new PermanentError(`Xero ${path}: HTTP ${res.status}`);
     return res.json();
   }
+  /** Create entries (PUT). The Idempotency-Key makes a retry safe: Xero never creates the same entry twice. */
+  async function put(path: string, body: unknown, idempotencyKey: string): Promise<any> {
+    const s = await session(db, cfg, f);
+    let res: Response;
+    try {
+      res = await f(`${base}/api.xro/2.0/${path}`, { method: 'PUT', headers: { authorization: `Bearer ${s.token}`, 'xero-tenant-id': s.tenant, accept: 'application/json', 'content-type': 'application/json', 'idempotency-key': idempotencyKey.slice(0, 128) }, body: JSON.stringify(body), signal: AbortSignal.timeout(60_000) });
+    } catch { throw new RetryableError(`Xero ${path}: network error or timeout`); }
+    const j: any = await res.json().catch(() => ({}));
+    if (res.status === 429 || res.status >= 500) throw new RetryableError(`Xero ${path}: HTTP ${res.status}`);
+    if (res.status === 401 || res.status === 403) throw new PermanentError(`Xero ${path}: not allowed (HTTP ${res.status}; run xero-connect again so Ledger gets the write permissions)`);
+    if (!res.ok) {
+      const errs = (j.Elements ?? []).flatMap((e: any) => (e.ValidationErrors ?? []).map((v: any) => v.Message)).filter(Boolean);
+      throw new PermanentError(`Xero ${path} refused: ${errs.join('; ') || j.Message || `HTTP ${res.status}`}`.slice(0, 300));
+    }
+    return j;
+  }
   /** Every page of a paged list (100 per page), at most maxPages. */
   async function pages(path: string, key: string, params: Record<string, string | number> = {}, maxPages = 10): Promise<any[]> {
     const out: any[] = [];
@@ -107,6 +123,6 @@ export function createXeroClient(db: Db, cfg: XeroCfg, f: typeof fetch = fetch) 
     }
     return out;
   }
-  return { get, pages };
+  return { get, put, pages };
 }
 export type XeroClient = ReturnType<typeof createXeroClient>;

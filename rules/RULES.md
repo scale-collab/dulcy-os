@@ -115,3 +115,14 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-17] Keep answers simple: direct result first, exact numbers, short done/left lists. (Alex)
 - [2026-11-17] Work in small committed steps. A previous Codex run spent heavily for 14 days without finishing; do not repeat that. (Alex)
 - [2026-11-17] ChatGPT handles admin, reporting, personal tasks and email support. Claude handles campaign building, automation and code. (Alex)
+
+## Ledger may write to Xero to prepare reconciliation (Alex, 2026-11-25)
+- **Rule:** Ledger may create entries in Xero to prepare reconciliation, without asking each time:
+  - bank transfers between the Mercury buckets;
+  - deposits;
+  - client payments applied to their invoices;
+  - spend coded the way that vendor was coded before.
+- **Limits:** Ledger never deletes, voids or edits existing entries, never moves money, and never touches payments going out of the bank.
+- **When unsure:** lines it can't code are asked about in Slack.
+- **Reason:** Alex wants the agent to do the reconciling. Xero's API cannot tick "reconcile", so Ledger creates exact matches and Xero's auto-reconcile clears them.
+- **Data:** Ledger reads Mercury with a read-only token (`MERCURY_TOKEN`).
