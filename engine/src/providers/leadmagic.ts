@@ -2,6 +2,7 @@
 // POST /bulk/submit {product:'email_finder', idempotencyKey, rows:[{first_name,last_name,domain}]}
 // GET  /bulk/jobs/<id>                       status + counters
 // GET  /bulk/jobs/<id>/results?limit=200&offset=n
+// POST /email-finder {first_name,last_name,domain}  one person (the old n8n path; 300/min limit)
 // Key in the X-API-Key header, server .env only (LEADMAGIC_API_KEY).
 import { NeedsReviewError, PermanentError, RetryableError } from '../errors.js';
 
@@ -50,6 +51,10 @@ export function createLeadMagicClient(o: LeadMagicOptions) {
       const id = String(b?.jobId ?? b?.job_id ?? b?.id ?? b?.data?.jobId ?? '').trim();
       if (!id) throw new Error('LeadMagic did not return a job ID; outcome unknown (a job may still be running)');
       return id;
+    },
+    /** Paid: one person. Returns LeadMagic's answer as-is (email, email_status / status). */
+    async findOne(row: FinderRow): Promise<any> {
+      return call('/email-finder', true, row);
     },
     /** Free: job status and counters. */
     async job(id: string): Promise<{ status: string; total: number; processed: number }> {

@@ -122,6 +122,11 @@ export interface Config {
   millionVerifierBaseUrl: string;
   leadMagicApiKey?: string;
   leadMagicBaseUrl: string;
+  /** LEADMAGIC_MODE: single (default, Alex 2026-11-25: parallel single Email Finder calls, near the 300/min limit) or bulk (LeadMagic's bulk queue, ~19 rows/min seen). */
+  leadMagicMode: 'single' | 'bulk';
+  /** Single mode: calls at once (LEADMAGIC_CONCURRENCY, default 40) and per minute (LEADMAGIC_PER_MIN, default 250). */
+  leadMagicConcurrency: number;
+  leadMagicPerMin: number;
   /** How often a waiting verification job checks MillionVerifier again. */
   verifyPollMs: number;
   /** Google service-account key file (read-only Sheets access), on the server only. */
@@ -274,6 +279,9 @@ export function loadConfig(env = process.env): Config {
     millionVerifierBaseUrl: env.MILLIONVERIFIER_BASE_URL || 'https://bulkapi.millionverifier.com',
     leadMagicApiKey: env.LEADMAGIC_API_KEY || undefined,
     leadMagicBaseUrl: env.LEADMAGIC_BASE_URL || 'https://api.leadmagic.io',
+    leadMagicMode: (env.LEADMAGIC_MODE || 'single').toLowerCase() === 'bulk' ? 'bulk' : 'single',
+    leadMagicConcurrency: Math.max(1, Math.min(100, num('LEADMAGIC_CONCURRENCY', 40, env))),
+    leadMagicPerMin: Math.max(1, Math.min(300, num('LEADMAGIC_PER_MIN', 250, env))),
     verifyPollMs: num('VERIFY_POLL_MS', 2 * 60_000, env),
     googleKeyFile: env.GOOGLE_KEY_FILE || '/app/secrets/google-sa.json',
     googleImpersonateUser: env.GOOGLE_IMPERSONATE_USER || undefined,
