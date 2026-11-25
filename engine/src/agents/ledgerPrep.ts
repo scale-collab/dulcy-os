@@ -71,10 +71,14 @@ export function planPrep(i: { txns: MercuryTxn[]; banks: XBank[]; existing: XEnt
       out.push({ kind: 'ask', txn: t, why: someInv ? `${t.counterparty} has open invoices, but none for exactly ${usd(t.amount)}` : `money in from "${t.counterparty}" with no matching invoice` });
       continue;
     }
+    const procOut = PROCESSORS.find(([who]) => who.test(t.counterparty));
+    const clearingOut = procOut && i.banks.find((b) => procOut[1].test(b.name));
+    if (clearingOut) { out.push({ kind: 'transfer', txn: t, from: here, to: clearingOut, amount: -t.amount }); continue; }
+    if (t.kind === 'externalTransfer') { out.push({ kind: 'ask', txn: t, why: `money moved to another bank ("${plainName(t.counterparty)}"): owner's draw, or a transfer to a business account?` }); continue; }
     if (/amex|american express/i.test(t.counterparty) || /amex|american express/i.test(t.description)) {
       out.push({ kind: 'ask', txn: t, why: 'AmEx payment: which card (Platinum, Gold or Blue Business Plus)?' }); continue;
     }
-    const code = [...i.vendorCodes.entries()].find(([v]) => sameName(v, t.counterparty))?.[1];
+    const code = [...i.vendorCodes.entries()].find(([v]) => norm(v) === norm(t.counterparty))?.[1];
     if (code) { out.push({ kind: 'spend', txn: t, account: here, amount: -t.amount, code, contact: t.counterparty }); continue; }
     out.push({ kind: 'ask', txn: t, why: `new payee "${t.counterparty}": which account code?` });
   }

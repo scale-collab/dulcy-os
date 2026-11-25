@@ -28,13 +28,16 @@ test('the plan: bucket transfers, processor payouts, invoice payments, coded spe
     tx('Entry Checking', 99, 'Mystery Co'),
     tx('OPEX', -356.74, 'AMEX EPAYMENT'),
     tx('OPEX', -225, 'Wise Inc'),
+    tx('OPEX', -2700, 'Chase - Checking ••3723', 'externalTransfer'),
+    tx('OPEX', -60, 'Chase - Checking'),
+    tx('OPEX', -30, 'Instantly'),
     tx('OPEX', -49, 'Brand New Vendor'),
     tx('Tax Account', -10, 'Somewhere ••1111', 'internalTransfer'),
   ];
   const plan = planPrep({
     txns, banks, existing: [], done: new Set(),
     invoices: [{ id: 'inv1', contact: 'Human Marketing', due: 600 }, { id: 'inv2', contact: 'Human Marketing', due: 250 }],
-    vendorCodes: new Map([['Wise Inc.', '6690']]),
+    vendorCodes: new Map([['Wise Inc.', '6690'], ['Chase', '6510'], ['Instantly', '6050']]),
   });
   const sum = plan.map((a) => a.kind === 'transfer' ? `transfer ${a.from.name}→${a.to.name} ${a.amount}` : a.kind === 'payment' ? `payment ${a.invoice.id} ${a.amount}` : a.kind === 'spend' ? `spend ${a.contact} ${a.amount} ${a.code}` : a.kind === 'ask' ? `ask ${a.txn.counterparty}: ${a.why}` : 'exists');
   assert.deepEqual(sum, [
@@ -46,9 +49,19 @@ test('the plan: bucket transfers, processor payouts, invoice payments, coded spe
     'ask Mystery Co: money in from "Mystery Co" with no matching invoice',
     'ask AMEX EPAYMENT: AmEx payment: which card (Platinum, Gold or Blue Business Plus)?',
     'spend Wise Inc 225 6690',
+    'ask Chase - Checking: money moved to another bank ("Chase - Checking"): owner\'s draw, or a transfer to a business account?',
+    'ask Chase - Checking: new payee "Chase - Checking": which account code?',
+    'spend Instantly 30 6050',
     'ask Brand New Vendor: new payee "Brand New Vendor": which account code?',
     'ask Somewhere: transfer to "Somewhere", which has no Xero bank account',
   ]);
+});
+
+test('money out to Wise or PayPal goes into their Xero clearing account', () => {
+  const withWise = [...banks, { id: 'accW', name: 'Wise USD' }];
+  const plan = planPrep({ txns: [tx('OPEX', -225, 'Wise Inc')], banks: withWise, existing: [], invoices: [], vendorCodes: new Map([['Wise Inc', '6590']]), done: new Set() });
+  assert.equal(plan[0].kind, 'transfer');
+  assert.equal(plan[0].kind === 'transfer' && `${plan[0].from.name}→${plan[0].to.name} ${plan[0].amount}`, 'OPEX→Wise USD 225');
 });
 
 test('nothing twice: already in Xero (±3 days) or handled before → no new entry', () => {
