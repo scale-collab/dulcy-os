@@ -23,6 +23,14 @@ export interface Decision {
 }
 export interface Task { id: string; name: string; client: string; stage: string; due: string; priority: string; status: string; notes: string; clientFacing: boolean; overdue: boolean; box: Box; stale: boolean }
 export type Box = 'doNow' | 'schedule' | 'delegate' | 'later';
+/** One thing an agent needs from you (GET /needs). The server builds it; text is shown escaped. */
+export interface NeedLink { label: string; href: string }
+export interface Need {
+  key: string; kind: 'decisions' | 'issue' | 'signups' | 'ask'; group: 'now' | 'later';
+  agent: string; icon?: string; title: string; why: string; steps: string;
+  action: NeedLink | null; link: NeedLink | null; canDone: boolean; canSnooze: boolean; count?: number; at: string;
+}
+export interface NeedCounts { total: number; now: number; later: number }
 export interface Report { id: number; agent: string; kind: string; title: string; summary: string; link: string | null; urgent: boolean; dryRun: boolean; created: string; data: any; body?: string }
 export interface TeamLine { agent: string; ok: boolean | null; line: string }
 export interface AgentCard {
