@@ -103,8 +103,8 @@ async function gather(at: Pick<AirtableClient, 'list'>, now: Date, weekly: boole
   const days = weekly ? 14 : 2;
   const [decisions, replies, campaigns, accounts, purchases, activity, workspaces] = await Promise.all([
     at.list(DECISIONS, `OR({Status}='New',{Status}='Waiting')`, [DF.title, DF.agent], 300).catch(() => []),
-    at.list(EMAILS, `OR(IS_AFTER({Latest Reply Time},DATEADD(NOW(),-${days},'days')),IS_AFTER({Meeting Booked At},DATEADD(NOW(),-${days},'days')),IS_AFTER({Dulcy Reply Agent Sent At},DATEADD(NOW(),-${days},'days')),{Dulcy Reply Agent State}='Needs Approval')`,
-      ['Workspace ID (Bison)', 'Lead Status', 'Dulcy Reply Agent State', 'Dulcy Reply Agent Sent At', 'Latest Reply Time', 'Meeting Booked At'], 5000, { byName: true }),
+    at.list(EMAILS, `OR(IS_AFTER({Latest Reply Time},DATEADD(NOW(),-${days},'days')),IS_AFTER({Meeting Booked At},DATEADD(NOW(),-${days},'days')),IS_AFTER({Date of Call Booked},DATEADD(NOW(),-${days},'days')),IS_AFTER({Dulcy Reply Agent Sent At},DATEADD(NOW(),-${days},'days')),{Dulcy Reply Agent State}='Needs Approval')`,
+      ['Workspace ID (Bison)', 'Lead Status', 'Dulcy Reply Agent State', 'Dulcy Reply Agent Sent At', 'Latest Reply Time', 'Meeting Booked At', 'Date of Call Booked'], 5000, { byName: true }),
     at.list(CAMPAIGNS, `OR({Campaign Status}='Active',IS_AFTER({Status Last Modified},DATEADD(NOW(),-2,'days')))`, ['Name', 'Client', 'Bounced %', 'Progress', 'Campaign Status', 'Status Last Modified'], 500, { byName: true }),
     at.list(ACCOUNTS, `{Spam Protocol Stage}!=''`, ['Spam Protocol Stage'], 2000, { byName: true }).catch(() => []),
     at.list(QUEUE, `{Status}='Pending Review'`, ['Status'], 200, { byName: true }).catch(() => []),
@@ -114,7 +114,7 @@ async function gather(at: Pick<AirtableClient, 'list'>, now: Date, weekly: boole
   const names = new Map(workspaces.map((w) => [String(num(w.fields.ID)), v(w.fields.Name)]));
   const byRecord = new Map(workspaces.map((w) => [w.id, v(w.fields.Name)]));
   const clientOf = (x: unknown) => { const id = v(x); return byRecord.get(id) ?? (id.startsWith('rec') ? 'unknown client' : id) ?? 'unknown'; };
-  const rows = replies.map((r) => ({ ws: v(r.fields['Workspace ID (Bison)']), status: v(r.fields['Lead Status']), state: v(r.fields['Dulcy Reply Agent State']), sentAt: v(r.fields['Dulcy Reply Agent Sent At']), repliedAt: v(r.fields['Latest Reply Time']), bookedAt: v(r.fields['Meeting Booked At']) }));
+  const rows = replies.map((r) => ({ ws: v(r.fields['Workspace ID (Bison)']), status: v(r.fields['Lead Status']), state: v(r.fields['Dulcy Reply Agent State']), sentAt: v(r.fields['Dulcy Reply Agent Sent At']), repliedAt: v(r.fields['Latest Reply Time']), bookedAt: v(r.fields['Meeting Booked At']) || v(r.fields['Date of Call Booked']) }));
   const clientName = (ws: string) => names.get(ws) ?? (ws ? `workspace ${ws}` : 'unknown');
   let week: BriefData['week'];
   if (weekly) {

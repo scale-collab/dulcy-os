@@ -65,12 +65,13 @@ test('Atlas reads Airtable: counts interested / booked per workspace by date, ca
       { id: 'e2', fields: { 'Workspace ID (Bison)': 7, 'Lead Status': 'Interested', 'Latest Reply Time': d(10), 'Meeting Booked At': d(9) } },
       { id: 'e3', fields: { 'Workspace ID (Bison)': 7, 'Lead Status': 'Not Interested', 'Latest Reply Time': d(1) } },
       { id: 'e4', fields: { 'Workspace ID (Bison)': 9, 'Lead Status': 'Interested', 'Latest Reply Time': d(1) } },
+      { id: 'e5', fields: { 'Workspace ID (Bison)': 7, 'Lead Status': 'Interested', 'Latest Reply Time': d(20), 'Date of Call Booked': d(3).slice(0, 10) } },
     ];
   } } as any;
   const h = await gatherHealth(at, now);
   assert.equal(h.clients.length, 1, 'internal Dulcy left out');
   const c = h.clients[0];
-  assert.deepEqual([c.interested7, c.interestedPrev7, c.interested30, c.booked7, c.bookedPrev7, c.booked30], [1, 1, 2, 0, 1, 1]);
+  assert.deepEqual([c.interested7, c.interestedPrev7, c.interested30, c.booked7, c.bookedPrev7, c.booked30], [1, 1, 3, 1, 1, 2], 'bookings come from Date of Call Booked too');
   assert.deepEqual(c.campaigns, { active: 1, over4: 1, watch: 0, past60: 1, ending: 0 });
 });
 
