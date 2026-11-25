@@ -1,5 +1,7 @@
 # Editing style guide: Alex Woung videos in OpusClip (Sienna)
 
+> Read with `editing-brief.md` (Alex's standing brief from ChatGPT). Authority: section 8 below > editing-brief.md > the rest of this file. Main long-form uses OpusClip's own light graphics; a Main Short may split one speaker + a real screen share; Raw never splits.
+
 Written 2026-11-25 from: 11 OpusClip clips checked (transcript, tracks, sampled frames), the Content Clips table (57 rows: 20 Approved, 0 Rejected, rest Needs Review), and frames of 10 Shorts and 4 long videos from 5 creators. Alex's rules in `rules/RULES.md` win over this file. Goal: Alex only approves finished videos, and never sees an obvious mistake.
 
 ## 1. Alex's hard rules (break one = reject the clip)

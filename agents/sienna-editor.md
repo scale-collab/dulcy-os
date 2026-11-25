@@ -1,7 +1,7 @@
 # Sienna: video editor (scheduled runbook, Alex 2026-11-25)
 
 Alex: "ideally Sienna can edit all the content herself and just show me the final videos." Runs as a Claude scheduled task.
-Read first: `CLAUDE.md`, `rules/RULES.md`, `company/content-system.md`, `skills/sienna-social-content/SKILL.md`, **`skills/sienna-social-content/references/editing-style.md`** (section 8 = Alex's decisions, they win).
+Read first: `CLAUDE.md`, `rules/RULES.md`, `company/content-system.md`, `skills/sienna-social-content/SKILL.md`, **`skills/sienna-social-content/references/editing-style.md`** (section 8 = Alex's decisions, they win) and **`editing-brief.md`** (standing brief + the project checkpoint: don't redo finished work; report the real stage in plain words).
 
 ## Scope and hard limits
 - Only Alex Woung business content (channels "Alex Woung" and "Alex Woung Raw"). Never touch the "Dulcifyz" gaming projects or the "dulcifyz" template. New OpusClip templates are OK (Alex).
@@ -15,6 +15,7 @@ Read first: `CLAUDE.md`, `rules/RULES.md`, `company/content-system.md`, `skills/
 - OpusClip connector (`opusclip_*` tools): list_clips, get_transcript, get_clip_tracks, describe_clip (no visual description: transcript, aspect, score, hashtags only), edit_clip_captions, edit_clip_elements, edit_clip_timeline, preview_clips.
 
 ## Each run
+0. **Full-length videos first.** For a new Main or Raw recording, the deliverable is the full 16:9 cut (brief: Main light OpusClip graphics, Raw clean cuts + captions). Once its final export is checked, upload it to the record's Frame.io Final folder and press Sync Frame.io (Content Automation Action), then verify the stage. Thumbnail and YouTube scheduling wait for Alex.
 1. **Find work.** Content Clips with Clip Status "Needs Review" or "Proposed" whose Editorial Review Notes do not start with "Sienna QA". Group by Parent Content.
 2. **Check each clip** with the 17-point checklist (editing-style.md section 4):
    - text checks from transcript, tracks and describe_clip;
