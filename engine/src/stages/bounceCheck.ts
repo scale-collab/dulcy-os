@@ -90,8 +90,10 @@ export const bounceCheckStage: Stage = async (ctx) => {
   let investigating = 0;
   const window = Math.floor(Date.now() / (3 * 86_400_000));
   const justPaused = new Set(paused.map((r) => r.id));
-  const toInvestigate = [...paused.map((r) => ({ r, key: String(window) })), ...skippedPause.map((r) => ({ r, key: String(window) })),
-    ...pausedHigh.filter((r) => !justPaused.has(r.id)).map((r) => ({ r, key: 'once' }))];
+  // Only campaigns this check pauses or flags (sending, over 4%). Old paused campaigns are not swept up:
+  // on 2026-11-25 that sent 47 long-finished campaigns from 35 workspaces to Slack at once.
+  void justPaused; void pausedHigh;
+  const toInvestigate = [...paused.map((r) => ({ r, key: String(window) })), ...skippedPause.map((r) => ({ r, key: String(window) }))];
   for (const { r, key } of toInvestigate) {
     if (!r.teamId) continue;
     const def = STAGES['bounce.investigate'];

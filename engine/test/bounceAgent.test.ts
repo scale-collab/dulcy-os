@@ -83,20 +83,16 @@ test('bounce check → bounce agent: the paused campaign is investigated once an
   assert.equal(inv[0].result.cause, 'inboxes');
   assert.equal(inv[0].result.action, 'Remove Inboxes and Resume');
   assert.equal(inv[0].input.teamId, 66);
-  // The next checks (campaign is paused now): one more look as an already-paused campaign, then never again.
-  await run(conf, 'bounce.check', { workspace: 'all' });
+  // The next check (campaign is paused now) does not investigate again.
   const again = await run(conf, 'bounce.check', { workspace: 'all' });
   assert.doesNotMatch(again.job.result.message, /bounce agent/);
   assert.ok((await db.query(`SELECT 1 FROM jobs WHERE kind='bounce.investigate'`)).rows.length <= 2);
 });
 
-test('a campaign already paused with bounce over 4% is investigated once', { skip }, async () => {
+test('old paused campaigns are not swept up (only what this check pauses or flags)', { skip }, async () => {
   bison.campaigns[0].status = 'paused';
-  const conf = cfg();
-  const a = await run(conf, 'bounce.check', { workspace: 'all' });
-  assert.match(a.job.result.message, /1 sent to the bounce agent/);
-  const b = await run(conf, 'bounce.check', { workspace: 'all' });
-  assert.doesNotMatch(b.job.result.message, /bounce agent/);
+  const a = await run(cfg(), 'bounce.check', { workspace: 'all' });
+  assert.doesNotMatch(a.job.result.message, /bounce agent/);
 });
 
 test('✅ fix: the burned inbox is removed and the campaign resumes; never left with no inboxes', { skip }, async () => {
