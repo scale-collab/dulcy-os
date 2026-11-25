@@ -460,3 +460,69 @@ Every weekday at `ADA_BRIEF_HOUR` (default 8 AM ET) the engine posts one brief t
 **Check now, from the server:** `docker compose exec engine node dist/src/cli.js ledger-prep` (shows the lines, posts nothing).
 
 **To switch it on:** add `ledger.prep` to `LIVE_STAGES` and set `LEDGER=on`. The prep runs once Mercury is set.
+
+## Atlas, Cole and Sienna (2026-11-25, built overnight)
+All three are **off until switched on**, and **post only when their stage is in `LIVE_STAGES`**. None of them sends anything to a client or prospect, or publishes anything.
+
+### Atlas: client health (Mondays, `ATLAS_HOUR`, default 9 AM ET, to your DM)
+**Each active client gets:**
+- retainer, months in and LTV;
+- interested and booked this week vs last week;
+- the last 30 days vs the client's calls-booked KPI;
+- the **interested → meeting rate** (the Twenty West lesson);
+- campaigns: active, over 4% bounce, past 60%.
+
+**The light:**
+- 🔴 when there's no active campaign, meetings are under half the KPI, or fewer than 10% of 20+ interested replies became meetings.
+- 🟡 for the smaller warnings, including **monthly fee missing in Airtable**: no fee is invented.
+
+**At the top:** MRR, average retainer, average months and average LTV. **At the end:** a top 3.
+
+**Try now (posts nothing):** `docker compose exec engine node dist/src/cli.js atlas-health`
+
+**Switch on:** `ATLAS=on`, and add `atlas.health` to `LIVE_STAGES`.
+
+### Cole: sales-call reviews (needs `FATHOM_API_KEY`)
+**What it does:**
+- **Finds the calls:** every `COLE_EVERY_MIN` (default 60) it reads new Fathom calls from the last 7 days. It skips internal ones, Claude classifies the rest, and only **sales** calls are reviewed, at most 3 per run.
+- **The review** goes to your DM, in Jackson Anderson style:
+  - a score;
+  - **pacing measured from the transcript**: your talk %, longest stretch and questions asked;
+  - each stage scored;
+  - what worked, with quotes;
+  - **3 fixes**, each with "you said / say instead";
+  - objections against Closers.io;
+  - missing beliefs, the next step agreed, and one drill.
+- **The follow-up email draft** goes in the thread. You edit it and send it yourself.
+- Each call is reviewed once.
+
+**Setup:**
+1. In Fathom, go to Settings → API Access and create a key.
+2. Add `FATHOM_API_KEY=` to `.env`.
+3. Set `COLE=on` and add `cole.review` to `LIVE_STAGES`.
+
+**Run now:** `docker compose exec engine node dist/src/cli.js agent cole.review`
+
+### Sienna: content (Monday ideas, Thursday scripts)
+**Monday (`SIENNA_IDEAS_HOUR`, default 10 AM ET):**
+- Claude **searches the web** (YouTube views and comments, LinkedIn, X, Reddit, forums; not Reddit alone) for what B2B agency owners and founders are asking now.
+- It then adds **2 × your weekly video count** ideas to the Content Center:
+  - Status "Review", source "Generated Idea";
+  - an Idea Score;
+  - the evidence URLs and why it's rising now, in the qualification reason.
+- Ideas that duplicate an existing title are skipped. You get a Slack list.
+- **Pick the ones you want by ticking "Record This Week".**
+
+**Thursday (`SIENNA_PREP_HOUR`, default 10 AM ET):** every ticked idea without a script gets:
+- a teleprompter **script** in your voice, learned from your recent transcripts;
+- 3 titles and 3 hooks;
+- a thumbnail idea;
+- a Gamma outline;
+- a YouTube description;
+- a **"check before recording"** list of any claim you must confirm.
+
+Production Stage becomes "Script Ready". Nothing is posted.
+
+**Switch on:** `SIENNA=on`, and add `sienna.ideas,sienna.prep` to `LIVE_STAGES`.
+
+**Run now:** `agent sienna.ideas`, or `agent sienna.prep`.

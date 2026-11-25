@@ -63,6 +63,23 @@ export interface Config {
   /** Off (default): Ledger only checks Mercury against Xero and flags stuck lines. On: it also creates the entries. */
   ledgerPrepWrite: boolean;
   ledgerOn: boolean;
+  /** Atlas: weekly client health (ATLAS=on) on Mondays after ATLAS_HOUR ET, to ATLAS_CHANNEL. */
+  atlasOn: boolean;
+  atlasHour: number;
+  atlasChannel: string;
+  /** Cole: reviews Alex's sales calls from Fathom (COLE=on + FATHOM_API_KEY) every COLE_EVERY_MIN; at most COLE_MAX_PER_RUN calls a run. */
+  coleOn: boolean;
+  coleEveryMin: number;
+  coleMaxPerRun: number;
+  coleFrom: string;
+  coleChannel: string;
+  fathomApiKey?: string;
+  fathomBaseUrl: string;
+  /** Sienna: Monday content ideas (SIENNA_IDEAS_HOUR) and Thursday scripts for Friday (SIENNA_PREP_HOUR), ET. */
+  siennaOn: boolean;
+  siennaIdeasHour: number;
+  siennaPrepHour: number;
+  siennaChannel: string;
   ledgerReportHour: number;
   ledgerChannel: string;
   ledgerCheckEveryMin: number;
@@ -186,6 +203,20 @@ export function loadConfig(env = process.env): Config {
     ledgerPrepFrom: (env.LEDGER_PREP_FROM || '2026-11-01').trim(),
     ledgerPrepHour: num('LEDGER_PREP_HOUR', 7, env),
     ledgerPrepWrite: (env.LEDGER_PREP_WRITE || 'off').toLowerCase() === 'on',
+    atlasOn: (env.ATLAS || 'off').toLowerCase() === 'on',
+    atlasHour: num('ATLAS_HOUR', 9, env),
+    atlasChannel: (env.ATLAS_CHANNEL || env.ADA_CHANNEL || 'U070Z26377C').trim(),
+    coleOn: (env.COLE || 'off').toLowerCase() === 'on',
+    coleEveryMin: num('COLE_EVERY_MIN', 60, env),
+    coleMaxPerRun: num('COLE_MAX_PER_RUN', 3, env),
+    coleFrom: (env.COLE_FROM || '').trim(),
+    coleChannel: (env.COLE_CHANNEL || env.ADA_CHANNEL || 'U070Z26377C').trim(),
+    fathomApiKey: env.FATHOM_API_KEY || undefined,
+    fathomBaseUrl: env.FATHOM_BASE_URL || 'https://api.fathom.ai/external/v1',
+    siennaOn: (env.SIENNA || 'off').toLowerCase() === 'on',
+    siennaIdeasHour: num('SIENNA_IDEAS_HOUR', 10, env),
+    siennaPrepHour: num('SIENNA_PREP_HOUR', 10, env),
+    siennaChannel: (env.SIENNA_CHANNEL || env.ADA_CHANNEL || 'U070Z26377C').trim(),
     ledgerOn: (env.LEDGER || 'off').toLowerCase() === 'on',
     ledgerReportHour: num('LEDGER_REPORT_HOUR', 9, env),
     ledgerChannel: (env.LEDGER_CHANNEL || env.ADA_CHANNEL || 'U070Z26377C').trim(),

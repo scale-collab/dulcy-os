@@ -38,6 +38,33 @@ export function createClaude(o: ClaudeOptions) {
       if (!res.parsed_output) throw new RetryableError('Claude answer did not match the expected shape');
       return res.parsed_output as z.infer<S>;
     },
+    /**
+     * Web research (Sienna's demand check): Claude searches the web and returns plain-text notes
+     * with source URLs. Kept separate from structured() so the search and the JSON answer never
+     * share one request. Resumes pause_turn (server-side search loop) up to 3 times.
+     */
+    async research(system: string, user: string, maxSearches = 8): Promise<string> {
+      const messages: Anthropic.Beta.BetaMessageParam[] = [{ role: 'user', content: user }];
+      let res: Anthropic.Beta.BetaMessage | undefined;
+      for (let i = 0; i < 4; i++) {
+        try {
+          res = await client.beta.messages.create({
+            model: o.model, max_tokens: 16000, betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default',
+            output_config: { effort: 'medium' }, system,
+            tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: maxSearches }],
+            messages,
+          } as any) as Anthropic.Beta.BetaMessage;
+        } catch (e) {
+          if (e instanceof Anthropic.RateLimitError || e instanceof Anthropic.InternalServerError || e instanceof Anthropic.APIConnectionError) throw new RetryableError(`Claude: ${(e as Error).message}`);
+          if (e instanceof Anthropic.APIError) throw new PermanentError(`Claude refused the request: ${e.status} ${e.message}`.slice(0, 300));
+          throw e;
+        }
+        if (res.stop_reason !== 'pause_turn') break;
+        messages.splice(1, messages.length - 1, { role: 'assistant', content: res.content as any });
+      }
+      if (!res || res.stop_reason === 'refusal') throw new PermanentError('Claude declined the research request');
+      return res.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text').map((b) => b.text).join('\n').trim();
+    },
   };
 }
 export type Claude = ReturnType<typeof createClaude>;
