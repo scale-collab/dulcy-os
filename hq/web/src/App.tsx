@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Today from './pages/Today';
 import Decisions from './pages/Decisions';
 import Tasks from './pages/Tasks';
+import Needs from './pages/Needs';
 import Agents from './pages/Agents';
 import AgentPage from './pages/AgentPage';
 import Chat from './pages/Chat';
@@ -17,7 +18,7 @@ const TABS = [
   { key: 'today', label: 'Today', icon: 'sun', count: '' },
   { key: 'decisions', label: 'Decisions', icon: 'inbox', count: 'decisions' },
   { key: 'clients', label: 'Clients', icon: 'briefcase', count: '' },
-  { key: 'tasks', label: 'To-do', icon: 'grid', count: 'doNow' },
+  { key: 'needs', label: 'Needs you', icon: 'bell', count: 'needs' },
   { key: 'agents', label: 'Team', icon: 'users', count: '' },
   { key: 'chat', label: 'Chat', icon: 'message', count: '' },
 ];
@@ -43,13 +44,15 @@ export default function App() {
     case 'decisions': body = <Decisions user={user} pile={a} client={b} />; break;
     case 'clients': body = a ? <ClientPage id={a} user={user} /> : <Clients user={user} />; break;
     case 'users': body = <Users user={user} />; break;
+    case 'needs': body = <Needs user={user} />; break;
+    // The old Eisenhower to-do (Airtable Tasks): still at #/tasks, out of the main navigation.
     case 'tasks': body = <Tasks />; break;
     case 'agents': body = a ? <AgentPage name={a} /> : <Agents />; break;
     case 'chat': body = <Chat user={user} agent={a || 'Ada'} threadId={b ? Number(b) : undefined} />; break;
     case 'report': body = <ReportPage id={Number(a)} />; break;
     default: body = <Today user={user} />;
   }
-  const active = page === 'report' ? 'today' : page === 'users' ? 'users' : TABS.some((t) => t.key === page) ? page : 'today';
+  const active = page === 'report' ? 'today' : page === 'users' ? 'users' : page === 'tasks' ? 'needs' : TABS.some((t) => t.key === page) ? page : 'today';
   const viewKey = page === 'agents' || page === 'clients' ? `${page}/${a ?? ''}` : page === 'report' ? `report/${a}` : page;
   return (
     <div className="min-h-dvh">
@@ -84,7 +87,7 @@ function Sidebar({ active, user, onSignOut }: { active: string; user: User; onSi
               className={cx('group flex min-h-11 items-center gap-3 rounded-xl px-3 text-[15px] font-medium transition', on ? 'bg-hover text-fg' : 'text-muted hover:bg-hover hover:text-fg')}>
               <Icon name={t.icon} size={18} className={on ? 'text-fg' : 'text-muted group-hover:text-fg'} />
               <span className="flex-1 text-left">{t.label}</span>
-              {!!n && <span className={cx('tabular rounded-full px-2 py-0.5 text-xs font-semibold', t.key === 'decisions' ? 'bg-ink text-ink-fg' : 'bg-sunken text-fg-2 border border-line')}>{n}</span>}
+              {!!n && <span className={cx('tabular rounded-full px-2 py-0.5 text-xs font-semibold', t.key === 'decisions' ? 'bg-ink text-ink-fg' : t.key === 'needs' ? 'bg-accent text-accent-fg' : 'bg-sunken text-fg-2 border border-line')}>{n}</span>}
             </button>
           );
         })}
@@ -147,14 +150,14 @@ function TabBar({ active }: { active: string }) {
       <div className="mx-auto grid max-w-lg grid-cols-6">
         {TABS.map((t) => {
           const on = active === t.key;
-          const n = t.key === 'decisions' ? c.decisions : 0;
+          const n = t.key === 'decisions' || t.key === 'needs' ? c[t.key] : 0;
           return (
             <button key={t.key} onClick={() => go(t.key)} aria-current={on ? 'page' : undefined}
               className={cx('relative flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium transition', on ? 'text-fg' : 'text-muted')}>
               {on && <span aria-hidden="true" className="absolute top-0 h-0.5 w-8 rounded-full bg-accent" />}
               <span className="relative">
                 <Icon name={t.icon} size={22} strokeWidth={on ? 2.1 : 1.8} />
-                {!!n && <span className="tabular absolute -right-2.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-bad px-1 text-[10px] font-bold leading-none text-surface">{n > 99 ? '99+' : n}</span>}
+                {!!n && <span className={cx('tabular absolute -right-2.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] font-bold leading-none', t.key === 'needs' ? 'bg-accent text-accent-fg' : 'bg-bad text-surface')}>{n > 99 ? '99+' : n}</span>}
               </span>
               {t.label}
             </button>

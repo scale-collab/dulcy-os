@@ -4,7 +4,7 @@ How the Dulcy lead engine works from start to finish, in plain words.
 **Keep this file current:** every engine change updates this guide in the same pull request (rule 2026-11-23).
 Technical details for developers are in `README.md`.
 
-Last updated: 2026-11-25 (HQ Step 2: Clients; sign-up and Users)
+Last updated: 2026-11-25 (HQ "Needs you" replaces To-do; Step 2: Clients; sign-up and Users)
 
 ---
 
@@ -601,7 +601,7 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
 
 **The six tabs** (plus Users for you):
 1. **Today**
-   - First things: how many decisions wait on you, and the top "Do now" task.
+   - First things: how many decisions wait on you, and the top 3 of **Needs you** in the "Do now" card (tap one to go straight to it).
    - Ada's brief: the two key lines first ("Waiting on you" and "Top 3"); tap for the rest.
    - Team check: one line per agent: ✓ ran fine, ⚠️ failed (which job and why), or ⚠️ decisions waiting on you.
    - Reports: every agent report as a short card. Tap one for the full text. A Cole call review opens on the score and the 3 fixes (what you said → what to say instead); the full review and the follow-up draft are one more tap away.
@@ -613,7 +613,17 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
      - The engine's reply sender sends it from the right inbox and closes the card. HQ only presses the buttons on the Emails row (Human Action, and Custom Reply for an edit).
    - **Others:** Issue / Checked / Proposed / On approve, then Approve or Reject. The engine then runs the action, exactly as for a ✅ in Slack.
    - **Later** keeps a card for another time. Keys on a computer: A approve (or send), R reject (or skip reply), S later, E edit the reply (Esc to stop editing). The keys are shown under the buttons.
-3. **To-do** (Airtable Tasks, open ones only). It's sorted into four boxes:
+3. **Needs you** (was "To-do", Alex 2026-11-25: "this is what you need me to do", not another project manager). A short list of only what the agents need from you. Each card: the agent's face, one line, why, and **one** button. "Do now" and "When you can" (two columns on the computer, one list on the phone). The number on the tab counts items, not decisions.
+   - **Decisions:** one card per pile, never one per decision ("Sean: 105 replies waiting for your OK", with the oldest age). The button opens that pile. Replies and Campaigns are "Do now", and so is any pile whose oldest card is a day old.
+   - **Riley's manual fixes:** System Issues in "Waiting for Alex" with Fix Type "Manual (Alex)". The card shows the Why; **See steps** opens the Fix. When you've done it, **Open the decision** and approve it in Fixes so Riley checks it worked (HQ writes nothing to Airtable here). Its decision is not counted again in the Fixes card.
+   - **Sign-ups waiting** → Approve (Users).
+   - **Asks:** something an agent or a Claude session needs you to do, e.g. "Atlas: reply to Pete about Twenty West", "Setup: publish the Google calendar app" (with steps). **Done** clears it; **Not now** hides it until tomorrow or Monday 8 a.m. (New York).
+   - A card disappears by itself when it's resolved: the pile is empty, the issue left "Waiting for Alex", the ask is done.
+   - Atlas's own to-dos are not here (none is assigned to a person); they stay on his Team page.
+   - Members see only the piles they can act on (no Money, nothing from Ledger or Sienna), asks sent to everyone, and no Riley manual fixes or sign-ups.
+   - **Add an ask (server):** `docker compose exec engine node dist/src/cli.js ask add --agent=Atlas --title="Reply to Pete about Twenty West" --why="He asked twice for the October numbers." --action-url=clients --action-label="Open the client"`. Options: `--steps="1. ...\n2. ..."` (or `--steps-stdin`), `--action-url=` an HQ page (`decisions/Replies`, `users`, `clients`) or an `https://` link, `--priority=high` for "Do now", `--for=everyone` so members see it too, `--key=` to set the duplicate key (default: agent + title; the same key never adds a second ask, even after it was done). `ask list [--all]` and `ask done <id>`. In code: `addAsk(db, {...})` in `engine/src/hq/asks.ts`.
+   - The old four-box to-do (below) is still at `#/tasks`, out of the menu.
+   **Old to-do** (Airtable Tasks, open ones only; at `#/tasks`). It's sorted into four boxes:
    - **Do now:** urgent and important.
    - **Schedule:** important.
    - **Delegate:** urgent, not important.
@@ -696,4 +706,5 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
 
 ### Server commands
 - `hq-user <email> --role=owner|member [--name=Josh] [--password-stdin] [--google-only]`: create or update a login.
+- `ask add --agent=<name> --title="..." [...]`, `ask list [--all]`, `ask done <id>`: the "Needs you" asks (see tab 3 above).
 - Local development: `npm run build:hq` in `engine/` builds the app to `hq/web/dist`. Start the engine with `HQ_WEB_DIR=../hq/web/dist`, then open http://localhost:8080/hq/. Or run `npm run dev` in `hq/web`; it sends API calls to the engine on :8080.
