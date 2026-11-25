@@ -76,7 +76,20 @@ const ICONS: Record<string, ReactNode> = {
   activity: P('M22 12h-4l-3 9L9 3l-3 9H2'),
   terminal: P('m4 17 6-6-6-6M12 19h8'),
   lock: <><rect x="3" y="11" width="18" height="11" rx="2" />{P('M7 11V7a5 5 0 0 1 10 0v4')}</>,
+  briefcase: <><rect x="2" y="7" width="20" height="14" rx="2" />{P('M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2M2 13h20')}</>,
+  shield: P('M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM9 12l2 2 4-4'),
+  userPlus: <>{P('M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M19 8v6M22 11h-6')}<circle cx="9" cy="7" r="4" /></>,
+  trendUp: P('m22 7-8.5 8.5-5-5L2 17M16 7h6v6'),
+  trendDown: P('m22 17-8.5-8.5-5 5L2 7M16 17h6v-6'),
+  key: P('M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4'),
 };
+
+/* ---------- Clients ---------- */
+export const lightTone: Record<string, Tone> = { red: 'bad', yellow: 'warn', green: 'good', inactive: 'idle' };
+export const lightLabel: Record<string, string> = { red: 'Red', yellow: 'Yellow', green: 'Green', inactive: 'Inactive' };
+export const usd = (x: number | null | undefined) => (x === null || x === undefined ? 'UNKNOWN' : `$${Math.round(x).toLocaleString('en-US')}`);
+/** Same rule as the server (engine/src/hq/clients.ts clientKey): the name without "(…)" and a trailing Internal / Free Campaigns / Trial. */
+export const clientKey = (name: string) => String(name ?? '').toLowerCase().replace(/^client:\s*/, '').replace(/\([^)]*\)/g, ' ').replace(/\b(internal|free campaigns?|trial)\s*$/g, ' ').replace(/[^a-z0-9]+/g, '');
 export type IconName = keyof typeof ICONS;
 export function Icon({ name, size = 18, className, strokeWidth = 1.8 }: { name: string; size?: number; className?: string; strokeWidth?: number }) {
   return (
@@ -113,7 +126,8 @@ export const toneLabel: Record<Tone, string> = { good: 'Fine', warn: 'Needs you'
 
 /* ---------- Surfaces ---------- */
 export function Card({ children, className, onClick, label }: { children: ReactNode; className?: string; onClick?: () => void; label?: string }) {
-  const cls = cx('min-w-0 rounded-2xl border border-line bg-surface p-5 shadow-card', onClick && 'w-full text-left transition duration-150 hover:border-line-strong hover:shadow-pop active:scale-[0.995]', className);
+  // A padding class (e.g. p-0 for lists) replaces the default p-5 instead of fighting it in the CSS order.
+  const cls = cx('min-w-0 rounded-2xl border border-line bg-surface shadow-card', /(^|\s)p-\d/.test(className ?? '') ? '' : 'p-5', onClick && 'w-full text-left transition duration-150 hover:border-line-strong hover:shadow-pop active:scale-[0.995]', className);
   return onClick ? <button type="button" onClick={onClick} aria-label={label} className={cls}>{children}</button> : <div className={cls}>{children}</div>;
 }
 

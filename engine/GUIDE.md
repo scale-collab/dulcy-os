@@ -4,7 +4,7 @@ How the Dulcy lead engine works from start to finish, in plain words.
 **Keep this file current:** every engine change updates this guide in the same pull request (rule 2026-11-23).
 Technical details for developers are in `README.md`.
 
-Last updated: 2026-11-25 (HQ Step 1)
+Last updated: 2026-11-25 (HQ Step 2: Clients; sign-up and Users)
 
 ---
 
@@ -593,13 +593,13 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
 - `RILEY=on`, and add `riley.collect,riley.apply` to `LIVE_STAGES`.
 - Optional, for n8n errors: `N8N_API_KEY` (n8n → Settings → n8n API → create key) and `N8N_BASE_URL` (default `http://localhost:5678`).
 
-## HQ: your private app, Step 1 "Today" (2026-11-25)
+## HQ: your private app (Step 1 "Today", Step 2 "Clients", 2026-11-25)
 
 **What it is:** one calm screen at **https://hq.dulcy.io**, on the phone or the computer. It runs inside the engine (same server, same code), and Airtable stays the database. Only people with an HQ login get in. Plan: `hq/PLAN.md`.
 
 **Look:** a sidebar on the computer, tabs at the bottom on the phone. Light or dark follows your phone/computer; the System / Light / Dark switch (bottom of the sidebar, or the screen icon at the top on the phone) pins one on that device.
 
-**The five tabs:**
+**The six tabs** (plus Users for you):
 1. **Today**
    - First things: how many decisions wait on you, and the top "Do now" task.
    - Ada's brief: the two key lines first ("Waiting on you" and "Top 3"); tap for the rest.
@@ -627,7 +627,14 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
    - its reports;
    - its Activity Log rows;
    - its engine runs.
-5. **Chat:** talk to Ada (default) or any agent. History is saved per agent.
+5. **Clients** (Step 2, 2026-11-25): one card per client, worst health first. It replaces the Airtable "Clients & LTV" page (that page shows 3 active because it only counts Client Type "Paying Client").
+   - **Shown by default:** the active clients and Dulcy itself. The **Inactive** switch adds past clients (e.g. Lead Flo Marketing).
+   - **One client, one card:** workspaces that are the same client count once: "Twenty West Media" (inactive) + "Twenty West Media (Internal)" (active), "Dulcy" + "Dulcy Free Campaigns". The rule: a Workspace IDs "Client" link to another record, otherwise the same name without "(…)" or a trailing "Internal" / "Free Campaigns". The active record leads; replies, meetings and campaigns of both add up.
+   - **On each card:** the health light (Atlas's grade, the same as the Monday report), a **note for today** (1-2 lines: a bounce over 4%, replies waiting for approval, a campaign at 60%+ with no plan yet, "283 interested / 17 booked in 30 days"), interested and booked in 30 days (vs KPI), replies waiting for approval (Emails "Dulcy Reply Agent State" = Needs Approval) and active campaigns.
+   - **Money (owner only):** monthly fee, lifetime revenue (Actual Lifetime Revenue, else Estimated LTV), what the client owes (Outstanding Receivables). A member's answer has no money in it at all (the server leaves it out).
+   - **Tap a card:** the 7- and 30-day numbers with trends, the interested → booked rate, money, the campaigns table (progress, bounce % with watch over 2.5% / pause over 4%, interested per 1,000 sent, "plan next" at 60%+ or "next planned" when a campaign plan exists), the **Data check** (Client Type empty, fee missing or on the other record, two workspaces), decisions waiting for this client (tap opens that pile filtered to the client), Atlas's to-do for the client and its Activity Log rows.
+   - **Speed and cost:** the Airtable reads are kept for 5 minutes for everyone; the refresh button re-reads (at most every 30 seconds). Atlas owns this data being right.
+6. **Chat:** talk to Ada (default) or any agent. History is saved per agent.
    - Chat is **read only**: agents look things up in Airtable and the engine and say where the answer came from. Nothing is sent or changed from chat.
    - When an agent isn't sure, it says "Here's what I found" and who should handle it.
    - Ada can ask another agent for you. That conversation is saved: tap "Read Ada ↔ Atlas" under her answer, or History → "Ada's conversations with the team".
@@ -642,9 +649,21 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
 - `SLACK_REPORTS=on` (default) still posts reports to Slack too. Set `off` once HQ works for you: then they go to HQ only. Urgent alerts always go to Slack (a campaign paused for bounces, a refused launch, a failed engine job).
 - `SLACK_DECISIONS=on` (default) still posts decisions to Slack for ✅/❌. Set `off` to decide in HQ only. Keep `SLACK_BOT_TOKEN` set: the decisions loop still needs it to run.
 
+**Sign-up and Users (owner only, 2026-11-25):**
+- **Sign up:** the sign-in page has "No login yet? Sign up" (name, email, password twice, 12+ characters; or "Sign up with Google" when Google is set up). It only sends a **request**: "Request sent. Alex will approve it." It never signs anyone in, and the answer is the same whether the email already has a login. Sign-ups are limited like logins (5 per email or 20 per address in 15 minutes).
+- **You see it:** a "1 sign-up waiting" card on Today and a number on **Users** in the sidebar (the shield icon at the top on the phone). Nothing goes to Slack.
+- **Users page:** everyone with a login: name, email, role, status (pending / active / disabled), last seen, added.
+  - **Approve** (choose Member or Owner; Member by default) or **Deny** (the request is deleted).
+  - **Make owner / Make member**, **Disable / Re-enable** (disabling signs them out everywhere), **Reset** a password (you set a temporary one; they are signed out everywhere).
+  - **Add user:** name, email, role, and a temporary password or Google sign-in only.
+  - You cannot disable or demote yourself or the last owner.
+  - Every action is in the **Log** at the bottom (who, what, when; table `hq_user_events`).
+- A pending or disabled login can never get in: password, Google and an old session are all refused.
+- The server command `hq-user` still works the same, and also approves a pending request.
+
 **Who can see what:**
 - `owner` (you) sees everything.
-- `member` (Josh later) never sees money or content (Alex, 2026-11-25): no Money pile, and nothing from Ledger or Sienna (cards, decisions, chats, reports). A member sees only their own chats.
+- `member` (Josh later) never sees money or content (Alex, 2026-11-25): no Money pile, nothing from Ledger or Sienna (cards, decisions, chats, reports), no client money (fee, LTV, receivables) and no Users page. A member sees only their own chats.
 
 **Safety:**
 - Passwords are stored as scrypt hashes and never printed.

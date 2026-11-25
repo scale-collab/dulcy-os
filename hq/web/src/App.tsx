@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, type User } from './api';
-import { cx, go, Icon, IconButton, Loading, Logo, useCounts, useRoute, useTheme, type ThemeMode } from './ui';
+import { cx, go, Icon, IconButton, Loading, Logo, setCount, useCounts, useRoute, useTheme, type ThemeMode } from './ui';
 import Login from './pages/Login';
 import Today from './pages/Today';
 import Decisions from './pages/Decisions';
@@ -9,10 +9,14 @@ import Agents from './pages/Agents';
 import AgentPage from './pages/AgentPage';
 import Chat from './pages/Chat';
 import ReportPage from './pages/ReportPage';
+import Clients from './pages/Clients';
+import ClientPage from './pages/ClientPage';
+import Users from './pages/Users';
 
 const TABS = [
   { key: 'today', label: 'Today', icon: 'sun', count: '' },
   { key: 'decisions', label: 'Decisions', icon: 'inbox', count: 'decisions' },
+  { key: 'clients', label: 'Clients', icon: 'briefcase', count: '' },
   { key: 'tasks', label: 'To-do', icon: 'grid', count: 'doNow' },
   { key: 'agents', label: 'Team', icon: 'users', count: '' },
   { key: 'chat', label: 'Chat', icon: 'message', count: '' },
@@ -26,7 +30,7 @@ const THEMES: { mode: ThemeMode; icon: string; label: string }[] = [
 export default function App() {
   const [user, setUser] = useState<User | null | undefined>(undefined);
   const route = useRoute();
-  const load = useCallback(() => { api<{ user: User }>('/me').then((r) => setUser(r.user)).catch(() => setUser(null)); }, []);
+  const load = useCallback(() => { api<{ user: User; signups?: number }>('/me').then((r) => { setUser(r.user); setCount('signups', r.signups ?? 0); }).catch(() => setUser(null)); }, []);
   useEffect(() => { load(); const out = () => setUser(null); window.addEventListener('hq:signed-out', out); return () => window.removeEventListener('hq:signed-out', out); }, [load]);
 
   if (user === undefined) return <Loading what="Opening HQ" />;
@@ -36,20 +40,22 @@ export default function App() {
   const signOut = async () => { try { await api('/auth/logout', { body: {} }); } catch { /* signed out anyway */ } setUser(null); };
   let body;
   switch (page) {
-    case 'decisions': body = <Decisions user={user} pile={a} />; break;
+    case 'decisions': body = <Decisions user={user} pile={a} client={b} />; break;
+    case 'clients': body = a ? <ClientPage id={a} user={user} /> : <Clients user={user} />; break;
+    case 'users': body = <Users user={user} />; break;
     case 'tasks': body = <Tasks />; break;
     case 'agents': body = a ? <AgentPage name={a} /> : <Agents />; break;
     case 'chat': body = <Chat user={user} agent={a || 'Ada'} threadId={b ? Number(b) : undefined} />; break;
     case 'report': body = <ReportPage id={Number(a)} />; break;
     default: body = <Today user={user} />;
   }
-  const active = page === 'report' ? 'today' : TABS.some((t) => t.key === page) ? page : 'today';
-  const viewKey = page === 'agents' ? `agents/${a ?? ''}` : page === 'report' ? `report/${a}` : page;
+  const active = page === 'report' ? 'today' : page === 'users' ? 'users' : TABS.some((t) => t.key === page) ? page : 'today';
+  const viewKey = page === 'agents' || page === 'clients' ? `${page}/${a ?? ''}` : page === 'report' ? `report/${a}` : page;
   return (
     <div className="min-h-dvh">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2 focus:shadow-pop">Skip to content</a>
       <Sidebar active={active} user={user} onSignOut={signOut} />
-      <MobileHeader onSignOut={signOut} />
+      <MobileHeader onSignOut={signOut} owner={user.role === 'owner'} />
       <div className="md:pl-64">
         <main id="main" className="mx-auto w-full max-w-6xl px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 md:pb-14 md:pt-10 lg:px-10">
           <div key={viewKey} className="anim-in">{body}</div>
@@ -82,6 +88,14 @@ function Sidebar({ active, user, onSignOut }: { active: string; user: User; onSi
             </button>
           );
         })}
+        {user.role === 'owner' && (
+          <button onClick={() => go('users')} aria-current={active === 'users' ? 'page' : undefined}
+            className={cx('group mt-3 flex min-h-11 items-center gap-3 rounded-xl border-t border-line px-3 pt-px text-[15px] font-medium transition', active === 'users' ? 'bg-hover text-fg' : 'text-muted hover:bg-hover hover:text-fg')}>
+            <Icon name="shield" size={18} className={active === 'users' ? 'text-fg' : 'text-muted group-hover:text-fg'} />
+            <span className="flex-1 text-left">Users</span>
+            {!!c.signups && <span className="tabular rounded-full bg-ink px-2 py-0.5 text-xs font-semibold text-ink-fg" aria-label={`${c.signups} sign-up${c.signups === 1 ? '' : 's'} waiting`}>{c.signups}</span>}
+          </button>
+        )}
       </nav>
       <div className="mt-auto space-y-3 p-3">
         <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-1 rounded-xl border border-line bg-sunken p-1">
@@ -102,8 +116,9 @@ function Sidebar({ active, user, onSignOut }: { active: string; user: User; onSi
   );
 }
 
-function MobileHeader({ onSignOut }: { onSignOut: () => void }) {
+function MobileHeader({ onSignOut, owner }: { onSignOut: () => void; owner: boolean }) {
   const [mode, setMode] = useTheme();
+  const c = useCounts();
   const i = THEMES.findIndex((t) => t.mode === mode);
   const next = THEMES[(i + 1) % THEMES.length];
   return (
@@ -111,6 +126,12 @@ function MobileHeader({ onSignOut }: { onSignOut: () => void }) {
       <div className="flex h-14 items-center justify-between pl-4 pr-2">
         <button onClick={() => go('today')} className="flex min-h-11 items-center gap-2.5 font-semibold tracking-tight"><Logo className="h-7 w-7" />Dulcy HQ</button>
         <div className="flex items-center">
+          {owner && (
+            <span className="relative">
+              <IconButton icon="shield" label={c.signups ? `Users: ${c.signups} sign-up${c.signups === 1 ? '' : 's'} waiting` : 'Users'} onClick={() => go('users')} />
+              {!!c.signups && <span aria-hidden="true" className="tabular pointer-events-none absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-bad px-1 text-[10px] font-bold leading-none text-surface">{c.signups}</span>}
+            </span>
+          )}
           <IconButton icon={THEMES[i].icon} label={`Theme: ${THEMES[i].label}. Switch to ${next.label}`} onClick={() => setMode(next.mode)} />
           <IconButton icon="logout" label="Sign out" onClick={onSignOut} />
         </div>
@@ -123,7 +144,7 @@ function TabBar({ active }: { active: string }) {
   const c = useCounts();
   return (
     <nav aria-label="Main" className="safe-bottom fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/90 backdrop-blur-md md:hidden">
-      <div className="mx-auto grid max-w-lg grid-cols-5">
+      <div className="mx-auto grid max-w-lg grid-cols-6">
         {TABS.map((t) => {
           const on = active === t.key;
           const n = t.key === 'decisions' ? c.decisions : 0;

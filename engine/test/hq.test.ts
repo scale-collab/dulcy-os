@@ -22,6 +22,8 @@ import { DECISIONS, DF } from '../src/decisions/fields.js';
 import { EMAILS, RA } from '../src/agents/emailsFields.js';
 import { decisionsTick } from '../src/decisions/loop.js';
 import type { ChatModel } from '../src/hq/chat.js';
+import { clientKey, groupWorkspaces, noteFor, _resetClientsCache } from '../src/hq/clients.js';
+import { ACTIVITY, AF } from '../src/activity.js';
 
 const url = process.env.TEST_DATABASE_URL;
 const skip = !url ? 'TEST_DATABASE_URL not set' : false;
@@ -92,9 +94,9 @@ before(async () => {
 });
 after(async () => { if (!skip) { server.close(); await db.end(); } fs.rmSync(webDir, { recursive: true, force: true }); });
 beforeEach(async () => {
-  tables = {}; writes = []; modelCalls = []; script = []; _resetClientCache();
+  tables = {}; writes = []; modelCalls = []; script = []; _resetClientCache(); _resetClientsCache();
   if (skip) return;
-  await db.query('TRUNCATE hq_users, hq_sessions, hq_login_attempts, hq_reports, hq_chat_threads, hq_chat_messages, hq_agent_tasks, hq_task_checks, campaign_plans, jobs, steps, receipts, events RESTART IDENTITY CASCADE');
+  await db.query('TRUNCATE hq_users, hq_sessions, hq_login_attempts, hq_user_events, hq_reports, hq_chat_threads, hq_chat_messages, hq_agent_tasks, hq_task_checks, campaign_plans, jobs, steps, receipts, events RESTART IDENTITY CASCADE');
   await upsertUser(db, 'Alex@dulcy.io', 'owner', PW, 'Alex');
 });
 
@@ -527,4 +529,274 @@ test('Atlas tasks: generator writes once, closes when the plan starts; done from
   const id = (await db.query(`SELECT id FROM hq_agent_tasks WHERE agent='Scout'`)).rows[0].id;
   assert.equal((await call('POST', `/hq/api/agent-tasks/${id}/done`, { body: {}, cookie })).body.ok, true);
   assert.equal((await db.query(`SELECT status FROM hq_agent_tasks WHERE id=$1`, [id])).rows[0].status, 'done');
+});
+
+// ---------- Clients (Step 2) ----------
+test('clients: one key per client; the active record leads a group; the note for today', () => {
+  assert.equal(clientKey('Twenty West Media (Internal)'), clientKey('Twenty West Media'));
+  assert.equal(clientKey('Dulcy Free Campaigns'), 'dulcy');
+  assert.notEqual(clientKey('Human Marketing'), clientKey('The Marketing Cartel'));
+  const g = groupWorkspaces([
+    { id: 'recA', fields: { Name: 'Twenty West Media', Status: 'Inactive', 'Client Type': 'Paying Client' } },
+    { id: 'recB', fields: { Name: 'Twenty West Media (Internal)', Status: 'Active', 'Client Type': 'Paying Client' } },
+    { id: 'recC', fields: { Name: 'Scroll Stop', Status: 'Active', Client: ['recD'] } },
+    { id: 'recD', fields: { Name: 'GLOBALMEDIAGROUP LTD', Status: 'Active' } },
+  ]);
+  assert.deepEqual(g.map((x) => x.map((w) => w.id)), [['recB', 'recA'], ['recC', 'recD']], 'a Client link to another record groups them too');
+  const base = { active: true, internal: false, waitingApproval: 0, seanWaiting: 0, interested30: 0, booked30: 0, interested7: 0, kpi: null };
+  const camp = (o: Record<string, unknown>) => ({ id: 'c', name: 'X', progress: 0.3, bounce: 1, sent: 1, interested: 0, perThousand: null, flag: null, next: false, planExists: false, ...o }) as any;
+  assert.deepEqual(noteFor({ ...base, campaigns: [] }), ['No active campaign.']);
+  assert.deepEqual(noteFor({ ...base, waitingApproval: 38, interested30: 283, booked30: 17, campaigns: [camp({ bounce: 4.6, flag: 'pause' })] }), ['Bounce 4.6% on X: pause and check.', '38 replies waiting for approval.']);
+  assert.deepEqual(noteFor({ ...base, interested30: 283, booked30: 17, campaigns: [camp({})] }), ['283 interested / 17 booked in 30 days.']);
+  assert.deepEqual(noteFor({ ...base, campaigns: [camp({ progress: 0.72, next: true })] }), ['X is at 72%: plan the next campaign.']);
+  assert.deepEqual(noteFor({ ...base, active: false, campaigns: [] }), []);
+});
+
+const WS_T = 'tblcjRBGJEWh5KgOt', CAMPAIGNS_T = 'tblAVAA6uBPaMj28P', EF_WS = 'fldCjo0mB0snziNZQ';
+function clientTables() {
+  const d = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
+  tables[WS_T] = {
+    recTWMOLD00000001: { Name: 'Twenty West Media', Status: 'Inactive', 'Client Type': 'Paying Client', 'Monthly Fee': 2500, 'Actual Lifetime Revenue': 8985, 'Outstanding Receivables': 4995, ID: 65, 'Client Start Date': '2026-03-31' },
+    recTWMINT00000001: { Name: 'Twenty West Media (Internal)', Status: 'Active', 'Client Type': 'Paying Client', 'Monthly Fee': 0, ID: 66, 'Client Health': 'At Risk', 'Client Health Reasons': 'Outstanding $4,995\nBounce high' },
+    recMJJ00000000001: { Name: 'Brilliant Jewelers / MJJ Inc. (MJJ Brilliant)', Status: 'Active', ID: 80 },
+    recLFM00000000001: { Name: 'Lead Flo Marketing', Status: 'Inactive', 'Client Type': 'Paying Client', 'Monthly Fee': 1000, ID: 68, 'Inactive Reason': 'Churned' },
+    recDUL00000000001: { Name: 'Dulcy', Status: 'Active', 'Client Type': 'Internal', 'Monthly Fee': 0, ID: 2 },
+    recDUL00000000002: { Name: 'Dulcy Free Campaigns', Status: 'Active', 'Client Type': 'Free / Trial', ID: 41 },
+  };
+  const emails: Record<string, Record<string, unknown>> = {};
+  for (let i = 0; i < 20; i++) emails[`recEI${String(i).padStart(12, '0')}`] = { 'Workspace ID (Bison)': '66', 'Lead Status': 'Interested', 'Latest Reply Time': d(3) };
+  emails.recEOLD0000000001 = { 'Workspace ID (Bison)': '65', 'Lead Status': 'Interested', 'Latest Reply Time': d(5) };
+  emails.recEOLD0000000002 = { 'Workspace ID (Bison)': '65', 'Lead Status': 'Interested', 'Latest Reply Time': d(6), 'Meeting Booked At': d(2) };
+  emails.recEDUL0000000001 = { 'Workspace ID (Bison)': '41', 'Lead Status': 'Interested', 'Latest Reply Time': d(1), 'Meeting Booked At': d(1) };
+  for (let i = 0; i < 3; i++) emails[`recEWAIT0000000${i}0`] = { [RA.state]: 'Needs Approval', [RA.clients]: ['recTWMINT00000001'] };
+  emails.recEWAITMJJ000001 = { [RA.state]: 'Needs Approval', [EF_WS]: '80' };
+  emails.recESENT000000001 = { [RA.state]: 'Sent', [RA.clients]: ['recTWMINT00000001'] };
+  tables[EMAILS] = emails;
+  tables[CAMPAIGNS_T] = {
+    recCTWM0000000001: { Name: 'TWM - Contractors', Client: ['recTWMINT00000001'], 'Campaign Status': 'Active', 'Bounced %': 4.6, Progress: 0.72, 'Emails Sent': 2000, Interested: 10 },
+    recCMJJ0000000001: { Name: 'MJJ - Jewelers', Client: ['recMJJ00000000001'], 'Campaign Status': 'Active', 'Bounced %': 3.1, Progress: 0.3, 'Emails Sent': 500, Interested: 2 },
+    recCLFM0000000001: { Name: 'Lead Flo - Events', Client: ['recLFM00000000001'], 'Campaign Status': 'Inactive', 'Bounced %': 9, Progress: 1 },
+    recCDUL0000000001: { Name: 'Dulcy - Agencies', Client: ['recDUL00000000001'], 'Campaign Status': 'Active', 'Bounced %': 1, Progress: 0.2, 'Emails Sent': 1000, Interested: 5 },
+  };
+  tables[DECISIONS] = { recSEANTWM0000001: decision({ [DF.client]: 'Client: Twenty West Media (Internal)' }) };
+  tables[ACTIVITY] = {
+    recACT00000000001: { [AF.event]: 'Atlas saw bounce 4.6%', [AF.when]: d(1), [AF.agent]: 'Atlas', [AF.type]: 'Detected', [AF.client]: ['recTWMINT00000001'] },
+    recACT00000000002: { [AF.event]: 'Other client', [AF.when]: d(1), [AF.agent]: 'Atlas', [AF.type]: 'Info', [AF.client]: ['recMJJ00000000001'] },
+  };
+}
+
+test('clients API: active by default, the Twenty West pair counted once, numbers, notes, flags, cache', { skip }, async () => {
+  clientTables();
+  assert.equal((await call('GET', '/hq/api/clients')).status, 401, 'needs a session');
+  assert.equal((await call('GET', '/hq/api/clients/recTWMINT00000001')).status, 401, 'needs a session');
+  const { cookie } = await login();
+  const r = await call('GET', '/hq/api/clients', { cookie });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  const names = r.body.clients.map((c: any) => c.name);
+  assert.deepEqual([...names].sort(), ['Brilliant Jewelers / MJJ Inc. (MJJ Brilliant)', 'Dulcy', 'Twenty West Media']);
+  assert.deepEqual({ active: r.body.summary.active, internal: r.body.summary.internal, inactive: r.body.summary.inactive }, { active: 2, internal: 1, inactive: 1 });
+  assert.equal(r.body.clients[0].name, 'Twenty West Media', 'worst health first');
+  const twm = r.body.clients[0];
+  assert.equal(twm.id, 'recTWMINT00000001', 'the active record leads');
+  assert.equal(twm.workspaces.length, 2);
+  assert.equal(twm.light, 'red');
+  assert.deepEqual([twm.interested30, twm.booked30, twm.waitingApproval, twm.seanWaiting], [22, 1, 3, 1], 'both workspaces add up; only Needs Approval counts');
+  assert.deepEqual({ ...twm.money, feeNote: '' }, { fee: 2500, feeNote: '', ltv: 8985, ltvSource: 'actual', receivables: 4995, months: null });
+  assert.match(twm.money.feeNote, /\$2,500 is on the inactive record "Twenty West Media"/);
+  assert.equal(r.body.summary.mrr, 2500);
+  assert.match(twm.note[0], /^Bounce 4\.6% on TWM - Contractors/);
+  assert.match(twm.note[1], /^3 replies waiting for approval/);
+  const camp = twm.campaigns[0];
+  assert.deepEqual([camp.flag, camp.next, camp.planExists, camp.perThousand], ['pause', true, false, 5]);
+  const mjj = r.body.clients.find((c: any) => /MJJ/.test(c.name));
+  assert.equal(mjj.campaigns[0].flag, 'watch');
+  assert.equal(mjj.waitingApproval, 1, 'matched by Bison workspace id');
+  assert.ok(mjj.dataIssues.some((x: string) => /Client Type is empty/.test(x)));
+  const dulcy = r.body.clients.find((c: any) => c.name === 'Dulcy');
+  assert.equal(dulcy.internal, true);
+  assert.equal(dulcy.workspaces.length, 2, 'Dulcy Free Campaigns folds into Dulcy');
+  assert.equal(dulcy.booked30, 1);
+  assert.ok(!dulcy.reasons.some((x: string) => /fee/.test(x)), 'no fee nag for Dulcy itself');
+
+  const all = await call('GET', '/hq/api/clients?all=1', { cookie });
+  const lfm = all.body.clients.find((c: any) => c.name === 'Lead Flo Marketing');
+  assert.deepEqual([lfm.active, lfm.light, lfm.inactiveReason, lfm.campaigns.length, lfm.note.length], [false, 'inactive', 'Churned', 0, 0]);
+  assert.equal(all.body.clients.at(-1).name, 'Lead Flo Marketing', 'inactive last');
+
+  // Cached for 5 minutes: a change shows only after the cache is cleared.
+  await db.query(`INSERT INTO campaign_plans (trigger_key, ws_rec, client, state) VALUES ('next:recCTWM0000000001','recTWMINT00000001','Twenty West Media','planning')`);
+  assert.equal((await call('GET', '/hq/api/clients', { cookie })).body.clients[0].campaigns[0].planExists, false, 'cached');
+  _resetClientsCache();
+  assert.equal((await call('GET', '/hq/api/clients', { cookie })).body.clients[0].campaigns[0].planExists, true, 'plan found after the cache');
+
+  const d = await call('GET', '/hq/api/clients/recTWMOLD00000001', { cookie });
+  assert.equal(d.status, 200);
+  assert.equal(d.body.client.id, 'recTWMINT00000001', 'any workspace id of the client opens it');
+  assert.deepEqual(d.body.activity.map((x: any) => x.event), ['Atlas saw bounce 4.6%']);
+  assert.equal(d.body.decisions.length, 1);
+  assert.equal((await call('GET', '/hq/api/clients/recNOPE0000000001', { cookie })).status, 404);
+});
+
+test('clients API: members get no money (fee, LTV, receivables, money reasons)', { skip }, async () => {
+  clientTables();
+  await upsertUser(db, 'josh@dulcy.io', 'member', 'josh long password 1', 'Josh');
+  const { cookie } = await login('josh@dulcy.io', 'josh long password 1');
+  for (const p of ['/hq/api/clients?all=1', '/hq/api/clients/recTWMINT00000001']) {
+    const r = await call('GET', p, { cookie });
+    assert.equal(r.status, 200);
+    assert.ok(!/"money"|"mrr"|4995|4,995|8985|8,985|2500|2,500|\$/.test(r.text), `no money in ${p}: ${r.text.slice(0, 300)}`);
+  }
+  const twm = (await call('GET', '/hq/api/clients', { cookie })).body.clients[0];
+  assert.equal(twm.airtableReasons, 'Bounce high');
+  assert.equal(twm.interested30, 22, 'results are still there');
+});
+
+// ---------- Sign-up and users ----------
+const SIGNUP = { name: 'Josh Rivera', email: 'Josh@dulcy.io', password: 'josh long password 1', password2: 'josh long password 1' };
+
+test('sign-up makes a pending request that can never log in; same answer for an existing email', { skip }, async () => {
+  const r = await call('POST', '/hq/api/auth/signup', { body: SIGNUP });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(r.body.message, 'Request sent. Alex will approve it.');
+  assert.equal(sessionCookie(r), '', 'no session from a sign-up');
+  const row = (await db.query(`SELECT email, role, pending, disabled, password_hash FROM hq_users WHERE email='josh@dulcy.io'`)).rows[0];
+  assert.deepEqual([row.role, row.pending, row.disabled], ['member', true, true]);
+  assert.match(row.password_hash, /^scrypt\$/);
+  const tryLogin = await login('josh@dulcy.io', SIGNUP.password);
+  assert.equal(tryLogin.r.status, 401, 'pending cannot log in');
+  assert.equal(tryLogin.r.body.error, 'That email and password do not match.', 'same answer as a wrong password');
+  // A session row for a pending user (should never exist) is refused anyway.
+  const owner = (await db.query(`SELECT id FROM hq_users WHERE email='josh@dulcy.io'`)).rows[0].id;
+  const { createSession } = await import('../src/hq/auth.js');
+  const forged = (await createSession(db, cfg(), owner)).split(';')[0];
+  assert.equal((await call('GET', '/hq/api/me', { cookie: forged })).status, 401, 'session lookup refuses pending users');
+
+  // Existing email (the owner's): same answer, nothing changes.
+  const before = (await db.query(`SELECT password_hash, pending FROM hq_users WHERE email='alex@dulcy.io'`)).rows[0];
+  const again = await call('POST', '/hq/api/auth/signup', { body: { ...SIGNUP, email: 'alex@dulcy.io' } });
+  assert.deepEqual([again.status, again.body.message], [200, 'Request sent. Alex will approve it.']);
+  assert.deepEqual((await db.query(`SELECT password_hash, pending FROM hq_users WHERE email='alex@dulcy.io'`)).rows[0], before);
+  assert.equal((await login()).r.status, 200, 'the owner still logs in');
+
+  // Validation: short password, mismatch, bad email.
+  assert.equal((await call('POST', '/hq/api/auth/signup', { body: { ...SIGNUP, email: 'a@b.io', password: 'short', password2: 'short' } })).status, 400);
+  assert.equal((await call('POST', '/hq/api/auth/signup', { body: { ...SIGNUP, email: 'a@b.io', password2: 'something else 123' } })).status, 400);
+  assert.equal((await call('POST', '/hq/api/auth/signup', { body: { ...SIGNUP, email: 'not-an-email' } })).status, 400);
+  assert.equal((await call('POST', '/hq/api/auth/signup', { body: SIGNUP, origin: 'https://evil.example' })).status, 403, 'CSRF check on sign-up too');
+});
+
+test('sign-up is rate limited per email', { skip }, async () => {
+  for (let i = 0; i < 5; i++) assert.equal((await call('POST', '/hq/api/auth/signup', { body: SIGNUP })).status, 200);
+  const blocked = await call('POST', '/hq/api/auth/signup', { body: SIGNUP });
+  assert.equal(blocked.status, 429);
+  assert.equal((await login()).r.status, 200, 'sign-up tries do not block logins');
+  assert.equal((await db.query(`SELECT count(*)::int AS n FROM hq_users WHERE email='josh@dulcy.io'`)).rows[0].n, 1);
+});
+
+test('owner sees the request, approves with a role; the user logs in with that role', { skip }, async () => {
+  await call('POST', '/hq/api/auth/signup', { body: SIGNUP });
+  const { cookie } = await login();
+  assert.equal((await call('GET', '/hq/api/me', { cookie })).body.signups, 1, 'badge count for the owner');
+  const list = await call('GET', '/hq/api/users', { cookie });
+  const josh = list.body.users.find((u: any) => u.email === 'josh@dulcy.io');
+  assert.deepEqual([josh.status, josh.role, josh.hasPassword, Boolean(josh.requested)], ['pending', 'member', true, true]);
+  assert.ok(!JSON.stringify(list.body).includes('scrypt'), 'no hashes to the browser');
+  assert.equal((await call('POST', `/hq/api/users/${josh.id}/approve`, { body: { role: 'admin' }, cookie })).status, 400);
+  assert.equal((await call('POST', `/hq/api/users/${josh.id}/approve`, { body: { role: 'member' }, cookie })).status, 200);
+  assert.equal((await call('GET', '/hq/api/me', { cookie })).body.signups, 0);
+  const j = await login('josh@dulcy.io', SIGNUP.password);
+  assert.equal(j.r.status, 200);
+  assert.equal(j.r.body.user.role, 'member');
+  assert.equal((await call('GET', '/hq/api/me', { cookie: j.cookie })).body.signups, undefined, 'members get no sign-up count');
+  // Members cannot reach any users API.
+  for (const [m, p] of [['GET', '/hq/api/users'], ['POST', '/hq/api/users'], ['POST', `/hq/api/users/${josh.id}/role`], ['POST', `/hq/api/users/${josh.id}/disable`], ['POST', '/hq/api/users/1/password']] as const) {
+    assert.equal((await call(m, p, { cookie: j.cookie, ...(m === 'POST' ? { body: { role: 'owner', password: 'x'.repeat(20) } } : {}) })).status, 403, `${m} ${p}`);
+  }
+  assert.equal((await db.query(`SELECT role FROM hq_users WHERE email='josh@dulcy.io'`)).rows[0].role, 'member', 'a member cannot promote themself');
+  // Promote: the role applies to the open session right away.
+  assert.equal((await call('POST', `/hq/api/users/${josh.id}/role`, { body: { role: 'owner' }, cookie })).status, 200);
+  assert.equal((await call('GET', '/hq/api/me', { cookie: j.cookie })).body.user.role, 'owner');
+  const actions = (await call('GET', '/hq/api/users', { cookie })).body.events.map((e: any) => `${e.actor} ${e.action} ${e.target}`);
+  assert.deepEqual(actions, ['alex@dulcy.io role josh@dulcy.io', 'alex@dulcy.io approve josh@dulcy.io', 'josh@dulcy.io signup josh@dulcy.io'], 'every action logged');
+});
+
+test('deny deletes the request; disable and password reset end sessions; re-enable restores', { skip }, async () => {
+  await call('POST', '/hq/api/auth/signup', { body: SIGNUP });
+  await call('POST', '/hq/api/auth/signup', { body: { ...SIGNUP, email: 'spam@example.com' } });
+  const { cookie } = await login();
+  const users = (await call('GET', '/hq/api/users', { cookie })).body.users;
+  const spam = users.find((u: any) => u.email === 'spam@example.com');
+  const josh = users.find((u: any) => u.email === 'josh@dulcy.io');
+  assert.equal((await call('POST', `/hq/api/users/${spam.id}/deny`, { body: {}, cookie })).status, 200);
+  assert.equal((await db.query(`SELECT count(*)::int AS n FROM hq_users WHERE email='spam@example.com'`)).rows[0].n, 0);
+  assert.equal((await login('spam@example.com', SIGNUP.password)).r.status, 401);
+  await call('POST', `/hq/api/users/${josh.id}/approve`, { body: {}, cookie });
+  assert.equal((await db.query(`SELECT role FROM hq_users WHERE id=$1`, [josh.id])).rows[0].role, 'member', 'member by default');
+  assert.equal((await call('POST', `/hq/api/users/${josh.id}/deny`, { body: {}, cookie })).status, 409, 'an active user is disabled, not denied');
+  const j = await login('josh@dulcy.io', SIGNUP.password);
+  assert.equal((await call('POST', `/hq/api/users/${josh.id}/disable`, { body: {}, cookie })).status, 200);
+  assert.equal((await call('GET', '/hq/api/me', { cookie: j.cookie })).status, 401, 'disabling ends the session');
+  assert.equal((await login('josh@dulcy.io', SIGNUP.password)).r.status, 401, 'and blocks logins');
+  assert.equal((await call('POST', `/hq/api/users/${josh.id}/enable`, { body: {}, cookie })).status, 200);
+  const j2 = await login('josh@dulcy.io', SIGNUP.password);
+  assert.equal(j2.r.status, 200);
+  assert.equal((await call('POST', `/hq/api/users/${josh.id}/password`, { body: { password: 'short' }, cookie })).status, 400);
+  assert.equal((await call('POST', `/hq/api/users/${josh.id}/password`, { body: { password: 'a new temporary pass 9' }, cookie })).status, 200);
+  assert.equal((await call('GET', '/hq/api/me', { cookie: j2.cookie })).status, 401, 'a reset ends the session');
+  assert.equal((await login('josh@dulcy.io', SIGNUP.password)).r.status, 401, 'old password dead');
+  assert.equal((await login('josh@dulcy.io', 'a new temporary pass 9')).r.status, 200);
+});
+
+test('the owner cannot disable or demote themself or the last owner; add user', { skip }, async () => {
+  const { cookie } = await login();
+  const me = (await db.query(`SELECT id FROM hq_users WHERE email='alex@dulcy.io'`)).rows[0].id;
+  assert.equal((await call('POST', `/hq/api/users/${me}/disable`, { body: {}, cookie })).status, 409);
+  assert.equal((await call('POST', `/hq/api/users/${me}/role`, { body: { role: 'member' }, cookie })).status, 409);
+  // Add a second owner (Google only) and a member with a temporary password.
+  const add = await call('POST', '/hq/api/users', { body: { name: 'Sam', email: 'sam@dulcy.io', role: 'owner', googleOnly: true }, cookie });
+  assert.equal(add.status, 200);
+  assert.equal((await call('POST', '/hq/api/users', { body: { name: 'Sam', email: 'sam@dulcy.io', role: 'member', password: 'x'.repeat(14) }, cookie })).status, 409, 'email taken');
+  assert.equal((await call('POST', '/hq/api/users', { body: { name: 'Kim', email: 'kim@dulcy.io', password: 'short' }, cookie })).status, 400);
+  assert.equal((await call('POST', '/hq/api/users', { body: { name: 'Kim', email: 'kim@dulcy.io', password: 'kim temporary pass 1' }, cookie })).status, 200);
+  assert.equal((await login('kim@dulcy.io', 'kim temporary pass 1')).r.body.user.role, 'member');
+  const sam = add.body.id;
+  assert.equal((await db.query(`SELECT password_hash FROM hq_users WHERE id=$1`, [sam])).rows[0].password_hash, null, 'Google only');
+  // With two owners, Sam can be demoted; then Alex is the last owner again.
+  assert.equal((await call('POST', `/hq/api/users/${sam}/role`, { body: { role: 'member' }, cookie })).status, 200);
+  // Disable Alex from another owner's view: the last owner is protected.
+  await db.query(`UPDATE hq_users SET role='owner' WHERE email='kim@dulcy.io'`);
+  const kim = await login('kim@dulcy.io', 'kim temporary pass 1');
+  assert.equal((await call('POST', `/hq/api/users/${me}/disable`, { body: {}, cookie: kim.cookie })).status, 200, 'two owners: one can disable the other');
+  const kimId = (await db.query(`SELECT id FROM hq_users WHERE email='kim@dulcy.io'`)).rows[0].id;
+  assert.equal((await call('POST', `/hq/api/users/${kimId}/role`, { body: { role: 'member' }, cookie: kim.cookie })).status, 409, 'cannot demote yourself (and the last owner)');
+});
+
+test('Google sign-up: a pending request, never a session; Google login refuses it until approved', { skip }, async () => {
+  const fakeGoogle = async (_u: string, init: any) => {
+    const claims = { iss: 'https://accounts.google.com', aud: 'cid.apps.googleusercontent.com', exp: Math.floor(Date.now() / 1000) + 600, email_verified: true, email: new URLSearchParams(String(init.body)).get('code') === 'alex' ? 'alex@dulcy.io' : 'newbie@gmail.com' };
+    return new Response(JSON.stringify({ id_token: `x.${Buffer.from(JSON.stringify(claims)).toString('base64url')}.y` }), { status: 200 });
+  };
+  const g = createServer(db, cfg({ hqGoogleClientId: 'cid.apps.googleusercontent.com', hqGoogleClientSecret: 'shh' }), { at: at as any, webDir, fetchImpl: fakeGoogle as any });
+  await new Promise<void>((r) => g.listen(0, '127.0.0.1', () => r()));
+  const saved = port; port = (g.address() as AddressInfo).port;
+  const start = async (mode = '') => {
+    const s = await call('GET', `/hq/api/auth/google/start${mode ? `?mode=${mode}` : ''}`);
+    return { state: new URL(String(s.headers.location)).searchParams.get('state')!, oauth: ([] as string[]).concat(s.headers['set-cookie'] ?? [])[0].split(';')[0] };
+  };
+  try {
+    let s = await start('signup');
+    const r = await call('GET', `/hq/api/auth/google/callback?code=other&state=${s.state}`, { cookie: s.oauth });
+    assert.equal(r.status, 302);
+    assert.match(decodeURIComponent(String(r.headers.location)), /#\/login\?notice=Request sent/);
+    assert.equal(sessionCookie(r), '', 'no session');
+    const row = (await db.query(`SELECT pending, disabled, password_hash FROM hq_users WHERE email='newbie@gmail.com'`)).rows[0];
+    assert.deepEqual([row.pending, row.disabled, row.password_hash], [true, true, null]);
+    s = await start();
+    const login2 = await call('GET', `/hq/api/auth/google/callback?code=other&state=${s.state}`, { cookie: s.oauth });
+    assert.match(decodeURIComponent(String(login2.headers.location)), /no HQ access/);
+    assert.equal(sessionCookie(login2), '');
+    // An existing active user who presses "Sign up with Google" is simply signed in.
+    s = await start('signup');
+    assert.ok(sessionCookie(await call('GET', `/hq/api/auth/google/callback?code=alex&state=${s.state}`, { cookie: s.oauth })));
+  } finally { port = saved; g.close(); }
 });

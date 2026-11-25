@@ -373,6 +373,25 @@ CREATE TABLE IF NOT EXISTS hq_agent_tasks (
 );
 CREATE INDEX IF NOT EXISTS hq_agent_tasks_open ON hq_agent_tasks (agent, status, due_date);
 
+-- HQ sign-up and user management (2026-11-25). A sign-up is a row with pending=true AND
+-- disabled=true: every login path refuses disabled and pending users, so a request can never get
+-- a session. The owner approves (role), denies (row deleted), disables, re-enables, resets.
+ALTER TABLE hq_users ADD COLUMN IF NOT EXISTS pending BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE hq_users ADD COLUMN IF NOT EXISTS requested_at TIMESTAMPTZ;
+ALTER TABLE hq_users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ;
+-- kind: login | signup (sign-ups have their own rate limit, per email and per address).
+ALTER TABLE hq_login_attempts ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'login';
+-- Every user-management action: who did what to whom, when.
+CREATE TABLE IF NOT EXISTS hq_user_events (
+  id          BIGSERIAL PRIMARY KEY,
+  actor       TEXT NOT NULL,              -- the owner's email, or the email that signed up
+  action      TEXT NOT NULL,              -- signup | approve | deny | role | disable | enable | password | add
+  target      TEXT NOT NULL,              -- the user's email
+  detail      TEXT NOT NULL DEFAULT '',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS hq_user_events_recent ON hq_user_events (created_at DESC);
+
 -- "Done?" questions answered "not yet": not asked again for that task until quiet_until.
 CREATE TABLE IF NOT EXISTS hq_task_checks (
   task_id     TEXT PRIMARY KEY,

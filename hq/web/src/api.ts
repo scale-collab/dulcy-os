@@ -30,4 +30,18 @@ export interface AgentCard {
 }
 export interface AgentTask { id: number; agent: string; title: string; due: string | null; status: string; client: string; notes: string }
 export interface ChatMessage { id: number; role: 'user' | 'assistant'; author: string; text: string; sources: string[]; tools: { name: string; input: any; note: string; threadId?: number }[]; created: string }
+export type Light = 'red' | 'yellow' | 'green' | 'inactive';
+export interface ClientCampaign { id: string; name: string; progress: number; bounce: number; sent: number; interested: number; perThousand: number | null; flag: 'pause' | 'watch' | null; next: boolean; planExists: boolean }
+/** Only in the owner's answers: the server leaves it out for members. */
+export interface ClientMoney { fee: number | null; feeNote: string; ltv: number | null; ltvSource: 'actual' | 'estimated' | null; receivables: number | null; months: number | null }
+export interface Client {
+  id: string; key: string; name: string; workspaces: { id: string; name: string; status: string; bisonId: string }[];
+  active: boolean; internal: boolean; type: string; startDate: string; endDate: string; inactiveReason: string;
+  light: Light; reasons: string[]; airtableHealth: string; airtableReasons: string;
+  interested7: number; interestedPrev7: number; interested30: number; booked7: number; bookedPrev7: number; booked30: number; kpi: number | null;
+  waitingApproval: number; seanWaiting: number; campaigns: ClientCampaign[]; note: string[]; dataIssues: string[]; money?: ClientMoney;
+}
+export interface ClientsSummary { active: number; internal: number; inactive: number; mrr?: number; readAt: string }
+export interface HqUserRow { id: number; email: string; name: string; role: 'owner' | 'member'; status: 'pending' | 'active' | 'disabled'; google: boolean; hasPassword: boolean; lastSeen: string | null; created: string; requested: string | null }
+export interface UserEvent { id: number; actor: string; action: string; target: string; detail: string; created: string }
 export interface Thread { id: number; agent: string; askedBy: string; parentId: number | null; title: string; updated?: string; messages?: number }
