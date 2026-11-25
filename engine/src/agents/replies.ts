@@ -17,6 +17,7 @@ import { STAGES } from '../stages/index.js';
 import { EMAILS, EF, RA, SETTINGS, REPLY_LEARNING, val, wsRecordOf } from './emailsFields.js';
 import { DECISIONS, DF } from '../decisions/fields.js';
 import { armFields, parsePlan, policyOf, shouldArm } from './followups.js';
+import { loadSettings, inOfficeHours, type ClientSettings } from './settings.js';
 
 const STOP = /\b(unsubscribe|remove me|take me off|stop emailing|do not contact)\b/i;
 const DONE_STATES = ['Sent', 'Sending', 'Suppressed', 'Thread Complete'];
@@ -143,7 +144,8 @@ export const replySendStage: Stage = async (ctx) => {
     ...(['', 'New Interested'].includes(val(f[EF.stage])) ? { [EF.stage]: 'In Conversation' } : {}),
   });
   // Learning: what Sean drafted vs what went out (approved by a person), read by Sean next time.
-  try {
+  // Automatic sends are not a person's approval, so they never become "Reply Alex approved" examples.
+  if (policy.auto !== true) try {
     await at.create(REPLY_LEARNING, {
       'Workspace Record ID': wsRec, 'Email Record ID': recId, Situation: isFollowup ? 'Follow-up' : 'Interested', 'Prospect Message': val(f[EF.latestReply]).slice(0, 5000),
       'AI Draft': val(f[RA.draft]), 'Approved Reply': body, 'Review Status': 'Approved', Outcome: 'Unknown', Source: `Engine sender (${via})`,
@@ -162,10 +164,17 @@ export async function repliesTick(db: Db, cfg: Config, at: Pick<AirtableClient, 
   let queued = 0, skipped = 0, closed = 0;
   if (cfg.replySenderOn) {
     const approved = await at.list(EMAILS, `AND(OR({Dulcy Reply Agent Human Action}='Approve Draft',{Dulcy Reply Agent Human Action}='Send Edited Reply'),NOT(OR(${DONE_STATES.map((s) => `{Dulcy Reply Agent State}='${s}'`).join(',')})))`,
-      [RA.humanAction, RA.updatedAt, EF.latestReplyAt], 20);
+      [RA.humanAction, RA.updatedAt, EF.latestReplyAt, RA.policy, RA.clients, RA.wsRecord], 20);
+    const office = new Map<string, ClientSettings>();
     for (const r of approved) {
       const def = STAGES['reply.send'];
-      const via = (await at.list(DECISIONS, `AND({Emails Record}='${r.id}',{Status}='Approved')`, [DF.status], 1)).length ? 'Slack' : 'Airtable';
+      // Automatic sends (client settings) go out inside the client's office hours only; approvals by a person go now.
+      if (policyOf(r.fields).auto === true) {
+        const wsRec = wsRecordOf(r.fields);
+        if (!office.has(wsRec)) office.set(wsRec, await loadSettings(at, wsRec));
+        if (!inOfficeHours(office.get(wsRec)!.office)) continue;
+      }
+      const via = policyOf(r.fields).auto === true ? 'auto-send, client settings' : (await at.list(DECISIONS, `AND({Emails Record}='${r.id}',{Status}='Approved')`, [DF.status], 1)).length ? 'Slack' : 'Airtable';
       const q = await enqueue(db, {
         kind: 'reply.send', recordId: r.id, input: { emailsRecordId: r.id, via },
         requestId: `send:${r.id}:${val(r.fields[RA.humanAction])}:${val(r.fields[RA.updatedAt])}:${val(r.fields[EF.latestReplyAt])}`,

@@ -13,7 +13,8 @@ import { createClaude } from '../providers/claude.js';
 import { EMAILS, EF, RA, SETTINGS, val, wsRecordOf } from './emailsFields.js';
 import { clientFileFor } from './knowledge.js';
 import { DraftSchema, type Draft, type Booking, sharedKnowledge, realExamples, bookingFor, bookingForDraft, trimHistory } from './sean.js';
-import { loadSettings, parseSettings, settingsBlock, blockedBy, typeAllowed, type ClientSettings } from './settings.js';
+import { loadSettings, parseSettings, settingsBlock, blockedBy, typeAllowed, autoSendDecision, type ClientSettings } from './settings.js';
+import { logActivity } from '../activity.js';
 import { rememberOffered } from './calendar.js';
 import { DECISIONS, DF } from '../decisions/fields.js';
 
@@ -143,7 +144,7 @@ export const seanFollowupStage: Stage = async (ctx) => {
     const d: Draft = await ctx.paid({
       callKey: `followup:${r.id}:${val(f[RA.dueAt])}`, provider: 'anthropic', units: 1,
       run: () => claude!.structured(DraftSchema, [shared, FOLLOWUP_BRIEF, block], varying, user),
-      dryRunResult: () => ({ action: 'skip', intent: 'Other', reason: 'dry run: Claude not called', they_said: '', draft: '', question_for_alex: '' }),
+      dryRunResult: () => ({ action: 'skip', intent: 'Other', reason: 'dry run: Claude not called', they_said: '', draft: '', question_for_alex: '', confidence: 0 }),
     });
 
     await ctx.step(`followup-write:${r.id}:${val(f[RA.dueAt])}`, async () => {
@@ -153,15 +154,22 @@ export const seanFollowupStage: Stage = async (ctx) => {
       const action = typeOff ? 'skip' : d.action === 'reply' && !(replyId > 0) ? 'ask_alex' : d.action;
       const question = action === 'ask_alex' ? (d.question_for_alex || (replyId > 0 ? d.reason : 'No EmailBison reply ID on this thread: send it by hand in EmailBison.')) : '';
       let decisionId = '';
+      // Follow-ups route by the thread's reply type (Out of Office / Check Back Later / the original intent).
+      const autoBefore = Number(policy.autoSent ?? 0) || 0;
+      const routeIntent = type !== 'No Response' ? type : (val(f[RA.intent]) || d.intent);
+      const auto = autoSendDecision(settings, { ...d, action, intent: routeIntent }, autoBefore, cfg.seanAutoSendOn);
       if (!ctx.dryRun) {
         await at.update(EMAILS, r.id, {
           [RA.state]: action === 'skip' ? 'Thread Complete' : 'Needs Approval',
-          [RA.draft]: action === 'skip' ? '' : d.draft, [RA.humanAction]: 'None', [RA.dueAt]: action === 'skip' ? null : val(f[RA.dueAt]),
+          [RA.draft]: action === 'skip' ? '' : d.draft, [RA.humanAction]: auto.auto ? 'Approve Draft' : 'None', [RA.dueAt]: action === 'skip' ? null : val(f[RA.dueAt]),
           [RA.seanReason]: d.reason, [RA.seanInput]: question, [RA.updatedAt]: new Date().toISOString(),
           ...(wsRec ? { [RA.wsRecord]: wsRec } : {}),
-          [RA.policy]: JSON.stringify({ agent: 'sean', kind: 'followup', followupType: type, followupNumber: n, seanFollowupsSent: sent, action, reason: d.reason, they_said: d.they_said, question_for_alex: question, calendarEvidence: { times: offer.times, slots: offer.slots, link: booking.link } }),
+          [RA.policy]: JSON.stringify({ agent: 'sean', kind: 'followup', followupType: type, followupNumber: n, seanFollowupsSent: sent, action, reason: d.reason, they_said: d.they_said, question_for_alex: question, confidence: d.confidence, autoSent: autoBefore + (auto.auto ? 1 : 0), ...(auto.auto ? { auto: true, autoWhy: auto.why } : { reviewWhy: auto.why }), calendarEvidence: { times: offer.times, slots: offer.slots, link: booking.link } }),
         });
-        if (action !== 'skip') {
+        if (auto.auto) {
+          if (offer.slots.length) await rememberOffered(ctx.db, wsRec, offer.slots, r.id);
+          await logActivity(cfg, { event: `Auto follow-up ${n} queued: ${val(f[EF.leadName]) || 'prospect'} (${client.name})`, type: 'Approved', agent: 'Sean', details: `Client setting: ${auto.why}. ${d.reason}`, jobId: ctx.job.id });
+        } else if (action !== 'skip') {
           if (offer.slots.length) await rememberOffered(ctx.db, wsRec, offer.slots, r.id);
           const who = `${val(f[EF.leadName]) || 'prospect'}${val(f[EF.company]) ? ` at ${val(f[EF.company])}` : ''}`;
           decisionId = await at.create(DECISIONS, {

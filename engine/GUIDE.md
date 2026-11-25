@@ -336,6 +336,22 @@ This covers paused campaigns too, and runs every day of the week. Only records w
 - `CALENDAR_READER_TOKEN` for client calendars.
 - `SEAN_FOLLOWUPS=on` for follow-ups (below). Only after the old n8n follow-up timer is off (FIX=followup-arm-off).
 
+### Sean follows each client's send settings (2026-11-25)
+Sean reads every setting on the client's Reply Agent settings row (Inbox Manager → Dulcy Reply Agent).
+- **Default Mode.**
+  - *Approval Required* (every client today): every draft waits for your Approve or ✅. Nothing changes from before.
+  - *Auto High Confidence:* Sean sends by itself only when its confidence is at or above **Minimum Auto Confidence** (92% today).
+  - *Autopilot:* Sean sends by itself.
+- **Routing groups (per reply type):** a group's mode wins over the Default Mode. *Do Not Reply* types (Unsubscribe, Hostile) are always skipped.
+- **OOO Mode = Auto Send:** out-of-office replies may go out by themselves.
+- **Always Require Human Review:** the ticked reply types always wait for you, whatever the mode.
+- **Max Automatic Replies:** at most this many automatic sends per thread (3 today). After that, you approve.
+- **Not Interested Nudge:** ticked → one courtesy reply to "not interested".
+- **Office hours** (Timezone, Office Start/End, Exclude Weekends, Exclude US Holidays): automatic sends wait for the client's office hours. Replies you approve go out at once.
+- **Never sent automatically:** a draft that needs your input, has a [GAP] or placeholder, or a client that is switched off. All the sender's checks still run.
+- **What you see:** an automatic send has no ✅ card. It shows in the Activity log ("Auto-reply queued") and the Slack/Airtable thread says "Sent (approved in auto-send, client settings)". It is not saved as a reply you approved, so Sean doesn't learn from its own sends.
+- **Off switch (server .env):** `SEAN_AUTO_SEND=off` → every reply waits for a person, whatever the settings say.
+
 ### Sean's follow-ups (2026-11-24)
 Your rule: keep following up on a positive reply until they answer or say stop.
 1. **When.** A thread is Scheduled with a Due At after every reply we send. Out-of-office and check-back-later replies keep the return date the old intake gave them.

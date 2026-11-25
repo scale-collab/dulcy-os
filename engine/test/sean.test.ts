@@ -269,3 +269,24 @@ test('the client\'s Inbox Manager settings drive Sean: handoff "All replies" →
   assert.match(String(emails.recM[RA.seanReason]), /switched off for this client/);
   assert.equal(Object.keys(decisions).length, 0);
 });
+
+test('client set to Autopilot: the draft is approved for the engine sender (no ✅ card); Approval Required still asks', { skip }, async () => {
+  settings = [{ Enabled: true, 'Default Mode': 'Autopilot', 'Calendar Link': 'https://calendly.com/client/intro', 'Calendar Settings JSON': '{}' }];
+  emails.recA = thread();
+  claudeAnswers = [{ action: 'reply', intent: 'Interested', reason: 'asked about fit', they_said: 'Wants to know more', draft: 'Hi Jane, does Tue 2pm ET work?', question_for_alex: '', confidence: 97 }];
+  const j = await run(cfg());
+  assert.equal(j.job.status, 'succeeded', j.job.error ?? '');
+  assert.equal(emails.recA[RA.humanAction], 'Approve Draft');
+  const pol = JSON.parse(String(emails.recA[RA.policy]));
+  assert.equal(pol.auto, true); assert.equal(pol.autoSent, 1); assert.equal(pol.confidence, 97);
+  assert.equal(Object.values(decisions).filter((d) => d[DF.action] === 'Approve Reply').length, 0, 'no approval card');
+
+  await db.query('TRUNCATE sean_drafts'); decisions = {};
+  settings = [{ Enabled: true, 'Default Mode': 'Approval Required', 'Calendar Link': 'https://calendly.com/client/intro', 'Calendar Settings JSON': '{}' }];
+  emails.recB = thread({ [EF.leadName]: 'Bob', [EF.replyId]: '556' }); delete emails.recA;
+  claudeAnswers = [{ action: 'reply', intent: 'Interested', reason: 'fit', they_said: 'More', draft: 'Hi Bob, does Wed work?', question_for_alex: '', confidence: 99 }];
+  const j2 = await run(cfg());
+  assert.equal(j2.job.status, 'succeeded', j2.job.error ?? '');
+  assert.equal(emails.recB[RA.humanAction], 'None');
+  assert.equal(Object.values(decisions).filter((d) => d[DF.action] === 'Approve Reply').length, 1);
+});

@@ -13,7 +13,8 @@ import { EMAILS, EF, RA, INTENTS, SETTINGS, REPLY_LEARNING, waitingFormula, val,
 import { clientFileFor, readKnowledge } from './knowledge.js';
 import { openTimes, pickTwo, fmtSlot, freeSlots, rememberOffered } from './calendar.js';
 import { DECISIONS, DF } from '../decisions/fields.js';
-import { loadSettings, parseSettings, settingsBlock, blockedBy, typeAllowed, type ClientSettings } from './settings.js';
+import { loadSettings, parseSettings, settingsBlock, blockedBy, typeAllowed, autoSendDecision, type ClientSettings } from './settings.js';
+import { logActivity } from '../activity.js';
 
 export const DraftSchema = z.object({
   action: z.enum(['reply', 'skip', 'ask_alex']),
@@ -22,6 +23,7 @@ export const DraftSchema = z.object({
   they_said: z.string(),
   draft: z.string(),
   question_for_alex: z.string(),
+  confidence: z.number().min(0).max(100).default(0),
 });
 export type Draft = z.infer<typeof DraftSchema>;
 
@@ -42,7 +44,7 @@ How Alex writes (follow it exactly):
 - If the prospect asked to stop or unsubscribe anywhere in the latest message, the action is "skip".
 - Real examples follow: this client's threads that reached a booked meeting, and replies Alex approved. Copy how they move to a call, not their facts.
 
-Fill every field: "reason" (one line: why this action), "they_said" (one line: what the prospect said), "draft" (email body or empty), "question_for_alex" (or empty).`;
+Fill every field: "reason" (one line: why this action), "they_said" (one line: what the prospect said), "draft" (email body or empty), "question_for_alex" (or empty), "confidence" (0-100: how sure you are this exact draft is right to send with no person checking it; under 90 if anything is uncertain).`;
 
 export function trimHistory(h: string, max = 6000): string {
   return h.length <= max ? h : `[earlier messages cut]\n${h.slice(-max)}`;
@@ -116,7 +118,7 @@ export const seanDraftStage: Stage = async (ctx) => {
   const days = Number(ctx.job.input.days ?? cfg.seanDays) || 14;
   const max = Number(ctx.job.input.max ?? cfg.seanMaxPerRun) || 20;
 
-  const recs = await at.list(EMAILS, waitingFormula(days), [...Object.values(EF), RA.clients, RA.wsRecord], 200);
+  const recs = await at.list(EMAILS, waitingFormula(days), [...Object.values(EF), RA.clients, RA.wsRecord, RA.policy], 200);
   const done = new Set((await ctx.db.query(`SELECT email_record || '|' || reply_at AS k FROM sean_drafts WHERE action <> 'dry_run'`)).rows.map((r: any) => String(r.k)));
   const todo = recs.filter((r) => !done.has(`${r.id}|${val(r.fields[EF.latestReplyAt])}`)).slice(0, max);
   if (!todo.length) return { message: `${recs.length} waiting replies, none new`, waiting: recs.length, drafted: 0 };
@@ -126,7 +128,7 @@ export const seanDraftStage: Stage = async (ctx) => {
 
   const claude = ctx.dryRun ? null : createClaude({ apiKey: cfg.anthropicApiKey, model: cfg.claudeModel, baseURL: cfg.anthropicBaseUrl });
   const perClient = new Map<string, { block: string; booking: Booking; settings: ClientSettings }>();
-  const counts = { reply: 0, skip: 0, ask_alex: 0, noClientFile: 0, clientOff: 0 };
+  const counts = { reply: 0, skip: 0, ask_alex: 0, auto: 0, noClientFile: 0, clientOff: 0 };
 
   for (const r of todo) {
     const f = r.fields;
@@ -165,7 +167,7 @@ export const seanDraftStage: Stage = async (ctx) => {
     const d: Draft = await ctx.paid({
       callKey: `draft:${r.id}:${replyAt}`, provider: 'anthropic', units: 1,
       run: () => claude!.structured(DraftSchema, [shared, SEAN_BRIEF, block], varying, user),
-      dryRunResult: () => ({ action: 'skip', intent: 'Other', reason: 'dry run (sean.draft not in LIVE_STAGES): Claude not called', they_said: '', draft: '', question_for_alex: '' }),
+      dryRunResult: () => ({ action: 'skip', intent: 'Other', reason: 'dry run (sean.draft not in LIVE_STAGES): Claude not called', they_said: '', draft: '', question_for_alex: '', confidence: 0 }),
     });
 
     await ctx.step(`write:${r.id}:${replyAt}`, async () => {
@@ -175,18 +177,25 @@ export const seanDraftStage: Stage = async (ctx) => {
       const action = typeOff ? 'skip' : d.action === 'reply' && !(replyId > 0) ? 'ask_alex' : d.action;
       const question = action === 'ask_alex' ? (d.question_for_alex || (replyId > 0 ? d.reason : 'No EmailBison reply ID on this thread: send it by hand in EmailBison.')) : '';
       let decisionId = '';
+      // The client's own send mode (Default Mode / OOO Mode / routing / confidence / max automatic).
+      const autoBefore = (() => { try { return Number(JSON.parse(val(f[RA.policy]) || '{}').autoSent ?? 0) || 0; } catch { return 0; } })();
+      const auto = autoSendDecision(settings, { ...d, action }, autoBefore, cfg.seanAutoSendOn);
       if (!ctx.dryRun) {
         const eventId = wsRec && replyId > 0 ? `bison:${wsRec}:${replyId}` : '';
         // The reply's own row: what the Reply Queue page shows and approves.
         await at.update(EMAILS, r.id, {
           [RA.state]: action === 'skip' ? 'Skipped' : 'Needs Approval',
-          [RA.intent]: d.intent, [RA.draft]: action === 'skip' ? '' : d.draft, [RA.humanAction]: 'None',
+          [RA.intent]: d.intent, [RA.draft]: action === 'skip' ? '' : d.draft, [RA.humanAction]: auto.auto ? 'Approve Draft' : 'None',
           [RA.seanReason]: d.reason, [RA.seanInput]: question, [RA.updatedAt]: new Date().toISOString(),
           ...(wsRec ? { [RA.wsRecord]: wsRec } : {}),
           ...(eventId ? { [RA.eventId]: eventId, [RA.lastInboundEventId]: eventId } : {}),
-          [RA.policy]: JSON.stringify({ agent: 'sean', action, reason: d.reason, they_said: d.they_said, question_for_alex: question, latestReplyAt: replyAt, calendarEvidence: { times: offer.times, slots: offer.slots, link: booking.link } }),
+          [RA.policy]: JSON.stringify({ agent: 'sean', action, reason: d.reason, they_said: d.they_said, question_for_alex: question, latestReplyAt: replyAt, confidence: d.confidence, autoSent: autoBefore + (auto.auto ? 1 : 0), ...(auto.auto ? { auto: true, autoWhy: auto.why } : { reviewWhy: auto.why }), calendarEvidence: { times: offer.times, slots: offer.slots, link: booking.link } }),
         });
-        if (action !== 'skip') {
+        if (auto.auto) {
+          // Sent by the engine sender inside the client's office hours; no approval card.
+          if (offer.slots.length) await rememberOffered(ctx.db, wsRec, offer.slots, r.id);
+          await logActivity(cfg, { event: `Auto-reply queued: ${val(f[EF.leadName]) || 'prospect'} (${client.name})`, type: 'Approved', agent: 'Sean', details: `Client setting: ${auto.why}. ${d.reason}`, jobId: ctx.job.id });
+        } else if (action !== 'skip') {
           if (offer.slots.length) await rememberOffered(ctx.db, wsRec, offer.slots, r.id);
           const who = `${val(f[EF.leadName]) || 'prospect'}${val(f[EF.company]) ? ` at ${val(f[EF.company])}` : ''}`;
           decisionId = await at.create(DECISIONS, {
@@ -203,11 +212,12 @@ export const seanDraftStage: Stage = async (ctx) => {
       await ctx.db.query(`INSERT INTO sean_drafts (email_record, reply_at, action, reason, decision_id) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (email_record, reply_at) DO UPDATE SET action = EXCLUDED.action, reason = EXCLUDED.reason, decision_id = EXCLUDED.decision_id WHERE sean_drafts.action = 'dry_run'`,
         [r.id, replyAt, ctx.dryRun ? 'dry_run' : action, d.reason.slice(0, 500), decisionId || null]);
       counts[action as 'reply' | 'skip' | 'ask_alex']++;
+      if (auto.auto) counts.auto++;
       return { decisionId };
     });
   }
   return {
-    message: `${recs.length} waiting replies; ${todo.length} new: ${counts.reply} drafted (Reply Queue + Slack ✅), ${counts.ask_alex} need your input, ${counts.skip} no reply needed${counts.clientOff ? `, ${counts.clientOff} left to the client (Inbox Manager settings)` : ''}${counts.noClientFile ? `, ${counts.noClientFile} skipped (no client file for the workspace)` : ''}${ctx.dryRun ? ' (dry run: Claude not called, nothing written)' : ''}`,
+    message: `${recs.length} waiting replies; ${todo.length} new: ${counts.reply} drafted (Reply Queue + Slack ✅)${counts.auto ? ` of which ${counts.auto} auto-send (client settings)` : ''}, ${counts.ask_alex} need your input, ${counts.skip} no reply needed${counts.clientOff ? `, ${counts.clientOff} left to the client (Inbox Manager settings)` : ''}${counts.noClientFile ? `, ${counts.noClientFile} skipped (no client file for the workspace)` : ''}${ctx.dryRun ? ' (dry run: Claude not called, nothing written)' : ''}`,
     waiting: recs.length, ...counts, dryRun: ctx.dryRun,
   };
 };

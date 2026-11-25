@@ -72,6 +72,28 @@ What this means in practice:
 
 ---
 
+## 1b. The psychology Alex cares about most (Alex, 2026-11-25)
+
+This is the fundamental understanding behind every email. Most of Alex's SOP scripts follow Mitchell Keller's approach, even where his name isn't on them.
+
+1. **Show you looked:** name one real, specific thing they already do.
+2. **Show the gap:** point to the one thing that isn't happening yet.
+3. **Offer to do a concrete piece of it for free,** so they can see the result before buying anything.
+4. **Ask a one-word question.**
+
+Alex's example of the shape:
+> "I noticed you're posting blogs on your site consistently, but they're not turned into Reddit posts yet. Could we turn 10 of them into Reddit posts for free, so you can see what it does?"
+
+**Why it works:**
+- It proves you looked, so it's not a mass email.
+- It's about their thing, not our service.
+- The free piece is real and small, which removes the risk.
+- The ask takes one word.
+
+This is the same pattern the data shows winning: "one concrete thing built from what they already have" and the "observation opener" (section 3.2).
+
+**What it is not:** generic GPT copy ("We help businesses like yours grow…") is exactly what this replaces. Atlas teaches Scribe these patterns, and the Friday watch adds to them.
+
 ## 2. Before writing
 
 ### 2.1 Use every input the engine gives
