@@ -597,6 +597,8 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
 
 **What it is:** one calm screen at **https://hq.dulcy.io**, on the phone or the computer. It runs inside the engine (same server, same code), and Airtable stays the database. Only people with an HQ login get in. Plan: `hq/PLAN.md`.
 
+**Look:** a sidebar on the computer, tabs at the bottom on the phone. Light or dark follows your phone/computer; the System / Light / Dark switch (bottom of the sidebar, or the screen icon at the top on the phone) pins one on that device.
+
 **The five tabs:**
 1. **Today**
    - First things: how many decisions wait on you, and the top "Do now" task.
@@ -610,7 +612,7 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
      - **Skip reply:** nothing is sent.
      - The engine's reply sender sends it from the right inbox and closes the card. HQ only presses the buttons on the Emails row (Human Action, and Custom Reply for an edit).
    - **Others:** Issue / Checked / Proposed / On approve, then Approve or Reject. The engine then runs the action, exactly as for a ✅ in Slack.
-   - **Later** keeps a card for another time. Keys on a computer: A approve, R reject, S later.
+   - **Later** keeps a card for another time. Keys on a computer: A approve (or send), R reject (or skip reply), S later, E edit the reply (Esc to stop editing). The keys are shown under the buttons.
 3. **To-do** (Airtable Tasks, open ones only). It's sorted into four boxes:
    - **Do now:** urgent and important.
    - **Schedule:** important.

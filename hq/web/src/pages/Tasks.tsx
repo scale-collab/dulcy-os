@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { api, type Box, type Task } from '../api';
-import { Button, Card, cx, dueLabel, Empty, ErrorBox, Label, Loading, PageTitle, Pill, Progress, Section } from '../ui';
+import { BackLink, Button, Card, cx, dueLabel, Empty, ErrorBox, Icon, Label, PageSkeleton, PageTitle, Pill, Progress, Section, setCount } from '../ui';
 
-const BOXES: { key: Box; title: string; hint: string }[] = [
-  { key: 'doNow', title: 'Do now', hint: 'Urgent and important' },
-  { key: 'schedule', title: 'Schedule', hint: 'Important, not urgent' },
-  { key: 'delegate', title: 'Delegate', hint: 'Urgent, not important' },
-  { key: 'later', title: 'Later / drop', hint: 'Neither' },
+const BOXES: { key: Box; title: string; hint: string; bar: string; dot: string }[] = [
+  { key: 'doNow', title: 'Do now', hint: 'Urgent and important', bar: 'bg-dot-bad', dot: 'bg-dot-bad' },
+  { key: 'schedule', title: 'Schedule', hint: 'Important, not urgent', bar: 'bg-info', dot: 'bg-info' },
+  { key: 'delegate', title: 'Delegate', hint: 'Urgent, not important', bar: 'bg-dot-warn', dot: 'bg-dot-warn' },
+  { key: 'later', title: 'Later / drop', hint: 'Neither', bar: 'bg-dot-idle', dot: 'bg-dot-idle' },
 ];
 interface TasksData { boxes: Record<Box, Task[]>; doneQuestions: Task[]; total: number }
 
@@ -15,79 +15,89 @@ export default function Tasks() {
   const [error, setError] = useState('');
   const [focus, setFocus] = useState(false);
   const [gone, setGone] = useState<string[]>([]);
-  const [openBox, setOpenBox] = useState<Box | null>('doNow');
-  const load = useCallback(() => { setError(''); api<TasksData>('/tasks').then((x) => { setD(x); setGone([]); }).catch((e) => setError(e.message)); }, []);
+  const load = useCallback(() => { setError(''); api<TasksData>('/tasks').then((x) => { setD(x); setGone([]); setCount('doNow', x.boxes.doNow.length); }).catch((e) => setError(e.message)); }, []);
   useEffect(load, [load]);
   const done = async (id: string) => { setGone((g) => [...g, id]); try { await api(`/tasks/${id}/done`, { body: {} }); } catch (e) { setGone((g) => g.filter((x) => x !== id)); setError((e as Error).message); } };
   const notYet = async (id: string) => { setGone((g) => [...g, `q:${id}`]); try { await api(`/tasks/${id}/not-yet`, { body: {} }); } catch { /* asked again next time */ } };
+  useEffect(() => { if (d) setCount('doNow', d.boxes.doNow.filter((t) => !gone.includes(t.id)).length); }, [d, gone]);
 
   if (error && !d) return <><PageTitle title="To-do" /><ErrorBox error={error} retry={load} /></>;
-  if (!d) return <><PageTitle title="To-do" /><Loading /></>;
+  if (!d) return <><PageTitle title="To-do" /><PageSkeleton kind="board" /></>;
   const live = (ts: Task[]) => ts.filter((t) => !gone.includes(t.id));
   const ordered = BOXES.flatMap((b) => live(d.boxes[b.key]));
   if (focus) return <Focus tasks={ordered} onDone={done} onExit={() => { setFocus(false); load(); }} />;
   const questions = d.doneQuestions.filter((t) => !gone.includes(t.id) && !gone.includes(`q:${t.id}`));
 
   return (
-    <div className="space-y-6">
-      <PageTitle title="To-do" kicker={`${ordered.length} open`} right={<Button tone="primary" disabled={!ordered.length} onClick={() => setFocus(true)}>▶ Start</Button>} />
-      {error && <ErrorBox error={error} />}
+    <div>
+      <PageTitle title="To-do" kicker={`${ordered.length} open · sorted by urgent and important`}
+        right={<Button tone="primary" icon="play" disabled={!ordered.length} onClick={() => setFocus(true)}>Start</Button>} />
+      {error && <div className="mb-4"><ErrorBox error={error} /></div>}
       <QuickAdd onAdded={load} />
 
       {questions.length > 0 && (
-        <section>
-          <Label>Done already?</Label>
-          <div className="mt-2 space-y-2">
+        <section className="mt-6">
+          <Label className="mb-2">Done already?</Label>
+          <div className="grid gap-2 md:grid-cols-2">
             {questions.map((t) => (
-              <Card key={t.id} className="p-4">
-                <div className="font-medium">{t.name}</div>
-                <div className="text-sm text-stone-500 dark:text-stone-400">In Review/QA for 7+ days{t.client ? ` · ${t.client}` : ''}</div>
-                <div className="mt-3 grid grid-cols-2 gap-2"><Button onClick={() => void notYet(t.id)}>Not yet</Button><Button tone="good" onClick={() => void done(t.id)}>✓ Yes, done</Button></div>
-              </Card>
+              <div key={t.id} className="flex flex-col gap-3 rounded-2xl border border-line bg-warn-soft p-4 sm:flex-row sm:items-center">
+                <div className="min-w-0 flex-1"><div className="font-medium text-fg">{t.name}</div><div className="text-sm text-fg-2">In Review/QA for 7+ days{t.client ? ` · ${t.client}` : ''}</div></div>
+                <div className="grid shrink-0 grid-cols-2 gap-2"><Button onClick={() => void notYet(t.id)}>Not yet</Button><Button tone="accent" icon="check" onClick={() => void done(t.id)}>Done</Button></div>
+              </div>
             ))}
           </div>
         </section>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        {BOXES.map((b) => {
-          const ts = live(d.boxes[b.key]);
-          const open = openBox === b.key || typeof window !== 'undefined' && window.innerWidth >= 640;
-          return (
-            <section key={b.key} className={cx('rounded-2xl border p-4', b.key === 'doNow' ? 'border-stone-900/20 bg-white dark:border-white/20 dark:bg-white/[0.05]' : 'border-stone-200/80 bg-white/60 dark:border-white/10 dark:bg-white/[0.02]')}>
-              <button onClick={() => setOpenBox(openBox === b.key ? null : b.key)} className="flex w-full items-center justify-between text-left">
-                <div><div className="font-semibold">{b.title}</div><div className="text-xs text-stone-500 dark:text-stone-400">{b.hint}</div></div>
-                <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-bold dark:bg-white/10">{ts.length}</span>
-              </button>
-              {open && (
-                <div className="mt-3 space-y-1">
-                  {ts.slice(0, 30).map((t) => <TaskRow key={t.id} t={t} onDone={() => void done(t.id)} />)}
-                  {!ts.length && <div className="py-2 text-sm text-stone-400">Empty.</div>}
-                  {ts.length > 30 && <div className="pt-1 text-xs text-stone-400">+{ts.length - 30} more in Airtable</div>}
-                </div>
-              )}
-            </section>
-          );
-        })}
+      <div className="mt-6 grid items-start gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {BOXES.map((b) => <Quadrant key={b.key} box={b} tasks={live(d.boxes[b.key])} onDone={(id) => void done(id)} />)}
       </div>
     </div>
   );
 }
 
-function TaskRow({ t, onDone }: { t: Task; onDone: () => void }) {
+function Quadrant({ box, tasks, onDone }: { box: (typeof BOXES)[number]; tasks: Task[]; onDone: (id: string) => void }) {
+  const [all, setAll] = useState(false);
+  const cap = all ? 30 : 8;
   return (
-    <div className="flex items-center gap-3 rounded-xl px-1 py-1.5">
-      <button aria-label={`Mark "${t.name}" done`} onClick={onDone} className="grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 border-stone-300 text-transparent hover:border-accent hover:text-accent dark:border-white/25">✓</button>
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-[15px]">{t.name}</div>
-        <div className="flex flex-wrap gap-x-2 text-xs text-stone-500 dark:text-stone-400">
-          {t.due && <span className={t.overdue ? 'font-semibold text-red-600 dark:text-red-300' : ''}>{dueLabel(t.due)}</span>}
-          {t.client && <span>{t.client}</span>}
-          {t.priority && t.priority !== 'Medium' && <span>{t.priority}</span>}
-          {t.clientFacing && <span>client facing</span>}
-        </div>
+    <section aria-label={box.title} className={cx('overflow-hidden rounded-2xl border bg-surface shadow-card', box.key === 'doNow' ? 'border-line-strong' : 'border-line')}>
+      <div aria-hidden="true" className={cx('h-1', box.bar)} />
+      <div className="flex items-start justify-between gap-2 px-4 pb-2 pt-3.5">
+        <div><h2 className="flex items-center gap-2 font-semibold text-fg">{box.title}</h2><div className="text-xs text-muted">{box.hint}</div></div>
+        <span className="tabular rounded-full border border-line bg-sunken px-2.5 py-0.5 text-sm font-bold text-fg-2">{tasks.length}</span>
       </div>
-    </div>
+      <ul className="px-1.5 pb-2">
+        {tasks.slice(0, cap).map((t) => <TaskRow key={t.id} t={t} onDone={() => onDone(t.id)} />)}
+      </ul>
+      {!tasks.length && <div className="px-4 pb-4 text-sm text-muted">Nothing here.</div>}
+      {tasks.length > cap && !all && <button onClick={() => setAll(true)} className="flex min-h-11 w-full items-center justify-center gap-1 border-t border-line text-sm font-medium text-accent-ink hover:bg-hover">Show {Math.min(30, tasks.length) - cap} more<Icon name="chevronDown" size={15} /></button>}
+      {all && tasks.length > 30 && <div className="border-t border-line px-4 py-2.5 text-xs text-muted">+{tasks.length - 30} more in Airtable</div>}
+    </section>
+  );
+}
+
+function TaskRow({ t, onDone }: { t: Task; onDone: () => void }) {
+  const [checked, setChecked] = useState(false);
+  const tick = () => { if (checked) return; setChecked(true); setTimeout(onDone, 320); };
+  return (
+    <li className={cx('flex items-start gap-1 rounded-xl pr-2 transition duration-300 hover:bg-hover', checked && 'opacity-40')}>
+      <button aria-label={`Mark "${t.name}" done`} onClick={tick} className="group grid h-11 w-11 shrink-0 place-items-center rounded-xl">
+        <span className={cx('grid h-[22px] w-[22px] place-items-center rounded-full border-2 transition', checked ? 'border-accent bg-accent text-accent-fg' : 'border-line-strong text-transparent group-hover:border-accent group-hover:text-accent-ink')}>
+          <Icon name="check" size={13} strokeWidth={3} />
+        </span>
+      </button>
+      <div className="min-w-0 flex-1 py-2.5">
+        <div className={cx('line-clamp-2 text-[15px] leading-snug text-fg', checked && 'line-through')}>{t.name}</div>
+        {(t.due || t.client || (t.priority && t.priority !== 'Medium') || t.clientFacing) && (
+          <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs text-muted">
+            {t.due && <span className={cx('inline-flex items-center gap-1', t.overdue && 'font-semibold text-bad')}><Icon name="clock" size={12} />{dueLabel(t.due)}</span>}
+            {t.client && <span>{t.client}</span>}
+            {t.priority && t.priority !== 'Medium' && <span className={t.priority === 'Urgent' ? 'font-medium text-bad' : t.priority === 'High' ? 'font-medium text-warn' : ''}>{t.priority}</span>}
+            {t.clientFacing && <span>client facing</span>}
+          </div>
+        )}
+      </div>
+    </li>
   );
 }
 
@@ -104,22 +114,24 @@ function QuickAdd({ onAdded }: { onAdded: () => void }) {
     try { await api('/tasks', { body: { name, due: due || undefined, priority: priority || undefined } }); setName(''); setDue(''); setPriority(''); onAdded(); }
     catch (err) { setError((err as Error).message); } finally { setBusy(false); }
   };
-  const field = 'min-h-12 rounded-xl border border-stone-300 bg-white px-3 text-[15px] outline-none focus:border-stone-500 dark:border-white/15 dark:bg-white/5';
+  const field = 'min-h-11 rounded-xl border border-line-strong bg-surface px-3 text-[15px] text-fg outline-none transition focus:border-accent focus:ring-4 focus:ring-accent-soft';
   return (
-    <form onSubmit={submit} className="space-y-2">
-      <div className="flex gap-2">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Add a task…" maxLength={250} className={cx(field, 'min-w-0 flex-1')} />
+    <form onSubmit={submit} className="rounded-2xl border border-line bg-surface p-2 shadow-card">
+      <div className="flex items-center gap-2">
+        <Icon name="plus" size={18} className="ml-2.5 text-muted" />
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Add a task…" aria-label="New task" maxLength={250}
+          className="min-h-11 min-w-0 flex-1 bg-transparent text-[16px] text-fg outline-none placeholder:text-muted focus-visible:outline-none" />
         <Button type="submit" tone="primary" disabled={busy || !name.trim()}>Add</Button>
       </div>
       {name && (
-        <div className="flex gap-2">
-          <input type="date" value={due} onChange={(e) => setDue(e.target.value)} className={cx(field, 'flex-1')} aria-label="Due date" />
-          <select value={priority} onChange={(e) => setPriority(e.target.value)} className={cx(field, 'flex-1')} aria-label="Priority">
+        <div className="mt-2 flex gap-2 border-t border-line px-1 pt-2 anim-fade">
+          <input type="date" value={due} onChange={(e) => setDue(e.target.value)} className={cx(field, 'min-w-0 flex-1')} aria-label="Due date" />
+          <select value={priority} onChange={(e) => setPriority(e.target.value)} className={cx(field, 'min-w-0 flex-1')} aria-label="Priority">
             <option value="">Priority</option><option>Urgent</option><option>High</option><option>Medium</option><option>Low</option>
           </select>
         </div>
       )}
-      {error && <ErrorBox error={error} />}
+      {error && <div className="mt-2"><ErrorBox error={error} /></div>}
     </form>
   );
 }
@@ -139,32 +151,34 @@ function Focus({ tasks, onDone, onExit }: { tasks: Task[]; onDone: (id: string) 
   useEffect(() => { setStarted(false); setPaused(false); setSecs(0); }, [current?.id]);
   const total = tasks.length;
   return (
-    <div>
-      <div className="mb-3 flex items-center justify-between"><button onClick={onExit} className="text-sm text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-white">← All tasks</button><span className="text-xs text-stone-400">One thing at a time</span></div>
+    <div className="mx-auto max-w-2xl">
+      <div className="flex items-center justify-between"><BackLink label="All tasks" onClick={onExit} /><span className="mb-3 text-xs font-medium text-muted">One thing at a time</span></div>
       <Progress done={finished.length + skipped.length} total={total} />
-      {!current ? <Empty icon="🏁" title="Day cleared" sub={`${finished.length} done${skipped.length ? ` · ${skipped.length} skipped` : ''}`} /> : (
+      {!current ? (
+        <Card className="mt-5"><Empty icon="flag" tone="good" title="Day cleared" sub={`${finished.length} done${skipped.length ? ` · ${skipped.length} skipped` : ''}`}><Button tone="primary" onClick={onExit}>Back to the list</Button></Empty></Card>
+      ) : (
         <>
-          <Card className="mt-4">
+          <Card key={current.id} className="mt-5 anim-in sm:p-7">
             <div className="flex flex-wrap items-center gap-2">
               {current.box === 'doNow' && <Pill tone="bad">Do now</Pill>}
               {current.priority && <Pill>{current.priority}</Pill>}
-              {current.due && <span className="text-xs text-stone-500 dark:text-stone-400">{dueLabel(current.due)}</span>}
-              {current.client && <span className="text-xs text-stone-500 dark:text-stone-400">· {current.client}</span>}
+              {current.due && <span className={cx('inline-flex items-center gap-1 text-xs', current.overdue ? 'font-semibold text-bad' : 'text-muted')}><Icon name="clock" size={12} />{dueLabel(current.due)}</span>}
+              {current.client && <span className="text-xs text-muted">· {current.client}</span>}
             </div>
-            <h2 className="mt-2 text-xl font-semibold">{current.name}</h2>
+            <h2 className="mt-3 text-2xl font-semibold leading-snug tracking-tight">{current.name}</h2>
             {started ? (
               <>
-                <div className="mt-4 text-4xl font-semibold tabular-nums">{fmt(secs)}</div>
+                <div className={cx('tabular mt-6 text-6xl font-semibold tracking-tight', paused ? 'text-muted' : 'text-fg')}>{fmt(secs)}</div>
                 <Section label="Notes" text={current.notes || 'No notes on this task.'} />
               </>
-            ) : <p className="mt-3 text-sm text-stone-500 dark:text-stone-400">Press Start when you begin.</p>}
+            ) : <p className="mt-3 text-[15px] text-muted">Press Start when you begin.</p>}
           </Card>
           <div className="mt-4 grid grid-cols-3 gap-2">
             <Button onClick={() => setSkipped((s) => [...s, current.id])}>Skip</Button>
-            {!started ? <Button tone="primary" className="col-span-2" onClick={() => setStarted(true)}>▶ Start</Button> : (
+            {!started ? <Button tone="primary" icon="play" className="col-span-2" onClick={() => setStarted(true)}>Start</Button> : (
               <>
-                <Button onClick={() => setPaused((p) => !p)}>{paused ? '▶ Resume' : '⏸ Pause'}</Button>
-                <Button tone="good" onClick={() => { setFinished((f) => [...f, current.id]); void onDone(current.id); }}>✓ Done</Button>
+                <Button icon={paused ? 'play' : 'pause'} onClick={() => setPaused((p) => !p)}>{paused ? 'Resume' : 'Pause'}</Button>
+                <Button tone="accent" icon="check" onClick={() => { setFinished((f) => [...f, current.id]); void onDone(current.id); }}>Done</Button>
               </>
             )}
           </div>
