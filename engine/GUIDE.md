@@ -378,3 +378,39 @@ Every weekday at `ADA_BRIEF_HOUR` (default 8 AM ET) the engine posts one brief t
 - **Agents:** steps per agent from the Activity Log.
 - **Top 3** things only Alex can unblock. **Fridays:** weekly scorecard per client (interested, booked, sent; this week vs last).
 - Switch: `ADA_BRIEF=on` and `ada.brief` in LIVE_STAGES. Today's calendar is not in v1 (the engine has no calendar read yet).
+
+## Ledger, the accountant (2026-11-25)
+**What it does (read only, never pays or moves money):**
+- **Saturday report** (9 AM ET, to your Slack DM). From Xero it shows:
+  - the cash in each bucket;
+  - money in this week and the month so far, with its source (Commas/Fanbasis, PayPal, Wise and so on);
+  - the **split check**: each bucket's share of what came into Entry Checking, against 40/30/15/10/5, with a ⚠️ when a bucket is more than 2 points off;
+  - **spend this month against the OPEX cap** (40% of income so far), with the top costs;
+  - invoices more than 7 days late, bills due in 14 days, lines waiting to be reconciled;
+  - the next 14th/28th payout: Owner's Comp, card balances, Tax → HYSA.
+  - It ends with a top 3.
+- **Purchase yes/no.** Post a question with a price in the decisions channel, e.g. "Should I buy Clay $349/mo?". Ledger replies in the thread within about 5 minutes:
+  - ✅ Yes, ⚠️ Yes, but (recurring cost, a vendor you already pay, or little room left) or ❌ No (over the cap);
+  - plus `OPEX room this month: $x → $y after this`.
+  - It never says yes to paying from Tax or Profit. Treasury is always "Alex's call".
+  - It only answers Alex and Josh, in top-level messages.
+- **Numbers come from Xero, as reconciled.** Xero already has every Mercury bucket, all 4 cards and the payment processors, so there is no Mercury key.
+
+**Setup, once:**
+1. Put `XERO_CLIENT_ID` and `XERO_CLIENT_SECRET` in `deploy/.env`, then deploy.
+2. Log in to Xero:
+   - Run `docker compose exec engine node dist/src/cli.js xero-connect` and open the link.
+   - Click Allow (pick Dulcy Media). The page that follows doesn't load; that's expected.
+   - Copy the address from the browser bar and run `xero-connect "<that address>"`.
+3. Check: `docker compose exec engine node dist/src/cli.js ledger-report` prints the report without posting it.
+4. Switch on, in `.env`:
+   - `LEDGER=on`
+   - `LEDGER_CHECK_EVERY_MIN=5`
+   - add `ledger.report,ledger.check` to `LIVE_STAGES`
+   - then deploy.
+5. The purchase check reads channel messages, so the Slack bot needs `channels:history`, plus `groups:history` if the channel is private.
+   - If the check job fails with `missing_scope`, add the permission at api.slack.com → your app → OAuth & Permissions → Bot Token Scopes, then reinstall the app.
+
+**Try a question without posting:** `ledger-ask "Should I buy Clay $349/mo?"`.
+
+**If Xero says "invalid_grant":** the login has expired (60 days unused, or the app was disconnected). Run `xero-connect` again.

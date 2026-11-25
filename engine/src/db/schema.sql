@@ -212,3 +212,25 @@ CREATE TABLE IF NOT EXISTS offered_slots (
   offered_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (ws_rec, slot, email_record)
 );
+
+-- OAuth connections (Xero for Ledger, 2026-11-25): one row per provider. Xero rotates the refresh
+-- token on every refresh, so the row is locked while refreshing (engine and CLI never race).
+CREATE TABLE IF NOT EXISTS oauth_tokens (
+  provider       TEXT PRIMARY KEY,
+  refresh_token  TEXT,
+  access_token   TEXT,
+  expires_at     TIMESTAMPTZ,
+  tenant_id      TEXT,
+  tenant_name    TEXT,
+  pending_state  TEXT,
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Ledger: Slack messages already answered with a purchase yes/no (each answered once).
+CREATE TABLE IF NOT EXISTS ledger_checks (
+  channel     TEXT NOT NULL,
+  ts          TEXT NOT NULL,
+  verdict     TEXT NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (channel, ts)
+);

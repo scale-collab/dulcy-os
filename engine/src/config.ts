@@ -44,6 +44,21 @@ export interface Config {
   adaBriefHour: number;
   adaChannel: string;
   accountHealthFrom: string;
+  /** Xero (read only) for Ledger: OAuth app from developer.xero.com; tokens are kept in Postgres. */
+  xeroClientId?: string;
+  xeroClientSecret?: string;
+  xeroRedirectUri: string;
+  xeroScopes: string;
+  xeroTenantName: string;
+  xeroLoginUrl: string;
+  xeroIdentityUrl: string;
+  xeroApiUrl: string;
+  /** Ledger: Saturday report at LEDGER_REPORT_HOUR ET to LEDGER_CHANNEL (LEDGER=on); purchase yes/no every LEDGER_CHECK_EVERY_MIN in LEDGER_CHECK_CHANNEL. */
+  ledgerOn: boolean;
+  ledgerReportHour: number;
+  ledgerChannel: string;
+  ledgerCheckEveryMin: number;
+  ledgerCheckChannel: string;
   /** Dulcy calendar service (client calendars) and its read-only token. */
   calendarUrl: string;
   calendarReaderToken?: string;
@@ -149,6 +164,20 @@ export function loadConfig(env = process.env): Config {
     adaBriefHour: num('ADA_BRIEF_HOUR', 8, env),
     adaChannel: (env.ADA_CHANNEL || 'U070Z26377C').trim(),
     // Alex 2026-11-25: start from the Friday 2026-11-27 tests (older results are not acted on).
+    xeroClientId: env.XERO_CLIENT_ID || undefined,
+    xeroClientSecret: env.XERO_CLIENT_SECRET || undefined,
+    xeroRedirectUri: env.XERO_REDIRECT_URI || 'http://localhost:8765/callback',
+    // New Xero apps (after 2026-03-02) only take granular scopes. Read only.
+    xeroScopes: env.XERO_SCOPES || 'offline_access accounting.invoices.read accounting.banktransactions.read accounting.reports.banksummary.read accounting.reports.profitandloss.read accounting.reports.aged.read accounting.contacts.read accounting.settings.read',
+    xeroTenantName: env.XERO_TENANT_NAME || 'Dulcy Media',
+    xeroLoginUrl: env.XERO_LOGIN_URL || 'https://login.xero.com/identity/connect/authorize',
+    xeroIdentityUrl: env.XERO_IDENTITY_URL || 'https://identity.xero.com',
+    xeroApiUrl: env.XERO_API_URL || 'https://api.xero.com',
+    ledgerOn: (env.LEDGER || 'off').toLowerCase() === 'on',
+    ledgerReportHour: num('LEDGER_REPORT_HOUR', 9, env),
+    ledgerChannel: (env.LEDGER_CHANNEL || env.ADA_CHANNEL || 'U070Z26377C').trim(),
+    ledgerCheckEveryMin: num('LEDGER_CHECK_EVERY_MIN', 0, env),
+    ledgerCheckChannel: (env.LEDGER_CHECK_CHANNEL || env.SLACK_DECISIONS_CHANNEL || 'C0B581HNSMR').trim(),
     accountHealthFrom: (env.ACCOUNT_HEALTH_FROM || '2026-11-26T12:00:00.000Z').trim(),
     calendarUrl: env.CALENDAR_URL || 'http://dulcy-calendar:8789',
     calendarReaderToken: env.CALENDAR_READER_TOKEN || undefined,

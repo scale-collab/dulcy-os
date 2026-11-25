@@ -32,6 +32,14 @@
 //       Cancel a job that is waiting to run (queued or retrying). A running job is not touched.
 //   job <id>
 //       Show a job's status and summary (counts and comparison; no lead rows).
+//   xero-connect ["<address from the browser bar>"]
+//       One-time Xero login for Ledger. Without an address: prints the link to open. Click Allow;
+//       the browser lands on a localhost page that fails to load (expected). Copy that whole
+//       address and run xero-connect again with it in quotes.
+//   ledger-report [--post]
+//       Ledger's Saturday money report now (printed; --post also sends it to Slack).
+//   ledger-ask "<question>"
+//       Print the yes/no Ledger would give, e.g. ledger-ask "Should I buy Clay $349/mo?" (posts nothing).
 //   mv-compare <recordId> <millionVerifierJobId>
 //       Free: download a MillionVerifier job and compare its verdicts with DiscoLike's own email
 //       check on the list's DiscoLike Contacts-run contacts (counts; emails masked).
@@ -187,8 +195,38 @@ async function main() {
         byDiscoLikeStatus: table, millionVerifierDetail: detail,
         notGood: results.filter((r) => r.verdict !== 'Good').map((r) => `${maskEmail(r.email)} | DiscoLike: ${status.get(r.email)} | MillionVerifier: ${r.verdict} (${r.detail})`),
       }, null, 2));
+    } else if (cmd === 'xero-connect') {
+      const x = await import('./providers/xero.js');
+      if (!args[0]) {
+        console.log(`1. Open this link and click Allow (pick the ${cfg.xeroTenantName} organisation):\n\n${await x.xeroAuthorizeUrl(db, cfg)}\n`);
+        console.log('2. The browser then shows a page that does not load (localhost). That is expected.');
+        console.log('3. Copy the whole address from the browser bar and run:\n   docker compose exec engine node dist/src/cli.js xero-connect "<that address>"');
+      } else {
+        const r = await x.xeroFinishLogin(db, cfg, args.join(' '));
+        console.log(`Connected to Xero: ${r.tenant}${r.others.length ? ` (also allowed, not used: ${r.others.join(', ')})` : ''}. Ledger can read the books now.`);
+      }
+    } else if (cmd === 'ledger-report' || cmd === 'ledger-ask') {
+      const { createXeroClient } = await import('./providers/xero.js');
+      const L = await import('./agents/ledger.js');
+      const xero = createXeroClient(db, cfg);
+      const now = new Date();
+      if (cmd === 'ledger-report') {
+        const text = L.writeLedgerReport(await L.gatherLedger(xero, now));
+        console.log(text);
+        if (args.includes('--post')) {
+          const { createSlackClient } = await import('./providers/slack.js');
+          await createSlackClient({ token: cfg.slackBotToken, baseUrl: cfg.slackBaseUrl }).post(cfg.ledgerChannel, text);
+          console.log(`\n(posted to ${cfg.ledgerChannel})`);
+        }
+      } else {
+        const q = args.join(' ');
+        if (!q) throw new Error('usage: ledger-ask "Should I buy Clay $349/mo?"');
+        const d = await L.gatherLedger(xero, now);
+        console.log(L.verdict(L.parseAsk(q), L.opex(d), []));
+        for (const e of d.errors) console.log(`(couldn't read ${e})`);
+      }
     } else {
-      throw new Error('commands: verify, mv-compare, campaign, topup, senders, bounce, whereis, cleanup-test, cancel, job');
+      throw new Error('commands: xero-connect, ledger-report, ledger-ask, verify, mv-compare, campaign, topup, senders, bounce, whereis, cleanup-test, cancel, job');
     }
   } finally {
     await db.end();

@@ -1,4 +1,8 @@
-# Ledger: Dulcy's accountant (scheduled task in claude.ai)
+# Ledger: Dulcy's accountant
+
+**Now runs in the engine (Alex, 2026-11-25, option 2):** stages `ledger.report` and `ledger.check` in `engine/src/agents/ledger.ts`. Setup is in `engine/GUIDE.md` under "Ledger".
+The prompt below is kept only as the spec and as a fallback for a claude.ai scheduled task.
+
 
 Runs as a claude.ai scheduled task with the **Xero, Mercury and Slack** connectors switched on.
 It can't run in the engine, because the server has no access to claude.ai connectors.

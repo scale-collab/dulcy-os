@@ -99,10 +99,31 @@ export async function adaTick(db: Db, cfg: Config, now = new Date()): Promise<nu
   return r.status === 'queued' ? 1 : 0;
 }
 
+/** Ledger: the Saturday report once after LEDGER_REPORT_HOUR ET, and the purchase check every LEDGER_CHECK_EVERY_MIN. Off unless LEDGER=on. */
+export async function ledgerTick(db: Db, cfg: Config, now = new Date()): Promise<number> {
+  if (!cfg.ledgerOn) return 0;
+  const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const live = (k: string) => !(cfg.dryRun && !cfg.liveStages.includes(k));
+  let q = 0;
+  if (et.getDay() === 6 && et.getHours() >= cfg.ledgerReportHour) {
+    const def = STAGES['ledger.report'];
+    const date = `${et.getFullYear()}-${String(et.getMonth() + 1).padStart(2, '0')}-${String(et.getDate()).padStart(2, '0')}`;
+    const r = await enqueue(db, { kind: 'ledger.report', recordId: 'ledger', input: {}, requestId: `ledger:${date}`, dryRun: !live('ledger.report'), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs });
+    if (r.status === 'queued') q++;
+  }
+  if (cfg.ledgerCheckEveryMin > 0 && cfg.slackBotToken) {
+    const def = STAGES['ledger.check'];
+    const slot = Math.floor(now.getTime() / (cfg.ledgerCheckEveryMin * 60_000));
+    const r = await enqueue(db, { kind: 'ledger.check', recordId: 'ledger-check', input: {}, requestId: `ledger-check:${slot}`, dryRun: !live('ledger.check'), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs });
+    if (r.status === 'queued') q++;
+  }
+  return q;
+}
+
 export function startScheduler(db: Db, cfg: Config, signal: AbortSignal): void {
-  if ((!cfg.bounceCheckEveryMin || cfg.bounceCheckWorkspaces.length === 0) && !cfg.seanEveryMin && !cfg.accountHealthEveryMin && !cfg.adaBriefOn) return;
+  if ((!cfg.bounceCheckEveryMin || cfg.bounceCheckWorkspaces.length === 0) && !cfg.seanEveryMin && !cfg.accountHealthEveryMin && !cfg.adaBriefOn && !cfg.ledgerOn) return;
   const err = (e: unknown) => console.error(JSON.stringify({ level: 'error', message: 'scheduler tick failed', err: String(e) }));
-  const tick = () => { void scheduleTick(db, cfg).catch(err); void seanTick(db, cfg).catch(err); void accountHealthTick(db, cfg).catch(err); void adaTick(db, cfg).catch(err); };
+  const tick = () => { void scheduleTick(db, cfg).catch(err); void seanTick(db, cfg).catch(err); void accountHealthTick(db, cfg).catch(err); void adaTick(db, cfg).catch(err); void ledgerTick(db, cfg).catch(err); };
   tick();
   const t = setInterval(tick, 60_000);
   signal.addEventListener('abort', () => clearInterval(t));
