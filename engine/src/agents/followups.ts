@@ -88,7 +88,7 @@ export const seanFollowupStage: Stage = async (ctx) => {
   if (!todo.length) return { message: `${recs.length} follow-ups due, none new`, due: recs.length, drafted: 0 };
 
   const dir = cfg.knowledgeDir;
-  const shared = sharedKnowledge(dir, FOLLOWUP_BRIEF);
+  const shared = sharedKnowledge(dir);
   const claude = ctx.dryRun ? null : createClaude({ apiKey: cfg.anthropicApiKey, model: cfg.claudeModel, baseURL: cfg.anthropicBaseUrl });
   const perClient = new Map<string, { block: string; booking: Booking; plan: FollowupPlan; settings: ClientSettings }>();
   const counts = { reply: 0, skip: 0, ask_alex: 0, answered: 0, complete: 0, noClientFile: 0, clientOff: 0 };
@@ -142,7 +142,7 @@ export const seanFollowupStage: Stage = async (ctx) => {
 
     const d: Draft = await ctx.paid({
       callKey: `followup:${r.id}:${val(f[RA.dueAt])}`, provider: 'anthropic', units: 1,
-      run: () => claude!.structured(DraftSchema, [shared, block], varying, user),
+      run: () => claude!.structured(DraftSchema, [shared, FOLLOWUP_BRIEF, block], varying, user),
       dryRunResult: () => ({ action: 'skip', intent: 'Other', reason: 'dry run: Claude not called', they_said: '', draft: '', question_for_alex: '' }),
     });
 

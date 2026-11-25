@@ -83,16 +83,28 @@ export async function bookingFor(cfg: Parameters<typeof openTimes>[0], st: Clien
   return { slots: open?.slots ?? [], tz: open?.timezone ?? 'America/New_York', link: st.disableLinks ? '' : st.calendarLink };
 }
 
-/** The knowledge every Sean call shares (cached by Claude): brief, skill, playbooks, real data, rules. */
-export function sharedKnowledge(dir: string, brief = SEAN_BRIEF): string {
+/** Only the named sections (## / ### headings) of a markdown file, in file order. */
+export function sections(md: string, keep: RegExp): string {
+  const parts = md.split(/\n(?=#{2,3} )/);
+  return parts.filter((p) => keep.test(p.split('\n')[0])).join('\n');
+}
+
+/**
+ * The knowledge every Sean call shares, first replies and follow-ups alike (cached once by Claude,
+ * Alex 2026-11-25: best replies, no paying to reload what a reply never uses). Focused on email
+ * replies: skill, playbooks, real reply data, creator methods, rules, promise contract, and only the
+ * sales-method parts a reply needs (beliefs, objections, follow-up). The call-only parts of the sales
+ * course and the old Drive SOP notes are left out. The brief (first reply vs follow-up) is a separate
+ * cached block after this one.
+ */
+export function sharedKnowledge(dir: string): string {
+  const closers = sections(readKnowledge(dir, 'skills/cole-sales-closing/references/closers-methods.md'), /^#{2,3} (2\.1|2\.6|2\.7)\b/);
   return [
-    brief,
     `# Sean skill\n${readKnowledge(dir, 'skills/sean-reply-handling/SKILL.md')}`,
     `# Reply decisions\n${readKnowledge(dir, 'skills/sean-reply-handling/references/reply-decision.md')}\n${readKnowledge(dir, 'skills/sean-reply-handling/references/decision-playbook.md')}`,
     `# What worked before (real reply data)\n${readKnowledge(dir, 'skills/sean-reply-handling/references/historical-patterns.md')}`,
     `# Methods from the creators we follow\n${readKnowledge(dir, 'skills/sean-reply-handling/references/creator-methods.md')}`,
-    `# From Dulcy's Google Drive SOPs\n${readKnowledge(dir, 'skills/sean-reply-handling/references/drive-findings.md')}`,
-    `# Sales method (objections)\n${readKnowledge(dir, 'skills/cole-sales-closing/references/closers-methods.md')}`,
+    `# Sales method: beliefs, objections, follow-up\n${closers}`,
     `# Standing rules (newest wins)\n${readKnowledge(dir, 'rules/RULES.md')}\n${readKnowledge(dir, 'rules/client-promise-contract.md')}`,
   ].join('\n\n---\n\n');
 }
@@ -152,7 +164,7 @@ export const seanDraftStage: Stage = async (ctx) => {
 
     const d: Draft = await ctx.paid({
       callKey: `draft:${r.id}:${replyAt}`, provider: 'anthropic', units: 1,
-      run: () => claude!.structured(DraftSchema, [shared, block], varying, user),
+      run: () => claude!.structured(DraftSchema, [shared, SEAN_BRIEF, block], varying, user),
       dryRunResult: () => ({ action: 'skip', intent: 'Other', reason: 'dry run (sean.draft not in LIVE_STAGES): Claude not called', they_said: '', draft: '', question_for_alex: '' }),
     });
 

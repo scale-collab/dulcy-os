@@ -81,7 +81,7 @@ export function writeHealth(d: HealthData): string {
 export async function gatherHealth(at: Pick<AirtableClient, 'list'>, now: Date): Promise<HealthData> {
   const [ws, emails, campaigns] = await Promise.all([
     at.list(WORKSPACES, `{Status}='Active'`, ['Name', 'Status', 'Client Type', 'Monthly Fee', 'Months Active', 'Estimated LTV', 'Actual Lifetime Revenue', 'Client Health', 'Calls Booked KPI (Client)', 'Calls Booked KPI (Internal)', 'ID'], 200, { byName: true }),
-    at.list(EMAILS, `OR(IS_AFTER({Latest Reply Time},DATEADD(NOW(),-31,'days')),IS_AFTER({Meeting Booked At},DATEADD(NOW(),-31,'days')))`, ['Workspace ID (Bison)', 'Lead Status', 'Latest Reply Time', 'Meeting Booked At'], 20000, { byName: true }),
+    at.list(EMAILS, `OR(IS_AFTER({Latest Reply Time},DATEADD(NOW(),-31,'days')),IS_AFTER({Meeting Booked At},DATEADD(NOW(),-31,'days')),IS_AFTER({Date of Call Booked},DATEADD(NOW(),-31,'days')))`, ['Workspace ID (Bison)', 'Lead Status', 'Latest Reply Time', 'Meeting Booked At', 'Date of Call Booked'], 20000, { byName: true }),
     at.list(CAMPAIGNS, `{Campaign Status}='Active'`, ['Client', 'Bounced %', 'Progress', 'Campaign Status'], 1000, { byName: true }),
   ]);
   const t = now.getTime();
@@ -90,7 +90,7 @@ export async function gatherHealth(at: Pick<AirtableClient, 'list'>, now: Date):
     const f = w.fields; const bison = String(num(f.ID) ?? '');
     const rows = emails.filter((e) => v(e.fields['Workspace ID (Bison)']) === bison && bison !== '');
     const interested = (a: number, b: number) => rows.filter((e) => INTERESTED.includes(v(e.fields['Lead Status'])) && within(v(e.fields['Latest Reply Time']), a, b)).length;
-    const booked = (a: number, b: number) => rows.filter((e) => within(v(e.fields['Meeting Booked At']), a, b)).length;
+    const booked = (a: number, b: number) => rows.filter((e) => within(v(e.fields['Meeting Booked At']) || v(e.fields['Date of Call Booked']), a, b)).length;
     const own = campaigns.filter((c) => (Array.isArray(c.fields.Client) ? c.fields.Client : [c.fields.Client]).map(v).includes(w.id));
     const prog = (c: (typeof own)[number]) => { const p = num(c.fields.Progress) ?? 0; return p > 1 ? p / 100 : p; };
     return {
