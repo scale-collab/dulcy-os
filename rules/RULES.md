@@ -183,7 +183,9 @@ Format: `- [date] rule. (why / source)`
 - **Order:** the approved copy goes back into the sequence fields first (the same as the Campaign Center's approve-and-prepare), then the spintax button, then Build, then Launch.
 
 ## How the agents work with Alex (Alex, 2026-11-25)
-- **Alex talks to Ada only.** Ada directs the agents (Atlas directs Scribe and Scout). Each agent reports to Ada daily; Ada reports to Alex.
+- **Ada is the orchestrator.** Alex normally talks to Ada; Ada asks the agents and gets things done (Atlas directs and teaches Scribe and Scout). Each agent reports to Ada daily; Ada reports to Alex. Alex can still talk to any agent directly when he wants.
+- **Each agent keeps its own to-do list with deadlines** (e.g. a campaign hits 60% today → Atlas's task to plan the next one, with a due date). Ada watches every list.
+- **Questions get one answerer, not many bots:** like EmailBison's help AI. Answer from the data with sources; if not sure, say "here's what I found" and hand it to a person.
 - **Ada's morning brief includes a team check:** one line per agent saying whether it did its job, and what's off.
 - **Less Slack.** Alex wants one calm screen, card by card, not blocks of text and many DMs. Slack is for urgent items only. Everything else goes to the central screen (Daily Run now; a private "HQ" later).
 - **Privacy:** Josh can see Airtable. Money (MRR, LTV, finance) and content are Alex-only.

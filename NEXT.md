@@ -8,6 +8,14 @@ Last updated: 2026-11-24 (full end-to-end run from Airtable done)
 - Step 1: pick a pile (Replies · Campaigns · Fixes · Money · Other) or "Do them all"; one card at a time; Approve / Reject / Skip (keys A/R/S); progress bar. Approve = same as ✅ in Slack (Status Approved; Sean replies also press Approve Draft on the Emails row so the engine sends once).
 - Step 2: "Start my day": Tasks table one at a time (overdue → due today → in progress, then priority); Start (timer) / Pause / Complete / Skip. Modelled on James Higgins's "Single Action" feed (call 2026-10-22).
 
+## Dulcy HQ: our own app (Alex, 2026-11-25, vision; start in the background, keep it simple)
+One private place instead of many Airtable interfaces, Slack DMs, bots and tools. Airtable stays the database behind it.
+1. **Today:** decisions to swipe (per person: Alex, Josh…), to-do list ranked Eisenhower-style (urgent/important; stale "done" tasks cleared), Ada's brief, talk to Ada (and any agent) with chat history, agent reports.
+2. **Clients:** one screen with every client's results (email now; LinkedIn, AI caller, direct mail later), health, notes for today. Replaces Clients & LTV (wrong: shows 3 active), Email Campaigns, inbox/domain/warm-up/placement dashboards.
+3. **Work areas:** Campaigns, one Inbox (replaces 6+ reply pages), Sales (contracts, agreements: same flow, better screens), Content (OpusClip etc.).
+4. **People + permissions:** Josh sees only his part (no keys, no money). Later: the client portal in the same app (send.dulcy.io is EmailBison's white-label, separate login: check later).
+- Clean-up alongside: old/redundant n8n, Make and Airtable automations; unused pages (Client Offers, Internal Lead Requests…).
+
 ## Project ideas (Alex, 2026-11-25, later)
 - **Own CRM** (move off Close?): not needed now; James built his in Lovable + Railway.
 - **Client portal, vibe-coded**: the free portal plan was taken away and now costs money; rebuild it ourselves (Lovable/Softr-free stack TBD).
