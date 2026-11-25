@@ -14,6 +14,8 @@ import type { Stage } from '../stages/index.js';
 import { PermanentError } from '../errors.js';
 import { createAirtableClient } from '../providers/airtable.js';
 import { createClaude } from '../providers/claude.js';
+import fs from 'node:fs';
+import path from 'node:path';
 import { readKnowledge, clientFileFor } from './knowledge.js';
 import { EMAILS, EF, val } from './emailsFields.js';
 import { FILTER_CLIENT_FIELDS } from '../airtable/bridge.js';
@@ -21,6 +23,18 @@ import { logActivity } from '../activity.js';
 import type { PlanRow, PlanT } from './campaignPlan.js';
 
 const CAMPAIGNS = 'tblAVAA6uBPaMj28P';
+const PERF = 'skills/scribe-cold-email-copywriter/references/ingest/performance';
+const slugOf = (x: string) => x.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+/** Every script we ran for this client, with its numbers (one file per client), capped to stay readable. */
+export function scriptsFor(dir: string, client: string, max = 60_000): string {
+  const c = slugOf(client); if (!c) return '';
+  let files: string[] = [];
+  try { files = fs.readdirSync(path.join(dir, PERF, 'scripts')).filter((f) => f.endsWith('.md') && f !== 'INDEX.md'); } catch { return ''; }
+  const f = files.find((x) => x === `${c}.md`) ?? files.find((x) => x.startsWith(`${c}-`) || c.startsWith(x.replace(/\.md$/, '')));
+  if (!f) return '';
+  const t = readKnowledge(dir, `${PERF}/scripts/${f}`);
+  return t.length > max ? `${t.slice(0, max)}\n\n[... more scripts in ${f}, cut for length]` : t;
+}
 const WORKSPACES = 'tblcjRBGJEWh5KgOt';
 /** Campaign copy fields (Campaigns table). */
 export const CC = {
@@ -163,7 +177,8 @@ export const scribeCopyStage: Stage = async (ctx) => {
   const k = (rel: string) => readKnowledge(cfg.knowledgeDir, rel);
   const playbook = [
     `# Scribe playbook\n${k('skills/scribe-cold-email-copywriter/references/playbook.md')}`,
-    `# Real results: what worked and what didn't\n${k('skills/scribe-cold-email-copywriter/references/ingest/performance-evidence.md')}`,
+    `# Real results across every campaign we ran (agency averages, A/B tests, patterns)\n${k(`${PERF}/analysis.md`)}`,
+    `# The top 10 and bottom 10 campaigns, full copy\n${k(`${PERF}/top-bottom.md`)}`,
     `# Standing rules (newest wins)\n${k('rules/RULES.md')}\n${k('rules/client-promise-contract.md')}`,
   ].join('\n\n---\n\n');
   const user = [
@@ -176,7 +191,9 @@ export const scribeCopyStage: Stage = async (ctx) => {
   ].filter(Boolean).join('\n\n');
   if (ctx.dryRun) return { message: `Would write the copy for ${plan.campaign_name} (dry run: Claude not called)` };
   const claude = createClaude({ apiKey: cfg.anthropicApiKey, model: cfg.claudeModel, baseURL: cfg.anthropicBaseUrl });
-  const clientBlock = file ? `# Client file: ${file.name}\n${file.text}` : 'No client file in the repo: use only the Airtable offer and the plan.';
+  const ran = scriptsFor(cfg.knowledgeDir, file?.name ?? row.client) || scriptsFor(cfg.knowledgeDir, row.client);
+  const clientBlock = [file ? `# Client file: ${file.name}\n${file.text}` : 'No client file in the repo: use only the Airtable offer and the plan.',
+    ran ? `# Every script we already ran for THIS client, with results (build on what worked, don't repeat what failed; re-sent copy fatigues)\n${ran}` : '# No past scripts for this client.'].join('\n\n');
   const draft = await ctx.paid({ callKey: `scribe-draft:${row.id}:${round}`, provider: 'anthropic', units: 1, scope: 'record',
     run: () => claude.structured(Copy, [WRITER, playbook], clientBlock, user, 'high'), dryRunResult: () => ({}) as CopyT });
   const lint1 = lintCopy(draft, { allowCall: /only logical next step/i.test(plan.why_move) });
