@@ -207,8 +207,9 @@ Format: `- [date] rule. (why / source)`
   - HQ only presses the Emails row's buttons (Human Action, and Custom Reply for an edit). The engine's reply sender sends.
 - **Reason:** Alex: "I want to move off of Slack for these because it's just too much."
 
-## Booking asks: two specific times, never a booking link (Alex, 2026-11-25)
-- **Rule:** every reply that asks for a call offers two specific times. Do not send booking links: prospects don't click them. No vague asks like "a quick chat sometime this week".
+## Booking asks: two specific times; a booking link only as a last resort (Alex, 2026-11-25)
+- **Rule:** every reply that asks for a call offers two specific times from the client's calendar. A booking link is very unideal (prospects rarely click it): use it only as a last resort (the prospect asks for a link, or no open time can be read). Never a vague ask like "a quick chat sometime this week". (Alex clarified 2026-11-25: not "never", but very unideal.)
+- **Calendars:** each client shares their calendar with Dulcy at onboarding, so the times are available; Sean must read them rather than fall back to the link.
 - **Follow-up:** every interested lead gets a follow-up every 3 days until they book, say no, or are recycled. Replies are answered within 1 hour, weekends included.
 - **Why:** Twenty West: 282 interested → 11 booked; the first reply sent a booking link 102 times and a vague ask 110 times, and 165 leads got no follow-up.
-- **Open:** Sean falls back to the booking link when a client's calendar isn't connected; that must change (connect each client's calendar so Sean can offer real times).
+- **Open:** in the Reply Agent settings only Dulcy's calendar is connected; the other clients are "Not Connected" with times switched off, so Sean falls back to the link. Fix: read each client's shared calendar.
