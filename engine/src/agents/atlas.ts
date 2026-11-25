@@ -8,6 +8,7 @@ import { PermanentError } from '../errors.js';
 import { createAirtableClient, type AirtableClient } from '../providers/airtable.js';
 import { createSlackClient } from '../providers/slack.js';
 import { EMAILS } from './emailsFields.js';
+import { saveReport, slackReports } from '../hq/reports.js';
 
 const WORKSPACES = 'tblcjRBGJEWh5KgOt';
 const CAMPAIGNS = 'tblAVAA6uBPaMj28P';
@@ -109,6 +110,9 @@ export const atlasHealthStage: Stage = async (ctx) => {
   const at = createAirtableClient({ apiKey: cfg.airtableApiKey, baseId: cfg.airtableBaseId, baseUrl: cfg.airtableBaseUrl });
   const now = new Date();
   const text = writeHealth(await gatherHealth(at, now));
+  const lines = text.split('\n');
+  await saveReport(ctx.db, { agent: 'Atlas', kind: 'client_health', title: lines[0].replace(/\*/g, '') || 'Client health', body: lines.slice(1).join('\n'), dryRun: ctx.dryRun, jobId: ctx.job.id, dedupeKey: `atlas:${ctx.job.id}` });
+  if (!slackReports(cfg)) return { message: 'Client health saved to HQ (Slack reports off)', text };
   if (ctx.dryRun || !cfg.slackBotToken || ctx.job.input.post === false) return { message: `Client health written (not posted${ctx.dryRun ? ': dry run' : ''})`, text };
   const slack = createSlackClient({ token: cfg.slackBotToken, baseUrl: cfg.slackBaseUrl });
   const to = String(ctx.job.input.channel ?? cfg.atlasChannel ?? ALEX);

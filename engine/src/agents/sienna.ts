@@ -14,6 +14,7 @@ import { createAirtableClient, type AirtableClient } from '../providers/airtable
 import { createClaude } from '../providers/claude.js';
 import { createSlackClient } from '../providers/slack.js';
 import { readKnowledge } from './knowledge.js';
+import { saveReport, slackReports } from '../hq/reports.js';
 
 export const CONTENT = 'tblcSzvicm3wivvhh';
 export const SETTINGS = 'tblbG7YbCpi84tQYM';
@@ -101,9 +102,11 @@ export const siennaIdeasStage: Stage = async (ctx) => {
     }));
     made.push(`${i.title} (${Math.round(i.score)})`);
   }
-  if (cfg.slackBotToken && made.length) {
+  const ideasText = `*Sienna: ${made.length} video ideas for Friday ${friday}* (in the Content Center, Status "Review")\n${made.map((m, n) => `${n + 1}. ${m}`).join('\n')}\nTick *Record This Week* on the ones you want. Thursday I'll write the scripts for those.`;
+  if (made.length) await saveReport(ctx.db, { agent: 'Sienna', kind: 'content_ideas', title: `Sienna: ${made.length} video ideas for Friday ${friday}`, body: ideasText.split('\n').slice(1).join('\n'), summary: made.slice(0, 2).join(' · '), dryRun: ctx.dryRun, jobId: ctx.job.id, dedupeKey: `sienna-ideas:${ctx.job.id}` });
+  if (cfg.slackBotToken && made.length && slackReports(cfg)) {
     const slack = createSlackClient({ token: cfg.slackBotToken, baseUrl: cfg.slackBaseUrl });
-    const text = `*Sienna: ${made.length} video ideas for Friday ${friday}* (in the Content Center, Status "Review")\n${made.map((m, n) => `${n + 1}. ${m}`).join('\n')}\nTick *Record This Week* on the ones you want. Thursday I'll write the scripts for those.`;
+    const text = ideasText;
     await ctx.paid({ callKey: `sienna-ideas-post:${etYmd(now)}`, provider: 'slack', units: 0, scope: 'record', run: () => slack.post(cfg.siennaChannel, text), dryRunResult: () => ({ channel: '', ts: '' }) });
   }
   return { message: `${made.length} ideas added for ${friday}`, ideas: made };
@@ -139,9 +142,11 @@ export const siennaPrepStage: Stage = async (ctx) => {
     }));
     done.push(v(f[CF.title]));
   }
-  if (cfg.slackBotToken && done.length) {
+  const scriptsText = `*Sienna: Friday is ready* · ${done.length} script${done.length === 1 ? '' : 's'} written (Content Center → Script; title, hook, thumbnail and Gamma outline in Notes)\n${done.map((t, n) => `${n + 1}. ${t}`).join('\n')}\nCheck the "Check before recording" list in each one.`;
+  if (done.length) await saveReport(ctx.db, { agent: 'Sienna', kind: 'content_scripts', title: `Sienna: ${done.length} script${done.length === 1 ? '' : 's'} ready for Friday`, body: scriptsText.split('\n').slice(1).join('\n'), summary: done.slice(0, 2).join(' · '), jobId: ctx.job.id, dedupeKey: `sienna-prep:${ctx.job.id}` });
+  if (cfg.slackBotToken && done.length && slackReports(cfg)) {
     const slack = createSlackClient({ token: cfg.slackBotToken, baseUrl: cfg.slackBaseUrl });
-    const text = `*Sienna: Friday is ready* · ${done.length} script${done.length === 1 ? '' : 's'} written (Content Center → Script; title, hook, thumbnail and Gamma outline in Notes)\n${done.map((t, n) => `${n + 1}. ${t}`).join('\n')}\nCheck the "Check before recording" list in each one.`;
+    const text = scriptsText;
     await ctx.paid({ callKey: `sienna-prep-post:${etYmd(new Date())}`, provider: 'slack', units: 0, scope: 'record', run: () => slack.post(cfg.siennaChannel, text), dryRunResult: () => ({ channel: '', ts: '' }) });
   }
   return { message: `${done.length} script(s) written`, titles: done };
