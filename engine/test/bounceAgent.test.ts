@@ -5,7 +5,8 @@ import { createPool, migrate, type Db } from '../src/db/pool.js';
 import { loadConfig, type Config } from '../src/config.js';
 import { enqueue, getJob } from '../src/queue.js';
 import { runOnce } from '../src/worker.js';
-import { classifyBounce, gatewayOf, diagnose, readBounce, type Bounce } from '../src/campaign/bounceDiagnosis.js';
+import { classifyBounce, gatewayOf, diagnose, readBounce, codeOf, providerOfMx, type Bounce } from '../src/campaign/bounceDiagnosis.js';
+import { setMxLookup } from '../src/stages/bounceAgent.js';
 import { startFakeBison, type FakeBison } from './fakes/bison.js';
 
 const url = process.env.TEST_DATABASE_URL;
@@ -22,7 +23,7 @@ async function run(conf: Config, kind: string, input: Record<string, unknown>) {
 }
 const notice = (body: string, sender = '11', lead = 'jane@acme.com') => ({ subject: 'Undeliverable', text_body: body, sender_email_id: Number(sender), lead: { email: lead } });
 
-before(async () => { bison = await startFakeBison(); if (skip) return; db = createPool(url!); await migrate(db); });
+before(async () => { setMxLookup(async (d) => (d.startsWith('pp') ? 'mx0a.pphosted.com' : 'aspmx.l.google.com')); bison = await startFakeBison(); if (skip) return; db = createPool(url!); await migrate(db); });
 after(async () => { bison.close(); if (!skip) await db.end(); });
 beforeEach(async () => {
   Object.assign(bison, { calls: [], workspaces: [{ id: 2, name: 'Dulcy' }, { id: 66, name: 'Twenty West' }], campaigns: [
@@ -45,36 +46,49 @@ test('each bounce notice is sorted by cause; security gateways are named', () =>
   assert.equal(b.kind, 'bad_address');
 });
 
-test('diagnosis: bad addresses → the list; blocks from a few inboxes → remove them and resume; tiny sample → too early', () => {
-  const inboxes = ['11', '12', '13', '14'].map((id) => ({ id, email: `i${id}@x.com`, status: 'connected', sent: 500, bounced: 10 }));
+test('Alex\'s method: step 1 codes (verification vs spam), step 2 domain / account / copy, step 3 where the bounces land', () => {
+  assert.equal(codeOf('Remote server returned 550 5.1.1 user unknown'), '5.1.1');
+  assert.equal(providerOfMx('mx0b-00123.pphosted.com'), 'Proofpoint');
+  assert.equal(providerOfMx('acme-com.mail.protection.outlook.com'), 'Microsoft 365');
+  assert.equal(providerOfMx('mail.acme-plumbing.com'), 'Custom mail server');
+  const inboxes = ['11', '12', '13', '14'].map((id) => ({ id, email: `i${id}@d${id}.com`, status: 'connected', sent: 500, bounced: 10 }));
   const c = { bounce: 6, contacted: 1000, bounced: 60, progress: 50 };
-  const bad: Bounce[] = Array.from({ length: 10 }, (_, i) => ({ senderId: String(11 + (i % 4)), recipient: `p${i}@a.com`, kind: 'bad_address', gateway: '' }));
-  const list = diagnose(c, inboxes, bad);
-  assert.equal(list.cause, 'list');
-  assert.equal(list.action, 'None', 'a list fix changes leads: proposed, not automatic');
-  assert.match(list.fix, /Re-verify/);
+  const mk = (k: number, f: (i: number) => Partial<Bounce>): Bounce[] => Array.from({ length: k }, (_, i) => ({ senderId: String(11 + (i % 4)), recipient: `p${i}@a.com`, kind: 'blocked', gateway: '', provider: 'Google', ...f(i) }));
 
-  const blocked: Bounce[] = Array.from({ length: 10 }, (_, i) => ({ senderId: i < 8 ? '13' : '11', recipient: `p${i}@a.com`, kind: 'blocked', gateway: '' }));
-  const inb = diagnose(c, inboxes, blocked);
-  assert.equal(inb.cause, 'inboxes');
-  assert.equal(inb.action, 'Remove Inboxes and Resume');
-  assert.deepEqual(inb.removeSenderIds, ['13']);
+  // Step 1: most bounces "not found" → verification (the list).
+  const v = diagnose(c, inboxes, mk(10, () => ({ kind: 'bad_address', code: '5.1.1' })));
+  assert.equal(v.cause, 'verification');
+  assert.match(v.fix, /Re-verify/);
+  assert.equal(v.action, 'None', 'a list fix changes leads: proposed, not automatic');
+  // Microsoft 365 also sends the not-found notices: still verification, not a filter problem.
+  assert.equal(diagnose(c, inboxes, [...mk(17, () => ({ kind: 'bad_address', provider: 'Microsoft 365' })), ...mk(3, () => ({})), ...mk(15, () => ({ kind: 'other' }))]).cause, 'verification');
 
-  const gw: Bounce[] = Array.from({ length: 10 }, (_, i) => ({ senderId: String(11 + (i % 4)), recipient: `p${i}@a.com`, kind: 'blocked', gateway: i < 6 ? 'Mimecast' : '' }));
-  assert.equal(diagnose(c, inboxes, gw).cause, 'gateway');
+  // Step 2a: blocks pile up on one email account → remove it and resume.
+  const acct = diagnose(c, inboxes, mk(10, (i) => ({ senderId: i < 8 ? '13' : '11' })));
+  assert.equal(acct.cause, 'account');
+  assert.equal(acct.action, 'Remove Inboxes and Resume');
+  assert.deepEqual(acct.removeSenderIds, ['13']);
+  // Step 2b: blacklist / reputation notices, or risky .info domains → our domain.
+  assert.equal(diagnose(c, inboxes, mk(10, () => ({ spamHint: 'domain' }))).cause, 'domain');
+  const info = inboxes.map((x) => ({ ...x, email: x.email.replace('.com', '.info') }));
+  assert.match(diagnose(c, info, mk(20, () => ({}))).fix, /\.info domains/);
+  // Step 2c: blocks spread evenly, nothing pointing at domains or accounts → the copy.
+  const copy = diagnose(c, inboxes, mk(20, () => ({})));
+  assert.equal(copy.cause, 'copy');
+  assert.equal(copy.action, 'None', 'one inbox with a few blocks is not proof');
+  assert.match(diagnose({ ...c, paused: false }, inboxes, mk(20, () => ({}))).fix, /Pause it \(Skip Bounce Pause is ticked/);
 
-  assert.equal(diagnose({ ...c, contacted: 100, bounced: 6 }, inboxes, bad).action, 'Resume Campaign');
-  // Live 2026-11-25: Microsoft 365 also sends the "address does not exist" notices, so it only counts as a filter when it blocked.
-  const tmc: Bounce[] = [
-    ...Array.from({ length: 17 }, (_, i) => ({ senderId: '11', recipient: `a${i}@x.com`, kind: 'bad_address' as const, gateway: i < 14 ? 'Microsoft (Exchange Online Protection)' : '' })),
-    ...Array.from({ length: 3 }, (_, i) => ({ senderId: '12', recipient: `b${i}@x.com`, kind: 'blocked' as const, gateway: '' })),
-    ...Array.from({ length: 15 }, (_, i) => ({ senderId: '13', recipient: `c${i}@x.com`, kind: 'other' as const, gateway: '' })),
-  ];
-  assert.equal(diagnose(c, inboxes, tmc).cause, 'list');
-  // One inbox with 4 of 20 blocks is not proof it is burned.
-  const spread: Bounce[] = Array.from({ length: 20 }, (_, i) => ({ senderId: String(11 + (i % 4)), recipient: `s${i}@x.com`, kind: 'blocked', gateway: '' }));
-  assert.equal(diagnose(c, inboxes, spread).action, 'None');
-  assert.match(diagnose({ ...c, paused: false }, inboxes, spread).fix, /Pause it \(Skip Bounce Pause is ticked/);
+  // Step 3: 50%+ of the bounces land on Proofpoint → stop sending to Proofpoint.
+  const seg = diagnose(c, inboxes, mk(10, (i) => ({ provider: i < 6 ? 'Proofpoint' : 'Google' })));
+  assert.equal(seg.cause, 'gateway');
+  assert.equal(seg.stopSendingTo, 'Proofpoint');
+  assert.match(seg.fix, /Stop sending to Proofpoint/);
+  // A custom mail server counts too; with a verification cause it is added as a second fix.
+  const both = diagnose(c, inboxes, mk(10, (i) => ({ kind: 'bad_address', provider: i < 7 ? 'Custom mail server' : 'Google' })));
+  assert.equal(both.cause, 'verification');
+  assert.match(both.fix, /stop sending to Custom mail server/);
+
+  assert.equal(diagnose({ ...c, contacted: 100, bounced: 6 }, inboxes, mk(10, () => ({}))).action, 'Resume Campaign');
 });
 
 test('bounce check → bounce agent: the paused campaign is investigated once and the cause + fix comes back', { skip }, async () => {
@@ -91,7 +105,7 @@ test('bounce check → bounce agent: the paused campaign is investigated once an
   const inv = (await db.query(`SELECT status, result, input FROM jobs WHERE kind='bounce.investigate'`)).rows;
   assert.equal(inv.length, 1);
   assert.equal(inv[0].status, 'succeeded');
-  assert.equal(inv[0].result.cause, 'inboxes');
+  assert.equal(inv[0].result.cause, 'account');
   assert.equal(inv[0].result.action, 'Remove Inboxes and Resume');
   assert.equal(inv[0].input.teamId, 66);
   // The next check (campaign is paused now) does not investigate again.

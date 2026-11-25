@@ -345,14 +345,14 @@ Your rule: keep following up on a positive reply until they answer or say stop.
 5. **Stops.** Any answer from the prospect, a stop or unsubscribe, booked/closed, Not Interested, DNC or client-handled. If the prospect wrote, it becomes a normal reply for Sean. If someone already followed up by hand after the draft, the sender refuses to send a second one.
 
 ## Bounce agent (Atlas, 2026-11-25)
-Your rule: over 4% bounce = pause and investigate (copy, inboxes, list quality, security gateways).
-1. **When.** Every bounce check. Each campaign it pauses, or flags over 4% with Skip Bounce Pause ticked, goes to the bounce agent (once every 3 days per campaign).
-2. **What it reads.** The campaign's bounce notices in EmailBison (up to 5 pages) and its inboxes (sends and bounces per inbox). Each bounce is sorted: *address does not exist* (list), *blocked / spam / policy* (inboxes or filters), *mailbox full*, other. Security gateways (Mimecast, Proofpoint, Barracuda, Microsoft…) are named.
-3. **Cause + one fix**, posted to Slack as a decision ("Bounce 6% on …: …"):
-   - **A few inboxes are being blocked** → On ✅: those inboxes are removed from the campaign and it resumes.
-   - **Too early to judge** (under 150 contacted) → On ✅: resume.
-   - **The list has bad addresses** → keep paused; re-verify the leads not yet contacted and remove risky ones (proposed, Atlas prepares it).
-   - **A security gateway is filtering** → keep paused; remove those leads or send them plain text (proposed).
-   - **Blocked across all inboxes / mixed** → keep paused; check the Spam Center and the copy.
-4. **After a fix**, Skip Bounce Pause is ticked on the campaign (the bounce % counts every email so far, so it would pause again). The watch alert still shows; untick it when the rate is back under 4%.
-5. **Switch:** `bounce.investigate` and `bounce.fix` in LIVE_STAGES. Without them it runs as a test and posts nothing.
+Follows Alex's method (RULES.md 2026-11-25). Over 4% bounce = pause and investigate.
+1. **When.** Every bounce check: each campaign it pauses, or flags over 4% with Skip Bounce Pause ticked (once every 3 days per campaign).
+2. **Step 1, the bounce codes.** Reads the campaign's bounce notices (up to 5 pages) and sorts each by its code: *not found / verification* (5.1.x) or *blocked / spam* (5.7.x), mailbox full, other. Top codes are listed.
+3. **Step 2, if it is spam: domain, account or copy.**
+   - **Account:** blocks pile up on a few inboxes → On ✅ those inboxes are removed and the campaign resumes.
+   - **Domain:** blocks cluster on one of our domains (across its inboxes), notices name a blacklist / reputation / SPF-DKIM-DMARC, or the inboxes send from risky domains (.info…) → check the domains in the Spam Center, plan new .com domains.
+   - **Copy:** blocks spread evenly over all inboxes and domains → review the copy (links, tracking, spam words) and run a placement test.
+4. **Step 3, where the bounces land.** Each bounced address's mail server is looked up (MX record): Google, Microsoft 365, a security gateway (Proofpoint, Mimecast, Barracuda…) or a custom mail server. If 50%+ of the bounces land on one gateway / custom server → stop sending to those recipients.
+5. **Verification** causes (list) and gateway removals change leads, so they are proposed only. ✅ runs only: remove the burned inboxes and resume, or resume (too early to judge). After a fix, Skip Bounce Pause is ticked (the bounce % counts every email so far).
+6. **Check one campaign by hand** (posts nothing): `docker compose exec engine node dist/src/cli.js bounce-check-campaign <workspaceId> <campaignId>` (add `--post` to post it to Slack).
+7. **Switch:** `bounce.investigate` and `bounce.fix` in LIVE_STAGES.

@@ -104,6 +104,21 @@ async function main() {
       const r = await enqueue(db, { kind: 'bounce.check', recordId: `bounce:${ws}`, input: { workspace: ws, skipPauseCampaignIds: await bounceSkipList(cfg) }, dryRun: cfg.dryRun && !cfg.liveStages.includes('bounce.check'), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs });
       console.log(JSON.stringify({ status: r.status, jobId: r.job.id, dryRun: r.job.dry_run }));
       console.log(`Check it with:  docker compose exec engine node dist/src/cli.js job ${r.job.id}`);
+    } else if (cmd === 'bounce-check-campaign') {
+      // Re-run the bounce agent on one campaign to see its diagnosis; posts nothing unless --post.
+      const teamId = Number(args[0]), campaignId = Number(args[1]);
+      if (!(teamId > 0) || !(campaignId > 0)) throw new Error('usage: bounce-check-campaign <workspaceId> <campaignId> [--post]');
+      const def = STAGES['bounce.investigate'];
+      const r = await enqueue(db, { kind: 'bounce.investigate', recordId: `bounce-investigate:${campaignId}`, input: { teamId, campaignId, post: args.includes('--post') }, dryRun: cfg.dryRun && !cfg.liveStages.includes('bounce.investigate'), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs });
+      // Wait for the worker (up to 3 minutes) and print the diagnosis.
+      for (let t = 0; t < 90; t++) {
+        const j = (await db.query(`SELECT status, result, error FROM jobs WHERE id=$1`, [r.job.id])).rows[0];
+        if (['succeeded', 'failed', 'needs_review'].includes(j?.status)) {
+          console.log(j.status === 'succeeded' ? `\n== ${campaignId}: ${j.result.message}\n${(j.result.facts ?? []).map((f: string) => `   ${f}`).join('\n')}` : `\n== ${campaignId}: ${j.status}: ${j.error}`);
+          break;
+        }
+        await new Promise((ok) => setTimeout(ok, 2_000));
+      }
     } else if (cmd === 'whereis') {
       const campaignId = Number(args[0]);
       const teams = args.slice(1).filter((a) => /^\d+$/.test(a)).map(Number);

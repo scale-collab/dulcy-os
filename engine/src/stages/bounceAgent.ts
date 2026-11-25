@@ -8,7 +8,27 @@ import { PermanentError, NeedsReviewError } from '../errors.js';
 import { createBisonClient } from '../providers/emailbison.js';
 import { createAirtableClient } from '../providers/airtable.js';
 import { DECISIONS, DF } from '../decisions/fields.js';
-import { diagnose, readBounce } from '../campaign/bounceDiagnosis.js';
+import { diagnose, readBounce, providerOfMx } from '../campaign/bounceDiagnosis.js';
+import { bounceRate, statsFrom } from '../campaign/bounce.js';
+import { resolveMx } from 'node:dns/promises';
+
+/** MX lookups (step 3: where the bounces land). Swappable in tests. */
+let mxLookup: (domain: string) => Promise<string> = async (domain) => {
+  const r = await Promise.race([resolveMx(domain), new Promise<never>((_, no) => setTimeout(() => no(new Error('timeout')), 5_000))]);
+  return [...r].sort((a, b) => a.priority - b.priority)[0]?.exchange ?? '';
+};
+export function setMxLookup(f: typeof mxLookup) { mxLookup = f; }
+
+async function providersFor(domains: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const queue = [...new Set(domains.filter(Boolean))];
+  await Promise.all(Array.from({ length: 8 }, async () => {
+    for (let d = queue.shift(); d; d = queue.shift()) {
+      try { out.set(d, providerOfMx(await mxLookup(d))); } catch { out.set(d, 'Unknown'); }
+    }
+  }));
+  return out;
+}
 import { CAMPAIGNS_TABLE as CAMPAIGNS, SKIP_BOUNCE_PAUSE, campaignRecordsFor } from '../airtable/campaignLookup.js';
 
 function bison(ctx: Parameters<Stage>[0], teamId: number) {
@@ -25,17 +45,29 @@ export const bounceInvestigateStage: Stage = async (ctx) => {
   const b = bison(ctx, teamId);
   const inboxes = await ctx.step('inboxes', () => b.campaignSenderStats(id));
   const ours = new Set(inboxes.map((x) => x.email));
-  const notices = await ctx.step('notices', async () => (await b.bouncedReplies(id, 5)).map((r) => readBounce(r, ours)));
-  const d = diagnose({ bounce: Number(i.bounce) || 0, contacted: Number(i.contacted) || 0, bounced: Number(i.bounced) || 0, progress: Number(i.progress) || 0, paused: i.paused !== false }, inboxes, notices);
-  const state = i.paused ? 'Paused by the bounce check' : 'Still sending (Skip Bounce Pause ticked)';
+  const notices = await ctx.step('notices', async () => {
+    const read = (await b.bouncedReplies(id, 5)).map((r) => readBounce(r, ours));
+    const prov = await providersFor(read.map((x) => x.recipient.split('@')[1]?.toLowerCase() ?? ''));
+    return read.map((x) => ({ ...x, provider: prov.get(x.recipient.split('@')[1]?.toLowerCase() ?? '') ?? 'Unknown' }));
+  });
+  // Numbers from the bounce check, or read here when run by hand.
+  let st = { bounce: Number(i.bounce) || 0, contacted: Number(i.contacted) || 0, bounced: Number(i.bounced) || 0, progress: Number(i.progress) || 0, status: '' };
+  if (!st.contacted) {
+    const c = (await b.listCampaigns()).map(statsFrom).find((x) => x.id === id);
+    if (c) st = { bounce: bounceRate(c), contacted: c.contacted, bounced: c.bounced, progress: c.progress, status: c.status };
+  }
+  if (!i.name) i.name = `campaign ${id}`;
+  const paused = i.paused === undefined ? st.status !== 'active' : i.paused !== false;
+  const d = diagnose({ ...st, paused }, inboxes, notices);
+  const state = paused ? 'Paused' : 'Still sending (Skip Bounce Pause ticked)';
 
   let decisionId = '';
-  if (!ctx.dryRun && ctx.cfg.airtableApiKey) {
+  if (!ctx.dryRun && ctx.cfg.airtableApiKey && i.post !== false) {
     const at = createAirtableClient({ apiKey: ctx.cfg.airtableApiKey, baseId: ctx.cfg.airtableBaseId, baseUrl: ctx.cfg.airtableBaseUrl });
     decisionId = await ctx.step('decision', () => at.create(DECISIONS, {
-      [DF.title]: `Bounce ${i.bounce}% on ${i.name}: ${d.headline}`,
+      [DF.title]: `Bounce ${st.bounce}% on ${i.name}: ${d.headline}`,
       [DF.agent]: 'Atlas', [DF.status]: 'New', [DF.client]: String(i.workspaceName ?? ''),
-      [DF.issue]: `${state}. Bounce ${i.bounce}% at ${i.progress}% progress (over 4% = pause and investigate).`,
+      [DF.issue]: `${state}. Bounce ${st.bounce}% at ${st.progress}% progress (over 4% = pause and investigate).`,
       [DF.checked]: d.facts.join('\n'),
       [DF.fix]: d.fix,
       [DF.details]: `EmailBison campaign ${id}, workspace ${i.workspaceName ?? ''} (${teamId}).\nCause: ${d.cause}.`,
@@ -43,7 +75,7 @@ export const bounceInvestigateStage: Stage = async (ctx) => {
       [DF.actionInput]: JSON.stringify({ teamId, campaignId: id, removeSenderIds: d.removeSenderIds, name: i.name }),
     }));
   }
-  return { message: `${i.name}: ${d.headline}. ${d.fix}${ctx.dryRun ? ' (dry run: no decision posted)' : ''}`, cause: d.cause, action: d.action, facts: d.facts, decisionId };
+  return { message: `${i.name}: ${d.headline}. ${d.fix}${ctx.dryRun || i.post === false ? ' (check only: no decision posted)' : ''}`, cause: d.cause, action: d.action, stopSendingTo: d.stopSendingTo, facts: d.facts, decisionId };
 };
 
 /** On ✅: remove the named inboxes (campaign must be paused for that) and resume; confirm it is sending. */
