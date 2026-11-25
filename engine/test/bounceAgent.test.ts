@@ -64,6 +64,17 @@ test('diagnosis: bad addresses → the list; blocks from a few inboxes → remov
   assert.equal(diagnose(c, inboxes, gw).cause, 'gateway');
 
   assert.equal(diagnose({ ...c, contacted: 100, bounced: 6 }, inboxes, bad).action, 'Resume Campaign');
+  // Live 2026-11-25: Microsoft 365 also sends the "address does not exist" notices, so it only counts as a filter when it blocked.
+  const tmc: Bounce[] = [
+    ...Array.from({ length: 17 }, (_, i) => ({ senderId: '11', recipient: `a${i}@x.com`, kind: 'bad_address' as const, gateway: i < 14 ? 'Microsoft (Exchange Online Protection)' : '' })),
+    ...Array.from({ length: 3 }, (_, i) => ({ senderId: '12', recipient: `b${i}@x.com`, kind: 'blocked' as const, gateway: '' })),
+    ...Array.from({ length: 15 }, (_, i) => ({ senderId: '13', recipient: `c${i}@x.com`, kind: 'other' as const, gateway: '' })),
+  ];
+  assert.equal(diagnose(c, inboxes, tmc).cause, 'list');
+  // One inbox with 4 of 20 blocks is not proof it is burned.
+  const spread: Bounce[] = Array.from({ length: 20 }, (_, i) => ({ senderId: String(11 + (i % 4)), recipient: `s${i}@x.com`, kind: 'blocked', gateway: '' }));
+  assert.equal(diagnose(c, inboxes, spread).action, 'None');
+  assert.match(diagnose({ ...c, paused: false }, inboxes, spread).fix, /Pause it \(Skip Bounce Pause is ticked/);
 });
 
 test('bounce check → bounce agent: the paused campaign is investigated once and the cause + fix comes back', { skip }, async () => {

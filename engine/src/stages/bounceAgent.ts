@@ -26,7 +26,7 @@ export const bounceInvestigateStage: Stage = async (ctx) => {
   const inboxes = await ctx.step('inboxes', () => b.campaignSenderStats(id));
   const ours = new Set(inboxes.map((x) => x.email));
   const notices = await ctx.step('notices', async () => (await b.bouncedReplies(id, 5)).map((r) => readBounce(r, ours)));
-  const d = diagnose({ bounce: Number(i.bounce) || 0, contacted: Number(i.contacted) || 0, bounced: Number(i.bounced) || 0, progress: Number(i.progress) || 0 }, inboxes, notices);
+  const d = diagnose({ bounce: Number(i.bounce) || 0, contacted: Number(i.contacted) || 0, bounced: Number(i.bounced) || 0, progress: Number(i.progress) || 0, paused: i.paused !== false }, inboxes, notices);
   const state = i.paused ? 'Paused by the bounce check' : 'Still sending (Skip Bounce Pause ticked)';
 
   let decisionId = '';
