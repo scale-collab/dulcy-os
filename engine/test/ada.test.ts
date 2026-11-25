@@ -37,10 +37,10 @@ test('the brief: waiting decisions, overnight replies and meetings, campaign and
   assert.match(b, /\*Good morning, Wednesday, Nov 25\*/);
   assert.match(b, /3 decisions \(2 replies \/ follow-ups, 1 bounce, 1 purchase\)\. Oldest: Reply to Jane at Acme/);
   assert.match(b, /2 new interested replies \(Twenty West 2\) · 1 meeting booked \(Twenty West 1\) · 1 reply sent · 1 draft waiting/);
-  assert.match(b, /\*Campaigns \(2 active\):\* ⚠️ 1 over 4% \(TW Food Direct 5\.2%\) · 👀 1 to watch \(2\.5-4%\) · ⏸ 1 paused in the last 24 h · 📈 1 past 60%: plan the next one \(Twenty West 1\)/);
+  assert.match(b, /\*Campaigns \(2 active\):\* ⚠️ 1 over 4% bounce \(Twenty West: TW Food Direct 5\.2%\) · 👀 1 to watch \(2\.5-4%\) · ⏸ 1 paused in the last 24 h · 📈 1 past 60%: plan the next one \(Twenty West 1\)/);
   assert.match(b, /\*Accounts:\* 2 resting · 1 to replace · 1 purchase waiting for your ✅/);
   assert.match(b, /\*Agents \(24 h\):\* Atlas 1 step \(1 fixed\) · Engine 1 step/);
-  assert.match(b, /1\. Approve or skip the 2 waiting replies/);
+  assert.match(b, /1\. Approve or skip the 2 waiting replies in Decisions/);
   assert.doesNotMatch(b, /@/, 'no email addresses');
 });
 
@@ -59,4 +59,14 @@ test('timer: weekdays after the brief hour only (no database needed when it is o
   assert.equal(await adaTick(null as any, { ...cfg, adaBriefOn: false }, now), 0, 'off by default');
   assert.equal(await adaTick(null as any, { ...cfg, adaBriefOn: true }, new Date('2026-11-28T15:00:00Z')), 0, 'Saturday');
   assert.equal(await adaTick(null as any, { ...cfg, adaBriefOn: true, adaBriefHour: 8 }, new Date('2026-11-25T11:00:00Z')), 0, 'before 8 AM ET');
+});
+
+test('brief names are short: clients and campaigns', async () => {
+  const { shortClient, shortCampaign } = await import('../src/agents/ada.js');
+  assert.equal(shortClient('Brilliant Jewelers / MJJ Inc. (MJJ Brilliant)'), 'MJJ Brilliant');
+  assert.equal(shortClient('Twenty West Media (Internal)'), 'Twenty West');
+  assert.equal(shortClient('GLOBALMEDIAGROUP LTD'), 'GMG / Scroll Stop');
+  assert.equal(shortClient('COLLABOR TECHNOLOGIES LTD'), 'Collabor Technologies');
+  assert.equal(shortClient('Human Marketing'), 'Human Marketing');
+  assert.equal(shortCampaign('[Twenty West Media (Internal)] Food & Beverage Generic'), 'Food & Beverage Generic');
 });
