@@ -11,6 +11,7 @@ import type { Db } from '../db/pool.js';
 import { PermanentError } from '../errors.js';
 import { createXeroClient, type XeroClient } from '../providers/xero.js';
 import { createSlackClient, type SlackMessage } from '../providers/slack.js';
+import { createMercuryClient, type MercuryClient } from '../providers/mercury.js';
 
 // Profit First split (Lucid "Setting Up Your Business Financial Structure").
 export const BUCKETS: { key: string; label: string; match: RegExp; target: number }[] = [
@@ -36,11 +37,32 @@ export interface LedgerData {
   receivables?: { contact: string; due: number; daysLate: number }[];
   bills?: { contact: string; due: number; daysUntil: number }[];
   books?: { unreconciled: number; lastReconciled: string };
+  /** Live from Mercury (preferred over Xero's books for cash, money in and the split). */
+  live?: Live;
+  /** Mercury lines Ledger asked Alex about and are still open. */
+  openAsks?: number;
   errors: string[];
+}
+export interface Live { balances: { name: string; balance: number }[]; inMonth: number; inWeek: number; sources: [string, number][]; toBuckets: Record<string, number> }
+
+/** Live numbers from Mercury: balances, money into Entry Checking (not transfers) and Entry → bucket transfers. Pure. */
+export function liveFrom(accounts: { name: string; balance: number }[], txns: { accountName: string; amount: number; kind: string; counterparty: string; postedAt: string }[], now: Date): Live {
+  const month = etYmd(now).slice(0, 7); const weekStart = now.getTime() - 7 * DAY;
+  const entryIn = txns.filter((t) => ENTRY.test(t.accountName) && t.amount > 0 && t.kind !== 'internalTransfer');
+  const inMonth = entryIn.filter((t) => etYmd(new Date(t.postedAt)).slice(0, 7) === month);
+  const inWeek = entryIn.filter((t) => Date.parse(t.postedAt) >= weekStart);
+  const src = new Map<string, number>();
+  for (const t of inWeek) { const label = PROCESSORS.find(([, re]) => re.test(t.counterparty))?.[0] ?? (t.counterparty || 'other'); src.set(label, (src.get(label) ?? 0) + t.amount); }
+  const toBuckets: Record<string, number> = {};
+  for (const t of txns.filter((x) => ENTRY.test(x.accountName) && x.kind === 'internalTransfer' && x.amount < 0 && etYmd(new Date(x.postedAt)).slice(0, 7) === month)) {
+    const b = BUCKETS.find((k) => k.match.test(t.counterparty)); if (b) toBuckets[b.key] = (toBuckets[b.key] ?? 0) - t.amount;
+  }
+  const sum = (xs: { amount: number }[]) => Math.round(xs.reduce((a, b) => a + b.amount, 0) * 100) / 100;
+  return { balances: accounts, inMonth: sum(inMonth), inWeek: sum(inWeek), sources: [...src.entries()].sort((a, b) => b[1] - a[1]), toBuckets };
 }
 
 const n = (x: unknown) => { const v = Number(String(x ?? '').replace(/,/g, '')); return Number.isFinite(v) ? v : 0; };
-export const usd = (x: number) => `${x < 0 ? '-' : ''}$${Math.abs(x).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: Math.abs(x) < 100 ? 2 : 0 })}`;
+export const usd = (x: number) => { const r = Math.round(x * 100) / 100; const whole = Number.isInteger(r); return `${r < 0 ? '-' : ''}$${Math.abs(r).toLocaleString('en-US', { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: whole ? 0 : 2 })}`; };
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 export const etYmd = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 const DAY = 86_400_000;
@@ -93,9 +115,10 @@ const find = (banks: Bank[] | undefined, re: RegExp) => banks?.find((b) => re.te
 /** Money that came in this month: what landed in Entry Checking (Profit First counts cash). */
 export const incomeOf = (banks?: Bank[]) => find(banks, ENTRY)?.received ?? 0;
 /** This month's OPEX cap and spend; spend is Xero's P&L costs, or the card spend when the P&L can't be read. */
-export function opex(d: Pick<LedgerData, 'month' | 'pnl'>): { cap: number; spent: number } | undefined {
-  if (!d.month) return undefined;
-  const cap = OPEX_SHARE * incomeOf(d.month);
+export function opex(d: Pick<LedgerData, 'month' | 'pnl' | 'live'>): { cap: number; spent: number } | undefined {
+  if (!d.month && !d.live) return undefined;
+  const cap = OPEX_SHARE * (d.live ? d.live.inMonth : incomeOf(d.month));
+  if (!d.month) return d.pnl ? { cap, spent: d.pnl.costs } : undefined;
   const spent = d.pnl ? d.pnl.costs : d.month.filter((b) => CARD.test(b.name)).reduce((a, b) => a + b.spent, 0);
   return { cap, spent };
 }
@@ -110,7 +133,19 @@ export function nextPayout(now: Date): string {
 export function writeLedgerReport(d: LedgerData): string {
   const lines = [`*Ledger: week to ${d.now.toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' })}* (Xero, as reconciled)`];
   const top: string[] = [];
-  if (d.month) {
+  if (d.live) {
+    const L = d.live; const bal = (re: RegExp) => L.balances.find((b) => re.test(b.name))?.balance;
+    const cash = [['Entry', ENTRY] as const, ...BUCKETS.map((b) => [b.label, b.match] as const)].map(([l, re]) => { const v = bal(re); return v === undefined ? '' : `${l} ${usd(v)}`; }).filter(Boolean);
+    lines.push(`*Cash (Mercury, live):* ${cash.join(' · ')}`);
+    lines.push(`*In:* this week ${usd(L.inWeek)}${L.sources.length ? ` (${L.sources.map(([l, v]) => `${l} ${usd(v)}`).join(', ')})` : ''} · month so far ${usd(L.inMonth)}`);
+    if (L.inMonth >= 500) {
+      const off = BUCKETS.map((b) => ({ b, got: (L.toBuckets[b.key] ?? 0) / L.inMonth })).filter((x) => Math.abs(x.got - x.b.target) > 0.02);
+      lines.push(`*Split (month):* ${off.length ? off.map((x) => `⚠️ ${x.b.label} got ${pct(x.got)} (target ${pct(x.b.target)})`).join(' · ') : '✅ on target (40/30/15/10/5)'}`);
+      if (off.length) top.push(`Fix the split: ${off.map((x) => x.b.label).join(', ')} ${off.length === 1 ? 'is' : 'are'} off target.`);
+      const sitting = bal(ENTRY) ?? 0;
+      if (sitting > 100 && sitting > 0.1 * L.inMonth) { lines.push(`⚠️ ${usd(sitting)} is still sitting in Entry Checking (not split yet).`); top.push(`Split the ${usd(sitting)} sitting in Entry Checking.`); }
+    } else lines.push('*Split (month):* not enough money in yet to check');
+  } else if (d.month) {
     const cash = [find(d.month, ENTRY) && `Entry ${usd(find(d.month, ENTRY)!.closing)}`, ...BUCKETS.map((b) => { const a = find(d.month, b.match); return a ? `${b.label} ${usd(a.closing)}` : ''; }), find(d.month, HYSA) && `HYSA ${usd(find(d.month, HYSA)!.closing)}`].filter(Boolean);
     lines.push(`*Cash:* ${cash.join(' · ')}`);
     const weekIn = incomeOf(d.week);
@@ -155,9 +190,11 @@ export function writeLedgerReport(d: LedgerData): string {
   }
   if (d.month) {
     const cards = d.month.filter((b) => CARD.test(b.name)).reduce((a, b) => a + (b.closing < 0 ? -b.closing : 0), 0);
-    const owner = find(d.month, BUCKETS[1].match)?.closing; const tax = find(d.month, BUCKETS[2].match)?.closing;
+    const liveBal = (re: RegExp) => d.live?.balances.find((b) => re.test(b.name))?.balance;
+    const owner = liveBal(BUCKETS[1].match) ?? find(d.month, BUCKETS[1].match)?.closing; const tax = liveBal(BUCKETS[2].match) ?? find(d.month, BUCKETS[2].match)?.closing;
     lines.push(`*Next payout (${nextPayout(d.now)}):* owner ${owner === undefined ? 'UNKNOWN' : usd(owner)} · cards ${usd(cards)} · tax→HYSA ${tax === undefined ? 'UNKNOWN' : tax > 0 ? usd(tax) : `nothing to move (Xero shows ${usd(tax)}: check the Tax account is reconciled)`}`);
   }
+  if (d.openAsks) { lines.push(`*Reconciliation:* ${d.openAsks} Mercury line${d.openAsks === 1 ? '' : 's'} still need you (I asked in Slack)`); top.push(`Answer the ${d.openAsks} open reconciliation question${d.openAsks === 1 ? '' : 's'}.`); }
   for (const e of d.errors) lines.push(`_couldn't read ${e}_`);
   lines.push(`*Top ${Math.min(3, top.length) || 1} for you:* ${top.length ? top.slice(0, 3).map((t, i) => `${i + 1}. ${t}`).join('  ') : '1. Nothing urgent in the books.'}`);
   return lines.join('\n');
@@ -214,7 +251,7 @@ async function monthPnl(x: Pick<XeroClient, 'get'>, now: Date) {
 }
 const whereSince = (t: number) => { const [y, m, d] = etYmd(new Date(t)).split('-').map(Number); return `Date>=DateTime(${y},${m},${d})`; };
 
-export async function gatherLedger(x: Pick<XeroClient, 'get' | 'pages'>, now: Date): Promise<LedgerData> {
+export async function gatherLedger(x: Pick<XeroClient, 'get' | 'pages'>, now: Date, m?: Pick<MercuryClient, 'accounts' | 'transactions'>, db?: Db): Promise<LedgerData> {
   const errors: string[] = [];
   const safe = async <T>(label: string, f: () => Promise<T>): Promise<T | undefined> => { try { return await f(); } catch (e) { errors.push(`${label} (${String((e as Error).message).slice(0, 120)})`); return undefined; } };
   const today = etYmd(now);
@@ -223,10 +260,17 @@ export async function gatherLedger(x: Pick<XeroClient, 'get' | 'pages'>, now: Da
   const pnl = await safe('the Profit and Loss', () => monthPnl(x, now));
   const invoices = await safe('invoices and bills', () => x.pages('Invoices', 'Invoices', { Statuses: 'AUTHORISED', summaryOnly: 'true' }, 10));
   const txns = await safe('bank transactions', () => x.pages('BankTransactions', 'BankTransactions', { where: whereSince(now.getTime() - 30 * DAY) }, 10));
+  const live = m ? await safe('Mercury', async () => {
+    const accs = await m.accounts();
+    const start = etYmd(new Date(Math.min(Date.parse(`${today.slice(0, 8)}01T12:00:00Z`), now.getTime() - 7 * DAY)));
+    const txns = (await Promise.all(accs.map((a) => m.transactions(a, start, today)))).flat();
+    return liveFrom(accs, txns, now);
+  }) : undefined;
+  const openAsks = db ? Number((await db.query(`SELECT count(*)::int AS n FROM ledger_entries WHERE action='asked'`).catch(() => ({ rows: [{ n: 0 }] }))).rows[0]?.n ?? 0) : undefined;
   const due = (i: any) => n(i.AmountDue);
   const dueAt = (i: any) => xeroDate(i.DueDateString ?? i.DueDate);
   return {
-    now, month, week, pnl, errors,
+    now, month, week, pnl, errors, live, openAsks,
     receivables: invoices?.filter((i) => i.Type === 'ACCREC').map((i) => ({ contact: String(i.Contact?.Name ?? 'unknown'), due: due(i), daysLate: Math.floor((now.getTime() - dueAt(i)) / DAY) || 0 })),
     bills: invoices?.filter((i) => i.Type === 'ACCPAY' && due(i) > 0).map((i) => ({ contact: String(i.Contact?.Name ?? 'unknown'), due: due(i), daysUntil: Math.ceil((dueAt(i) - now.getTime()) / DAY) || 0 })),
     books: txns && {
@@ -244,7 +288,8 @@ function xeroFor(db: Db, cfg: Parameters<typeof createXeroClient>[1]) {
 export const ledgerReportStage: Stage = async (ctx) => {
   const cfg = ctx.cfg;
   const now = new Date();
-  const text = writeLedgerReport(await gatherLedger(xeroFor(ctx.db, cfg), now));
+  const merc = cfg.mercuryToken ? createMercuryClient({ token: cfg.mercuryToken, baseUrl: cfg.mercuryBaseUrl }) : undefined;
+  const text = writeLedgerReport(await gatherLedger(xeroFor(ctx.db, cfg), now, merc, ctx.db));
   if (ctx.dryRun || !cfg.slackBotToken || ctx.job.input.post === false) return { message: `Ledger report written (not posted${ctx.dryRun ? ': dry run' : !cfg.slackBotToken ? ': no Slack token' : ''})`, text };
   const slack = createSlackClient({ token: cfg.slackBotToken, baseUrl: cfg.slackBaseUrl });
   const to = String(ctx.job.input.channel ?? cfg.ledgerChannel);
@@ -269,7 +314,15 @@ export const ledgerCheckStage: Stage = async (ctx) => {
   if (!asks.length) return { message: 'No new purchase questions', answered: 0 };
   const x = xeroFor(ctx.db, cfg);
   let money: { cap: number; spent: number } | undefined;
-  try { const [month, pnl] = await Promise.all([monthBanks(x, now), monthPnl(x, now).catch(() => undefined)]); money = opex({ month, pnl }); } catch { money = undefined; }
+  try {
+    const [month, pnl] = await Promise.all([monthBanks(x, now), monthPnl(x, now).catch(() => undefined)]);
+    let live: Live | undefined;
+    if (cfg.mercuryToken) {
+      try { const mc = createMercuryClient({ token: cfg.mercuryToken, baseUrl: cfg.mercuryBaseUrl }); const accs = await mc.accounts(); const t = etYmd(now);
+        live = liveFrom(accs, (await Promise.all(accs.map((a) => mc.transactions(a, `${t.slice(0, 8)}01`, t)))).flat(), now); } catch { live = undefined; }
+    }
+    money = opex({ month, pnl, live });
+  } catch { money = undefined; }
   let spend: { contact: string; total: number }[] = [];
   try {
     const txns = await x.pages('BankTransactions', 'BankTransactions', { where: `${whereSince(now.getTime() - 90 * DAY)} AND Type=="SPEND"` }, 10);

@@ -111,6 +111,12 @@ export async function ledgerTick(db: Db, cfg: Config, now = new Date()): Promise
     const r = await enqueue(db, { kind: 'ledger.report', recordId: 'ledger', input: {}, requestId: `ledger:${date}`, dryRun: !live('ledger.report'), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs });
     if (r.status === 'queued') q++;
   }
+  if (cfg.mercuryToken && et.getHours() >= cfg.ledgerPrepHour) {
+    const def = STAGES['ledger.prep'];
+    const date = `${et.getFullYear()}-${String(et.getMonth() + 1).padStart(2, '0')}-${String(et.getDate()).padStart(2, '0')}`;
+    const r = await enqueue(db, { kind: 'ledger.prep', recordId: 'ledger-prep', input: {}, requestId: `ledger-prep:${date}`, dryRun: !live('ledger.prep'), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs });
+    if (r.status === 'queued') q++;
+  }
   if (cfg.ledgerCheckEveryMin > 0 && cfg.slackBotToken) {
     const def = STAGES['ledger.check'];
     const slot = Math.floor(now.getTime() / (cfg.ledgerCheckEveryMin * 60_000));
