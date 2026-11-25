@@ -446,3 +446,17 @@ Every weekday at `ADA_BRIEF_HOUR` (default 8 AM ET) the engine posts one brief t
    - run `ledger-prep --live` once, or wait for the daily run (needs `LEDGER=on`).
 
 **The Saturday report** now shows cash, money in and the split **live from Mercury**, plus how many reconciliation questions are still open.
+
+### Ledger checker mode (default, 2026-11-25)
+**Why:** Xero's API and the Xero connector can't see the Reconcile screen, and auto-reconcile isn't on Dulcy's plan. So Ledger **never writes to Xero** (`LEDGER_PREP_WRITE=off`, the default).
+
+**Every day at 7 AM ET:**
+- Ledger compares every Mercury line with Xero.
+- Lines still not in Xero after 3 days are posted **once** to Alex in Slack, with what each one should be (e.g. "should be a transfer Entry Checking → OPEX").
+- Every run checks them again. Once a line is reconciled, it's marked as in Xero.
+
+**Every Friday:** in Chrome, open Xero and tell Claude "reconcile Xero" (routine in `agents/ledger-reconcile-chrome.md`). It clicks OK only on Xero's clear suggestions and lists what it skipped.
+
+**Check now, from the server:** `docker compose exec engine node dist/src/cli.js ledger-prep` (shows the lines, posts nothing).
+
+**To switch it on:** add `ledger.prep` to `LIVE_STAGES` and set `LEDGER=on`. The prep runs once Mercury is set.

@@ -60,6 +60,8 @@ export interface Config {
   /** Ledger prepares reconciliation for Mercury lines from this date (YYYY-MM-DD), daily at LEDGER_PREP_HOUR ET. */
   ledgerPrepFrom: string;
   ledgerPrepHour: number;
+  /** Off (default): Ledger only checks Mercury against Xero and flags stuck lines. On: it also creates the entries. */
+  ledgerPrepWrite: boolean;
   ledgerOn: boolean;
   ledgerReportHour: number;
   ledgerChannel: string;
@@ -183,6 +185,7 @@ export function loadConfig(env = process.env): Config {
     mercuryBaseUrl: env.MERCURY_BASE_URL || 'https://api.mercury.com/api/v1',
     ledgerPrepFrom: (env.LEDGER_PREP_FROM || '2026-11-01').trim(),
     ledgerPrepHour: num('LEDGER_PREP_HOUR', 7, env),
+    ledgerPrepWrite: (env.LEDGER_PREP_WRITE || 'off').toLowerCase() === 'on',
     ledgerOn: (env.LEDGER || 'off').toLowerCase() === 'on',
     ledgerReportHour: num('LEDGER_REPORT_HOUR', 9, env),
     ledgerChannel: (env.LEDGER_CHANNEL || env.ADA_CHANNEL || 'U070Z26377C').trim(),

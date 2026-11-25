@@ -212,7 +212,7 @@ async function main() {
       const def = STAGES['ledger.prep'];
       const liveRun = args.includes('--live') && !(cfg.dryRun && !cfg.liveStages.includes('ledger.prep'));
       const r = await enqueue(db, { kind: 'ledger.prep', recordId: 'ledger-prep', input: { post: liveRun }, dryRun: !liveRun, maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs });
-      console.log(liveRun ? 'Creating entries in Xero…' : 'Preview only (nothing is written)…');
+      console.log(`Job ${r.job.id}: ${cfg.ledgerPrepWrite ? (liveRun ? 'creating entries in Xero…' : 'preview only (nothing is written)…') : 'checking Mercury against Xero (Ledger never writes in checker mode)…'}`);
       for (let t = 0; t < 150; t++) {
         const j = (await db.query(`SELECT status, result, error FROM jobs WHERE id=$1`, [r.job.id])).rows[0];
         if (['succeeded', 'failed', 'needs_review'].includes(j?.status)) {
@@ -220,11 +220,12 @@ async function main() {
           const res = j.result;
           console.log(res.message);
           if (res.made?.length) console.log(`\n${liveRun ? 'Created' : 'Would create'}:\n${res.made.map((x: string) => `  ${x}`).join('\n')}`);
-          if (res.asks?.length) console.log(`\nNeeds you:\n${res.asks.join('\n')}`);
+          if (res.asks?.length) console.log(`\n${res.mode === 'check' ? 'Not in Xero after 3+ days' : 'Needs you'}:\n${res.asks.join('\n')}`);
           if (res.failed?.length) console.log(`\nXero refused:\n${res.failed.join('\n')}`);
           break;
         }
         await new Promise((ok) => setTimeout(ok, 2_000));
+        if (t === 149) console.log(`Still running. Check later with: docker compose exec engine node dist/src/cli.js job ${r.job.id}`);
       }
     } else if (cmd === 'ledger-report' || cmd === 'ledger-ask') {
       const { createXeroClient } = await import('./providers/xero.js');
