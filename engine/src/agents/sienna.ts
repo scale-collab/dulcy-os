@@ -106,7 +106,7 @@ export const siennaIdeasStage: Stage = async (ctx) => {
     let chans = cfg.siennaDiscordChannels;
     if (!chans.length) { try { chans = await dc.allChannels(); } catch (e) { await ctx.log('Discord channels not listed', { err: String((e as Error).message) }, 'warn'); } }
     for (const ch of chans) {
-      try { lines.push(...communityQuestions(await dc.recent(ch), now)); } catch (e) { await ctx.log('Discord channel not read', { channel: ch, err: String((e as Error).message) }, 'warn'); }
+      try { lines.push(...communityQuestions(await dc.recent(ch), now, 30)); } catch (e) { await ctx.log('Discord channel not read', { channel: ch, err: String((e as Error).message) }, 'warn'); }
     }
     community = lines.slice(0, 40).map((t) => `- ${t}`).join('\n');
   }
@@ -117,7 +117,7 @@ export const siennaIdeasStage: Stage = async (ctx) => {
   const research = await ctx.paid({
     callKey: `sienna-research:${etYmd(now)}`, provider: 'anthropic', units: 1, scope: 'record',
     run: () => claude.research(`${VOICE}\nYou research content demand. Sources, all of them (Reddit is only one): Reddit (r/coldemail, r/agency, r/Entrepreneur, r/EmailOutreach, r/ColdEmailsForLiving), the Agency Ignition community and its public posts, comments on YouTube/LinkedIn/X/Instagram posts by cold email and agency creators, online forums, "new updates" (Google/Microsoft sender rules, cold email and AI tool changes, platform news), Google "people also ask", and the real questions Dulcy's own prospects asked (given below).`,
-      `Find ${want + 4} video topics that B2B agency owners and B2B service-business founders are actively asking about in the last 60 days, around: cold email and deliverability, outbound with AI, booking more sales meetings, agency operations and growth, founder-led sales. For each: the question people ask, where you saw demand (URL + the signal: views, comments, upvotes, date), the source type, and why it is rising now. Skip anything close to these existing titles:\n${titles.slice(0, 80).map((t) => `- ${t}`).join('\n')}${community ? `\n\nQuestions members asked this week in Agency Ignition (Alex's own Discord community; anonymous; a strong source):\n${community}` : ''}${questions ? `\n\nQuestions Dulcy's own prospects asked in the last 30 days (no names; a strong source, keep them anonymous):\n${questions}` : ''}`),
+      `Find ${want + 4} video topics that B2B agency owners and B2B service-business founders are actively asking about in the last 60 days, around: cold email and deliverability, outbound with AI, booking more sales meetings, agency operations and growth, founder-led sales. For each: the question people ask, where you saw demand (URL + the signal: views, comments, upvotes, date), the source type, and why it is rising now. Skip anything close to these existing titles:\n${titles.slice(0, 80).map((t) => `- ${t}`).join('\n')}${community ? `\n\nQuestions members asked in the last 30 days in Agency Ignition (Alex's own Discord community; anonymous; a strong source):\n${community}` : ''}${questions ? `\n\nQuestions Dulcy's own prospects asked in the last 30 days (no names; a strong source, keep them anonymous):\n${questions}` : ''}`),
     dryRunResult: () => '',
   });
   const ideas = await ctx.paid({
