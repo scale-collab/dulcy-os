@@ -25,7 +25,9 @@ import { LEAD_LISTS, F, FILTER_CLIENT_FIELDS } from '../airtable/bridge.js';
 const CAMPAIGNS = 'tblAVAA6uBPaMj28P';
 const LL = { whichCampaign: 'fldepbn71awSjmZPV' } as const;
 import { logActivity } from '../activity.js';
-import { CC, copyText, type CopyT } from './scribe.js';
+import { CC, copyText, enrichmentRequest, type CopyT } from './scribe.js';
+/** Lead List "Custom Variables Requested" (plain-English enrichment request). */
+const LL_CUSTOM_VARS = 'fldTYRjTrpVW27tmG';
 
 const WORKSPACES = 'tblcjRBGJEWh5KgOt';
 const CAMPAIGN_THESIS = 'fldlixHfhzrd7nuSc';
@@ -92,12 +94,12 @@ Follow Alex's rules exactly (next-campaign rules and campaign SOP below; RULES.m
 export interface PlanRow { id: number; trigger_key: string; ws_rec: string; client: string; state: string; lead_list_rec: string | null; campaign_rec: string | null; decision_rec: string | null; plan: PlanT | null }
 const OPEN = ['planning', 'filters', 'sample', 'approval1'];
 /** Every state the pipeline still moves on. Ends: client_approved (build + launch next), rejected, copy_rejected, stuck. */
-const ACTIVE = ['planning', 'filters', 'sample', 'approval1', 'expand', 'contacts_sample', 'approval_contacts', 'contacts', 'verify', 'enrich', 'qa', 'approval2', 'approval2_wait', 'client_review'];
+const ACTIVE = ['planning', 'filters', 'sample', 'approval1', 'expand', 'contacts_sample', 'approval_contacts', 'contacts', 'verify', 'enrich', 'enrich_prompt', 'enrich_run', 'qa', 'approval2', 'approval2_wait', 'client_review'];
 const WAITING: Record<string, true> = { approval1: true, approval_contacts: true, approval2: true };
 /** The Lead List job each state waits for. */
 const STEPS: Record<string, { after: string }> = {
   filters: { after: 'leadlist.filters' }, sample: { after: 'leadlist.sample' }, expand: { after: 'leadlist.expand' }, contacts_sample: { after: 'leadlist.contacts' },
-  contacts: { after: 'leadlist.contacts' }, verify: { after: 'leadlist.verify' }, enrich: { after: 'leadlist.skipenrich' }, qa: { after: 'leadlist.qa' },
+  contacts: { after: 'leadlist.contacts' }, verify: { after: 'leadlist.verify' }, enrich: { after: 'leadlist.skipenrich' }, enrich_prompt: { after: 'leadlist.enrichprompt' }, enrich_run: { after: 'leadlist.enrich' }, qa: { after: 'leadlist.qa' },
 };
 interface PlanRowX extends PlanRow { decision2_rec: string | null; copy: CopyT | null; copy_state: string | null; copy_issues: { reviewer?: string[]; left?: string[] } | null; copy_round: number }
 
@@ -163,7 +165,7 @@ export function approvalText(p: PlanT, sample: { good: number; bad: number; fitR
     title: `Approve campaign plan: ${p.campaign_name}`,
     issue: `${p.move.replace(/_/g, ' ')}: ${p.why_move}`,
     checked: `${thesisText(p)}\n\nFirst 100 companies: ${sample.good} fit, ${sample.bad} not (${sample.fitRate || 'fit rate UNKNOWN'}).${sample.summary ? `\n${sample.summary.slice(0, 600)}` : ''}${sample.sheet ? `\nSample sheet: ${sample.sheet}` : ''}${p.questions_for_alex.length ? `\n\nQuestions for you: ${p.questions_for_alex.join(' · ')}` : ''}`,
-    fix: '✅ = build the full list (expand, contacts, verify) and write the copy. ❌ = stop here; nothing more is spent.',
+    fix: '✅ = build the full list (expand, contacts, verify, plus enrichment for any variables the copy needs) and write the copy. ❌ = stop here; nothing more is spent.',
   };
 }
 
@@ -257,9 +259,16 @@ export const campaignPipelineStage: Stage = async (ctx) => {
         break;
       }
       case 'contacts': await press('Verify and Finalize'); await setState('verify'); say('contacts found → verify'); break;
-      case 'verify': await press('Skip Enrichment'); await setState('enrich'); say(`verified (${num(ll.fields[F.leads])} leads) → QA next`); break;
-      case 'enrich':
-        if (r.copy_state !== 'ready') { say('list ready, waiting for the copy'); break; }
+      case 'verify': {
+        // The copy decides whether the list needs enrichment (its custom {VARIABLES}), so wait for it.
+        if (r.copy_state !== 'ready' || !r.copy) { say(`verified (${num(ll.fields[F.leads])} leads), waiting for the copy`); break; }
+        const req = enrichmentRequest(r.copy);
+        if (req) { await press('Prepare Enrichment Prompt', { [LL_CUSTOM_VARS]: req }); await setState('enrich_prompt'); say(`verified → enrichment for ${r.copy.custom_variables.map((v) => `{${v.name}}`).join(', ')}`); }
+        else { await press('Skip Enrichment'); await setState('enrich'); say(`verified (${num(ll.fields[F.leads])} leads) → QA next`); }
+        break;
+      }
+      case 'enrich_prompt': await press('Run Enrichment'); await setState('enrich_run'); say('enrichment prompt ready → enriching'); break;
+      case 'enrich_run': case 'enrich':
         await press('Run Automated QA'); await setState('qa'); say('list + copy ready → automated QA'); break;
       case 'qa': if (!ctx.dryRun) await postApproval2(ctx, at, r, { leads: num(ll.fields[F.leads]), direct: num(ll.fields[F.finalDirect]), generic: num(ll.fields[F.finalGeneric]), good: num(ll.fields[F.verifyGood]), risky: num(ll.fields[F.verifyRisky]), sheet: val(ll.fields[F.sheetLink]) }); say('QA passed → approval 2 posted'); break;
     }

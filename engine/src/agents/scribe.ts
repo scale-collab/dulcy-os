@@ -71,6 +71,11 @@ export const Copy = z.object({
     subject: z.string().describe('Empty when thread_reply is true'),
     body: z.string(),
   })).describe('The cold follow-ups, steps 2 to 4'),
+  custom_variables: z.array(z.object({
+    name: z.string().describe('UPPER_SNAKE, e.g. KEYWORD, HERO_PRODUCT. Used in the copy as {NAME}'),
+    find: z.string().describe('Plain English: what to find for each company, from where (their website, Google), e.g. "the main product category the company sells, 1-3 words, lowercase"'),
+    fallback: z.string().describe('Words used when it cannot be found; must read right in every sentence that uses it'),
+  })).describe('At most 2 per-company facts the list must be enriched with. Empty if {FIRST_NAME}/{COMPANY} are enough. Only facts a web lookup can find reliably'),
   claims: z.array(z.object({ claim: z.string(), source: z.string().describe('Where it comes from in the client facts given, or UNKNOWN') })).describe('Every factual claim in the copy and its source'),
   questions_for_alex: z.array(z.string()).describe('Only what blocks the copy (missing proof, unclear offer)'),
   notes: z.string().describe('One or two lines: why this copy, what the 2 angles test'),
@@ -87,18 +92,19 @@ const BANNED: [RegExp, string][] = [
   [/https?:\/\/|www\.|\.com\b|\.io\b/i, 'a link (no links in cold copy)'],
   [/;/, 'a semicolon'],
   [/—|–/, 'an em/en dash (write " - ")'],
-  [/this isn['’]t just/i, '"this isn\'t just"'],
+  [/(?:this isn|it's not|it is not) just/i, '"this isn\'t just" / "it\'s not just"'],
   [/\b(?:i am|i'm|just) following up\b|\bfollowing up on\b/i, '"following up"'],
   [/\bjust checking in\b|\bcircling back\b|\bbumping this\b/i, 'a canned follow-up phrase'],
   [/hope (?:this|you)(?:'re| are)? ?(?:email )?finds? you/i, '"hope this finds you"'],
   [/\{[^{}]*\|[^{}]*\}/, 'spintax (added later, after the client approves)'],
 ];
-const CALL_ASK = /\b(?:book (?:a|some) (?:call|time|meeting)|hop on a (?:quick )?call|(?:15|20|30)[- ]min(?:ute)?s?\b|calendar link|schedule a (?:call|meeting)|jump on a call|quick call|grab (?:a|some) time)/i;
+const CALL_ASK = /\b(?:lunch\b[^.?!]*\bmy treat|grab lunch|book (?:a|some) (?:call|time|meeting)|hop on a (?:quick )?call|(?:15|20|30)[- ]min(?:ute)?s?\b|calendar link|schedule a (?:call|meeting)|jump on a call|quick call|grab (?:a|some) time)/i;
 /** Problems a human would bounce the copy for. `allowCall` = the plan says a call is the only logical next step. */
 export function lintCopy(c: CopyT, opts: { variables?: string[]; allowCall?: boolean } = {}): string[] {
-  const allowed = new Set(['FIRST_NAME', 'COMPANY', ...(opts.variables ?? [])]);
+  const allowed = new Set(['FIRST_NAME', 'COMPANY', ...(opts.variables ?? []), ...(c.custom_variables ?? []).map((v) => v.name)]);
   const out: string[] = [];
   if (c.email1.length !== 2) out.push(`Email 1 has ${c.email1.length} variants (needs exactly 2 angles)`);
+  if ((c.custom_variables ?? []).length > 2) out.push(`${c.custom_variables.length} custom variables (2 at most)`);
   const all = [...c.email1.map((v, i) => ({ label: `Email 1 variant ${i + 1}`, subject: v.subject, body: v.body, first: true, thread: false })),
     ...c.followups.map((f) => ({ label: `Email ${f.step}`, subject: f.subject, body: f.body, first: false, thread: f.thread_reply }))];
   for (const e of all) {
@@ -143,7 +149,12 @@ export function copyFields(c: CopyT): Record<string, unknown> {
 export function copyText(c: CopyT): string {
   const e1 = c.email1.map((v, i) => `*Email 1 · Variant ${i + 1} (${v.angle})*\nSubject: ${v.subject}\n${v.body}`).join('\n\n');
   const fu = [...c.followups].sort((a, b) => a.step - b.step).map((f) => `*Email ${f.step}* (${f.thread_reply ? 'same thread' : `subject: ${f.subject}`}) · ${f.purpose}\n${f.body}`).join('\n\n');
-  return `${e1}\n\n${fu}`;
+  const vars = (c.custom_variables ?? []).map((v) => `{${v.name}} = ${v.find} (if not found: "${v.fallback}")`).join('\n');
+  return `${e1}\n\n${fu}${vars ? `\n\n*Variables the list is enriched with:*\n${vars}` : ''}`;
+}
+/** The plain-English enrichment request for the Lead List (Prepare Enrichment Prompt turns it into the DiscoGen prompt). */
+export function enrichmentRequest(c: CopyT): string {
+  return (c.custom_variables ?? []).map((v) => `Column name: ${v.name}. Scope: company. Find: ${v.find}. If not found, use exactly: "${v.fallback}".`).join('\n');
 }
 
 const WRITER = `You are Scribe, Dulcy's cold email copywriter. Copy is the most important thing Dulcy does: write the best cold email this client has ever sent.
@@ -167,6 +178,7 @@ export const scribeCopyStage: Stage = async (ctx) => {
   if (!row?.plan || !row.campaign_rec) throw new PermanentError(`campaign plan ${i.planId} not found or not planned yet`);
   const plan = row.plan as PlanT;
   const feedback = i.feedback ?? row.copy_feedback ?? '';
+  const prevVars = ((row as { copy?: CopyT | null }).copy?.custom_variables ?? []);
   const round = i.round ?? row.copy_round ?? 1;
   const ws = await at.get(WORKSPACES, row.ws_rec, ['fld48x6Yg3v6RP30W', ...Object.keys(FILTER_CLIENT_FIELDS)]);
   const bisonId = Number(val((await at.list(WORKSPACES, `RECORD_ID()='${row.ws_rec}'`, ['ID'], 1, { byName: true }))[0]?.fields.ID)) || 0;
@@ -188,7 +200,9 @@ export const scribeCopyStage: Stage = async (ctx) => {
     `# Offer (Airtable)\n${offer || 'UNKNOWN'}`,
     `# What this client's prospects actually said (last 180 days)\nInterested:\n${said(/interested|meeting|info/i, 20) || 'none'}\nObjections / not interested:\n${said(/objection|not interested/i, 15) || 'none'}`,
     feedback ? `# Feedback on the last version (client or Alex): fix all of it, keep what they did not mention\n${feedback}` : '',
-    'Variables you may use: {FIRST_NAME}, {COMPANY}. Write the full sequence now.',
+    prevVars.length
+      ? `Variables you may use: {FIRST_NAME}, {COMPANY}${prevVars.map((v) => `, {${v.name}}`).join('')} (the list is already enriched with these; add no new ones). Write the full sequence now.`
+      : 'Variables you may use: {FIRST_NAME}, {COMPANY}, plus at most 2 custom per-company variables you define in custom_variables (the list gets enriched with them; the strongest 2026 openers use one, e.g. their product category or search term). Write the full sequence now.',
   ].filter(Boolean).join('\n\n');
   if (ctx.dryRun) return { message: `Would write the copy for ${plan.campaign_name} (dry run: Claude not called)` };
   const claude = createClaude({ apiKey: cfg.anthropicApiKey, model: cfg.claudeModel, baseURL: cfg.anthropicBaseUrl });
@@ -203,6 +217,7 @@ export const scribeCopyStage: Stage = async (ctx) => {
       `${user}\n\n# Draft to review\n${JSON.stringify(draft, null, 1)}\n\n# Rule checks the code found (must be fixed)\n${lint1.join('\n') || 'none'}`, 'high'),
     dryRunResult: () => ({ issues: [], copy: draft }) });
   const copy = reviewed.copy; copy.email1 = copy.email1.slice(0, 2);
+  if (prevVars.length) copy.custom_variables = prevVars; // the list is already enriched: the variables cannot change on a rewrite
   const left = lintCopy(copy, { allowCall: /only logical next step/i.test(plan.why_move) });
   await ctx.step(`write:${round}`, () => at.update(CAMPAIGNS, row.campaign_rec!, copyFields(copy)));
   await ctx.db.query(`UPDATE campaign_plans SET copy=$2, copy_state='ready', copy_issues=$3, updated_at=now() WHERE id=$1`, [row.id, JSON.stringify(copy), JSON.stringify({ reviewer: reviewed.issues, left })]);

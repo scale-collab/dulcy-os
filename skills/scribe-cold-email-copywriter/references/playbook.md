@@ -26,7 +26,7 @@ Source codes used in brackets:
 4. Performance evidence (`ingest/performance/analysis.md`, `top-bottom.md`, the client's scripts file). Read them directly for the tables. This playbook turns them into rules.
 5. Creator learnings (`references/creator-learnings.md`). Claims, not benchmarks.
 
-The older references in this folder (`copy-framework.md`, `copy-review-contract.md`, `campaign-patterns.md`, `cold-email-offer-patterns.md`, `drive-sop-basis.md`) still hold useful truth and review checks. Where they disagree with this playbook on meeting asks, number of variants, delivery fine print or the P.S., this playbook and the 2026-11-25 rules win.
+Older references here (`copy-framework.md`, `copy-review-contract.md`, `campaign-patterns.md`, `cold-email-offer-patterns.md`) keep their truth and review checks; on meeting asks, variant count, delivery fine print and the P.S., this playbook and the 2026-11-25 rules win.
 
 **What Scribe produces for every campaign:**
 - Email 1: exactly 2 variants, one per plan angle. Each has a subject of 1-3 words and a body of 30-75 words. [RULES 2026-11-25] [Engine]
@@ -37,7 +37,7 @@ The older references in this folder (`copy-framework.md`, `copy-review-contract.
 
 **What Scribe never writes** (the system adds these later):
 - No signature. The builder adds the sign-off, sender name, title and brand. [RULES 2026-11-17] [RULES 2026-11-20]
-- No P.S. The builder adds "{P.S.|P.s.|p.s.} or tell me to pound sand if you'd like.." to the copy. That P.S. is a proven winner (see 7.6). If Scribe writes its own P.S., the builder skips the default one. [RULES 2026-11-20, 2026-11-23] [Alex, chat 2026-11-25]
+- No P.S. The builder adds "{P.S.|P.s.|p.s.} or tell me to pound sand if you'd like.." to the copy. That P.S. is a proven winner (section 7). If Scribe writes its own P.S., the builder skips the default one. [RULES 2026-11-20, 2026-11-23] [Alex, chat 2026-11-25]
 - No spintax. Spintax is added after the client approves the copy. [RULES 2026-11-17] [SOP 119] [Engine]
 - No links, no images, no attachments. [Engine] [2h L1013] [data: links in Email 1 0.54 vs 1.77/1k]
 
@@ -74,443 +74,242 @@ What this means in practice:
 
 ## 2. Before writing
 
-### 2.1 Read the inputs (in this order)
+### 2.1 Use every input the engine gives
 
-The engine hands Scribe: the approved plan, the client's Airtable offer fields, the client file, every script already run for this client with its results, and what this client's prospects actually said in the last 180 days. Use all of it.
+The engine hands Scribe the approved plan, the client's Airtable offer fields, the client file, every script already run for this client with its results, and what this client's prospects said in the last 180 days. [Engine]
 
-From the **plan** (approval 1, Alex):
-- **Move and why** (top-up, new vertical, new offer, copy change). A top-up preserves the winning Email 1 and fixes only truth and evidence problems. [SOP 118 #29]
-- **ICP and persona.** Write to one person in one kind of company. "Match tone to the ICP (cosmetics brand ≠ auto dealer)." [DND A2]
-- **Pain** (one) and **dream outcome** (money, time or status). [2h §2.2, §2.3]
-- **Proof** the plan picked. It must come from this client's facts. [RULES 2026-11-25]
-- **Structure** (Question → Proof → CTA, or Offer → Proof → CTA). See 2.3.
-- **Angles** (2): name, what each tests, the hypothesis. Write one Email 1 variant per angle. See section 9.
-- **Objections to answer early.** Pre-handle the top one inside a follow-up. "You're clearing up what you do before another person has to ask." [2h §1.12]
-- **"Only logical next step"** in the plan's reasoning is the only thing that lets a call ask through the code check. [Engine: allowCall]
+- **Plan (approval 1):** move and why (a top-up keeps the winning Email 1 and fixes only truth and evidence [SOP 118 #29]); ICP and persona (write to one person in one kind of company); one pain; one dream outcome (money, time or status); the proof; the structure; the 2 angles (name, what each tests, hypothesis); the objections to answer early. A call ask passes the code check only when the plan's reasoning says it is "the only logical next step". [Engine: allowCall]
+- **Offer fields** (Cold Traffic Offer, Front End Offer(s), Back End Offer(s), Outbound Risk Reversal): the exact offer, free or paid, quantity, any guarantee. Nothing else is an offer. [RULES 2026-11-20] [Contract]
+- **Client file:** approved proof and its scope, the "never use" list, sender, tone, client preferences.
+- **Scripts already run:** keep what won, drop what lost, refresh what is fatigued. "Do not keep rewording a script that already works." [2h L520]
+- **What prospects said:** their words are your best copy. "The actual words your leads use on sales calls and in replies are the best copy you will ever write." [SOT §1.3] Interested replies show what they wanted. Objections tell step 2 or 3 what to answer. "Pre-handle" the top one: "You're clearing up what you do before another person has to ask." [2h §1.12]
 
-From the **offer fields** (Cold Traffic Offer, Front End Offer(s), Back End Offer(s), Outbound Risk Reversal): the exact offer, free or paid, quantity, any guarantee. Use only what is there. A guarantee needs the client's approved terms. [RULES 2026-11-20] [Contract]
+### 2.2 Write the 4-line definition first
 
-From the **client file**: approved proof with its scope, sender, tone, what was removed as unverified, client preferences (e.g. MJJ's close style). Check the "never use" list before using any number.
-
-From **the scripts already run for this client**: what won, what lost, what is fatigued. "Do not keep rewording a script that already works." [2h L520] Re-sent copy decays (section 10).
-
-From **what prospects said**: their words are the best copy you will ever write. "The actual words your leads use on sales calls and in replies are the best copy you will ever write." [SOT §1.3] "Listening = Copywriting ... Every objection, every concern, every frustration, that's your goldmine." [DND A7] Use the interested replies to see what they wanted. Use the objections to pick what step 2 or 3 should answer.
-
-### 2.2 Write the 4-line campaign definition first
-
-"Do not move on until this is written." [2h §2.2]
-- ICP: who exactly.
-- Pain: one problem only.
-- Dream outcome: money, time or status.
-- Proof: one client, one source or one specific insight.
-
-Then write the message contract in one line each: who, why this buyer, the one thing on offer, the reason to believe, and what a "yes" means (what happens next). [copy-framework.md]
-
-"Do not write copy while the ICP is still fuzzy." [2h L508] If the plan is fuzzy, put it in questions for Alex rather than writing around it.
+"Do not move on until this is written." ICP: who exactly. Pain: one problem only. Dream outcome: money, time or status. Proof: one client, one source or one specific insight. [2h §2.2] Then one line each: who, why this buyer, the one thing on offer, the reason to believe, what a "yes" means. [copy-framework.md] "Do not write copy while the ICP is still fuzzy." [2h L508] If the plan is fuzzy, ask; don't write around it.
 
 ### 2.3 Pick the structure
 
-Two structures. Pick one. "Do not blend them unless you have a very good reason." [2h L76]
+Pick one. "Do not blend them unless you have a very good reason." [2h L76]
 
-**Question → Proof → CTA** ("poke the bear")
-- Use when the prospect may not fully see the problem yet. [2h §2.4]
-- Alex's template: "What are you doing to solve [pain] so [dream outcome] happens? / We do that for [same-world proof] by [simple mechanism]. / Want me to send over [resource]?" [2h §2.4]
-- The question must be one they can honestly answer "we're fine". Do not manufacture a problem. [copy-framework.md]
-- Data warning: a question as the very first line did worse in 2026: 1.76/1k vs 2.43/1k for an observation or offer opener. In the one clean test (Shop Innovator EB 465) the question opener got 1.93/1k vs 6.96/1k. [data: P2] So when you use this structure, prefer an observation first line, then the question. Example of that shape: "Noticed {COMPANY} sells [product type] online. ... Are first-time visitors converting well for you?" (Shop Innovator EB 422, 7.96/1k on 15,084 sent). [data: top-bottom #9]
+- **Question → Proof → CTA** ("poke the bear"): when the prospect may not see the problem yet. Template: "What are you doing to solve [pain] so [dream outcome] happens? / We do that for [same-world proof] by [simple mechanism]. / Want me to send over [resource]?" [2h §2.4] The question must allow an honest "we're fine". [copy-framework.md] Data: a question as the first line did worse (1.76 vs 2.43/1k in 2026; 1.93 vs 6.96/1k in Shop Innovator's A/B) [data: P2], so open with an observation, then ask: "Noticed {COMPANY} sells [product type] online. ... Are first-time visitors converting well for you?" (7.96/1k on 15,084 sent). [data: top-bottom #9]
+- **Offer → Proof → CTA:** when the outcome is already easy to want. "Often the proof is baked directly into the offer itself." Template: "If I could help [company] get [dream outcome], that usually leads to [benefit]. / That's the same problem we've worked on for [proof]. / Would you be open to [small ask]?" [2h §2.5] Most 2026 winners are this shape. [DND C]
+- **The investment piece** (Alex's 4 parts): "1. Investment (I noticed) 2. Knowledge Statement / PTB 3. Call out the pain 4. Easy CTA to solve the problem". The investment piece "shows they are already aware of the problem or already trying to solve it. Examples: using blogs, running ads, investing in SEO, posting regularly, updating their website". [DND D1] Attach the offer to a bet they already make. [DND C] Use it whenever a real, checkable signal exists.
+- **The observation opener:** the strongest 2026 opener. Say what you noticed or made for them. "Keep the question for the CTA." [data: P2] It must be checkable: "Separate what was observed from what it might suggest; ads, hiring or a website gap do not prove poor performance." [SOT §1.9] A reliable sub-segment ("plumbing contractor", not "contractor") is an observation too. "Never force AI to come up with a variable." [SOT §1.9]
 
-**Offer → Proof → CTA**
-- Use when the outcome is already easy to want. [2h §2.5] "Often the proof is baked directly into the offer itself."
-- Alex's template: "If I could help [company] get [dream outcome], that usually leads to [benefit]. / That's the same problem we've worked on for [proof]. / Would you be open to [small ask]?" [2h §2.5]
-- The 2026 house style is mostly this: first line is the offer or the thing you made, one line makes it concrete, one line of proof, one question. [DND C]
-
-**The investment piece** (Alex's 4-part method)
-- "1. Investment (I noticed) 2. Knowledge Statement / PTB 3. Call out the pain 4. Easy CTA to solve the problem" [DND D1]
-- The investment piece is "something that shows they are already aware of the problem or already trying to solve it. Examples: using blogs, running ads, investing in SEO, posting regularly, updating their website". [DND D1]
-- Attach the offer to a bet they are already making: "Attaches the offer to an investment the prospect is already making (paid traffic)". [DND C, Shop Innovator]
-- Use it whenever a real, checkable signal exists (ads running, a blog, a creator program, a hero product, a search term they want to rank for).
-
-**The observation opener**
-- The strongest 2026 opener: say what you noticed or what you made for them. "Open with what you noticed or made for them. Keep the question for the CTA." [data: P2]
-- It must be true and checkable. "state one specific, verifiable observation about the company ... Separate what was observed from what it might suggest; ads, hiring or a website gap do not prove poor performance." [SOT §1.9]
-- The observation can come from the list itself (a segment the AI can classify reliably, like "plumbing contractor" not "contractor") or from enrichment. "Never force AI to come up with a variable." [SOT §1.9]
-
-**Picking guide** [2h §5.1] [SOP 089-094]
-| Situation | Lead with |
+| Situation | Lead with [2h §5.1] [SOP 089-094] |
 |---|---|
-| Prospect may not see the problem | Observation, then a question (Question → Proof → CTA) |
-| Outcome already wanted, offer is clear | The offer (Offer → Proof → CTA) |
-| A real signal exists (ads, blog, creators, a product, a search term) | Observation / investment piece, then the one thing built from it |
-| Category is new to the market | Third-party authority that validates the category, then the offer [2h §2.8] |
-| No case study yet | Knowledge as proof: show you already know their situation [2h §2.7] |
+| Prospect may not see the problem | An observation, then a question |
+| Outcome already wanted, offer is clear | The offer |
+| A real signal (ads, blog, creators, a product, a search term) | The observation, then the one thing built from it |
+| New category | A real third-party fact that validates the category [2h §2.8] |
+| No case study yet | Knowledge as proof [2h §2.7] |
 | Commodity service | "Find the one thing that is actually different ... and anchor your entire cold email copy to that." [2h §1.10] |
-| Weak or unclear product | "lean into the lowest-friction entry point. Free and specific will always outperform vague and paid." [2h §1.10] |
+| Weak product | "Free and specific will always outperform vague and paid." [2h §1.10] |
 
-**Market sophistication** decides how much you explain. "If you talk to a Level 4 market like it's Level 1, you sound naive. If you talk to a Level 1 market like it's Level 4, you sound confusing and try-hard." [DND A8] Saturated markets (agencies, SaaS buyers) need a specific mechanism and real receipts. New categories need the idea explained in one plain line.
+Market sophistication sets how much you explain: "If you talk to a Level 4 market like it's Level 1, you sound naive. If you talk to a Level 1 market like it's Level 4, you sound confusing and try-hard." [DND A8]
 
-### 2.4 Check the offer before you write a word
+### 2.4 Test the offer before writing a word
 
-Run Alex's offer test. "If you answered "no" to ANY of these, your offer is garbage" [2h §3.6]:
-1. Is the outcome completely obvious?
-2. Is the risk clearly on you, not them?
-3. Can they calculate ROI in 10 seconds?
-4. Is the promise quantifiable?
-5. Does replying feel easier than ignoring?
-
-If the offer fails and the plan cannot fix it, say so in questions for Alex. Copy cannot rescue it. [data: P9] "Copy iteration has the lowest likelihood of a meaningful performance change." [DND A12]
+"If you answered "no" to ANY of these, your offer is garbage": 1. Is the outcome completely obvious? 2. Is the risk clearly on you, not them? 3. Can they calculate ROI in 10 seconds? 4. Is the promise quantifiable? 5. Does replying feel easier than ignoring? [2h §3.6] If it fails and the plan can't fix it, say so in questions for Alex. Copy cannot rescue it: copy iteration "has the lowest likelihood of a meaningful performance change." [DND A12] [data: P9]
 
 ---
 
 ## 3. Email 1 rules
 
-### 3.1 Hard rules (the copy is bounced if any fails)
+### 3.1 Hard rules (bounced if any fails)
 
-1. **Exactly 2 variants, one per plan angle, same direction.** They test the angle (USP, pain, solution, proof or offer framing), never word swaps. [RULES 2026-11-25] [Engine]
-2. **30-75 words in the body** (variables count as one word each). [Engine] [2h §1.2]
-3. **Subject: 1-3 words, no punctuation.** Apostrophes and {VARIABLES} are allowed. [Engine] (Section 5.)
-4. **At least 1 strong proof from this client's facts.** More only if just as strong. No filler proof. [RULES 2026-11-25] (Section 8.)
-5. **One CTA, low friction, answerable in one word.** [RULES 2026-11-25] [2h L1013] "Is there exactly one CTA?" [2h §3.1]
-6. **No call ask** unless the plan says a call is the only logical next step. The code bounces: book a call / time / meeting, hop on a call, 15/20/30 minutes, calendar link, schedule a call, jump on a call, quick call, grab some time. [RULES 2026-11-25] [Engine]
-7. **No links, no images, no attachments.** No ".com", ".io", "www" or "http" in the body. [Engine] [2h §1.14]
-8. **No semicolons. No em or en dashes.** Write " - " (space, hyphen, space). [Engine] [2h §1.8]
-9. **Banned phrases:** "this isn't just", "it's not just", "following up", "I am following up", "just checking in", "circling back", "bumping this", "hope this finds you". [Engine] [2h §1.8]
-10. **Variables:** {FIRST_NAME} and {COMPANY}, plus custom ones only when the plan and lead list have them. Never spin a variable. Every custom variable needs a fallback phrase that reads right in the sentence (a city becomes "your area"). Never a blank. [RULES 2026-11-17, 2026-11-21, 2026-11-24] [Engine: unknown variables bounced]
-11. **No spintax, no signature, no P.S.** [RULES 2026-11-17] [Alex, chat 2026-11-25] [Engine]
-12. **Never invent** results, numbers, customers, prices, guarantees, assets or prospect signals. Never use another client's facts. List every claim with its source. [CLAUDE.md #3] [RULES 2026-11-25] [Contract]
-13. **Never claim finished work that does not exist.** "I made", "I put together", "I pulled", "I recorded", "I ran" only when that exact thing exists and has been checked. Otherwise offer to make it: "I can put together...". [SOP 118 #8-12] [SOT §1.11] (Note: the winning TWM and Shop Innovator emails say "I pulled together some notes" and "I made a short video". That works only because the notes and the video were real. If the engine cannot produce the asset per lead, write the offer version.)
-14. **No fake relationship, referral, research project, scarcity or urgency.** No "Re:" on Email 1, no "my colleague came across you", no "we only build a few of these each week", no "yours is ready". [DND B3] [copy-framework.md] [SKILL]
+1. Exactly 2 variants, one per plan angle, same direction. They test the angle, never word swaps. [RULES 2026-11-25] [Engine]
+2. 30-75 words in the body (a {VARIABLE} counts as one word). [Engine] [2h §1.2]
+3. Subject 1-3 words, no punctuation (apostrophes and {VARIABLES} allowed). [Engine]
+4. At least 1 strong proof from this client's facts. More only if just as strong. [RULES 2026-11-25]
+5. One CTA, low friction, answerable in one word. [RULES 2026-11-25] [2h L1013]
+6. No call ask unless the plan says it is the only logical next step. Bounced phrases: book a call / time / meeting, hop on a call, 15/20/30 minutes, calendar link, schedule a call or meeting, jump on a call, quick call, grab some time. [RULES 2026-11-25] [Engine]
+7. No links, images or attachments; no "http", "www", ".com" or ".io" in the body. [Engine] [data: links 0.54 vs 1.77/1k]
+8. No semicolons. No em or en dashes: write " - ". [Engine] [2h §1.8]
+9. Banned: "this isn't just", "it's not just", "following up", "just checking in", "circling back", "bumping this", "hope this finds you". [Engine] [2h §1.8]
+10. Variables: {FIRST_NAME}, {COMPANY}, plus **at most 2 custom per-company variables Scribe defines itself** (`custom_variables`: name, what to find, fallback). The engine enriches the list with them before QA, so use one when it makes the opener concrete ({KEYWORD}, {HERO_PRODUCT}, the strongest 2026 openers). Only facts a web lookup finds reliably; the fallback must read right in the sentence ("your products"). On a rewrite the list is already enriched: keep the same variables. Never spin a variable. [RULES 2026-11-17, 2026-11-21, 2026-11-24] [Engine]
+11. No spintax, no signature, no P.S. [RULES 2026-11-17] [Alex, chat 2026-11-25]
+12. Never invent results, numbers, customers, prices, guarantees, assets or prospect signals. Never use another client's facts. List every claim with its source. [CLAUDE.md #3] [Contract]
+13. "I made / put together / pulled / recorded / ran" only when that exact thing exists. Otherwise offer it: "I can put together...". [SOP 118 #8-12] The TWM and Shop Innovator winners say "I pulled together some notes" and "I made a short video" only because those were real.
+14. No fake relationship, referral, research project, scarcity or urgency. No "Re:" on Email 1. [DND B3] [copy-framework.md]
 
 ### 3.2 Proven patterns, with the numbers
 
-**P-a. Offer one concrete thing built from what they already have.** Strongest finding in the data: 3 significant A/B wins. [data: P3]
-- "We could turn usable product photos and clips you already have into a series of social posts" 14.3/1k vs "We could handle turning product ideas like that into social posts, so your team isn't planning..." 5.6/1k (TWM EB 609, p = 0.046). Same test re-run: 3 vs 0. "Uses what you already have" won both runs. "We do the work for you" lost both.
-- One idea beats two: "I had an idea for showing ur {HEROPRODUCT} in a {CONSUMERUSEOCCASION} moment" 24.1/1k vs "I had two ideas..." 2.7/1k (TWM EB 599, p = 0.011).
-- "Could I send you 5 leads from people already looking for those services?" 16.8/1k vs a pay-per-lead pitch 1.8/1k (Lead Flo EB 514, p = 0.009).
-- Offer type, 2026: free notes / review / ideas 3.17/1k, creators/talent shortlist 2.31/1k, free work / trial / demo 1.29/1k, research or interview request 0.87/1k (all years 0.69/1k, the lowest). [data: P3]
-- Rule: name one specific thing, made from their product, their search term, their footage, their listing, their store. Say what it is in plain words. One, not two or three.
+- **One concrete thing, built from what they already have** (3 significant A/B wins). "turn usable product photos and clips you already have into a series of social posts" 14.3/1k vs "we handle turning product ideas into posts" 5.6/1k (TWM EB 609, and again 3 vs 0 on the re-run). One idea 24.1/1k vs two ideas 2.7/1k (EB 599). "Could I send you 5 leads from people already looking for those services?" 16.8 vs a pay-per-lead pitch 1.8/1k (Lead Flo EB 514). Offer types in 2026: free notes / review / ideas 3.17/1k, creator shortlist 2.31, free work / trial / demo 1.29, research or interview request 0.87. [data: P3] Name one specific thing made from their product, search term, footage or store. One, not two.
+- **Observation or "thing I made" opener, not a question.** 2.43 vs 1.76/1k in 2026 (91 vs 50 campaigns). Dulcy 2.40 vs 0.92, Twenty West 3.40 vs 2.21, Shop Innovator 5.53 vs 2.15. [data: P2]
+- **Reference what they already do.** "{COMPANY} works with creators to show the best of {PERSONAL}" 5/2,969 vs "is all about staying true to {PERSONAL}" 0/3,023, twice. [data: P6]
+- **Short.** Step 1 ≤75 words 2.08 vs longer 1.30/1k. Scroll Stop's 47-word April opener: about 9x their 2025 long copy (5.67 vs 0.65/1k). [data: U3, U1] Most top-10 Email 1s are 41-52 words. Aim for 40-60. Don't pad a clear 35-word email.
+- **No hard guarantees.** Guarantee-led copy 0.88 vs 1.72/1k; Adverio "or we work for free" 0.33 and 0.67; Digital Neighbor "or we send you $1,500" 0.70, while their plain "you guys handle {CASE}, right?" did 2.80. [data: U4] "You don't need a wild guarantee. You need a believable one." [DND A6]
+- **Concrete, visual, local offers beat abstract ones.** Top: Slogan Social 6.59/1k (creator roster), Shop Innovator 3.94 (video of their product page), MJJ 3.65 (repair overflow), Lead Flo 3.19 (free local leads), Twenty West 2.63 (AI-search notes, post ideas). Bottom: RMG 0.15 (geo-fenced ad targeting), Unleashed 0.22, LuckyDiem 0.29, Alpha Software 0.30, TargetonStar 0.34. [data: P9] If you can't picture what they receive, neither can they.
+- **The free thing is for them, not for their clients.** "a reactivation campaign for your SEO clients" 0/12,783. "a free list of ~1,000 real active homebuyers" 0/4,806. [data: top-bottom update]
+- **No seasonal hook without an offer.** "Post Q4 reset" 0/10,446, "Pre-Season Advantage for 2026" 0/4,767, "MWC Barcelona" 0/2,813. [data: P8]
+- **One problem, one offer, one proof, one CTA.** [2h §1.3] "You can only sell a single solution in a cold email." [2h §2.4]
+- **The buyer's words, specific.** "Use the words your ICP actually uses: patients, leads, bookings, consults, pipeline". [DND A7] MJJ's "bench", Shop Innovator's "$1,000 to $8,000 buyer". "Sharp, specific pain points only the right person recognizes get the reply." [SOT §1.3]
 
-**P-b. Open with an observation or with the thing you made, not with a question.** [data: P2]
-- 2026: statement/observation opener 2.43/1k (91 campaigns, 619,777 sent) vs question opener 1.76/1k (50 campaigns, 485,611 sent).
-- Within clients: Dulcy 2.40 vs 0.92. Twenty West 3.40 vs 2.21. Shop Innovator 5.53 vs 2.15.
-- Clean A/B (Shop Innovator EB 465, p = 0.0065): "{I made|I put together} a short video walking through product pages like {COMPANY}'s..." 6.96/1k vs "{Do you know what's|Have you figured out what's} actually stopping your ecommerce store from converting...?" 1.93/1k.
-- Keep the question for the CTA.
-
-**P-c. Reference what the prospect already does, not a generic value.** "{COMPANY} works with creators to show the best of {PERSONAL}" 5/2,969 vs "{COMPANY} is all about staying true to {PERSONAL}" 0/3,023. Same swap again: 5/2,337 vs 0/2,253. Small counts, same direction twice. [data: P6] Alex: "We noticed this specific issue in what you are already doing". [DND B2]
-
-**P-d. Short.** Step 1 at 75 words or fewer: 2.08/1k (59 campaigns, 389,377 sent) vs longer 1.30/1k (82 campaigns). [data: U3] Amazon Consultancy's one-sentence email (3.38 and 2.34/1k) beat their longer white-paper version (1.82 and 2.05/1k). The Scroll Stop April 2026 wave opened with about 47 words and did about 9x better than their 2025 long copy (5.67 vs 0.65/1k). [data: U1] Most top-10 Email 1s are 41-52 words. Aim for 40-60 words. Do not pad a clear 35-word email.
-
-**P-e. No hard guarantees.** Copy leaning on "you pay nothing", "we work for free until", "we send you $1,500", "it's on the house": 0.88/1k vs 1.72/1k for the rest (18 campaigns, 99,922 sent). [data: U4] Adverio "guarantee 10-20% growth in 90 days or we work for free" 0.33 and 0.67/1k. Digital Neighbor "100+ prospective clients in 60 days or we send you $1,500" 0.70/1k; their best was a plain "you guys handle {CASE}, right?" opener at 2.80/1k. A guarantee P.S. did 0.74/1k vs 2.37/1k for the opt-out P.S. [data: P4] Scroll Stop "P.S. We always offer a guarantee around ROI..." 0.75/1k vs 2.48/1k. Rule: no guarantee in Email 1 unless the client's approved Outbound Risk Reversal states it exactly, and even then prefer the concrete free thing. "You don't need a wild guarantee. You need a believable one." [DND A6]
-
-**P-f. Concrete, visual, local offers beat abstract ones.** Top clients: Slogan Social 6.59/1k (exclusive creator roster), Shop Innovator 3.94 (video teardown of their product page), MJJ 3.65 (jewelry repair overflow), Lead Flo 3.19 (free local leads, free property shoot), Twenty West 2.63 (AI-search notes, product-post ideas). Bottom: RMG 0.15 (geo-fenced ad targeting), Unleashed 0.22, LuckyDiem 0.29, Alpha Software 0.30, TargetonStar 0.34, Collabor 0.00. [data: P9] If you cannot picture the thing the prospect receives, the prospect cannot either.
-
-**P-g. A free thing they must imagine using on someone else fails.** TargetonStar "a reactivation campaign for your SEO clients": 12,783 sent, 0 interested. RMG "a free list of ~1,000 real active homebuyers": 4,806 sent, 0. [data: top-bottom update] The free thing must be for them, about their own business.
-
-**P-h. No timely or seasonal hook without an offer.** Scroll Stop "Post Q4 reset" 0/10,446. "Pre-Season Advantage for 2026" 0/4,767. "MWC Barcelona" 0/2,813. "Fashion Winter wear" 0/2,679. [data: P8] A season can frame a real offer. It cannot be the email.
-
-**P-i. One problem, one offer, one CTA.** "Rule: - one problem - one proof - one CTA - 30-75 words" [2h §1.3] "You can only sell a single solution in a cold email." [2h §2.4] "Solving more than one problem in a single piece of outreach ... your offer should name one" [SOT §1.2]
-
-**P-j. Be specific in the buyer's words.** "Use the words your ICP actually uses: patients, leads, bookings, consults, pipeline, appointments, clinicians, whatever's accurate." [DND A7] "Sharp, specific pain points only the right person recognizes get the reply." [SOT §1.3] MJJ's "bench" and Shop Innovator's "$1,000 to $8,000 buyer" are this. "If you're not being specific, no one's going to care." [2h §1.15]
-
-**P-k. Go straight to the point after the opener.** "After the call out, go straight into the pitch. Do not bury it." / "Do not re-explain the problem to someone who already lives it." [SOT §1.2]
-
-### 3.3 The shape that works (2026 house style)
-
-Most Dulcy winners in 2026 look like this. [DND C] [data: top-bottom #6-#10]
+### 3.3 The shape (2026 house style) [DND C] [data: top-bottom]
 
 ```
-{FIRST_NAME},                                   (or "Hey {FIRST_NAME}," or no greeting)
-[Observation or the thing made for them.]       (1 line)
-[What exactly they get, in plain words.]        (1 line)
-[One strong proof line, this client's facts.]   (1 line, can be inside line 2)
-[One-word question CTA.]                        (1 line)
+{FIRST_NAME},                                 (or "Hey {FIRST_NAME}," or no greeting)
+[Observation, or the thing made for them]
+[What exactly they get, in plain words]
+[One strong proof line, this client's facts]  (can sit inside the line above)
+[One-word question CTA]
 ```
+3-5 short lines with a blank line between. Generic-inbox campaigns lose the greeting automatically; a missing name is never guessed. [RULES 2026-11-20] Several winners have no greeting. Tone fits the market ("ur" worked for TWM's food brands; doctors get "Dr. [Last Name]"). [SOT §1.3]
 
-- 3-5 short lines, a blank line between them. Each line one idea.
-- Greeting: "{FIRST_NAME}," or "Hey {FIRST_NAME},". Generic-inbox campaigns lose the greeting automatically. A missing first name never becomes a guessed name. [DND C] [RULES 2026-11-20] Several top campaigns (TWM ChatGPT, F&B) open with no greeting at all. That is fine.
-- Avoid the company name in the very first words if the list's company names are messy; the builder cleans legal suffixes and ALL CAPS, but a wrong name in line 1 is the most visible error. [RULES 2026-11-24] [DND D15]
-- Tone matches the market: "ur" worked for TWM's food brands. Doctors get "Dr. [Last Name]". [SOT §1.3] Casual, not sloppy.
-
-### 3.4 Lists that are mostly Outlook
-
-"Outlook has imposed extremely strict, AI spam filters." For all-Outlook campaigns: "1 line MAX." "Ideally 25-30 words or less, 50 max." "Make the email sound as casual as possible, and as far from a "pitch" as possible." For Gmail or other: "3-4 Lines MAX", "<75 Words". [SOP 130] The engine still needs 30 words minimum, so for an Outlook-heavy list write 30-45 words.
+Outlook-heavy lists: "1 line MAX." "Ideally 25-30 words or less, 50 max." "as far from a "pitch" as possible." [SOP 130] With the 30-word minimum, write 30-45 words.
 
 ---
 
 ## 4. Offers and CTAs
 
-Scribe owns offers now (Forge folded in, 2026-11-24). Offer what the client can genuinely do. Never invent one. [RULES 2026-11-24, 2026-11-25]
+Scribe owns offers now (Forge folded in). Offer only what the client can genuinely do. [RULES 2026-11-24, 2026-11-25]
 
-### 4.1 Offer what we can do, without the delivery fine print
+### 4.1 Offer what we can do, without delivery fine print [RULES 2026-11-25]
 
-The rule (Alex, 2026-11-25) [RULES 2026-11-25]:
-- Offer what the client can genuinely do, and keep the copy about whether they want it.
-- Steps needed to deliver (access, logins, setup, a call to confirm targeting) belong in the reply or the call, not in the cold email.
-- Example Alex approved: "I can run {COMPANY} through Profit Compass for free" is fine, even though it needs Shopify and ads access.
-- State a condition only when it changes the deal for the prospect: they pay something, or it is paid vs free. Example: Marketing Cartel's "Your school covers the advertising spend" stays, because the prospect pays money. [SOP 118 #20]
-- Never lie: no invented results, numbers, customers, guarantees or assets that don't exist.
-- Don't get stuck on small nuances. Flag real truth problems, not every qualifier.
+- Keep the copy about whether they want it. Delivery steps (access, logins, setup, a targeting call) go in the reply or the call.
+- Alex's example: "I can run {COMPANY} through Profit Compass for free" is fine, even though it needs Shopify and ads access.
+- State a condition only when it changes the deal: they pay something, or paid vs free. "Your school covers the advertising spend" stays (the prospect pays). [SOP 118 #20]
+- Never lie: no invented results, numbers, customers, guarantees or assets.
+- Don't get stuck on small nuances.
 
-What this replaces: older drafts carried lines like "Publishing it is separate.", "We'd first check that we cover your delivery area", "with no call or purchase required", "on agreed jobs", "Your team would review the copy before anything changes on the site." Cut these unless the line would be false without them. [DND H2]
+This replaces older lines like "Publishing it is separate.", "We'd first check that we cover your delivery area", "with no call or purchase required", "Your team would review the copy before anything changes". [DND H2]
 
-Truth test for a qualifier: delete it and read the sentence. If the sentence is now false (it promises something the client cannot do, or hides a cost), keep it. If it is only less complete, cut it.
-- Keep: "0% duty on qualifying USMCA production" (without "qualifying" the claim is false). "Your school pays the ad spend" (a cost).
-- Cut: "We'd agree on the types of companies and people first" (a delivery step). "on agreed jobs" (process, unless Alex says otherwise, see section 14).
+**Qualifier test:** delete it. If the sentence becomes false (promises what the client can't do, or hides a cost), keep it ("0% duty on *qualifying* USMCA production"). If it is only less complete, cut it ("We'd agree on the types of companies and people first").
 
-Also from the contract, still true: "Can I send X?" commits to sending X if they say yes. Never bait-and-switch an emailed asset into a mandatory call or purchase. If the asset can only be produced after a call (Profit Compass), word the offer as "I can run / build ... for you" and ask if they want it, not "Want me to send it over?" [Contract] [SOT §1.6] [SOP 119]
+Still true from the contract: "Can I send X?" commits to sending X on a yes. Never turn an emailed asset into a mandatory call or purchase. If the asset can only be made after access or a call (Profit Compass), write "I can run / build ... for you. Want me to?", not "Want me to send it over?" [Contract] [SOP 119]
 
-### 4.2 Offer types and when each fits
+### 4.2 Offer types
 
-| Type | What it is | When it fits | Evidence |
-|---|---|---|---|
-| **Free work / preview** (service lead magnet) | A small finished slice of the paid result: a post idea, notes on their AI-search gap, two ads, a page draft, 5 leads, a sell-in sheet | Default for most B2B service clients. "Service Lead Magnet (Best Performing in 2026)" [SOT §1.11] | Free notes/ideas 3.17/1k (2026); TWM post idea 24.1/1k; Lead Flo 5 leads 16.8/1k [data: P3] |
-| **Talent / shortlist / roster** | "I've got a few creators in the beauty space..." | Clients who hold access the buyer wants (creators, candidates, suppliers) | Slogan Social 20.96/1k; Scroll Stop April 5.67/1k [data: top-bottom #1, U1] |
-| **Video / Loom** | A short video on something real about their business | "When the opportunity is visual or tactical" [SOP 092]. Only when tied to a real observation: "This doesn't work as "can I send you a video audit" by itself. It works when you call something out, then offer the loom as the breakdown/fix" [DND A6] | Shop Innovator "I made a short video" 6.96/1k; TWM contractors 2-min video 3.77/1k on 14,842 sent [data: P2, scripts] |
-| **Direct offer** | The service itself, stated as an outcome | "When the prospect already understands the problem" / "Direct offer needs a direct outcome." [SOP 094] [DND D4] | MJJ repair overflow 5.26/1k [scripts]; works when the pain is obvious and the thing is simple |
-| **Case study** | "Here is how we got [result] for [similar company]" | "When there is a clear result worth sharing" and it matches what they want [SOP 089] | Best as step 2 proof; Slogan's recognisable names; Softies 88% revenue as Human's step 2 [SOP 119] |
-| **Lead magnet** (digital) | A guide, report, benchmark | "it has to be something you'd normally pay for" [DND A6]. "If it's not obviously valuable in 2 seconds, it's not a real lead magnet." | Weaker than a service lead magnet; "This is not a digital lead magnet (ebook, guide, checklist)." [SOT §1.11] |
-| **Whitepaper / interview** | "We're writing a white paper on..." | Demand-generation markets, narrow niches, no proof yet [DND D6]. Every named company and "already spoke with" must be true. | Middling: 1.26/1k vs 1.68 (15 campaigns, 97,881 sent). KNR luxury fashion 4.16/1k but TwoTreesPPC Software 0.26, Snowball SaaS 0.39. Dulcy's own Amazon whitepaper: 8,000 contacts, 7 replies, 0 bookings. [data: U7] [DND E4] Don't default to it. |
-| **Risk reversal** | An approved guarantee | Only with the client's exact approved terms [SOP 090] | Guarantees did worse: 0.88 vs 1.72/1k [data: U4] |
-| **Free audit / consultation / strategy** | Avoid | "Generic "audit" offers (in sophisticated markets, nobody cares)" [DND A6]. "No one wants a marketing strategy (Not valuable)" / "No one wants a short audit" [DND A6]. Tier list puts "Free audit" at D: "If you can identify the problem externally, just give them the insight/value instead" [SOT §2] | TWM pre-Dulcy: Free Marketing Strategy 0.5% replies, Free audit 0.4% [DND E5] |
+| Type | When it fits | Evidence |
+|---|---|---|
+| **Free work / preview** (service lead magnet): a post idea, AI-search notes, two ads, a page draft, 5 leads, a sell-in sheet | Default for most service clients. "Service Lead Magnet (Best Performing in 2026)" [SOT §1.11] | Notes / ideas 3.17/1k; post idea 24.1; 5 leads 16.8 [data: P3] |
+| **Talent / shortlist / roster** | The client holds access the buyer wants | Slogan 20.96/1k; Scroll Stop April 5.67 [data: top-bottom #1, U1] |
+| **Video / Loom** | Tied to a real observation. "It works when you call something out, then offer the loom as the breakdown/fix" [DND A6] | Shop Innovator 6.96/1k; TWM contractors 3.77 on 14,842 sent |
+| **Direct offer** | "When the prospect already understands the problem" / "Direct offer needs a direct outcome." [SOP 094] [DND D4] | MJJ repairs 5.26/1k |
+| **Case study** | A clear matching result exists [SOP 089] | Best as step 2 (Human's Softies; Scroll Stop "Asked because") |
+| **Lead magnet** (digital) | Only if "something you'd normally pay for" and "obviously valuable in 2 seconds" [DND A6] | Weaker than a service lead magnet [SOT §1.11] |
+| **Whitepaper / interview** | Demand-gen markets, narrow niches, no proof yet; every named company must be real [DND D6] | 1.26 vs 1.68/1k overall; KNR 4.16 but TwoTreesPPC Software 0.26; Dulcy's Amazon whitepaper 8,000 contacts, 0 bookings [data: U7] [DND E4] |
+| **Risk reversal** | Only the client's exact approved terms [SOP 090] | 0.88 vs 1.72/1k [data: U4] |
+| **Free audit / strategy / consultation** | Avoid. "No one wants a marketing strategy", "No one wants a short audit" [DND A6]; tier D: "just give them the insight/value instead" [SOT §2] | TWM pre-Dulcy 0.4-0.5% replies [DND E5] |
 
-Rules for the free thing:
-- "Rule: relevance > free stuff" / "Your free thing should preview the paid result" [DND A6] [SOT §1.11]
-- "Make it specific ("2-3 fixes") and fast ("10-minute Loom"), not vague ("full audit")" [DND A6]
-- "Help me improve what's working" beats "let me build this for you from scratch" [SOT §1.10]
-- Name the burden you remove: "No need to plan a shoot just to see the idea." (TWM F&B, 23.56/1k) [data: top-bottom #8] [SOT §1.10]
-- Bound it: one product, two ads, one SKU, five leads, one page. [SOP 118 #21]
-- "Be careful leading with a website offer because it is a ton of trust up front ... some people take their website very personal" [DND A6]
+Rules for the free thing: "relevance > free stuff" / "Your free thing should preview the paid result" [DND A6]. Specific and fast ("2-3 fixes", "10-minute Loom"), never "full audit". [DND A6] "Help me improve what's working" beats a rebuild. [SOT §1.10] Name the burden removed ("No need to plan a shoot just to see the idea.", 23.56/1k). Bound it: one product, two ads, one SKU, five leads. [SOP 118 #21] Careful with website offers: "some people take their website very personal". [DND A6]
 
-### 4.3 Offer decay (free leads used to work better)
+### 4.3 Offer decay
 
-- Alex, 2026-11: free-leads offers used to get 20-25%+ positive reply rates. Now about 10%. [creator-learnings] The free lead list is "now more saturated ... it is less effective but still outperforms a naked service pitch." [SOT §1.11]
-- Dulcy's 2026 agency list offer ("Could I build you a free list of 1,000 potential clients...?") sits at 1.06-1.75/1k, around the agency average, not a winner. [data: A/B EB 626, 627]
-- Rule: an offer the market has seen many times needs a fresher frame (a narrower segment, a specific use: "for your next client push", a concrete sample) or a different free thing. Atlas decides the move. Scribe flags saturation in the notes.
+Alex: free-leads offers used to get 20-25%+ positive reply rates; now about 10%. [creator-learnings] The free list "is now more saturated ... less effective but still outperforms a naked service pitch." [SOT §1.11] Dulcy's 2026 free-list Email 1s sit at 1.06-1.75/1k, around average. [data: EB 626, 627] A saturated offer needs a fresher frame (narrower segment, a specific use) or a different free thing. Flag it in the notes; Atlas picks the move.
 
-### 4.4 CTA rules
+### 4.4 CTAs
 
-The default ask is low friction and answerable in one word. A call is asked for only when it is the only logical next step. [RULES 2026-11-25]
-
+Default: low friction, one-word answer. A call only when it is the only logical next step. [RULES 2026-11-25]
 - "If your CTA makes them think, you lose. Your CTA should be: low resistance / one-step / no links / easy to reply to with one word" [DND A3]
-- "You're not trying to close a deal in email #1. You're trying to get a reply so the conversation starts." [DND A3]
-- ""Just let me know" or none action taking CTAs statistically lead to worse reply rates then asking for the user to take an action" [DND A3] So ask for one concrete action ("Want me to send them over?"), not "let me know".
-- "15-minute call is a very high ask for a low consciousness prospect on the problem + solution." [DND A3]
-- "The multiple choice answer is phased out (not as effective anymore compared to 3-4 years ago)" [DND A3]
-- Make it a non-decision: "Want me to set it up? Takes 30 seconds and it's free." [SOT §1.6]
-- CTA type data is weak (call asks 2.26/1k, permission-to-send 1.61, interest check 1.25, mixed within clients), but both significant A/B tests that changed the CTA favoured permission-to-send. [data: weak evidence] The rule stands.
+- ""Just let me know" or none action taking CTAs statistically lead to worse reply rates then asking for the user to take an action" [DND A3]
+- "15-minute call is a very high ask for a low consciousness prospect" / "The multiple choice answer is phased out" [DND A3]
+- "Make the CTA a non-decision. "Want me to set it up? Takes 30 seconds and it's free."" [SOT §1.6]
+- CTA-type data is weak and mixed (call ask 2.26/1k, permission 1.61, interest check 1.25), but both significant A/B tests that changed the CTA favoured permission-to-send. [data: weak evidence]
 
-**CTAs that work (permission or micro-yes):**
-- "Want me to send them over?" (TWM ChatGPT notes, 16.70/1k) [data: top-bottom #6]
-- "Mind if I put that together?" / "Want me to put that together?" (TWM post idea, 24.13/1k) [data: top-bottom #8]
-- "Mind if I make it?" (TWM reel, 23.56/1k)
-- "Want me to send it over?" (Shop Innovator video, 6.96/1k)
-- "Could I send you 5 leads from people already looking for those services?" (the offer is the CTA, 16.76/1k)
-- "Would it be helpful if I sent over some influencers from our exclusive talent roster?" (Slogan, 20.96/1k)
-- "Would you guys find that useful?" (TWM F&B, 14.34/1k)
-- "Can I send a quick video explaining?" / "Mind if I show you an example?" / "Want me to share the breakdown?" [DND A3]
-- "Can I send you a few resumes to look at?" [SOT §4.14]
-- Softest (for later steps): "Is [result] a priority right now?", "Would you be the right person to speak to?", "Mind if I send more info?", "Is this the best place to send it?" [DND A3]
+**Work:** "Want me to send them over?" (16.70/1k) · "Mind if I put that together?" (24.13) · "Mind if I make it?" (23.56) · "Would you guys find that useful?" (14.34) · "Could I send you 5 leads from people already looking for those services?" (16.76) · "Would it be helpful if I sent over some influencers from our exclusive talent roster?" (20.96) · "Mind if I show you an example?" / "Want me to share the breakdown?" [DND A3] · "Can I send you a few resumes to look at?" [SOT §4.14] · Softest, for later steps: "Is [result] a priority right now?", "Would you be the right person to speak to?", "Is this the best place to send it?" [DND A3]
 
-**CTAs that are too generic or too big:**
-- Stand-alone "Interested?" and "Worth a chat?" (Archive: "Too Generic"). [2h §1.4] Scroll Stop's April winner used "Worth a chat?", but it carried a concrete talent offer. Today write "Want me to send over 2 creators we'd look at first?" instead.
-- "Would you be interested in discussing?" [SOP 011] "Is this worth exploring for {COMPANY}?" (LuckyDiem, 0/5,176) [data: top-bottom #360]
-- "Do you have 30 minutes this week?" / "Would you be open to a brief 15-minute call...? You can book a time ... here: [link]" [DND A3, B8]
-- "If you're open to it" ("is asking them to shoo you away"), "If it helps", "I'd love to", "Just let me know". [DND B7]
-- A statement instead of a question ("If you're looking closely at revenue per user this month, a quick conversation could be useful", Scroll Stop, 0/10,446). [data: top-bottom #365]
-- Pitch dressed as a CTA: "Any interest in adding $73,000 in the next 90 days?" [DND G3]
+**Too generic or too big:** stand-alone "Interested?" / "Worth a chat?" (Archive "Too Generic") [2h §1.4] · "Would you be interested in discussing?" [SOP 011] · "Is this worth exploring for {COMPANY}?" (0/5,176) · "Do you have 30 minutes this week?" · a 15-minute call plus a calendar link [DND B8] · "If you're open to it" / "If it helps" / "I'd love to" / "Just let me know" [DND B7] · a statement instead of a question ("a quick conversation could be useful", 0/10,446) · the promise as the CTA ("Any interest in adding $73,000 in the next 90 days?") [DND G3]
 
 ---
 
 ## 5. Subject lines
 
-Hard rule: 1-3 words, no punctuation (apostrophes and {VARIABLES} allowed). Thread replies have no subject. [Engine]
+Hard rule: 1-3 words, no punctuation. Thread replies have no subject. [Engine]
 
-Alex:
-- "The best subject lines look like an internal email. Not "marketing." Not clever. Not try-hard." [DND A4]
-- "Make it feel like a coworker emailing another coworker. Short. Normal. Easy to understand in half a second." / "If your subject line could realistically be sent inside a company Slack/email thread, you're doing it right." [DND A4]
-- "We also don't track open rates, so there's no reason to obsess over this." Open tracking stays off. [DND A4] [SOP 130]
-- ">Dont let them know its a cold email until they open oit" [DND A4]
-- "saying like quick idea for {company} lead flow is just saying this is a marketing email" → "our homepage | our lead flow | quick question" [DND A4]
+Alex: "The best subject lines look like an internal email. Not "marketing." Not clever. Not try-hard." / "Make it feel like a coworker emailing another coworker. Short. Normal. Easy to understand in half a second." / "If your subject line could realistically be sent inside a company Slack/email thread, you're doing it right." / "We also don't track open rates, so there's no reason to obsess over this." / "saying like quick idea for {company} lead flow is just saying this is a marketing email" → "our homepage | our lead flow | quick question" [DND A4]
 
-What the data says [data: P5]:
-- 1-2 word subjects 2.24/1k vs 3+ words 1.14/1k (2026: 2.30 vs 1.71).
-- The prospect's own topic word wins: `{KEYWORD}` (the search term) 6.58/1k across 8 campaigns, 42,241 sent. `{HEROPRODUCT} question` 8.74/1k (TWM EB 609). `post idea` 8.22/1k. `product question` (Shop Innovator). `repair capacity` (MJJ).
-- Scroll Stop, same client, same product: `{our creators|influencers|creators}` 2.65/1k vs `Use influencer marketing for {COMPANY}` 0.71/1k.
-- Pitch-style subjects fail: "Would this make sense for {COMPANY}?" 0.17/1k, "Quick question {FIRST_NAME}" 0.21/1k, "Why top apps reset in February" 0/10,446.
-- Short is not the rule by itself. Lead Flo's longer local subjects (`{RESTAURANT} - yes or no?`) did better for them (4.37 vs 1.14). What fails is the pitch, not the length. Those subjects break the punctuation rule, so they are an open question (section 14).
+Data [data: P5]:
+- 1-2 words 2.24 vs 3+ words 1.14/1k.
+- Their topic word wins: `{KEYWORD}` 6.58/1k (8 campaigns, 42,241 sent); `{HEROPRODUCT} question` 8.74; `post idea` 8.22; `product question`; `repair capacity`.
+- Scroll Stop: `{our creators|influencers|creators}` 2.65 vs `Use influencer marketing for {COMPANY}` 0.71/1k.
+- Pitch subjects fail: "Would this make sense for {COMPANY}?" 0.17, "Quick question {FIRST_NAME}" 0.21, "Why top apps reset in February" 0.
+- What fails is the pitch, not length: Lead Flo's longer local subjects did better for them (4.37 vs 1.14). Those break the punctuation rule (question 3).
 
-How to write them:
-- Use the topic of the email in their words: the product, the service, the search term, the thing on offer. `{COMPANY} rentals`, `five rental inquiries`, `extra repair capacity`, `two ads`, `repair capacity`. [DND C]
-- Lowercase is fine and looks internal. [SOT §1.7]
-- One subject per Email 1 variant. Each variant's subject should fit its angle, so the subject does not become a second test variable. If both angles share a topic, use the same subject on both.
-- Four types (Alex): Desired outcome, Pain, Reference, Curiosity. "Curiosity ... most common used because it creates a small "open loop"". [DND A4]
-- Never "Re:" or "Fwd:" on Email 1. Never a fake thread. [copy-framework.md]
-- Check: send it to yourself and look 2-3 hours later "when I am super busy and see if it catches my own attention". [DND A4]
+How: the email's topic in their words (`{COMPANY} rentals`, `extra repair capacity`, `two ads`). Lowercase is fine. One subject per variant, fitted to its angle; if both angles share a topic, use the same subject so it is not a second test variable. Never "Re:" or "Fwd:" on Email 1. Send it to yourself and look "2-3 hours later when I am super busy". [DND A4]
 
 ---
 
 ## 6. Follow-ups
 
-Follow-ups bring in about 52% of interested replies. Treat them as seriously as Email 1. [data: P1]
+Steps 2-3 bring in 51.9% of all interested replies: step 1 2.06/1k (46.7%), step 2 1.31 (27.6%), step 3 1.23 (24.3%), step 4+ 2.16 on only 12,058 sends (1.4%). Each follow-up converts at about 60% of Email 1. [data: P1] "I've had plenty of campaigns where Step 2 and Step 3 generated the majority of positive replies." [DND A5] Treat them as seriously as Email 1.
 
-| Step | Emails sent | Interested | Per 1k | Share |
-|---:|---:|---:|---:|---:|
-| 1 | 424,922 | 874 | 2.06 | 46.7% |
-| 2 | 395,529 | 517 | 1.31 | 27.6% |
-| 3 | 370,385 | 455 | 1.23 | 24.3% |
-| 4+ | 12,058 | 26 | 2.16 | 1.4% |
+### 6.1 Every follow-up
 
-Each follow-up converts at about 60% of Email 1's rate. Alex: "I've had plenty of campaigns where Step 2 and Step 3 generated the majority of positive replies." [DND A5]
+- Same offer. "Do not invent a new offer in the follow-ups." [2h §1.12]
+- Adds something new: "1. restate the core idea (without copy/pasting the same email) 2. make the "yes" easier each step 3. *Add more context through social proof" / "each step gets easier to say yes to, and adds something new." [DND A5]
+- Thread reply, no subject. At most 75 words; aim 30-60. [Engine] [Alex, chat 2026-11-25]
+- No bump: "it looks thirsty, and it adds no value." [DND A5] Code-banned phrases apply; "As I mentioned in my first email" counts too. [2h §4.10.13]
+- No breakup: "Just don't do the cringey "last email" thing." [DND A5]
+- No greeting needed; starting with the new thing reads natural ("Just a bit more on what I mean:"). "Hey {FIRST_NAME}," is fine too.
+- Rotate the CTA: "Open to hearing more? / Want to see how it works? / Is this a priority right now? / Should I send it here? / Are you the right person for this?" [DND A5]
+- Answer the plan's top objection in one line ("You wouldn't need to move all your repair work.", MJJ step 2, 4.39/1k).
 
-### 6.1 Rules for every follow-up
+### 6.2 Step 2: clarify and make it easier to believe
 
-- **Same offer.** "Do not invent a new offer in the follow-ups." [2h §1.12] [Alex, chat 2026-11-25]
-- **Each one adds something new.** "Your follow-ups should do three things: 1. restate the core idea (without copy/pasting the same email) 2. make the "yes" easier each step 3. *Add more context through social proof" [DND A5] "The core rule: each step gets easier to say yes to, and adds something new." [DND A5]
-- **Thread replies, no subject.** [Alex, chat 2026-11-25] [Engine: thread_reply true, subject empty] "Steps 2 and 3 are genuine in-thread replies with no new subject." [DND C]
-- **At most 75 words.** [Engine] Most winning follow-ups are 40-80 words; stay at 30-60.
-- **No bump.** "The biggest mistake people make is the lazy follow up: "just bumping this up." It's weak, it looks thirsty, and it adds no value." [DND A5] "Never say quick follow up // just bumping this up. Stands out as youre marketing them" [DND A5] Also banned in code: "following up", "just checking in", "circling back", "bumping this". [Engine] "As I mentioned in my first email" counts too. [2h §4.10.13]
-- **No breakup.** "Just don't do the cringey "last email" thing." [DND A5] "I haven't heard back, so I'll pause outreach for now." = "No way someone would read past this." [DND B4]
-- **No greeting is needed** in a thread reply. Starting straight with the new thing reads natural ("Just a bit more on what I mean:"). "Hey {FIRST_NAME}," is also fine. [data: TWM, MJJ scripts]
-- **Don't repeat the same CTA wording.** Rotate easy CTAs: "Open to hearing more? / Want to see how it works? / Is this a priority right now? / Should I send it here? / Are you the right person for this? / Want me to pass over a quick example?" [DND A5]
-- **Pre-handle the plan's top objection** in step 2 or 3, in one line. E.g. "You wouldn't need to move all your repair work." (MJJ step 2, 4.39/1k) answers "we already have a bench". [scripts: MJJ EB 603]
+"Clarify the first email and make it easier to believe." [2h §1.12] "same idea, quicker, easier yes. You can: add context / offer the lead magnet again / offer a Loom instead of a call / give 2-3 specific ideas." [DND A5] Or narrow to one item with a pick question: "Which service would you choose?" / "Is there a product page you'd want us to start with?" [DND C]
+- Best step 2 in the data (TWM EB 609, 8.17/1k): the idea explained in detail, what they'd get (three post angles with hook, visual and caption), one line of experience, "Want me to send a quick video showing how that would work?" [scripts]
+- "Asked because we've run creator campaigns for [client] that generated [result]." + a two-item ask (Scroll Stop April). The "reason I ask" opener brings in proof naturally. [data: U1] [DND F14]
+- The strongest case study often lands best here (Human's Softies 88% revenue, 22% AOV). [SOP 119]
+- When the offer sounds too good to be true: "I realize this is probably crazy ... Let me explain better." then show how it works. In that third-party campaign ~50%+ of interested replies became calls: "A scammer would never go to this level of effort." [2h §1.12]
 
-### 6.2 Step 2's job: clarify and make it easier to believe
+### 6.3 Step 3: the lowest friction
 
-- 2h SOP: "Step 2 job / Clarify the first email and make it easier to believe." [2h §1.12]
-- Alex: "Step 2 should feel like: "same idea, quicker, easier yes." You can: add context / offer the lead magnet again / offer a Loom instead of a call / give 2-3 specific ideas." [DND A5]
-- 2026 drafts: step 2 explains how the free work is done, or narrows to one item and asks a pick question: "Which service would you choose?" / "Which rentals would you like more inquiries for?" / "Is there a product page you'd want us to start with?" [DND C]
-- Good step 2s from the data:
-  - TWM F&B (EB 609), 8.17/1k, the best follow-up rate in the data: explains the idea in more detail, adds what they'd get (three post angles with hook, visual idea and caption), one line of experience, then "Want me to send a quick video showing how that would work?" [scripts]
-  - Scroll Stop April (EB 428): "Asked because we've run creator campaigns for [client] that generated [result]." + "Want me to send over 2 creators we'd look at first for {COMPANY}?" The "reason I ask" opener makes the follow-up feel natural and brings in proof. [data: U1] [DND F14]
-  - MJJ (EB 603), 4.39/1k: removes the biggest objection, then a pick question. [scripts]
-- Proof often lands best here. If Email 1 carried the offer and a light proof, step 2 can carry the strongest case study (Human's Softies 88% revenue / 22% AOV as step 2). [SOP 119]
-- "The 'I know this sounds crazy' move": open with "I realize this is probably crazy, you probably didn't even believe me. Let me explain better." then show how it works in detail. In that third-party campaign ~50%+ of interested replies became calls, because "A scammer would never go to this level of effort." [2h §1.12] Use when the offer sounds too good to be true. (Write the dash as " - " or a full stop.)
+"Step 3 is where you go low friction. Three approaches that work a lot: "Are you the right person?" / "Should this go to you or {COLLEAGUE}?" / Reiterating the offer again" [DND A5] Data: the right-person step 3 often beats step 2 (TWM 4.89 vs 3.38; 5.56 vs 1.78; 3.67 vs 3.36/1k). [data: top-bottom #6, #10, #14] Or one small concrete action ("Send over one job your bench couldn't take on.") or a sweetener. [DND C] {COLLEAGUE} only when the list has it, with a fallback ("someone else on your team").
 
-### 6.3 Step 3's job: the lowest friction
+### 6.4 Step 4: only on evidence
 
-- Alex: "Step 3 is where you go low friction. Three approaches that work a lot: "Are you the right person?" / "Should this go to you or {COLLEAGUE}?" / Reiterating the offer again" [DND A5]
-- Data: the right-person step 3 often beats step 2. TWM ChatGPT: step 3 4.89/1k vs step 2 3.38/1k. TWM beauty: 5.56 vs 1.78. TWM home and consumer: 3.67 vs 3.36. [data: top-bottom #6, #10, #14]
-- 2026 drafts: step 3 lowers the bar again, one small concrete action ("Send over one job your bench couldn't take on.") or adds a sweetener ("You'd also get a short recorded walkthrough"). [DND C]
-- Winning step 3 shape (TWM): "I wasn't sure if I should send this to you or someone else. / I recorded a quick video showing a few things that may be stopping {COMPANY} from showing up more often when people search for {KEYWORD}. / Mind if I share the video here?" (Only if the video is real. Otherwise: "I can record a quick video..." )
-- {COLLEAGUE} is a custom variable. Use it only when the list has it, with a fallback ("someone else on your team").
-- The 2h SOP gives step 3 a different job ("Add trust, proof, examples, or practical ideas"). Alex's newer follow-up doc and the data favour low friction. Default: low friction, with one new small reason (an example, a narrower ask) inside it. [2h C18]
-
-### 6.4 Step 4: only if the evidence supports it
-
-- Default: 3 steps. "Most sequences should be 2-3 steps." [DND A5] Generate Filters sizes lists on 3 steps. [RULES 2026-11-23] Human's sequence has "no email 4 so blank on purpose". [SOP 119]
-- Alex: "4 steps is rare and usually only makes sense if your TAM is small (think under ~10,000 prospects) and you need to squeeze every reply out of the list." [DND A5]
-- Data: step 4+ was only 12,058 sends and 26 interested (2.16/1k, too small to trust). LuckyDiem's 5-step sequence got 0 interested on every step (5,824 sent). [data: P1, top-bottom #361]
-- "Never send more than 3/4 emails per sequence (to avoid spam complaints)." [SOP 011] "Beyond that ... spam report rate increases." [SOT §1.13]
-- Write step 4 only when: the plan says the TAM is small (under ~10,000) AND this client's own scripts show step 3 still converting at or above step 2. Step 4 = the same offer from a new side (a different example, a routing question) with no "last email" wording. See section 14, question 4.
+Default 3 steps. "Most sequences should be 2-3 steps." / "4 steps is rare and usually only makes sense if your TAM is small (think under ~10,000 prospects)" [DND A5] Lists are sized on 3 steps. [RULES 2026-11-23] LuckyDiem's 5 steps got 0 on every step (5,824 sent). [data: top-bottom #361] Write step 4 only when the plan says TAM is under ~10,000 and this client's step 3 still converts at or above step 2: the same offer from a new side, no "last email". (Question 4.)
 
 ---
 
 ## 7. Style and banned phrases
 
-### 7.1 Reading level and words
+**Reading level and words.** As simple as clarity allows, about 5th grade or lower (question 2). "Can a 10-year-old understand what you're selling? Would you actually say this to someone in person?" [2h §3.5] Keep real trade words (bench, MOQ, SKU, CPI): "The exception is when niche-specific language increases trust ... Do not use insider language merely to sound clever." [SOT §1.3] Concrete nouns and verbs; no abstract benefits. Read it aloud: "like you're talking to someone at a bar." [2h §3.7]
 
-- Write as simply as clarity allows. Alex's sources say 6th grade (Triple Tap), 4th grade (3 Simple Rules), below 3rd grade (Template Library). [2h §1.8] [DND A2] Default: about 5th grade or lower, short sentences, everyday words. The test: "Can a 10-year-old understand what you're selling?" [2h §3.5] See section 14, question 2.
-- Keep the buyer's real trade words even if they are not "simple": bench, MOQ, SKU, CPI, contribution margin. "Normally, simplicity is preferred. The exception is when niche-specific language increases trust ... Do not use insider language merely to sound clever." [SOT §1.3]
-- "Make sure the dream outcome is presented in plain language - not just numbers and stats." [2h §1.8]
-- Concrete nouns and verbs. No inflated adjectives. No abstract benefits ("drive consistent growth", "optimize your outreach process"). [copy-framework.md] [DND B12]
-- Read it out loud: "It needs to sound like you're talking to someone at a bar." [2h §3.7]
+**Banned by code:** see 3.1 rule 9. [Engine]
 
-### 7.2 Banned words and phrases
+**Banned by Alex:**
+- "I'd love to" ("prospect get the "ick" from it"), "If you're open to it" ("asking them to shoo you away"), "If it helps", "Just let me know". [DND B7]
+- Fake scarcity, "yours is ready", guilt breakups. [DND B3, B4]
+- Vague marketer words: "Noticed a few areas", "In your space", "Cleaner flow, stronger positioning, clearer CTA". [DND B6]
+- Generic "we help" lines: "We specialize in identifying and fixing those issues to drive consistent lead growth" ("and so do 100k agencies"), "We help businesses grow", "If we could help generate 1-5 clients…", "We help X get Y in Z time". [DND B1] [2h §1.8]
+- A company bio as an offer: "That's not an offer. That's a company bio." [SOT §1.4]
+- Hype and "euphoric words" (10X, viral, game-changer). [2h §1.8] Naming the framework ("Triple Tap"). [2h §1.8]
+- "Hope you're doing well" or any filler opener [SOP 011]; emojis and decorative punctuation [SOP 134, 118 #25]; thanks or "great question" [Contract].
 
-Code-banned (bounced automatically): "this isn't just", "it's not just" (by the 2h rule), "following up", "I am following up", "just checking in", "circling back", "bumping this", "hope this finds you". [Engine] [2h §1.8]
+**Punctuation and format.** " - " for dashes, no semicolons [Engine]. Plain text, no bold or bullets in Email 1 (a short list can work in a follow-up). One idea per line, blank line between.
 
-Alex-banned (reviewer fails it):
-- "I'd love to": "we always say this but prospect get the "ick" from it. Ask yourself "What's in it for them?"" [DND B7]
-- "If you're open to it": "is asking them to shoo you away". [DND B7]
-- "If it helps": "Already implying it might now or hasnt before". [DND B7]
-- "Just let me know" (non-action CTA). [DND B7]
-- "quick follow up", "just bumping this up". [DND B5]
-- Fake scarcity: "We only build a small number of these ... Yours is ready on our end". "bait and switch energy". [DND B3]
-- Guilt breakups: "I haven't heard back, so I'll pause outreach for now." [DND B4]
-- Vague marketer words: "Noticed a few areas", "In your space", "Cleaner flow, stronger positioning, clearer CTA", "Nothing crazy.. Just higher intent design." [DND B6]
-- Generic "we help" lines: "We specialize in identifying and fixing those issues to drive consistent lead growth." ("and so do 100k agencies") [DND B1] "We help businesses grow" ("invisible in an inbox") [SOT §1.4] "If we could help generate 1-5 clients...", "We help X get Y in Z time". [2h §1.8]
-- Company bio as an offer: "We're honest. 80% renewal rate. Five years in business." "That's not an offer. That's a company bio." [SOT §1.4]
-- Hype: "10X your revenue", "go viral", "game-changer", "the future". [SOT §1.4] "Do NOT use euphoric words." [2h §1.8]
-- Mentioning the framework ("Triple Tap") or any formula. [2h §1.8]
-- "Hope you're doing well" or any phatic opener. [SOP 011]
-- Emojis, emoticons, decorative punctuation, exclamation-heavy lines. [SOP 134] [SOP 118 #25]
-- Thanks or "great question" (those belong to replies, and are banned there too). [Contract]
+**Spam words.** "I replaced the word 'free' with complimentary in the script. The very next email generated a lead. Spam words are no joke." [SOT §1.4] Often flagged: free, guarantee, money, urgent, act now, "$". [SOP 011, 130] No full list exists; EmailGuard checks the final copy. [RULES 2026-11-17] Write naturally, don't stack money words, swap a flagged word (question 10).
 
-### 7.3 Punctuation and format
+**Variables.** A variable must read right in its sentence ("CONTRACTOR must be a grammatical singular trade noun, e.g. roofer"). [SOP 118 #16] A signal used to pick the list need not appear in the email. [SOP 118 #15] Sub-segment variables help: "Nick has never run a campaign where adding a specific sub-segment variable did not improve performance." [SOT §1.9]
 
-- " - " for a dash. Never "—" or "–". [Engine] [2h §1.8]
-- No semicolons. "Avoid semicolons or excessive punctuation." [Engine] [2h §1.8]
-- Plain text. No bold, no bullets in Email 1 (a 3-item list in a follow-up can work, as TWM step 2 did). No HTML, no images. [SOT §1.15]
-- One idea per line, blank line between lines.
-- Write money and percentages only when they are approved proof. "$" and money words can trigger spam filters [SOP 130]: EmailGuard checks the final copy. See section 14, question 10.
-
-### 7.4 Spam words
-
-- Alex's note: "I replaced the word 'free' with complimentary in the script. The very next email generated a lead. Spam words are no joke." [SOT §1.4]
-- Flagged often: "free", "guarantee", "money", "urgent", "act now", "$". [SOP 011, 130]
-- No full list exists. EmailGuard runs on the final spintaxed copy before upload. [RULES 2026-11-17] Scribe writes naturally ("free", "at no cost", "on us") and avoids stacking several money words. If EmailGuard flags a word, swap it ("complimentary", "at no charge").
-
-### 7.5 Variables
-
-- {FIRST_NAME}, {COMPANY}, and custom variables only when the plan and list have them. The code bounces any other {VARIABLE}. [Engine]
-- A variable must read naturally in the sentence. "CONTRACTOR must be a grammatical singular trade noun, e.g. roofer". [SOP 118 #16]
-- Every custom variable has a fallback that fits the copy ("your area", "your products"). Never blank, never "Not Found". [RULES 2026-11-21] The build stops if any lead is missing a variable the copy uses. [RULES 2026-11-24]
-- Never spin a variable. [RULES 2026-11-17]
-- A signal used to pick the list does not have to appear in the email ("active_meta_ad_evidence: Audience gate, not an email merge field"). [SOP 118 #15]
-- Sub-segment variables help: "Nick has never run a campaign where adding a specific sub-segment variable did not improve performance." [SOT §1.9]
-
-### 7.6 The P.S. (added by the system, do not write it)
-
-- The builder adds "{P.S.|P.s.|p.s.} or tell me to pound sand if you'd like.." unless a P.S. is already there. [RULES 2026-11-20]
-- It is the opt-out (the unsubscribe link is always off). [RULES 2026-11-23]
-- It travels with the winners: 2.37/1k with it vs 0.88 no P.S. vs 0.74 guarantee P.S. (all years). Scroll Stop 2.48 vs 0.75. Recovered campaigns: 3.20 vs 1.24. Confounded with the 2026 template, so Medium evidence. [data: P4, U2]
-- So Scribe writes no P.S. at all, and never a guarantee P.S. A proof P.S. is an open question (section 14, question 6).
+**The P.S. (system-added).** The builder adds "{P.S.|P.s.|p.s.} or tell me to pound sand if you'd like.." unless a P.S. exists. [RULES 2026-11-20] It is the opt-out (no unsubscribe link). [RULES 2026-11-23] It travels with winners: 2.37/1k vs no P.S. 0.88 vs guarantee P.S. 0.74; Scroll Stop 2.48 vs 0.75; recovered campaigns 3.20 vs 1.24 (Medium, confounded). [data: P4, U2] So Scribe writes no P.S. and never a guarantee P.S. (question 6).
 
 ---
 
 ## 8. Proof
 
-### 8.1 The rule
+**The rule.** At least 1 strong proof per email, from this client's facts. More only if just as strong. No filler. [RULES 2026-11-25] "This is the single heaviest lifting element". [SOT §1.5] "Numbers Beat Adjectives ... Specifics = trust." [DND A7] "Not "we're experts" that means nothing." [DND A2]
 
-At least 1 strong proof per email, from this client's facts only. More is better only if every extra proof is just as strong. No filler proof. [RULES 2026-11-25]
+**Three types** [2h §1.9]:
+1. **Social proof, "I did the thing":** a result for a similar company. Stack similarity: ""We helped a SaaS company" is weak. "We helped a 15-person B2B SaaS selling to mid-market HR teams" is strong."
+2. **Third-party authority, "They found it":** a real, sourced fact from a source this reader knows. "Use this when you don't yet have your own social proof."
+3. **Knowledge as proof, "I know this about you specifically":** "That's not a pitch, that's a demonstration of capability." [2h §2.7] The 2026 winners' main proof (the real ChatGPT answer, their hero product in a use moment).
 
-- "On proof and social proof: This is the single heaviest lifting element of the value prop." [SOT §1.5]
-- "nothing builds trust faster than showing that you've already done exactly what they want… for someone just like them." / "Numbers Beat Adjectives ... Specifics = trust." [DND A7]
-- "the more specific your proof, the less selling you have to do" [2h §1.9]
-- "Credibility can be: a relevant case study / a known competitor you work with / media mention / a specific result. Not "we're experts" that means nothing." [DND A2]
+Also strong: recognisable names ("everyone knows Apple, so the proof is much more effective" [SOT §1.5]; Slogan's DoorDash, Meta, Amazon Prime Video at 20.96/1k); a one-line mechanism ("Every bold claim needs a reason it is possible" [SOT §1.3]); a company fact the buyer cares about ("family-owned ... since 1982", kept secondary to the benefit [DND B, MJJ]).
 
-### 8.2 What counts as proof (three types)
+**Match it to the dream outcome and its scope.** "Irrelevant proof kills trust." [2h §1.9] Dulcy's Digital Force "$25,000 MRR added in 21 days" proves broader outbound work, "not the free list or a guaranteed result". [SOP 118 #1] Historical speed is not a promise (TONAL 2021). [SOP 118 #4] A huge vague number can lower trust: "We've helped 500 home and garden brands" sat in the losing Shop Innovator variant. "A bigger promise can actually lower trust." [SOT §1.3]
 
-From Alex's 2026 guide [2h §1.9]:
-1. **Social proof: "I did the thing."** A result for a similar company. "The more specific the similarity, the more powerful it lands." Stack layers: same industry, same size, same stage, same problem. ""We helped a SaaS company" is weak. "We helped a 15-person B2B SaaS selling to mid-market HR teams" is strong."
-2. **Third-party authority: "They found it."** A credible outside source the reader knows (Google, a major publication). "Use this when you don't yet have your own social proof." It must be real and sourced. "Authority must match the recipient's world ... does this person know this source?"
-3. **Knowledge as proof: "I know this about you specifically."** Research or niche expertise shown in the email. "That's not a pitch, that's a demonstration of capability. ... It flips the dynamic from "trust me" to "look what I already know about your situation."" [2h §2.7]
+**Where it goes.** Email 1: one line, or baked into the offer ("creators who've been part of campaigns driving 1M+ views"). Step 2: the strongest case study. Never a guarantee as proof. Data: Email 1 proof helped Dulcy (3.10 vs 1.02/1k) and Shop Innovator (4.20 vs 1.96) but not Lead Flo, Twenty West or Scroll Stop, whose winners used knowledge as proof. [data: weak evidence]
 
-Also strong:
-- **Recognisable names.** "No number at all, but everyone knows Apple, so the proof is much more effective." [SOT §1.5] Slogan Social's "brands like DoorDash, Meta, and Amazon Prime Video" was the #1 campaign at 20.96/1k. [data: top-bottom #1]
-- **Mechanism as credibility.** One short line on how: "We use Predictive Targeting to identify high-intent players before an ad is even served". "Every bold claim needs a reason it is possible." [SOT §1.3]
-- **Company facts that matter to the buyer.** "MJJ Brilliant has been a family-owned and operated jewelry manufacturer since 1982." (Keep it secondary to the buyer benefit. [DND B, MJJ])
-
-### 8.3 Match the proof to the dream outcome
-
-- "Proof must match the dream outcome / Irrelevant proof kills trust. Every proof element should reinforce the specific outcome you're promising." [2h §1.9]
-- Scope it to what it proves. Dulcy's Digital Force "$25,000 MRR added in 21 days" is proof of broader outbound work, "not the free list or a guaranteed result" and "not an AEO/GEO-specific result". [SOP 118 #1] Human's Thompson Tee case "supports SEO/content capability only". [SOP 118 #5]
-- Historical speed is not a promise. TONAL's "200+ video variations in less than three days" (2021) must not become a three-day turnaround promise. [SOP 118 #4]
-- Proof that loses: "We've helped 500 home and garden brands ... to $100K/mo" was in the losing Shop Innovator variant (1.93 vs 6.96/1k). A huge vague number can lower trust. [data: P2] "Do not maximize only the dream outcome. A bigger promise can actually lower trust." [SOT §1.3]
-
-### 8.4 Where the proof goes
-
-- Email 1: one line, or baked into the offer ("creators ... who've been part of campaigns driving 1M+ views"). [data: U1] "Often the proof is baked directly into the offer itself." [2h §2.5]
-- Step 2: the strongest case study, with "Asked because..." or "For context...". [data: U1] [SOP 119]
-- Never a guarantee as "proof". [data: U4]
-- Data note: proof in Email 1 did better for Dulcy (3.10 vs 1.02/1k) and Shop Innovator (4.20 vs 1.96), and worse for Lead Flo, Twenty West and Scroll Stop, whose winners carried no case study but had a strong knowledge-as-proof opener (the real ChatGPT query, the real product idea). [data: weak evidence] That is why knowledge-as-proof counts.
-
-### 8.5 When there is no proof
-
-1. Never invent one. Never borrow another client's. Never use the numbers in swipe files (Anivvo's 10M emails, the "300+ clients" agency, Russell Brunson, Leadbird, Planta, the 31% apparel example). [RULES 2026-11-17] [SOT §0] [2h §1.9]
-2. Use knowledge as proof: a real observation about their business that only someone who looked would know (the actual ChatGPT answer naming two competitors, their hero product in a use moment, their listing in their city). This is the 2026 winners' main proof.
-3. Use a real, sourced third-party fact that validates the category, if one exists in the client facts.
-4. Use a real mechanism line ("We use your existing photos and clips").
-5. Say so in questions for Alex: "No approved case study for this vertical. Email 1 uses [knowledge-as-proof line]. Is that enough, or can the client approve a result?" [Engine WRITER] [SOP 118 conflicts #5] See section 14, question 5.
-6. Unverified client claims stay out until approved: Dulcy's "average 20+ sales opportunities per month" is not verified; do not use it. [clients/dulcy.md] "Current lack of evidence is not a finding that the historical claim is false." If the client supplies substantiation, keep the original line. [SOP 118 #3]
+**When there is none.**
+1. Never invent or borrow (no Anivvo 10M emails, no "300+ clients", no Planta, no 31% apparel example). [RULES 2026-11-17] [SOT §0] [2h §1.9]
+2. Use knowledge as proof, a real third-party fact, or a real mechanism line.
+3. Flag it in questions_for_alex. [Engine] (Question 5.)
+4. Unverified client claims stay out: Dulcy's "average 20+ sales opportunities per month" is not verified. [clients/dulcy.md] If the client later substantiates a claim, keep the original line. [SOP 118 #3]
 
 ---
 
@@ -530,24 +329,16 @@ Why: most A/B "winners" are noise. Of 91 Email 1 tests, only 6 reached p < 0.05,
 4. Write what each tests in the notes, in one line: "A tests the pain of losing quotes on price. B tests the outcome of becoming the obvious choice."
 
 Good angle pairs (real differences):
-- **Pain vs desired outcome.** "A roofing company isn't getting any inbound calls. The pain is invisibility." vs "already gets calls, but wants to stop competing on price". [SOT §4.23] Same offer, two openings.
-- **Offer-led vs context-led** (the 2026 house test): 1A "I'd like to offer {COMPANY} five free rental inquiries." vs 1B "Have a repair job your usual bench can't take on?" then the same offer. [DND C]
-- **What they already have vs what we do for them** (TWM EB 609): "turn usable product photos and clips you already have into a series of social posts" (14.3/1k) vs "so your team isn't planning, writing and putting together every post" (5.6/1k). [data: P3]
-- **One idea vs two ideas** (TWM EB 599): 24.1 vs 2.7/1k. [data: P3]
-- **Observation + thing made vs question + claim** (Shop Innovator EB 465): 6.96 vs 1.93/1k. [data: P2]
-- **Free sample vs service pitch** (Lead Flo EB 514): 16.8 vs 1.8/1k. [data: P3]
-- **Two different USPs**: MJJ "No MOQs made-to-order" vs "0% duty production" (subjects and lead benefit). [scripts: MJJ EB 605, 606]
-- **Two different pains for the same buyer**: MJJ repairs "Are repairs taking time away from your jeweler's custom work?" (9.89/1k) vs "Have a repair job your usual bench can't take on?" (7.25/1k). [scripts: MJJ EB 603]
-- **Same offer, two buying situations**: "For a company with reps, you could test helping them find better accounts to approach. For a founder without a sales team, you could test finding demand before they hire." [2h §2.14] (Only inside one direction; two different audiences belong in two campaigns.)
+- **Pain vs desired outcome:** a roofer "isn't getting any inbound calls" vs one that "already gets calls, but wants to stop competing on price". [SOT §4.23]
+- **Offer-led vs context-led** (the 2026 house test): "I'd like to offer {COMPANY} five free rental inquiries." vs "Have a repair job your usual bench can't take on?" then the same offer. [DND C]
+- **What they already have vs what we do for them:** 14.3 vs 5.6/1k (TWM EB 609). **One idea vs two:** 24.1 vs 2.7 (EB 599). **Observation + thing made vs question + claim:** 6.96 vs 1.93 (Shop Innovator EB 465). **Free sample vs service pitch:** 16.8 vs 1.8 (Lead Flo EB 514). [data: P2, P3]
+- **Two USPs:** MJJ "No MOQs made-to-order" vs "0% duty production". **Two pains for one buyer:** MJJ "Are repairs taking time away from your jeweler's custom work?" 9.89/1k vs "Have a repair job your usual bench can't take on?" 7.25/1k. [scripts: MJJ]
+- **Two buying situations for one offer:** "For a company with reps ... better accounts to approach. For a founder without a sales team ... finding demand before they hire." [2h §2.14] Two different audiences belong in two campaigns.
 
-Bad angle pairs (do not do this):
-- Scroll Stop "{COMPANY} works with creators to show the best of {PERSONAL}" vs "{COMPANY} is all about staying true to {PERSONAL}", re-run 15+ times. It is a phrase swap. [data: All tests]
-- Lead Flo "Saw you guys provide landscaping in {CITY}." vs "Noticed you guys provide landscaping in {CITY}." (0 vs 0). [data: EB 616, 617]
-- RMG "Would you be open to a quick discussion to see how this could look for {COMPANY}?" vs "Would it make sense for us to discuss what this could look like for {COMPANY}?" (0 vs 0). [data: EB 245]
-- A greeting test: "{Hi|Hey|Hello} {FIRST_NAME}," vs "Hi {FIRST_NAME},". [data: EB 208]
-- Demo wording: "Would you be open to a 5m demo?" / "Up for a short demo?" / "How about a quick demo?" [SOP 015]
-- Two angles that change audience, offer and proof at once. That is two campaigns, not a test. [SKILL] [SOT §1.16]
-- Nine variants of everything (Lead Flo's 9-test offer validation, Forever Card's 10 whitepaper headlines). [2h C5] [data: EB 154, 167, 176]
+Bad angle pairs:
+- Phrase swaps: Scroll Stop "works with creators to show the best of" vs "is all about staying true to", re-run 15+ times; Lead Flo "Saw you guys provide" vs "Noticed you guys provide" (0 vs 0); RMG two wordings of "a quick discussion" (0 vs 0); a greeting test; three wordings of "a quick demo". [data: All tests] [SOP 015]
+- Changing audience, offer and proof at once: that is two campaigns, not a test. [SOT §1.16]
+- Nine or ten variants of everything (Lead Flo's 9-test validation, Forever Card's 10 whitepaper headlines). [2h C5] [data: EB 154, 167, 176]
 
 ### 9.3 After the test
 
@@ -565,7 +356,7 @@ The engine passes feedback with: "fix all of it, keep what they did not mention"
 
 1. Fix every point raised, in the fewest words. Keep every line they did not mention, exactly.
 2. If the feedback changes the offer or commercial terms (price, quantity, free vs paid, a guarantee), it is an offer change: note it in the claims list and make sure the client fact exists. [copy-review-contract.md]
-3. Respect client direction on the ask and style when it is truthful. ChopShop wanted "Meetings first"; MJJ prefers statement closes. Post-call direction "overrides old onboarding". [SOP 118 #24] Where it conflicts with RULES (a call ask in the cold sequence), keep the client's wish only if the plan says the call is the only logical next step, and flag it.
+3. Respect truthful client direction on style (MJJ's statement closes; post-call direction "overrides old onboarding" [SOP 118 #24]). A client's call-first wish passes only if the plan says the call is the only logical next step. Flag it.
 4. "Rewrite once. Once." [2h §3.3] "If it passes, stop editing." [2h §3.1] "Stop cosmetic revision; obtain approval and test under the managed workflow." [DND C] Do not polish what nobody asked about.
 5. Vague feedback ("make it better"): pick the single highest-impact supported change (usually the offer line or the opener) and say what you changed. "do not just say 'make it better.'" [SOT §1.16]
 6. Keep a top-up's winning Email 1: "No new offer or opening test. Preserve Email 1; only evidence and claim-safety fixes to follow-ups." [SOP 118 #29]
@@ -579,10 +370,7 @@ The engine passes feedback with: "fix all of it, keep what they did not mention"
 - Offers decay too: free leads 20-25% positive replies → about 10% now. [creator-learnings]
 - Exception: a re-up to a **fresh list** can hold (Twenty West Local Contractors Re-Up 2.10/1k). [data: P7]
 
-What to do:
-- Same copy, same TAM, second pass: write a new angle and refreshed copy. "Whatever number is in your TAM, hit them every 30-60 days and repeat with new messaging, new offers, and new copy." [SOT §5.3]
-- Monthly rinse and repeat: "Pull new list / Change angle / Refresh copy / Run again" [2h §5.6]
-- Lookalikes of interested leads get the message that earned interest. Remaining eligible leads get a new angle. [2h §5.5]
+What to do: a second pass on the same TAM gets a new angle and refreshed copy ("hit them every 30-60 days and repeat with new messaging, new offers, and new copy" [SOT §5.3]; "Pull new list / Change angle / Refresh copy / Run again" [2h §5.6]). Lookalikes of interested leads get the message that earned interest. [2h §5.5]
 
 ### 10.3 Before rewriting copy that underperforms
 
@@ -610,48 +398,31 @@ From Alex's final send check [2h §3.3] and checklist [2h §3.1]:
 
 ### 11.2 Alex's critique list as a checklist
 
-Tick every line. Each is a real critique Alex made. [DND B] [2h] [SOP 118]
-- [ ] It is about them, not about us. "Talking about yourself too much (they don't care)" [DND A2]
-- [ ] It names a specific issue or thing, not a category ("I noticed {issue} - solving {issue} leads to {benefit}..."). [DND B1]
-- [ ] No "we specialize in", "we help businesses grow", "can we help grow your business?". [DND B1, B2]
-- [ ] No fake scarcity, no "yours is ready", no bait and switch. [DND B3]
-- [ ] No "If you're open to it", "If it helps", "I'd love to", "Just let me know". [DND B7]
-- [ ] No 15-minute call, no calendar link, no "do you have 30 minutes". [DND B8]
-- [ ] No vague marketer language a local owner would not understand. [DND B6]
-- [ ] No irrelevant personalisation (college, hometown, random facts). [DND A2]
-- [ ] Not an inbox essay. 30-75 words. [DND A2] [Engine]
-- [ ] No fancy formatting, images or links. [DND A2] [Engine]
-- [ ] One problem, one offer, one proof, one CTA. [2h §1.3]
-- [ ] Dream outcome is money, time or status, in plain language, and fits this audience. [2h §3.1]
-- [ ] Proof reinforces the exact dream outcome and the source means something to this reader. [2h §3.1]
-- [ ] Clearly Question → Proof → CTA or Offer → Proof → CTA. [2h §3.1]
-- [ ] Feels written for this market and this person. [2h §3.1]
-- [ ] A 10-year-old understands what is offered. You would say it in person. [2h §3.5]
-- [ ] Every claim is in this client's facts. Every "I made / I pulled" is real. [SOP 118]
-- [ ] No assumed problem stated as fact ("I noticed you're still manually screening..."). Observed vs guessed is kept apart; guesses become questions. [SOP 118 #13-14] [SOP 015]
-- [ ] Conditions that change the deal are stated. Delivery steps are not. [RULES 2026-11-25]
-- [ ] Variables read naturally, with fallbacks. No variable is spun. [RULES 2026-11-21]
-- [ ] Follow-ups: same offer, each adds something new, no bump, no breakup, no subject. [Alex, chat 2026-11-25]
-- [ ] The 2 variants test a real difference that the plan named. [RULES 2026-11-25]
-- [ ] No signature, no P.S., no spintax. [Alex, chat 2026-11-25]
-- [ ] The reply-feels-easier-than-ignoring test passes. [2h §3.6]
+Tick every line. Each is a real critique Alex made. [DND A2, B] [2h §3.1, §3.5] [SOP 118]
+- [ ] About them, not us. Names a specific issue or thing, not a category. No "we specialize in" / "we help businesses grow".
+- [ ] No fake scarcity, "yours is ready" or bait and switch. No "If you're open to it", "If it helps", "I'd love to", "Just let me know".
+- [ ] No call, calendar link or "do you have 30 minutes". No links, images or formatting. 30-75 words.
+- [ ] No vague marketer language, no irrelevant personalisation (college, hometown).
+- [ ] One problem, one offer, one proof, one CTA, in a clear Question → Proof → CTA or Offer → Proof → CTA.
+- [ ] Dream outcome is money, time or status, in plain language, for this audience. Proof reinforces it and means something to this reader.
+- [ ] Written for this market and this person. A 10-year-old gets it. You would say it in person.
+- [ ] Every claim is in this client's facts; every "I made / I pulled" is real; no guessed problem stated as fact (guesses become questions). [SOP 015]
+- [ ] Deal-changing conditions stated, delivery steps not. Variables read naturally, with fallbacks, never spun.
+- [ ] Follow-ups: same offer, something new each, no bump, no breakup, no subject.
+- [ ] The 2 variants test the real difference the plan named. No signature, P.S. or spintax.
+- [ ] Replying feels easier than ignoring. [2h §3.6]
 
-### 11.3 Pre-launch checks (Atlas runs them; Scribe should expect them)
-
-- Preview 10-15 random leads. "Variables populate correctly ... Nothing looks broken, awkward, or "obviously automated"" [DND A10] [SOP 011: "Preview copy in Bison for 15+ leads"]
-- "No missing assets that you need (links, lead magnet, doc, Loom, whatever you referenced)." [DND A10]
-- EmailGuard spam check on the spintaxed copy: "as close to clean as possible (1-2 flags can be fine)". [DND A10] [RULES 2026-11-17]
-- "Send the email to myself and read it at first glance like I'm busy". [DND A10]
+### 11.3 Pre-launch (Atlas runs it)
+Preview 10-15 random leads ("Nothing looks broken, awkward, or "obviously automated""), check every referenced asset exists, EmailGuard on the spintaxed copy ("1-2 flags can be fine"), and send it to yourself "like I'm busy". [DND A10] [SOP 011] [RULES 2026-11-17]
 
 ---
 
 ## 12. Best examples (full sequences, verbatim)
 
-Read these for shape and voice. **Every name, number, result and claim belongs to that client only. Never reuse these facts.** Several were sent with spintax, signatures and a P.S.: those parts were added by the system. Scribe writes the plain version. Where the copy breaks a current rule, the note says what to change.
+For shape and voice only. **Every name, number, result and claim belongs to that client. Never reuse these facts.** Spintax, signatures and the P.S. were added by the system and are left out here. "Today" says what to change under current rules.
 
-### 12.1 Twenty West Media · ChatGPT shopping questions (skincare and haircare) · never reuse these facts
-EB 597: 6,453 sent, 61 interested = **9.45/1k (5.7x average)**, 7 meetings. Step 1 variant A: 2,336 sent, 39 interested = 16.70/1k. Step 2: 3.38/1k. Step 3: 4.89/1k. Same copy at EB 598: 6.46/1k. [data: top-bottom #6, scripts]
-
+### 12.1 Twenty West Media · ChatGPT shopping questions · never reuse these facts
+EB 597: 6,453 sent, **9.45/1k** (5.7x average), 7 meetings. Step 1 A 16.70/1k (2,336 sent). Step 2 3.38/1k. Step 3 4.89/1k. [data: top-bottom #6, scripts]
 Subject: `{KEYWORD}`
 ```
 I asked ChatGPT for "{SEARCH}" and the first 2 brands that came up were {COMP}.
@@ -662,7 +433,7 @@ I spent a few minutes digging into why those {KEYWORD} were getting recommended 
 
 Want me to send them over?
 ```
-Step 2 (same thread):
+Step 2:
 ```
 Just a bit more context on what I was referring to.
 
@@ -674,7 +445,7 @@ I can show you how we'd get {COMPANY} in front of more of those searches.
 
 Open to that?
 ```
-Step 3 (same thread):
+Step 3:
 ```
 I wasn't sure if I should send this to you or someone else.
 
@@ -682,15 +453,13 @@ I recorded a quick video showing a few things that may be stopping {COMPANY} fro
 
 Mind if I share the video here?
 ```
-Why it worked: knowledge as proof (a real answer naming two real competitors), the prospect's own search term as the subject, one concrete thing already made (notes), a one-word CTA, 47 words. Step 3's right-person line beat step 2.
-Change today: the "65%" stat was removed as unsourced in the Oct 8 review [SOP 118 #2]: use a sourced stat or cut the line. The query, the two brands and the notes must be real for every lead [SOP 118 #12]. The video must exist or say "I can record". Step 2's "Open to that?" is a little generic.
+Why: knowledge as proof (a real answer naming two real competitors), their search term as the subject, one thing already made, a one-word CTA, 47 words. The right-person step 3 beat step 2.
+Today: the "65%" stat was cut as unsourced [SOP 118 #2]. Query, brands, notes and video must be real per lead [SOP 118 #12]; otherwise "I can record...".
 
-### 12.2 Twenty West Media · Food and beverage "post idea" (one idea vs two) · never reuse these facts
-EB 599: 3,163 sent, 26 interested = **8.22/1k**. Step 1 A/B: variant A 9/373 = 24.13/1k, variant C 9/382 = 23.56/1k, variant B (two ideas) 1/376 = 2.66/1k (p = 0.011). [data: P3, top-bottom #8]
-
+### 12.2 Twenty West Media · Food and beverage "post idea" · never reuse these facts
+EB 599: **8.22/1k**. Step 1: variant A 24.13/1k, variant C 23.56/1k, two-ideas variant B 2.66/1k (p = 0.011). [data: P3, top-bottom #8]
 Subject: `post idea`
-
-Variant A (won):
+Variant A:
 ```
 I had an idea for showing ur {HEROPRODUCT} in a {CONSUMERUSEOCCASION} moment.
 
@@ -698,7 +467,7 @@ We could make a post and caption around it using your product images. If you hat
 
 Mind if I put that together?
 ```
-Variant C (won):
+Variant C:
 ```
 I had an idea for a short reel showing ur {HEROPRODUCT} in a {CONSUMERUSEOCCASION} moment.
 
@@ -706,24 +475,15 @@ We could put together a draft using product photos or clips you already have, wi
 
 Mind if I make it?
 ```
-Variant B (lost):
-```
-I had two ideas for showing off ur {HEROPRODUCT}: one around {CONSUMERUSEOCCASION}, and one around {BRANDDIFFERENTIATOR}.
+Loser B opened "I had two ideas for showing off ur {HEROPRODUCT}: one around {CONSUMERUSEOCCASION}, and one around {BRANDDIFFERENTIATOR}." and asked them to pick website, social or ads.
+Steps 2-3 (4.87 and 1.99/1k) showed the exact shot in mind, then offered to "make the first one".
+Why: one specific idea about their hero product, from what they already have, a "just delete it" risk reducer, a tiny ask. Two ideas plus a choice made them think, and lost 9 to 1.
+Today: add one strong TWM proof line if the client has one.
 
-We could make both so you can see them side by side. Tell us whether you'd want them designed for your website, social, or ads. If you hate them, you can just delete them.
-
-Mind if I put together the two versions?
-```
-Follow-ups (same thread): step 2 (4.87/1k) opened "I only took a quick look, but here's the shot I had in mind for ur {HEROPRODUCT}: {SPECIFICCREATIVESCENE}" and asked "Mind if I send over what I'd make?". Step 3 (1.99/1k) opened "We offer free creative so you can see what our ideas actually look like for your product." and asked "Should I make the first one for ur {HEROPRODUCT}, or is there another product you'd rather try?"
-Why it worked: one specific idea about their hero product, built from what they already have, a "you can just delete it" risk reducer, a tiny ask. Two ideas plus a choice of channel made the prospect think, and lost 9 to 1.
-Change today: add one strong TWM proof line (RULES) if the client has one. Variant B's colon is fine but its extra decision is not.
-
-### 12.3 Twenty West Media · Food and beverage reusable video (use what they have) · never reuse these facts
-EB 609: 7,668 sent, 67 interested = **8.74/1k**. Variant C 14.34/1k vs variant A 5.64/1k (p = 0.046). Step 2: 8.17/1k (the best follow-up rate in the data). Step 3: 6.93/1k. [data: P3, top-bottom #7, scripts]
-
+### 12.3 Twenty West Media · Food and beverage reusable video · never reuse these facts
+EB 609: **8.74/1k**. Variant C 14.34/1k vs variant A 5.64/1k (p = 0.046). Step 2 **8.17/1k** (the best follow-up in the data). Step 3 6.93/1k. [data: P3, scripts]
 Subject: `{HEROPRODUCT} question`
-
-Variant C (won):
+Variant C:
 ```
 I had an idea for showing ur {HEROPRODUCT} in a {CONSUMERUSEOCCASION} moment.
 
@@ -731,15 +491,8 @@ We could turn usable product photos and clips you already have into a series of 
 
 Would you guys find that useful?
 ```
-Variant A (lost):
-```
-I had an idea for showing ur {HEROPRODUCT} in a {CONSUMERUSEOCCASION} moment.
-
-We could handle turning product ideas like that into social posts, so your team isn't planning, writing and putting together every post themselves.
-
-Would you guys find that useful?
-```
-Step 2 (same thread):
+Loser A: "We could handle turning product ideas like that into social posts, so your team isn't planning, writing and putting together every post themselves."
+Step 2:
 ```
 Just a bit more on what I mean: The idea is to show where {HEROPRODUCT} fits into someone's day, like that {CONSUMERUSEOCCASION} moment, and turn it into content your team doesn't have to plan and make themselves.
 
@@ -747,7 +500,7 @@ We could put together three post angles for {HEROPRODUCT}, with a hook, visual i
 
 Want me to send a quick video showing how that would work?
 ```
-Step 3 (same thread):
+Step 3:
 ```
 I wasn't sure if I should reach out to you or {COLLEAGUE}.
 
@@ -755,51 +508,27 @@ Showing {HEROPRODUCT} in a {CONSUMERUSEOCCASION} moment was just a quick idea th
 
 Would it be okay if I sent more info to you, or would {COLLEAGUE} be better?
 ```
-Why it worked: "what you already have" beat "we do the work" twice. Step 2 made the free thing concrete (three angles, hook, visual, caption) and added experience proof. Step 3 routed.
-Change today: "40+ food brands" must be in TWM's approved facts. Step 2 is about 70 words: fine, at the cap.
+Why: "what you already have" beat "we do the work" twice. Step 2 made the free thing concrete and added experience proof. Step 3 routed.
+Today: "40+ food brands" must be in TWM's approved facts.
 
-### 12.4 Shop Innovator · Home and garden video walkthrough (observation vs question) · never reuse these facts
-EB 465 step 1 A/B: variant A 18/2,586 = **6.96/1k** vs variant B 5/2,589 = 1.93/1k (p = 0.0065). Steps 2-3: about 1.07/1k each. [data: P2, scripts]
-
+### 12.4 Shop Innovator · Home and garden video walkthrough · never reuse these facts
+EB 465 step 1: variant A **6.96/1k** (2,586 sent) vs variant B 1.93/1k (p = 0.0065). [data: P2, scripts]
 Subject: `product question`
-
-Variant A (won):
 ```
 I made a short video walking through product pages like {COMPANY}'s, looking at where a $1,000 to $8,000 buyer starts to hesitate before they commit to buying.
 
 It's specific to how high-consideration home and garden goods buyers shop and make their decision. Want me to send it over?
 ```
-Variant B (lost):
-```
-Do you know what's actually stopping your ecommerce store from converting more of the visitors you're already getting?
+Loser B opened "Do you know what's actually stopping your ecommerce store from converting more of the visitors you're already getting?", re-explained the problem and claimed "We've helped 500 home and garden brands ... to $100K/mo".
+Steps 2-3 (about 1.07/1k each) ended "if helpful" with no question.
+Why: the thing was made and named precisely (their price band, their buyer). 40 words. Permission CTA.
+Today: the follow-ups end without a question and add little: write real steps 2-3. The embedded-video version (EB 466) did 1.27 vs 2.20/1k: no embeds.
 
-I know the frustrating part is the customers are already there. Something between landing and buying is causing hesitation, and it's almost impossible to see from the inside.
-
-We've helped 500 home and garden brands selling high-ticket products go from inconsistent online sales to $100K/mo by fixing exactly that.
-
-Would it help if I sent a short video on what causes buyers to hesitate before checkout?
+### 12.5 Shop Innovator · $1K+ products · never reuse these facts
+EB 422: 15,084 sent, **7.96/1k** (4.8x average), 6 meetings. [data: top-bottom #9]
+Subject: `{product type} question`
 ```
-Step 2 (same thread):
-```
-With $1K+ products, buyers usually do a lot more second-guessing before they checkout than most Shopify stores account for.
-
-I can send over a few things worth checking on {COMPANY}'s store if helpful.
-```
-Step 3 (same thread):
-```
-I had a few ideas for how {COMPANY} could reduce hesitation on your product pages before buyers checkout.
-
-Happy to send them over if helpful.
-```
-Why it worked: the thing was made and named precisely (their price band, their buyer), 40 words, permission CTA. The loser opened with a question, re-explained the problem and leaned on a big vague number.
-Change today: the follow-ups end without a question ("if helpful" is a non-action CTA) and add little: write a real step 2 and 3. The embedded-video version of the same campaign (EB 466) did 1.27/1k vs 2.20/1k without the embed. No links or embeds. [scripts]
-
-### 12.5 Shop Innovator · $1K+ products (observation + honest question) · never reuse these facts
-EB 422: 15,084 sent, 120 interested = **7.96/1k (4.8x average)**, 6 meetings. Copy from Airtable fields. [data: top-bottom #9]
-
-Subject: `{{product type}} question`
-```
-Noticed {{CompanyName}} sells {{product type}} online.
+Noticed {COMPANY} sells {product type} online.
 
 One thing we see with $1K+ products is most stores treat them like normal ecommerce, but buyers usually need much more reassurance before committing.
 
@@ -807,26 +536,25 @@ Trust signals, buying guidance and conversion flow tend to matter a lot more.
 
 Are first-time visitors converting well for you?
 ```
-Step 2 opened "With $1K+ products, buyers usually do a lot more second-guessing before they buy than most Shopify stores account for." Step 3: "I had a few ideas for how {{CompanyName}} could reduce hesitation on the {{product type}} pages." + "Want me to?"
-Why it worked: a true segment observation, knowledge as proof (an insight only a specialist would state), a question the prospect can honestly answer. High volume, so the 7.96/1k is solid.
-Change today: no offer in Email 1 and no client proof line: add both under the 2026 rules. Variables in the engine's format.
+Step 3: "I had a few ideas for how {COMPANY} could reduce hesitation on the {product type} pages." + "Want me to?"
+Why: a true segment observation, an insight only a specialist states (knowledge as proof), an honest question. High volume, so the rate is solid.
+Today: add the offer and a client proof line.
 
-### 12.6 Scroll Stop (Global Media Group) · April 2026 "I've got creators" wave · never reuse these facts
-EB 428 Beauty: 21,914 sent, 161 interested = **7.35/1k**. With Apps (EB 426, 4.60/1k) and Sports (EB 427, 3.82/1k): 48,829 sent, 277 interested = 5.67/1k, about 9x their 2025 copy (0.65/1k). [data: U1, scripts]
-
+### 12.6 Scroll Stop (Global Media Group) · April 2026 "I've got creators" · never reuse these facts
+EB 428 Beauty: 21,914 sent, **7.35/1k**. The wave (with Apps 4.60, Sports 3.82): 48,829 sent, 5.67/1k, about 9x their 2025 copy (0.65/1k). [data: U1, scripts]
 Subject: `{our creators|influencers|creators}`
 ```
 Hi {FIRST_NAME}, I've got a few creators in the beauty space who've been part of campaigns driving 1M+ views, would love to see if they're a good fit to promote {COMPANY}.
 
 Worth a chat?
 ```
-Step 2 (same thread):
+Step 2:
 ```
 Asked because we've run creator campaigns for Glaze Hair that generated 33,000+ clicks.
 
 Want me to send over 2 creators we'd look at first for {COMPANY}?
 ```
-Step 3 (same thread):
+Step 3:
 ```
 Not sure if this should go to you or someone else.
 
@@ -834,13 +562,11 @@ I reached out a few days ago because we run influencer campaigns with access to 
 
 Is this you, or should I reach someone else?
 ```
-Why it worked: a concrete thing they want (creators, in their space), proof baked into the offer, short, topic-word subject. Step 2's "Asked because" brings in a named result and a tiny two-creator ask.
-Change today: "Worth a chat?" is archive-generic and close to a call ask: use step 2's ask in Email 1 ("Want me to send over 2 creators...?"). "would love to" is on Alex's ick list. The Glaze Hair figure and "guaranteed results" were archived as unverified in the Oct 8 review: confirm with the client or cut. [SOP 118 client facts] "I reached out a few days ago" is close to a follow-up phrase.
+Why: a concrete thing they want, proof baked into the offer, short, topic-word subject. "Asked because" brings in a named result and a tiny ask.
+Today: use step 2's ask in Email 1 ("Want me to send over 2 creators...?"), since "Worth a chat?" is archive-generic. Cut "would love to". Glaze Hair's figure and "guaranteed results" were archived as unverified: confirm or cut [SOP 118].
 
 ### 12.7 Slogan Social · Exclusive talent roster · never reuse these facts
-EB 133: 3,817 sent, 80 interested = **20.96/1k (12.6x average)**, 12 meetings. Same email on a CMO list (EB 177): 3.67/1k. [data: top-bottom #1, U5]
-
-Subject: `{Looking for influencers?|Searching for influencers?|Need influencers?}`
+EB 133: 3,817 sent, **20.96/1k** (12.6x average), 12 meetings. Same email to CMOs (EB 177): 3.67/1k. [data: top-bottom #1, U5]
 ```
 Hey {FIRST_NAME},
 
@@ -848,14 +574,12 @@ I noticed {COMPANY} works with influencer talent to highlight the best of {PERSO
 
 We've worked with brands like DoorDash, Meta, and Amazon Prime Video to run influencer campaigns with exclusive talent in the lifestyle, beauty, food, and fashion spaces. Would it be helpful if I sent over some influencers from our exclusive talent roster?
 ```
-Why it worked: references what they already do (P-c), recognisable-name proof the reader instantly trusts, an exclusive thing they can only get here, a permission CTA. The right list mattered as much as the copy (20.96 vs 3.67).
-Change today: subject must lose the "?" and stay 1-3 words ("influencers"). 2-step sequence: write a real step 3.
+Why: references what they already do, recognisable-name proof, an exclusive thing, a permission CTA. The list mattered as much as the copy.
+Today: subject "influencers" (theirs had a "?"). It was a 2-step sequence: write a real step 3.
 
 ### 12.8 MJJ Brilliant · Wholesale repair overflow · never reuse these facts
-EB 603: 4,186 sent, 22 interested = **5.26/1k (3.2x average)**. Variant B 9.89/1k, variant A 7.25/1k. Step 2: 4.39/1k. Step 3: 4.33/1k. The follow-ups held almost the whole rate. [scripts: MJJ]
-
+EB 603: 4,186 sent, **5.26/1k** (3.2x average). Variant B 9.89/1k, A 7.25/1k. Step 2 4.39/1k, step 3 4.33/1k: the follow-ups kept almost the whole rate. [scripts: MJJ]
 Subject: `repair capacity`
-
 Variant B:
 ```
 Hey {FIRST_NAME},
@@ -868,19 +592,8 @@ MJJ Brilliant has been a family-owned and operated jewelry manufacturer since 19
 
 You keep your bench focused. We'll handle the overflow.
 ```
-Variant A:
-```
-Hey {FIRST_NAME},
-
-Have a repair job your usual bench can't take on?
-
-We can handle your overflow repairs at trade pricing with a turnaround time of 10 business days on agreed jobs, so you can keep repairs moving without the expense of hiring another jeweler.
-
-MJJ Brilliant has been a family-owned and operated jewelry manufacturer since 1982.
-
-You focus on your customers. We'll handle the repairs.
-```
-Step 2 (same thread):
+Variant A opens "Have a repair job your usual bench can't take on?" (a second real pain).
+Step 2:
 ```
 Hey {FIRST_NAME},
 
@@ -890,7 +603,7 @@ Keep the jobs you want in-house and use us as your wholesale repair partner for 
 
 Which types of repairs would you most like to take off your bench?
 ```
-Step 3 (same thread):
+Step 3:
 ```
 Hey {FIRST_NAME},
 
@@ -898,15 +611,12 @@ If a repair comes in that your usual bench can't take on, you can ask us before 
 
 We'll confirm whether we can handle it along with the cost and turnaround, before you ship anything.
 ```
-Why it worked: the buyer's own word ("bench"), an obvious pain for jewelers, a direct offer with concrete terms, a credibility line, two angles that are two real pains. Step 2 answers the obvious objection then asks a pick question.
-Change today: Email 1 is about 55-60 words and ends on a statement (client preference, section 14 question 9). Step 3 has no ask: add a small one ("Send over one job your bench couldn't take on."). "on agreed jobs" is open (question 9).
+Why: the buyer's word ("bench"), an obvious pain, a direct offer with concrete terms, a credibility line, two angles that are two pains. Step 2 removes the objection, then asks a pick question.
+Today: statement close is the client's choice (question 9). Step 3 needs an ask ("Send over one job your bench couldn't take on.").
 
 ### 12.9 Lead Flo Marketing · Free leads for local services (inactive client, evidence only) · never reuse these facts
-EB 514: 14,024 sent, 60 interested = 4.28/1k. Step 1 variant A **16.76/1k** vs the pay-per-lead variant 1.80/1k (9 variants, p = 0.009). [data: P3, scripts]
-
+EB 514 step 1: variant A **16.76/1k** vs pay-per-lead variant 1.80/1k (9 variants, p = 0.009). [data: P3, scripts]
 Subject: `{SERVICE} question`
-
-Variant A (won):
 ```
 Saw you guys provide {SERVICE} in {CITY}.
 
@@ -916,32 +626,12 @@ Yes, it's free because we've already done this for 12 companies in your space an
 
 Interested?
 ```
-Why it worked: a free result (five leads), not a free "audit". The offer is the CTA. It pre-answers "why free?". Short.
-Change today: "12 companies" was removed as unsupported [SOP 118 #2]. Lead Flo could only fulfil in Southern California (a targeting limit, not copy). "Interested?" alone is archive-generic. Its step 2 asked for a phone number ("Is {PHONE} the best number to reach you on?"), a hard CTA. Lead Flo went inactive 2026-11-25: its copy is evidence only. [RULES 2026-11-25]
+Why: a free result, not a free audit. The offer is the CTA. It pre-answers "why free?".
+Today: "12 companies" was cut as unsupported [SOP 118 #2]. "Interested?" alone is generic. Its step 2 asked for a phone number (a hard ask). Lead Flo is inactive since 2026-11-25. [RULES 2026-11-25]
 
-### 12.10 Juiced Digital Agency · Gyms and ChatGPT local search · never reuse these facts
-EB 501: 931 sent, 14 interested = **15.04/1k**, SMALL SAMPLE. [data: top-bottom #2]
-
-Subject: `{KEYWORD}`
-```
-I asked gpt for "{KEYWORD} in {CITY}" and the first 2 places that came up was {COMP}.
-
-Didn't see you guys come up.
-
-I spent a few minutes digging into why those {KEYWORD} were getting recommended and pulled together a few notes for {COMPANY}.
-
-Want me to send them over?
-```
-It carried a proof P.S. (a personal training studio "stuck around position 12", "about 90 days later they were sitting around position 2"). Step 3: "I wasn't sure if I should send this to you or someone else." + "Mind if I share the video here?"
-Why it worked: the same knowledge-as-proof pattern as 12.1 travels to a local market. A specific, believable case story.
-Change today: grammar ("the first 2 places that came up were"). Under current rules the proof goes in the body, not a P.S. (question 6). Small sample.
-
-### 12.11 Dulcy · Other marketing agencies (the clean 2026 format) · never reuse these facts
-EB 627: variant A 5/2,851 = **1.75/1k**, variant B 4/2,969 = 1.35/1k. About the agency average: a format model, not a top performer. From the Oct 8 review. [SOP 118] [data: All tests]
-
-Subject: `1,000 contacts for {COMPANY}` (today: `prospects for {COMPANY}`)
-
-Variant A:
+### 12.10 Dulcy · Other marketing agencies (clean 2026 format) · never reuse these facts
+EB 627: variant A **1.75/1k**, B 1.35/1k. About average: a format model, not a top performer. [SOP 118] [data: All tests]
+Subject today: `prospects for {COMPANY}`
 ```
 Hey {FIRST_NAME},
 
@@ -951,7 +641,7 @@ Names, emails, companies, LinkedIn profiles: the details you need for outbound.
 
 Can I put that together?
 ```
-Step 2 (same thread):
+Step 2:
 ```
 Hey {FIRST_NAME},
 
@@ -961,7 +651,7 @@ For your free list, we'd agree on the companies and buyer roles you want to reac
 
 Mind if I send the targeting details we'd need?
 ```
-Step 3 (same thread):
+Step 3:
 ```
 Hey {FIRST_NAME},
 
@@ -969,12 +659,10 @@ The 1,000 contacts are a sample of Dulcy's list-building work. We also run outbo
 
 Would a list for your next client push be useful?
 ```
-Why it is here: Dulcy's own offer done cleanly (one free thing, exact contents, one-word CTA, proof scoped correctly in step 2, a pick-up step 3). Why it is not higher: the free list is a saturated offer [SOT §1.11] [creator-learnings], and Email 1 has no proof line (now required). Variant B's delivery line ("We'd agree on the types of companies and people first") is now cut under the 2026-11-25 rule.
+Why here: one free thing, exact contents, one-word CTA, proof scoped right. Why not higher: the free list is saturated [SOT §1.11] [creator-learnings] and Email 1 has no proof line (now required). Step 2's "we'd agree on the companies" is a delivery step: cut it today.
 
-### 12.12 Twenty West Media · Local contractors two-minute video (high volume) · never reuse these facts
-EB 601 step 1 variant A: 14,842 sent, 56 interested = **3.77/1k** (2.3x average, the largest single variant in the data). [scripts: TWM]
-
-Subject: `quick question`
+### 12.11 Twenty West Media · Local contractors two-minute video · never reuse these facts
+EB 601 step 1 A: 14,842 sent, **3.77/1k** (the largest single variant in the data). [scripts: TWM]
 ```
 {FIRST_NAME}, noticed you're a {CONTRACTOR} in {CITY}.
 
@@ -984,22 +672,13 @@ I made a quick 2-minute video breaking down why some contractors become the obvi
 
 Mind if I send it over?
 ```
-Why it worked: a sub-segment variable that reads naturally ({CONTRACTOR} = roofer), a pain every contractor knows (competing on price), a real asset, a permission CTA.
-Change today: "quick question" is a generic subject that did badly elsewhere (0.21/1k for "Quick question {FIRST_NAME}"): use the topic ("{COMPANY} estimates"). The video must exist.
+Why: a sub-segment variable that reads naturally ({CONTRACTOR} = roofer), a pain every contractor knows, a real asset, a permission CTA.
+Today: its subject "quick question" is generic (0.21/1k elsewhere): use "{COMPANY} estimates". The video must exist.
 
-### 12.13 Human Marketing · Profit Compass (the offer rule example) · never reuse these facts
-Wellness and Beauty / Apparel DTC (EB 552, 553): 1.08/1k overall for Human (low). Here for the structure and for Alex's 2026-11-25 offer ruling, not for its numbers. [SOP 119] [RULES 2026-11-25]
-
-Subject: `{PRODUCT} question`
-```
-{FIRST_NAME} -
-How are you making sure the growth you're seeing is actually profitable growth?
-ROAS can look great while the actual profit tells a different story, so you can spend more, grow revenue, and still make less money.
-Profit Compass shows your true contribution margin and break-even CAC across Shopify, Meta, and Google.
-```
-then (today's allowed wording): "I can run {COMPANY} through Profit Compass for free. Want me to?" (The original "I ran {COMPANY} through it for free. Mind if I send over what it found?" was false: it can't run before access. Alex's ruling: offer it as something we can do; the access step stays out of the cold email.)
-
-Step 2 (same thread):
+### 12.12 Human Marketing · Profit Compass (the offer rule, and model follow-ups) · never reuse these facts
+Human overall 1.08/1k (low). Here for Alex's offer ruling and for steps 2-3. [SOP 119] [RULES 2026-11-25]
+Email 1 opened "How are you making sure the growth you're seeing is actually profitable growth?", explained that ROAS can look great while profit falls, named Profit Compass, then claimed "I ran {COMPANY} through it for free." That was false (it needs access first). Allowed today: "I can run {COMPANY} through Profit Compass for free. Want me to?"
+Step 2:
 ```
 {FIRST_NAME} -
 For context, Softies came to Human Marketing with a product people already loved, but their site, acquisition, and lifecycle marketing weren't working together.
@@ -1007,36 +686,21 @@ Human Marketing rebuilt the system around profitable growth and helped increase 
 Different situation at {COMPANY}, obviously, but that's the kind of problem we're looking for here.
 Worth sending over what I put together?
 ```
-Step 3 (same thread):
+Step 3:
 ```
 {FIRST_NAME} -
 Wasn't sure if this should go to you or somebody else at {COMPANY}.
 Regardless, if the goal is to grow ecommerce revenue without finding out later that the extra sales weren't actually profitable, that's exactly what Human Marketing helps with.
 Are you the right person for that, or should I speak to somebody else?
 ```
-Why it is here: step 2 is a model case-study follow-up (named client, two numbers, an honest "different situation" bridge). Step 3 is a model routing step. Email 1 shows the offer rule.
-Change today: "{FIRST_NAME} -" works but is unusual. Email 1 is long and opens with a question (data favours an observation first). Step 2's "what I put together" must be real.
-
-### 12.14 Clear River (Dulcy Free Campaigns) · Free retail sell-in sheet · never reuse these facts
-EB 212: 547 sent, 6 interested = **10.97/1k** on CPG (3.60/1k on manufacturing, 0/110 on healthcare). SMALL SAMPLE. [data: U6, top-bottom #4]
-```
-Hi {FIRST_NAME},
-
-Could I put together a free retail sell-in sheet for one of your products, the kind you'd use to pitch to store buyers or distributors here in Michigan? It's at no expense to you.
-
-We're a small creative team in Midland, and for over 60 years we've been helping Michigan food and beverage brands look great in front of retailers.
-
-Since you're in {CITY}, happy to walk you through it over lunch sometime this week, my treat.
-```
-Why it worked: one concrete, useful free thing for one product, local trust ("here in Michigan", 60 years), a human offer.
-Change today: 70+ words, and the lunch line is an in-person meeting ask (question 7). The subject (`{RESTAURANT} - yes or no?`) breaks the punctuation rule (question 3).
+Why: a model case-study step 2 (named client, two numbers, an honest "different situation" bridge) and a model routing step 3.
+Today: open Email 1 with an observation, not a question. "what I put together" must be real.
 
 ---
 
 ## 13. Bad examples (and why)
 
-### 13.1 TargetonStar · "free reactivation campaign for your SEO clients"
-12,783 sent, 0 interested (and the web-design version 12,037 sent, 0). [data: top-bottom #367, #366]
+**13.1 TargetonStar · free reactivation campaign for your SEO clients** · 12,783 sent, 0 interested (web-design version 12,037 sent, 0). [data: top-bottom #367]
 ```
 When an SEO client wants more leads, do you usually keep pushing for more traffic or go back after the leads and customers they already paid to acquire?
 
@@ -1044,10 +708,9 @@ I can run a reactivation campaign for you guys for free, just so you can see how
 
 Can I send over what that campaign would look like?
 ```
-Why it failed: the prospect has to imagine using the free thing on someone else's business (their clients). A long, abstract opening question. A commodity service. Step 3 even said "In case this sounds crazy or too good to be true lol". Fit beats copy (P9).
+Why: the free thing is for someone else's business (their clients). Long abstract opening question. Commodity service. Step 3 said "In case this sounds crazy or too good to be true lol".
 
-### 13.2 Scroll Stop · "Post Q4 reset" (seasonal hook, no offer)
-10,446 sent, 0 interested. [data: P8, top-bottom #365]
+**13.2 Scroll Stop · "Post Q4 reset"** · 10,446 sent, 0. Subject "Why top apps reset in February". [data: P8]
 ```
 February is when the smartest app teams reset performance before the scale season.
 
@@ -1057,10 +720,9 @@ We help app publishers drive installs using our creative-plus-performance Reacto
 
 If you're looking closely at revenue per user this month, a quick conversation could be useful.
 ```
-Why it failed: a season instead of an offer, ad-copy opener about "the smartest app teams", a named "engine" nobody knows, a vague claim ("significantly"), no question, a call ask. Six-word subject: "Why top apps reset in February".
+Why: a season instead of an offer, ad-copy opener, a named "engine" nobody knows, "significantly", no question, a call ask, a 6-word subject.
 
-### 13.3 Retail Media Group · Financial planners "Q4 squeeze"
-7,695 sent, 0 interested. RMG overall 0.15/1k, the bottom client. [data: top-bottom #364]
+**13.3 Retail Media Group · financial planners "Q4 squeeze"** · 7,695 sent, 0. RMG overall 0.15/1k. [data: top-bottom #364]
 ```
 A lot of planners/lenders are feeling the Q4 squeeze, rising acquisition costs, unclear attribution, and audiences built on broad "interest" guesses.
 
@@ -1068,10 +730,9 @@ RMG solves that by targeting based on real-world behaviour, not platform assumpt
 
 If you want a quick 1-min breakdown of how this dropped CPA ~85% in a recent campaign, I can send it.
 ```
-Why it failed: "A lot of planners are feeling..." is ad copy about an amorphous third party [SOT §1.3]. An abstract product. A big number with no named customer. No question. Q4 framing.
+Why: talks about an amorphous third party [SOT §1.3], abstract product, a big number with no named customer, no question.
 
-### 13.4 Scroll Stop · Guarantee P.S. and phrase-swap re-runs
-Sports (Data Bank) runs 3 and 4: 5,974 and 5,834 sent, 0 interested each. The family decayed 0.55 → 0.48 → 0 → 0. [data: P7, top-bottom #363, #362]
+**13.4 Scroll Stop · guarantee P.S. and phrase-swap re-runs** · runs 3 and 4: 5,974 and 5,834 sent, 0 each. The family went 0.55 → 0.48 → 0 → 0/1k. [data: P7]
 ```
 I noticed {COMPANY} works with creators to show the best of {PERSONAL}.
 
@@ -1081,10 +742,9 @@ Is it worth sending over some ideas for {COMPANY}?
 
 P.S. We always offer a guarantee around ROI and traffic outcomes to our clients. Just ask!
 ```
-Why it failed: "not just for awareness, but..." (the banned "not just" shape), generic "many brands we work with", a guarantee P.S. (0.74/1k pattern), a 5-word pitch subject ("Use influencer marketing for {COMPANY}"), and the same copy re-sent until it hit zero. The variant "test" was a phrase swap.
+Why: the "not just ... but" shape, generic "many brands we work with", a guarantee P.S., a pitch subject ("Use influencer marketing for {COMPANY}"), re-sent until zero, and the "A/B" was a phrase swap.
 
-### 13.5 LuckyDiem · "My colleague Andrew came across {COMPANY}"
-5,176 sent, 0 interested. [data: top-bottom #360]
+**13.5 LuckyDiem · "My colleague Andrew came across {COMPANY}"** · 5,176 sent, 0. [data: top-bottom #360]
 ```
 My colleague Andrew came across {COMPANY} on LinkedIn and thought it'd be worth reaching out.
 
@@ -1094,90 +754,52 @@ No contracts, no tech. Just CPA-based revenue from verified cardholders.
 
 Is this worth exploring for {COMPANY}?
 ```
-Why it failed: a fake-sounding referral opener, a feature dump, big numbers with no named customer, a generic interest CTA, an abstract product. Its sister campaign ran 5 steps, all at 0 (5,824 sent): more steps do not rescue a bad offer.
+Why: a referral-style opener, feature dump, unnamed big numbers, generic interest CTA, abstract product. Its 5-step sister campaign got 0 on every step (5,824 sent): more steps don't rescue a bad offer.
 
-### 13.6 Twenty West Media before Dulcy · scarcity, bait and switch, guilt
-Free Marketing Strategy: 61,717 leads, 434 replies (0.5%), 5 positive. Free audit: 80,896 leads, 300 replies (0.4%), 13 positive. [DND E5, G1]
-```
-We only put together a handful of custom strategy outlines each week - didn't want to build one unnecessarily.
-Yours is ready on our end, just haven't sent it yet.
-I haven't heard back, so I'll pause outreach for now.
-```
-Why it failed: fake scarcity, "yours is ready" when it isn't ("a feeling of lying is not a very good first impression. Even if it was true"), a guilt breakup, and offers nobody wants ("No one wants a marketing strategy", "No one wants a short audit"). [DND B3, B4, A6]
+**13.6 Twenty West Media before Dulcy · scarcity, bait and switch, guilt** · Free Marketing Strategy 61,717 leads, 0.5% replies, 5 positive. Free audit 80,896 leads, 0.4%, 13 positive. [DND E5, G1]
+"We only put together a handful of custom strategy outlines each week - didn't want to build one unnecessarily." / "Yours is ready on our end, just haven't sent it yet." / "I haven't heard back, so I'll pause outreach for now."
+Why: fake scarcity, "a feeling of lying is not a very good first impression. Even if it was true", a guilt breakup, and offers nobody wants. [DND B3, B4, A6]
 
-### 13.7 Reach Digital and Aline (third-party swipe, 2023) · self-focus and inconsistent claims
-[DND G3, G4]
-```
-Unlike other Ad agencies that say they're a "strategic partner", We on the other hand are actually a strategic growth partner that gets you results. We create a 25-document Message Matrix compiled of industry research, customer language, and angles to target where competitors aren't playing. ... Any interest in adding $73,000 in the next 90 days?
-```
-```
-We are 3X as powerful as IronClad/DocuSign - at only half the price. Save $50,000 in annual software fees and 40-52 Hours Per Month with our AI platform Got 15 minutes to look into the future?
-```
-Why they fail: about the sender, a feature dump, ~90 words in one block, the promise repeated as the CTA. Aline used "3X" in some variants and "5X" in another, and $50k / $75k / $100k savings across variants: invented-looking claims. A 15-minute call on a first touch.
+**13.7 Client-written bump and breakup (MJJ, 2026)** · never reuse these facts [DND G5, G6]
+"Hi [First Name] - just bumping this in case repair overflow is becoming a challenge." / Subject "Should I close the loop on this?" + "I've reached out a few times ... I'll leave it here for now."
+Why: a bump that adds nothing and a "last email" breakup. Compare MJJ's Dulcy-written follow-ups in 12.8 (4.39 and 4.33/1k).
 
-### 13.8 Client-written bump and breakup (MJJ, 2026) · never reuse these facts
-[DND G5, G6]
-```
-Hi [First Name] - just bumping this in case repair overflow is becoming a challenge. ... The offer to cover your first repairs free still stands if you'd like to test the process.
-```
-```
-Subject: Should I close the loop on this?
-I've reached out a few times ... I know timing isn't always right, so I'll leave it here for now.
-```
-Why they fail: a lazy bump that adds nothing, a "last email" breakup Alex calls cringey, and a freebie the client later withdrew. Compare MJJ's Dulcy-written follow-ups in 12.8 (4.39 and 4.33/1k).
-
-### 13.9 Old Dulcy: "I dropped my phone in the pool" and an unverified average
-Dulcy Florida agencies (EB 506) did 7.62/1k, but on a lunch ask, and its copy has two problems that must not be copied. [data: top-bottom #11]
-```
-I run a company called Dulcy and help B2B agencies average around 20 new sales opportunities a month with omnichannel outreach, so I figured I'd reach out and introduce myself.
-```
-```
-I dropped my phone in the pool while sending my last email… wasn't sure if you got it.
-```
-Why they fail today: "average around 20 new sales opportunities a month" is not verified and must not be used [clients/dulcy.md]. "Omnichannel" claims channels that are not working now (only cold email works) [CLAUDE.md]. The pool story is an invented excuse to bump. Never invent a story.
+**13.8 Old Dulcy lines · unverified average and an invented excuse** [data: top-bottom #11]
+"I run a company called Dulcy and help B2B agencies average around 20 new sales opportunities a month with omnichannel outreach" / step 2: "I dropped my phone in the pool while sending my last email… wasn't sure if you got it."
+Why: the "20" average is not verified [clients/dulcy.md], "omnichannel" claims channels that don't work now [CLAUDE.md], and the pool story is an invented bump. Never invent a story.
 
 ---
 
 ## 14. Open questions for Alex
 
-Real conflicts only, deduplicated across every source. Each has the default Scribe uses until Alex answers. When Alex answers, log it in `rules/RULES.md` and `rules/decisions-log.md` and update this section.
+Real conflicts only, deduplicated across all sources. Each has the default Scribe uses until Alex answers. When he answers, log it in `rules/RULES.md` and `rules/decisions-log.md`, then update this section.
 
-1. **Word cap for Email 1.**
-   Sources: "Less than 50 words" (Copywriting Playbook 2025-03) [DND A2]; "Short Scripts <50 Words" [SOP 011]; "4 sentences max ... (50-75 words)" and "Under 75 Words" (2025-12, TWM audit 2026-04) [DND A2]; "30-75 words" (2-hour SOP and Dulcy prompt) [2h §1.2]; "< 70 words" / "25-69 words (strict)" (enterprise prompt) [2h §1.2]; Outlook lists "25-30 words or less, 50 max" [SOP 130]. Data: ≤75 words 2.08 vs 1.30/1k [data: U3], but 2026 bands are flat (≤50 2.28, 51-80 2.04) [data: weak evidence].
-   **Default:** 30-75 words hard (the engine check), aim for 40-60, and 30-45 on Outlook-heavy lists.
+1. **Word cap for Email 1.** Alex's docs say <50 (2025-03 playbook, SOP 011), 50-75 and "under 75" (2025-12, TWM audit 2026-04), 30-75 (2-hour SOP), <70 / 25-69 (enterprise prompt), 25-30 for Outlook lists (SOP 130). Data: ≤75 words 2.08 vs 1.30/1k [U3], but flat across bands in 2026. [DND A2] [2h §1.2]
+   **Default:** 30-75 hard (engine), aim 40-60, 30-45 on Outlook-heavy lists.
 
-2. **Reading level.**
-   Sources: "6th-grade reading level" (Triple Tap) [2h L1012]; "4th grade" (3 Simple Rules) [DND A2]; "below a 3rd-grade reading level" (Template Library, Script Templates) [2h §1.8]; "Can a 10-year-old understand" [2h §3.5].
-   **Default:** as simple as clarity allows, about 5th grade or lower, with the buyer's real trade words kept.
+2. **Reading level.** 6th grade (Triple Tap), 4th grade (3 Simple Rules), below 3rd grade (Template Library). [2h §1.8] [DND A2]
+   **Default:** as simple as clarity allows, about 5th grade or lower, buyer's trade words kept.
 
-3. **Subject format: 1-3 words, no punctuation, vs winning longer subjects.**
-   Sources: the engine and the enterprise prompt require 1-3 words and no punctuation [Engine] [2h §1.5]. But Lead Flo's `{RESTAURANT} - yes or no?` (4.37 vs 1.14/1k for their short ones), `event rentals in {CITY}?`, Slogan's `{Looking for influencers?|...}` (20.96/1k), the Oct 8 review's 2-5 word subjects (`1,000 contacts for {COMPANY}`) and Alex's own bank ("{FIRST_NAME}?", "re: [your service]", "Contact more [ICP]?") all break it [data: P5] [SOP 118] [DND D11].
-   **Default:** the engine rule (1-3 words, no punctuation, topic word in their language). Never "re:" on Email 1.
+3. **Subject format.** The engine needs 1-3 words, no punctuation. Winners and Alex's own bank break it: `{RESTAURANT} - yes or no?` (Lead Flo, 4.37 vs 1.14/1k), Slogan's `Looking for influencers?` (20.96/1k), the Oct 8 review's 2-5 word subjects, "{FIRST_NAME}?", "re: [your service]". [Engine] [data: P5] [DND D11]
+   **Default:** the engine rule, with the topic word in their language. Never "re:" on Email 1.
 
-4. **Step 4, and step 3's job.**
-   Sources: Alex: "4 steps is rare and usually only makes sense if your TAM is small (think under ~10,000 prospects)" [DND A5]; the 2-Hour SOP has steps 1-3 only and does not cover step 4 [2h §1.12]; "Never send more than 3/4 emails" [SOP 011]; "3-5 follow ups MINIMUM" (third-party) [SOT §1.13]. Data: step 4+ only 12,058 sent, 26 interested [data: P1]. Step 3: the 2h SOP says "Add trust, proof, examples, or practical ideas"; Alex's follow-up doc and the Ultimate sequence say right-person / low friction [2h C18] [DND A5].
-   **Default:** 3 steps. Step 4 only when the plan says the TAM is under ~10,000 and this client's own step 3 converts at or above step 2. Step 3 = the lowest-friction ask (right person or one small concrete action), carrying one new small reason.
+4. **Step 4, and step 3's job.** Alex: 4 steps only "if your TAM is small (think under ~10,000 prospects)"; the 2-hour SOP covers steps 1-3 only; SOP 011 "never more than 3/4". Step 4+ data is tiny (12,058 sent). Step 3: 2h SOP says add proof/examples, Alex's follow-up doc and the data say right-person / low friction. [DND A5] [2h C18] [data: P1]
+   **Default:** 3 steps. Step 4 only if the plan says TAM under ~10,000 and this client's step 3 converts at or above step 2. Step 3 = lowest-friction ask with one new small reason.
 
-5. **Proof when the client has no approved result.**
-   Sources: RULES requires at least 1 strong proof per email [RULES 2026-11-25]. Several current clients have no quantified case study (MJJ, Collabor, Lead Flo's verticals, some Twenty West segments) [SOP 118 client facts]. The best 2026 winners used knowledge as proof with no case study (TWM ChatGPT 16.70/1k, F&B 24.13/1k), and no-proof Email 1s did better at Lead Flo, Twenty West and Scroll Stop [data: weak evidence].
-   **Default:** a verified observation that shows real knowledge of their business (knowledge as proof), a real mechanism line, or a client fact like MJJ's "since 1982" counts as the 1 strong proof. Never filler, never borrowed. Scribe flags it in questions_for_alex every time.
+5. **Proof when the client has no approved result.** RULES needs 1 strong proof per email. MJJ, Collabor and some TWM segments have no quantified case study. The best 2026 winners used knowledge as proof only (TWM 16.70 and 24.13/1k). [RULES 2026-11-25] [SOP 118] [data: weak evidence]
+   **Default:** a verified observation showing real knowledge of their business, a real mechanism line, or a strong client fact ("since 1982") counts. Flag it in questions_for_alex every time.
 
-6. **Proof in a P.S.**
-   Sources: RULES confirms The Marketing Cartel's Email 1 P.S. result lines (ITI "doubled enrollments", hair 15 to 24, rehab 31 to 46) are OK [RULES 2026-11-25] [clients/the-marketing-cartel.md]. The 2-hour SOP's Base 2 puts the case study in the P.S., and Juiced's 15.04/1k email carried a proof P.S. [2h §2.5] [data: top-bottom #2]. But Scribe writes no P.S., and the builder only adds the proven "pound sand" P.S. when no P.S. exists [RULES 2026-11-20] [Alex, chat 2026-11-25].
-   **Default:** proof goes in the body. Scribe writes no P.S. For Marketing Cartel, the confirmed result lines are used as a body sentence, unless Alex says to keep them as a P.S. (which would replace the pound-sand line).
+6. **Proof in a P.S.** RULES confirms Marketing Cartel's Email 1 P.S. result lines (ITI "doubled enrollments", hair 15 to 24, rehab 31 to 46). The 2-hour SOP's Base 2 puts the case study in a P.S. But Scribe writes no P.S., and the builder adds the proven "pound sand" P.S. only when none exists. [RULES 2026-11-25, 2026-11-20] [2h §2.5]
+   **Default:** proof in the body, no P.S. For Marketing Cartel the confirmed lines become a body sentence unless Alex says keep the P.S. (it would replace "pound sand").
 
-7. **Local lunch or in-person offers ("lunch, my treat").**
-   Sources: three of the top-12 campaigns used an in-person lunch: Lead Flo luxury real estate 14.95/1k (Email 1 variant 21.18/1k), Clear River 10.97/1k, Dulcy Florida agencies 7.62/1k [data: top-bottom #3, #4, #11]. It is a meeting ask, which RULES allows in the cold sequence only when it is the only logical next step [RULES 2026-11-25]. The code check does not catch "lunch" [Engine].
-   **Default:** no lunch or in-person meeting ask, unless the plan explicitly says it is the only logical next step for a local campaign and Alex approved that plan.
+7. **Local lunch / in-person offers.** Three of the top 12 used "lunch, my treat": Lead Flo real estate 14.95/1k, Clear River 10.97/1k (small), Dulcy Florida 7.62/1k. It is a meeting ask, and the code check does not catch "lunch". [data: top-bottom #3, #4, #11] [RULES 2026-11-25]
+   **Default:** none, unless the approved plan says it is the only logical next step for a local campaign.
 
-8. **Whitepaper headline tests vs the 2-angle rule.**
-   Sources: Alex's whitepaper notes (Isaiah Lebron's method): "10 variants of the same script but different whitepaper headlines. Each variant = 250 leads" and "one bad headline can kill performance" [DND A11, D6]. RULES: 2 angles, never trivial word swaps [RULES 2026-11-25]. Data: whitepaper/interview openers 1.26 vs 1.68/1k; Forever Card's 10-headline tests all ended near zero [data: U7, All tests].
-   **Default:** 2 headlines only, and they must be 2 different angles (e.g. a trend vs a peer benchmark), not word changes. Whitepaper only when the plan picks it.
+8. **Whitepaper headline tests vs 2 angles.** Alex's whitepaper notes: 10 headline variants x 250 leads. RULES: 2 angles, no word swaps. Data: whitepaper openers 1.26 vs 1.68/1k, Forever Card's 10-headline tests near zero. [DND A11, D6] [data: U7]
+   **Default:** 2 headlines that are 2 different angles. Whitepaper only when the plan picks it.
 
-9. **MJJ Brilliant: statement close, qualifiers and turnaround.**
-   Sources: MJJ's client prefers statement closes ("You keep your bench focused. We'll handle the overflow.") and Alex suggested testing it against a question close [clients/mjj-brilliant.md] [DND I1]; RULES defaults to a one-word-reply ask. MJJ's live copy (5.26/1k, statement close) is the best current-client result per email [scripts: MJJ EB 603]. Qualifiers "on agreed jobs", "on qualifying USMCA production", "depending on the piece and order" sit between truth and fine print under the 2026-11-25 rule. Turnaround: 10 business days in Dulcy's copy and the client file; "7-business-day", "3-5" and "7-10" in client-written copy [DND I2].
-   **Default:** on MJJ top-ups keep the approved statement close (preserve what works); new MJJ angles end with a one-word question. Keep "qualifying" (without it the duty claim is false), cut "depending on the piece and order", keep "on agreed jobs" (the client file says repair timing applies to agreed jobs only). Use 10 business days.
+9. **MJJ Brilliant: close, qualifiers, turnaround.** The client prefers statement closes ("You keep your bench focused. We'll handle the overflow.") and Alex suggested testing a question close; MJJ's live copy is the best current-client rate (5.26/1k). Qualifiers "on agreed jobs", "qualifying USMCA", "depending on the piece and order". Turnaround: 10 business days (Dulcy copy, client file) vs 7, 3-5 and 7-10 in client-written copy. [clients/mjj-brilliant.md] [DND I1, I2]
+   **Default:** keep the statement close on MJJ top-ups; new MJJ angles end with a one-word question. Keep "qualifying" and "on agreed jobs" (truth), cut "depending on the piece and order". Use 10 business days.
 
-10. **The word "free" and money amounts.**
-    Sources: Alex's note: replacing "free" with "complimentary" got a lead the very next email [SOT §1.4]; "free", "guarantee", "money" and "$" are listed as spam triggers [SOP 011, 130]. But most winners say "free" ("Yes, it's free", "for free", "on us") and approved proof uses amounts ("$25,000 in monthly recurring revenue", "up to $5,000 in services") [data] [SOP 118].
-    **Default:** write "free" or "at no cost" naturally, at most once per email, and write approved amounts as they are. EmailGuard on the final copy decides. Swap to "complimentary" or "at no charge" only when it flags.
+10. **"Free" and money amounts.** Alex: "free" → "complimentary" got a lead the next email; "free", "guarantee", "money", "$" are listed spam triggers. But most winners say "free" and approved proof uses amounts. [SOT §1.4] [SOP 011, 130]
+    **Default:** "free" or "at no cost" at most once per email, approved amounts as written; EmailGuard decides, swap to "complimentary" only when flagged.

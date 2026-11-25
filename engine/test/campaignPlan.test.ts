@@ -70,7 +70,7 @@ const COPY: CopyT = {
     { step: 2, purpose: 'clarify', thread_reply: true, subject: '', body: 'Hi {FIRST_NAME}, the short version: every call to {COMPANY} gets answered and booked, even at night. Want the details?' },
     { step: 3, purpose: 'value', thread_reply: true, subject: '', body: 'Last one from me, {FIRST_NAME}. If missed calls are not a problem at {COMPANY}, no worries at all. If they are, reply yes and I will send the details.' },
   ],
-  claims: [{ claim: 'answers in under a minute', source: 'offer' }], questions_for_alex: [], notes: 'Tests pain (missed calls) vs solution (speed).',
+  custom_variables: [], claims: [{ claim: 'answers in under a minute', source: 'offer' }], questions_for_alex: [], notes: 'Tests pain (missed calls) vs solution (speed).',
 };
 
 test('Scribe rule checks: clean copy passes; length, links, call ask, subject, spintax, unknown variables and the 2-angle rule are caught', () => {
@@ -261,6 +261,23 @@ test('Campaign creation end to end: 60% trigger → Atlas plan → filters → s
   assert.match(String(fin.job.result.message), /client approved \(Auto-approved after 48 business hours\)/);
   assert.equal((await st()).state, 'client_approved');
   assert.equal(claudeCalls.length, 5, 'plan 1 + copy 2 rounds × (draft + review)');
+});
+
+test('Copy with a custom variable: the list is enriched for it (Prepare Enrichment Prompt → Run Enrichment → QA)', { skip }, async () => {
+  const withVar: CopyT = { ...COPY, custom_variables: [{ name: 'KEYWORD', find: 'the main product category they sell, 1-3 words, lowercase', fallback: 'your products' }],
+    email1: COPY.email1.map((v) => ({ ...v, body: v.body.replace('Most roofers', 'Most {KEYWORD} brands') })) };
+  assert.deepEqual(lintCopy(withVar), [], 'a declared custom variable is allowed');
+  tables[LEAD_LISTS] = { recL0000000000001: {} };
+  await db.query(`INSERT INTO campaign_plans (trigger_key, ws_rec, client, state, lead_list_rec, campaign_rec, plan, copy, copy_state) VALUES ('new:a','recW0000000000001','Acme','verify','recL0000000000001','recC0000000000001',$1,$2,'ready')`, [JSON.stringify(PLAN), JSON.stringify(withVar)]);
+  await bridgeDone('recL0000000000001', 'leadlist.verify'); await run('campaign.pipeline');
+  const ll = tables[LEAD_LISTS].recL0000000000001;
+  assert.equal(ll[F.engineAction], 'Prepare Enrichment Prompt');
+  assert.equal(ll.fldTYRjTrpVW27tmG, 'Column name: KEYWORD. Scope: company. Find: the main product category they sell, 1-3 words, lowercase. If not found, use exactly: "your products".');
+  await bridgeDone('recL0000000000001', 'leadlist.enrichprompt'); await run('campaign.pipeline');
+  assert.equal(ll[F.engineAction], 'Run Enrichment');
+  await bridgeDone('recL0000000000001', 'leadlist.enrich'); await run('campaign.pipeline');
+  assert.equal(ll[F.engineAction], 'Run Automated QA');
+  assert.equal((await db.query('SELECT state FROM campaign_plans WHERE id=1')).rows[0].state, 'qa');
 });
 
 test('Low contact sample asks Alex; ❌ on approval 1 stops the plan', { skip }, async () => {
