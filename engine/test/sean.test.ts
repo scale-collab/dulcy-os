@@ -107,8 +107,11 @@ test('reply → Send Reply decision; ask_alex → no action; skip → nothing; e
   assert.equal(req.model, 'claude-opus-5-5');
   assert.equal(req.fallbacks, 'default');
   assert.ok(req.system[0].cache_control, 'shared instructions are cached');
-  assert.match(req.system[0].text, /You are Sean/);
-  assert.match(req.system[1].text, /Client file: .*Twenty West/i);
+  assert.doesNotMatch(req.system[0].text, /You are Sean/, 'the shared library is the same for first replies and follow-ups');
+  assert.match(req.system[0].text, /Objection/i, 'objection handling is kept');
+  assert.doesNotMatch(req.system[0].text, /Google Drive SOPs|Course outline/, 'call-only course parts and old Drive notes are left out');
+  assert.match(req.system[1].text, /You are Sean/);
+  assert.match(req.system[2].text, /Client file: .*Twenty West/i);
   assert.match(req.messages[0].content, /Sounds interesting/);
 
   // Drafts land on the reply rows (Reply Queue) ...
@@ -204,7 +207,7 @@ test('due follow-ups: drafted onto the row + Slack; prospect answered → not a 
   const j = await run(cfg(), 'sean.followup');
   assert.equal(j.job.status, 'succeeded', j.job.error ?? '');
   assert.equal(claudeCalls.length, 2, 'only Jane and Ola need a draft');
-  assert.match(claudeCalls[0].body.system[0].text, /FOLLOW-UP/);
+  assert.match(claudeCalls[0].body.system[1].text, /FOLLOW-UP/);
   assert.match(claudeCalls[0].body.messages[0].content, /Follow-up 1 of up to 4/);
   assert.equal(due.recF[RA.state], 'Needs Approval');
   assert.match(String(due.recF[RA.draft]), /notes are ready/);
