@@ -5,6 +5,8 @@
 //   replier-on   : switch them back on (undo)
 //   followup-arm-off : in 'Manual Emails Sent', switch off only the node that arms the old follow-up timer (Sean arms follow-ups now)
 //   followup-arm-on  : switch that node back on (undo)
+//   spam-protocol-off: switch off '[Email Accounts] Automated Spam Protocol' (the engine's account.health loop replaces it)
+//   spam-protocol-on : switch it back on (undo)
 // Usage:
 //   read -s -p "n8n API key: " K; echo; docker exec -i -e N8N_API_KEY="$K" -e FIX=placement-30 deploy-engine-1 node --input-type=module - < /opt/dulcy-os/automations/n8n-fix.mjs
 const BASE = process.env.N8N_URL || 'https://n8n.dulcy.io';
@@ -58,4 +60,8 @@ if (FIX === 'placement-30') {
   node.disabled = FIX === 'followup-arm-off';
   await save(w);
   console.log(`Done: "${node.name}" in "${w.name}" is now ${node.disabled ? 'OFF' : 'ON'}; the rest of the workflow is unchanged (active: ${w.active}).`);
+} else if (FIX === 'spam-protocol-off' || FIX === 'spam-protocol-on') {
+  const verb = FIX.endsWith('off') ? 'deactivate' : 'activate';
+  const w = await api('POST', `/workflows/M3Hq5fkTvZLaJg9jVeq9X/${verb}`);
+  console.log(`Done: "${w.name ?? 'Automated Spam Protocol'}" ${verb}d (active: ${w.active}).`);
 } else throw new Error(`unknown FIX ${FIX}`);

@@ -5,6 +5,7 @@ import { JobContext } from './context.js';
 import { STAGES } from './stages/index.js';
 import { NeedsReviewError, PermanentError, WaitError } from './errors.js';
 import { alert, logEvent } from './log.js';
+import { logJobOutcome } from './activity.js';
 
 /** Run one job if there is one. Returns true when a job was processed. */
 export async function runOnce(db: Db, cfg: Config): Promise<boolean> {
@@ -34,6 +35,7 @@ async function runJob(db: Db, cfg: Config, job: Job): Promise<void> {
     const result = await def.run(ctx);
     await finish(db, job.id, result);
     await ctx.log('job succeeded', { result: brief(result) });
+    await logJobOutcome(cfg, job, true, String((result as any)?.message ?? 'Done'));
   } catch (e) {
     if (e instanceof WaitError) {
       await snooze(db, job.id, e.waitMs, e.message);
@@ -46,7 +48,7 @@ async function runJob(db: Db, cfg: Config, job: Job): Promise<void> {
       needsReview: e instanceof NeedsReviewError,
     });
     await logEvent(db, 'error', `job ${outcome}`, { error: msg }, job.id);
-    if (outcome !== 'retrying') await notify(cfg, job, outcome, msg);
+    if (outcome !== 'retrying') { await notify(cfg, job, outcome, msg); await logJobOutcome(cfg, job, false, msg); }
   } finally {
     clearInterval(renew);
   }

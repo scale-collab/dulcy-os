@@ -13,6 +13,7 @@ import { syncCampaignStats } from '../campaign/statsSync.js';
 import { createAirtableClient } from '../providers/airtable.js';
 import { alert } from '../log.js';
 import { enqueue } from '../queue.js';
+import { logActivity } from '../activity.js';
 import { STAGES } from './index.js';
 
 type Row = { id: number; name: string; bounce: number; progress: number; note?: string; workspace?: string; teamId?: number; contacted?: number; bounced?: number };
@@ -40,6 +41,7 @@ async function checkWorkspace(ctx: Parameters<Stage>[0], bison: ReturnType<typeo
       dryRunResult: () => ({ paused: 0 }),
     });
     paused.push(row);
+    if (!ctx.dryRun) await logActivity(ctx.cfg, { event: `Paused: bounce ${row.bounce}% at ${row.progress}% progress`, type: 'Detected', agent: 'Atlas', details: `Over 4% at 35%+ progress = pause and investigate. ${c.bounced} bounced of ${c.contacted} contacted.`, bisonCampaignId: c.id, jobId: ctx.job.id });
   }
   // Live: confirm each pause took effect (the Airtable script never checked its pause call).
   if (!ctx.dryRun && paused.length) {

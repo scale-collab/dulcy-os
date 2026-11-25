@@ -18,6 +18,7 @@ import { sendReplyStage } from './decisionAct.js';
 import { seanDraftStage } from '../agents/sean.js';
 import { seanFollowupStage } from '../agents/followups.js';
 import { bounceInvestigateStage, bounceFixStage } from './bounceAgent.js';
+import { accountHealthStage, approvePurchaseStage } from './accountHealth.js';
 import { replySendStage } from '../agents/replies.js';
 
 /** A stage = one Airtable action. It returns a small result for the Airtable record. */
@@ -52,6 +53,8 @@ const selfTest: Stage = async (ctx) => {
 
 export const STAGES: Record<string, StageDef> = {
   'reply.send': { run: replySendStage, deadlineMs: 10 * 60_000, maxAttempts: 3, description: 'Send one approved reply from its Airtable row (every workspace, client CC/BCC), then update the row, Reply Learning and Slack. Never sends twice.' },
+  'account.health': { run: accountHealthStage, deadlineMs: 30 * 60_000, maxAttempts: 3, description: 'Account health loop: placement under 60% → rest 7 days at 0/day; retest → restore, or queue a replacement (1 .com + 2 Google accounts) for approval.' },
+  'account.approve_purchase': { run: approvePurchaseStage, deadlineMs: 5 * 60_000, maxAttempts: 3, description: 'On ✅ of a replacement: tick Approve Purchase on the Spam Remediation Queue record.' },
   'bounce.investigate': { run: bounceInvestigateStage, deadlineMs: 15 * 60_000, maxAttempts: 3, description: 'Bounce agent: read a flagged campaign\'s bounce notices and inboxes, name the cause and one fix, post it as a Slack decision. Changes nothing.' },
   'bounce.fix': { run: bounceFixStage, deadlineMs: 15 * 60_000, maxAttempts: 3, description: 'Bounce agent fix on ✅: remove the named inboxes (if any) and resume the campaign, then tick Skip Bounce Pause.' },
   'sean.followup': { run: seanFollowupStage, deadlineMs: 30 * 60_000, maxAttempts: 3, description: 'Sean: draft due follow-ups (no answer, back from out of office, check back later) and post each as a Slack decision. Sends nothing.' },

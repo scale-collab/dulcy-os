@@ -37,6 +37,9 @@ export interface Config {
   seanMaxPerRun: number;
   /** Sean drafts due follow-ups too (SEAN_FOLLOWUPS=on). Switch on after the old n8n follow-up timer is off. */
   seanFollowupsOn: boolean;
+  /** Account health loop (rest / retest / replace) every N minutes (0 = off); only placement tests created after accountHealthFrom. */
+  accountHealthEveryMin: number;
+  accountHealthFrom: string;
   /** Dulcy calendar service (client calendars) and its read-only token. */
   calendarUrl: string;
   calendarReaderToken?: string;
@@ -137,6 +140,9 @@ export function loadConfig(env = process.env): Config {
     seanDays: num('SEAN_DAYS', 14, env),
     seanMaxPerRun: num('SEAN_MAX_PER_RUN', 20, env),
     seanFollowupsOn: (env.SEAN_FOLLOWUPS || 'off').toLowerCase() === 'on',
+    accountHealthEveryMin: num('ACCOUNT_HEALTH_EVERY_MIN', 0, env),
+    // Alex 2026-11-25: start from the Friday 2026-11-27 tests (older results are not acted on).
+    accountHealthFrom: (env.ACCOUNT_HEALTH_FROM || '2026-11-26T12:00:00.000Z').trim(),
     calendarUrl: env.CALENDAR_URL || 'http://dulcy-calendar:8789',
     calendarReaderToken: env.CALENDAR_READER_TOKEN || undefined,
     replySenderOn: (env.REPLY_SENDER || 'off').toLowerCase() === 'on',

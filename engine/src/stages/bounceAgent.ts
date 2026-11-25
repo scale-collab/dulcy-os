@@ -9,6 +9,8 @@ import { createBisonClient } from '../providers/emailbison.js';
 import { createAirtableClient } from '../providers/airtable.js';
 import { DECISIONS, DF } from '../decisions/fields.js';
 import { diagnose, readBounce, providerOfMx } from '../campaign/bounceDiagnosis.js';
+import { logActivity } from '../activity.js';
+import { restAccount, ACCOUNTS, EA } from './accountHealth.js';
 import { bounceRate, statsFrom } from '../campaign/bounce.js';
 import { resolveMx } from 'node:dns/promises';
 
@@ -71,22 +73,54 @@ export const bounceInvestigateStage: Stage = async (ctx) => {
   const d = diagnose({ ...st, paused }, inboxes, notices, new Map(Object.entries(leadProviders)));
   const state = paused ? 'Paused' : 'Still sending (Skip Bounce Pause ticked)';
 
-  let decisionId = '';
+  let decisionId = '', autoDone = '';
   if (!ctx.dryRun && ctx.cfg.airtableApiKey && i.post !== false) {
     const at = createAirtableClient({ apiKey: ctx.cfg.airtableApiKey, baseId: ctx.cfg.airtableBaseId, baseUrl: ctx.cfg.airtableBaseUrl });
+    await logActivity(ctx.cfg, { event: `Bounce ${st.bounce}% diagnosed: ${d.headline}`, type: 'Diagnosed', agent: 'Atlas', details: `${d.facts.join('\n')}\n\nFix: ${d.fix}`, bisonCampaignId: id, jobId: ctx.job.id }, at);
+    // Automatic fixes (Alex 2026-11-25): rest the accounts causing it, resume; tell Alex. List / copy / gateway fixes stay proposals.
+    autoDone = await ctx.step('auto-fix', async () => {
+      if (d.cause === 'account' && d.removeSenderIds.length) {
+        const rested: string[] = [];
+        for (const sid of d.removeSenderIds) {
+          const inbox = inboxes.find((x) => x.id === sid);
+          const rec = (await at.list(ACCOUNTS, `{Email ID}=${Number(sid)}`, [EA.workspaceId, EA.client, EA.campaigns], 3)).find((r) => Number(r.fields[EA.workspaceId] ?? teamId) === teamId);
+          if (rec) await restAccount(ctx, at, { accountRecordId: rec.id, senderId: Number(sid), teamId, email: inbox?.email ?? sid, reason: `Bounce: causing the blocks on ${i.name} (${st.bounce}%)` });
+          else await ctx.paid({ callKey: `rest:${sid}:bounce`, provider: 'emailbison', units: 0, scope: 'record', run: async () => { try { await b.setDailyLimit([Number(sid)], 0); } catch { await b.setDailyLimit([Number(sid)], 1); } return 0; }, dryRunResult: () => 0 });
+          rested.push(inbox?.email ?? sid);
+        }
+        const resumed = paused ? ` Campaign ${await resumeAndMark(ctx, b, id)}` : '';
+        return `Rested ${rested.join(', ')} for a week (daily limit 0, retested at the next weekly placement test).${resumed}`;
+      }
+      if (d.cause === 'early' && paused) return `Campaign ${await resumeAndMark(ctx, b, id)}`;
+      return '';
+    });
+    if (autoDone) await logActivity(ctx.cfg, { event: `Fixed automatically: ${d.headline}`, type: 'Fixed', agent: 'Atlas', details: autoDone, bisonCampaignId: id, jobId: ctx.job.id }, at);
     decisionId = await ctx.step('decision', () => at.create(DECISIONS, {
-      [DF.title]: `Bounce ${st.bounce}% on ${i.name}: ${d.headline}`,
+      [DF.title]: `${autoDone ? 'Fixed: ' : ''}Bounce ${st.bounce}% on ${i.name}: ${d.headline}`,
       [DF.agent]: 'Atlas', [DF.status]: 'New', [DF.client]: String(i.workspaceName ?? ''),
       [DF.issue]: `${state}. Bounce ${st.bounce}% at ${st.progress}% progress (over 4% = pause and investigate).`,
       [DF.checked]: d.facts.join('\n'),
-      [DF.fix]: d.fix,
+      [DF.fix]: autoDone ? `Done automatically: ${autoDone}` : d.fix,
       [DF.details]: `EmailBison campaign ${id}, workspace ${i.workspaceName ?? ''} (${teamId}).\nCause: ${d.cause}.`,
-      [DF.action]: d.action,
+      [DF.action]: autoDone ? 'None' : d.action,
       [DF.actionInput]: JSON.stringify({ teamId, campaignId: id, removeSenderIds: d.removeSenderIds, name: i.name }),
     }));
   }
-  return { message: `${i.name}: ${d.headline}. ${d.fix}${ctx.dryRun || i.post === false ? ' (check only: no decision posted)' : ''}`, cause: d.cause, action: d.action, stopSendingTo: d.stopSendingTo, facts: d.facts, decisionId };
+  return { message: `${i.name}: ${d.headline}. ${autoDone ? `Done automatically: ${autoDone}` : d.fix}${ctx.dryRun || i.post === false ? ' (check only: no decision posted)' : ''}`, cause: d.cause, action: d.action, stopSendingTo: d.stopSendingTo, facts: d.facts, decisionId };
 };
+
+/** Resume a campaign, confirm it is sending, and tick Skip Bounce Pause (the cumulative bounce % would re-pause it). */
+async function resumeAndMark(ctx: Parameters<Stage>[0], b: ReturnType<typeof bison>, id: number): Promise<string> {
+  await ctx.paid({ callKey: `bounce-fix-resume:${id}`, provider: 'emailbison', units: 0, run: async () => { await b.resumeCampaign(id); return { resumed: id }; }, dryRunResult: () => ({ resumed: 0 }) });
+  const status = await b.campaignStatus(id);
+  if (!['active', 'queued', 'launching'].includes(status)) throw new NeedsReviewError(`campaign ${id} did not resume (status ${status}); check it in EmailBison`);
+  let ticked = 0;
+  if (ctx.cfg.airtableApiKey) {
+    const at = createAirtableClient({ apiKey: ctx.cfg.airtableApiKey, baseId: ctx.cfg.airtableBaseId, baseUrl: ctx.cfg.airtableBaseUrl });
+    for (const rec of await campaignRecordsFor(at, id).catch(() => [] as string[])) { await at.update(CAMPAIGNS, rec, { [SKIP_BOUNCE_PAUSE]: true }); ticked++; }
+  }
+  return `resumed (status ${status}).${ticked ? ' Skip Bounce Pause ticked so the next check does not pause it again; the watch alert still shows.' : ' Tick Skip Bounce Pause on it, or the next bounce check pauses it again.'}`;
+}
 
 /** On ✅: remove the named inboxes (campaign must be paused for that) and resume; confirm it is sending. */
 export const bounceFixStage: Stage = async (ctx) => {
@@ -105,15 +139,7 @@ export const bounceFixStage: Stage = async (ctx) => {
     }
     await ctx.paid({ callKey: `bounce-fix-remove:${id}`, provider: 'emailbison', units: 0, run: async () => { await b.removeSenders(id, remove); return { removed: remove.length }; }, dryRunResult: () => ({ removed: 0 }) });
   }
-  await ctx.paid({ callKey: `bounce-fix-resume:${id}`, provider: 'emailbison', units: 0, run: async () => { await b.resumeCampaign(id); return { resumed: id }; }, dryRunResult: () => ({ resumed: 0 }) });
-  const status = await b.campaignStatus(id);
-  if (!['active', 'queued', 'launching'].includes(status)) throw new NeedsReviewError(`campaign ${id} did not resume (status ${status}); check it in EmailBison`);
-  // The bounce % stays above 4% for a while (it counts every email sent so far), so without this the next
-  // check would pause it again: tick Skip Bounce Pause on its Campaigns record (the watch alert still shows).
-  let ticked = 0;
-  if (ctx.cfg.airtableApiKey) {
-    const at = createAirtableClient({ apiKey: ctx.cfg.airtableApiKey, baseId: ctx.cfg.airtableBaseId, baseUrl: ctx.cfg.airtableBaseUrl });
-    for (const rec of await campaignRecordsFor(at, id).catch(() => [] as string[])) { await at.update(CAMPAIGNS, rec, { [SKIP_BOUNCE_PAUSE]: true }); ticked++; }
-  }
-  return { message: `${i.name ?? `Campaign ${id}`}: ${remove.length ? `${remove.length} inbox(es) removed, ` : ''}resumed (status ${status}).${ticked ? ' Skip Bounce Pause ticked so the next check does not pause it again; the watch alert still shows.' : ' Tick Skip Bounce Pause on it, or the next bounce check pauses it again.'}` };
+  const done = await resumeAndMark(ctx, b, id);
+  await logActivity(ctx.cfg, { event: `Campaign ${remove.length ? 'inboxes removed and ' : ''}resumed`, type: 'Fixed', agent: 'Atlas', details: done, bisonCampaignId: id, jobId: ctx.job.id });
+  return { message: `${i.name ?? `Campaign ${id}`}: ${remove.length ? `${remove.length} inbox(es) removed, ` : ''}${done}` };
 };
