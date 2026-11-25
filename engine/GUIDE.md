@@ -347,6 +347,7 @@ Sean reads every setting on the client's Reply Agent settings row (Inbox Manager
 - **Always Require Human Review:** the ticked reply types always wait for you, whatever the mode.
 - **Max Automatic Replies:** at most this many automatic sends per thread (3 today). After that, you approve.
 - **Not Interested Nudge:** ticked → one courtesy reply to "not interested".
+- **Out-of-office and not-interested first replies** are drafted only for clients that turn them on: out of office when *Out of Office* is a ticked reply type (or OOO Mode = Auto Send); not interested when the Not Interested Nudge is on. An out-of-office reply is one or two lines, no pitch, and the first follow-up waits until the day after their return date.
 - **Office hours** (Timezone, Office Start/End, Exclude Weekends, Exclude US Holidays): automatic sends wait for the client's office hours. Replies you approve go out at once.
 - **Never sent automatically:** a draft that needs your input, has a [GAP] or placeholder, or a client that is switched off. All the sender's checks still run.
 - **What you see:** an automatic send has no ✅ card. It shows in the Activity log ("Auto-reply queued") and the Slack/Airtable thread says "Sent (approved in auto-send, client settings)". It is not saved as a reply you approved, so Sean doesn't learn from its own sends.

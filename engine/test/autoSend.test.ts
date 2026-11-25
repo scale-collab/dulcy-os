@@ -1,7 +1,8 @@
 // Sean follows each client's Reply Agent send settings (Alex 2026-11-25). Approval Required is the default.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseSettings, autoSendDecision, inOfficeHours, isUsHoliday, typeAllowed } from '../src/agents/settings.js';
+import { parseSettings, autoSendDecision, inOfficeHours, isUsHoliday, typeAllowed, extraTypeOn } from '../src/agents/settings.js';
+import { extraTypeOf, waitingFormula, EF, RA } from '../src/agents/emailsFields.js';
 
 // The real shape of a settings row (Airtable, read by name), as on the live base 2026-11-25.
 const row = (over: Record<string, unknown> = {}) => ({
@@ -79,4 +80,19 @@ test('office hours: client time zone, weekends and US holidays', () => {
   assert.equal(isUsHoliday(2026, 5, 25), true, 'Memorial Day');
   assert.equal(isUsHoliday(2026, 9, 7), true, 'Labor Day');
   assert.equal(isUsHoliday(2026, 11, 19), false);
+});
+
+test('out-of-office and not-interested first replies: only where the client turns them on', () => {
+  assert.equal(extraTypeOn(parseSettings(row()), 'Out of Office'), false, 'no reply types ticked, OOO Mode Approval Required');
+  assert.equal(extraTypeOn(parseSettings(row({ 'Enabled Reply Types': ['Interested', 'Out of Office'] })), 'Out of Office'), true);
+  assert.equal(extraTypeOn(parseSettings(row({ 'OOO Mode': 'Auto Send' })), 'Out of Office'), true);
+  assert.equal(extraTypeOn(parseSettings(row()), 'Not Interested'), false);
+  assert.equal(extraTypeOn(parseSettings(row({ 'Not Interested Nudge': true })), 'Not Interested'), true);
+  assert.equal(extraTypeOn(parseSettings(row({ 'Not Interested Nudge': true, 'Enabled Reply Types': ['Interested'] })), 'Not Interested'), false, 'type unticked');
+  assert.equal(extraTypeOn(parseSettings(null), 'Not Interested'), false);
+  assert.equal(extraTypeOf({ [EF.leadStatus]: 'Out Of Office' }), 'Out of Office');
+  assert.equal(extraTypeOf({ [EF.leadStatus]: 'Not Interested', [RA.intent]: 'Interested' }), '', 'Sean read it as interested');
+  assert.equal(extraTypeOf({ [EF.leadStatus]: 'Interested' }), '');
+  assert.match(waitingFormula(14, true), /'Out Of Office'/);
+  assert.doesNotMatch(waitingFormula(14), /'Out Of Office'/);
 });

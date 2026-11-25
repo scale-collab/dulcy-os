@@ -290,3 +290,21 @@ test('client set to Autopilot: the draft is approved for the engine sender (no â
   assert.equal(emails.recB[RA.humanAction], 'None');
   assert.equal(Object.values(decisions).filter((d) => d[DF.action] === 'Approve Reply').length, 1);
 });
+
+test('out of office: drafted only for a client that answers them; the return date is kept for the follow-up', { skip }, async () => {
+  emails.recO = thread({ [EF.leadStatus]: 'Out Of Office', [EF.latestReply]: 'I am out of office until Dec 3.' });
+  // Setting off (no reply types ticked): no Claude call, nothing drafted.
+  const j = await run(cfg());
+  assert.equal(j.job.status, 'succeeded', j.job.error ?? '');
+  assert.equal(claudeCalls.length, 0);
+  assert.match(String(j.job.result?.message ?? JSON.stringify(j.job)), /not answered for that client/);
+
+  await db.query('TRUNCATE sean_drafts');
+  settings = [{ Enabled: true, 'Enabled Reply Types': ['Interested', 'Out of Office'], 'Calendar Link': 'https://calendly.com/client/intro', 'Calendar Settings JSON': '{}' }];
+  claudeAnswers = [{ action: 'reply', intent: 'Out of Office', reason: 'away until Dec 3', they_said: 'OOO', draft: 'Hi Jane, no rush. We will pick this up when you are back.', question_for_alex: '', confidence: 90, follow_up_on: '2026-12-03' }];
+  const j2 = await run(cfg());
+  assert.equal(j2.job.status, 'succeeded', j2.job.error ?? '');
+  assert.equal(claudeCalls.length, 1);
+  assert.equal(emails.recO[RA.state], 'Needs Approval');
+  assert.equal(JSON.parse(String(emails.recO[RA.policy])).followUpOn, '2026-12-03');
+});

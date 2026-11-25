@@ -138,6 +138,9 @@ export const replySendStage: Stage = async (ctx) => {
   // Arm the next follow-up (Alex: keep following up until they answer or say stop), or close the thread.
   const sentFollowups = isFollowup ? (Number(policy.seanFollowupsSent ?? 0) || 0) + 1 : 0;
   const arm = armFields(parsePlan(val(settings[0]?.fields['Follow-up Plan JSON'])), sentFollowups, new Date(now), shouldArm(f));
+  // Out of office with a return date: the first follow-up waits until the day after they're back.
+  const back = Date.parse(`${String(policy.followUpOn ?? '')}T14:00:00Z`);
+  if (!isFollowup && arm[RA.state] === 'Scheduled' && Number.isFinite(back) && back + 86_400_000 > Date.parse(String(arm[RA.dueAt]))) arm[RA.dueAt] = new Date(back + 86_400_000).toISOString();
   await at.update(EMAILS, recId, {
     ...arm, [RA.sentAt]: now, [RA.policy]: JSON.stringify({ ...policy, seanFollowupsSent: sentFollowups }), [RA.humanAction]: 'None', [RA.draft]: '', [RA.customReply]: '', [RA.lastError]: '', [RA.updatedAt]: now,
     [EF.lastSent]: 'Last Email Sent By Dulcy',

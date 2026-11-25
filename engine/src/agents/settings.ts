@@ -195,3 +195,10 @@ export function inOfficeHours(o: ClientSettings['office'], now = new Date()): bo
   if (o.noHolidays && isUsHoliday(p.y, p.m, p.d)) return false;
   return p.mins >= hm(o.start, 540) && p.mins < hm(o.end, 1020);
 }
+
+/** Sean drafts a first reply to an out-of-office / not-interested message only when this client turns it on. */
+export function extraTypeOn(s: ClientSettings, type: 'Out of Office' | 'Not Interested'): boolean {
+  if (!s.found || s.routes[type] === 'Do Not Reply') return false;
+  if (type === 'Not Interested') return s.notInterested.enabled && (!s.replyTypes.length || s.replyTypes.includes('Not Interested'));
+  return s.replyTypes.includes('Out of Office') || s.oooAuto;
+}
