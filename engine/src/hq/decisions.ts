@@ -58,6 +58,13 @@ export function groupByPile(cards: DecisionCard[], canSeeMoney: boolean): Record
 /** approve = ✅ (a reply: send the draft as is) · edited = send the edited reply text · reject = ❌ (a reply: Skip). */
 export type Verdict = 'approve' | 'reject' | 'edited';
 
+/** The Emails row's buttons for a reply verdict (the Reply Queue's own fields). HQ Decisions and HQ Inbox both use this. */
+export function replyButtons(verdict: Verdict, edited = ''): Record<string, string> {
+  return verdict === 'edited'
+    ? { [RA.customReply]: edited, [RA.humanAction]: 'Send Edited Reply' }
+    : { [RA.humanAction]: verdict === 'approve' ? 'Approve Draft' : 'Skip' };
+}
+
 /**
  * Approve or reject one decision. Refuses one that is no longer pending (decided elsewhere).
  * Sean's replies: only the Emails row's buttons are pressed (Approve Draft / Send Edited Reply with the
@@ -80,9 +87,7 @@ export async function decide(at: Pick<HqAirtable, 'get' | 'update'>, id: string,
   const status = verdict === 'reject' ? 'Rejected' : 'Approved';
   if (card.isReply && /^rec[A-Za-z0-9]{14}$/.test(emailRec)) {
     // Sean's reply drafts: the same buttons the Reply Queue uses, so the engine sends exactly once.
-    await at.update(EMAILS, emailRec, verdict === 'edited'
-      ? { [RA.customReply]: edited, [RA.humanAction]: 'Send Edited Reply' }
-      : { [RA.humanAction]: verdict === 'approve' ? 'Approve Draft' : 'Skip' });
+    await at.update(EMAILS, emailRec, replyButtons(verdict, edited));
   }
   await at.update(DECISIONS, id, { [DF.status]: status, [DF.decidedBy]: decidedBy, [DF.decidedAt]: now.toISOString() });
   return { status: 200, result: verdict === 'edited' ? 'Approved (edited)' : status };

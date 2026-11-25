@@ -103,6 +103,8 @@ export interface Config {
   /** Dulcy calendar service (client calendars) and its read-only token. */
   calendarUrl: string;
   calendarReaderToken?: string;
+  /** Optional: token that may call the calendar service's /calendar/admin/request-invite (HQ "Get calendar link"). The service's inviter token is enough. */
+  calendarAdminToken?: string;
   /** Engine sends approved replies for every workspace (off until the n8n sender is switched off). */
   replySenderOn: boolean;
   /** Max provider units (credits/rows) per job, per provider. */
@@ -272,6 +274,7 @@ export function loadConfig(env = process.env): Config {
     accountHealthFrom: (env.ACCOUNT_HEALTH_FROM || '2026-11-26T12:00:00.000Z').trim(),
     calendarUrl: env.CALENDAR_URL || 'http://dulcy-calendar:8789',
     calendarReaderToken: env.CALENDAR_READER_TOKEN || undefined,
+    calendarAdminToken: env.CALENDAR_ADMIN_TOKEN || undefined,
     replySenderOn: (env.REPLY_SENDER || 'off').toLowerCase() === 'on',
     capPerJob: num('CAP_PER_JOB', 100_000, env),
     capPerDay: num('CAP_PER_DAY', 100_000, env),

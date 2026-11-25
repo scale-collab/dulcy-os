@@ -28,6 +28,9 @@ import { addAsk, cleanActionUrl, type Ask } from '../src/hq/asks.js';
 import { aggregateNeeds } from '../src/hq/needs.js';
 import type { DecisionCard } from '../src/hq/decisions.js';
 import { ISSUES, IF } from '../src/agents/riley.js';
+import { EF, SETTINGS } from '../src/agents/emailsFields.js';
+import { WORKSPACES, XF, _resetInboxCache, bookingLinks, oneLine, parseHistory, tabOf } from '../src/hq/inbox.js';
+import { SF, calendarInvite, isTimezone, validateSave, valuesOf } from '../src/hq/replier.js';
 
 const url = process.env.TEST_DATABASE_URL;
 const skip = !url ? 'TEST_DATABASE_URL not set' : false;
@@ -98,9 +101,9 @@ before(async () => {
 });
 after(async () => { if (!skip) { server.close(); await db.end(); } fs.rmSync(webDir, { recursive: true, force: true }); });
 beforeEach(async () => {
-  tables = {}; writes = []; modelCalls = []; script = []; _resetClientCache(); _resetClientsCache();
+  tables = {}; writes = []; modelCalls = []; script = []; _resetClientCache(); _resetClientsCache(); _resetInboxCache();
   if (skip) return;
-  await db.query('TRUNCATE hq_users, hq_sessions, hq_login_attempts, hq_user_events, hq_reports, hq_chat_threads, hq_chat_messages, hq_agent_tasks, hq_task_checks, hq_asks, hq_needs_quiet, campaign_plans, jobs, steps, receipts, events RESTART IDENTITY CASCADE');
+  await db.query('TRUNCATE hq_users, hq_sessions, hq_login_attempts, hq_user_events, hq_reports, hq_chat_threads, hq_chat_messages, hq_agent_tasks, hq_task_checks, hq_asks, hq_needs_quiet, hq_settings_log, campaign_plans, jobs, steps, receipts, events RESTART IDENTITY CASCADE');
   await upsertUser(db, 'Alex@dulcy.io', 'owner', PW, 'Alex');
 });
 
@@ -958,4 +961,229 @@ test('snooze: tomorrow = 24 h, monday = next Monday 8:00 New York; hidden until 
   assert.deepEqual(keys, [`ask:${x.id}`, `ask:${y.id}`, 'issue:recISSUE000000001']);
   assert.equal((await call('POST', `/hq/api/asks/${x.id}/done`, { body: {}, cookie })).status, 200);
   assert.equal((await call('POST', `/hq/api/asks/${x.id}/snooze`, { body: { until: 'tomorrow' }, cookie })).status, 409, 'a done ask cannot be snoozed');
+});
+
+// ---------- Inbox (Step 3) and the AI replier settings ----------
+const H = (n: number) => new Date(Date.now() - n * 3_600_000).toISOString();
+const thread = (over: Record<string, unknown> = {}) => ({
+  [EF.leadName]: 'Jane Roe', [EF.leadEmail]: 'jane@acme.com', [EF.company]: 'Acme', [EF.subject]: 'Leads', [EF.latestReply]: 'Can you do Tuesday?\n\nOn Mon, Nov 23 Alex wrote:\n> hi',
+  [EF.latestReplyAt]: H(2), [EF.lastSent]: 'Last Email Sent By Prospect', [EF.leadStatus]: 'Interested', [EF.workspace]: '1', [EF.replyUuid]: 'uuid-1',
+  [RA.state]: 'Needs Approval', [RA.intent]: 'Meeting Request', [RA.draft]: 'Hi Jane,\n\nTue 2pm or Wed 10am ET?', [RA.humanAction]: 'None', [RA.clients]: ['recWSDULCY0000001'],
+  [RA.policy]: JSON.stringify({ agent: 'sean', they_said: 'Asked for Tuesday', calendarEvidence: { times: ['Tue, Dec 1, 2:00 PM EST', 'Wed, Dec 2, 10:00 AM EST'], link: '' } }),
+  ...over,
+});
+function inboxTables() {
+  tables[WORKSPACES] = {
+    recWSDULCY0000001: { ID: '1', Name: 'Dulcy', Status: 'Active' },
+    recWSTWMINT000001: { ID: '2', Name: 'Twenty West Media (Internal)', Status: 'Active' },
+    recWSTWM000000001: { ID: '3', Name: 'Twenty West Media', Status: 'Inactive' },
+  };
+  tables[EMAILS] = {
+    recEMAIL000000001: thread(),
+    recEMAIL000000002: thread({ [EF.leadName]: 'Bob', [RA.clients]: ['recWSTWMINT000001'], [EF.workspace]: '2', [RA.draft]: 'Grab a time: https://calendly.com/ryan/x', [EF.latestReplyAt]: H(1), [RA.policy]: JSON.stringify({ kind: 'followup', followupNumber: 2, followupType: 'No Response', calendarEvidence: { times: [], link: 'https://calendly.com/ryan/x' } }) }),
+    recEMAIL000000003: thread({ [RA.state]: 'Scheduled', [EF.lastSent]: 'Last Email Sent By Dulcy', [RA.dueAt]: '2026-12-01T15:00:00.000Z', [RA.clients]: ['recWSTWM000000001'], [EF.workspace]: '3' }),
+    recEMAIL000000004: thread({ [RA.state]: 'Sent', [EF.stage]: 'Booked Meeting', [XF.meetingBookedAt]: H(5) }),
+    recEMAIL000000005: thread({ [RA.state]: 'Sent', [EF.clientHandling]: true }),
+    recEMAIL000000006: thread({ [RA.state]: 'Skipped' }),
+    recEMAIL000000007: thread({ [RA.state]: 'Sent' }), // in no tab
+  };
+}
+
+test('inbox: tabs, one-line "they said", booking links, quoted history, latest first', () => {
+  assert.equal(tabOf(thread()), 'approve');
+  assert.equal(tabOf(thread({ [RA.state]: 'Scheduled', [EF.lastSent]: 'Last Email Sent By Dulcy' })), 'waiting');
+  assert.equal(tabOf(thread({ [RA.state]: 'Scheduled', [EF.lastSent]: 'Last Email Sent By Prospect' })), null, 'they wrote since: not waiting on them');
+  assert.equal(tabOf(thread({ [RA.state]: 'Sent', [EF.stage]: 'Completed Meeting' })), 'booked');
+  assert.equal(tabOf(thread({ [RA.state]: 'Sent', [RA.ownership]: 'Handoff' })), 'handed');
+  assert.equal(tabOf(thread({ [RA.state]: 'Needs Approval', [EF.stage]: 'Booked Meeting' })), 'approve', 'a draft to approve always shows in To approve');
+  assert.equal(oneLine('Sounds good, [our site](https://x.com)  works.\nOn Tue, Nov 24 Alex <a@b.c>\nwrote:\n> old'), 'Sounds good, our site works.');
+  assert.deepEqual(bookingLinks('Pick one: https://calendly.com/x/y. Or https://cal.com/a/b'), ['https://calendly.com/x/y', 'https://cal.com/a/b']);
+  assert.deepEqual(bookingLinks('Tue 2pm or Wed 10am?'), []);
+  assert.deepEqual(bookingLinks('See https://book.example.com/me', 'https://book.example.com/me'), ['https://book.example.com/me'], 'the saved booking link counts too');
+  const h = 'Reply:\n\nHi Alex,\nTuesday works.\n\nOn Tue, Jul 15, 2025 at 7:09 AM Alexander Woung \nwrote:\n\n│ Earlier text\n\n▃▃▃▃▃▃▃▃▃▃▃▃\n\nReply:\n\n▃▃▃▃▃▃▃▃▃▃▃▃\n\nSENT:\n\nGreat, invite sent.\n\n▃▃▃▃▃▃▃▃▃▃▃▃';
+  const msgs = parseHistory(h);
+  assert.deepEqual(msgs.map((m) => [m.who, m.body]), [['us', 'Great, invite sent.'], ['them', 'Hi Alex,\nTuesday works.']], 'latest first, empty blocks dropped');
+  assert.match(msgs[1].quoted, /^On Tue, Jul 15/);
+  const h2 = 'Amber Pratt amber@x.com · Received Nov 17, 2026, 5:14 PM UTC\n\nOut until Nov 23.';
+  assert.deepEqual(parseHistory(h2).map((m) => [m.who, m.head, m.body]), [['them', 'Amber Pratt amber@x.com · Received Nov 17, 2026, 5:14 PM UTC', 'Out until Nov 23.']]);
+  assert.deepEqual(parseHistory(''), []);
+});
+
+test('inbox API: counts per tab, client chips and filter, follow-up dates, notes, pages, cache', { skip }, async () => {
+  inboxTables();
+  assert.equal((await call('GET', '/hq/api/inbox')).status, 401, 'needs a session');
+  const { cookie } = await login();
+  const r = await call('GET', '/hq/api/inbox', { cookie });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.deepEqual(r.body.counts, { approve: 2, waiting: 1, booked: 1, handed: 1, skipped: 1 });
+  assert.equal(r.body.tab, 'approve');
+  assert.deepEqual(r.body.rows.map((x: any) => x.id), ['recEMAIL000000002', 'recEMAIL000000001'], 'newest first');
+  const [bob, jane] = r.body.rows;
+  assert.deepEqual([jane.prospect, jane.company, jane.client, jane.clientKey, jane.intent, jane.theySaid, jane.bookingLink], ['Jane Roe', 'Acme', 'Dulcy', 'dulcy', 'Meeting Request', 'Asked for Tuesday', false]);
+  assert.deepEqual([bob.client, bob.clientKey, bob.followup, bob.bookingLink], ['Twenty West', 'twentywestmedia', 2, true]);
+  assert.deepEqual(r.body.clients.map((c: any) => [c.key, c.count]), [['dulcy', 1], ['twentywestmedia', 1]]);
+  assert.match(r.body.notes[0].problem, /^1 of 2 drafts offer a booking link/);
+  assert.equal(r.body.notes[0].data, 'Twenty West 1');
+  const tw = await call('GET', '/hq/api/inbox?client=twentywestmedia', { cookie });
+  assert.deepEqual(tw.body.rows.map((x: any) => x.id), ['recEMAIL000000002']);
+  assert.deepEqual(tw.body.counts, { approve: 1, waiting: 1, booked: 0, handed: 0, skipped: 0 }, 'both Twenty West workspaces are one client');
+  const w = await call('GET', '/hq/api/inbox?tab=waiting', { cookie });
+  assert.equal(w.body.rows[0].nextFollowUp, '2026-12-01T15:00:00.000Z');
+  assert.equal((await call('GET', '/hq/api/inbox?tab=booked', { cookie })).body.rows[0].id, 'recEMAIL000000004');
+  assert.equal((await call('GET', '/hq/api/inbox?tab=handed', { cookie })).body.rows[0].id, 'recEMAIL000000005');
+  assert.equal((await call('GET', '/hq/api/inbox?tab=skipped', { cookie })).body.rows[0].id, 'recEMAIL000000006');
+  assert.equal((await call('GET', '/hq/api/inbox?tab=approve&q=bob', { cookie })).body.total, 1, 'search');
+  // 60-second cache: new rows show only once the copy is re-read.
+  for (let i = 10; i < 70; i++) tables[EMAILS][`recEMAILP${String(i).padStart(8, '0')}`] = thread({ [EF.latestReplyAt]: H(100 + i) });
+  assert.equal((await call('GET', '/hq/api/inbox', { cookie })).body.counts.approve, 2, 'cached');
+  _resetInboxCache();
+  const p1 = await call('GET', '/hq/api/inbox', { cookie });
+  assert.deepEqual([p1.body.total, p1.body.pages, p1.body.rows.length], [62, 2, 50]);
+  const p2 = await call('GET', '/hq/api/inbox?page=2', { cookie });
+  assert.equal(p2.body.rows.length, 12);
+});
+
+test('inbox thread: conversation, reason + draft, offered times, booking-link warning, EmailBison link', { skip }, async () => {
+  inboxTables();
+  tables[EMAILS].recEMAIL000000001[EF.history] = 'SENT:\n\nHi Jane, worth a chat?\n\n▃▃▃▃▃▃▃▃▃▃▃▃\n\nReply:\n\nCan you do Tuesday?\n\nOn Mon, Nov 23 Alex wrote:\n> hi\n\n▃▃▃▃▃▃▃▃▃▃▃▃';
+  tables[EMAILS].recEMAIL000000001[RA.seanReason] = 'She asked for a time.';
+  const { cookie } = await login();
+  const t = (await call('GET', '/hq/api/inbox/recEMAIL000000001', { cookie })).body;
+  assert.equal(t.latest.startsWith('Can you do Tuesday?'), true);
+  assert.deepEqual(t.messages.map((m: any) => [m.who, m.body]), [['us', 'Hi Jane, worth a chat?']], 'the latest message is shown once, on top');
+  assert.equal(t.reason, 'She asked for a time.');
+  assert.deepEqual(t.offeredTimes, ['Tue, Dec 1, 2:00 PM EST', 'Wed, Dec 2, 10:00 AM EST']);
+  assert.deepEqual(t.bookingLinks, []);
+  assert.equal(t.threadUrl, 'https://send.dulcy.io/inbox?reply_uuid=uuid-1');
+  assert.equal(t.canAct, true);
+  const b = (await call('GET', '/hq/api/inbox/recEMAIL000000002', { cookie })).body;
+  assert.deepEqual(b.bookingLinks, ['https://calendly.com/ryan/x']);
+  assert.equal(b.notes[0].problem, 'Booking link instead of two times', 'a warning, not a block');
+  assert.equal((await call('GET', '/hq/api/inbox/recNOPE0000000001', { cookie })).status, 404);
+});
+
+test('inbox Send / Send edited / Skip: the same writes as the Decisions reply card', { skip }, async () => {
+  const strip = () => writes.map((w) => ({ table: w.table, id: w.id, fields: { ...w.fields, [DF.decidedAt]: w.fields[DF.decidedAt] ? 'set' : undefined } }));
+  const run = async (path: string, verdict: string, text?: string) => {
+    tables = {}; writes = []; _resetInboxCache(); inboxTables();
+    tables[DECISIONS] = { recREPLY000000001: decision({ [DF.fix]: 'Hi Jane,\n\nTue 2pm or Wed 10am ET?' }) };
+    const { cookie } = await login();
+    const r = await call('POST', path, { body: { verdict, ...(text ? { text } : {}) }, cookie });
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    return strip();
+  };
+  for (const [verdict, text] of [['approve'], ['edited', 'Hi Jane,\n\nThursday 3pm?'], ['edited', 'Hi Jane,\n\nTue 2pm or Wed 10am ET?'], ['reject']] as [string, string?][]) {
+    const a = await run('/hq/api/decisions/recREPLY000000001', verdict, text);
+    const b = await run('/hq/api/inbox/recEMAIL000000001', verdict, text);
+    assert.deepEqual(b, a, `${verdict}${text ? ' (text)' : ''}: identical writes`);
+    assert.equal(a[0].table, EMAILS);
+  }
+  // No Echo decision: only the Emails row's button (what the Airtable Reply Queue presses).
+  tables = {}; writes = []; _resetInboxCache(); inboxTables();
+  const { cookie } = await login();
+  assert.equal((await call('POST', '/hq/api/inbox/recEMAIL000000001', { body: { verdict: 'edited', text: 'Hi Jane, Thu?' }, cookie })).status, 200);
+  assert.deepEqual(writes, [{ table: EMAILS, id: 'recEMAIL000000001', fields: { [RA.customReply]: 'Hi Jane, Thu?', [RA.humanAction]: 'Send Edited Reply' } }]);
+  assert.equal((await call('POST', '/hq/api/inbox/recEMAIL000000001', { body: { verdict: 'approve' }, cookie })).status, 409, 'already pressed');
+  assert.equal((await call('POST', '/hq/api/inbox/recEMAIL000000006', { body: { verdict: 'approve' }, cookie })).status, 409, 'not waiting for approval');
+  assert.equal((await call('POST', '/hq/api/inbox/recEMAIL000000002', { body: { verdict: 'edited', text: ' ' }, cookie })).status, 400);
+  assert.equal((await call('POST', '/hq/api/inbox/recEMAIL000000002', { body: { verdict: 'maybe' }, cookie })).status, 400);
+  assert.equal((await call('POST', '/hq/api/inbox/recEMAIL000000002', { body: { verdict: 'approve' }, cookie, origin: 'https://evil.example' })).status, 403, 'CSRF');
+  // A "need your input" decision (no Approve Reply action): Emails button, then the decision is marked.
+  tables[DECISIONS] = { recASK00000000001: decision({ [DF.action]: 'None', [DF.emailsRecord]: 'recEMAIL000000002', [DF.title]: 'Need your input: reply to Bob' }) };
+  writes = [];
+  assert.equal((await call('POST', '/hq/api/inbox/recEMAIL000000002', { body: { verdict: 'edited', text: 'Hi Bob, Tue 2pm or Wed 10am?' }, cookie })).status, 200);
+  assert.deepEqual(writes.map((w) => w.table), [EMAILS, DECISIONS]);
+  assert.equal(tables[DECISIONS].recASK00000000001[DF.status], 'Approved');
+  assert.equal(tables[DECISIONS].recASK00000000001[DF.decidedBy], 'Alex');
+  const row = (await call('GET', '/hq/api/inbox', { cookie })).body.rows.find((x: any) => x.id === 'recEMAIL000000002');
+  assert.equal(row.pressed, 'Send Edited Reply', 'the list shows the press at once');
+});
+
+const settingsRow = (over: Record<string, unknown> = {}) => ({
+  [SF.wsRec]: 'recWSTWMINT000001', [SF.wsName]: 'Twenty West Media (Internal)', [SF.enabled]: true, [SF.handoff]: 'Disabled', [SF.defaultMode]: 'Approval Required',
+  [SF.oooMode]: 'Approval Required', [SF.minConfidence]: 0.92, [SF.maxAuto]: 3, [SF.tone]: 'Warm', [SF.length]: 'Brief', [SF.timezone]: 'America/New_York',
+  [SF.officeStart]: '09:00', [SF.officeEnd]: '18:00', [SF.calendarLink]: 'https://calendly.com/ryan/x', [SF.calProvider]: 'Not Connected', [SF.calStatus]: 'Not Connected',
+  [SF.calJson]: JSON.stringify({ disableTimes: true, disableLinks: false, connectionStatus: 'not_connected' }), ...over,
+});
+
+test('AI replier: validation (HH:MM, IANA timezone, percent 0-100, known types), only changes written', () => {
+  const cur = valuesOf(settingsRow());
+  assert.equal(cur.minConfidence, 92, 'Airtable percent → 0-100');
+  for (const [input, msg] of [
+    [{ officeStart: '9am' }, /HH:MM/], [{ officeStart: '24:00' }, /HH:MM/], [{ officeStart: '19:00' }, /after office start/],
+    [{ timezone: 'Mars/Base' }, /IANA/], [{ timezone: 'EST5EDT; drop' }, /IANA/], [{ minConfidence: 101 }, /0 to 100/], [{ minConfidence: '90' }, /0 to 100/],
+    [{ maxAuto: 2.5 }, /whole number/], [{ replyTypes: ['Interested', 'Spam'] }, /only these types/], [{ defaultMode: 'YOLO' }, /one of/],
+    [{ enabled: 'yes' }, /on or off/], [{ companyUrl: 'javascript:alert(1)' }, /https/], [{ secret: 1 }, /unknown setting/], [[], /object/],
+  ] as [unknown, RegExp][]) {
+    const r = validateSave(input, cur);
+    assert.ok('error' in r && msg.test(r.error), `${JSON.stringify(input)} → ${JSON.stringify(r)}`);
+  }
+  assert.equal(isTimezone('Europe/London'), true);
+  const ok = validateSave({ minConfidence: 95, officeEnd: '17:30', tone: 'Warm', replyTypes: ['Out of Office', 'Interested'], timezone: 'Europe/London' }, cur);
+  assert.ok(!('error' in ok));
+  assert.deepEqual(ok.fields, { [SF.minConfidence]: 0.95, [SF.replyTypes]: ['Interested', 'Out of Office'], [SF.timezone]: 'Europe/London', [SF.officeEnd]: '17:30' }, 'unchanged tone not written');
+  assert.deepEqual(ok.changes.map((c) => c.field), ['Enabled Reply Types', 'Minimum Auto Confidence', 'Timezone', 'Office End']);
+});
+
+test('AI replier API: owner reads and saves (logged), member reads only (403 on save), calendar link off without a token', { skip }, async () => {
+  inboxTables();
+  tables[SETTINGS] = { recSET00000000001: settingsRow() };
+  const { cookie } = await login();
+  const g = await call('GET', '/hq/api/clients/recWSTWMINT000001/replier', { cookie });
+  assert.equal(g.status, 200, JSON.stringify(g.body));
+  assert.equal(g.body.found, true);
+  assert.equal(g.body.canEdit, true);
+  assert.equal(g.body.values.officeEnd, '18:00');
+  assert.equal(g.body.summaries.calendar.timesOff, true);
+  assert.match(g.body.notes[0].problem, /can't offer two times/);
+  assert.deepEqual(g.body.invite, { ready: false, why: 'Needs CALENDAR_ADMIN_TOKEN on the server', provider: 'google', email: '' });
+  assert.equal((await call('GET', '/hq/api/clients/recWSTWM000000001/replier', { cookie })).body.rowId, 'recSET00000000001', 'either workspace of the client');
+
+  assert.equal((await call('POST', '/hq/api/clients/recWSTWMINT000001/replier', { body: { values: { officeStart: '25:00' } }, cookie })).status, 400);
+  writes = [];
+  const s = await call('POST', '/hq/api/clients/recWSTWMINT000001/replier', { body: { values: { officeStart: '08:30', nudge: true, firstName: 'Ryan' } }, cookie });
+  assert.equal(s.status, 200, JSON.stringify(s.body));
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].table, SETTINGS);
+  const { [SF.lastUpdated]: stamp, ...fields } = writes[0].fields;
+  assert.ok(stamp);
+  assert.deepEqual(fields, { [SF.nudge]: true, [SF.firstName]: 'Ryan', [SF.officeStart]: '08:30' }, 'by field ID, only the changes');
+  const logged = (await db.query(`SELECT actor, action, ws_rec, changes FROM hq_settings_log`)).rows;
+  assert.deepEqual(logged.map((x) => [x.actor, x.action, x.ws_rec, x.changes.length]), [['Alex', 'save', 'recWSTWMINT000001', 3]]);
+  assert.equal((await call('GET', '/hq/api/clients/recWSTWMINT000001/replier', { cookie })).body.history[0].changes[0].field, 'Not Interested Nudge');
+  const none = await call('POST', '/hq/api/clients/recWSTWMINT000001/replier', { body: { values: { officeStart: '08:30' } }, cookie });
+  assert.deepEqual(none.body.changes, [], 'no change, no write');
+  const inv = await call('POST', '/hq/api/clients/recWSTWMINT000001/calendar-invite', { body: { provider: 'google', email: 'ryan@twm.com' }, cookie });
+  assert.deepEqual([inv.status, inv.body.error], [503, 'Needs CALENDAR_ADMIN_TOKEN on the server']);
+
+  await upsertUser(db, 'josh@dulcy.io', 'member', 'josh long password 1', 'Josh');
+  const j = await login('josh@dulcy.io', 'josh long password 1');
+  const mg = await call('GET', '/hq/api/clients/recWSTWMINT000001/replier', { cookie: j.cookie });
+  assert.deepEqual([mg.status, mg.body.canEdit, mg.body.invite.ready], [200, false, false], 'members read');
+  writes = [];
+  assert.equal((await call('POST', '/hq/api/clients/recWSTWMINT000001/replier', { body: { values: { nudge: false } }, cookie: j.cookie })).status, 403);
+  assert.equal((await call('POST', '/hq/api/clients/recWSTWMINT000001/calendar-invite', { body: { provider: 'google', email: 'a@b.co' }, cookie: j.cookie })).status, 403);
+  assert.equal(writes.length, 0);
+  assert.equal((await call('GET', '/hq/api/clients/recNOPE0000000001/replier', { cookie })).status, 404);
+});
+
+test('calendar link: with a token, asks the calendar service for a one-time link and keeps a copy in Airtable', { skip }, async () => {
+  inboxTables();
+  tables[SETTINGS] = { recSET00000000001: settingsRow() };
+  const sent: { url: string; auth: string; body: any }[] = [];
+  const fetchImpl = (async (u: string, init: any) => { sent.push({ url: u, auth: init.headers.authorization, body: JSON.parse(init.body) }); return new Response(JSON.stringify({ url: 'https://n8n.dulcy.io/calendar/connect?ticket=abc', expiresAt: '2026-11-27T00:00:00.000Z' }), { status: 200 }); }) as unknown as typeof fetch;
+  const c = cfg({ calendarAdminToken: 't'.repeat(40), calendarUrl: 'http://cal:8789/' });
+  const ctx = { db, cfg: c, at: at as any, fetchImpl };
+  assert.equal((await calendarInvite(ctx, 'recWSTWMINT000001', 'Alex', { provider: 'outlook', email: 'a@b.co' })).status, 400);
+  assert.equal((await calendarInvite(ctx, 'recWSTWMINT000001', 'Alex', { provider: 'google', email: 'nope' })).status, 400);
+  const r = await calendarInvite(ctx, 'recWSTWMINT000001', 'Alex', { provider: 'google', email: 'Ryan@TWM.com' });
+  assert.deepEqual(r, { status: 200, url: 'https://n8n.dulcy.io/calendar/connect?ticket=abc', expiresAt: '2026-11-27T00:00:00.000Z', email: 'ryan@twm.com' });
+  assert.equal(sent[0].url, 'http://cal:8789/calendar/admin/request-invite');
+  assert.equal(sent[0].auth, `Bearer ${'t'.repeat(40)}`);
+  assert.deepEqual({ ...sent[0].body, requestId: /^[A-Za-z0-9_-]{12,100}$/.test(sent[0].body.requestId) }, { workspace: 'recWSTWMINT000001', requestId: true, provider: 'google', expectedEmail: 'ryan@twm.com', label: 'Twenty West Media' });
+  assert.equal(JSON.parse(String(tables[SETTINGS].recSET00000000001[SF.calResult])).status, 'Ready');
+  assert.equal((await db.query(`SELECT action FROM hq_settings_log`)).rows[0].action, 'calendar_invite');
+  const bad = (async () => new Response(JSON.stringify({ error: 'Provider application registration is required' }), { status: 500 })) as unknown as typeof fetch;
+  const no = await calendarInvite({ ...ctx, fetchImpl: bad }, 'recWSTWMINT000001', 'Alex', { provider: 'calendly', email: 'a@b.co' });
+  assert.deepEqual([no.status, no.error], [502, 'The calendar service said no: Provider application registration is required']);
 });
