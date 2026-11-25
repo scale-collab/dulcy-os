@@ -2,6 +2,7 @@
 // Host is HQ_HOST; its API is /hq/api/* on both. Every API route except the login ones needs a
 // session. Writes need a same-origin Origin header (CSRF) and a JSON body; cookies are SameSite=Strict.
 // No key or token ever goes to the browser.
+import { slackToMarkdown } from './reports.js';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -313,7 +314,7 @@ async function today(db: Db, at: HqAirtable, user: HqUser) {
     // Before the first saved brief: the text of the latest ada.brief job.
     const j = (await db.query(`SELECT result, updated_at, dry_run FROM jobs WHERE kind='ada.brief' AND status='succeeded' ORDER BY id DESC LIMIT 1`)).rows[0];
     const t = String(j?.result?.text ?? '');
-    if (t) { const [first, ...rest] = t.split('\n'); briefOut = { title: first.replace(/\*/g, ''), body: rest.join('\n'), created: new Date(j.updated_at).toISOString(), dryRun: j.dry_run }; }
+    if (t) { const [first, ...rest] = t.split('\n'); briefOut = { title: first.replace(/\*/g, ''), body: slackToMarkdown(rest.join('\n')), created: new Date(j.updated_at).toISOString(), dryRun: j.dry_run }; }
   }
   const piles = groupByPile(decisions, owner);
   return {

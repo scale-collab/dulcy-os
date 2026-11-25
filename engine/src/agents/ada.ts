@@ -21,6 +21,19 @@ const num = (x: unknown) => (Number.isFinite(Number(v(x))) ? Number(v(x)) : 0);
 const tally = (xs: string[]) => { const m = new Map<string, number>(); for (const x of xs) if (x) m.set(x, (m.get(x) ?? 0) + 1); return [...m.entries()].sort((a, b) => b[1] - a[1]); };
 const fmt = (pairs: [string, number][], k = 4) => pairs.slice(0, k).map(([a, b]) => `${a} ${b}`).join(', ') + (pairs.length > k ? ', …' : '');
 const short = (s: string, n = 60) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
+/** Readable client name: "Brilliant Jewelers / MJJ Inc. (MJJ Brilliant)" → "MJJ Brilliant", "Twenty West Media (Internal)" → "Twenty West". */
+export function shortClient(name: string): string {
+  let n = String(name ?? '').trim();
+  if (/^GLOBALMEDIAGROUP/i.test(n) || /Global Media Group/i.test(n)) return 'GMG / Scroll Stop';
+  const paren = /\(([^)]+)\)\s*$/.exec(n);
+  if (paren && !/^internal$/i.test(paren[1].trim())) return paren[1].trim();
+  n = n.replace(/\s*\(Internal\)\s*$/i, '').replace(/^Client:\s*/i, '').replace(/,?\s+(LTD|LLC|Inc\.?|Ltd\.?)$/i, '').trim();
+  n = n.replace(/\bTwenty West Media\b/, 'Twenty West');
+  if (n === n.toUpperCase() && /[A-Z]{3}/.test(n)) n = n.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+  return n || name;
+}
+/** Campaign name without its "[Client] " prefix, trimmed. */
+export const shortCampaign = (name: string, n = 38) => short(String(name ?? '').replace(/^\[[^\]]+\]\s*/, '').trim(), n);
 const INTERESTED = ['Interested', 'Meeting Request', 'Info Request', 'Information Request'];
 
 export interface BriefData {
@@ -66,10 +79,10 @@ export function writeBrief(d: BriefData): string {
   const ending = active.filter((c) => c.progress >= 0.95);
   const pausedToday = d.campaigns.filter((c) => c.status === 'Paused' && recent(c.changed));
   const parts = [
-    over4.length ? `⚠️ ${over4.length} over 4% (${over4.slice(0, 2).map((c) => `${short(c.name, 40)} ${c.bounce}%`).join('; ')}${over4.length > 2 ? '; …' : ''})` : '',
+    over4.length ? `⚠️ ${over4.length} over 4% bounce (${over4.slice(0, 2).map((c) => `${shortClient(c.client)}: ${shortCampaign(c.name)} ${c.bounce}%`).join('; ')}${over4.length > 2 ? `; +${over4.length - 2} more` : ''})` : '',
     watch.length ? `👀 ${watch.length} to watch (2.5-4%)` : '',
     pausedToday.length ? `⏸ ${pausedToday.length} paused in the last 24 h` : '',
-    at60.length ? `📈 ${at60.length} past 60%: plan the next one (${fmt(tally(at60.map((c) => c.client)), 3)})` : '',
+    at60.length ? `📈 ${at60.length} past 60%: plan the next one (${fmt(tally(at60.map((c) => shortClient(c.client))), 3)})` : '',
     ending.length ? `🏁 ${ending.length} almost done (95%+)` : '',
   ].filter(Boolean);
   lines.push(`*Campaigns (${active.length} active):* ${parts.length ? parts.join(' · ') : 'all healthy'}`);
@@ -85,11 +98,11 @@ export function writeBrief(d: BriefData): string {
 
   // Top 3: what only Alex can unblock, most impact first.
   const top: string[] = [];
-  if (replyDecisions) top.push(`Approve or skip the ${replyDecisions} waiting repl${replyDecisions === 1 ? 'y' : 'ies'} in Slack (prospects are waiting).`);
+  if (replyDecisions) top.push(`Approve or skip the ${replyDecisions} waiting repl${replyDecisions === 1 ? 'y' : 'ies'} in Decisions (prospects are waiting).`);
   if (d.purchases) top.push(`Decide the ${d.purchases} inbox replacement purchase${d.purchases === 1 ? '' : 's'}.`);
-  if (over4.length) top.push(`Look at the bounce fix for ${short(over4[0].name, 45)} (${over4[0].bounce}%).`);
+  if (over4.length) top.push(`Look at the bounce fix for ${shortClient(over4[0].client)}: ${shortCampaign(over4[0].name)} (${over4[0].bounce}%).`);
   if (bounceDecisions && !over4.length) top.push(`Clear the ${bounceDecisions} bounce decision${bounceDecisions === 1 ? '' : 's'}.`);
-  if (at60.length) top.push(`Plan the next campaign for ${tally(at60.map((c) => c.client))[0][0]} (${at60.length} campaign${at60.length === 1 ? '' : 's'} past 60%).`);
+  if (at60.length) top.push(`Plan the next campaign for ${tally(at60.map((c) => shortClient(c.client)))[0][0]} (${at60.length} campaign${at60.length === 1 ? '' : 's'} past 60%).`);
   if (!top.length) top.push('Nothing blocking: spend the morning on sales calls or content.');
   lines.push(`*Top ${Math.min(3, top.length)} for you:* ${top.slice(0, 3).map((t, i) => `${i + 1}. ${t}`).join('  ')}`);
 
@@ -116,7 +129,7 @@ async function gather(at: Pick<AirtableClient, 'list'>, now: Date, weekly: boole
   const byRecord = new Map(workspaces.map((w) => [w.id, v(w.fields.Name)]));
   const clientOf = (x: unknown) => { const id = v(x); return byRecord.get(id) ?? (id.startsWith('rec') ? 'unknown client' : id) ?? 'unknown'; };
   const rows = replies.map((r) => ({ ws: v(r.fields['Workspace ID (Bison)']), status: v(r.fields['Lead Status']), state: v(r.fields['Dulcy Reply Agent State']), sentAt: v(r.fields['Dulcy Reply Agent Sent At']), repliedAt: v(r.fields['Latest Reply Time']), bookedAt: v(r.fields['Meeting Booked At']) || v(r.fields['Date of Call Booked']) }));
-  const clientName = (ws: string) => names.get(ws) ?? (ws ? `workspace ${ws}` : 'unknown');
+  const clientName = (ws: string) => shortClient(names.get(ws) ?? (ws ? `workspace ${ws}` : 'unknown'));
   let week: BriefData['week'];
   if (weekly) {
     const t = now.getTime(), wk = 7 * 86_400_000;

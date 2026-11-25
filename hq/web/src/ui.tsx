@@ -104,9 +104,14 @@ export const AGENT_COLOR: Record<string, string> = {
   Ada: '#4f46e5', Atlas: '#0369a1', Scribe: '#7c3aed', Scout: '#0f766e', Sean: '#15803d',
   Riley: '#c2410c', Cole: '#be123c', Ledger: '#a16207', Sienna: '#a21caf',
 };
+const AGENT_FACES = ['Ada', 'Atlas', 'Scribe', 'Scout', 'Sean', 'Riley', 'Cole', 'Ledger', 'Sienna'];
 export function Avatar({ name, size = 'md', className, round }: { name: string; size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'; className?: string; round?: boolean }) {
   const s = { xs: 'h-5 w-5 text-[10px] rounded-md', sm: 'h-7 w-7 text-xs rounded-lg', md: 'h-9 w-9 text-sm rounded-[10px]', lg: 'h-11 w-11 text-base rounded-xl', xl: 'h-14 w-14 text-xl rounded-2xl' }[size].replace(/rounded-\S+/, round ? 'rounded-full' : '$&');
   const bg = AGENT_COLOR[name] ?? '#57534e';
+  // Agents have their own illustrated faces (Notionists by Zoish, CC0, generated once into public/agents/).
+  if (AGENT_FACES.includes(name)) {
+    return <img src={`${import.meta.env.BASE_URL}agents/${name.toLowerCase()}.svg`} alt="" aria-hidden="true" draggable={false} className={cx('shrink-0 select-none object-cover', s, className)} style={{ background: bg + '22' }} />;
+  }
   return <span aria-hidden="true" className={cx('inline-grid shrink-0 place-items-center font-semibold text-white select-none', s, className)} style={{ background: bg }}>{(name || '?').slice(0, 1).toUpperCase()}</span>;
 }
 
