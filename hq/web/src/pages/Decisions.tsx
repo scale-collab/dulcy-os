@@ -3,7 +3,7 @@ import { api, type Decision, type Pile, type User } from '../api';
 import { Avatar, BackLink, Button, Card, clientKey, cx, Empty, ErrorBox, ExtLink, go, Icon, Kbd, Label, PageSkeleton, PageTitle, Pill, Progress, setCount, timeAgo } from '../ui';
 
 const PILES: { key: Pile; who: string; icon: string }[] = [
-  { key: 'Replies', who: 'Sean', icon: 'reply' },
+  { key: 'Replies', who: 'Echo', icon: 'reply' },
   { key: 'Campaigns', who: 'Atlas · Scribe · Scout', icon: 'megaphone' },
   { key: 'Fixes', who: 'Riley', icon: 'wrench' },
   { key: 'Money', who: 'Ledger', icon: 'dollar' },

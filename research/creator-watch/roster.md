@@ -38,7 +38,7 @@ Also (Alex, 2026-11-25, in chat): stay on top of cold email changes (example: .i
 | Topic | File |
 |---|---|
 | Copy, offers, subject lines, CTAs, follow-ups | `skills/scribe-cold-email-copywriter/references/creator-learnings.md` (Scribe reads it on every campaign) |
-| Reply handling, objections, booking | `skills/sean-reply-handling/references/creator-methods.md` (Sean reads it on every reply) |
+| Reply handling, objections, booking | `skills/echo-reply-handling/references/creator-methods.md` (Echo reads it on every reply) |
 | Lists, targeting, data sources, verification | `skills/scout-lead-list-builder/references/creator-learnings.md` |
 | Deliverability, domains, infrastructure, campaign strategy, market shifts | `skills/atlas-campaign-operator/references/market-watch.md` (Atlas reads it when planning) |
 

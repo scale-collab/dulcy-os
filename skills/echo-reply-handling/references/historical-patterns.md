@@ -1,6 +1,6 @@
 # Historical reply patterns: what led to booked meetings
 
-Prepared for Sean (reply handling). Read-only analysis, run 2026-11-17. Nothing was created, changed or sent in any system.
+Prepared for Echo (reply handling). Read-only analysis, run 2026-11-17. Nothing was created, changed or sent in any system.
 Anonymized: no names, emails, company names, domains, phone numbers or URLs. Workspaces are described by type only.
 
 ## 1. Scope and definitions
@@ -206,7 +206,7 @@ Workspace types are generic. [Name], [Company] and [Client] replace real values.
     - Prospect: "I don't know who you are or how you found us. Expand on what you do, but I usually delete these."
     - Us: about 130 words of introduction, an explanation of the data source and a service description, with no clear next step.
 
-## 6. What this suggests for Sean (to test, not yet a rule)
+## 6. What this suggests for Echo (to test, not yet a rule)
 
 1. For any positive reply, offer two specific dated slots with a time zone in the first response. A booking link can be added as a backup, but should not be the only option.
 2. Keep the first response under about 70 words: one line that echoes their reply, one reason for the call that helps them, and two times.

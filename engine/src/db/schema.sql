@@ -193,7 +193,7 @@ CREATE TABLE IF NOT EXISTS lead_contact_reviews (
 );
 ALTER TABLE lead_contact_reviews ADD COLUMN IF NOT EXISTS prev_tier TEXT;  -- the code-fit tier before the review (for an undo)
 
--- Sean (inbox agent): one row per prospect reply handled (record + reply time), so a reply is drafted once.
+-- Echo (inbox agent): one row per prospect reply handled (record + reply time), so a reply is drafted once.
 CREATE TABLE IF NOT EXISTS sean_drafts (
   email_record TEXT NOT NULL,
   reply_at     TEXT NOT NULL,
@@ -204,7 +204,7 @@ CREATE TABLE IF NOT EXISTS sean_drafts (
   PRIMARY KEY (email_record, reply_at)
 );
 
--- Calendar slots Sean offered, so two prospects are never offered the same time (2026-11-24).
+-- Calendar slots Echo offered, so two prospects are never offered the same time (2026-11-24).
 CREATE TABLE IF NOT EXISTS offered_slots (
   ws_rec       TEXT NOT NULL,
   slot         TEXT NOT NULL,
@@ -427,3 +427,9 @@ CREATE TABLE IF NOT EXISTS hq_needs_quiet (
   quiet_until TIMESTAMPTZ NOT NULL,
   set_by      TEXT NOT NULL DEFAULT ''
 );
+
+-- Sean was renamed Echo (Alex, 2026-11-25): carry HQ's own rows over. Idempotent; matches nothing after the first boot.
+UPDATE hq_reports SET agent = 'Echo' WHERE agent = 'Sean';
+UPDATE hq_chat_threads SET agent = 'Echo' WHERE agent = 'Sean';
+UPDATE hq_agent_tasks SET agent = 'Echo' WHERE agent = 'Sean';
+UPDATE hq_asks SET agent = 'Echo' WHERE agent = 'Sean';

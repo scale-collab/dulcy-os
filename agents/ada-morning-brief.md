@@ -37,7 +37,7 @@ what to do first. Business only (no personal items). Alex's time zone: America/N
 *Today:* <time> <who, company> · … (or "no calls")
 *Campaigns:* ⚠️ <campaign> <bounce>% … · 👀 <n> to watch · 📈 <campaign> at <progress>% → plan next
 *Accounts:* <n> resting · <n> waiting for a replacement ✅
-*Agents:* Sean drafted <n> · Atlas <…> · Engine <…>
+*Agents:* Echo drafted <n> · Atlas <…> · Engine <…>
 *Top 3 for you:* 1. … 2. … 3. …
 ```
 Top 3 = the highest-impact things only Alex can do today (approvals blocking sends first, then at-risk clients, then calls to prep).

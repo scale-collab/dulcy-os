@@ -1,4 +1,4 @@
-// Sean follows each client's Reply Agent send settings (Alex 2026-11-25). Approval Required is the default.
+// Echo follows each client's Reply Agent send settings (Alex 2026-11-25). Approval Required is the default.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseSettings, autoSendDecision, inOfficeHours, isUsHoliday, typeAllowed, extraTypeOn } from '../src/agents/settings.js';
@@ -91,7 +91,7 @@ test('out-of-office and not-interested first replies: only where the client turn
   assert.equal(extraTypeOn(parseSettings(row({ 'Not Interested Nudge': true, 'Enabled Reply Types': ['Interested'] })), 'Not Interested'), false, 'type unticked');
   assert.equal(extraTypeOn(parseSettings(null), 'Not Interested'), false);
   assert.equal(extraTypeOf({ [EF.leadStatus]: 'Out Of Office' }), 'Out of Office');
-  assert.equal(extraTypeOf({ [EF.leadStatus]: 'Not Interested', [RA.intent]: 'Interested' }), '', 'Sean read it as interested');
+  assert.equal(extraTypeOf({ [EF.leadStatus]: 'Not Interested', [RA.intent]: 'Interested' }), '', 'Echo read it as interested');
   assert.equal(extraTypeOf({ [EF.leadStatus]: 'Interested' }), '');
   assert.match(waitingFormula(14, true), /'Out Of Office'/);
   assert.doesNotMatch(waitingFormula(14), /'Out Of Office'/);

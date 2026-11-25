@@ -23,7 +23,7 @@ export function NeedFace({ n, size = 'md' }: { n: Pick<Need, 'agent' | 'icon'>; 
   }
   return <Avatar name={n.agent} size={size === 'sm' ? 'sm' : 'lg'} />;
 }
-/** "Sean", "Riley", or the label for a non-agent item ("HQ" → "Sign-ups"). */
+/** "Echo", "Riley", or the label for a non-agent item ("HQ" → "Sign-ups"). */
 export const whoLabel = (n: Pick<Need, 'agent' | 'kind'>) => (n.kind === 'signups' ? 'Sign-ups' : n.agent);
 
 export default function Needs({ user }: { user: User }) {

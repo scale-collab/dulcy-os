@@ -62,7 +62,7 @@ export async function scheduleTick(db: Db, cfg: Config, now = Date.now(), at?: P
   return queued;
 }
 
-/** Sean (inbox agent): one sean.draft job per SEAN_EVERY_MIN slot. Off when 0. */
+/** Echo (inbox agent): one sean.draft job per SEAN_EVERY_MIN slot. Off when 0. */
 export async function seanTick(db: Db, cfg: Config, now = Date.now()): Promise<number> {
   if (!cfg.seanEveryMin) return 0;
   const slot = Math.floor(now / (cfg.seanEveryMin * 60_000));

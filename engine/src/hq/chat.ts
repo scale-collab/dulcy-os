@@ -11,7 +11,7 @@ import type { Config } from '../config.js';
 import { readKnowledge } from '../agents/knowledge.js';
 import { CP } from '../agents/campaignPlan.js';
 import { EMAILS, val } from '../agents/emailsFields.js';
-import { ACTIVITY, AF } from '../activity.js';
+import { ACTIVITY, AF, agentFormula } from '../activity.js';
 import { AGENTS, AGENT_NAMES, OWNER_ONLY, agentByName, jobPatternsFor, type AgentName } from './agents.js';
 import { pendingDecisions, type HqAirtable } from './decisions.js';
 import { clientNames, listTasks } from './tasks.js';
@@ -97,7 +97,7 @@ async function runTool(deps: ChatDeps, name: string, input: any, ctx: { asks: nu
     }
     case 'recent_activity': {
       const days = Math.min(14, Math.max(1, Number(input?.days) || 2));
-      const rows = await needAt(deps.at).list(ACTIVITY, agentArg ? `AND({Agent}='${agentArg}',IS_AFTER({When},DATEADD(NOW(),-${days},'days')))` : `IS_AFTER({When},DATEADD(NOW(),-${days},'days'))`, [AF.event, AF.when, AF.agent, AF.type], 60, { sortField: AF.when, sortDesc: true });
+      const rows = await needAt(deps.at).list(ACTIVITY, agentArg ? `AND(${agentFormula('Agent', agentArg)},IS_AFTER({When},DATEADD(NOW(),-${days},'days')))` : `IS_AFTER({When},DATEADD(NOW(),-${days},'days'))`, [AF.event, AF.when, AF.agent, AF.type], 60, { sortField: AF.when, sortDesc: true });
       return { source: 'Airtable Activity Log', data: rows.map((r) => ({ when: s(r.fields[AF.when]), agent: s(r.fields[AF.agent]), type: s(r.fields[AF.type]), event: s(r.fields[AF.event]) })), note: `${rows.length} rows` };
     }
     case 'reply_counts': {

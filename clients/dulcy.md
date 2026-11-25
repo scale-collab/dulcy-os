@@ -11,7 +11,7 @@ Source short names used below:
 - [Camp] = Airtable Campaigns table, 90 records linked to the two workspaces, read 2026-11-17
 - [P/L] = Dulcy Media P/L goal tab, via `company/client-pricing-and-goals-2026-11-17.md` section 3 (read 2026-11-17)
 - [Agmt-GP] / [Agmt-PPL] = Drive templates "Client <> Dulcy | Growth Partnership" (mod 2026-11-13) and "... Growth Partnership PPL" (mod 2026-11-16), read 2026-11-17
-- [Sean-hist] = `skills/sean-reply-handling/references/historical-patterns.md` (Emails table analysis 2026-05-17 to 2026-11-17)
+- [Echo-hist] = `skills/echo-reply-handling/references/historical-patterns.md` (Emails table analysis 2026-05-17 to 2026-11-17)
 
 ## 1. Snapshot
 - **What Dulcy sells, to whom, in one line:** done-for-you B2B outbound (verified lists, sending infrastructure, targeting and copy, optimization, reply handoff) for B2B companies that want more qualified sales conversations, mainly marketing and service agencies. [Onb, 2026-10-21]
@@ -21,7 +21,7 @@ Source short names used below:
   - The 11 Active Dulcy campaigns: 13,629 contacted, 591 replies, 33 interested (**5.6%** interested/replies, below the 15% top-up bar), 4 meetings. [Camp, 2026-11-17]
   - Two Active "Product Manufacturers" campaigns show bounce **6.64%** and **10.23%** (over the 4% pause line). Robotics direct-email campaign is 3.98%; three others are between 2.5% and 4% (watch). [Camp, 2026-11-17]
   - Revenue goal gap: November goal is $18,000–$21,000 MRR; recorded nonblank monthly client lines total $7,745 (planning rows, excludes per-call revenue, not collections). [P/L, 2026-11-17]
-  - Positive side: Dulcy's own replies book better than other workspaces (11.4% of positive replies booked) and new proposals are in progress (section 7). [Sean-hist, 2026-11-17]
+  - Positive side: Dulcy's own replies book better than other workspaces (11.4% of positive replies booked) and new proposals are in progress (section 7). [Echo-hist, 2026-11-17]
 - **Main contact and approver:** Alex (Alexander Woung), Founder. Sender Title on the workspace = "Founder". Alex takes Dulcy's sales calls. [WS-Dulcy, 2026-11-17; company/business-context.md, 2026-11-17]
 - **Who handles replies:** Josh (VA inbox manager) handles normal replies; tricky ones (price, complaints, unusual) go to Alex. Reply Agent pilot runs on Dulcy in Human-in-the-Loop mode. [rules/RULES.md, 2026-11-17]
 
@@ -56,8 +56,8 @@ Source short names used below:
 - **Main front-end offer in use: free list of 1,000 prospect contacts matched to the prospect's ICP** (names, emails, companies, LinkedIn profiles). Used in the current agency campaigns (Other Agencies, AEO/GEO). [Drive "Dulcy Campaign Copy Morning Review", 2026-10-08]. Alex says this offer has been used for over five years and consistently books meetings. [Slack DM, 2026-11-03]
   - Other front ends tested: "3 Outbound Ideas", "500 Leads", Loom video, "Direct Offer", 10-account map (physical robotics), "Local Business Owners Monthly Offer Test" (med spas), "Retail and Distribution Buyer Outreach" (product manufacturers). Exact copy of the last two: UNKNOWN (not read). [Camp, 2026-11-17; Copy Review, 2026-10-08]
   - "Dulcy Free Campaigns" workspace: Dulcy runs a free trial campaign for a prospect agency (e.g. SEO, web dev, med-spa and manufacturing campaigns in Oct–Dec 2025; a free sample-edit campaign drafted Oct 2026; a food-and-beverage-manufacturer TAM and demo sheet Nov 13 2026). [WS-Free; Camp; Drive search, 2026-11-17]
-- **Pricing we may mention and how:** explain it depends on goals and scope, monthly investment; give only an Alex-approved range or example. No approved range exists in the sources read. Past booked example: the list is free with no obligation; then either they use their own team or Dulcy runs outbound; fees depend on which option. [rules/RULES.md; Sean-hist, 2026-11-17]
-- **Exact outbound promises (free list):** 1,000 contacts, free, matched to an agreed ICP. Delivery seen in practice: a short call (10–15 min) to confirm targeting, then a Google Sheet with a "Final Export" tab, with generic and direct emails both verified. [Copy Review, 2026-10-08; Sean-hist; Slack #team-marketing, 2026-11-09]
+- **Pricing we may mention and how:** explain it depends on goals and scope, monthly investment; give only an Alex-approved range or example. No approved range exists in the sources read. Past booked example: the list is free with no obligation; then either they use their own team or Dulcy runs outbound; fees depend on which option. [rules/RULES.md; Echo-hist, 2026-11-17]
+- **Exact outbound promises (free list):** 1,000 contacts, free, matched to an agreed ICP. Delivery seen in practice: a short call (10–15 min) to confirm targeting, then a Google Sheet with a "Final Export" tab, with generic and direct emails both verified. [Copy Review, 2026-10-08; Echo-hist; Slack #team-marketing, 2026-11-09]
   - Conditions still open (from the 2026-10-08 review): delivery owner, capacity, turnaround, handling of missing LinkedIn profiles and sparse niches. Do not invent a turnaround. [Copy Review, 2026-10-08]
   - Per the promise contract: a booked or held call does not by itself fulfil the free list; transfer the agreed usable list. [rules/client-promise-contract.md]
 - **Fulfillment owner and capacity:** Josh builds sample lists in Lead List Center, with Alex guiding (Nov 9 and Nov 12–13 examples). Capacity: UNKNOWN. [Slack #team-marketing, 2026-11-09 to 2026-11-13]
@@ -80,7 +80,7 @@ Source short names used below:
 - **ICP (current Active campaigns):** marketing agencies 1–200 employees in US/UK/Canada, split into AEO/GEO agencies and "other" agencies; digital marketing agencies 5–75 employees from Clutch, Agency Vista and GoodFirms lists (Nov 2026). Tests: US physical-robotics vendors; product manufacturers (retail and distribution buyer outreach) US/CA/UK; med spas 1–200 employees US/CA/UK. [Camp, 2026-11-17]
   - Onboarding: "B2B companies seeking qualified sales conversations, especially marketing and service agencies"; locations "USA". Define vertical and exclusions per campaign. [Onb, 2026-10-21]
   - Past verticals (2025–mid 2026): PPC agencies, advertising agencies, SaaS (incl. funded/high-ticket), business-loan firms, video production, social media, influencer, content, local agencies (FL/NJ), previously interested leads. [Camp, 2026-11-17]
-- **Buyer roles:** agency owners/founders implied by the sender title "Founder"; one booked example targeted marketing managers and heads of marketing for the prospect's own list. Exact title list for Dulcy's own campaigns: UNKNOWN. [WS-Dulcy; Sean-hist]
+- **Buyer roles:** agency owners/founders implied by the sender title "Founder"; one booked example targeted marketing managers and heads of marketing for the prospect's own list. Exact title list for Dulcy's own campaigns: UNKNOWN. [WS-Dulcy; Echo-hist]
 - **Exclusions:** AEO/GEO providers excluded from the "Other agencies" campaign; cross-campaign company overlap must be resolved. [Copy Review, 2026-10-08]. Current clients, booked-meeting domains (workspace fields exist but were not read): UNKNOWN. Unsubscribes and suppression always honoured. [rules/RULES.md]
 - **Known bad fits:** AEO/GEO label only when the agency explicitly sells that service (AI use alone does not qualify). [Copy Review, 2026-10-08]. SaaS campaigns had low interest (1 interested on 2,565 contacted, Nov 2025). [Camp]
 
@@ -177,8 +177,8 @@ Zero-send records in Dulcy Free Campaigns: 2 (tests, drafts, copies, unlaunched:
 - Most meetings, 2025: [DULCY] APPC E53 (40 meetings, but 5.19% bounce), [DULCY] MISS G550 (35), [DULCY] CPPC G63 (22), Copy of GF + AV PPC Leads (18).
 - Best of the last 6 months: "Other Marketing Agencies ... Discolike (Lead Magnet)" Jun 2026: 13.09% interested, 16 meetings, but 5.92% bounce. "B2B Marketing Agencies ... (Lead Magnet)" Sep 2026: 8.54% interested, 10 meetings, 3.01% bounce. "Florida Marketing Agencies (Direct Offer)" Jun 2026: 21.05% interested, 4 meetings from 550 contacted.
 - Lead-magnet (free list) campaigns beat "Direct Offer" campaigns on meetings in 2026 (e.g. Clutch Digital Marketing Direct Offer: 9,531 contacted, 0 meetings; Influencer Direct Offer: 4,392 contacted, 1 meeting).
-- Free-list replies booked at 11.4% of positive replies (35 of 307), the highest of all workspaces. [Sean-hist, 2026-11-17]
-- Replies with two specific dated times booked ~27.7% vs 6.2% with a link only (all workspaces). [Sean-hist, 2026-11-17]
+- Free-list replies booked at 11.4% of positive replies (35 of 307), the highest of all workspaces. [Echo-hist, 2026-11-17]
+- Replies with two specific dated times booked ~27.7% vs 6.2% with a link only (all workspaces). [Echo-hist, 2026-11-17]
 - Bounce problems: Apollo Agencies (Oct 2025) 8.16%; June 2026 DiscoLike agency lists 4.7–6.3%; free campaigns in Oct–Dec 2025 often 8–48%; Nov 2026 Product Manufacturers 6.64% and 10.23%.
 - The current Active set is weak on interest (5.6% interested overall, 4 meetings).
 
@@ -203,7 +203,7 @@ Dulcy's own outbound is discussed mainly in #team-marketing (C0938K8LE3Y) and #t
 - Alex approves every launch, send, spend and record change. [rules/RULES.md]
 - Booking ask: two specific dated times, no calendar link. [rules/RULES.md]
 - Price by email: say it depends on goals and scope, give only an approved range or example, then two times. [rules/RULES.md]
-- Frame the call as something the prospect needs (confirm targeting for the free list), not as Dulcy's pitch; keep first responses short (under ~70 words booked best). [Sean-hist, 2026-11-17]
+- Frame the call as something the prospect needs (confirm targeting for the free list), not as Dulcy's pitch; keep first responses short (under ~70 words booked best). [Echo-hist, 2026-11-17]
 - Reply within 5–15 minutes in working hours (standard presented to clients). [Slack #team-marketing, 2026-10-22]
 - Copy: no spintax in client-facing text, no manual signature, EmailGuard check before upload; no .info sender domains. [rules/RULES.md]
 - Bounce: over 2.5% watch, over 4% pause and investigate; top-up only above 15% interested. [rules/RULES.md]
@@ -223,7 +223,7 @@ Dulcy's own outbound is discussed mainly in #team-marketing (C0938K8LE3Y) and #t
 
 ## Sources read
 - CLAUDE.md, rules/RULES.md, rules/decisions-log.md, rules/client-promise-contract.md, clients/_TEMPLATE.md, clients/INDEX.md, company/business-context.md, company/channels-status.md, company/channel-evidence-2026-11-17.md, company/client-pricing-and-goals-2026-11-17.md, NEXT.md (read 2026-11-17)
-- skills/sean-reply-handling/references/historical-patterns.md; sops/drive-export/138-Dulcy-Summary.md (2025-03-18), 139-Dulcy-Next-Steps.md (2025-03-11), 131-Dulcy-WhitepaperEducation-Approach.md (2026-01-05), 118-DulcyCampaignCopyMorningReview2026-10-08.md (read 2026-11-17)
+- skills/echo-reply-handling/references/historical-patterns.md; sops/drive-export/138-Dulcy-Summary.md (2025-03-18), 139-Dulcy-Next-Steps.md (2025-03-11), 131-Dulcy-WhitepaperEducation-Approach.md (2026-01-05), 118-DulcyCampaignCopyMorningReview2026-10-08.md (read 2026-11-17)
 - Airtable (base appxqINt5XKw7a76A), read 2026-11-17, secret fields excluded: Workspace IDs 2 records; Onboarding 1 record; Campaigns 90 records
 - Slack, read 2026-11-17: #team-chat (100 messages since 2026-05-17), #team-marketing (~320 messages across May–Nov 2026), #team-sales (80 messages), 4 searches (Dulcy campaign, free list, robotics, one DM thread)
 - Google Drive, read 2026-11-17: 1 search (30 files listed); read 4 docs: "Client <> Dulcy | Growth Partnership", "Client <> Dulcy | Growth Partnership PPL", "Protek CNC — Proposal and follow-up review packet", "BigPxl — Nov 12 call follow-up and proposal draft"

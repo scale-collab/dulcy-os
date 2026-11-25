@@ -6,7 +6,7 @@
 - Forge: offers. Design and test offers; Atlas picks which offer a campaign uses.
 - Scout: targeting and lead lists. ICP, sourcing, fit, exclusions, list QA.
 - Scribe: copywriting only.
-- Sean: reply handling from cold reply to booked meeting; the AI replier (Reply Agent); Josh's inbox process.
+- Echo: reply handling from cold reply to booked meeting; the AI replier (Reply Agent); Josh's inbox process.
 - Cole: sales calls and closing (Closers.io).
 - Sienna: social media and content, including Content OS.
 - Pixel: paid ads. Lex: legal and HR. Ledger: business finance. Harper: hiring and people operations.

@@ -1,4 +1,4 @@
-# Sean: Drive research on reply handling and Josh's inbox process
+# Echo: Drive research on reply handling and Josh's inbox process
 
 Read-only research, 2026-11-17. No Drive file was edited, shared, moved or trashed.
 Everything below is paraphrased. Prospect names, emails and phone numbers are left out. Client staff and vendor staff appear by role, not by name.
@@ -186,7 +186,7 @@ Not reply templates: [TargetonStar] BEST REPLIES (2025-10-13) and [Retail Media 
 1. **Sending tools.** The 2025 Inbox Management SOP has two send buttons, Smartlead and EmailBison. The Exec Assistant SOP (2025-01) lists Smartlead. "Keeping Inboxes Organized" says Smartlead was used "back when". The current tool is EmailBison (send.dulcy.io). Smartlead steps are outdated.
 2. **AI replier.** RevReply (Dec 2025 setup SOP; Jun 2026 meetings; it says to enable full auto and auto-book once trained) versus the in-house Dulcy Reply Agent in Airtable (2026-10-07: Dulcy pilot only, Human in the Loop, never Autopilot, auto-booking off). The current rule sides with the Reply Agent SOP. Whether RevReply is still in use is UNKNOWN.
 3. **Calendly link.** The 2025 SOP says never send a Calendly link and to pitch times. The Reply Agent SOP says to keep the correct booking link. The RevReply setup puts the booking link under "actually book here". Booking Without Sounding Salesy uses a link as follow-up #2. The May 2026 plan says to cut calendar-forcing for contractors.
-4. **Price.** The 2025 rule is never to give price by email. The June 2026 realignment says to answer price simply. The Closers example sits in between. MJJ templates require approved terms. The current repo position (in the Sean evidence file) is to answer price only with approved facts.
+4. **Price.** The 2025 rule is never to give price by email. The June 2026 realignment says to answer price simply. The Closers example sits in between. MJJ templates require approved terms. The current repo position (in the Echo evidence file) is to answer price only with approved facts.
 5. **Cadence.** Options found:
    - Follow up forever every 3 days until a clear yes or no (2025 SOP).
    - About 5 times, every 3 days (Responding Fast).

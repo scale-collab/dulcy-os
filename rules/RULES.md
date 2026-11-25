@@ -82,7 +82,7 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-21] Enrichment fallback: a lead the research cannot answer gets a short fallback phrase that fits the email copy (e.g. a city -> "your area"), never a blank or "Not Found". The prompt step writes the phrase into each variable's FALLBACK section; Alex reviews it before Run. Reason: blank values made QA block the whole list (28 of 466 in the first test). (Alex)
 
 ## Replies and inbox
-- [2026-11-24] Sean follows each client's own Reply Agent settings in the Inbox Manager (Enabled, Client reply handoff, reply types, tone, length, instructions prompt, not-interested reply, templates, approved links, follow-up plan and instructions, calendar). No one rule for every client; to change how Sean answers a client, edit that client's settings. "Client reply handoff: All replies" = the client answers its own replies. Why: Alex needs to customize and edit the replier per client. (Alex)
+- [2026-11-24] Echo follows each client's own Reply Agent settings in the Inbox Manager (Enabled, Client reply handoff, reply types, tone, length, instructions prompt, not-interested reply, templates, approved links, follow-up plan and instructions, calendar). No one rule for every client; to change how Echo answers a client, edit that client's settings. "Client reply handoff: All replies" = the client answers its own replies. Why: Alex needs to customize and edit the replier per client. (Alex)
 - [2026-11-24] When Alex says in chat that he approved replies, Claude may press Approve in Airtable for him (Alex confirmed this was right). If his Slack ✅ did not register, say so. (Alex)
 - [2026-11-24] Reply approval (Alex): Airtable is the main place (Approve / Send Edited on the reply row); the Slack ✅ is a shortcut that presses the same Approve. One sender, sends once. Airtable and Slack always mirror each other: a reply sent or skipped from Airtable is posted in its Slack thread, and one approved in Slack shows as sent in Airtable. (Alex)
 - [2026-11-24] The AI replier lives in Airtable (Alex): reuse and tweak the existing Reply Agent interfaces and automations (modeled on RevReply) rather than replacing them. Agents must be built from real source data: Google Drive, real replies across all clients, the creators' content we follow, real-world results. Why: RevReply-style AI got poor booked meetings because Alex could not control how it built the reply. (Alex)
@@ -101,7 +101,7 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-17] The repurposing counts (2 LinkedIn, 3-5 X, 2 short scripts, 1 carousel per source) are examples, not a weekly quota. No posting cadence is set yet. (Alex)
 
 ## How to work with Alex
-- [2026-11-24] Agents: 9 active (Ada, Atlas, Scribe with offers, Scout, Sean, Riley, Cole, Ledger, Sienna). Forge folded into Scribe; Pixel, Lex, Harper parked. Start with Sean (draft mode: Alex/Josh approve each reply in Slack until Alex says otherwise) plus the decisions loop. Why: Twenty West is cancelling over reply handling and Josh can't scale. (Alex)
+- [2026-11-24] Agents: 9 active (Ada, Atlas, Scribe with offers, Scout, Echo, Riley, Cole, Ledger, Sienna). Forge folded into Scribe; Pixel, Lex, Harper parked. Start with Echo (draft mode: Alex/Josh approve each reply in Slack until Alex says otherwise) plus the decisions loop. Why: Twenty West is cancelling over reply handling and Josh can't scale. (Alex)
 - [2026-11-24] Claude handles business only; ChatGPT handles personal. Nothing personal goes into the agents until Alex says so. (Alex)
 - [2026-11-24] Alex's week: Mon campaigns, Tue and Thu meetings, Wed check meetings, Fri content day, Sat-Sun off. Agents plan around it (content ready by Friday, campaign reviews on Monday). (Alex)
 - [2026-11-20] Until Alex says otherwise, Claude runs the engine end-to-end tests itself on Dulcy's own test lists, including the approval clicks (Company Sample Approved, Contact Sample Approved, QA Passed) and Build Campaign drafts. Never a launch, and never on a client's list. Reason: Alex wants it proven end to end before he tests. (Alex)
@@ -111,7 +111,7 @@ Format: `- [date] rule. (why / source)`
 - [2026-11-17] Bounce and campaign-health checks belong to Atlas, never Riley. Riley only fixes n8n and Make.com (and Airtable automations). (Alex correction)
 - [2026-11-17] Build agents one at a time; Alex approves each before the next. (Alex)
 - [2026-11-17] Atlas leads every campaign: runs the managed Airtable campaign/list stages and directs and checks Scout, Scribe and Forge. Riley only fixes systems (n8n, Make, Airtable automations/scripts), not campaign work. Supersedes earlier lines that gave Riley the Airtable stages. (Alex correction)
-- [2026-11-17] Roster update: Forge (offers) is separate from Atlas. Cole (sales/closing) is a separate skill. Scribe is copywriting only. New agent Sean owns reply handling (cold prospect to booked meeting) and the AI replier. Sienna is a full-size agent. Pixel, Lex, Ledger, Harper stay short for now. Red Dog stays out of this repo. Supersedes the earlier roster line where they differ. (Alex)
+- [2026-11-17] Roster update: Forge (offers) is separate from Atlas. Cole (sales/closing) is a separate skill. Scribe is copywriting only. New agent Echo owns reply handling (cold prospect to booked meeting) and the AI replier. Sienna is a full-size agent. Pixel, Lex, Ledger, Harper stay short for now. Red Dog stays out of this repo. Supersedes the earlier roster line where they differ. (Alex)
 - [2026-11-17] Keep answers simple: direct result first, exact numbers, short done/left lists. (Alex)
 - [2026-11-17] Work in small committed steps. A previous Codex run spent heavily for 14 days without finishing; do not repeat that. (Alex)
 - [2026-11-17] ChatGPT handles admin, reporting, personal tasks and email support. Claude handles campaign building, automation and code. (Alex)
@@ -193,8 +193,8 @@ Format: `- [date] rule. (why / source)`
 - **Atlas answers client and campaign questions when asked.** The old Jarvis didn't answer pings.
 - **Riley also checks once overnight** (4 a.m. ET).
 
-## Sean follows each client's Reply Agent settings (Alex, 2026-11-25)
-- **Rule:** Sean honors every send setting per client: Default Mode, routing groups, OOO Mode, Minimum Auto Confidence, Max Automatic Replies, Always Require Human Review, Not Interested Nudge and office hours.
+## Echo follows each client's Reply Agent settings (Alex, 2026-11-25)
+- **Rule:** Echo honors every send setting per client: Default Mode, routing groups, OOO Mode, Minimum Auto Confidence, Max Automatic Replies, Always Require Human Review, Not Interested Nudge and office hours.
 - **Approval Required stays the default.** A reply goes out without a person only where that client's own settings say so, inside the client's office hours, and never with a gap, a question for Alex, or past the sender's checks.
 - **Why:** Alex asked for the inbox replier to work per client, with the settings he already set in the Inbox Manager, instead of one rule for everyone.
 ## Reports and reply approvals move to HQ (Alex, 2026-11-25)
@@ -202,17 +202,17 @@ Format: `- [date] rule. (why / source)`
 - **Slack switches:**
   - `SLACK_REPORTS` and `SLACK_DECISIONS` stay `on` until HQ is live. Then Alex turns them `off`.
   - Urgent alerts keep going to Slack either way: a campaign paused for bounces, a refused launch, a failed engine job.
-- **Reply approvals:** Sean's reply cards are approved in HQ.
+- **Reply approvals:** Echo's reply cards are approved in HQ.
   - The draft can be edited. The buttons are Send, Send edited, and Skip.
   - HQ only presses the Emails row's buttons (Human Action, and Custom Reply for an edit). The engine's reply sender sends.
 - **Reason:** Alex: "I want to move off of Slack for these because it's just too much."
 
 ## Booking asks: two specific times; a booking link only as a last resort (Alex, 2026-11-25)
 - **Rule:** every reply that asks for a call offers two specific times from the client's calendar. A booking link is very unideal (prospects rarely click it): use it only as a last resort (the prospect asks for a link, or no open time can be read). Never a vague ask like "a quick chat sometime this week". (Alex clarified 2026-11-25: not "never", but very unideal.)
-- **Calendars:** each client shares their calendar with Dulcy at onboarding, so the times are available; Sean must read them rather than fall back to the link.
+- **Calendars:** each client shares their calendar with Dulcy at onboarding, so the times are available; Echo must read them rather than fall back to the link.
 - **Follow-up:** every interested lead gets a follow-up every 3 days until they book, say no, or are recycled. Replies are answered within 1 hour, weekends included.
 - **Why:** Twenty West: 282 interested → 11 booked; the first reply sent a booking link 102 times and a vague ask 110 times, and 165 leads got no follow-up.
-- **Open:** in the Reply Agent settings only Dulcy's calendar is connected; the other clients are "Not Connected" with times switched off, so Sean falls back to the link. Fix: read each client's shared calendar.
+- **Open:** in the Reply Agent settings only Dulcy's calendar is connected; the other clients are "Not Connected" with times switched off, so Echo falls back to the link. Fix: read each client's shared calendar.
 
 ## HQ: built for phone and desktop (Alex, 2026-11-25)
 - **Rule:** every HQ screen is designed and checked on both phone (390 px) and desktop (1440 px), light and dark, before it ships. Big tap targets on phone, no sideways scroll.
@@ -228,3 +228,9 @@ Format: `- [date] rule. (why / source)`
   Plus one action (button or question) if Alex has to do something. No walls of text.
 - **Why:** Alex wants everything super simple and up to date, so he can act fast.
 - **Target:** HQ in daily use next week (the systems exist; HQ is the visual layer on top).
+
+## The inbox agent is Echo (was Sean) (Alex, 2026-11-25)
+- **Rule:** the inbox agent's name is **Echo**. The job is unchanged: reply to booked call, every client's Reply Agent settings, Josh's inbox process.
+- **What stays the same on purpose:** stage ids (`sean.draft`, `sean.followup`), `SEAN_*` server settings, the `sean_drafts` table and `engine/src/agents/sean.ts`. Renaming those would break the live server config for no gain.
+- **Old records:** Airtable Decisions and Activity rows that say "Sean" are read as Echo. Skill: `skills/echo-reply-handling/`, agent: `.claude/agents/echo.md`.
+- **Why:** Alex picked the name ("Echo": answers everyone back).

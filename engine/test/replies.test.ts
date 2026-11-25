@@ -192,7 +192,7 @@ test('not interested: reply sent, no follow-ups; a follow-up waiting for approva
 
 test('✅ in Slack presses the same Approve; the thread says it was sent', { skip }, async () => {
   tables[EMAILS].recAAAAAAAAAAAAAA = row({ [RA.humanAction]: 'None' });
-  tables[DECISIONS].recD = { [DF.title]: 'Reply to Jane', [DF.agent]: 'Sean', [DF.emailsRecord]: 'recAAAAAAAAAAAAAA', [DF.status]: 'Waiting', [DF.action]: 'Approve Reply', [DF.slackChannel]: 'C1', [DF.slackTs]: 'ts9' };
+  tables[DECISIONS].recD = { [DF.title]: 'Reply to Jane', [DF.agent]: 'Echo', [DF.emailsRecord]: 'recAAAAAAAAAAAAAA', [DF.status]: 'Waiting', [DF.action]: 'Approve Reply', [DF.slackChannel]: 'C1', [DF.slackTs]: 'ts9' };
   reacts.ts9 = [{ name: 'white_check_mark', users: [ALEX] }];
   const conf = cfg();
   await decisionsTick(db, conf, at(), slack);

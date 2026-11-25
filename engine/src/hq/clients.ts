@@ -102,7 +102,7 @@ export function noteFor(c: Pick<ClientRow, 'active' | 'campaigns' | 'waitingAppr
   const pause = [...c.campaigns].filter((x) => x.flag === 'pause').sort((a, b) => b.bounce - a.bounce);
   if (pause.length) out.push(`Bounce ${pct(pause[0].bounce)} on ${pause[0].name}${pause.length > 1 ? ` (+${pause.length - 1} more over 4%)` : ''}: pause and check.`);
   if (c.waitingApproval) out.push(`${c.waitingApproval} repl${c.waitingApproval === 1 ? 'y' : 'ies'} waiting for approval.`);
-  else if (c.seanWaiting) out.push(`${c.seanWaiting} Sean decision${c.seanWaiting === 1 ? '' : 's'} waiting.`);
+  else if (c.seanWaiting) out.push(`${c.seanWaiting} Echo decision${c.seanWaiting === 1 ? '' : 's'} waiting.`);
   if (!c.campaigns.length) out.push('No active campaign.');
   const next = c.campaigns.filter((x) => x.next && !x.planExists);
   if (next.length) out.push(`${next[0].name} is at ${Math.round(next[0].progress * 100)}%: plan the next campaign.`);
@@ -140,7 +140,7 @@ export function buildClients(src: ClientsSource, canSeeMoney: boolean, now = new
     }).sort((a, b) => b.bounce - a.bounce || b.progress - a.progress);
     const waitingApproval = src.waiting.filter((r) => { const w = replyWs(r); return ids.includes(w.rec) || (w.bison !== '' && bisons.includes(w.bison)); }).length;
     const keys = new Set([clientKey(name), ...group.map((w) => clientKey(s(w.fields.Name)))]);
-    const seanWaiting = src.decisions.filter((d) => d.agent === 'Sean' && keys.has(clientKey(d.client))).length;
+    const seanWaiting = src.decisions.filter((d) => d.agent === 'Echo' && keys.has(clientKey(d.client))).length;
     let light: Light = 'inactive'; let reasons: string[] = [];
     if (active) {
       const g = grade(c);

@@ -206,7 +206,7 @@ Reporting: weekly internal update; "Friday Client Check-In" with Google Sheet su
 
 ## 3. 084 / 147: Cold Email Objections SOP
 
-These are **reply** scripts (Sean's area), not first-touch copy; all are Dulcy's own sales responses. Scribe uses them to pre-empt objections in follow-ups (as 011's Email #2 does). Many carry claims that are not verified today (see conflicts): never paste one into copy unchecked. 27 pairs in the source; the copy-relevant ones verbatim, the rest as gist.
+These are **reply** scripts (Echo's area), not first-touch copy; all are Dulcy's own sales responses. Scribe uses them to pre-empt objections in follow-ups (as 011's Email #2 does). Many carry claims that are not verified today (see conflicts): never paste one into copy unchecked. 27 pairs in the source; the copy-relevant ones verbatim, the rest as gist.
 
 Verbatim (most reusable in copy):
 - "Why is it free with no strings attached? Hard to believe." → "Great question! We offer 1,000 free leads because we believe in the quality of our service and want to give you a risk-free way to see the results for yourself. We're confident that you'll find value in what we provide.”
@@ -1222,7 +1222,7 @@ Little copy content. What applies:
 16. **Channels Dulcy can claim.** 084: "we integrate multi-channel outreach, including LinkedIn and phone calls" vs CLAUDE.md: "Right now only cold email works. LinkedIn and direct mail need system fixes." → Do not claim multi-channel in Dulcy copy.
 17. **Client counts and "many clients".** 084: "A lot of our [INDUSTRY] clients", "Many small businesses"; 118: "26 review units across nine clients" vs CLAUDE.md: "Clients: 6, plus Dulcy itself ... Do NOT state any larger client count." → Never state or imply a count.
 18. **Trials vs free samples.** 084: "We don’t offer trials" vs Dulcy's free 1,000-contact list ("a sample of Dulcy’s list-building work", 118) and 123's "reactivation campaign for you completely free". → UNKNOWN how to phrase if a prospect asks; ask Alex.
-19. **Booking ask.** 084: "would Monday at 10 AM EST work for you?" (one time) vs RULES: "offer two specific dated times, no calendar link". → RULES (Sean's area).
+19. **Booking ask.** 084: "would Monday at 10 AM EST work for you?" (one time) vs RULES: "offer two specific dated times, no calendar link". → RULES (Echo's area).
 20. **P.S. line.** RULES 2026-11-23: "Opt-outs come by reply (the P.S. invites it)" and 123 "p.s. or tell me to pound sand if you'd like.." vs 118 GMG: "removing signatures/PS". → RULES allow an opt-out P.S.; UNKNOWN whether every sequence must carry one; ask Alex.
 21. **Days between steps.** 011: Step 1 → "2 days+" → Step 2 → "3 days+" → Step 3 vs RULES: "Days between emails: default 2, editable per campaign." → RULES. (Sequence length agrees: 3 steps now; 011/084 "3-4" max; 119 "There is no email 4".)
 22. **Open tracking.** 015: "Open Rate (if tracking is enabled)" vs 130: open tracking "has 100% chance of triggering spam filters". → 130 (newer); never rely on opens to judge subjects.

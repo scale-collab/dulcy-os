@@ -8,7 +8,7 @@ Mapped by Riley for Ada. Nothing was changed, run or sent. Sources: live Airtabl
 - **Clients are sent by hand.** The Airtable button automation "Send Email (SL and EB)" (wflVhGbUEolHEGuk6) sends **Custom Reply** through EmailBison for every workspace, using that workspace's key and its CC/BCC settings.
 - **The learning loop is open.** 2,540 Reply Learning rows exist and are written on every human or agent send. All of them are "Candidate" except 1 "Rejected". The drafter reads only `Review Status = Approved`, so it gets 0 examples.
 - **Live state (Emails rows with an agent State): 5,253.** Suppressed 2,429; Paused 1,764; Skipped 672; **Needs Approval 250**; Scheduled 138. No row is in Approved, Sending or Sent. Human Action: None 4,199, Pause 415, blank 639, and 0 rows set to Approve Draft.
-- **The engine's Sean writes somewhere else.** Today it writes to the **Decisions** table and Slack, not to the Emails fields the interface shows. Its sender (`decision.send_reply`) does work for any workspace. But it sends with `reply_all: true` and no per-workspace CC/BCC, and it skips the sender and recipient checks the Airtable script does.
+- **The engine's Echo writes somewhere else.** Today it writes to the **Decisions** table and Slack, not to the Emails fields the interface shows. Its sender (`decision.send_reply`) does work for any workspace. But it sends with `reply_all: true` and no per-workspace CC/BCC, and it skips the sender and recipient checks the Airtable script does.
 
 ## 1. Interfaces and pages that show or act on replies
 The page API does not expose page buttons or button elements. Which control sets Human Action is **UNKNOWN** (see section 6).
@@ -69,7 +69,7 @@ No automation is triggered by the Reply Agent Settings, Events or Learning table
 | Reply Category | fld2EkyARl7blJklV | formula from Intent |
 | Courtesy Reply Sent At, First Inbound Reply At, First Response At, Meeting Booked At, Touchpoints to Meeting | fldhLwoSv8rHzVP5k, fld13kyYbCsckb6BI, fld5ApgrrxDTJgXgp, fld7kOIDWTVycZtdA, fldleB6TDMnnJ5pJZ | KPI fields |
 | Thread ids used by senders | reply_message_id fldvARFWnr4H2wC8V, email_stats_id (= sender_email_id) flds1ZqBq2ZW6dVBr, lead_id fldv66oGZQQ9Qscmb, campaign_id fldv0o5rhmd7jXDrt, Workspace ID (Bison) fldCjo0mB0snziNZQ, Clients Table fldtPAlC0MDPHTWcl, reply_uuid fldT2Nvl3qPmSMsgb, CC (Optional) fldGkiO630UgVCnv5, ESP fldBNI5MPeDfMELjd | |
-| Thread state used by Sean | Last Email Sent fldE9bxKtmeRsvG9f, Latest Reply fldjG76LvUTv60Pzj, Latest Reply Time fldb1GEPgDTyJPm2v, Conversation History fldYocEhrAzRUw9sA, Lead Status fldr2uNiscZfeCNiT, Pipeline Stage fldSuQyvPM3IlS5oD, DNC fldbme5e9wDtnVwrx | |
+| Thread state used by Echo | Last Email Sent fldE9bxKtmeRsvG9f, Latest Reply fldjG76LvUTv60Pzj, Latest Reply Time fldb1GEPgDTyJPm2v, Conversation History fldYocEhrAzRUw9sA, Lead Status fldr2uNiscZfeCNiT, Pipeline Stage fldSuQyvPM3IlS5oD, DNC fldbme5e9wDtnVwrx | |
 
 State by workspace (live, rows with State set):
 
@@ -141,27 +141,27 @@ Answers to the specific questions:
 
 ## 5. Proposed rewire (minimal; every item needs Alex's OK)
 
-### 5a. What engine Sean writes (per drafted Emails record, same fields the interface already uses)
+### 5a. What engine Echo writes (per drafted Emails record, same fields the interface already uses)
 | Field | Value |
 |---|---|
 | Dulcy Reply Agent Draft (fldiokFlOaUEEs2qX) | `d.draft` (for ask_alex: the draft with its [GAP: …] marker) |
 | Dulcy Reply Agent State (fldOfNaPJfpJLcInm) | `Needs Approval` for reply and ask_alex; `Skipped` for skip |
-| Dulcy Reply Agent Intent (fldSgiv4CLnRBEJGc) | **New output needed**: add `intent` (one of the 13 choices) to Sean's DraftSchema. Needed because the n8n classifier stops when the intakes are off, and the CC/BCC script uses Intent. |
+| Dulcy Reply Agent Intent (fldSgiv4CLnRBEJGc) | **New output needed**: add `intent` (one of the 13 choices) to Echo's DraftSchema. Needed because the n8n classifier stops when the intakes are off, and the CC/BCC script uses Intent. |
 | Dulcy Reply Agent Event ID + Last Inbound Event ID (fldIe5tgtL4OVeJAj, fldy284s0aaXCZaa7) | `bison:<Clients Table rec id>:<reply_message_id>` (same convention, so the CC/BCC rules pick the current intent) |
 | Dulcy Reply Agent Workspace Record ID (fldaSgBchAb4KiIZS) | Clients Table rec id |
 | Dulcy Reply Agent Human Action (fldvdJBtL4ez5lbjN) | `None` |
 | Dulcy Reply Agent Policy Decision (fldkfrqE1Xng2mftd) | JSON `{"agent":"sean","action":…,"reason":…,"they_said":…,"question_for_alex":…,"latestReplyAt":…,"calendarEvidence":{…offered slots…}}` |
 | Dulcy Reply Agent Updated At (fldTn2Eth51XolDMg) | now |
-| **New field "Sean Reason"** (long text) | `d.reason` (do not reuse Reply Explanation: the inbound flow and the Make button write it) |
-| **New field "Sean Needs Your Input"** (long text) | `d.question_for_alex` (empty unless ask_alex) |
+| **New field "Echo Reason"** (long text) | `d.reason` (do not reuse Reply Explanation: the inbound flow and the Make button write it) |
+| **New field "Echo Needs Your Input"** (long text) | `d.question_for_alex` (empty unless ask_alex) |
 | Events table row | Event Type Drafted (or Skipped), Actor AI, Intent, State, Summary = reason |
 
 ### 5b. Approval → engine send, for all workspaces
 - In the interface, the approver sets **Human Action = Approve Draft**, or edits and uses **Send Edited Reply** with Custom Reply. This is the same contract sender v4 uses today.
 - New engine poller (every minute), replacing sender v4 and covering all 8 workspaces. Pick: `State='Needs Approval' AND Human Action IN (Approve Draft, Send Edited Reply) AND NOT DNC AND NOT Client Handling AND Reply Ownership!='Handoff'`, then run the existing `decision.send_reply` checks (prospect wrote again → no send; Last Email Sent By Dulcy → no send).
 - **Send fixes needed in the engine** to match the Airtable script: `reply_all: false`; `to_emails` = the one prospect address taken from the thread; `sender_email_id` = email_stats_id; **CC/BCC from the workspace's CC BCC Settings JSON** (MJJ and Human Marketing copy the client today); confirm delivery before writing anything.
-- After the send, write: State `Sent`, Sent At, Human Action `None`, Draft cleared, Last Email Sent `Last Email Sent By Dulcy`, Pipeline Stage `In Conversation` if it was New Interested. Add an Events row (Sent, Actor Human). Add a **Reply Learning row with AI Draft = Sean's draft and Approved Reply = the sent text, Review Status `Approved` when sent unchanged** (or always Approved, since a human approved it). Sean should read the last approved examples for the same workspace. That closes the loop.
-- **Conflict to settle with Alex:** RULES.md 2026-11-24 says approval happens in Slack (Sean posts Decisions with ✅). Proposal: keep one record of truth. The Slack ✅ sets Human Action = Approve Draft on the Emails row, and only the new poller sends. That way Slack and the Airtable interface can never both send.
+- After the send, write: State `Sent`, Sent At, Human Action `None`, Draft cleared, Last Email Sent `Last Email Sent By Dulcy`, Pipeline Stage `In Conversation` if it was New Interested. Add an Events row (Sent, Actor Human). Add a **Reply Learning row with AI Draft = Echo's draft and Approved Reply = the sent text, Review Status `Approved` when sent unchanged** (or always Approved, since a human approved it). Echo should read the last approved examples for the same workspace. That closes the loop.
+- **Conflict to settle with Alex:** RULES.md 2026-11-24 says approval happens in Slack (Echo posts Decisions with ✅). Proposal: keep one record of truth. The Slack ✅ sets Human Action = Approve Draft on the Emails row, and only the new poller sends. That way Slack and the Airtable interface can never both send.
 
 ### 5c. n8n to switch off (in this order, each needs Alex's OK)
 1. `DulcyClientDraftOnlyV1` and `DulcyReplyClientPilotV4`: stops double drafting, and stops the State flips to Paused/Suppressed.
@@ -169,13 +169,13 @@ Answers to the specific questions:
 3. `DulcyReplyPilotSenderV4` (and `DulcyReplyRecoveryV4` once its ledger is empty), switched off at the moment the engine poller goes live, never both at once. While sender v4 is on, any Dulcy row where someone sets Approve Draft is sent by n8n.
 4. `X8o_bx_MBS0h0mmrGKas-` 04 Provision Client: stop using it (it registers webhooks to the old intake).
 Keep on: Receive Replies from EmailBison, Manual Emails Sent (minus the follow-up node), 05 KPI, Calendar connections, Bison Untracked, HeyReach flows.
-Undecided: the 250 rows already in Needs Approval with old OpenAI drafts. Option: clear them and let Sean redraft the ones still waiting. Alex to decide.
+Undecided: the 250 rows already in Needs Approval with old OpenAI drafts. Option: clear them and let Echo redraft the ones still waiting. Alex to decide.
 
 ### 5d. Interface tweaks (Reply Queue page)
-- Add: Human Action (Approve Draft / Send Edited Reply / Skip), Custom Reply (for edits), **Sean Reason**, **Sean Needs Your Input**, Workspace / client name, Conversation History, Last Error, Sent At.
-- Filter: State = Needs Approval, not Client Handling, sorted by Latest Reply Time. Second tab "Needs your input" = Sean Needs Your Input not empty.
+- Add: Human Action (Approve Draft / Send Edited Reply / Skip), Custom Reply (for edits), **Echo Reason**, **Echo Needs Your Input**, Workspace / client name, Conversation History, Last Error, Sent At.
+- Filter: State = Needs Approval, not Client Handling, sorted by Latest Reply Time. Second tab "Needs your input" = Echo Needs Your Input not empty.
 - Reply Learning page: default view Review Status = Candidate with a quick Approved/Rejected toggle.
-- The custom element's Responses/Routing settings that only the OpenAI flow used (tone, length, routing groups, follow-up plan) do nothing for Sean unless Sean reads them. Decide which ones Sean honours: CC/BCC, Calendar Link, disableTimes/disableLinks, office hours.
+- The custom element's Responses/Routing settings that only the OpenAI flow used (tone, length, routing groups, follow-up plan) do nothing for Echo unless Echo reads them. Decide which ones Echo honours: CC/BCC, Calendar Link, disableTimes/disableLinks, office hours.
 
 ## 6. Left / UNKNOWN
 - Which page control sets Human Action today (buttons are not exposed by the API). Human Action is not on Reply Queue.
@@ -196,11 +196,11 @@ Undecided: the 250 rows already in Needs Approval with old OpenAI drafts. Option
 
 ### How the drafters read availability
 - n8n intakes: node "Read Verified Calendar" POSTs `{workspace, start: now+10 min, end: now+6 days}` to the calendar service. The reply is Calendly-shaped (`connection{status,eventType}`, `eventType`, `collection[{start_time,status,invitees_remaining}]`, `fetchedAt`). Offered slots are stored in Policy Decision `calendarEvidence`. Sender v4 node "Recheck Offered Calendar Times" re-reads the slots and refuses to send if an offered time is gone or the data is older than 2 min.
-- **Engine Sean:** reads Calendly directly (CALENDLY_TOKEN, event "outreach-consultation") for Dulcy workspaces 2 and 41 only. Clients get no times: Sean uses the booking link from the client file or asks about their week. Note the mismatch: Dulcy's settings say Google Calendar connected with links disabled, but the engine uses the Calendly link and Calendly times.
+- **Engine Echo:** reads Calendly directly (CALENDLY_TOKEN, event "outreach-consultation") for Dulcy workspaces 2 and 41 only. Clients get no times: Echo uses the booking link from the client file or asks about their week. Note the mismatch: Dulcy's settings say Google Calendar connected with links disabled, but the engine uses the Calendly link and Calendly times.
 
 ### Proposal: add Calendly, GoHighLevel and HubSpot to the same link flow
 - **Keep one flow.** Widen Request JSON `provider` to `google | calendly | ghl | hubspot`. Add a provider picker next to the button (label "Create connection link"). In `DulcyCalendarConnectionsV1`, change the `provider === 'google'` check to that allowed list (in Select Scoped Records and the other code nodes that repeat it).
 - **Calendar service:** add one OAuth app per provider. Tokens stay in the service, never in Airtable. Every provider returns the **same response shape** the drafters already use (`collection[start_time,status,invitees_remaining]`, `eventType`, `connection.status`), so nothing downstream changes. Provider APIs to verify before building (not checked here): Calendly OAuth plus the event-type available-times API; GoHighLevel/LeadConnector marketplace OAuth plus calendar free-slots; HubSpot OAuth plus the meetings-scheduler availability for a meeting link. GHL may need a private-integration token per location instead of OAuth. Alex decides.
 - **Snapshot:** add `provider` and `eventType` to Snapshot JSON; set Calendar Provider to Calendly / Other (GHL) / Other (HubSpot), or add the choices "GoHighLevel" and "HubSpot" (schema change).
-- **Sean:** replace the direct Calendly call with one helper, `availability(workspaceRecordId, start, end)`, that calls the calendar service for any workspace whose Calendar Connection Status = Connected. Pick two slots inside office hours, write them into Policy Decision `calendarEvidence`, and have the engine sender re-check them right before sending (same rule as sender v4). If not connected: use the saved Calendar Link when disableLinks is false; otherwise ask about their week.
+- **Echo:** replace the direct Calendly call with one helper, `availability(workspaceRecordId, start, end)`, that calls the calendar service for any workspace whose Calendar Connection Status = Connected. Pick two slots inside office hours, write them into Policy Decision `calendarEvidence`, and have the engine sender re-check them right before sending (same rule as sender v4). If not connected: use the saved Calendar Link when disableLinks is false; otherwise ask about their week.
 - **Blocker to check:** the service is on an internal host of the n8n server. Whether the engine server can reach it is UNKNOWN. It may need an authenticated route.

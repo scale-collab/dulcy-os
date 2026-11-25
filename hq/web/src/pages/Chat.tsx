@@ -2,12 +2,12 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEve
 import { api, type ChatMessage, type Thread, type User } from '../api';
 import { AGENT_COLOR, Avatar, cx, ErrorBox, go, Icon, Label, Markdown, Pill, timeAgo } from '../ui';
 
-const AGENTS = ['Ada', 'Atlas', 'Scribe', 'Scout', 'Sean', 'Riley', 'Cole', 'Ledger', 'Sienna'];
-const ROLE: Record<string, string> = { Ada: 'COO', Atlas: 'Clients + campaigns', Scribe: 'Copy and offers', Scout: 'Lead lists', Sean: 'Inbox', Riley: 'Automation', Cole: 'Sales', Ledger: 'Money', Sienna: 'Content' };
+const AGENTS = ['Ada', 'Atlas', 'Scribe', 'Scout', 'Echo', 'Riley', 'Cole', 'Ledger', 'Sienna'];
+const ROLE: Record<string, string> = { Ada: 'COO', Atlas: 'Clients + campaigns', Scribe: 'Copy and offers', Scout: 'Lead lists', Echo: 'Inbox', Riley: 'Automation', Cole: 'Sales', Ledger: 'Money', Sienna: 'Content' };
 const STARTERS: Record<string, string[]> = {
   Ada: ['What needs me first today?', 'Which agents had problems this week?', 'Ask Atlas which campaigns are past 60%'],
   Atlas: ['Which campaigns are past 60%?', 'Any bounce rates over 2.5%?'],
-  Sean: ['How many replies are waiting for approval?', 'Which replies came in overnight?'],
+  Echo: ['How many replies are waiting for approval?', 'Which replies came in overnight?'],
   Riley: ['Did any engine job fail in the last 24 h?'],
 };
 type FullThread = { id: number; agent: string; askedBy: string; parentId: number | null; messages: ChatMessage[]; children: { id: number; agent: string; title: string }[] };

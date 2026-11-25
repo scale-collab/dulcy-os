@@ -7,17 +7,18 @@ import type { AirtableClient, AirtableRecord } from '../providers/airtable.js';
 import { DECISIONS, DF } from '../decisions/fields.js';
 import { EMAILS, RA } from '../agents/emailsFields.js';
 import { OWNER_ONLY, PILES, pileFor, type Pile } from './agents.js';
+import { canonAgent } from '../activity.js';
 
 export type HqAirtable = Pick<AirtableClient, 'list' | 'get' | 'create' | 'update'>;
 
 export interface DecisionCard {
   id: string; title: string; agent: string; client: string; pile: Pile; status: string;
   isReply: boolean; issue: string; checked: string; fix: string; details: string; action: string; created: string;
-  /** Sean reply cards: the EmailBison thread link and the prospect's latest message (from Details). */
+  /** Echo reply cards: the EmailBison thread link and the prospect's latest message (from Details). */
   threadUrl: string; latestMessage: string; canEdit: boolean;
 }
 
-/** "Thread: <url>" and "Latest message:" / "Their last message:" from a Sean decision's Details. Pure. */
+/** "Thread: <url>" and "Latest message:" / "Their last message:" from a Echo decision's Details. Pure. */
 export function replyContext(details: string): { threadUrl: string; latestMessage: string } {
   const url = /^Thread:\s*(https:\/\/\S+)/m.exec(details)?.[1] ?? '';
   const latest = /(?:^|\n)(?:Latest message|Their last message):\s*\n([\s\S]*)$/.exec(details)?.[1]?.trim() ?? '';
@@ -30,7 +31,7 @@ const FIELDS = [DF.title, DF.agent, DF.status, DF.client, DF.issue, DF.checked, 
 
 export function toCard(r: AirtableRecord): DecisionCard {
   const f = r.fields;
-  const agent = text(f[DF.agent]);
+  const agent = canonAgent(text(f[DF.agent]));
   const isReply = text(f[DF.action]) === 'Approve Reply';
   const ctx = isReply ? replyContext(text(f[DF.details])) : { threadUrl: '', latestMessage: '' };
   return {
@@ -60,7 +61,7 @@ export type Verdict = 'approve' | 'reject' | 'edited';
 
 /**
  * Approve or reject one decision. Refuses one that is no longer pending (decided elsewhere).
- * Sean's replies: only the Emails row's buttons are pressed (Approve Draft / Send Edited Reply with the
+ * Echo's replies: only the Emails row's buttons are pressed (Approve Draft / Send Edited Reply with the
  * text in Custom Reply / Skip); the engine's reply sender sends and closes the decision.
  */
 export async function decide(at: Pick<HqAirtable, 'get' | 'update'>, id: string, verdict: Verdict, decidedBy: string, opts: { canSeeMoney: boolean; editedText?: string }, now = new Date()): Promise<{ status: number; error?: string; result?: string }> {
@@ -79,7 +80,7 @@ export async function decide(at: Pick<HqAirtable, 'get' | 'update'>, id: string,
   }
   const status = verdict === 'reject' ? 'Rejected' : 'Approved';
   if (card.isReply && /^rec[A-Za-z0-9]{14}$/.test(emailRec)) {
-    // Sean's reply drafts: the same buttons the Reply Queue uses, so the engine sends exactly once.
+    // Echo's reply drafts: the same buttons the Reply Queue uses, so the engine sends exactly once.
     await at.update(EMAILS, emailRec, verdict === 'edited'
       ? { [RA.customReply]: edited, [RA.humanAction]: 'Send Edited Reply' }
       : { [RA.humanAction]: verdict === 'approve' ? 'Approve Draft' : 'Skip' });

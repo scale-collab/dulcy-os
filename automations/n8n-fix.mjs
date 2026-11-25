@@ -1,9 +1,9 @@
 // Small n8n fixes through the n8n API (run on the server, keys typed in, never saved).
 //   placement-30 : [Inbox Placement Tests] Check Results runs every 30 min instead of every 1 min
 //   lock-actions : EmailBison Actions webhook requires header X-Dulcy-Key (value from ACTIONS_KEY)
-//   replier-off  : switch off the old n8n Reply Agent (drafters, follow-up scheduler, sender, reconcile, provision) when Sean goes live
+//   replier-off  : switch off the old n8n Reply Agent (drafters, follow-up scheduler, sender, reconcile, provision) when Echo goes live
 //   replier-on   : switch them back on (undo)
-//   followup-arm-off : in 'Manual Emails Sent', switch off only the node that arms the old follow-up timer (Sean arms follow-ups now)
+//   followup-arm-off : in 'Manual Emails Sent', switch off only the node that arms the old follow-up timer (Echo arms follow-ups now)
 //   followup-arm-on  : switch that node back on (undo)
 //   spam-protocol-off: switch off '[Email Accounts] Automated Spam Protocol' (the engine's account.health loop replaces it)
 //   spam-protocol-on : switch it back on (undo)

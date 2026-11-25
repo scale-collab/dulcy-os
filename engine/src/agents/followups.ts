@@ -1,7 +1,7 @@
-// Sean's follow-ups (Alex 2026-11-24: "keep following up until they answer or say stop").
+// Echo's follow-ups (Alex 2026-11-24: "keep following up until they answer or say stop").
 // A thread is "armed" (State Scheduled + Due At + Follow-up Type) after every reply we send, and
 // by the old intakes for out-of-office / check-back-later replies. When Due At passes and the
-// prospect still has not answered, Sean drafts the next follow-up with a real reason, onto the
+// prospect still has not answered, Echo drafts the next follow-up with a real reason, onto the
 // same Airtable row + a Slack decision. Nothing sends without a person's Approve / ✅.
 // Steps come from the client's "Follow-up Plan JSON" in the Reply Agent settings (delay + what
 // the step should do); then one polite close-the-loop note; then the thread is complete.
@@ -58,7 +58,7 @@ export function dueFormula(): string {
     + `NOT(${any('Lead Status', NO_FOLLOWUP_STATUS)}),NOT(${any('Pipeline Stage', CLOSED_STAGES)}))`;
 }
 
-export const FOLLOWUP_BRIEF = `You are Sean, Dulcy's inbox manager, writing a FOLLOW-UP in a thread where the prospect has not answered our last email (or was out of office and is now back). Dulcy is a cold email agency run by Alex; the client file below says whose campaign this is and what is true about them.
+export const FOLLOWUP_BRIEF = `You are Echo, Dulcy's inbox manager, writing a FOLLOW-UP in a thread where the prospect has not answered our last email (or was out of office and is now back). Dulcy is a cold email agency run by Alex; the client file below says whose campaign this is and what is true about them.
 
 Decide one action:
 - "reply": a follow-up is worth sending now. Write the full email body in "draft".
@@ -105,7 +105,7 @@ export const seanFollowupStage: Stage = async (ctx) => {
       `INSERT INTO sean_drafts (email_record, reply_at, action, reason, decision_id) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (email_record, reply_at) DO UPDATE SET action = EXCLUDED.action, reason = EXCLUDED.reason, decision_id = EXCLUDED.decision_id WHERE sean_drafts.action = 'dry_run'`,
       [r.id, `followup:${val(f[RA.dueAt])}`, ctx.dryRun ? 'dry_run' : action, reason.slice(0, 500), decisionId || null]);
 
-    // The prospect answered after our last email: that is a reply for Sean's normal drafting, not a follow-up.
+    // The prospect answered after our last email: that is a reply for Echo's normal drafting, not a follow-up.
     if (type === 'No Response' && val(f[EF.lastSent]) === 'Last Email Sent By Prospect') { await record('answered', 'prospect wrote after our last email'); counts.answered++; continue; }
     const client = clientFileFor(dir, ws);
     if (!client) { counts.noClientFile++; continue; }
@@ -168,13 +168,13 @@ export const seanFollowupStage: Stage = async (ctx) => {
         });
         if (auto.auto) {
           if (offer.slots.length) await rememberOffered(ctx.db, wsRec, offer.slots, r.id);
-          await logActivity(cfg, { event: `Auto follow-up ${n} queued: ${val(f[EF.leadName]) || 'prospect'} (${client.name})`, type: 'Approved', agent: 'Sean', details: `Client setting: ${auto.why}. ${d.reason}`, jobId: ctx.job.id });
+          await logActivity(cfg, { event: `Auto follow-up ${n} queued: ${val(f[EF.leadName]) || 'prospect'} (${client.name})`, type: 'Approved', agent: 'Echo', details: `Client setting: ${auto.why}. ${d.reason}`, jobId: ctx.job.id });
         } else if (action !== 'skip') {
           if (offer.slots.length) await rememberOffered(ctx.db, wsRec, offer.slots, r.id);
           const who = `${val(f[EF.leadName]) || 'prospect'}${val(f[EF.company]) ? ` at ${val(f[EF.company])}` : ''}`;
           decisionId = await at.create(DECISIONS, {
             [DF.title]: action === 'reply' ? `Follow-up ${n} to ${who}` : `Need your input: follow-up ${n} to ${who}`,
-            [DF.agent]: 'Sean', [DF.status]: 'New', [DF.client]: client.name, [DF.emailsRecord]: r.id,
+            [DF.agent]: 'Echo', [DF.status]: 'New', [DF.client]: client.name, [DF.emailsRecord]: r.id,
             [DF.issue]: `${type === 'No Response' ? 'No answer to our last email' : type}. ${d.they_said}`.trim(),
             [DF.checked]: action === 'ask_alex' ? `${question} (answer it in Airtable: edit the draft, then Send Edited)` : d.reason,
             [DF.fix]: d.draft,

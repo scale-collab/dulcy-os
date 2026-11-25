@@ -169,7 +169,7 @@ Small lists swing hard: #1, #2 and #4 rest on 3-4 meetings each.
 6. **Use fresh lists; plan on one strong run per list.** Re-runs averaged 0.20 per 1k on 55,664 contacted. Top up with net-new lookalikes instead of re-mailing.
 7. **Verify, then re-verify before a re-send.** MV re-runs cut bounce from about 14-16% to about 1% and then booked meetings (Amazon 5, TwoTrees 10). Do not send "risky" segments (8.7-11.1% bounce, 0 meetings).
 8. **Generic inboxes are worth including for small businesses, with tight bounce control.** In 18 pairs, generic booked 41 meetings vs 7 for direct (0.67 vs 0.18 per 1k) but bounced 5.95% vs 4.12%.
-9. **Fix booking before buying more volume.** Current clients: 2,203 interested, 172 meetings (7.8 per 100 interested) vs Dulcy 20.8. Send interested-to-booked gaps to Sean (two dated times, no link: 27.7% vs 6.2% booked, per RULES).
+9. **Fix booking before buying more volume.** Current clients: 2,203 interested, 172 meetings (7.8 per 100 interested) vs Dulcy 20.8. Send interested-to-booked gaps to Echo (two dated times, no link: 27.7% vs 6.2% booked, per RULES).
 10. **Interest above 15% predicts meetings.** 70 camps at >= 15% interested booked 1.23 per 1k vs 0.38 for the rest. It is a sound top-up gate (matches the RULES 15% bar).
 11. **Whitepaper/research-interview asks are steady but not winners.** 32 camps, 0.51 per 1k, median 0.53, only 5 with zero meetings. A safe second test, not a lead offer.
 

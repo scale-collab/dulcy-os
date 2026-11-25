@@ -94,7 +94,7 @@ export async function decisionsTick(db: Db, cfg: Config, at: Pick<AirtableClient
     if (!who) continue;
     await at.update(DECISIONS, r.id, { [DF.status]: no ? 'Rejected' : 'Approved', [DF.decidedBy]: NAMES[who] ?? who, [DF.decidedAt]: now() });
     decided++;
-    // Sean's replies: Slack presses the same button as Airtable (one sender, sends once).
+    // Echo's replies: Slack presses the same button as Airtable (one sender, sends once).
     const emailsRecord = text(r.fields[DF.emailsRecord]);
     if (text(r.fields[DF.action]) === 'Approve Reply' && emailsRecord) {
       await at.update(EMAILS, emailsRecord, { [RA.humanAction]: no ? 'Skip' : 'Approve Draft' });

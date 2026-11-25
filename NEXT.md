@@ -3,7 +3,7 @@
 Last updated: 2026-11-25 evening
 
 ## Done 2026-11-25 (live on the server)
-- **Inbox replier (Sean):** every per-client Reply Agent setting honoured (send modes, confidence, max automatic, always-review types, OOO, nudge, office hours); out-of-office / not-interested first replies only where the client turns them on. All 8 clients still Approval Required.
+- **Inbox replier (Echo):** every per-client Reply Agent setting honoured (send modes, confidence, max automatic, always-review types, OOO, nudge, office hours); out-of-office / not-interested first replies only where the client turns them on. All 8 clients still Approval Required.
 - **Dulcy HQ (hq.dulcy.io):** Today, Decisions (reply edit + send), To-do, Team, Chat, reports; redesign, Dulcy logo, Dulcy purple. Slack still on (SLACK_REPORTS / SLACK_DECISIONS) until Alex trusts HQ.
 - **Content (Sienna):** ideas Friday 7 AM for both channels (main 4, Raw 8) from web research, prospect questions and Agency Ignition (Discord bot reads 38 channels; quiet server); scripts/hooks/titles/thumbnail idea/Gamma outline within 30 min of approval; editing style guide + GPT brief; scheduled "Sienna: video editor" every 2 h 8 AM-8 PM (check → fix → reject → Needs Review; never posts).
 - **LeadMagic:** parallel single Email Finder calls (bulk ran ~19 rows/min; ticket T-1619 sent to the team).
@@ -20,7 +20,7 @@ Last updated: 2026-11-25 evening
 
 ## Daily Run page (built 2026-11-25)
 - Project Management interface → **Daily Run** (page pag4oy80YbYDAOj4C, custom element blk5lFNbkRRBFd7gF; Riley can rebuild from `airtable/custom-elements/daily-run/README.md`).
-- Step 1: pick a pile (Replies · Campaigns · Fixes · Money · Other) or "Do them all"; one card at a time; Approve / Reject / Skip (keys A/R/S); progress bar. Approve = same as ✅ in Slack (Status Approved; Sean replies also press Approve Draft on the Emails row so the engine sends once).
+- Step 1: pick a pile (Replies · Campaigns · Fixes · Money · Other) or "Do them all"; one card at a time; Approve / Reject / Skip (keys A/R/S); progress bar. Approve = same as ✅ in Slack (Status Approved; Echo replies also press Approve Draft on the Emails row so the engine sends once).
 - Step 2: "Start my day": Tasks table one at a time (overdue → due today → in progress, then priority); Start (timer) / Pause / Complete / Skip. Modelled on James Higgins's "Single Action" feed (call 2026-10-22).
 
 ## Dulcy HQ: our own app (Alex, 2026-11-25, vision; start in the background, keep it simple)
@@ -37,7 +37,7 @@ One private place instead of many Airtable interfaces, Slack DMs, bots and tools
 
 ## Next up (Alex, 2026-11-25)
 1. Switch on and check Atlas, Cole (needs FATHOM_API_KEY) and Sienna (morning list in `reports/morning-2026-11-25.md`).
-2. Then, in the terminal together: **campaign creation**, **inbox management** (Sean AI replier improvements, pinned earlier), and the **Content Center**.
+2. Then, in the terminal together: **campaign creation**, **inbox management** (Echo AI replier improvements, pinned earlier), and the **Content Center**.
 
 ## Now (2026-11-24)
 - **End-to-end done from the Airtable pages** on "[Dulcy Free Campaigns] new end to end testttt" (pet e-com): Generate filters → first 100 → Expand (2,011 companies, 1,957 usable) → contacts (1,518) → Verify (1,127 Good: 850 direct + 277 generic) → Skip enrichment → QA Passed (Ready) → spintax (n8n) → Build Campaign → EmailBison drafts **654** (Generic, 277) and **655** (Direct, 850), 1 inbox each, **not launched**. Launch/Pause was tested on 2026-11-23 (campaign 653).
@@ -45,12 +45,12 @@ One private place instead of many Airtable interfaces, Slack DMs, bots and tools
 - **Built today (engine):** Generate filters for every niche (500-company pull, labels only at 60%+, sub-industry alone, soft 3,000-lead goal, auto-widen size first); business model + example sites only when they fit; Expand switches to MAX_COVERAGE when BALANCED runs out; live line-by-line progress (Expand, Contacts, Verify); Lead List Stage follows the steps; contacts = DiscoLike Contacts Run only; ALL CAPS company names fixed at build; Build stops on empty copy variables; QA still needs the copy (Alex's correction).
 - **Server (2026-11-24):** updates installed + reboot, disk 74.5% (n8n keeps 7 days of runs now), keys for phone + PC (via GitHub keys).
 - **Next / open:** 1) Real search-depth check in Generate filters: built 2026-11-24. 2) Fallbacks: already built 2026-11-21 (each variable's FALLBACK section in the enrichment prompt; the engine fills blanks/Not Found); enrichment now reports found vs fallback per variable. 3) Auto-tidy finished lists (keeps the engine DB small). 4) Switch the main pages to the engine versions. 5) Bounce check live (needs the server setting names). 6) n8n memory cap 6144 → 3072 and Hetzner backups (Alex, optional). 7) Old n8n lead tables (~3 GB, used until 2026-11-21): keep 2-4 weeks, then export and remove; maybe import the ~300k old email checks into the engine.
-- **PINNED (Alex 2026-11-25): Sean AI replier improvements — come back after the account health loop + activity log are done.**
-- **Sean LIVE (2026-11-24 evening):** drafts every 10 min onto the Emails rows (Reply Queue) + Slack (channel C0B581HNSMR); one engine sender for all clients (REPLY_SENDER=on); old n8n replier (6 workflows) switched off by Alex; 249 old OpenAI drafts cleared (State Skipped). First run: 8 drafts (3 ready to approve, 5 need Alex's input).
-  - **Follow-ups built (2026-11-24):** Sean drafts due follow-ups (Slack ✅ / Approve). To switch on: FIX=followup-arm-off in n8n, then SEAN_FOLLOWUPS=on in the server .env, deploy.
-  - Next: add Human Action / Custom Reply / Sean fields to the Reply Queue page; Calendly selectable in the calendar button (service already supports it; needs a Calendly OAuth app); GoHighLevel + HubSpot providers in services/dulcy-calendar (code on branch calendar-import); Google OAuth app out of test mode.
+- **PINNED (Alex 2026-11-25): Echo AI replier improvements — come back after the account health loop + activity log are done.**
+- **Echo LIVE (2026-11-24 evening):** drafts every 10 min onto the Emails rows (Reply Queue) + Slack (channel C0B581HNSMR); one engine sender for all clients (REPLY_SENDER=on); old n8n replier (6 workflows) switched off by Alex; 249 old OpenAI drafts cleared (State Skipped). First run: 8 drafts (3 ready to approve, 5 need Alex's input).
+  - **Follow-ups built (2026-11-24):** Echo drafts due follow-ups (Slack ✅ / Approve). To switch on: FIX=followup-arm-off in n8n, then SEAN_FOLLOWUPS=on in the server .env, deploy.
+  - Next: add Human Action / Custom Reply / Echo fields to the Reply Queue page; Calendly selectable in the calendar button (service already supports it; needs a Calendly OAuth app); GoHighLevel + HubSpot providers in services/dulcy-calendar (code on branch calendar-import); Google OAuth app out of test mode.
 - **Backlog from Alex (2026-11-24), in his words, to plan with the agents:**
-  - Agents (Riley, Atlas, Sean…) as real triggered agents, not just skills: Decisions loop (Slack ✅/❌ + Airtable log) first.
+  - Agents (Riley, Atlas, Echo…) as real triggered agents, not just skills: Decisions loop (Slack ✅/❌ + Airtable log) first.
   - n8n audit: list every workflow, what is active, what moves to the engine; tag each "engine", "n8n only" or "n8n + engine".
   - Analytics: daily 3 AM stats sync is fine; check it. Inbox placement tests often fail: check. Bounce counts in Airtable are too low vs EmailBison: investigate. Verifier breakdown stats (share of replies by MillionVerifier / LeadMagic / DiscoLike): check whether still active.
   - Google Sheet shared with the client at approval: set to Commenter automatically.
@@ -98,8 +98,8 @@ One private place instead of many Airtable interfaces, Slack DMs, bots and tools
 
 ## Agent build (one at a time, Alex approves each)
 - [x] All 13 built 2026-11-17: Ada (main session) + 12 sub-agents in `.claude/agents/`, skills in `skills/`.
-- [x] Closers.io library fully read (198 lessons) → Cole (+ Pixel ads, Harper hiring, Ledger finance pointers). Sean has Dulcy reply history (6 months), creator methods and Drive SOPs. Pixel/Lex/Ledger/Harper expanded from Alex's zip.
-- [ ] Still UNKNOWN: Josh's daily routine and approvals (Sean), Sienna cadence and Reddit format, the 7FSA course beyond 5 docs (Cole).
+- [x] Closers.io library fully read (198 lessons) → Cole (+ Pixel ads, Harper hiring, Ledger finance pointers). Echo has Dulcy reply history (6 months), creator methods and Drive SOPs. Pixel/Lex/Ledger/Harper expanded from Alex's zip.
+- [ ] Still UNKNOWN: Josh's daily routine and approvals (Echo), Sienna cadence and Reddit format, the 7FSA course beyond 5 docs (Cole).
 - [x] Reply conflicts answered by Alex 2026-11-17 (see RULES). Still open: mock-call interviews yes/no (Harper).
 - [ ] Alex reviews each agent and corrects it.
 
