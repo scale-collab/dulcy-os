@@ -225,6 +225,15 @@ export function createBisonClient(o: BisonOptions) {
       const n = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : 0);
       return rows.map((x) => ({ id: String(x.id), email: String(x.email ?? '').toLowerCase(), status: String(x.status ?? '').toLowerCase(), sent: n(x.emails_sent_count), bounced: n(x.bounced_count), contacted: n(x.total_leads_contacted_count) }));
     },
+    /** Set the cold-email daily limit of sender inboxes (0 = rest the account). */
+    setDailyLimit: (senderIds: (string | number)[], limit: number) =>
+      call('PATCH', '/api/sender-emails/daily-limits/bulk', { sender_email_ids: senderIds.map(Number), daily_limit: limit }, { write: true }),
+    /** One inbox's current settings (daily limit, status). */
+    async senderEmailDetails(id: number): Promise<{ id: number; email: string; dailyLimit: number; status: string }> {
+      const r = await call('GET', `/api/sender-emails/${id}`);
+      const x = r?.data ?? r ?? {};
+      return { id: Number(x.id ?? id), email: String(x.email ?? '').toLowerCase(), dailyLimit: Number(x.daily_limit ?? 0), status: String(x.status ?? '').toLowerCase() };
+    },
     /** A sample of the campaign's lead emails (first pages only), for where-the-bounces-land comparisons. */
     async campaignLeadEmailsSample(campaignId: number, maxPages = 10): Promise<string[]> {
       const out: string[] = [];

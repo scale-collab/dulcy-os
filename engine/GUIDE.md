@@ -356,3 +356,15 @@ Follows Alex's method (RULES.md 2026-11-25). Over 4% bounce = pause and investig
 5. **Verification** causes (list) and gateway removals change leads, so they are proposed only. ✅ runs only: remove the burned inboxes and resume, or resume (too early to judge). After a fix, Skip Bounce Pause is ticked (the bounce % counts every email so far).
 6. **Check one campaign by hand** (posts nothing): `docker compose exec engine node dist/src/cli.js bounce-check-campaign <workspaceId> <campaignId>` (add `--post` to post it to Slack).
 7. **Switch:** `bounce.investigate` and `bounce.fix` in LIVE_STAGES.
+
+## Account health loop (Atlas, 2026-11-25)
+Alex's rule (RULES.md 2026-11-25). Replaces the n8n "[Email Accounts] Automated Spam Protocol", which never processed a test.
+1. **When.** Every `ACCOUNT_HEALTH_EVERY_MIN` minutes the engine reads new inbox placement tests (Inbox Placement Testing, created after `ACCOUNT_HEALTH_FROM`, default the Friday 2026-11-27 tests). The bounce agent uses the same rest when one account causes a campaign's bounces.
+2. **Under 60% → rest.** Daily limit set to 0 (1 if EmailBison refuses 0), old limit saved in *Previous Daily Limit*, Spam Protocol Stage *Resting 7 Days*, Retest Due = 6.5 days later (so the next Friday test is the retest). Automatic; Slack summary.
+3. **Next weekly test.** 60%+ → old limit restored, *Recovered*. Under 60% → the domain's blacklist result (from the weekly EmailGuard check on Domains) is read, a **Replace Domain** record goes to the Spam Remediation Queue (1 .com domain at $9.99 + 2 Google accounts via Cheap Inboxes) and a Slack decision. **✅ ticks Approve Purchase**; the n8n "Approve Domain Replacement" flow prepares the purchase request and the card is charged only after the final approval in Buy Domains & Inboxes.
+4. **Activity log.** Every step (rest, recover, replacement, approval) is written to the Activity Log, linked to the account, its campaigns and the client.
+
+## Activity log (2026-11-25)
+Airtable table **Activity Log**: one row per step, with When, Agent (Atlas, Sean, Engine…), Type (Detected, Diagnosed, Fixed, Waiting for approval, Approved, Step done, Step failed) and links to Campaign, Lead List, Email Account and Client. Written by: every finished lead list and campaign job (sample, contacts, verify, build, launch, pause, top up…), the bounce check (pauses), the bounce agent (diagnosis and automatic fixes) and the account health loop. Each Campaign and Lead List record has the linked **Activity Log** field; the Campaigns interface has an **Activity Log** page with dropdowns per campaign / lead list / account / client.
+
+**Bounce agent, automatic fixes (Alex 2026-11-25):** when one account is the cause, it is rested for a week and the campaign is resumed without waiting for ✅; "too early to judge" resumes too. The Slack post then says "Fixed: …". List, copy, domain and gateway fixes stay proposals.

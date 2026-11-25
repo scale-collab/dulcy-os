@@ -6,7 +6,7 @@
 import { PermanentError, RetryableError } from '../errors.js';
 
 export interface AirtableOptions { apiKey?: string; baseId: string; baseUrl?: string; timeoutMs?: number; fetchImpl?: typeof fetch }
-export interface AirtableRecord { id: string; fields: Record<string, unknown> }
+export interface AirtableRecord { id: string; fields: Record<string, unknown>; createdTime?: string }
 
 export function createAirtableClient(o: AirtableOptions) {
   const f = o.fetchImpl ?? fetch;
@@ -43,7 +43,7 @@ export function createAirtableClient(o: AirtableOptions) {
         if (opts.sortField) { q.set('sort[0][field]', opts.sortField); q.set('sort[0][direction]', opts.sortDesc ? 'desc' : 'asc'); }
         if (offset) q.set('offset', offset);
         const r = await call('GET', `/${tableId}?${q}`);
-        out.push(...(r.records ?? []).map((x: any) => ({ id: String(x.id), fields: x.fields ?? {} })));
+        out.push(...(r.records ?? []).map((x: any) => ({ id: String(x.id), fields: x.fields ?? {}, ...(x.createdTime ? { createdTime: String(x.createdTime) } : {}) })));
         offset = r.offset;
       } while (offset && out.length < maxRecords);
       return out;

@@ -69,6 +69,11 @@ export async function startFakeBison(): Promise<FakeBison> {
     if (cm) { const c: any = s.campaigns.find((y) => y.id === Number(cm[1])); if (c && (c.team ?? 2) !== team) return json(res, 403, { data: { success: false, message: 'This action is unauthorized. Consider using api-user keys or switch to the workspace this record is on.' } }); }
     let x;
     if ((x = m(/^\/api\/replies\/(\d+)\/conversation-thread$/)) && req.method === 'GET') { const t = ((s as any).threads ?? {})[x[1]]; return t ? json(res, 200, { data: t }) : json(res, 404, { message: 'not found' }); }
+    if (u.pathname === '/api/sender-emails/daily-limits/bulk' && req.method === 'PATCH') {
+      const bd = body(); if ((s as any).rejectZeroLimit && Number(bd.daily_limit) === 0) return json(res, 422, { message: 'The daily limit must be at least 1.' });
+      for (const id of bd.sender_email_ids ?? []) ((s as any).dailyLimits ??= {})[String(id)] = Number(bd.daily_limit);
+      return json(res, 200, { data: { success: true } });
+    }
     if ((x = m(/^\/api\/sender-emails\/(\d+)$/)) && req.method === 'GET') return json(res, 200, { data: { id: Number(x[1]), email: `inbox${x[1]}@dulcy-mail.com` } });
     if ((x = m(/^\/api\/replies\/(\d+)\/reply$/)) && req.method === 'POST') { ((s as any).repliesSent ??= []).push({ replyId: Number(x[1]), team, ...body() }); return json(res, 200, { data: { success: true, reply: { id: 9000 + ((s as any).repliesSent.length) } } }); }
     if (req.method === 'GET' && u.pathname === '/api/workspaces') return json(res, 200, { data: (s as any).workspaces ?? [{ id: 2, name: 'Dulcy' }] });
