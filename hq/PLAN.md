@@ -61,7 +61,21 @@
 - **Counting:** active clients by default (Inactive switch for the rest). Workspaces that are one client count once (Twenty West Media + "(Internal)"; Dulcy + Dulcy Free Campaigns). Same Airtable reads and grade as Atlas's Monday report (shared code in `engine/src/agents/atlas.ts`). Airtable reads cached 5 minutes.
 - **Data problems it shows (for Atlas to fix in Airtable):** MJJ Brilliant and The Marketing Cartel have no Client Type and no Monthly Fee (that is why "Clients & LTV" shows 3 active); Twenty West's $2,500 fee, $8,985 revenue and $4,995 owed sit on the inactive record while the active "(Internal)" record has $0.
 - **Also built (Alex, same day):** sign-up requests and a Users page (approve / deny / role / disable / reset / add; owner only). See GUIDE "Sign-up and Users".
-- **Not in Step 2 yet:** LinkedIn, AI caller and direct-mail results; the domain, inbox, warm-up, placement and spam screens.
+- **Not in Step 2 yet:** LinkedIn, AI caller and direct-mail results. (The domain, inbox, warm-up, placement and spam screens: built as Deliverability, below.)
+
+### Step 2 status (2026-11-25): Deliverability built, not deployed
+- **Built:** `engine/src/hq/deliverability.ts` (API `/hq/api/deliverability`, `/inboxes`, `/placement`, `/domains`) and the Deliverability tab in `hq/web/` (after Campaigns in the sidebar; envelope icon at the top on the phone). How to use it: `engine/GUIDE.md` → "HQ" → 8. Deliverability.
+- **Replaces:** Spam Center, Email Account Center, Domain & Inbox Inventory, Email Accounts / Warm Up, Inbox Placement Tests, Buy Domains & Inboxes. Retire each once Alex has used HQ instead.
+- **What it shows:** Needs attention by default (4 tiles: healthy / watch / sick / resting, overall and per client; one line per sick inbox or domain with the reason, owner and what the engine is already doing); All inboxes; Placement tests (newest per client and domain, late-scores warning); Domains (inbox count, expiry, blacklist, replacements, purchase requests).
+- **Read only:** no writes anywhere, no buying; buttons open Decisions or the Airtable record.
+- **Data problems found in Airtable (read only, 2026-11-25/26):**
+  1. **Placement scores:** the newest test is 2026-11-21 (11,646 tests in all; 6,541 in the last 45 days). The n8n "Check Results" workflow was not visible in the audit, and the health loop only reads tests from 11-26, so it needs Friday 11-27's. HQ shows this as a warning until they land.
+  2. **The health loop hasn't acted yet:** Spam Protocol Stage is empty on all 1,200 Email Accounts; the Spam Remediation Queue is empty.
+  3. **182 Email Accounts have Status "Spam"** (set before the engine's loop; HQ shows them as sick "Marked Spam in Airtable").
+  4. **347 of 1,200 Email Accounts have no Domains link** (HQ groups them by the email's domain).
+  5. **No domain has a Renewal Date** (0 of 607): expiry is UNKNOWN, so HQ can't warn before one lapses.
+  6. Blacklist: 0 domains Listed; last checks 11-20.
+- **Not yet:** the Spam Center's bounce charts (bounce codes, providers, trend); writes of any kind (warm-up on/off, limits, bulk controls stay in Airtable); a domain-level placement history chart.
 
 ## Step 3: Work areas
 - **Campaigns:** the Lead List and Campaign Centers rebuilt without Airtable's size limit, with the Activity log inside each campaign (code ready: `airtable/custom-elements/campaign-center/activity-log.pending.tsx`).

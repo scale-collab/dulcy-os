@@ -15,13 +15,16 @@ import ClientPage from './pages/ClientPage';
 import Users from './pages/Users';
 import Inbox, { ThreadPage } from './pages/Inbox';
 import Campaigns from './pages/Campaigns';
+import Deliverability from './pages/Deliverability';
 
 const TABS = [
   { key: 'today', label: 'Today', icon: 'sun', count: '' },
   { key: 'decisions', label: 'Decisions', icon: 'inbox', count: 'decisions' },
   { key: 'inbox', label: 'Inbox', icon: 'reply', count: 'inbox' },
   { key: 'campaigns', label: 'Campaigns', icon: 'megaphone', count: 'campaigns' },
+  { key: 'deliverability', label: 'Deliverability', icon: 'mail', count: 'deliverability' },
   { key: 'clients', label: 'Clients', icon: 'briefcase', count: '' },
+  // Deliverability goes after Campaigns in the sidebar (on the phone: an icon at the top).
   { key: 'needs', label: 'Needs you', icon: 'bell', count: 'needs' },
   { key: 'agents', label: 'Team', icon: 'users', count: '' },
   { key: 'chat', label: 'Chat', icon: 'message', count: '' },
@@ -48,6 +51,7 @@ export default function App() {
     case 'decisions': body = <Decisions user={user} pile={a} client={b} />; break;
     case 'clients': body = a ? <ClientPage id={a} user={user} tab={b} sub={c} /> : <Clients user={user} />; break;
     case 'inbox': body = <Inbox tab={a} client={b} />; break;
+    case 'deliverability': body = <Deliverability tab={a} client={b} status={c} />; break;
     case 'thread': body = <ThreadPage id={a ?? ''} />; break;
     case 'campaigns': body = <Campaigns a={a} b={b} />; break;
     case 'users': body = <Users user={user} />; break;
@@ -94,7 +98,7 @@ function Sidebar({ active, user, onSignOut }: { active: string; user: User; onSi
               className={cx('group flex min-h-11 items-center gap-3 rounded-xl px-3 text-[15px] font-medium transition', on ? 'bg-hover text-fg' : 'text-muted hover:bg-hover hover:text-fg')}>
               <Icon name={t.icon} size={18} className={on ? 'text-fg' : 'text-muted group-hover:text-fg'} />
               <span className="flex-1 text-left">{t.label}</span>
-              {!!n && <span className={cx('tabular rounded-full px-2 py-0.5 text-xs font-semibold', t.key === 'decisions' ? 'bg-ink text-ink-fg' : t.key === 'needs' || t.key === 'inbox' || t.key === 'campaigns' ? 'bg-accent text-accent-fg' : 'bg-sunken text-fg-2 border border-line')}>{n}</span>}
+              {!!n && <span className={cx('tabular rounded-full px-2 py-0.5 text-xs font-semibold', t.key === 'decisions' ? 'bg-ink text-ink-fg' : t.key === 'deliverability' ? 'bg-bad-soft text-bad' : t.key === 'needs' || t.key === 'inbox' || t.key === 'campaigns' ? 'bg-accent text-accent-fg' : 'bg-sunken text-fg-2 border border-line')}>{n}</span>}
             </button>
           );
         })}
@@ -138,6 +142,7 @@ function MobileHeader({ onSignOut, owner, active }: { onSignOut: () => void; own
         <div className="flex items-center">
           <IconButton icon="megaphone" label="Campaigns" active={active === 'campaigns'} onClick={() => go('campaigns')} />
           <IconButton icon="users" label="Team" active={active === 'agents'} onClick={() => go('agents')} />
+          <IconButton icon="mail" label={c.deliverability ? `Deliverability: ${c.deliverability} sick` : 'Deliverability'} active={active === 'deliverability'} onClick={() => go('deliverability')} />
           {owner && (
             <span className="relative">
               <IconButton icon="shield" label={c.signups ? `Users: ${c.signups} sign-up${c.signups === 1 ? '' : 's'} waiting` : 'Users'} onClick={() => go('users')} />
@@ -157,8 +162,8 @@ function TabBar({ active }: { active: string }) {
   return (
     <nav aria-label="Main" className="safe-bottom fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/90 backdrop-blur-md md:hidden">
       <div className="mx-auto grid max-w-lg grid-cols-6">
-        {/* Phone: Team and Campaigns are icons in the top bar (six tabs fit). */}
-        {TABS.filter((t) => t.key !== 'agents' && t.key !== 'campaigns').map((t) => {
+        {/* Phone: Team, Campaigns and Deliverability are icons in the top bar (six tabs fit). */}
+        {TABS.filter((t) => t.key !== 'agents' && t.key !== 'campaigns' && t.key !== 'deliverability').map((t) => {
           const on = active === t.key;
           const n = t.key === 'decisions' || t.key === 'needs' || t.key === 'inbox' ? c[t.key] : 0;
           return (
