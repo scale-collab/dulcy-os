@@ -23,6 +23,7 @@ import { askVisible, finishAsk, getAsk, isSnooze, listAsks, quietItem, snoozeAsk
 import { loadNeeds, needCounts } from './needs.js';
 import { actOnThread, listInbox, threadDetail } from './inbox.js';
 import { calendarInvite, replierDetail, saveReplier } from './replier.js';
+import { deliverabilityView } from './deliverability.js';
 
 export interface HqDeps { at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string }
 
@@ -292,6 +293,10 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         json(res, status, error ? { error } : { ok: true, ...rest });
         return true;
       }
+
+      // Deliverability: inboxes and domains, read only (sick first; tabs: inboxes, placement, domains).
+      m = p.match(/^\/hq\/api\/deliverability(?:\/(inboxes|placement|domains))?$/);
+      if (m && req.method === 'GET') { json(res, 200, await deliverabilityView(needAt(), db, cfg, m[1] ?? 'attention', url.searchParams)); return true; }
 
       if (p === '/hq/api/agents' && req.method === 'GET') { json(res, 200, { agents: await agentCards(db, at, user) }); return true; }
       m = p.match(/^\/hq\/api\/agents\/([A-Za-z]+)$/);
