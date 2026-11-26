@@ -593,13 +593,13 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
 - `RILEY=on`, and add `riley.collect,riley.apply` to `LIVE_STAGES`.
 - Optional, for n8n errors: `N8N_API_KEY` (n8n → Settings → n8n API → create key) and `N8N_BASE_URL` (default `http://localhost:5678`).
 
-## HQ: your private app (Step 1 "Today", Step 2 "Clients", 2026-11-25)
+## HQ: your private app (Step 1 "Today", Step 2 "Clients", Step 3 "Inbox", 2026-11-25)
 
 **What it is:** one calm screen at **https://hq.dulcy.io**, on the phone or the computer. It runs inside the engine (same server, same code), and Airtable stays the database. Only people with an HQ login get in. Plan: `hq/PLAN.md`.
 
-**Look:** a sidebar on the computer, tabs at the bottom on the phone. Light or dark follows your phone/computer; the System / Light / Dark switch (bottom of the sidebar, or the screen icon at the top on the phone) pins one on that device.
+**Look:** a sidebar on the computer, tabs at the bottom on the phone (on the phone, Inbox has Team's place in the bottom bar; Team is the people icon at the top). Light or dark follows your phone/computer; the System / Light / Dark switch (bottom of the sidebar, or the screen icon at the top on the phone) pins one on that device.
 
-**The six tabs** (plus Users for you):
+**The seven tabs** (plus Users for you):
 1. **Today**
    - First things: how many decisions wait on you, and the top 3 of **Needs you** in the "Do now" card (tap one to go straight to it).
    - Ada's brief: the two key lines first ("Waiting on you" and "Top 3"); tap for the rest.
@@ -642,6 +642,7 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
    - **One client, one card:** workspaces that are the same client count once: "Twenty West Media" (inactive) + "Twenty West Media (Internal)" (active), "Dulcy" + "Dulcy Free Campaigns". The rule: a Workspace IDs "Client" link to another record, otherwise the same name without "(…)" or a trailing "Internal" / "Free Campaigns". The active record leads; replies, meetings and campaigns of both add up.
    - **On each card:** the health light (Atlas's grade, the same as the Monday report), a **note for today** (1-2 lines: a bounce over 4%, replies waiting for approval, a campaign at 60%+ with no plan yet, "283 interested / 17 booked in 30 days"), interested and booked in 30 days (vs KPI), replies waiting for approval (Emails "Dulcy Reply Agent State" = Needs Approval) and active campaigns.
    - **Money (owner only):** monthly fee, lifetime revenue (Actual Lifetime Revenue, else Estimated LTV), what the client owes (Outstanding Receivables). A member's answer has no money in it at all (the server leaves it out).
+   - **Three tabs on a client:** **Overview** (below), **Inbox** (the Inbox list for this client only) and **AI replier** (its Reply Agent settings, below in 7).
    - **Tap a card:** the 7- and 30-day numbers with trends, the interested → booked rate, money, the campaigns table (progress, bounce % with watch over 2.5% / pause over 4%, interested per 1,000 sent, "plan next" at 60%+ or "next planned" when a campaign plan exists), the **Data check** (Client Type empty, fee missing or on the other record, two workspaces), decisions waiting for this client (tap opens that pile filtered to the client), Atlas's to-do for the client and its Activity Log rows.
    - **Speed and cost:** the Airtable reads are kept for 5 minutes for everyone; the refresh button re-reads (at most every 30 seconds). Atlas owns this data being right.
 6. **Chat:** talk to Ada (default) or any agent. History is saved per agent.
@@ -649,6 +650,19 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
    - When an agent isn't sure, it says "Here's what I found" and who should handle it.
    - Ada can ask another agent for you. That conversation is saved: tap "Read Ada ↔ Atlas" under her answer, or History → "Ada's conversations with the team".
    - Cost: each answer makes at most 5 calls (4 look-up rounds) with capped length (`HQ_CHAT_MAX_ROUNDS`, `HQ_CHAT_MAX_TOKENS`).
+
+7. **Inbox** (Step 3, 2026-11-25): every reply thread for every client, straight from the Airtable Emails table. It replaces the Reply Queue and the reply pages in Airtable for daily use. HQ only reads and presses the same buttons; Echo's drafting and the engine sender are unchanged.
+   - **Tabs** (with counts): **To approve** (Dulcy Reply Agent State = Needs Approval, follow-ups included), **Waiting on prospect** (we wrote last and a follow-up is Scheduled; shows the next follow-up date), **Booked** (last 60 days), **Handed to client** (Client Handling or Reply Ownership = Handoff, last 30 days), **Skipped** (last 30 days).
+   - **Client chips** filter to one client (the Twenty West pair counts as one); a search box finds a name, company or words. 50 rows a page.
+   - **Each row:** prospect + company, client, intent, age (or the next follow-up / booked date), one line of what they said, and flags: Follow-up N, **Link, not times** (the draft has a booking link), **Needs a fact** ([GAP]), **Not sent** (the sender refused; its reason is in the note), **Sending…** once pressed.
+   - **Notes on top** (Problem → Data → Fix): replies not sent, drafts with a booking link instead of two times (per client), drafts over a week old.
+   - **Tap a row:** their latest message, Echo's reason (and what Echo needs from you), **Offered times** when the draft has them, the draft in an editable box, and **Send / Send edited / Skip reply**: exactly the Decisions reply card's writes (Human Action Approve Draft / Send Edited Reply + Custom Reply / Skip, and the linked decision marked Approved/Rejected with who and when). The engine sender sends within a minute. A booking link in the draft shows a warning (RULES 2026-11-25: two times; a link only as a last resort); it does not block. A draft with a [GAP] can only go out edited. Below: the earlier messages, latest first, quoted text folded. **Open in EmailBison** opens the thread.
+   - Keys on a computer: A send, R skip reply, E edit, Esc stop editing.
+   - The list is read once a minute for everyone (refresh re-reads after 10 seconds). Members (Josh) can send and skip, like in Decisions.
+   - **AI replier** (client page → AI replier): the client's Reply Agent settings row in plain words, in six groups: **Sending mode** (on/off, who replies, send mode, minimum confidence %, max automatic replies, out-of-office replies), **Reply types** (which types get a draft, which always need a person, the "not interested" courtesy reply; routing groups read only), **Voice** (tone, length, name, company, website, your instructions), **Hours** (timezone, office start/end, weekends, US holidays), **Follow-ups** (the plan and CC/BCC read only; the follow-up instructions), **Calendar** (status, the booking link as a last resort, and **Get calendar link**).
+     - Only you (owner) can change it; members see it read only. Save sends only what changed, checks it (times as HH:MM, a real IANA timezone, percent 0-100, known reply types, https links) and writes those fields to Airtable. Every save is logged (who, when, from → to) under **Changes** (table `hq_settings_log`).
+     - Notes on top say what is off (Problem → Data → Fix), e.g. "Echo can't offer two times · times are switched off and the calendar is not connected · get the calendar link".
+     - **Get calendar link** asks the calendar service for a one-time "connect your calendar" link for the client's email (Google Calendar or Calendly). You get **Copy** and **Email to client** (your mail app opens with "Connect your calendar so we can offer your prospects two real times: <link>"). HQ never sends email. It needs `CALENDAR_ADMIN_TOKEN` in the server `.env` (a calendar-service token allowed to call `/calendar/admin/request-invite`; the service's inviter token is enough). Without it the button is off and says so.
 
 **Agent to-do lists:** kept in HQ (the Airtable Tasks table has no Agent field). For now one generator fills them, every 30 minutes:
 - A running campaign past 60% sent gives Atlas "Plan next campaign for <client>", due in 3 days.

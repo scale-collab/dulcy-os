@@ -53,3 +53,41 @@ export interface ClientsSummary { active: number; internal: number; inactive: nu
 export interface HqUserRow { id: number; email: string; name: string; role: 'owner' | 'member'; status: 'pending' | 'active' | 'disabled'; google: boolean; hasPassword: boolean; lastSeen: string | null; created: string; requested: string | null }
 export interface UserEvent { id: number; actor: string; action: string; target: string; detail: string; created: string }
 export interface Thread { id: number; agent: string; askedBy: string; parentId: number | null; title: string; updated?: string; messages?: number }
+
+/* ---------- Inbox (Step 3) ---------- */
+export type InboxTab = 'approve' | 'waiting' | 'booked' | 'handed' | 'skipped';
+/** A short status line written by the server: Problem → Data → Fix. */
+export interface Note { problem: string; data: string; fix: string }
+export interface InboxRow {
+  id: string; tab: InboxTab | null; prospect: string; email: string; company: string; client: string; clientKey: string; wsRec: string;
+  intent: string; at: string; theySaid: string; followup: number; followupType: string; nextFollowUp: string | null; bookedAt: string;
+  state: string; pressed: string; error: string; bookingLink: boolean; gap: boolean;
+}
+export interface InboxList {
+  tab: InboxTab; client: string; rows: InboxRow[]; total: number; page: number; pages: number; counts: Record<InboxTab, number>;
+  clients: { key: string; name: string; count: number }[]; notes: Note[]; readAt: string;
+}
+export interface InboxMsg { who: 'them' | 'us' | 'unknown'; head: string; body: string; quoted: string }
+export interface InboxThread {
+  row: InboxRow; subject: string; campaign: string; latest: string; messages: InboxMsg[]; draft: string; reason: string; question: string;
+  offeredTimes: string[]; bookingLinks: string[]; threadUrl: string; decisionId: string; canAct: boolean; canEdit: boolean; sentAt: string; dueAt: string; notes: Note[];
+}
+
+/* ---------- Client hub → AI replier ---------- */
+export interface ReplierValues {
+  enabled: boolean; handoff: string; replyTypes: string[]; defaultMode: string; oooMode: string; minConfidence: number; maxAuto: number;
+  alwaysReview: string[]; nudge: boolean; tone: string; length: string; firstName: string; lastName: string; companyName: string; companyUrl: string;
+  context: string; followupInstructions: string; calendarLink: string; timezone: string; officeStart: string; officeEnd: string; noWeekends: boolean; noHolidays: boolean;
+}
+export interface ReplierSummaries {
+  routing: string[]; copies: string; plan: string; templates: string[]; assets: number; goal: string; language: string;
+  calendar: { provider: string; status: string; jsonStatus: string; timesOff: boolean; linksOff: boolean; lastRequest: { provider: string; email: string; at: string } | null; lastResult: { status: string; expiresAt: string } | null };
+}
+export interface ReplierChange { field: string; from: unknown; to: unknown }
+export interface ReplierDetail {
+  client: { id: string; name: string }; found: boolean; rowId: string; workspaceRecordId: string; workspaceName: string; lastUpdated: string;
+  values: ReplierValues | null; summaries: ReplierSummaries | null; canEdit: boolean; notes: Note[];
+  options: { handoff: string[]; defaultMode: string[]; oooMode: string[]; tone: string[]; length: string[]; replyTypes: string[] };
+  history: { by: string; action: string; at: string; changes: ReplierChange[] | { provider: string; email: string; expiresAt: string } }[];
+  invite: { ready: boolean; why: string; provider: 'google' | 'calendly'; email: string };
+}

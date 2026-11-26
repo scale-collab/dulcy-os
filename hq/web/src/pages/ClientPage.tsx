@@ -2,6 +2,9 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { api, type AgentTask, type Client, type ClientCampaign, type User } from '../api';
 import { Avatar, BackLink, Button, Card, cx, dueLabel, ErrorBox, go, Icon, Label, lightLabel, lightTone, PageSkeleton, Pill, SectionHeader, StatusDot, timeAgo, usd } from '../ui';
 import { noteBox } from './Clients';
+import { InboxPanel, INBOX_TABS } from './Inbox';
+import ReplierPanel from './Replier';
+import type { InboxTab } from '../api';
 
 interface Detail {
   client: Client;
@@ -12,7 +15,10 @@ interface Detail {
 }
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
-export default function ClientPage({ id, user }: { id: string; user: User }) {
+const HUB_TABS = [{ key: 'overview', label: 'Overview', icon: 'briefcase' }, { key: 'inbox', label: 'Inbox', icon: 'inbox' }, { key: 'replier', label: 'AI replier', icon: 'sparkles' }] as const;
+
+/** #/clients/<id>[/inbox[/<inbox tab>] | /replier] */
+export default function ClientPage({ id, user, tab, sub }: { id: string; user: User; tab?: string; sub?: string }) {
   const [d, setD] = useState<Detail | null>(null);
   const [error, setError] = useState('');
   const load = useCallback(() => { setError(''); api<Detail>(`/clients/${encodeURIComponent(id)}`).then(setD).catch((e) => setError(e.message)); }, [id]);
@@ -56,6 +62,23 @@ export default function ClientPage({ id, user }: { id: string; user: User }) {
         )}
       </Card>
 
+      <div role="tablist" aria-label="Client sections" className="mt-5 flex gap-1 border-b border-line">
+        {HUB_TABS.map((t) => {
+          const on = (tab && HUB_TABS.some((x) => x.key === tab) ? tab : 'overview') === t.key;
+          return (
+            <button key={t.key} role="tab" aria-selected={on} onClick={() => go(`clients/${id}${t.key === 'overview' ? '' : `/${t.key}`}`)}
+              className={cx('-mb-px flex min-h-11 items-center gap-2 border-b-2 px-3 text-sm font-semibold transition', on ? 'border-accent text-fg' : 'border-transparent text-muted hover:text-fg')}>
+              <Icon name={t.icon} size={16} />{t.label}{t.key === 'inbox' && c.waitingApproval > 0 && <span className="tabular rounded-full bg-accent px-1.5 text-xs text-accent-fg">{c.waitingApproval}</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      {tab === 'inbox' ? (
+        <div className="mt-5"><InboxPanel fixedClient={{ key: c.key, name: c.name }} tab={(INBOX_TABS.some((x) => x.key === sub) ? sub : 'approve') as InboxTab} client="" route={(t) => go(`clients/${id}/inbox/${t}`)} /></div>
+      ) : tab === 'replier' ? (
+        <div className="mt-5"><ReplierPanel clientId={id} /></div>
+      ) : <>
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Stat label="Interested · 7 d" n={c.interested7} trend={c.interested7 - c.interestedPrev7} prev={c.interestedPrev7} />
         <Stat label="Booked · 7 d" n={c.booked7} trend={c.booked7 - c.bookedPrev7} prev={c.bookedPrev7} />
@@ -154,6 +177,7 @@ export default function ClientPage({ id, user }: { id: string; user: User }) {
         </Card>
       </section>
       <p className="mt-6 text-xs text-muted">Read {timeAgo(d.readAt) || 'just now'} from Airtable; kept for 5 minutes.</p>
+      </>}
     </div>
   );
 }

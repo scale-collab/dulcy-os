@@ -13,10 +13,12 @@ import ReportPage from './pages/ReportPage';
 import Clients from './pages/Clients';
 import ClientPage from './pages/ClientPage';
 import Users from './pages/Users';
+import Inbox, { ThreadPage } from './pages/Inbox';
 
 const TABS = [
   { key: 'today', label: 'Today', icon: 'sun', count: '' },
   { key: 'decisions', label: 'Decisions', icon: 'inbox', count: 'decisions' },
+  { key: 'inbox', label: 'Inbox', icon: 'reply', count: 'inbox' },
   { key: 'clients', label: 'Clients', icon: 'briefcase', count: '' },
   { key: 'needs', label: 'Needs you', icon: 'bell', count: 'needs' },
   { key: 'agents', label: 'Team', icon: 'users', count: '' },
@@ -37,12 +39,14 @@ export default function App() {
   if (user === undefined) return <Loading what="Opening HQ" />;
   if (!user) return <Login onIn={(u) => { setUser(u); go('today'); }} />;
 
-  const [page, a, b] = route;
+  const [page, a, b, c] = route;
   const signOut = async () => { try { await api('/auth/logout', { body: {} }); } catch { /* signed out anyway */ } setUser(null); };
   let body;
   switch (page) {
     case 'decisions': body = <Decisions user={user} pile={a} client={b} />; break;
-    case 'clients': body = a ? <ClientPage id={a} user={user} /> : <Clients user={user} />; break;
+    case 'clients': body = a ? <ClientPage id={a} user={user} tab={b} sub={c} /> : <Clients user={user} />; break;
+    case 'inbox': body = <Inbox tab={a} client={b} />; break;
+    case 'thread': body = <ThreadPage id={a ?? ''} />; break;
     case 'users': body = <Users user={user} />; break;
     case 'needs': body = <Needs user={user} />; break;
     // The old Eisenhower to-do (Airtable Tasks): still at #/tasks, out of the main navigation.
@@ -52,13 +56,13 @@ export default function App() {
     case 'report': body = <ReportPage id={Number(a)} />; break;
     default: body = <Today user={user} />;
   }
-  const active = page === 'report' ? 'today' : page === 'users' ? 'users' : page === 'tasks' ? 'needs' : TABS.some((t) => t.key === page) ? page : 'today';
-  const viewKey = page === 'agents' || page === 'clients' ? `${page}/${a ?? ''}` : page === 'report' ? `report/${a}` : page;
+  const active = page === 'report' ? 'today' : page === 'thread' ? 'inbox' : page === 'users' ? 'users' : page === 'tasks' ? 'needs' : TABS.some((t) => t.key === page) ? page : 'today';
+  const viewKey = page === 'agents' || page === 'clients' || page === 'thread' ? `${page}/${a ?? ''}` : page === 'report' ? `report/${a}` : page;
   return (
     <div className="min-h-dvh">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2 focus:shadow-pop">Skip to content</a>
       <Sidebar active={active} user={user} onSignOut={signOut} />
-      <MobileHeader onSignOut={signOut} owner={user.role === 'owner'} />
+      <MobileHeader onSignOut={signOut} owner={user.role === 'owner'} active={active} />
       <div className="md:pl-64">
         <main id="main" className="mx-auto w-full max-w-6xl px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 md:pb-14 md:pt-10 lg:px-10">
           <div key={viewKey} className="anim-in">{body}</div>
@@ -87,7 +91,7 @@ function Sidebar({ active, user, onSignOut }: { active: string; user: User; onSi
               className={cx('group flex min-h-11 items-center gap-3 rounded-xl px-3 text-[15px] font-medium transition', on ? 'bg-hover text-fg' : 'text-muted hover:bg-hover hover:text-fg')}>
               <Icon name={t.icon} size={18} className={on ? 'text-fg' : 'text-muted group-hover:text-fg'} />
               <span className="flex-1 text-left">{t.label}</span>
-              {!!n && <span className={cx('tabular rounded-full px-2 py-0.5 text-xs font-semibold', t.key === 'decisions' ? 'bg-ink text-ink-fg' : t.key === 'needs' ? 'bg-accent text-accent-fg' : 'bg-sunken text-fg-2 border border-line')}>{n}</span>}
+              {!!n && <span className={cx('tabular rounded-full px-2 py-0.5 text-xs font-semibold', t.key === 'decisions' ? 'bg-ink text-ink-fg' : t.key === 'needs' || t.key === 'inbox' ? 'bg-accent text-accent-fg' : 'bg-sunken text-fg-2 border border-line')}>{n}</span>}
             </button>
           );
         })}
@@ -119,7 +123,7 @@ function Sidebar({ active, user, onSignOut }: { active: string; user: User; onSi
   );
 }
 
-function MobileHeader({ onSignOut, owner }: { onSignOut: () => void; owner: boolean }) {
+function MobileHeader({ onSignOut, owner, active }: { onSignOut: () => void; owner: boolean; active: string }) {
   const [mode, setMode] = useTheme();
   const c = useCounts();
   const i = THEMES.findIndex((t) => t.mode === mode);
@@ -129,6 +133,7 @@ function MobileHeader({ onSignOut, owner }: { onSignOut: () => void; owner: bool
       <div className="flex h-14 items-center justify-between pl-4 pr-2">
         <button onClick={() => go('today')} className="flex min-h-11 items-center gap-2.5 font-semibold tracking-tight"><Logo className="h-7 w-7" />Dulcy HQ</button>
         <div className="flex items-center">
+          <IconButton icon="users" label="Team" active={active === 'agents'} onClick={() => go('agents')} />
           {owner && (
             <span className="relative">
               <IconButton icon="shield" label={c.signups ? `Users: ${c.signups} sign-up${c.signups === 1 ? '' : 's'} waiting` : 'Users'} onClick={() => go('users')} />
@@ -148,16 +153,16 @@ function TabBar({ active }: { active: string }) {
   return (
     <nav aria-label="Main" className="safe-bottom fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/90 backdrop-blur-md md:hidden">
       <div className="mx-auto grid max-w-lg grid-cols-6">
-        {TABS.map((t) => {
+        {TABS.filter((t) => t.key !== 'agents').map((t) => {
           const on = active === t.key;
-          const n = t.key === 'decisions' || t.key === 'needs' ? c[t.key] : 0;
+          const n = t.key === 'decisions' || t.key === 'needs' || t.key === 'inbox' ? c[t.key] : 0;
           return (
             <button key={t.key} onClick={() => go(t.key)} aria-current={on ? 'page' : undefined}
               className={cx('relative flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium transition', on ? 'text-fg' : 'text-muted')}>
               {on && <span aria-hidden="true" className="absolute top-0 h-0.5 w-8 rounded-full bg-accent" />}
               <span className="relative">
                 <Icon name={t.icon} size={22} strokeWidth={on ? 2.1 : 1.8} />
-                {!!n && <span className={cx('tabular absolute -right-2.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] font-bold leading-none', t.key === 'needs' ? 'bg-accent text-accent-fg' : 'bg-bad text-surface')}>{n > 99 ? '99+' : n}</span>}
+                {!!n && <span className={cx('tabular absolute -right-2.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] font-bold leading-none', t.key === 'needs' || t.key === 'inbox' ? 'bg-accent text-accent-fg' : 'bg-bad text-surface')}>{n > 99 ? '99+' : n}</span>}
               </span>
               {t.label}
             </button>
