@@ -428,6 +428,19 @@ CREATE TABLE IF NOT EXISTS hq_needs_quiet (
   set_by      TEXT NOT NULL DEFAULT ''
 );
 
+-- HQ Inbox → AI replier (2026-11-25): every save of a client's Reply Agent settings row from HQ
+-- (who, when, which fields from what to what) and every "Get calendar link" request.
+CREATE TABLE IF NOT EXISTS hq_settings_log (
+  id          BIGSERIAL PRIMARY KEY,
+  actor       TEXT NOT NULL,
+  action      TEXT NOT NULL,                  -- 'save' | 'calendar_invite'
+  ws_rec      TEXT NOT NULL DEFAULT '',
+  row_id      TEXT NOT NULL DEFAULT '',
+  changes     JSONB NOT NULL DEFAULT '[]',    -- [{field, from, to}] (save) or {provider, email, expiresAt} (invite)
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS hq_settings_log_ws ON hq_settings_log (ws_rec, created_at DESC);
+
 -- Sean was renamed Echo (Alex, 2026-11-25): carry HQ's own rows over. Idempotent; matches nothing after the first boot.
 UPDATE hq_reports SET agent = 'Echo' WHERE agent = 'Sean';
 UPDATE hq_chat_threads SET agent = 'Echo' WHERE agent = 'Sean';

@@ -21,6 +21,8 @@ import { clientDetail, listClients } from './clients.js';
 import { SIGNUP_SENT, addUser, googleSignUp, listUsers, manageUser, pendingCount, signUp } from './users.js';
 import { askVisible, finishAsk, getAsk, isSnooze, listAsks, quietItem, snoozeAsk } from './asks.js';
 import { loadNeeds, needCounts } from './needs.js';
+import { actOnThread, listInbox, threadDetail } from './inbox.js';
+import { calendarInvite, replierDetail, saveReplier } from './replier.js';
 
 export interface HqDeps { at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string }
 
@@ -251,6 +253,43 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       if (m && req.method === 'GET') {
         const d = await clientDetail(needAt(), db, m[1], owner);
         if (!d) json(res, 404, { error: 'no such client' }); else json(res, 200, d);
+        return true;
+      }
+
+      // Inbox (Step 3): every reply thread; Send / Send edited / Skip press the same buttons as the Decisions reply card.
+      if (p === '/hq/api/inbox' && req.method === 'GET') {
+        const sp = url.searchParams;
+        json(res, 200, await listInbox(needAt(), { tab: sp.get('tab') ?? undefined, client: sp.get('client') ?? undefined, page: Number(sp.get('page')) || 1, q: sp.get('q') ?? undefined, refresh: sp.get('refresh') === '1' }));
+        return true;
+      }
+      m = p.match(/^\/hq\/api\/inbox\/(rec[A-Za-z0-9]{14})$/);
+      if (m && req.method === 'GET') {
+        const t = await threadDetail(needAt(), m[1]);
+        if (!t) json(res, 404, { error: 'no such thread' }); else json(res, 200, t);
+        return true;
+      }
+      if (m && req.method === 'POST') {
+        const b = await readJson(req, 50_000);
+        if (!['approve', 'reject', 'edited'].includes(b.verdict)) { json(res, 400, { error: 'verdict must be approve, edited or reject' }); return true; }
+        const r = await actOnThread(needAt(), m[1], b.verdict, user.name, owner, typeof b.text === 'string' ? b.text : undefined);
+        json(res, r.status, r.error ? { error: r.error } : { ok: true, status: r.result });
+        return true;
+      }
+      // Client hub → AI replier: everyone reads; only the owner saves or asks for a calendar link (checked here).
+      m = p.match(/^\/hq\/api\/clients\/(rec[A-Za-z0-9]{14})\/(replier|calendar-invite)$/);
+      if (m) {
+        const ctx = { db, cfg, at: needAt(), fetchImpl: deps.fetchImpl };
+        if (m[2] === 'replier' && req.method === 'GET') {
+          const d = await replierDetail(ctx, m[1], owner);
+          if (!d) json(res, 404, { error: 'no such client' }); else json(res, 200, d);
+          return true;
+        }
+        if (req.method !== 'POST') { json(res, 405, { error: 'method not allowed' }); return true; }
+        if (!owner) { json(res, 403, { error: 'only the owner changes the AI replier' }); return true; }
+        const b = await readJson(req, 60_000);
+        const r = m[2] === 'replier' ? await saveReplier(ctx, m[1], user.name, b.values) : await calendarInvite(ctx, m[1], user.name, b);
+        const { status, error, ...rest } = r as { status: number; error?: string };
+        json(res, status, error ? { error } : { ok: true, ...rest });
         return true;
       }
 

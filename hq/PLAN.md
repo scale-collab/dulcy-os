@@ -65,9 +65,22 @@
 
 ## Step 3: Work areas
 - **Campaigns:** the Lead List and Campaign Centers rebuilt without Airtable's size limit, with the Activity log inside each campaign (code ready: `airtable/custom-elements/campaign-center/activity-log.pending.tsx`).
-- **Inbox:** one inbox, per client, replacing New Replies, Follow Ups, Positive Replies, Won/Lost, Meeting Requests and the Reply Agent pages.
+- **Inbox:** one inbox, per client, replacing New Replies, Follow Ups, Positive Replies, Won/Lost, Meeting Requests and the Reply Agent pages. (Built 2026-11-25, see "Step 3 status" below.)
 - **Sales:** contracts and agreements (the same flow that works now, with cleaner screens), plus the executive dashboard.
 - **Content:** the Content Center and OpusClip (Sienna).
+
+### Step 3 status (2026-11-25): Inbox built, not deployed
+- **Built:** `engine/src/hq/inbox.ts` (API `/hq/api/inbox`, `/hq/api/inbox/<rec>`), `engine/src/hq/replier.ts` (API `/hq/api/clients/<rec>/replier`, `/hq/api/clients/<rec>/calendar-invite`), `hq/web/src/pages/Inbox.tsx` and `Replier.tsx`, and the client hub tabs (Overview · Inbox · AI replier). How to use it: `engine/GUIDE.md` → "HQ" → 7. Inbox.
+- **Inbox:** all clients, client chips, five tabs (To approve, Waiting on prospect, Booked, Handed to client, Skipped), thread view with Send / Send edited / Skip (the Decisions reply card's writes), a booking-link warning, offered times and the EmailBison link. Read cached 60 seconds; 50 a page.
+- **AI replier:** the client's Reply Agent settings, owner edits (members read), validated, only changed fields written, every save logged. "Get calendar link" needs `CALENDAR_ADMIN_TOKEN`.
+- **Data problems found in Airtable (read only, 2026-11-25; for Echo/Atlas to fix):**
+  1. 107 drafts wait in Needs Approval (27 replies + 80 follow-ups); the oldest is from Oct 1.
+  2. 38 of those 107 drafts offer a booking link, not two times (Calendly 24, Cal.com 10, HubSpot 3, LeadConnector 1): 7 of 8 settings rows have times switched off (Calendar Settings JSON `disableTimes: true`) and no connected calendar. Only Dulcy is connected (Google).
+  3. 2 reply drafts sit on threads where we already wrote last ("Last Email Sent By Dulcy"): the sender will refuse them.
+  4. 1 draft waits for Lead Flo Marketing (inactive; its replier is off).
+  5. Emails "Last Email Sent" has two stray options: an email address and "Custom Reply".
+  6. Settings: Agent First Name is empty on 7 of 8 rows; Calendar Link is empty for MJJ Brilliant, The Marketing Cartel and Collabor; Dulcy's office hours (09:30-17:00) differ from its calendar note (09:00-18:00).
+- **Not yet:** search inside the full history; per-person piles (Josh's own queue); writing the calendar JSON switches (times on/off) from HQ.
 
 ## Step 4: People and clients
 - Josh's login with permissions.
