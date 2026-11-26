@@ -26,6 +26,7 @@ import { actOnThread, listInbox, threadDetail } from './inbox.js';
 import { calendarInvite, replierDetail, saveReplier } from './replier.js';
 import { campaignDetail, listCampaigns } from './campaigns.js';
 import { deliverabilityView } from './deliverability.js';
+import { contentSummary, contentView, decideIdea } from './content.js';
 
 export interface HqDeps { at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string }
 
@@ -312,6 +313,22 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       // Deliverability: inboxes and domains, read only (sick first; tabs: inboxes, placement, domains).
       m = p.match(/^\/hq\/api\/deliverability(?:\/(inboxes|placement|domains))?$/);
       if (m && req.method === 'GET') { json(res, 200, await deliverabilityView(needAt(), db, cfg, m[1] ?? 'attention', url.searchParams)); return true; }
+
+      // Content (Step 3, 2026-11-26): owner only (content is Alex-only; members get 403). One write: the idea decision.
+      if (p === '/hq/api/content' || p.startsWith('/hq/api/content/')) {
+        if (!owner) { json(res, 403, { error: 'only the owner sees content' }); return true; }
+        if (p === '/hq/api/content' && req.method === 'GET') { json(res, 200, await contentView(needAt(), db, cfg.airtableBaseId, { refresh: url.searchParams.get('refresh') === '1' })); return true; }
+        if (p === '/hq/api/content/summary' && req.method === 'GET') { json(res, 200, await contentSummary(needAt(), db, cfg.airtableBaseId)); return true; }
+        const cm = p.match(/^\/hq\/api\/content\/ideas\/(rec[A-Za-z0-9]{14})$/);
+        if (cm && req.method === 'POST') {
+          const b = await readJson(req, 2_000);
+          if (!['approve', 'reject'].includes(b.verdict)) { json(res, 400, { error: 'verdict must be approve or reject' }); return true; }
+          const r = await decideIdea(needAt(), db, cm[1], b.verdict, user.name);
+          json(res, r.status, r.error ? { error: r.error } : { ok: true, ...r.result });
+          return true;
+        }
+        json(res, 404, { error: 'not found' }); return true;
+      }
 
       if (p === '/hq/api/agents' && req.method === 'GET') {
         const agents = await agentCards(db, at, user);

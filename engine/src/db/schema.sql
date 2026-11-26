@@ -474,3 +474,16 @@ UPDATE hq_reports SET agent = 'Echo' WHERE agent = 'Sean';
 UPDATE hq_chat_threads SET agent = 'Echo' WHERE agent = 'Sean';
 UPDATE hq_agent_tasks SET agent = 'Echo' WHERE agent = 'Sean';
 UPDATE hq_asks SET agent = 'Echo' WHERE agent = 'Sean';
+
+-- HQ Content (2026-11-26): every idea decision HQ writes to the Content Channels table (who, when,
+-- which record, which fields from what to what). The same fields the Content Center's buttons write.
+CREATE TABLE IF NOT EXISTS hq_content_log (
+  id          BIGSERIAL PRIMARY KEY,
+  actor       TEXT NOT NULL,
+  action      TEXT NOT NULL,                  -- 'idea_approve' | 'idea_reject'
+  record_id   TEXT NOT NULL,
+  title       TEXT NOT NULL DEFAULT '',
+  changes     JSONB NOT NULL DEFAULT '[]',    -- [{field, from, to}]
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS hq_content_log_at ON hq_content_log (created_at DESC);
