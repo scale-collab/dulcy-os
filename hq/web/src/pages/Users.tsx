@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { api, type HqUserRow, type User, type UserEvent } from '../api';
+import { api, type Client, type HqUserRow, type User, type UserEvent } from '../api';
 import { Button, Card, cx, Empty, ErrorBox, Icon, Label, PageSkeleton, PageTitle, Pill, SectionHeader, setCount, timeAgo } from '../ui';
 
 interface UsersData { users: HqUserRow[]; events: UserEvent[] }
@@ -10,7 +10,7 @@ const ACTION: Record<string, string> = { signup: 'asked for a login', approve: '
 export default function Users({ user }: { user: User }) {
   const [d, setD] = useState<UsersData | null>(null);
   const [error, setError] = useState('');
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState<'' | 'user' | 'client'>('');
   const load = useCallback(() => {
     setError('');
     api<UsersData>('/users').then((x) => { setD(x); setCount('signups', x.users.filter((u) => u.status === 'pending').length); }).catch((e) => setError(e.message));
@@ -20,18 +20,26 @@ export default function Users({ user }: { user: User }) {
     setError('');
     try { await api(`/users/${u.id}/${action}`, { body }); load(); return true; } catch (e) { setError((e as Error).message); return false; }
   };
-  const title = <PageTitle title="Users" kicker="Who can sign in to HQ" sub="Members see everything except money and content." right={<Button tone="primary" icon="userPlus" onClick={() => setAdding((v) => !v)}>Add user</Button>} />;
+  const right = (
+    <>
+      <Button icon="briefcase" onClick={() => setAdding((v) => (v === 'client' ? '' : 'client'))}>Add client login</Button>
+      <Button tone="primary" icon="userPlus" onClick={() => setAdding((v) => (v === 'user' ? '' : 'user'))}>Add user</Button>
+    </>
+  );
+  const title = <PageTitle title="Users" kicker="Who can sign in to HQ" sub="Members see everything except money and content. A client login sees only its own results." right={right} />;
   if (user.role !== 'owner') return <><PageTitle title="Users" /><ErrorBox error="Only the owner manages users." /></>;
   if (error && !d) return <>{title}<ErrorBox error={error} retry={load} /></>;
   if (!d) return <>{title}<PageSkeleton kind="list" /></>;
   const pending = d.users.filter((u) => u.status === 'pending');
-  const others = d.users.filter((u) => u.status !== 'pending');
+  const others = d.users.filter((u) => u.status !== 'pending' && u.role !== 'client');
+  const clients = d.users.filter((u) => u.status !== 'pending' && u.role === 'client');
   const owners = others.filter((u) => u.role === 'owner' && u.status === 'active').length;
   return (
     <div>
       {title}
       {error && <div className="mb-4"><ErrorBox error={error} /></div>}
-      {adding && <AddUser onDone={() => { setAdding(false); load(); }} />}
+      {adding === 'user' && <AddUser onDone={() => { setAdding(''); load(); }} />}
+      {adding === 'client' && <AddClientLogin onDone={() => { setAdding(''); load(); }} />}
 
       <section className="mb-6">
         <SectionHeader title={`Sign-up requests · ${pending.length}`} icon="inbox" />
@@ -44,6 +52,15 @@ export default function Users({ user }: { user: User }) {
         <SectionHeader title={`Logins · ${others.length}`} icon="users" />
         <Card className="divide-y divide-line p-0">
           {others.map((u) => <UserLine key={u.id} u={u} self={u.email === user.email} lastOwner={u.role === 'owner' && u.status === 'active' && owners <= 1} act={act} />)}
+        </Card>
+      </section>
+
+      <section className="mb-6">
+        <SectionHeader title={`Client logins · ${clients.length}`} icon="briefcase" />
+        <Card className="divide-y divide-line p-0">
+          {clients.length
+            ? clients.map((u) => <UserLine key={u.id} u={u} self={false} lastOwner={false} act={act} />)
+            : <Empty icon="briefcase" title="No client logins yet" sub="Add one to let a client see their own results: leads, meetings and live campaigns. Never money, notes or other clients." />}
         </Card>
       </section>
 
@@ -116,7 +133,8 @@ function UserLine({ u, self, lastOwner, act }: { u: HqUserRow; self: boolean; la
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="truncate font-semibold text-fg">{u.name}</span>
             {self && <span className="text-xs text-muted">(you)</span>}
-            <Pill tone={u.role === 'owner' ? 'accent' : 'plain'}>{u.role}</Pill>
+            <Pill tone={u.role === 'owner' ? 'accent' : u.role === 'client' ? 'info' : 'plain'}>{u.role}</Pill>
+            {u.role === 'client' && u.clientName && <span className="truncate text-xs font-medium text-fg-2">{u.clientName}</span>}
             {u.status === 'disabled' && <Pill tone="bad">disabled</Pill>}
           </div>
           <div className="truncate text-sm text-muted">{u.email}</div>
@@ -130,7 +148,9 @@ function UserLine({ u, self, lastOwner, act }: { u: HqUserRow; self: boolean; la
         <div className="mt-3 space-y-3 rounded-xl border border-line bg-sunken p-3 anim-fade">
           {locked && <p className="text-xs text-muted">{self ? 'You cannot disable or demote yourself.' : 'The last owner cannot be disabled or demoted.'}</p>}
           <div className="grid grid-cols-2 gap-2">
-            <Button disabled={busy || (u.role === 'owner' && locked)} onClick={() => void run('role', { role: u.role === 'owner' ? 'member' : 'owner' })}>{u.role === 'owner' ? 'Make member' : 'Make owner'}</Button>
+            {u.role === 'client'
+              ? <p className="self-center text-xs text-muted">Sees only {u.clientName || 'their client'}'s portal.</p>
+              : <Button disabled={busy || (u.role === 'owner' && locked)} onClick={() => void run('role', { role: u.role === 'owner' ? 'member' : 'owner' })}>{u.role === 'owner' ? 'Make member' : 'Make owner'}</Button>}
             {u.status === 'disabled'
               ? <Button disabled={busy} onClick={() => void run('enable')}>Re-enable</Button>
               : <Button tone="danger" disabled={busy || locked} onClick={() => void run('disable')}>Disable</Button>}
@@ -170,6 +190,47 @@ function AddUser({ onDone }: { onDone: () => void }) {
         <label className="flex min-h-11 items-center gap-2.5 text-sm text-fg-2 sm:col-span-2"><input type="checkbox" className="h-5 w-5 accent-[var(--accent)]" checked={f.googleOnly} onChange={(e) => setF({ ...f, googleOnly: e.target.checked })} />Google sign-in only (no password)</label>
         {error && <div className="sm:col-span-2"><ErrorBox error={error} /></div>}
         <div className="flex justify-end gap-2 sm:col-span-2"><Button onClick={onDone}>Cancel</Button><Button type="submit" tone="primary" disabled={busy}>Add user</Button></div>
+      </form>
+    </Card>
+  );
+}
+
+/** Add client login: a client from Airtable, a name and email, a temporary password or Google only. */
+function AddClientLogin({ onDone }: { onDone: () => void }) {
+  const [clients, setClients] = useState<Client[] | null>(null);
+  const [f, setF] = useState({ clientRec: '', name: '', email: '', password: '', googleOnly: false });
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    api<{ clients: Client[] }>('/clients?all=1')
+      .then((x) => setClients([...x.clients].sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name))))
+      .catch((e) => setError(e.message));
+  }, []);
+  const submit = async (e: FormEvent) => {
+    e.preventDefault(); setBusy(true); setError('');
+    try { await api('/users', { body: { ...f, role: 'client', password: f.googleOnly ? '' : f.password } }); onDone(); } catch (err) { setError((err as Error).message); } finally { setBusy(false); }
+  };
+  return (
+    <Card className="mb-6 anim-in">
+      <form onSubmit={submit} className="grid gap-3 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <Label>Add a client login</Label>
+          <p className="mt-1 text-sm text-muted">They sign in at the same address and see only their own results: leads, meetings and live campaigns. Never money, notes, drafts or other clients.</p>
+        </div>
+        <label className="text-sm font-medium text-fg-2 sm:col-span-2">Client
+          <select className={cx(field, 'mt-1')} required value={f.clientRec} onChange={(e) => setF({ ...f, clientRec: e.target.value })} disabled={!clients}>
+            <option value="">{clients ? 'Pick a client' : 'Loading clients…'}</option>
+            {clients?.map((c) => <option key={c.id} value={c.id}>{c.name}{c.active ? '' : ' (inactive)'}{c.internal ? ' (Dulcy)' : ''}</option>)}
+          </select>
+        </label>
+        <label className="text-sm font-medium text-fg-2">Their name<input className={cx(field, 'mt-1')} required maxLength={80} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>
+        <label className="text-sm font-medium text-fg-2">Their email<input className={cx(field, 'mt-1')} type="email" required value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></label>
+        <label className="text-sm font-medium text-fg-2 sm:col-span-2">Temporary password
+          <input className={cx(field, 'mt-1')} type="text" autoComplete="off" minLength={12} disabled={f.googleOnly} placeholder={f.googleOnly ? 'Google sign-in only' : '12+ characters; send it to them yourself'} value={f.googleOnly ? '' : f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
+        </label>
+        <label className="flex min-h-11 items-center gap-2.5 text-sm text-fg-2 sm:col-span-2"><input type="checkbox" className="h-5 w-5 accent-[var(--accent)]" checked={f.googleOnly} onChange={(e) => setF({ ...f, googleOnly: e.target.checked })} />Google sign-in only (no password)</label>
+        {error && <div className="sm:col-span-2"><ErrorBox error={error} /></div>}
+        <div className="flex justify-end gap-2 sm:col-span-2"><Button onClick={onDone}>Cancel</Button><Button type="submit" tone="primary" disabled={busy || !f.clientRec}>Add client login</Button></div>
       </form>
     </Card>
   );

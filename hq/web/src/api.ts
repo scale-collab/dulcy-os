@@ -15,7 +15,7 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
   return data as T;
 }
 
-export interface User { email: string; name: string; role: 'owner' | 'member' }
+export interface User { email: string; name: string; role: 'owner' | 'member' | 'client' }
 export type Pile = 'Replies' | 'Campaigns' | 'Fixes' | 'Money' | 'Other';
 export interface Decision {
   id: string; title: string; agent: string; client: string; pile: Pile; status: string; isReply: boolean; canEdit: boolean;
@@ -64,7 +64,7 @@ export interface Client {
   waitingApproval: number; seanWaiting: number; campaigns: ClientCampaign[]; note: string[]; dataIssues: string[]; money?: ClientMoney;
 }
 export interface ClientsSummary { active: number; internal: number; inactive: number; mrr?: number; readAt: string }
-export interface HqUserRow { id: number; email: string; name: string; role: 'owner' | 'member'; status: 'pending' | 'active' | 'disabled'; google: boolean; hasPassword: boolean; lastSeen: string | null; created: string; requested: string | null }
+export interface HqUserRow { id: number; email: string; name: string; role: 'owner' | 'member' | 'client'; clientName?: string; status: 'pending' | 'active' | 'disabled'; google: boolean; hasPassword: boolean; lastSeen: string | null; created: string; requested: string | null }
 export interface UserEvent { id: number; actor: string; action: string; target: string; detail: string; created: string }
 export interface Thread { id: number; agent: string; askedBy: string; parentId: number | null; title: string; updated?: string; messages?: number }
 
@@ -137,3 +137,14 @@ export interface CampaignDetail {
   activity: { id: string; when: string; agent: string; type: string; event: string; details: string; on: 'campaign' | 'list' }[];
   links: { airtable: string; bison: string }; readAt: string;
 }
+
+/* ---------- Client portal (Step 4): what a client login gets. The server builds each field; nothing internal. ---------- */
+export type PortalHealth = 'healthy' | 'watching' | 'fixing';
+export interface PortalMe { user: User; client: { name: string } }
+export interface PortalCampaign { name: string; sent: number; replies: number; interested: number; booked: number; deliverability: PortalHealth }
+export interface PortalOverview {
+  client: { name: string }; results: { interested7: number; interested30: number; booked7: number; booked30: number };
+  campaigns: PortalCampaign[]; health: { status: PortalHealth; text: string }; readAt: string;
+}
+export interface PortalLead { key: string; name: string; company: string; email: string; message: string; date: string; status: 'booked' | 'sent'; bookedOn: string }
+export interface PortalMeeting { key: string; name: string; company: string; bookedOn: string }

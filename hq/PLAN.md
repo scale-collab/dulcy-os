@@ -123,6 +123,17 @@
 - Josh's login with permissions.
 - The client portal inside the same app. (send.dulcy.io is EmailBison's white-label with its own login: check later whether it can share a login.)
 
+### Client portal (2026-11-26): built, not deployed
+- **What it is:** a client signs in at hq.dulcy.io and sees only their own results: Overview (interested and booked, 7 and 30 days; live campaigns; deliverability in words), Leads (yes-replies handed to them or booked, 90 days), Meetings (booked, 90 days). Phone and computer, light and dark.
+- **How Alex adds one:** Users → Add client login (pick the client, name, email, temporary password or Google only). Disable on the same page. How to use it: `engine/GUIDE.md` → "HQ" → "Client logins".
+- **Isolation:** role `client` linked to one client record (Twenty West's two records are one client). The server lets a client reach only `/hq/api/portal/*` (an allow-list, so new HQ pages are closed to clients by default); the client always comes from the login. No money, drafts, notes, agents, Decisions or Airtable links, and no writes. A test walks every HQ route with a client login and expects "no".
+- **Where:** `engine/src/hq/portal.ts`, the guard `clientMayCall` in `engine/src/hq/server.ts`, `hq/web/src/pages/Portal.tsx`, Users page.
+- **Not yet:**
+  1. Reports for clients: HQ reports have no "for the client" mark yet, so the portal has no Reports tab.
+  2. Meeting times: Airtable stores the day a meeting was booked, not when it happens (UNKNOWN which field, if any, holds the meeting time).
+  3. Password reset by email: there is no email sending in HQ; Alex sets a temporary password.
+  4. send.dulcy.io (EmailBison white-label) stays a separate login.
+
 ## Clean-up alongside (Riley)
 - Old and duplicate n8n, Make and Airtable automations.
 - Unused pages: Client Offers, Internal Lead Requests, the old mobile pages, Inbox Manager backups.

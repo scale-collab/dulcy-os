@@ -740,9 +740,26 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
 - A pending or disabled login can never get in: password, Google and an old session are all refused.
 - The server command `hq-user` still works the same, and also approves a pending request.
 
+**Client logins: the client portal (Step 4, 2026-11-26):**
+- **What a client sees:** the same address (https://hq.dulcy.io), but a small app of its own: the Dulcy logo, their company name and three tabs. Nothing else from HQ.
+  - **Overview:** interested replies and meetings booked (last 7 and 30 days, the same count as your Clients screen), each live campaign (sent, replies, interested, booked), and deliverability in words: "Healthy", "keeping a close eye on 1 campaign" (bounce over 2.5%) or "We're fixing deliverability on 1 campaign" (over 4%). No bounce numbers.
+  - **Leads:** people who said yes in the last 90 days: meetings booked, and positive replies handed to the client. Name, company, email, what the prospect wrote, and the date.
+  - **Meetings:** meetings booked in the last 90 days (the day it was booked; the meeting time itself is not stored).
+  - **Never:** fees, revenue, receivables, other clients, Decisions, Echo's drafts or reasoning, notes, agent names, Airtable links. The server never even reads those fields for the portal.
+  - **Reports:** not in the portal yet. HQ reports have no "for the client" mark, so none is shown. Add that mark first if you want clients to see a report.
+- **Add a client login (you only):** **Users** → **Add client login** → pick the client (Twenty West and "Twenty West (Internal)" are one client), their name and email, then a temporary password (12+ characters; send it to them yourself) or "Google sign-in only". There is no emailed reset link: to reset, open the login on Users and set a new temporary password.
+- **Turn it off:** Users → the client login → **Disable** (signs them out at once). Re-enable brings it back.
+- **Safe by design:**
+  - Clients cannot sign up. A sign-up is always a pending member, and Approve only offers Member or Owner.
+  - An existing owner or member can never become a client (the email already has a login), and a client login can never be made member or owner (disable it and add a new login instead). The `hq-user` command refuses a client email.
+  - The server lets a client login reach only the portal. Every other HQ address answers "not part of your client portal", including pages added later. Which client it sees comes from the login itself, never from the address bar.
+  - The portal reads Airtable once a minute for everyone and only shows what belongs to that client. A reply linked to two clients is shown to neither. It changes nothing in Airtable.
+- **Not the same as send.dulcy.io:** that is EmailBison's white-label inbox, with its own separate login. A client portal login does not open it, and an EmailBison login does not open HQ.
+
 **Who can see what:**
 - `owner` (you) sees everything.
 - `member` (Josh later) never sees money or content (Alex, 2026-11-25): no Money pile, nothing from Ledger or Sienna (cards, decisions, chats, reports), no client money (fee, LTV, receivables) and no Users page. A member sees only their own chats.
+- `client` (a client's portal login, 2026-11-26) sees only their own portal: Overview, Leads, Meetings. Nothing else in HQ.
 
 **Safety:**
 - Passwords are stored as scrypt hashes and never printed.
