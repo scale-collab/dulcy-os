@@ -28,6 +28,7 @@ import { campaignDetail, listCampaigns } from './campaigns.js';
 import { deliverabilityView } from './deliverability.js';
 import { portalRoute, resolvePortalClient } from './portal.js';
 import { contentSummary, contentView, decideIdea } from './content.js';
+import { dealDetail, salesView } from './sales.js';
 
 export interface HqDeps { at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string }
 
@@ -348,6 +349,18 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
           if (!['approve', 'reject'].includes(b.verdict)) { json(res, 400, { error: 'verdict must be approve or reject' }); return true; }
           const r = await decideIdea(needAt(), db, cm[1], b.verdict, user.name);
           json(res, r.status, r.error ? { error: r.error } : { ok: true, ...r.result });
+      // Sales (Dulcy's own deals): owner only (money), checked here so members get 403. Read only.
+      if (p === '/hq/api/sales' || p.startsWith('/hq/api/sales/')) {
+        if (!owner) { json(res, 403, { error: 'only the owner sees sales (money)' }); return true; }
+        if (req.method !== 'GET') { json(res, 405, { error: 'method not allowed' }); return true; }
+        if (p === '/hq/api/sales') {
+          json(res, 200, await salesView(needAt(), db, owner, { days: Number(url.searchParams.get('days')) === 90 ? 90 : 30, refresh: url.searchParams.get('refresh') === '1' }));
+          return true;
+        }
+        m = p.match(/^\/hq\/api\/sales\/(rec[A-Za-z0-9]{14})$/);
+        if (m) {
+          const d = await dealDetail(needAt(), db, m[1], owner, cfg.airtableBaseId);
+          if (!d) json(res, 404, { error: 'no such deal' }); else json(res, 200, d);
           return true;
         }
         json(res, 404, { error: 'not found' }); return true;

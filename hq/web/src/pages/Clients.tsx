@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, type Client, type ClientsSummary, type User } from '../api';
-import { Card, cx, Empty, ErrorBox, go, Icon, IconButton, lightLabel, lightTone, PageSkeleton, PageTitle, Pill, setCount, StatusDot, timeAgo, usd } from '../ui';
+import { Card, cx, Empty, ErrorBox, go, Icon, IconButton, lightLabel, lightTone, PageSkeleton, PageTitle, Pill, setCount, StatusDot, timeAgo, usd, useCounts } from '../ui';
 
 interface ClientsData { clients: Client[]; summary: ClientsSummary }
 
@@ -37,12 +37,26 @@ export default function Clients({ user }: { user: User }) {
     <div>
       {title}
       {error && <div className="mb-4"><ErrorBox error={error} retry={() => load()} /></div>}
+      {owner && <SalesLink />}
       {!d.clients.length && <Card><Empty icon="briefcase" title="No clients" sub="No active Workspace IDs records in Airtable." /></Card>}
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {d.clients.map((c) => <ClientCard key={c.id} c={c} owner={owner} />)}
       </div>
       <p className="mt-6 text-xs text-muted">From Airtable (Workspace IDs, Emails, Campaigns), read {timeAgo(d.summary.readAt) || 'just now'}; kept for 5 minutes. Health is Atlas's grade.</p>
     </div>
+  );
+}
+
+/** Owner only: the way into Sales (on the phone there is no room for another header icon). */
+function SalesLink() {
+  const n = useCounts().sales;
+  return (
+    <Card onClick={() => go('sales')} label="Open Sales" className="mb-4 flex items-center gap-3 px-4 py-3">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent-ink"><Icon name="dollar" size={18} /></span>
+      <span className="min-w-0 flex-1"><span className="block text-[15px] font-semibold text-fg">Sales</span><span className="block truncate text-sm text-muted">New deals: booked call to signed and paid</span></span>
+      {!!n && <span className="tabular rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-accent-fg" aria-label={`${n} need action`}>{n}</span>}
+      <Icon name="chevronRight" size={18} className="text-faint" />
+    </Card>
   );
 }
 
