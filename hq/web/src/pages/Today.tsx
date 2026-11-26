@@ -6,6 +6,7 @@ import {
 } from '../ui';
 import { ReportList } from './Reports';
 import { NeedFace, whoLabel } from './Needs';
+import { ContentCard } from './Content';
 
 interface TodayData {
   signups?: number;
@@ -73,6 +74,7 @@ export default function Today({ user }: { user: User }) {
         </div>
         <div className="order-first min-w-0 space-y-6 lg:order-none">
           <NeedsNow items={d.needs.top} counts={d.needs.counts} />
+          {user.role === 'owner' && <ContentCard />}
           <TeamCheck team={d.team} />
         </div>
       </div>

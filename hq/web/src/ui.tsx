@@ -85,6 +85,7 @@ const ICONS: Record<string, ReactNode> = {
   bell: P('M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0'),
   list: P('M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01'),
   mail: <><rect x="2" y="4" width="20" height="16" rx="2" />{P('m22 7-10 6L2 7')}</>,
+  film: <><rect x="2" y="5" width="15" height="14" rx="2" />{P('m17 10 5-3v10l-5-3')}</>,
 };
 
 /* ---------- Clients ---------- */

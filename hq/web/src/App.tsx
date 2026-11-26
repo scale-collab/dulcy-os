@@ -17,13 +17,16 @@ import Inbox, { ThreadPage } from './pages/Inbox';
 import Campaigns from './pages/Campaigns';
 import Deliverability from './pages/Deliverability';
 import Portal from './pages/Portal';
+import Content from './pages/Content';
 
-const TABS = [
+const TABS: { key: string; label: string; icon: string; count: string; ownerOnly?: boolean }[] = [
   { key: 'today', label: 'Today', icon: 'sun', count: '' },
   { key: 'decisions', label: 'Decisions', icon: 'inbox', count: 'decisions' },
   { key: 'inbox', label: 'Inbox', icon: 'reply', count: 'inbox' },
   { key: 'campaigns', label: 'Campaigns', icon: 'megaphone', count: 'campaigns' },
   { key: 'deliverability', label: 'Deliverability', icon: 'mail', count: 'deliverability' },
+  // Content is Alex-only (members get 403). On the phone it is a card on Today, not a 7th header icon.
+  { key: 'content', label: 'Content', icon: 'film', count: 'content', ownerOnly: true },
   { key: 'clients', label: 'Clients', icon: 'briefcase', count: '' },
   { key: 'needs', label: 'Needs you', icon: 'bell', count: 'needs' },
   { key: 'agents', label: 'Team', icon: 'users', count: '' },
@@ -61,6 +64,7 @@ export default function App() {
     case 'deliverability': body = <Deliverability tab={a} client={b} status={c} />; break;
     case 'thread': body = <ThreadPage id={a ?? ''} />; break;
     case 'campaigns': body = <Campaigns a={a} b={b} />; break;
+    case 'content': body = user.role === 'owner' ? <Content a={a} b={b} c={c} /> : <Today user={user} />; break;
     case 'users': body = <Users user={user} />; break;
     case 'needs': body = <Needs user={user} />; break;
     // The old Eisenhower to-do (Airtable Tasks): still at #/tasks, out of the main navigation.
@@ -97,7 +101,7 @@ function Sidebar({ active, user, onSignOut }: { active: string; user: User; onSi
         <div><div className="text-[15px] font-semibold leading-tight tracking-tight">Dulcy HQ</div><div className="text-xs text-muted">Operator</div></div>
       </button>
       <nav aria-label="Main" className="mt-6 flex flex-col gap-0.5 px-3">
-        {TABS.map((t) => {
+        {TABS.filter((t) => !t.ownerOnly || user.role === 'owner').map((t) => {
           const on = active === t.key;
           const n = t.count ? c[t.count] : undefined;
           return (
@@ -105,7 +109,7 @@ function Sidebar({ active, user, onSignOut }: { active: string; user: User; onSi
               className={cx('group flex min-h-11 items-center gap-3 rounded-xl px-3 text-[15px] font-medium transition', on ? 'bg-hover text-fg' : 'text-muted hover:bg-hover hover:text-fg')}>
               <Icon name={t.icon} size={18} className={on ? 'text-fg' : 'text-muted group-hover:text-fg'} />
               <span className="flex-1 text-left">{t.label}</span>
-              {!!n && <span className={cx('tabular rounded-full px-2 py-0.5 text-xs font-semibold', t.key === 'decisions' ? 'bg-ink text-ink-fg' : t.key === 'deliverability' ? 'bg-bad-soft text-bad' : t.key === 'needs' || t.key === 'inbox' || t.key === 'campaigns' ? 'bg-accent text-accent-fg' : 'bg-sunken text-fg-2 border border-line')}>{n}</span>}
+              {!!n && <span className={cx('tabular rounded-full px-2 py-0.5 text-xs font-semibold', t.key === 'decisions' ? 'bg-ink text-ink-fg' : t.key === 'deliverability' ? 'bg-bad-soft text-bad' : t.key === 'needs' || t.key === 'inbox' || t.key === 'campaigns' || t.key === 'content' ? 'bg-accent text-accent-fg' : 'bg-sunken text-fg-2 border border-line')}>{n}</span>}
             </button>
           );
         })}
@@ -170,7 +174,7 @@ function TabBar({ active }: { active: string }) {
     <nav aria-label="Main" className="safe-bottom fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/90 backdrop-blur-md md:hidden">
       <div className="mx-auto grid max-w-lg grid-cols-6">
         {/* Phone: Team, Campaigns and Deliverability are icons in the top bar (six tabs fit). */}
-        {TABS.filter((t) => t.key !== 'agents' && t.key !== 'campaigns' && t.key !== 'deliverability').map((t) => {
+        {TABS.filter((t) => t.key !== 'agents' && t.key !== 'campaigns' && t.key !== 'deliverability' && t.key !== 'content').map((t) => {
           const on = active === t.key;
           const n = t.key === 'decisions' || t.key === 'needs' || t.key === 'inbox' ? c[t.key] : 0;
           return (

@@ -4,7 +4,7 @@ How the Dulcy lead engine works from start to finish, in plain words.
 **Keep this file current:** every engine change updates this guide in the same pull request (rule 2026-11-23).
 Technical details for developers are in `README.md`.
 
-Last updated: 2026-11-25 (HQ "Needs you" replaces To-do; Step 2: Clients; sign-up and Users)
+Last updated: 2026-11-26 (HQ "Content": ideas, Friday, pipeline; before: "Needs you", Clients, sign-up and Users)
 
 ---
 
@@ -594,7 +594,7 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
 - `RILEY=on`, and add `riley.collect,riley.apply` to `LIVE_STAGES`.
 - Optional, for n8n errors: `N8N_API_KEY` (n8n → Settings → n8n API → create key) and `N8N_BASE_URL` (default `http://localhost:5678`).
 
-## HQ: your private app (Step 1 "Today", Step 2 "Clients" and "Deliverability", Step 3 "Inbox", 2026-11-25)
+## HQ: your private app (Step 1 "Today", Step 2 "Clients" and "Deliverability", Step 3 "Inbox", "Campaigns" and "Content", 2026-11-25/26)
 
 **What it is:** one calm screen at **https://hq.dulcy.io**, on the phone or the computer. It runs inside the engine (same server, same code), and Airtable stays the database. Only people with an HQ login get in. Plan: `hq/PLAN.md`.
 
@@ -707,6 +707,40 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
    - **Domains:** per client: each domain's inbox count (marked when not 2: every domain has 2 accounts), expiry, blacklist; replacements waiting (the Decide button opens Decisions → Campaigns) and open Buy Domains & Inboxes requests (Airtable link). Data gaps are noted on top (domains without a renewal date, inboxes without a Domains record, domains without 2 inboxes).
    - **Speed and cost:** one batched Airtable read for everyone (7 list calls plus the pending decisions, no per-row calls), kept 1 minute; placement tests (about 1,000 a week, last 21 days) are kept 10 minutes. Refresh re-reads after 10 seconds. Login passwords and money are never read.
    - Members (Josh) see it too.
+
+10. **Content** (2026-11-26; you only). The Airtable Content Center (Content OS → Content Center) as one simple area, with the same steps, field names and order, only simpler. You record every **Friday morning**: main channel 2 videos a week (Sienna proposes 4 ideas), Alex Woung Raw 5 a week (8 ideas). The targets come from Content Automation Settings → Videos Per Week. In the sidebar after Deliverability; on the phone it's the **Content card on Today** (no extra icon at the top). Members (Josh) never see it: the server answers 403.
+   - **Needs you** (default): only what needs you.
+     - **Ideas to approve**, grouped Main / Raw, newest first, each with Sienna's hook, angle and "why now", and who proposed it (Sienna, or the n8n Reddit intake).
+       - **Approve** writes exactly what the Content Center's "Approve & schedule" writes: Idea Decision "Approved", Production Stage "Idea Approved", and Recording Date + Publish Date from the same scheduling rule.
+       - **Reject** writes exactly what "Reject idea" writes: Idea Decision "Rejected" and both dates cleared.
+       - HQ reads the record fresh first. It refuses a duplicate, an idea already decided, and an idea with no channel.
+     - **Final videos to check:** only clips Sienna's editor passed (Clip Status "Needs Review" and Editorial Review Notes "Sienna QA: passed …"), grouped by video, with **Watch** and **Decide in Airtable**. Approve and send back stay in the Content Center. Its "Approve reviewed copy" writes Review Intent JSON and then calls n8n, which checks who wrote it, and HQ can't do that, so HQ writes nothing here. Clips Sienna hasn't checked yet are only counted.
+     - **Other steps waiting on you** (links only): choose the editing route, approve the thumbnail, upload to YouTube, choose where the clips go, review the posts.
+     - A one-line link to the data problems (they are on This week).
+     - **Changes from HQ:** every approve and reject (who, when, each field from → to). Table `hq_content_log`.
+   - **Friday:** the approved ideas for this Friday, Main / Raw, in recording order (recording date, then publish date). "1/2" means 1 of 2 has a script. It shows **one idea per screen** in big type, with numbered dots, **Previous / Next** (← → on a computer), hooks, the script (Raw: talking points), "check before recording", title options, thumbnail idea and the Gamma outline. The Gamma link shows once a real Gamma doc exists; until then only the outline. It includes leftovers from the last two weeks ("From an earlier week").
+   - **Pipeline:** each video's stage, Idea → Approved → Script ready → Recorded → Editing → Final review → Final approved → Posted, from Idea Decision, Production Stage, Status, Script, Thumbnail Status, YouTube URL / Publishing Status and the clips' Clip Status. Filter by channel; tap a stage tile to see only that stage. Tap a row to see the Content Center's **next step**, who does it and which automation runs it. Rows with no date in the last 60 days are left out (counted). There is no client filter: these tables only hold your own channels.
+   - **This week** (Mon–Sun, New York): per channel, ideas proposed (target 4 / 8), approved, recorded and posted (with proof) vs target. Then the data problems as Problem → Data → Fix → Why, with an owner:
+     - rows "Scheduled" with no proof of posting (17 known);
+     - an approved idea with no script after 1 day (with the last sienna.prep run; Riley owns it if that run failed);
+     - clips waiting for Sienna's check;
+     - main-channel recording dates that aren't a Friday;
+     - ideas waiting 14+ days.
+   - **Which HQ action leads to which automation:**
+     | Step | Where | What runs |
+     |---|---|---|
+     | New ideas | automatic | engine `sienna.ideas` (Fri 7 AM) + n8n "[Content OS] Reddit … Weekly Intake" ×5 (Sat 9 AM) |
+     | Approve / Reject idea | **HQ** (or Content Center) | the fields above; after Approve, engine `sienna.prep` (every 30 min) writes the script, hooks, titles, thumbnail idea, Gamma outline. No n8n flow reads Idea Decision |
+     | Generate script by hand | Content Center button | n8n "[Content OS] Generate Teleprompter Script" (2 copies) |
+     | Sync Frame.io / Submit to OpusClip / Refresh Opus Clips / Generate Distribution Pack | Content Center (Content Automation Action field) | Airtable automation "Content OS Action Script" → n8n Frame.io Sync / OpusClip Submit and Refresh / Generate Distribution Pack |
+     | Thumbnail, Revise thumbnail, YouTube details | Content Center buttons | n8n Generate Thumbnail / Revise Thumbnail / Prepare YouTube Details |
+     | Clip approve / reject | Content Center | n8n "[Content OS] Current Clip Review and Preview" |
+     | Posts: newsletter, Framer blog, scheduling | Content Center → Posts | n8n Prepare Newsletter Preview / Publish Framer Blog Draft / Schedule Approved Social Posts. **Never from HQ** |
+   - **Clean-up for Riley (the same job twice), shown once in HQ:**
+     - three script writers: `sienna.prep` + 2 copies of the n8n Teleprompter Script;
+     - two idea sources: `sienna.ideas` + the 5 Reddit intakes;
+     - final edits: Sienna's editor + the OpusClip buttons.
+   - **Speed and safety:** one batched read for everyone (6 list calls plus one call per 50 rows of long text, no per-row calls), kept 1 minute; refresh re-reads after 10 seconds. HQ never posts, schedules or deletes, and never calls OpusClip, Gamma, Frame.io, YouTube, Discord or n8n.
 
 **Agent to-do lists:** kept in HQ (the Airtable Tasks table has no Agent field). For now one generator fills them, every 30 minutes:
 - A running campaign past 60% sent gives Atlas "Plan next campaign for <client>", due in 3 days.

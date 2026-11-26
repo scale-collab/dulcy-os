@@ -487,3 +487,16 @@ ALTER TABLE hq_users ADD CONSTRAINT hq_users_role_check CHECK (role IN ('owner',
 ALTER TABLE hq_users DROP CONSTRAINT IF EXISTS hq_users_client_link;
 ALTER TABLE hq_users ADD CONSTRAINT hq_users_client_link CHECK (
   (role = 'client') = (client_rec IS NOT NULL AND client_rec ~ '^rec[A-Za-z0-9]{14}$') AND NOT (role = 'client' AND pending));
+
+-- HQ Content (2026-11-26): every idea decision HQ writes to the Content Channels table (who, when,
+-- which record, which fields from what to what). The same fields the Content Center's buttons write.
+CREATE TABLE IF NOT EXISTS hq_content_log (
+  id          BIGSERIAL PRIMARY KEY,
+  actor       TEXT NOT NULL,
+  action      TEXT NOT NULL,                  -- 'idea_approve' | 'idea_reject'
+  record_id   TEXT NOT NULL,
+  title       TEXT NOT NULL DEFAULT '',
+  changes     JSONB NOT NULL DEFAULT '[]',    -- [{field, from, to}]
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS hq_content_log_at ON hq_content_log (created_at DESC);
