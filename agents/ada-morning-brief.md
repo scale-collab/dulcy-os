@@ -26,6 +26,7 @@ what to do first. Business only (no personal items). Alex's time zone: America/N
 4. **Campaign health** — Campaigns table `tblAVAA6uBPaMj28P`, *Campaign Status* active: list campaigns with *Bounced %* over 4% (paused/pause-worthy) and 2.5–4% (watch); campaigns at 60%+ *Progress* (time to plan the next one — Atlas); any campaign whose *Campaign Status* changed to paused in the last 24 h (*Status Last Modified*).
 5. **Accounts** — Email Accounts table `tblMSOBJ0wMgxSg4l`: count *Spam Protocol Stage* = Resting 7 Days and Replace Domain; Spam Remediation Queue `tblaJZ3ru2TOiHOOM` Status Pending Review (purchases waiting for Alex).
 6. **What the agents did** — Activity Log `tbl4DK6tEuy2ZEmbP`, *When* in the last 24 h: one line per agent with the counts (e.g. "Atlas: 1 campaign paused, 2 accounts rested").
+7. **Agent work** (2026-11-25) — HQ's agent task lists (Postgres `hq_agent_tasks`): every task overdue or with no update for 2+ days, one line each (at most 5). A stuck task with an engine job behind it is re-queued through the normal queue (once a day per task, at most 3 times; only when the brief runs live). See `engine/GUIDE.md` → "Agent task lists".
 
 **Friday only — weekly scorecard** (Mon–Fri this week vs last week): interested replies, meetings booked, replies sent, per client; campaigns launched; bounce flags; accounts rested/replaced. One line per client, then the 3 numbers that moved most.
 
