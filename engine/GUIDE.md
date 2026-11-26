@@ -792,26 +792,37 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
 - A pending or disabled login can never get in: password, Google and an old session are all refused.
 - The server command `hq-user` still works the same, and also approves a pending request.
 
-**Client logins: the client portal (Step 4, 2026-11-26):**
-- **What a client sees:** the same address (https://hq.dulcy.io), but a small app of its own: the Dulcy logo, their company name and three tabs. Nothing else from HQ.
-  - **Overview:** interested replies and meetings booked (last 7 and 30 days, the same count as your Clients screen), each live campaign (sent, replies, interested, booked), and deliverability in words: "Healthy", "keeping a close eye on 1 campaign" (bounce over 2.5%) or "We're fixing deliverability on 1 campaign" (over 4%). No bounce numbers.
-  - **Leads:** people who said yes in the last 90 days: meetings booked, and positive replies handed to the client. Name, company, email, what the prospect wrote, and the date.
-  - **Meetings:** meetings booked in the last 90 days (the day it was booked; the meeting time itself is not stored).
-  - **Never:** fees, revenue, receivables, other clients, Decisions, Echo's drafts or reasoning, notes, agent names, Airtable links. The server never even reads those fields for the portal.
-  - **Reports:** not in the portal yet. HQ reports have no "for the client" mark, so none is shown. Add that mark first if you want clients to see a report.
-- **Add a client login (you only):** **Users** → **Add client login** → pick the client (Twenty West and "Twenty West (Internal)" are one client), their name and email, then a temporary password (12+ characters; send it to them yourself) or "Google sign-in only". There is no emailed reset link: to reset, open the login on Users and set a new temporary password.
-- **Turn it off:** Users → the client login → **Disable** (signs them out at once). Re-enable brings it back.
+**Client portal (portal.dulcy.io, replaces Softr; Step 4, v2 2026-11-26):**
+- **What it is:** the same portal clients use in Softr today, now inside HQ, at **https://portal.dulcy.io** once you switch it (steps below). Until then it runs at **https://hq.dulcy.io/portal** for a preview with a client login. The spec (every Softr page, block, table and form) is `hq/portal-softr-inventory.md`.
+- **What a client sees** (one menu, grouped; a sidebar on the computer, a bottom bar with Home · Results · Leads · Meetings · More on the phone; light and dark):
+  - **Home:** "Is it working?" in one line, then meetings booked and interested replies this month, emails sent (30 days), live campaigns, the next meeting with you, the latest meeting booked for them, their open tasks, and what waits on them (a campaign to review, call feedback to give).
+  - **Results:** Email (10 / 30 / 60 / 120 days / all time: sent, replies, interested, meetings, the rates, emails per meeting; every campaign), LinkedIn, AI caller, Direct mail. A channel that is not on for them shows "not active for you yet", never an empty table.
+  - **Campaigns:** every campaign in plain words (waiting for your review, being prepared, live, paused, finished), the plan, who we reach, the emails, the numbers. **Review:** Approve, or Request changes (copy / lead list / entire campaign) with notes and the four targeting answers. **Calendar:** launches, starts and finishes.
+  - **Leads & pipeline:** the pipeline by stage (12 months) and the leads list (90 days). Each lead: what they wrote, the stage, the call feedback they gave and the deal. Buttons **Give call feedback** (Qualified / Unqualified / No Show / New Date, stars, notes, recording link) and **I closed a deal** (value, date, type, why).
+  - **Meetings:** booked meetings, call feedback (missing and given), meetings with you (summaries and recordings), and **Book a call** (a button to your booking page: set `PORTAL_MEETING_URL`; without it the page says "reply to any email").
+  - **Tasks & onboarding:** tasks for them (**Mark done**), the onboarding form (read and **Edit answers**; never the LinkedIn password, 2FA or other credential fields), and Getting started (the steps the data proves).
+  - **Docs & access:** documents (from Dulcy / from them; never "Internal?" ones), **Access & logins** (the Logins text of their own client record, hidden until they tap Show), and the links to the Dulcy ESP portal and Partnership info.
+  - **Billing** (their own invoices: Paid / Due / Unpaid; drafts and hidden ones left out), **Notifications** (Dismiss all), **Account** (name, password).
+  - **Never:** other clients, fees, revenue, receivables, Decisions, Echo's drafts or reasoning, internal notes, agent names, Airtable links or record IDs.
+- **What a client can change** (exactly what the Softr forms and buttons write, to the same Airtable tables): Campaign Review → a Campaign Feedback record; call feedback → a Call Feedback record; I closed a deal → a Client Closed Deals record; Mark done → Client Tasks Stage = Done; onboarding answers → the Onboarding record; Dismiss all → Client Notifications Dismissed. Your Airtable automations then run as before (Call Feedback Sync, Close a Deal Sync, the campaign plan reading the client's review). Every client write is logged (who, when, table, record, fields; never the values): Users → `/hq/api/users/portal-writes`.
+- **Accounts:**
+  - **Anyone can create an account** on the portal, as in Softr. It sees nothing until you link it: it waits on **Users → Client portal requests** with the company Airtable Portal Users suggests for that email. Check who they are, then tap **Link to …** (or pick another company), or **Deny**. HQ never links by email alone, because nobody has proven they own that email.
+  - **Exception:** "Continue with Google" proves the email. If that email is in Airtable Portal Users and linked to exactly one **active** client, the login is made for that client at once. Anything else (no match, two clients, an inactive client) becomes a request.
+  - **Existing Softr users:** Softr passwords cannot be moved. **Users → Softr portal users → Show who to invite** lists them with their client (active clients first). **Make login + link** creates their portal login and a one-time link to set a password (valid 7 days, works once). Copy it and send it to them yourself (HQ sends no email).
+  - **Forgot password:** the client taps "Forgot your password?" on the portal; you see "asked for a new password" on their row in Users; tap **Send link** and send it. You can also reset with a temporary password as before.
+  - **Turn a login off:** Users → the client login → **Disable** (signs them out at once).
 - **Safe by design:**
-  - Clients cannot sign up. A sign-up is always a pending member, and Approve only offers Member or Owner.
-  - An existing owner or member can never become a client (the email already has a login), and a client login can never be made member or owner (disable it and add a new login instead). The `hq-user` command refuses a client email.
-  - The server lets a client login reach only the portal. Every other HQ address answers "not part of your client portal", including pages added later. Which client it sees comes from the login itself, never from the address bar.
-  - The portal reads Airtable once a minute for everyone and only shows what belongs to that client. A reply linked to two clients is shown to neither. It changes nothing in Airtable.
-- **Not the same as send.dulcy.io:** that is EmailBison's white-label inbox, with its own separate login. A client portal login does not open it, and an EmailBison login does not open HQ.
+  - The client always comes from the login, never from the address. Every row is cut to that client on the server; a row linked to two clients is shown to neither. The browser only ever gets a short key for each row, and a key is looked up among that client's own rows only, so a borrowed or made-up key finds nothing.
+  - On portal.dulcy.io the server answers only the portal page and the portal + sign-in routes. HQ's own app, every other HQ route and the engine API answer "not found" there; a Dulcy team login signing in there is sent to hq.dulcy.io.
+  - On hq.dulcy.io a client login is refused everywhere except its portal (tests walk every HQ route).
+  - Credentials are read only when the client opens Access & logins, for that client only, never cached and never logged. **Note: the logins themselves live in Airtable (Workspace IDs → Logins), as in Softr.** Anyone with Airtable access can read them there.
+  - The Airtable Portal Users table has a plain-text **Password** column from Softr. HQ never reads it. Consider clearing it after the switch.
+- **Not the same as send.dulcy.io:** that is EmailBison's white-label inbox, with its own login. The portal links to it.
 
 **Who can see what:**
 - `owner` (you) sees everything.
 - `member` (Josh later) never sees money or content (Alex, 2026-11-25): no Money pile, nothing from Ledger or Sienna (cards, decisions, chats, reports), no client money (fee, LTV, receivables) and no Users page. A member sees only their own chats.
-- `client` (a client's portal login, 2026-11-26) sees only their own portal: Overview, Leads, Meetings. Nothing else in HQ.
+- `client` (a client's portal login) sees only their own portal (above). Nothing else in HQ.
 
 **Safety:**
 - Passwords are stored as scrypt hashes and never printed.
@@ -830,6 +841,19 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
 4. **Your login:** `cd engine/deploy && docker compose exec engine node dist/src/cli.js hq-user alex@dulcy.io --role=owner --name=Alex`. It asks for the password twice (12+ characters) and shows nothing as you type. Run it again any time to change the password; that signs you out everywhere.
 5. Open **https://hq.dulcy.io** and sign in. Traefik gets the HTTPS certificate by itself; the first load can take a minute after the DNS record exists.
 
+### Switch portal.dulcy.io from Softr to HQ (Alex, once, after testing)
+1. **Test first, on hq.dulcy.io/portal:** Users → Add client login for one client (or "Make login + link" for one Softr user), open the link in a private window, set a password, and look at every screen. Nothing in Softr or DNS changes during this.
+2. **Settings:** in `engine/deploy/.env` on the server, add:
+   - `PORTAL_HOST=portal.dulcy.io` (the default; add it so it is visible).
+   - `PORTAL_MEETING_URL=` your booking page for client calls (an `https://` link; the old Softr "Schedule Meeting" page was a custom-code block whose link the Softr tools could not read). Leave it out and the page says "reply to any email".
+   - While you test before the DNS switch, `PORTAL_PUBLIC_URL=https://hq.dulcy.io/portal` makes setup links open the preview. Remove it at the switch (the default is `https://portal.dulcy.io`).
+3. **Deploy:** `bash engine/deploy/deploy.sh`. The last lines say "Engine is up.", "HQ is up." and "Portal is up." (the engine answers portal.dulcy.io locally even before DNS points at it).
+4. **DNS (the switch):** where dulcy.io's DNS is managed, change the `portal` record from Softr's target to the server: an **A record** `portal` → the server's IP (the same as `hq`), proxy off / DNS only. Delete the old `portal` CNAME to Softr in the same step. Traefik gets the HTTPS certificate by itself within a minute or two of the record working.
+5. **Google sign-in for clients (optional):** in Google Cloud → Credentials → the "Dulcy HQ" OAuth client, add the redirect URI `https://portal.dulcy.io/hq/api/auth/google/callback`. Clients use their own Google accounts, so the OAuth consent screen must be **External** (scopes: `openid` and `email` only; no Google review is needed for those). With "Internal" only @dulcy.io accounts can use it.
+6. **Invite the Softr users:** Users → Softr portal users → Show who to invite. For each person of an active client: **Make login + link**, copy, send (email or Slack). They set a password and are in. On 2026-11-26 Airtable Portal Users had 51 rows, 15 of them for the 5 active clients and Dulcy.
+7. **After a week with no problems:** in Softr, cancel the plan (or remove the custom domain), and clear the Password column in Airtable Portal Users. Nothing in HQ needs Softr.
+- **Roll back:** point the `portal` DNS record back at Softr. HQ keeps working at hq.dulcy.io/portal.
+
 ### Optional: "Sign in with Google"
 1. Go to console.cloud.google.com, pick (or create) a project, then **APIs & Services**.
 2. **OAuth consent screen:**
@@ -841,9 +865,12 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
    - **Authorized redirect URI:** `https://hq.dulcy.io/hq/api/auth/google/callback`.
 4. Put the two values in `.env` as `HQ_GOOGLE_CLIENT_ID` and `HQ_GOOGLE_CLIENT_SECRET`, then deploy again.
 5. The Google button appears on the sign-in page. It only lets in emails that already have an HQ login (step 4 above). To make one for Google sign-in only, use `--google-only`.
+6. For the client portal on portal.dulcy.io, also add `https://portal.dulcy.io/hq/api/auth/google/callback` and make the consent screen External (see "Switch portal.dulcy.io" above). There, a Google-verified email that Airtable Portal Users links to one active client gets its client login at once; any other email becomes a request on Users.
 
 ### Server commands
 - `hq-user <email> --role=owner|member [--name=Josh] [--password-stdin] [--google-only]`: create or update a login.
+- Settings for the client portal: `PORTAL_HOST` (default `portal.dulcy.io`), `PORTAL_PUBLIC_URL` (where setup links point; default `https://PORTAL_HOST`), `PORTAL_MEETING_URL` (the "Book a call" page).
+- Local development: `npm run dev` in `hq/web` serves HQ at `/hq/` and the portal at `/hq/portal.html`.
 - `ask add --agent=<name> --title="..." [...]`, `ask list [--all]`, `ask done <id>`: the "Needs you" asks (see tab 3 above).
 - `agent-task upsert|done|list`: an agent's own task list (see "Agent task lists" above).
 - Local development: `npm run build:hq` in `engine/` builds the app to `hq/web/dist`. Start the engine with `HQ_WEB_DIR=../hq/web/dist`, then open http://localhost:8080/hq/. Or run `npm run dev` in `hq/web`; it sends API calls to the engine on :8080.

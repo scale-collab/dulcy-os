@@ -16,3 +16,6 @@ curl -fsS http://127.0.0.1:8090/health && echo && echo "Engine is up."
 HQ_HOST="$(grep -E '^HQ_HOST=' .env | tail -1 | cut -d= -f2- || true)"
 # HQ answers on its host name too (the app page; the API needs a login).
 curl -fsS -o /dev/null -H "Host: ${HQ_HOST:-hq.dulcy.io}" http://127.0.0.1:8090/ && echo "HQ is up." || echo "HQ page not served yet (check HQ_HOST and the build)."
+PORTAL_HOST="$(grep -E '^PORTAL_HOST=' .env | tail -1 | cut -d= -f2- || true)"
+# The client portal answers on its host name (the portal page only; HQ's app is never served there).
+curl -fsS -H "Host: ${PORTAL_HOST:-portal.dulcy.io}" http://127.0.0.1:8090/ | grep -q "client portal" && echo "Portal is up." || echo "Portal page not served yet (check PORTAL_HOST and the build)."

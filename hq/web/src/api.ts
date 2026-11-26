@@ -64,7 +64,11 @@ export interface Client {
   waitingApproval: number; seanWaiting: number; campaigns: ClientCampaign[]; note: string[]; dataIssues: string[]; money?: ClientMoney;
 }
 export interface ClientsSummary { active: number; internal: number; inactive: number; mrr?: number; readAt: string }
-export interface HqUserRow { id: number; email: string; name: string; role: 'owner' | 'member' | 'client'; clientName?: string; status: 'pending' | 'active' | 'disabled'; google: boolean; hasPassword: boolean; lastSeen: string | null; created: string; requested: string | null }
+export interface HqUserRow { id: number; email: string; name: string; role: 'owner' | 'member' | 'client'; clientName?: string; status: 'pending' | 'active' | 'disabled'; google: boolean; hasPassword: boolean; lastSeen: string | null; created: string; requested: string | null;
+  /** A sign-up from the client portal: linked to a client, never approved as member/owner. */
+  portalRequest?: boolean; resetAsked?: string | null; suggest?: { id: string; name: string } | null }
+/** A Softr portal user (Airtable Portal Users) and whether it has an HQ portal login yet. */
+export interface SoftrUser { rec: string; name: string; email: string; client: string; clientActive: boolean; lastSeen: string; hq: 'none' | 'client' | 'other' | 'pending'; hqId: number | null }
 export interface UserEvent { id: number; actor: string; action: string; target: string; detail: string; created: string }
 export interface Thread { id: number; agent: string; askedBy: string; parentId: number | null; title: string; updated?: string; messages?: number }
 

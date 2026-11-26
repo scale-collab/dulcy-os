@@ -154,14 +154,14 @@ export const googleOn = (cfg: Pick<Config, 'hqGoogleClientId' | 'hqGoogleClientS
 export const googleRedirectUri = (cfg: Pick<Config, 'hqPublicUrl'>) => `${cfg.hqPublicUrl}/hq/api/auth/google/callback`;
 
 /** The Google sign-in address and the short-lived state cookie (SameSite=Lax: Google's redirect back is a cross-site navigation). */
-export function googleStart(cfg: Config, mode: 'login' | 'signup' = 'login'): { location: string; setCookie: string } {
+export function googleStart(cfg: Config, mode: 'login' | 'signup' = 'login', redirectUri = googleRedirectUri(cfg)): { location: string; setCookie: string } {
   const state = randomBytes(24).toString('base64url');
-  const q = new URLSearchParams({ client_id: cfg.hqGoogleClientId!, redirect_uri: googleRedirectUri(cfg), response_type: 'code', scope: 'openid email', state, prompt: 'select_account' });
+  const q = new URLSearchParams({ client_id: cfg.hqGoogleClientId!, redirect_uri: redirectUri, response_type: 'code', scope: 'openid email', state, prompt: 'select_account' });
   return { location: `${cfg.hqGoogleAuthUrl}?${q}`, setCookie: cookie(OAUTH_COOKIE, signValue(cfg.hqSessionSecret!, `${state}:${Date.now()}:${mode}`), 600, 'Lax') };
 }
 
 /** The Google callback: check state, swap the code for the id token (server to Google over TLS), return the verified email. */
-export async function googleFinish(cfg: Config, query: URLSearchParams, cookieHeader: string | undefined, fetchImpl: typeof fetch = fetch): Promise<{ email?: string; error?: string; mode: 'login' | 'signup' }> {
+export async function googleFinish(cfg: Config, query: URLSearchParams, cookieHeader: string | undefined, fetchImpl: typeof fetch = fetch, redirectUri = googleRedirectUri(cfg)): Promise<{ email?: string; error?: string; mode: 'login' | 'signup' }> {
   const saved = unsignValue(cfg.hqSessionSecret!, parseCookies(cookieHeader)[OAUTH_COOKIE]);
   const [state, at, m] = String(saved ?? '').split(':');
   const mode = m === 'signup' ? 'signup' : 'login';
@@ -173,7 +173,7 @@ export async function googleFinish(cfg: Config, query: URLSearchParams, cookieHe
   try {
     const res = await fetchImpl(cfg.hqGoogleTokenUrl, {
       method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ code, client_id: cfg.hqGoogleClientId!, client_secret: cfg.hqGoogleClientSecret!, redirect_uri: googleRedirectUri(cfg), grant_type: 'authorization_code' }),
+      body: new URLSearchParams({ code, client_id: cfg.hqGoogleClientId!, client_secret: cfg.hqGoogleClientSecret!, redirect_uri: redirectUri, grant_type: 'authorization_code' }),
       signal: AbortSignal.timeout(15_000),
     });
     tok = await res.json();

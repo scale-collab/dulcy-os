@@ -13,6 +13,8 @@ import type { Db } from '../db/pool.js';
 import { FAIL_WINDOW_MIN, MAX_FAILS_PER_EMAIL, MAX_FAILS_PER_IP, MIN_PASSWORD, firstName, hashPassword, normEmail, type HqUser } from './auth.js';
 
 export const SIGNUP_SENT = 'Request sent. Alex will approve it.';
+/** The portal's sign-up answer (portal.dulcy.io): the same for every email. */
+export const PORTAL_SIGNUP_SENT = 'Account requested. Your Dulcy team will link it to your company; then you can sign in and see your results.';
 const EMAIL_RE = /^[^@\s]{1,64}@[^@\s]{1,190}\.[^@\s]{2,63}$/;
 type Role = 'owner' | 'member';
 /** The roles approve / role / add-user may set. 'client' is deliberately not one of them. */
@@ -35,15 +37,16 @@ export async function signupBlocked(db: Db, email: string, ip: string): Promise<
 const recordSignup = (db: Db, email: string, ip: string) => db.query(`INSERT INTO hq_login_attempts (email, ip, ok, kind) VALUES ($1,$2,false,'signup')`, [email, ip]);
 
 /** Insert a pending request unless the email already has a row (then nothing changes). */
-async function addPending(db: Db, email: string, name: string, hash: string | null, via: string): Promise<void> {
+async function addPending(db: Db, email: string, name: string, hash: string | null, via: string, portal = false): Promise<void> {
+  // portal: a client portal request (portal.dulcy.io). Still a pending member: it sees nothing until the owner links it to a client.
   const r = await db.query(
-    `INSERT INTO hq_users (email, name, role, password_hash, disabled, pending, requested_at) VALUES ($1,$2,'member',$3,true,true,now())
-     ON CONFLICT (email) DO NOTHING RETURNING id`, [email, name, hash]);
-  if (r.rows.length) await logUserEvent(db, email, 'signup', email, via);
+    `INSERT INTO hq_users (email, name, role, password_hash, disabled, pending, requested_at, portal_signup) VALUES ($1,$2,'member',$3,true,true,now(),$4)
+     ON CONFLICT (email) DO NOTHING RETURNING id`, [email, name, hash, portal]);
+  if (r.rows.length) await logUserEvent(db, email, portal ? 'portal signup' : 'signup', email, via);
 }
 
 /** POST /auth/signup. Never says whether the email exists; never logs in. */
-export async function signUp(db: Db, b: any, ip: string): Promise<{ status: number; error?: string; message?: string }> {
+export async function signUp(db: Db, b: any, ip: string, opts: { portal?: boolean } = {}): Promise<{ status: number; error?: string; message?: string }> {
   const email = normEmail(b?.email);
   const name = String(b?.name ?? '').trim().replace(/\s+/g, ' ');
   const password = String(b?.password ?? ''); const again = String(b?.password2 ?? '');
@@ -54,16 +57,16 @@ export async function signUp(db: Db, b: any, ip: string): Promise<{ status: numb
   if (await signupBlocked(db, email, ip)) return { status: 429, error: `Too many tries. Wait ${FAIL_WINDOW_MIN} minutes and try again.` };
   await recordSignup(db, email, ip);
   const hash = await hashPassword(password); // always, so an existing email takes as long
-  await addPending(db, email, name, hash, 'password');
-  return { status: 200, message: SIGNUP_SENT };
+  await addPending(db, email, name, hash, 'password', opts.portal === true);
+  return { status: 200, message: opts.portal ? PORTAL_SIGNUP_SENT : SIGNUP_SENT };
 }
 
 /** Google sign-up for an email with no active login: a pending request (no password). */
-export async function googleSignUp(db: Db, email: string, ip: string): Promise<{ ok: boolean; error?: string }> {
+export async function googleSignUp(db: Db, email: string, ip: string, opts: { portal?: boolean } = {}): Promise<{ ok: boolean; error?: string }> {
   const e = normEmail(email);
   if (await signupBlocked(db, e, ip)) return { ok: false, error: `Too many tries. Wait ${FAIL_WINDOW_MIN} minutes and try again.` };
   await recordSignup(db, e, ip);
-  await addPending(db, e, firstName(e), null, 'Google');
+  await addPending(db, e, firstName(e), null, 'Google', opts.portal === true);
   return { ok: true };
 }
 
@@ -71,10 +74,19 @@ export async function pendingCount(db: Db): Promise<number> {
   return (await db.query(`SELECT count(*)::int AS n FROM hq_users WHERE pending`)).rows[0].n;
 }
 
-export interface UserRow { id: number; email: string; name: string; role: Role | 'client'; clientName: string; status: 'pending' | 'active' | 'disabled'; hasPassword: boolean; lastSeen: string | null; created: string; requested: string | null }
+export interface UserRow {
+  id: number; email: string; name: string; role: Role | 'client'; clientName: string; status: 'pending' | 'active' | 'disabled'; hasPassword: boolean; lastSeen: string | null; created: string; requested: string | null;
+  /** A sign-up from the client portal: link it to a client (never approve it as member/owner). */
+  portalRequest: boolean;
+  /** The client asked for a new password (portal "Forgot password"), not handled yet. */
+  resetAsked: string | null;
+  /** Filled in by the server: the client the Airtable Portal Users table links this email to. */
+  suggest?: { id: string; name: string } | null;
+}
 export async function listUsers(db: Db): Promise<{ users: UserRow[]; events: { id: number; actor: string; action: string; target: string; detail: string; created: string }[] }> {
   const [u, e] = await Promise.all([
-    db.query(`SELECT u.id, u.email, u.name, u.role, u.client_name, u.disabled, u.pending, u.password_hash IS NOT NULL AS has_pw, u.created_at, u.requested_at,
+    db.query(`SELECT u.id, u.email, u.name, u.role, u.client_name, u.disabled, u.pending, u.portal_signup, u.password_hash IS NOT NULL AS has_pw, u.created_at, u.requested_at,
+        (SELECT max(r.created_at) FROM hq_portal_resets r WHERE r.user_id=u.id AND r.handled_at IS NULL) AS reset_asked,
         GREATEST(u.last_login_at, (SELECT max(s.last_seen) FROM hq_sessions s WHERE s.user_id=u.id)) AS last_seen
       FROM hq_users u ORDER BY u.pending DESC, u.disabled, u.role DESC, lower(u.name), u.email`),
     db.query(`SELECT id, actor, action, target, detail, created_at FROM hq_user_events ORDER BY id DESC LIMIT 30`),
@@ -84,6 +96,7 @@ export async function listUsers(db: Db): Promise<{ users: UserRow[]; events: { i
     users: u.rows.map((x) => ({
       id: Number(x.id), email: String(x.email), name: String(x.name || firstName(x.email)), role: x.role === 'owner' ? 'owner' : x.role === 'client' ? 'client' : 'member', clientName: x.role === 'client' ? String(x.client_name ?? '') : '',
       status: x.pending ? 'pending' : x.disabled ? 'disabled' : 'active', hasPassword: Boolean(x.has_pw), lastSeen: iso(x.last_seen), created: iso(x.created_at)!, requested: iso(x.requested_at),
+      portalRequest: Boolean(x.pending && x.portal_signup), resetAsked: iso(x.reset_asked),
     })),
     events: e.rows.map((x) => ({ id: Number(x.id), actor: String(x.actor), action: String(x.action), target: String(x.target), detail: String(x.detail), created: iso(x.created_at)! })),
   };
@@ -97,7 +110,7 @@ const endSessions = (db: Db, id: number) => db.query(`DELETE FROM hq_sessions WH
 /** One owner action on one user. `actor` is the signed-in owner (the route checks the role). */
 export async function manageUser(db: Db, actor: HqUser, id: number, action: string, b: any): Promise<Result> {
   if (actor.role !== 'owner') return { status: 403, error: 'only the owner manages users' };
-  const u = (await db.query(`SELECT id, email, role, disabled, pending FROM hq_users WHERE id=$1`, [id])).rows[0];
+  const u = (await db.query(`SELECT id, email, role, disabled, pending, portal_signup FROM hq_users WHERE id=$1`, [id])).rows[0];
   if (!u) return { status: 404, error: 'no such user' };
   const self = Number(u.id) === actor.id;
   const isLastOwner = u.role === 'owner' && !u.disabled && !u.pending && (await activeOwners(db)) <= 1;
@@ -105,6 +118,7 @@ export async function manageUser(db: Db, actor: HqUser, id: number, action: stri
   switch (action) {
     case 'approve': {
       if (!u.pending) return { status: 409, error: 'not a pending request' };
+      if (u.portal_signup) return { status: 409, error: 'This is a client portal request: link it to a client instead.' };
       const role = b?.role === undefined ? 'member' : b.role;
       if (!isRole(role)) return { status: 400, error: 'role must be member or owner' };
       await db.query(`UPDATE hq_users SET pending=false, disabled=false, role=$2, updated_at=now() WHERE id=$1`, [id, role]);

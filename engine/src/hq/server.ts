@@ -11,14 +11,16 @@ import type { Config } from '../config.js';
 import { createAirtableClient } from '../providers/airtable.js';
 import { AGENTS, AGENT_NAMES, OWNER_ONLY, PILES, agentByName, type AgentName } from './agents.js';
 import {
-  OAUTH_COOKIE, SESSION_COOKIE, cookie, createSession, endSession, googleFinish, googleOn, googleStart, passwordLogin, sessionUser, userByEmail, type HqUser,
+  OAUTH_COOKIE, SESSION_COOKIE, cookie, createSession, endSession, googleFinish, googleOn, googleRedirectUri, googleStart, passwordLogin, sessionUser, userByEmail, type HqUser,
 } from './auth.js';
 import { decide, groupByPile, pendingDecisions, type HqAirtable } from './decisions.js';
 import { listTasks, markDone, notYet, quickAdd, validNewTask } from './tasks.js';
 import { agentActivity, agentRuns, agentTasks, finishAgentTask, jobHealth, teamCheck } from './team.js';
 import { canTalkTo, chatTurn, listThreads, readThread, type ChatModel } from './chat.js';
 import { clientDetail, listClients } from './clients.js';
-import { SIGNUP_SENT, addUser, googleSignUp, listUsers, manageUser, pendingCount, signUp } from './users.js';
+import { PORTAL_SIGNUP_SENT, SIGNUP_SENT, addUser, googleSignUp, listUsers, manageUser, pendingCount, signUp } from './users.js';
+import { portalWrite, recentPortalWrites } from './portalWrites.js';
+import { forgotPassword, inviteSoftrUser, linkPortalUser, listSoftrUsers, makeSetupLink, portalGoogleNewUser, setPasswordWithToken, suggestedClient, updateOwnAccount } from './portalAccounts.js';
 import { askVisible, finishAsk, getAsk, isSnooze, listAsks, quietItem, snoozeAsk } from './asks.js';
 import { isNeedDay, loadNeeds, loadNeedsDay, needCounts } from './needs.js';
 import { workSummary } from './agentTasks.js';
@@ -72,18 +74,18 @@ export function sameOrigin(req: http.IncomingMessage): boolean {
 
 const MIME: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8' };
 
-function serveStatic(res: http.ServerResponse, webDir: string, rel: string) {
+function serveStatic(res: http.ServerResponse, webDir: string, rel: string, fallback: 'index.html' | 'portal.html' = 'index.html') {
   const root = path.resolve(webDir);
   const clean = rel.replace(/^\/+/, '');
-  let file = path.resolve(root, clean || 'index.html');
+  let file = path.resolve(root, clean || fallback);
   if (!file.startsWith(root + path.sep) && file !== root) { res.writeHead(404, SECURITY_HEADERS); return res.end('not found'); }
   let isIndex = false;
   try { if (!fs.statSync(file).isFile()) throw new Error('dir'); } catch {
     // Unknown paths (not assets) get the app; missing assets are a 404.
     if (/^assets\//.test(clean)) { res.writeHead(404, SECURITY_HEADERS); return res.end('not found'); }
-    file = path.join(root, 'index.html'); isIndex = true;
+    file = path.join(root, fallback); isIndex = true;
   }
-  if (path.basename(file) === 'index.html') isIndex = true;
+  if (path.basename(file) === 'index.html' || path.basename(file) === 'portal.html') isIndex = true;
   let body: Buffer;
   try { body = fs.readFileSync(file); } catch {
     res.writeHead(503, { 'content-type': 'text/plain; charset=utf-8', ...SECURITY_HEADERS });
@@ -102,14 +104,41 @@ function serveStatic(res: http.ServerResponse, webDir: string, rel: string) {
  * (blocked by default). The login routes run before the session check, so they are not listed.
  * Owners and members are not affected here (the portal routes refuse them themselves).
  */
-export const CLIENT_API_ALLOW: readonly RegExp[] = [/^\/hq\/api\/portal\/[a-z]+$/];
+export const CLIENT_API_ALLOW: readonly RegExp[] = [/^\/hq\/api\/portal\/[a-z][a-z-]{1,23}(?:\/(?:[A-Za-z0-9_-]{12}|[a-z]{2,12}))?(?:\/[a-z]{2,12})?$/];
 export const CLIENT_REFUSED = 'This page is not part of your client portal.';
 export function clientMayCall(user: Pick<HqUser, 'role'>, pathname: string): boolean {
   if (user.role !== 'client') return true;
   return CLIENT_API_ALLOW.some((re) => re.test(pathname));
 }
 
-const PUBLIC = new Set(['/hq/api/auth/signup', '/hq/api/auth/login', '/hq/api/auth/config', '/hq/api/auth/google/start', '/hq/api/auth/google/callback', '/hq/api/auth/logout']);
+const PUBLIC = new Set(['/hq/api/auth/signup', '/hq/api/auth/login', '/hq/api/auth/config', '/hq/api/auth/google/start', '/hq/api/auth/google/callback', '/hq/api/auth/logout', '/hq/api/auth/forgot', '/hq/api/auth/set-password']);
+
+/**
+ * Host routing (2026-11-26). On PORTAL_HOST (portal.dulcy.io) only the portal shell (portal.html and
+ * the files it loads), the login routes and /hq/api/portal/* answer. HQ's own app (index.html), every
+ * other HQ API route and the engine's signed API are never served there; staff signing in there are
+ * sent to HQ_HOST.
+ */
+export const PORTAL_HOST_API: readonly RegExp[] = [/^\/hq\/api\/auth\/(?:config|login|logout|signup|forgot|set-password|google\/start|google\/callback)$/, ...CLIENT_API_ALLOW];
+export const portalHostMayCall = (pathname: string) => PORTAL_HOST_API.some((re) => re.test(pathname));
+const PORTAL_STATIC = /^\/hq\/(?:favicon\.png|apple-touch-icon\.png|theme\.js|dulcy-mark\.png)$/;
+let portalAssetCache: { file: string; mtime: number; set: Set<string> } | null = null;
+/** The asset files portal.html loads (and the CSS/JS they pull in): the only /hq/assets/ files the portal host serves. */
+export function portalAssets(webDir: string): Set<string> {
+  const file = path.join(path.resolve(webDir), 'portal.html');
+  let mtime = 0; try { mtime = fs.statSync(file).mtimeMs; } catch { return new Set(); }
+  if (portalAssetCache?.file === file && portalAssetCache.mtime === mtime) return portalAssetCache.set;
+  const set = new Set<string>(); const seen = new Set<string>();
+  const scan = (text: string) => { for (const m of text.matchAll(/\/hq\/(assets\/[A-Za-z0-9._-]+)/g)) set.add(m[1]); for (const m of text.matchAll(/["'(]\.\/([A-Za-z0-9._-]+\.(?:js|css|woff2))/g)) set.add(`assets/${m[1]}`); };
+  scan(fs.readFileSync(file, 'utf8'));
+  for (let again = true; again;) {
+    again = false;
+    for (const a of [...set]) if (!seen.has(a) && /\.(css|js)$/.test(a)) { seen.add(a); again = true; try { scan(fs.readFileSync(path.join(path.resolve(webDir), a), 'utf8')); } catch { /* missing */ } }
+  }
+  portalAssetCache = { file, mtime, set };
+  return set;
+}
+const PORTAL_LINKS = { esp: 'https://send.dulcy.io/', partnership: 'https://www.fanbasis.com/portal/user/my-purchase' } as const;
 
 /** Handle an HQ request. Returns false when the path is not HQ's (the engine API handles it). */
 export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
@@ -119,17 +148,30 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
   const home = (req: http.IncomingMessage) => (hostOf(req) === cfg.hqHost ? '/' : '/hq/');
 
   return async function handle(req: http.IncomingMessage, res: http.ServerResponse, url: URL): Promise<boolean> {
-    const onHqHost = hostOf(req) === cfg.hqHost;
+    const host = hostOf(req);
+    const onPortalHost = host === cfg.portalHost && cfg.portalHost !== cfg.hqHost;
+    const onHqHost = host === cfg.hqHost;
     const p = url.pathname;
     const isHq = p === '/hq' || p.startsWith('/hq/');
-    if (!isHq && !onHqHost) return false;
+    if (!isHq && !onHqHost && !onPortalHost) return false;
 
     if (!p.startsWith('/hq/api/')) {
       if (req.method !== 'GET' && req.method !== 'HEAD') { json(res, 405, { error: 'method not allowed' }); return true; }
+      if (onPortalHost) {
+        // The portal shell only: its own files, else portal.html (never HQ's index.html).
+        const asset = /^\/hq\/(assets\/[A-Za-z0-9._-]+)$/.exec(p)?.[1];
+        if (asset) { if (portalAssets(webDir).has(asset)) serveStatic(res, webDir, asset, 'portal.html'); else { res.writeHead(404, SECURITY_HEADERS); res.end('not found'); } return true; }
+        serveStatic(res, webDir, PORTAL_STATIC.test(p) ? p.slice('/hq/'.length) : 'portal.html', 'portal.html');
+        return true;
+      }
       if (p === '/hq') { redirect(res, '/hq/'); return true; }
-      serveStatic(res, webDir, isHq ? p.slice('/hq/'.length) : p.slice(1));
+      const rel = isHq ? p.slice('/hq/'.length) : p.slice(1);
+      // The portal preview before the DNS switch: hq.dulcy.io/portal (and /hq/portal), with a client login.
+      if (/^portal(?:\/|$)/.test(rel)) { serveStatic(res, webDir, 'portal.html', 'portal.html'); return true; }
+      serveStatic(res, webDir, rel);
       return true;
     }
+    if (onPortalHost && !portalHostMayCall(p)) { json(res, 404, { error: 'not found' }); return true; }
 
     try {
       if (!cfg.hqSessionSecret) { json(res, 503, { error: 'HQ is off on this server: set HQ_SESSION_SECRET (32+ characters).' }); return true; }
@@ -140,18 +182,33 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       }
 
       // ---- Login (no session needed) ----
-      if (p === '/hq/api/auth/config' && req.method === 'GET') { json(res, 200, { google: googleOn(cfg) }); return true; }
+      if (p === '/hq/api/auth/config' && req.method === 'GET') { json(res, 200, { google: googleOn(cfg), portal: onPortalHost, staffUrl: `${cfg.hqPublicUrl}/` }); return true; }
       if (p === '/hq/api/auth/login' && req.method === 'POST') {
         const b = await readJson(req);
         const r = await passwordLogin(db, String(b.email ?? ''), String(b.password ?? ''), clientIp(req));
         if (!r.user) { json(res, r.status, { error: r.error }); return true; }
+        // Staff on the portal host: no session there; their place is HQ.
+        if (onPortalHost && r.user.role !== 'client') { json(res, 200, { redirect: `${cfg.hqPublicUrl}/`, message: 'Dulcy team logins sign in at HQ.' }); return true; }
         json(res, 200, { user: publicUser(r.user) }, { 'set-cookie': await createSession(db, cfg, r.user.id) });
         return true;
       }
       if (p === '/hq/api/auth/signup' && req.method === 'POST') {
         // A request for a login: pending until the owner approves. Never a session; same answer for every email.
-        const r = await signUp(db, await readJson(req, 5_000), clientIp(req));
+        const r = await signUp(db, await readJson(req, 5_000), clientIp(req), { portal: onPortalHost });
         json(res, r.status, r.error ? { error: r.error } : { ok: true, message: r.message });
+        return true;
+      }
+      if (p === '/hq/api/auth/forgot' && req.method === 'POST') {
+        const b = await readJson(req, 2_000);
+        const r = await forgotPassword(db, String(b.email ?? ''), clientIp(req));
+        json(res, r.status, r.error ? { error: r.error } : { ok: true, message: r.message });
+        return true;
+      }
+      if (p === '/hq/api/auth/set-password' && req.method === 'POST') {
+        const b = await readJson(req, 2_000);
+        const r = await setPasswordWithToken(db, String(b.token ?? ''), String(b.password ?? ''), String(b.password2 ?? ''));
+        if (!r.user) { json(res, r.status, { error: r.error }); return true; }
+        json(res, 200, { user: publicUser(r.user) }, { 'set-cookie': await createSession(db, cfg, r.user.id) });
         return true;
       }
       if (p === '/hq/api/auth/logout' && req.method === 'POST') {
@@ -161,16 +218,31 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       }
       if (p === '/hq/api/auth/google/start' && req.method === 'GET') {
         if (!googleOn(cfg)) { json(res, 404, { error: 'Google sign-in is not set up' }); return true; }
-        const g = googleStart(cfg, url.searchParams.get('mode') === 'signup' ? 'signup' : 'login');
+        const g = googleStart(cfg, url.searchParams.get('mode') === 'signup' ? 'signup' : 'login', onPortalHost ? portalGoogleRedirect(cfg) : googleRedirectUri(cfg));
         redirect(res, g.location, { 'set-cookie': g.setCookie });
         return true;
       }
       if (p === '/hq/api/auth/google/callback' && req.method === 'GET') {
         if (!googleOn(cfg)) { json(res, 404, { error: 'Google sign-in is not set up' }); return true; }
         const ip = clientIp(req);
-        const g = await googleFinish(cfg, url.searchParams, req.headers.cookie, deps.fetchImpl);
+        const g = await googleFinish(cfg, url.searchParams, req.headers.cookie, deps.fetchImpl, onPortalHost ? portalGoogleRedirect(cfg) : googleRedirectUri(cfg));
         const clear = cookie(OAUTH_COOKIE, '', 0, 'Lax');
-        const user = g.email ? await userByEmail(db, g.email) : null;
+        let user = g.email ? await userByEmail(db, g.email) : null;
+        if (onPortalHost) {
+          // Portal: a client signs in; staff go to HQ; a Google-verified email that Airtable Portal Users
+          // links to exactly one active client gets its login; anyone else becomes a request.
+          if (user && user.role !== 'client') { redirect(res, `${cfg.hqPublicUrl}/`, { 'set-cookie': clear }); return true; }
+          if (!user && g.email && at) user = await portalGoogleNewUser(db, at, g.email).catch(() => null);
+          await db.query(`INSERT INTO hq_login_attempts (email, ip, ok) VALUES ($1,$2,$3)`, [g.email ?? 'google', ip, Boolean(user)]);
+          if (user) { redirect(res, '/', { 'set-cookie': [clear, await createSession(db, cfg, user.id)] }); return true; }
+          if (g.email) {
+            const s = await googleSignUp(db, g.email, ip, { portal: true });
+            redirect(res, `/#/login?${s.ok ? `notice=${encodeURIComponent(PORTAL_SIGNUP_SENT)}` : `error=${encodeURIComponent(s.error ?? 'Try again.')}`}`, { 'set-cookie': clear });
+            return true;
+          }
+          redirect(res, `/#/login?error=${encodeURIComponent(g.error ?? 'Google sign-in did not work. Try again.')}`, { 'set-cookie': clear });
+          return true;
+        }
         await db.query(`INSERT INTO hq_login_attempts (email, ip, ok) VALUES ($1,$2,$3)`, [g.email ?? 'google', ip, Boolean(user)]);
         if (!user && g.email && g.mode === 'signup') {
           // Sign up with Google: a pending request (or nothing, if the email already has one). Same answer either way.
@@ -187,13 +259,23 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       const user = await sessionUser(db, cfg, req.headers.cookie);
       if (!user) { json(res, 401, { error: 'sign in first' }); return true; }
       if (!clientMayCall(user, p)) { json(res, 403, { error: CLIENT_REFUSED, portal: true }); return true; }
+      if (onPortalHost && user.role !== 'client') { json(res, 403, { error: 'Dulcy team logins sign in at HQ.', redirect: `${cfg.hqPublicUrl}/` }); return true; }
       if (PUBLIC.has(p)) { json(res, 405, { error: 'method not allowed' }); return true; }
       const owner = user.role === 'owner';
 
       // ---- Client portal (Step 4): read only; the client is the session's, never the URL's ----
       if (p.startsWith('/hq/api/portal/')) {
-        if (req.method !== 'GET') { json(res, 405, { error: 'method not allowed' }); return true; }
-        const r = await portalRoute(needAt(), user, p.slice('/hq/api/portal'.length));
+        const sub = p.slice('/hq/api/portal'.length);
+        if (req.method === 'GET') { const r = await portalRoute(needAt(), user, sub, { meeting: cfg.portalMeetingUrl, ...PORTAL_LINKS }); json(res, r.status, r.body); return true; }
+        if (req.method !== 'POST') { json(res, 405, { error: 'method not allowed' }); return true; }
+        if (sub === '/account') {
+          const r = await updateOwnAccount(db, user, await readJson(req, 5_000));
+          if (r.error) { json(res, r.status, { error: r.error }); return true; }
+          // A new password ends every session, this one too: a fresh one is handed back.
+          json(res, 200, { ok: true }, r.passwordChanged ? { 'set-cookie': await createSession(db, cfg, user.id) } : {});
+          return true;
+        }
+        const r = await portalWrite(needAt(), db, user, sub, await readJson(req, 60_000));
         json(res, r.status, r.body);
         return true;
       }
@@ -203,7 +285,22 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       // ---- Users (owner only, checked here: members get 403) ----
       if (p === '/hq/api/users' || p.startsWith('/hq/api/users/')) {
         if (!owner) { json(res, 403, { error: 'only the owner manages users' }); return true; }
-        if (p === '/hq/api/users' && req.method === 'GET') { json(res, 200, await listUsers(db)); return true; }
+        if (p === '/hq/api/users' && req.method === 'GET') {
+          const out = await listUsers(db);
+          // Client portal requests: the client Airtable Portal Users links the email to (a suggestion; the owner links).
+          if (at) for (const u of out.users) if (u.portalRequest) u.suggest = await suggestedClient(at, u.email).catch(() => null);
+          json(res, 200, out); return true;
+        }
+        if (p === '/hq/api/users/softr' && req.method === 'GET') { json(res, 200, await listSoftrUsers(db, needAt())); return true; }
+        if (p === '/hq/api/users/portal-writes' && req.method === 'GET') { json(res, 200, { writes: await recentPortalWrites(db) }); return true; }
+        const sm = p.match(/^\/hq\/api\/users\/softr\/(rec[A-Za-z0-9]{14})\/invite$/);
+        if (sm && req.method === 'POST') { const r = await inviteSoftrUser(db, user, needAt(), sm[1], cfg.portalPublicUrl); json(res, r.status, r.error ? { error: r.error } : { ok: true, url: r.url, expires: r.expires }); return true; }
+        const lm = p.match(/^\/hq\/api\/users\/(\d{1,9})\/(link|setup-link)$/);
+        if (lm && req.method === 'POST') {
+          const b = await readJson(req, 5_000);
+          if (lm[2] === 'link') { const r = await linkPortalUser(db, user, Number(lm[1]), String(b.clientRec ?? ''), (rec) => resolvePortalClient(needAt(), rec)); json(res, r.status, r.error ? { error: r.error } : { ok: true }); return true; }
+          const r = await makeSetupLink(db, user, Number(lm[1]), cfg.portalPublicUrl); json(res, r.status, r.error ? { error: r.error } : { ok: true, url: r.url, expires: r.expires }); return true;
+        }
         if (p === '/hq/api/users' && req.method === 'POST') { const r = await addUser(db, user, await readJson(req, 5_000), (rec) => resolvePortalClient(needAt(), rec)); json(res, r.status, r.error ? { error: r.error } : { ok: true, id: r.id }); return true; }
         const um = p.match(/^\/hq\/api\/users\/(\d{1,9})\/(approve|deny|role|disable|enable|password)$/);
         if (um && req.method === 'POST') { const r = await manageUser(db, user, Number(um[1]), um[2], await readJson(req, 5_000)); json(res, r.status, r.error ? { error: r.error } : { ok: true }); return true; }
@@ -440,6 +537,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
 }
 
 const publicUser = (u: HqUser) => ({ email: u.email, name: u.name, role: u.role });
+const portalGoogleRedirect = (cfg: Config) => `https://${cfg.portalHost}/hq/api/auth/google/callback`;
 
 function reportOut(r: any, full = false) {
   return {
