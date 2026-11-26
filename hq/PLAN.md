@@ -55,14 +55,14 @@
 - Alex: "To create new campaigns and bounce protection, it all gets sent to my project management. It's a little too much. ... the task should be assigned to them, and we could see and ask for progress." And: "I need this to be very autonomous." And: "here's today's to-do list, and you could look at tomorrow's and yesterday's."
 - **Agent tasks (HQ's own database, never Airtable Tasks):** each task has a status (Not started · In progress · Waiting on you · Done), a due date, when it last moved and a one-line progress note. The engine opens, moves and closes them itself (`upsertAgentTask` in `engine/src/hq/agentTasks.ts`, one task per key).
   - **Atlas:** "Plan next campaign" at 60%+ (as before), and one task per new campaign that follows the plan step by step until it is live.
-  - **Riley:** one task per bounce investigation (queued → diagnosed → fixed, or waiting on Alex's ✅) and per rested inbox (until its retest: recovered or replaced).
+  - **Atlas (bounce + inbox health):** one task per bounce investigation (queued → diagnosed → fixed, or waiting on Alex's ✅) and per rested inbox (until its retest: recovered or replaced).
 - **Team:** "Agent work" on top (open, late, stuck per agent), task chips on each card; each agent page lists its tasks with status and progress, done ones folded, and **Ask for an update** (chat, question typed in).
 - **Ada:** her morning brief has an "Agent work" section: late or stuck (no update for 2+ days), one line each. A stuck task with an engine job is re-queued (normal queue and LIVE_STAGES, once a day, at most 3 times).
 - **Needs you by day:** Yesterday (what got handled) · Today (what is due now, money and client-facing first, then the oldest; plain rules, no AI call per load) · Tomorrow (back from Not now + due tomorrow). Asks can have a due date and Money / Client flags.
 - **Chat:** "where is X?" answers from the tasks and cites "HQ task #id".
 - **How to use it:** `engine/GUIDE.md` → "HQ" → tabs 3 and 4, and "Agent task lists".
 - **Open for Alex:**
-  1. Bounce checks and account rests are on **Riley's** list (as asked), but the engine still logs them as Atlas in the Activity Log and Decisions (pile Campaigns). Keep it that way, or move those to Riley too?
+  1. Bounce checks and account rests are on **Atlas's** list, matching the Activity Log and Decisions (pile Campaigns). Riley stays systems-only (CLAUDE.md).
   2. A new campaign is due **a week** after its plan starts (a default). Another target?
   3. Not yet: Echo, Scout, Scribe, Cole, Ledger and Sienna open no tasks by themselves (their jobs are scheduled runs, not long work). Add them when they get long-running work.
 

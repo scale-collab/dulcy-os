@@ -123,7 +123,7 @@ test('bounce check → bounce agent: the paused campaign is investigated once an
   assert.match(chk.job.result.message, /1 sent to the bounce agent/);
   // HQ: the investigation is Riley's task from the moment it is queued (with the job to re-queue).
   const queued = (await db.query(`SELECT agent, status, progress_note, job_kind, job_record FROM hq_agent_tasks WHERE source_key='bounce:66:604'`)).rows[0];
-  assert.deepEqual([queued.agent, queued.status, queued.job_kind, queued.job_record], ['Riley', 'in_progress', 'bounce.investigate', 'bounce-investigate:604']);
+  assert.deepEqual([queued.agent, queued.status, queued.job_kind, queued.job_record], ['Atlas', 'in_progress', 'bounce.investigate', 'bounce-investigate:604']);
   assert.match(queued.progress_note, /Queued/);
   for (let i = 0; i < 10; i++) await runOnce(db, conf);
   const inv = (await db.query(`SELECT status, result, input FROM jobs WHERE kind='bounce.investigate'`)).rows;
@@ -160,7 +160,7 @@ test('✅ fix: the burned inbox is removed and the campaign resumes; never left 
   const task = (await db.query(`SELECT title, status, progress_note, done_at FROM hq_agent_tasks WHERE source_key='bounce:66:604'`)).rows[0];
   assert.deepEqual([task.title, task.status], ['Bounce check: TW Contractors (6%)', 'done']);
   assert.match(task.progress_note, /^Fixed: 1 inbox\(es\) removed/);
-  assert.ok(task.done_at, 'the fix closes Riley\'s task');
+  assert.ok(task.done_at, 'the fix closes Atlas\'s task');
 
   await db.query('TRUNCATE jobs, steps, receipts, events RESTART IDENTITY CASCADE');
   bison.campaigns[0].status = 'paused';

@@ -95,7 +95,7 @@ test('Friday: an account under 60% is rested at 0/day, its old limit saved; olde
   assert.ok(log.some((l) => /Account rested 7 days: a11@/.test(String(l[AF.event])) && (l[AF.campaign] as string[])?.[0] === 'recCampaign000001'), 'the rest is in the campaign\'s activity log');
   // HQ: Riley's task until the retest (a planned wait, so it is not "stalled" before then).
   const t = (await db.query(`SELECT agent, title, status, to_char(due_date,'YYYY-MM-DD') AS due, waiting_until, job_kind FROM hq_agent_tasks WHERE source_key='rest:recAccount0000001'`)).rows[0];
-  assert.deepEqual([t.agent, t.title, t.status, t.due, t.job_kind], ['Riley', 'Rest a11@dulcyx.info until its retest', 'in_progress', '2026-12-03', 'account.health']);
+  assert.deepEqual([t.agent, t.title, t.status, t.due, t.job_kind], ['Atlas', 'Rest a11@dulcyx.info until its retest', 'in_progress', '2026-12-03', 'account.health']);
   assert.equal(new Date(t.waiting_until).toISOString(), '2026-12-03T22:00:00.000Z');
 });
 

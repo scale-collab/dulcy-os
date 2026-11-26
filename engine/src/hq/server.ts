@@ -313,7 +313,6 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       m = p.match(/^\/hq\/api\/deliverability(?:\/(inboxes|placement|domains))?$/);
       if (m && req.method === 'GET') { json(res, 200, await deliverabilityView(needAt(), db, cfg, m[1] ?? 'attention', url.searchParams)); return true; }
 
-      if (p === '/hq/api/agents' && req.method === 'GET') { json(res, 200, { agents: await agentCards(db, at, user) }); return true; }
       if (p === '/hq/api/agents' && req.method === 'GET') {
         const agents = await agentCards(db, at, user);
         json(res, 200, { agents, work: agents.map((a) => ({ agent: a.name, ...a.work })) });
