@@ -1,44 +1,29 @@
 // The client portal app (portal.dulcy.io; preview at hq.dulcy.io/portal). Its own bundle: none of
 // HQ's internal screens are in it. Every number comes from /hq/api/portal/*, built on the server for
 // the session's client only.
+//
+// v3 (2026-11-26, Alex: "simpler to read, so not like 4 different sections"): three tabs.
+//   Home    "How it's going": results, our next call, Needs you, campaigns (+ the pages under it)
+//   Leads   "Your leads": one list with stage chips and a Meetings chip, and each lead's page
+//   Account "Your account": rows that open sheets (onboarding, documents, logins, billing, ...)
+// Every older route still lands on the right screen, so an old link or bookmark keeps working.
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { api, ApiError, type User } from '../api';
+import { api, ApiError } from '../api';
 import { cx, ErrorBox, go, Icon, IconButton, Loading, Logo, useRoute, useTheme, type ThemeMode } from '../ui';
 import Auth, { type AuthMode } from './Auth';
-import { AiCallerPage, DirectMail, Email, Home, Linkedin } from './Results';
-import { CalendarPage, CampaignPage, Campaigns } from './Campaigns';
-import { LeadPage, Leads, Pipeline } from './Leads';
-import { Access, Account, Billing, Documents, FeedbackPage, Meetings, Notifications, Onboarding, OurMeetings, Pathway, Schedule, Tasks } from './More';
+import { AiCallerPage, DirectMail, Email, Linkedin } from './Results';
+import { CampaignPage, Campaigns } from './Campaigns';
+import { Home } from './Home';
+import { LEAD_CHIPS, LeadPage, Leads, type LeadChip } from './Leads';
+import { OurMeetings, Schedule, Tasks } from './More';
+import { AccountTab, SHEETS, type SheetKey } from './Account';
 import type { Session } from './types';
 
-interface NavItem { key: string; label: string; icon: string; badge?: keyof Session['badges']; off?: boolean; href?: string }
-interface NavGroup { title: string; items: NavItem[] }
-function navGroups(s: Session): NavGroup[] {
-  return [
-    { title: '', items: [{ key: 'home', label: 'Home', icon: 'home' }] },
-    { title: 'Results', items: [
-      { key: 'email', label: 'Email', icon: 'mail', off: !s.channels.email },
-      { key: 'linkedin', label: 'LinkedIn', icon: 'users', off: !s.channels.linkedin },
-      { key: 'ai-caller', label: 'AI caller', icon: 'phone', off: !s.channels.aiCaller },
-      { key: 'mail', label: 'Direct mail', icon: 'send', off: !s.channels.directMail },
-    ] },
-    { title: 'Campaigns', items: [{ key: 'campaigns', label: 'Campaigns', icon: 'megaphone', badge: 'review' }, { key: 'calendar', label: 'Calendar', icon: 'calendar' }] },
-    { title: 'Leads & pipeline', items: [{ key: 'pipeline', label: 'Pipeline', icon: 'layers' }, { key: 'leads', label: 'Leads', icon: 'reply' }] },
-    { title: 'Meetings', items: [
-      { key: 'meetings', label: 'Booked meetings', icon: 'check' }, { key: 'feedback', label: 'Call feedback', icon: 'star', badge: 'feedback' },
-      { key: 'our-meetings', label: 'Meetings with us', icon: 'message' }, { key: 'schedule', label: 'Book a call', icon: 'calendar' },
-    ] },
-    { title: 'Tasks & onboarding', items: [{ key: 'tasks', label: 'Tasks for you', icon: 'list', badge: 'tasks' }, { key: 'onboarding', label: 'Onboarding form', icon: 'file' }, { key: 'pathway', label: 'Getting started', icon: 'flag' }] },
-    { title: 'Docs & access', items: [
-      { key: 'documents', label: 'Documents', icon: 'folder' }, { key: 'access', label: 'Access & logins', icon: 'key' },
-      { key: 'esp', label: 'Dulcy ESP portal', icon: 'external', href: s.go.esp }, { key: 'partnership', label: 'Partnership info', icon: 'external', href: s.go.partnership },
-    ] },
-    { title: 'Billing & account', items: [{ key: 'billing', label: 'Billing', icon: 'dollar' }, { key: 'notifications', label: 'Notifications', icon: 'bell', badge: 'unread' }, { key: 'account', label: 'Account', icon: 'shield' }] },
-  ];
-}
-/** Which nav item a route belongs to (detail pages light their list). */
-const owner = (page: string) => (page === 'campaign' ? 'campaigns' : page === 'lead' ? 'pipeline' : page);
-const BOTTOM = [{ key: 'home', label: 'Home', icon: 'home' }, { key: 'email', label: 'Results', icon: 'trendUp' }, { key: 'pipeline', label: 'Leads', icon: 'layers' }, { key: 'meetings', label: 'Meetings', icon: 'calendar' }] as const;
+type Tab = 'home' | 'leads' | 'account';
+const TABS: { key: Tab; label: string; icon: string }[] = [{ key: 'home', label: 'Home', icon: 'home' }, { key: 'leads', label: 'Leads', icon: 'users' }, { key: 'account', label: 'Account', icon: 'user' }];
+const LEAD_PAGES = ['leads', 'lead', 'pipeline', 'meetings', 'feedback'];
+const isSheet = (x: string): x is SheetKey => (SHEETS as readonly string[]).includes(x);
+const tabOf = (page: string): Tab => (LEAD_PAGES.includes(page) ? 'leads' : page === 'account' || page === 'more' || isSheet(page) ? 'account' : 'home');
 const THEMES: { mode: ThemeMode; icon: string; label: string }[] = [{ mode: 'system', icon: 'monitor', label: 'System' }, { mode: 'light', icon: 'sun', label: 'Light' }, { mode: 'dark', icon: 'moon', label: 'Dark' }];
 const AUTH: AuthMode[] = ['login', 'signup', 'forgot', 'set-password'];
 
@@ -71,136 +56,100 @@ export default function PortalApp() {
   }
   if (AUTH.includes(page as AuthMode)) { go('home'); }
   const signOut = async () => { try { await api('/auth/logout', { body: {} }); } catch { /* signed out anyway */ } setSession(null); go('login'); };
-  const groups = navGroups(session);
   const refresh = () => api<Session>('/portal/session').then(setSession).catch(() => undefined);
-  const [, a] = route;
+  const [, a, b] = route;
+  const tab = tabOf(page);
   let body: ReactNode;
   switch (page) {
+    // Under Home
+    case 'campaigns': body = <Campaigns view="list" />; break;
+    case 'calendar': body = <Campaigns view="calendar" />; break;
+    case 'campaign': body = <CampaignPage id={a ?? ''} review={b === 'review'} />; break;
     case 'email': body = <Email />; break;
     case 'linkedin': body = <Linkedin />; break;
     case 'ai-caller': body = <AiCallerPage />; break;
     case 'mail': body = <DirectMail session={session} />; break;
-    case 'campaigns': body = <Campaigns />; break;
-    case 'campaign': body = <CampaignPage id={a ?? ''} />; break;
-    case 'calendar': body = <CalendarPage />; break;
-    case 'pipeline': body = <Pipeline />; break;
-    case 'leads': body = <Leads />; break;
-    case 'lead': body = <LeadPage id={a ?? ''} />; break;
-    case 'meetings': body = <Meetings />; break;
-    case 'feedback': body = <FeedbackPage />; break;
     case 'our-meetings': body = <OurMeetings />; break;
     case 'schedule': body = <Schedule session={session} />; break;
-    case 'tasks': body = <Tasks />; break;
-    case 'onboarding': body = <Onboarding />; break;
-    case 'pathway': body = <Pathway />; break;
-    case 'documents': body = <Documents />; break;
-    case 'access': body = <Access />; break;
-    case 'billing': body = <Billing />; break;
-    case 'notifications': body = <Notifications onChange={refresh} />; break;
-    case 'account': body = <Account session={session} onRenamed={(name) => setSession({ ...session, user: { ...session.user, name } })} />; break;
-    case 'more': body = <MoreMenu groups={groups} session={session} />; break;
-    default: body = <Home session={session} />;
+    case 'tasks': body = <Tasks onChange={refresh} />; break;
+    // Leads (the old Pipeline, Booked meetings and Call feedback pages are chips now)
+    case 'leads': body = <Leads chip={LEAD_CHIPS.includes(a as LeadChip) ? (a as LeadChip) : 'all'} />; break;
+    case 'pipeline': body = <Leads chip="all" />; break;
+    case 'meetings': case 'feedback': body = <Leads chip="meetings" />; break;
+    case 'lead': body = <LeadPage id={a ?? ''} open={b === 'feedback' || b === 'deal' ? b : undefined} />; break;
+    default:
+      if (tab === 'account') {
+        const sheet = page === 'account' ? (a && isSheet(a) ? a : null) : isSheet(page) ? page : null;
+        body = <AccountTab session={session} sheet={sheet} onSignOut={signOut} onChanged={refresh} onRenamed={(name) => setSession({ ...session, user: { ...session.user, name } })} />;
+      } else body = <Home session={session} onChanged={refresh} />;
   }
-  const active = owner(page);
+  // The Account list stays put while a sheet opens over it; a Leads chip change keeps the list loaded.
+  const viewKey = tab === 'account' ? 'account' : page === 'leads' || page === 'pipeline' || page === 'meetings' || page === 'feedback' ? 'leads' : `${page}/${a ?? ''}`;
+  const needs = session.badges.needs ?? 0;
   return (
     <div className="min-h-dvh">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2 focus:shadow-pop">Skip to content</a>
-      <Sidebar groups={groups} session={session} active={active} onSignOut={signOut} />
-      <MobileHeader session={session} onSignOut={signOut} />
-      <div className="md:pl-64">
-        <main id="main" className="mx-auto w-full max-w-6xl px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 md:pb-14 md:pt-10 lg:px-10">
-          <div key={`${page}/${a ?? ''}`} className="anim-in">{body}</div>
-          <p className="mt-12 border-t border-line pt-4 text-center text-xs text-muted">Questions? Reply to any email from your Dulcy team.</p>
-        </main>
-      </div>
-      <BottomBar active={active} groups={groups} session={session} />
+      <Header session={session} tab={tab} needs={needs} />
+      <main id="main" className="mx-auto w-full max-w-6xl px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 md:pb-14 md:pt-8 lg:px-10">
+        <div key={viewKey} className="anim-in">{body}</div>
+        <p className="mt-12 border-t border-line pt-4 text-center text-xs text-muted">Questions? Reply to any email from your Dulcy team.</p>
+      </main>
+      <BottomBar tab={tab} needs={needs} />
     </div>
   );
 }
 
-function Badge({ n, strong }: { n: number; strong?: boolean }) {
+/** The one count badge in the portal: what waits on the client (the Home "Needs you" card). */
+function NeedsBadge({ n, className }: { n: number; className?: string }) {
   if (!n) return null;
-  return <span className={cx('tabular rounded-full px-2 py-0.5 text-xs font-semibold', strong ? 'bg-accent text-accent-fg' : 'bg-sunken text-muted border border-line')}>{n}</span>;
+  return <span aria-hidden="true" className={cx('tabular grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1.5 text-[11px] font-bold leading-none text-accent-fg', className)}>{n}</span>;
 }
-function NavButton({ item, on, n }: { item: NavItem; on: boolean; n: number }) {
-  const cls = cx('group flex min-h-10 w-full items-center gap-3 rounded-xl px-3 text-[14.5px] font-medium transition', on ? 'bg-accent-soft text-accent-ink' : 'text-fg-2 hover:bg-hover hover:text-fg');
-  const inner = (<><Icon name={item.icon} size={17} className={on ? 'text-accent-ink' : 'text-muted group-hover:text-fg'} /><span className="flex-1 truncate text-left">{item.label}</span>{item.off && <span className="text-[11px] font-normal text-faint">not active</span>}<Badge n={n} strong={item.badge !== 'unread'} /></>);
-  if (item.href) return <a href={item.href} target="_blank" rel="noopener noreferrer" className={cls}>{inner}</a>;
-  return <button onClick={() => go(item.key)} aria-current={on ? 'page' : undefined} className={cls}>{inner}</button>;
-}
+const tabLabel = (t: { key: Tab; label: string }, needs: number) => (t.key === 'home' && needs ? `${t.label}: ${needs} thing${needs === 1 ? '' : 's'} need${needs === 1 ? 's' : ''} you` : t.label);
 
-function Sidebar({ groups, session, active, onSignOut }: { groups: NavGroup[]; session: Session; active: string; onSignOut: () => void }) {
-  const [mode, setMode] = useTheme();
-  return (
-    <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 flex-col border-r border-line bg-surface/60 backdrop-blur md:flex">
-      <button onClick={() => go('home')} className="mx-3 mt-4 flex min-h-12 items-center gap-3 rounded-xl px-2 text-left hover:bg-hover">
-        <Logo className="h-8 w-8" />
-        <div className="min-w-0"><div className="truncate text-[15px] font-semibold leading-tight tracking-tight">{session.client.name}</div><div className="text-xs text-muted">with Dulcy</div></div>
-      </button>
-      <nav aria-label="Main" className="mt-4 flex-1 space-y-4 overflow-y-auto px-3 pb-4">
-        {groups.map((g) => (
-          <div key={g.title || 'top'}>
-            {g.title && <div className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">{g.title}</div>}
-            <div className="space-y-0.5">{g.items.map((it) => <NavButton key={it.key} item={it} on={active === it.key} n={it.badge ? session.badges[it.badge] : 0} />)}</div>
-          </div>
-        ))}
-      </nav>
-      <div className="space-y-3 border-t border-line p-3">
-        <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-1 rounded-xl border border-line bg-sunken p-1">
-          {THEMES.map((t) => (
-            <button key={t.mode} role="radio" aria-checked={mode === t.mode} onClick={() => setMode(t.mode)} title={t.label}
-              className={cx('flex min-h-9 items-center justify-center gap-1.5 rounded-lg text-xs font-medium transition', mode === t.mode ? 'bg-surface text-fg shadow-card' : 'text-muted hover:text-fg')}>
-              <Icon name={t.icon} size={14} />{t.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-3 rounded-xl px-2 py-1">
-          <span aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-line bg-sunken text-sm font-semibold text-fg-2">{(session.user.name || session.user.email).slice(0, 1).toUpperCase()}</span>
-          <div className="min-w-0 flex-1"><div className="truncate text-sm font-medium">{session.user.name}</div><div className="truncate text-xs text-muted">{session.user.email}</div></div>
-          <IconButton icon="logout" label="Sign out" onClick={onSignOut} />
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-function MobileHeader({ session, onSignOut }: { session: Session; onSignOut: () => void }) {
+/** Top bar: the client's name; on a computer also the three tabs. The bell opens Account → Notifications. */
+function Header({ session, tab, needs }: { session: Session; tab: Tab; needs: number }) {
   const [mode, setMode] = useTheme();
   const i = THEMES.findIndex((t) => t.mode === mode); const next = THEMES[(i + 1) % THEMES.length];
   return (
-    <header className="sticky top-0 z-20 border-b border-line bg-bg/85 backdrop-blur-md md:hidden">
-      <div className="flex h-14 items-center gap-2 pl-4 pr-1">
-        <button onClick={() => go('home')} className="flex min-h-11 min-w-0 flex-1 items-center gap-2.5 text-left"><Logo className="h-7 w-7" /><span className="truncate text-[15px] font-semibold tracking-tight">{session.client.name}</span></button>
-        <span className="relative">
-          <IconButton icon="bell" label={session.badges.unread ? `Notifications: ${session.badges.unread} new` : 'Notifications'} onClick={() => go('notifications')} />
-          {!!session.badges.unread && <span aria-hidden="true" className="tabular pointer-events-none absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-accent-fg">{session.badges.unread}</span>}
-        </span>
-        <IconButton icon={THEMES[i].icon} label={`Theme: ${THEMES[i].label}. Switch to ${next.label}`} onClick={() => setMode(next.mode)} />
-        <IconButton icon="logout" label="Sign out" onClick={onSignOut} />
+    <header className="sticky top-0 z-20 border-b border-line bg-bg/85 backdrop-blur-md">
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 pl-4 pr-1 sm:pl-6 sm:pr-4 md:h-16 lg:px-10">
+        <button onClick={() => go('home')} className="flex min-h-11 min-w-0 items-center gap-2.5 text-left md:mr-4">
+          <Logo className="h-7 w-7 md:h-8 md:w-8" />
+          <span className="min-w-0"><span className="block truncate text-[15px] font-semibold leading-tight tracking-tight">{session.client.name}</span><span className="hidden text-xs text-muted md:block">with Dulcy</span></span>
+        </button>
+        <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
+          {TABS.map((t) => (
+            <button key={t.key} onClick={() => go(t.key)} aria-current={tab === t.key ? 'page' : undefined} aria-label={tabLabel(t, needs)}
+              className={cx('flex min-h-10 items-center gap-2 rounded-xl px-4 text-[15px] font-semibold transition', tab === t.key ? 'bg-accent-soft text-accent-ink' : 'text-fg-2 hover:bg-hover hover:text-fg')}>
+              <Icon name={t.icon} size={17} />{t.label}{t.key === 'home' && <NeedsBadge n={needs} />}
+            </button>
+          ))}
+        </nav>
+        <div className="ml-auto flex shrink-0 items-center">
+          <span className="relative">
+            <IconButton icon="bell" label={session.badges.unread ? `Notifications: ${session.badges.unread} new` : 'Notifications'} onClick={() => go('account/notifications')} />
+            {!!session.badges.unread && <span aria-hidden="true" className="pointer-events-none absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-accent ring-2 ring-bg" />}
+          </span>
+          <IconButton icon={THEMES[i].icon} label={`Theme: ${THEMES[i].label}. Switch to ${next.label}`} onClick={() => setMode(next.mode)} />
+        </div>
       </div>
     </header>
   );
 }
 
-const RESULTS = ['email', 'linkedin', 'ai-caller', 'mail'];
-const LEADS = ['pipeline', 'leads'];
-const MEETINGS = ['meetings', 'feedback', 'our-meetings', 'schedule'];
-function BottomBar({ active, groups, session }: { active: string; groups: NavGroup[]; session: Session }) {
-  const inTab = (k: string) => (k === 'email' ? RESULTS.includes(active) : k === 'pipeline' ? LEADS.includes(active) : k === 'meetings' ? MEETINGS.includes(active) : active === k);
-  const onMore = !groups.slice(0, 1).concat(groups.filter((g) => ['Results', 'Leads & pipeline', 'Meetings'].includes(g.title))).some((g) => g.items.some((x) => x.key === active));
-  const moreN = session.badges.tasks + session.badges.review;
+/** Phone: the same three tabs at the bottom. */
+function BottomBar({ tab, needs }: { tab: Tab; needs: number }) {
   return (
     <nav aria-label="Main" className="safe-bottom fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/90 backdrop-blur-md md:hidden">
-      <div className="mx-auto grid max-w-lg grid-cols-5">
-        {[...BOTTOM, { key: 'more', label: 'More', icon: 'menu' } as const].map((t) => {
-          const on = t.key === 'more' ? onMore : inTab(t.key);
-          const n = t.key === 'more' ? moreN : t.key === 'meetings' ? session.badges.feedback : 0;
+      <div className="mx-auto grid max-w-lg grid-cols-3">
+        {TABS.map((t) => {
+          const on = tab === t.key;
           return (
-            <button key={t.key} onClick={() => go(t.key)} aria-current={on ? 'page' : undefined}
-              className={cx('relative flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium transition', on ? 'text-fg' : 'text-muted')}>
-              {on && <span aria-hidden="true" className="absolute top-0 h-0.5 w-8 rounded-full bg-accent" />}
-              <span className="relative"><Icon name={t.icon} size={22} strokeWidth={on ? 2.1 : 1.8} />
-                {!!n && <span className="tabular absolute -right-2.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-accent-fg">{n}</span>}
+            <button key={t.key} onClick={() => go(t.key)} aria-current={on ? 'page' : undefined} aria-label={tabLabel(t, needs)}
+              className={cx('relative flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-semibold transition', on ? 'text-fg' : 'text-muted')}>
+              {on && <span aria-hidden="true" className="absolute top-0 h-0.5 w-10 rounded-full bg-accent" />}
+              <span className="relative"><Icon name={t.icon} size={23} strokeWidth={on ? 2.1 : 1.8} />
+                {t.key === 'home' && <NeedsBadge n={needs} className="absolute -right-3 -top-1.5" />}
               </span>
               {t.label}
             </button>
@@ -208,31 +157,6 @@ function BottomBar({ active, groups, session }: { active: string; groups: NavGro
         })}
       </div>
     </nav>
-  );
-}
-
-/** Phone: everything in one list (the bottom bar holds four). Sub-tabs of Results, Leads and Meetings are here too. */
-function MoreMenu({ groups, session }: { groups: NavGroup[]; session: Session }) {
-  return (
-    <div>
-      <h1 className="mb-5 text-[26px] font-bold leading-tight tracking-tight text-fg">Everything</h1>
-      <div className="space-y-5">
-        {groups.filter((g) => g.title).map((g) => (
-          <section key={g.title}>
-            <div className="mb-1.5 px-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">{g.title}</div>
-            <div className="divide-y divide-line rounded-2xl border border-line bg-surface shadow-card">
-              {g.items.map((it) => {
-                const n = it.badge ? session.badges[it.badge] : 0;
-                const inner = (<><Icon name={it.icon} size={18} className="text-muted" /><span className="flex-1 text-left text-[15px] font-medium text-fg">{it.label}</span>{it.off && <span className="text-xs text-faint">not active</span>}<Badge n={n} strong />{!it.href && <Icon name="chevronRight" size={16} className="text-faint" />}</>);
-                return it.href
-                  ? <a key={it.key} href={it.href} target="_blank" rel="noopener noreferrer" className="flex min-h-12 items-center gap-3 px-4">{inner}</a>
-                  : <button key={it.key} onClick={() => go(it.key)} className="flex min-h-12 w-full items-center gap-3 px-4">{inner}</button>;
-              })}
-            </div>
-          </section>
-        ))}
-      </div>
-    </div>
   );
 }
 

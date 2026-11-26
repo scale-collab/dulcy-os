@@ -1,97 +1,9 @@
-// Home ("is this working?") and the results per channel: Email, LinkedIn, AI caller, Direct mail.
+// A channel's full numbers (opened from Home's results): Email, LinkedIn, AI caller, Direct mail.
+// Only the channels that are on for the client are linked from Home.
 import { useState } from 'react';
-import { Button, Card, cx, Empty, go, Icon, Pill, SectionHeader } from '../ui';
-import { HealthLine, HealthPill, niceDate, NotActive, num, Page, pct, Segmented, Stat, Updated, useLoad } from './kit';
-import type { AiCaller, CampaignRow, EmailResults, Home as HomeT, LinkedinResults, Session } from './types';
-
-export function Home({ session }: { session: Session }) {
-  const s = useLoad<HomeT>('/portal/home');
-  const first = (session.user.name || '').split(' ')[0];
-  return (
-    <Page title={first ? `Hi ${first}` : 'Welcome'} kicker={session.client.name} state={s} kind="today">
-      {(d) => (
-        <div className="space-y-6">
-          <Card className="relative overflow-hidden border-accent/30 bg-gradient-to-br from-accent-soft via-surface to-surface p-5 sm:p-7">
-            <div className="text-xs font-semibold uppercase tracking-[0.08em] text-accent-ink">Is it working?</div>
-            <div className="mt-2 text-xl font-bold leading-snug tracking-tight text-fg sm:text-2xl">{d.verdict}</div>
-            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Mini label="Meetings booked" sub="This month" n={d.month.booked} strong />
-              <Mini label="Interested replies" sub="This month" n={d.month.interested} />
-              <Mini label="Emails sent" sub="Last 30 days" n={d.month.sent30} />
-              <Mini label="Live campaigns" sub="Right now" n={d.month.live} />
-            </div>
-          </Card>
-
-          {(d.todo.review > 0 || d.todo.feedback > 0) && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {d.todo.review > 0 && <Todo icon="megaphone" title={`${d.todo.review === 1 ? 'A campaign is' : `${d.todo.review} campaigns are`} waiting for your review`} sub="Read the plan and the emails, then approve or ask for changes." onClick={() => go('campaigns')} />}
-              {d.todo.feedback > 0 && <Todo icon="star" title={`${d.todo.feedback} call${d.todo.feedback === 1 ? '' : 's'} need${d.todo.feedback === 1 ? 's' : ''} your feedback`} sub="30 seconds each: how did the call go?" onClick={() => go('feedback')} />}
-            </div>
-          )}
-          <div className="grid gap-4 lg:grid-cols-3">
-            <Card className="flex flex-col">
-              <SectionHeader title="Next meeting with us" icon="calendar" />
-              {d.next ? (
-                <div><div className="text-lg font-semibold text-fg">{d.next.title}</div><div className="text-sm text-muted">{niceDate(d.next.day, { weekday: true })}</div></div>
-              ) : <div className="text-sm text-muted">Nothing on the calendar yet.</div>}
-              <div className="mt-auto pt-4"><Button icon="calendar" onClick={() => go('schedule')} className="w-full sm:w-auto">Book a call with us</Button></div>
-            </Card>
-            <Card className="flex flex-col">
-              <SectionHeader title="Latest meeting booked for you" icon="check" />
-              {d.lastBooked ? (
-                <button onClick={() => go(`lead/${d.lastBooked!.key}`)} className="-mx-2 rounded-xl px-2 py-1 text-left hover:bg-hover">
-                  <div className="text-lg font-semibold text-fg">{d.lastBooked.name}</div>
-                  <div className="text-sm text-muted">{[d.lastBooked.company, `booked ${niceDate(d.lastBooked.bookedOn)}`].filter(Boolean).join(' · ')}</div>
-                </button>
-              ) : <div className="text-sm text-muted">Booked meetings show up here.</div>}
-              <div className="mt-auto pt-4"><Button icon="arrowRight" onClick={() => go('pipeline')} className="w-full sm:w-auto">See your pipeline</Button></div>
-            </Card>
-            <Card className="flex flex-col">
-              <SectionHeader title={`Open tasks for you · ${d.tasks.open}`} icon="list" />
-              {d.tasks.top.length ? (
-                <ul className="space-y-1.5">{d.tasks.top.map((t) => <li key={t.key} className="flex items-start gap-2 text-[15px] text-fg-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />{t.name}{t.stage === 'blocked' && <Pill tone="warn">Blocked</Pill>}</li>)}</ul>
-              ) : <div className="text-sm text-muted">Nothing needed from you right now.</div>}
-              <div className="mt-auto pt-4"><Button icon="arrowRight" onClick={() => go('tasks')} className="w-full sm:w-auto">Open tasks</Button></div>
-            </Card>
-          </div>
-
-          <HealthLine h={d.health} />
-          <Updated at={d.readAt} />
-        </div>
-      )}
-    </Page>
-  );
-}
-
-function Mini({ label, sub, n, strong }: { label: string; sub: string; n: number; strong?: boolean }) {
-  return (
-    <div className="min-w-0 rounded-xl border border-line bg-surface/80 px-3 py-3 sm:px-4">
-      <div className={cx('tabular text-[28px] font-bold leading-none tracking-tight sm:text-[32px]', strong ? 'text-accent-ink' : 'text-fg')}>{num(n)}</div>
-      <div className="mt-1.5 truncate text-sm font-medium text-fg-2">{label}</div>
-      <div className="text-xs text-muted">{sub}</div>
-    </div>
-  );
-}
-function Todo({ icon, title, sub, onClick }: { icon: string; title: string; sub: string; onClick: () => void }) {
-  return (
-    <Card onClick={onClick} className="flex items-center gap-3 border-accent/40">
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent-ink"><Icon name={icon} size={20} /></span>
-      <div className="min-w-0 flex-1"><div className="font-semibold text-fg">{title}</div><div className="text-sm text-muted">{sub}</div></div>
-      <Icon name="chevronRight" className="text-muted" />
-    </Card>
-  );
-}
-
-/** The four channels as tabs at the top of each results page (the phone's Results tab opens Email). */
-function Channels({ on }: { on: string }) {
-  return (
-    <nav aria-label="Channels" className="mb-5 flex gap-1 overflow-x-auto rounded-xl border border-line bg-sunken p-1 md:hidden">
-      {([['email', 'Email'], ['linkedin', 'LinkedIn'], ['ai-caller', 'AI caller'], ['mail', 'Direct mail']] as const).map(([k, l]) => (
-        <button key={k} onClick={() => go(k)} aria-current={on === k ? 'page' : undefined} className={cx('min-h-10 shrink-0 flex-1 rounded-lg px-3 text-sm font-medium', on === k ? 'bg-surface text-fg shadow-card' : 'text-muted')}>{l}</button>
-      ))}
-    </nav>
-  );
-}
+import { Card, cx, Empty, go, Pill, SectionHeader } from '../ui';
+import { BackTo, HealthLine, HealthPill, NotActive, num, Page, pct, Segmented, Stat, Updated, useLoad } from './kit';
+import type { AiCaller, CampaignRow, EmailResults, LinkedinResults, Session } from './types';
 
 /* ---------- Email ---------- */
 const PERIOD_OPTS = [['Last 10 days', '10 days'], ['Last 30 days', '30 days'], ['Last 60 days', '60 days'], ['Last 120 days', '120 days'], ['All time', 'All time']] as const;
@@ -101,7 +13,7 @@ export function Email() {
   const [p, setP] = useState<PeriodKey>('Last 30 days');
   return (
     <>
-    <Channels on="email" />
+    <BackTo tab="home" />
     <Page title="Email results" sub="Your cold email campaigns: what was sent, who replied, and the meetings booked." state={s} kind="grid">
       {(d) => {
         if (!d.active) return <NotActive channel="Cold email" icon="mail" />;
@@ -185,7 +97,7 @@ export function Linkedin() {
   const [p, setP] = useState<PeriodKey>('Last 30 days');
   return (
     <>
-    <Channels on="linkedin" />
+    <BackTo tab="home" />
     <Page title="LinkedIn results" sub="Connection requests, replies and meetings from LinkedIn." state={s} kind="grid">
       {(d) => {
         if (!d.active) return <NotActive channel="LinkedIn" icon="users" />;
@@ -232,7 +144,7 @@ export function AiCallerPage() {
   const s = useLoad<AiCaller>('/portal/ai-caller');
   return (
     <>
-    <Channels on="ai-caller" />
+    <BackTo tab="home" />
     <Page title="AI caller results" sub="Calls our AI caller made to your leads." state={s} kind="grid">
       {(d) => !d.active ? <NotActive channel="The AI caller" icon="phone" /> : (
         <div className="space-y-6">
@@ -252,7 +164,7 @@ export function AiCallerPage() {
 export function DirectMail({ session }: { session: Session }) {
   return (
     <div>
-      <Channels on="mail" />
+      <BackTo tab="home" />
       <h1 className="mb-6 text-[26px] font-bold leading-tight tracking-tight text-fg sm:text-[28px]">Direct mail results</h1>
       {session.channels.directMail
         ? <Card><Empty icon="mail" title="Direct mail numbers are not in your portal yet" sub="Ask your Dulcy team for the latest direct mail report." /></Card>

@@ -9,7 +9,8 @@ export interface Session {
   user: User; client: { name: string };
   channels: { email: boolean; linkedin: boolean; aiCaller: boolean; directMail: boolean };
   go: { meeting: string; esp: string; partnership: string };
-  badges: { unread: number; tasks: number; review: number; feedback: number };
+  /** needs = what the Home "Needs you" card lists (the portal's one count badge). */
+  badges: { unread: number; tasks: number; review: number; feedback: number; needs: number };
 }
 export interface Home {
   hello: string; client: string; verdict: string;
@@ -19,7 +20,18 @@ export interface Home {
   tasks: { open: number; top: { key: string; name: string; stage: TaskStage }[] };
   todo: { review: number; feedback: number; unread: number };
   health: HealthText; readAt: string;
+  needs: { tasks: Task[]; review: { key: string; name: string }[]; feedback: Meeting[]; onboarding: boolean; count: number };
+  results: {
+    email: { label: string; now: Win; before: Win | null; health: HealthText } | null;
+    linkedin: { label: string; now: Win; before: Win | null } | null;
+    aiCaller: { label: string; calls: number; answered: number; interested: number } | null;
+    directMail: boolean;
+  };
+  campaigns: Pick<CampaignRow, 'key' | 'name' | 'state' | 'label' | 'sent' | 'replies' | 'interested' | 'booked'>[];
+  finishedCampaigns: number;
 }
+/** One time window of numbers (sent, replies, interested, booked; LinkedIn: sent, accepted, replies, booked). */
+export type Win = Record<string, number>;
 export type CampaignState = 'review' | 'changes' | 'building' | 'live' | 'paused' | 'finished';
 export interface CampaignRow {
   key: string; name: string; state: CampaignState; label: string; contacted: number; sent: number; replies: number; interested: number; booked: number;
@@ -34,7 +46,10 @@ export interface Period { period: string; updated: string; [k: string]: string |
 export interface EmailResults { active: boolean; periods: Period[]; total: { contacted: number; sent: number; replies: number; interested: number; booked: number }; campaigns: CampaignRow[]; health: HealthText; readAt: string }
 export interface LinkedinResults { active: boolean; periods: Period[]; campaigns: { key: string; name: string; status: string; leads: number; sent: number; accepted: number; replies: number; booked: number }[]; readAt: string }
 export interface AiCaller { active: boolean; calls: number; answered: number; interested: number; readAt: string }
-export interface PipelineLead { key: string; name: string; company: string; stage: string; date: string; bookedOn: string; feedback: boolean; deal: boolean }
+export interface PipelineLead {
+  key: string; name: string; company: string; stage: string; date: string; bookedOn: string; message: string;
+  feedback: boolean; feedbackDue: boolean; lastFeedback: { status: string; rating: number } | null; deal: boolean;
+}
 export interface Pipeline { stages: { stage: string; leads: PipelineLead[] }[]; total: number; deals: { count: number; value: number }; readAt: string }
 export interface FeedbackGiven { key: string; status: string; rating: number; comments: string; recording: string; newDate: string; date: string }
 export interface LeadDetail {

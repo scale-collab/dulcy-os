@@ -264,6 +264,8 @@ Engagement as Alex describes it: $3,000/month for campaigns, interested leads an
 Check-in at the end of Q4: if bookings don't move, discuss the pay-per-qualified-booking setup Pete suggested.
 Status: saved for now (Alex, 2026-11-25); not started.
 
+**2026-11-26: Pete disputed the numbers** ("an AI answer that doesn't know how we operate"). Check of 40 threads directly in EmailBison (all 26 "no answer", 10 "no follow-up", 4 booked): 39 of 40 match Airtable exactly; EmailBison shows no follow-ups Airtable missed; every outbound message is "Ryan Labrie" from Twenty West inboxes, none from Bea. Corrections: 9 of the 26 "no answer" end on a survey, ticket notice or newsletter, so real unanswered prospects are about 17; recount from the same data gives 178 no follow-up / 26 / 10 booked (the 165 / 34 / 11 sent used different rules). Still unknown: anything Twenty West did outside EmailBison (Bea's own inbox, calls, GHL). Next: meet Pete with the thread list; ask for Bea's log and the handoff steps.
+
 ## 8. Preferences and rules for this client
 - Send invoices by email, not Discord. [2026-04-20]
 - Put Pete's name on calendar invites. [2026-04-20]
