@@ -82,6 +82,14 @@
   6. Settings: Agent First Name is empty on 7 of 8 rows; Calendar Link is empty for MJJ Brilliant, The Marketing Cartel and Collabor; Dulcy's office hours (09:30-17:00) differ from its calendar note (09:00-18:00).
 - **Not yet:** search inside the full history; per-person piles (Josh's own queue); writing the calendar JSON switches (times on/off) from HQ.
 
+### Step 3 status (2026-11-25): Campaigns built, not deployed
+- **Alex's rule:** too many Airtable screens (Campaign Center, Lead List Center, email / LinkedIn / AI-call statistics). Show what needs action first; everything else one tap deeper.
+- **Built:** `engine/src/hq/campaigns.ts` (API `/hq/api/campaigns`, `/hq/api/campaigns/<rec>`) and `hq/web/src/pages/Campaigns.tsx`. How to use it: `engine/GUIDE.md` → "HQ" → 8. Campaigns.
+- **Screens:** Needs action (bounce pause/watch, failed step, stuck 3+ days, 60% with no next plan, client review, low interest per 1,000), All live, Building, Pipeline (List → Copy → Client review → Launch → Live → 60% → Next), client chips, data notes, and a campaign page with stats, stage history (engine jobs + campaign plans) and the Activity log. LinkedIn and AI caller show "Channel paused" with the reason.
+- **Read only:** no writes anywhere. Buttons open Airtable or EmailBison; Campaign Center keeps its buttons until an HQ-safe action exists for them.
+- **Not yet:** HQ buttons for Build / Launch / Pause / Top up (need an engine action that writes exactly what the Airtable button writes); LinkedIn and AI caller numbers (channels paused); the Lead List Center's own screens (sample review, contact decisions) for lists not tied to a campaign.
+- **UNKNOWN until checked on live data:** which fields "Status Last Modified" watches (used for "stuck"); the Activity Log's link field name ("Campaign" is assumed for the by-name read; the shared newest-500 read does not depend on it).
+
 ## Step 4: People and clients
 - Josh's login with permissions.
 - The client portal inside the same app. (send.dulcy.io is EmailBison's white-label with its own login: check later whether it can share a login.)
