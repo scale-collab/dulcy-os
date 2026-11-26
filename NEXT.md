@@ -1,6 +1,12 @@
 # Where we are (update this at the end of every session)
 
-Last updated: 2026-11-25 evening
+Last updated: 2026-11-26
+
+## Done 2026-11-26 (merged; live after Alex deploys)
+- **HQ:** Inbox (5 tabs, thread edit/send/skip) + per-client AI replier settings; Campaigns (needs action first, pipeline, campaign page + Activity log); Deliverability (sick first, inboxes, placement freshness, domains); Team agent task lists + Ada's daily stale-task check; Needs you yesterday/today/tomorrow. All read-only except the existing reply buttons and owner-only replier settings.
+- **Sean renamed Echo** (internal ids and SEAN_* settings unchanged).
+- **Automation audit** (`automations/audit-2026-11-25.md`): 143 n8n + 79 Make; about half unused or duplicate. Ignition Dev Make scenarios paused. AI caller off for now (Alex runs `FIX=ai-call-off`). Batch 1 clean-up waiting for Alex's yes.
+- Josh sent the HQ sign-up link on Slack.
 
 ## Done 2026-11-25 (live on the server)
 - **Inbox replier (Echo):** every per-client Reply Agent setting honoured (send modes, confidence, max automatic, always-review types, OOO, nudge, office hours); out-of-office / not-interested first replies only where the client turns them on. All 8 clients still Approval Required.
@@ -12,7 +18,8 @@ Last updated: 2026-11-25 evening
 1. Watch the first live campaign plans (GMG, Twenty West) through approvals; part 3 (spintax → inboxes → build → launch) has never run live.
 2. Check Sienna's first editor runs (first 2026-11-25 4:39 PM ET) and tune the rules from what Alex approves/rejects.
 3. Content steps left: repurposing pack in Alex's voice (X, LinkedIn, Reddit, blog/newsletter); proof of posting (Published/Failed + URL; 17 old "Scheduled" items unconfirmed); real thumbnails + Gamma docs on approval; folder → Frame.io auto upload.
-4. HQ Step 2: Clients screen (replaces the wrong Clients & LTV), then Step 3 work areas (Campaigns with Activity log, one Inbox, Sales, Content), Step 4 Josh login + client portal. Then switch Slack reports/decisions off.
+4. HQ left: Sales and Content screens, client portal; HQ-safe campaign buttons; then switch Slack reports/decisions off. Calendar: Alex publishes the Google app + creates a Calendly app (at home), then CALENDAR_ADMIN_TOKEN and connect clients.
+4b. Automation clean-up: batch 1 (60% task maker, LinkedIn, unused Make, stubs) on Alex's yes; batch 2 (old lead-list/campaign n8n pipeline) once HQ Campaigns is in daily use.
 5. Riley known issues: content webhooks without auth, duplicate teleprompter workflow, ~100 n8n webhooks without auth, keys in n8n/Airtable scripts.
 6. Friday 2026-11-27: compare the GPT vs Claude creator watch, then switch the GPT task off. Saturday: first account-health check.
 - Open with Alex: Lead Flo LinkedIn password + 2FA change (found in old SOPs); copy of the 32 deleted Dulcy campaigns if he has it; Outbound Funnel Math re-record (with GPT, then Sienna).
