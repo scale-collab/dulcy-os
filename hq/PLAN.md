@@ -96,7 +96,7 @@
 - **Campaigns:** the Lead List and Campaign Centers rebuilt without Airtable's size limit, with the Activity log inside each campaign (code ready: `airtable/custom-elements/campaign-center/activity-log.pending.tsx`).
 - **Inbox:** one inbox, per client, replacing New Replies, Follow Ups, Positive Replies, Won/Lost, Meeting Requests and the Reply Agent pages. (Built 2026-11-25, see "Step 3 status" below.)
 - **Sales:** contracts and agreements (the same flow that works now, with cleaner screens), plus the executive dashboard.
-- **Content:** the Content Center and OpusClip (Sienna).
+- **Content:** the Content Center and OpusClip (Sienna). (Built 2026-11-26, see "Step 3 status: Content" below.)
 
 ### Step 3 status (2026-11-25): Inbox built, not deployed
 - **Built:** `engine/src/hq/inbox.ts` (API `/hq/api/inbox`, `/hq/api/inbox/<rec>`), `engine/src/hq/replier.ts` (API `/hq/api/clients/<rec>/replier`, `/hq/api/clients/<rec>/calendar-invite`), `hq/web/src/pages/Inbox.tsx` and `Replier.tsx`, and the client hub tabs (Overview · Inbox · AI replier). How to use it: `engine/GUIDE.md` → "HQ" → 7. Inbox.
@@ -118,6 +118,35 @@
 - **Read only:** no writes anywhere. Buttons open Airtable or EmailBison; Campaign Center keeps its buttons until an HQ-safe action exists for them.
 - **Not yet:** HQ buttons for Build / Launch / Pause / Top up (need an engine action that writes exactly what the Airtable button writes); LinkedIn and AI caller numbers (channels paused); the Lead List Center's own screens (sample review, contact decisions) for lists not tied to a campaign.
 - **UNKNOWN until checked on live data:** which fields "Status Last Modified" watches (used for "stuck"); the Activity Log's link field name ("Campaign" is assumed for the by-name read; the shared newest-500 read does not depend on it).
+
+### Step 3 status (2026-11-26): Content built, not deployed
+- **Alex's rule:** show what needs Alex first; everything else is one tap deeper. Keep the Content Center's workflow and the n8n automations; only simpler.
+- **Built:** `engine/src/hq/content.ts` (API `/hq/api/content`, `/content/summary`, `/content/ideas/<rec>`; owner only, members get 403) and `hq/web/src/pages/Content.tsx` (sidebar after Deliverability; on the phone a card on Today). How to use it: `engine/GUIDE.md` → "HQ" → 10. Content.
+- **Screens:**
+  - Needs you: ideas to approve per channel; final clips Sienna passed; other steps waiting on Alex.
+  - Friday: one idea per screen, big type, Previous / Next, count vs target (main 2, Raw 5).
+  - Pipeline: Idea → Approved → Script ready → Recorded → Editing → Final review → Final approved → Posted, with the Content Center's next step and the automation behind it.
+  - This week: proposed / approved / recorded / posted vs target, plus data problems.
+- **The one write:** Approve / Reject an idea, exactly the Content Center's "Approve & schedule" / "Reject idea" fields:
+  - Idea Decision;
+  - Production Stage "Idea Approved";
+  - Recording + Publish Date, from the same rule (`nextIdeaDates`).
+  - Logged in `hq_content_log`. After Approve, the engine's `sienna.prep` writes the script.
+- **Links only:** clip approval (the Content Center's approve goes through the n8n Current Clip Review flow, which checks who wrote the request), thumbnail approval, editing route, YouTube upload, posts. HQ never posts, schedules, deletes or calls n8n, OpusClip, Gamma, Frame.io, YouTube or Discord.
+- **Data problems it shows (demo-checked, live numbers on deploy):**
+  1. rows "Scheduled" with no proof of posting (17 known);
+  2. approved ideas with no script after 1 day;
+  3. clips without Sienna's QA note;
+  4. main recording dates not on Friday;
+  5. ideas waiting 14+ days.
+- **For Riley's clean-up (same job twice):**
+  - scripts: `sienna.prep` + 2 copies of the n8n Teleprompter Script;
+  - ideas: `sienna.ideas` + 5 n8n Reddit intakes;
+  - final edits: Sienna's editor + the OpusClip buttons.
+- **Open for Alex:**
+  1. **Recording day.** The Content Center's approve sets the main channel's recording date to the Sunday before the publish week (or today), not Friday. HQ writes the same dates, so the two agree, and it flags the mismatch. Confirm Friday, then Riley changes the rule in both.
+  2. **Clip approve / send back in HQ.** This needs an engine path the n8n review flow accepts. UNKNOWN until Riley checks the ledger.
+  3. **Gamma links.** Only outlines exist (content-system.md, Next 4).
 
 ## Step 4: People and clients
 - Josh's login with permissions.
