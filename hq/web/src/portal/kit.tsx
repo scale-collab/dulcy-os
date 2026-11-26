@@ -1,7 +1,7 @@
 // Small pieces every portal screen uses. Everything is plain React text (escaped); no raw HTML.
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { api } from '../api';
-import { Card, cx, Empty, ErrorBox, Icon, PageSkeleton, PageTitle, Pill, StatusDot, timeAgo } from '../ui';
+import { BackLink, Card, cx, Empty, ErrorBox, go, Icon, PageSkeleton, PageTitle, Pill, StatusDot, timeAgo } from '../ui';
 import type { Health } from './types';
 
 /** A date for people: "Nov 24" (with the year when not this year). A plain date (YYYY-MM-DD) stays that day. */
@@ -158,10 +158,13 @@ export function Files({ files }: { files: { name: string; href: string }[] }) {
   );
 }
 
-export function Quote({ children }: { children: ReactNode }) {
-  return <blockquote className="mt-3 whitespace-pre-line rounded-xl border-l-4 border-line-strong bg-sunken px-3 py-2 text-[15px] leading-relaxed text-fg-2 [overflow-wrap:anywhere]">{children}</blockquote>;
+export function Quote({ children, clamp }: { children: ReactNode; clamp?: boolean }) {
+  return <blockquote className={cx('mt-3 whitespace-pre-line rounded-xl border-l-4 border-line-strong bg-sunken px-3 py-2 text-[15px] leading-relaxed text-fg-2 [overflow-wrap:anywhere]', clamp && 'line-clamp-3')}>{children}</blockquote>;
 }
 
 export function Initial({ name, className }: { name: string; className?: string }) {
   return <span aria-hidden="true" className={cx('grid h-10 w-10 shrink-0 place-items-center rounded-full border border-line bg-sunken text-sm font-semibold text-fg-2', className)}>{(name || '?').slice(0, 1).toUpperCase()}</span>;
 }
+
+/** A way back to a tab's main screen from a page under it (Home's sub-pages, a lead, an old link). */
+export const BackTo = ({ tab }: { tab: 'home' | 'leads' | 'account' }) => <BackLink label={tab === 'home' ? 'Home' : tab === 'leads' ? 'Leads' : 'Account'} onClick={() => go(tab)} />;

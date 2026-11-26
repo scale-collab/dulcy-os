@@ -78,6 +78,7 @@ const ICONS: Record<string, ReactNode> = {
   lock: <><rect x="3" y="11" width="18" height="11" rx="2" />{P('M7 11V7a5 5 0 0 1 10 0v4')}</>,
   briefcase: <><rect x="2" y="7" width="20" height="14" rx="2" />{P('M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2M2 13h20')}</>,
   shield: P('M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM9 12l2 2 4-4'),
+  user: <>{P('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2')}<circle cx="12" cy="7" r="4" /></>,
   userPlus: <>{P('M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M19 8v6M22 11h-6')}<circle cx="9" cy="7" r="4" /></>,
   trendUp: P('m22 7-8.5 8.5-5-5L2 17M16 7h6v6'),
   trendDown: P('m22 17-8.5-8.5-5 5L2 7M16 17h6v-6'),

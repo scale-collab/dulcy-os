@@ -1,58 +1,54 @@
-// Leads & pipeline (Softr: Pipeline, Lead Details Full, Close a Deal, Call Feedback Form, Emails details).
+// Tab 2, Leads: "Your leads" (v3, 2026-11-26). Softr: Pipeline, Lead Details Full, Close a Deal, Call
+// Feedback Form, Call Feedback, Emails details. One list of positive replies, newest first; the
+// pipeline stages are the filter chips; booked meetings (with the feedback due or given) are the
+// "Meetings" chip. One read: /portal/pipeline. A lead's page: what they wrote, the meeting, the
+// call feedback form and the close-a-deal form.
 import { useState, type FormEvent } from 'react';
 import { api } from '../api';
-import { BackLink, Button, Card, cx, Empty, ErrorBox, go, Icon, Pill, SectionHeader } from '../ui';
-import { Choice, Done, Field, Initial, inputCls, money, niceDate, num, Page, Quote, Segmented, StarRow, Stars, TextArea, Updated, useLoad } from './kit';
-import type { Lead, LeadDetail, Pipeline as PipelineT } from './types';
+import { Button, Card, cx, Empty, ErrorBox, go, Icon, Pill, SectionHeader } from '../ui';
+import { BackTo, Choice, Done, Field, Initial, inputCls, money, niceDate, Page, Quote, StarRow, Stars, TextArea, Updated, useLoad } from './kit';
+import type { LeadDetail, Pipeline as PipelineT, PipelineLead } from './types';
 
 const STAGE_TONE: Record<string, 'accent' | 'good' | 'info' | 'warn' | 'plain'> = {
   'New Interested': 'info', 'In Conversation': 'info', 'Booked Meeting': 'accent', 'Completed Meeting': 'accent', 'Closed Deal': 'good', 'Closed -- Not Moving Forward': 'plain', Lost: 'plain',
 };
-const stageLabel = (s: string) => (s === 'Closed -- Not Moving Forward' ? 'Not moving forward' : s);
+const STAGE_LABEL: Record<string, string> = {
+  'New Interested': 'New', 'In Conversation': 'In conversation', 'Booked Meeting': 'Meeting booked', 'Completed Meeting': 'Meeting done', 'Closed Deal': 'Closed', 'Closed -- Not Moving Forward': 'Not moving forward', Lost: 'Lost',
+};
+const stageLabel = (s: string) => STAGE_LABEL[s] ?? s;
 
-export function Pipeline() {
+export type LeadChip = 'all' | 'new' | 'booked' | 'closed' | 'lost' | 'meetings';
+const CHIP_STAGES: Record<'new' | 'booked' | 'closed' | 'lost', readonly string[]> = {
+  new: ['New Interested', 'In Conversation'], booked: ['Booked Meeting', 'Completed Meeting'], closed: ['Closed Deal'], lost: ['Closed -- Not Moving Forward', 'Lost'],
+};
+const CHIP_LABEL: Record<LeadChip, string> = { all: 'All', new: 'New', booked: 'Meeting booked', closed: 'Closed', lost: 'Lost', meetings: 'Meetings' };
+export const LEAD_CHIPS = Object.keys(CHIP_LABEL) as LeadChip[];
+const newest = (l: PipelineLead) => l.bookedOn || l.date;
+
+export function Leads({ chip }: { chip: LeadChip }) {
   const s = useLoad<PipelineT>('/portal/pipeline');
   return (
-    <Page title="Pipeline" sub="Every lead we found for you, from the first yes to a closed deal (last 12 months)." state={s} kind="board">
+    <Page title="Your leads" sub="Everyone who said yes to your campaigns, newest first (last 12 months). Tap a lead to see what they wrote." state={s} kind="list">
       {(d) => {
-        if (!d.total) return <Card><Empty icon="reply" title="No leads yet" sub="When a prospect says yes, they show up here." /></Card>;
-        const shown = d.stages.filter((x) => x.leads.length || ['New Interested', 'Booked Meeting', 'Completed Meeting', 'Closed Deal'].includes(x.stage));
+        const all = d.stages.flatMap((x) => x.leads).sort((a, b) => newest(b).localeCompare(newest(a)));
+        const of = (c: LeadChip) => (c === 'all' ? all : c === 'meetings' ? all.filter((l) => l.bookedOn) : all.filter((l) => CHIP_STAGES[c].includes(l.stage)));
+        const chips = LEAD_CHIPS.filter((c) => c !== 'lost' || of('lost').length > 0);
+        const cur = chips.includes(chip) ? chip : 'all';
+        const rows = of(cur);
         return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {(['New Interested', 'Booked Meeting', 'Completed Meeting', 'Closed Deal'] as const).map((st) => (
-                <Card key={st} className="p-4"><div className="text-xs text-muted">{stageLabel(st)}</div><div className={cx('tabular mt-1 text-2xl font-bold', st === 'Closed Deal' ? 'text-good' : 'text-fg')}>{num(d.stages.find((x) => x.stage === st)?.leads.length ?? 0)}</div></Card>
+          <div className="space-y-4">
+            <div role="radiogroup" aria-label="Show" className="flex flex-wrap gap-2">
+              {chips.map((c) => (
+                <button key={c} role="radio" aria-checked={cur === c} onClick={() => go(c === 'all' ? 'leads' : `leads/${c}`)}
+                  className={cx('inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition', cur === c ? 'border-accent bg-accent-soft text-accent-ink' : 'border-line-strong bg-surface text-fg-2 hover:bg-hover')}>
+                  {CHIP_LABEL[c]}<span className={cx('tabular', cur === c ? 'text-accent-ink' : 'text-muted')}>{of(c).length}</span>
+                </button>
               ))}
             </div>
-            {d.deals.count > 0 && <p className="text-sm text-fg-2"><Icon name="dollar" size={15} className="mr-1 inline text-good" />{d.deals.count} deal{d.deals.count === 1 ? '' : 's'} closed, worth {money(d.deals.value)} (as you recorded them).</p>}
-            <div className="grid gap-6 md:grid-cols-2 md:gap-4 xl:grid-cols-4">
-              {shown.map((col) => (
-                <section key={col.stage} className="min-w-0">
-                  <SectionHeader title={<>{stageLabel(col.stage)} <span className="tabular font-normal text-muted">{col.leads.length}</span></>} />
-                  <div className="space-y-2">
-                    {!col.leads.length && <div className="rounded-xl border border-dashed border-line p-4 text-center text-sm text-muted">None yet</div>}
-                    {col.leads.slice(0, 30).map((l) => (
-                      <Card key={l.key} className="p-3" onClick={() => go(`lead/${l.key}`)} label={`${l.name}, ${stageLabel(l.stage)}`}>
-                        <div className="flex items-start gap-2.5">
-                          <Initial name={l.name} className="h-8 w-8 text-xs" />
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate font-semibold text-fg">{l.name}</div>
-                            <div className="truncate text-xs text-muted">{l.company || '–'}</div>
-                            <div className="mt-1 flex flex-wrap gap-1 text-[11px] text-muted">
-                              {l.bookedOn ? <span>Booked {niceDate(l.bookedOn)}</span> : l.date ? <span>Replied {niceDate(l.date)}</span> : null}
-                              {l.feedback && <Pill tone="good">Feedback given</Pill>}
-                              {l.deal && <Pill tone="good" icon="dollar">Deal</Pill>}
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                    {col.leads.length > 30 && <div className="text-center text-xs text-muted">+{col.leads.length - 30} more in Leads</div>}
-                  </div>
-                </section>
-              ))}
-            </div>
-            <Updated at={d.readAt} />
+            {d.deals.count > 0 && cur !== 'meetings' && <p className="text-sm text-fg-2"><Icon name="dollar" size={15} className="mr-1 inline text-good" />{d.deals.count} deal{d.deals.count === 1 ? '' : 's'} closed, worth {money(d.deals.value)} (as you recorded them).</p>}
+            {!rows.length ? <Card><Empty icon={cur === 'meetings' ? 'calendar' : 'reply'} title={cur === 'meetings' ? 'No meetings booked yet' : 'No leads here yet'} sub={cur === 'meetings' ? 'Booked meetings show up here.' : 'When a prospect says yes, they show up here.'} /></Card>
+              : cur === 'meetings' ? <MeetingList rows={rows} /> : <LeadList rows={rows} />}
+            <Updated at={d.readAt} extra={cur === 'meetings' ? 'Each date is the day the meeting was booked, or the day of the call when we have it.' : undefined} />
           </div>
         );
       }}
@@ -60,55 +56,78 @@ export function Pipeline() {
   );
 }
 
-type LeadFilter = 'all' | 'booked' | 'sent';
-export function Leads() {
-  const s = useLoad<{ leads: Lead[]; days: number; readAt: string }>('/portal/leads');
-  const [f, setF] = useState<LeadFilter>('all');
+function LeadList({ rows }: { rows: PipelineLead[] }) {
   return (
-    <Page title="Leads" sub={`People who said yes in the last ${s.d?.days ?? 90} days: meetings booked, and leads sent to you to follow up.`} state={s}>
-      {(d) => {
-        const counts = { all: d.leads.length, booked: d.leads.filter((l) => l.status === 'booked').length, sent: d.leads.filter((l) => l.status === 'sent').length };
-        const rows = d.leads.filter((l) => f === 'all' || l.status === f);
-        return (
-          <div>
-            <div className="mb-4"><Segmented label="Show" value={f} onChange={setF} options={[['all', <>All <span className="tabular text-muted">{counts.all}</span></>], ['booked', <>Booked <span className="tabular text-muted">{counts.booked}</span></>], ['sent', <>Sent to you <span className="tabular text-muted">{counts.sent}</span></>]] as const} /></div>
-            {!rows.length ? <Card><Empty icon="reply" title="No leads here yet" sub="When a prospect says yes, they show up here." /></Card> : (
-              <div className="grid gap-3 lg:grid-cols-2">
-                {rows.map((l) => (
-                  <Card key={l.key} className="flex flex-col p-4 sm:p-5" onClick={() => go(`lead/${l.key}`)} label={l.name}>
-                    <div className="flex items-start gap-3">
-                      <Initial name={l.name} />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1"><span className="font-semibold text-fg [overflow-wrap:anywhere]">{l.name}</span>{l.status === 'booked' ? <Pill tone="accent" icon="check">Meeting booked</Pill> : <Pill tone="info" icon="arrowRight">Sent to you</Pill>}</div>
-                        {l.company && <div className="text-sm text-fg-2">{l.company}</div>}
-                        <div className="mt-0.5 text-xs text-muted">{l.status === 'booked' && l.bookedOn ? `Booked ${niceDate(l.bookedOn)}` : `Replied ${niceDate(l.date)}`}</div>
-                      </div>
-                    </div>
-                    {l.message && <Quote>{l.message.length > 280 ? `${l.message.slice(0, 279)}…` : l.message}</Quote>}
-                  </Card>
-                ))}
-              </div>
-            )}
-            <Updated at={d.readAt} />
+    <div className="grid gap-3 lg:grid-cols-2">
+      {rows.map((l) => (
+        <Card key={l.key} className="flex flex-col p-4 sm:p-5" onClick={() => go(`lead/${l.key}`)} label={`${l.name}, ${stageLabel(l.stage)}`}>
+          <div className="flex items-start gap-3">
+            <Initial name={l.name} />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1"><span className="font-semibold text-fg [overflow-wrap:anywhere]">{l.name}</span><Pill tone={STAGE_TONE[l.stage] ?? 'plain'}>{stageLabel(l.stage)}</Pill></div>
+              {l.company && <div className="text-sm text-fg-2 [overflow-wrap:anywhere]">{l.company}</div>}
+              <div className="mt-0.5 text-xs text-muted">{l.bookedOn ? `Meeting booked ${niceDate(l.bookedOn)}` : l.date ? `Replied ${niceDate(l.date)}` : ''}</div>
+            </div>
           </div>
-        );
-      }}
-    </Page>
+          {l.message && <Quote clamp>{l.message}</Quote>}
+          {(l.feedbackDue || l.deal) && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {l.feedbackDue && <Pill tone="accent" icon="star">Call feedback needed</Pill>}
+              {l.deal && <Pill tone="good" icon="dollar">Deal recorded</Pill>}
+            </div>
+          )}
+        </Card>
+      ))}
+    </div>
   );
 }
 
-export function LeadPage({ id }: { id: string }) {
+/** Booked meetings by month, like a calendar: the day it was booked, and the call feedback due or given. */
+function MeetingList({ rows }: { rows: PipelineLead[] }) {
+  const months = new Map<string, PipelineLead[]>();
+  for (const l of [...rows].sort((a, b) => b.bookedOn.localeCompare(a.bookedOn))) { const m = l.bookedOn.slice(0, 7); months.set(m, [...(months.get(m) ?? []), l]); }
+  return (
+    <div className="space-y-5">
+      {[...months.entries()].map(([m, list]) => (
+        <section key={m}>
+          <SectionHeader title={new Date(`${m}-01T12:00:00`).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })} icon="calendar" />
+          <Card className="divide-y divide-line p-0">
+            {list.map((l) => {
+              const day = new Date(l.bookedOn.length === 10 ? `${l.bookedOn}T12:00:00` : l.bookedOn);
+              return (
+                <button key={l.key} onClick={() => go(l.feedbackDue ? `lead/${l.key}/feedback` : `lead/${l.key}`)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-hover sm:px-5">
+                  <div className="w-12 shrink-0 text-center"><div className="text-xs uppercase text-muted">{day.toLocaleDateString(undefined, { weekday: 'short' })}</div><div className="tabular text-xl font-bold text-fg">{day.getDate()}</div></div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-semibold text-fg">{l.name}</div>
+                    <div className="truncate text-sm text-muted">{l.company || stageLabel(l.stage)}</div>
+                  </div>
+                  <div className="shrink-0 text-right text-sm">
+                    {l.feedbackDue ? <span className="font-semibold text-accent-ink">Give feedback</span>
+                      : l.lastFeedback ? <div className="flex flex-col items-end gap-0.5"><span className="font-medium text-fg-2">{l.lastFeedback.status}</span><StarRow n={l.lastFeedback.rating} /></div>
+                        : <span className="text-muted">{stageLabel(l.stage)}</span>}
+                  </div>
+                </button>
+              );
+            })}
+          </Card>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+export function LeadPage({ id, open }: { id: string; open?: 'feedback' | 'deal' }) {
   const s = useLoad<LeadDetail>(`/portal/lead/${encodeURIComponent(id)}`);
-  const [form, setForm] = useState<'feedback' | 'deal' | null>(null);
+  const [form, setForm] = useState<'feedback' | 'deal' | null>(open ?? null);
   return (
     <div>
-      <BackLink label="Pipeline" onClick={() => go('pipeline')} />
+      <BackTo tab="leads" />
       <Page title={s.d?.name ?? 'Lead'} kicker={s.d?.company} state={s}>
         {(d) => (
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_380px]">
             <div className="min-w-0 space-y-4">
               <Card>
-                <div className="flex flex-wrap items-center gap-2"><Pill tone={STAGE_TONE[d.stage] ?? 'plain'}>{stageLabel(d.stage)}</Pill>{d.bookedOn && <span className="text-sm text-muted">Meeting booked {niceDate(d.bookedOn)}</span>}</div>
+                <div className="flex flex-wrap items-center gap-2"><Pill tone={STAGE_TONE[d.stage] ?? 'plain'}>{stageLabel(d.stage)}</Pill>{d.bookedOn && <span className="text-sm text-muted">Booked {niceDate(d.bookedOn)}</span>}</div>
                 {d.message && <><div className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted">What they wrote {d.date && `· ${niceDate(d.date)}`}</div><Quote>{d.message}</Quote></>}
                 <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
                   {d.email && <div><dt className="text-muted">Email</dt><dd><a className="inline-flex min-h-10 items-center gap-1.5 font-medium text-accent-ink hover:underline [overflow-wrap:anywhere]" href={`mailto:${d.email}`}><Icon name="mail" size={15} />{d.email}</a></dd></div>}
@@ -137,9 +156,9 @@ export function LeadPage({ id }: { id: string }) {
                 </Card>
               )}
             </div>
-            <aside className="space-y-4">
-              {form === 'feedback' ? <FeedbackForm d={d} onDone={() => { setForm(null); s.load(); }} />
-                : form === 'deal' ? <DealForm d={d} onDone={() => { setForm(null); s.load(); }} />
+            <aside className={cx('space-y-4', form && 'order-first lg:order-none')}>
+              {form === 'feedback' && d.canFeedback ? <FeedbackForm d={d} onDone={() => { setForm(null); s.load(); }} />
+                : form === 'deal' && d.canCloseDeal ? <DealForm d={d} onDone={() => { setForm(null); s.load(); }} />
                   : (
                     <Card>
                       <SectionHeader title="What happened next?" icon="flag" />

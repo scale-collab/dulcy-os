@@ -1,15 +1,26 @@
-// Campaigns (Softr: Campaign Overview, Campaign Details, Campaign Review, Campaign Calendar).
-import { useState, type FormEvent } from 'react';
+// Campaigns (Softr: Campaign Overview, Campaign Details, Campaign Review, Campaign Calendar). v3: under
+// Home. Home lists the active ones; "All campaigns" is every campaign with a List / Calendar switch.
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { api } from '../api';
-import { BackLink, Button, Card, cx, Empty, ErrorBox, go, Icon, Label, Markdown, SectionHeader } from '../ui';
+import { Button, Card, cx, Empty, ErrorBox, go, Icon, Label, Markdown, SectionHeader } from '../ui';
 import { CampaignTable, StatePill } from './Results';
-import { Choice, Done, Field, HealthPill, niceDate, num, Page, TextArea, Updated, useLoad } from './kit';
+import { BackTo, Choice, Done, Field, HealthPill, niceDate, num, Page, Segmented, TextArea, Updated, useLoad } from './kit';
 import type { Calendar, CampaignDetail, CampaignRow } from './types';
 
-export function Campaigns() {
+export function Campaigns({ view }: { view: 'list' | 'calendar' }) {
+  return (
+    <div>
+      <BackTo tab="home" />
+      <div className="mb-5"><Segmented label="Show" value={view} onChange={(v) => go(v === 'calendar' ? 'calendar' : 'campaigns')} options={[['list', 'All campaigns'], ['calendar', 'Launch calendar']] as const} /></div>
+      {view === 'calendar' ? <CalendarPage /> : <CampaignList />}
+    </div>
+  );
+}
+
+function CampaignList() {
   const s = useLoad<{ campaigns: CampaignRow[]; readAt: string }>('/portal/campaigns');
   return (
-    <Page title="Campaigns" sub="Every campaign we run for you: what is waiting for your review, what is live, and what is done." state={s} kind="list">
+    <Page title="All campaigns" sub="Every campaign we run for you: what is waiting for your review, what is live, and what is done." state={s} kind="list">
       {(d) => {
         const review = d.campaigns.filter((c) => c.state === 'review');
         return (
@@ -40,15 +51,21 @@ export function Campaigns() {
   );
 }
 
-export function CampaignPage({ id }: { id: string }) {
+export function CampaignPage({ id, review }: { id: string; review?: boolean }) {
   const s = useLoad<CampaignDetail>(`/portal/campaign/${encodeURIComponent(id)}`);
   return (
     <div>
-      <BackLink label="Campaigns" onClick={() => go('campaigns')} />
+      <BackTo tab="home" />
       <Page title={s.d?.name ?? 'Campaign'} kicker={s.d ? <StatePill c={s.d} /> : undefined} state={s} kind="list">
         {(d) => (
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
             <div className="min-w-0 space-y-6">
+              {d.canReview && (
+                <Card className="flex flex-col gap-3 border-accent/50 sm:flex-row sm:items-center lg:hidden">
+                  <div className="min-w-0 flex-1 text-[15px] text-fg-2">Read the plan and the emails below, then approve or ask for changes.</div>
+                  <Button tone="accent" icon="flag" onClick={() => document.getElementById('review')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>Go to the review</Button>
+                </Card>
+              )}
               {d.state !== 'review' && d.state !== 'building' && (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {([['Sent', d.sent], ['Replies', d.replies], ['Interested', d.interested], ['Booked', d.booked]] as const).map(([k, v]) => (
@@ -91,7 +108,7 @@ export function CampaignPage({ id }: { id: string }) {
                   {d.deliverability && <div className="flex items-center justify-between gap-3"><dt className="text-muted">Deliverability</dt><dd><HealthPill h={d.deliverability} /></dd></div>}
                 </dl>
               </Card>
-              {d.canReview ? <ReviewForm d={d} /> : d.answer.feedback ? (
+              {d.canReview ? <ReviewForm d={d} focus={review} /> : d.answer.feedback ? (
                 <Card><SectionHeader title="Your answer" icon="check" /><div className="text-[15px] font-semibold text-fg">{d.answer.feedback}</div>{d.answer.changes && <div className="text-sm text-muted">Change: {d.answer.changes}</div>}{d.answer.comments && <p className="mt-2 whitespace-pre-wrap text-sm text-fg-2">{d.answer.comments}</p>}</Card>
               ) : null}
             </aside>
@@ -103,7 +120,10 @@ export function CampaignPage({ id }: { id: string }) {
 }
 const Row = ({ k, v }: { k: string; v: string }) => <div className="flex items-center justify-between gap-3"><dt className="text-muted">{k}</dt><dd className="text-right font-medium text-fg">{v}</dd></div>;
 
-function ReviewForm({ d }: { d: CampaignDetail }) {
+function ReviewForm({ d, focus }: { d: CampaignDetail; focus?: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  // Opened from Home's "Needs you" on a computer: the form is beside the plan, so bring it into view.
+  useEffect(() => { if (focus && window.matchMedia('(min-width: 1024px)').matches) ref.current?.scrollIntoView({ block: 'start' }); }, [focus]);
   const [f, setF] = useState({ feedback: '', changes: '', reviewCopy: '', size: '', geo: '', industry: '', title: '', context: '' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -118,6 +138,7 @@ function ReviewForm({ d }: { d: CampaignDetail }) {
   };
   if (sent) return <Card><Done title={sent === 'Approve Campaign' ? 'Approved. Thank you!' : 'Got it. We will update the campaign.'} sub={sent === 'Approve Campaign' ? 'We take it from here and let you know when it is live.' : 'You will see the new version here for review.'} /></Card>;
   return (
+    <div id="review" ref={ref} className="scroll-mt-24">
     <Card className="border-accent/50">
       <SectionHeader title="Your review" icon="flag" />
       <form onSubmit={submit} className="space-y-4">
@@ -142,13 +163,14 @@ function ReviewForm({ d }: { d: CampaignDetail }) {
         <Button type="submit" tone="accent" size="lg" className="w-full" disabled={busy || !f.feedback || (changes && !f.changes)}>{busy ? 'Sending…' : f.feedback === 'Approve Campaign' ? 'Approve campaign' : 'Send my review'}</Button>
       </form>
     </Card>
+    </div>
   );
 }
 
-export function CalendarPage() {
+function CalendarPage() {
   const s = useLoad<Calendar>('/portal/calendar');
   return (
-    <Page title="Campaign calendar" sub="When each campaign launched, launches next, and finished." state={s}>
+    <Page title="Launch calendar" sub="When each campaign launched, launches next, and finished." state={s}>
       {(d) => {
         if (!d.events.length) return <Card><Empty icon="calendar" title="Nothing on the calendar yet" sub="Planned launches show up here as soon as they are set." /></Card>;
         const months = new Map<string, Calendar['events']>();

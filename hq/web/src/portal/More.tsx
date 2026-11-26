@@ -1,82 +1,19 @@
-// Meetings, tasks & onboarding, docs & access, billing, notifications, account.
+// v3 (2026-11-26): pages under Home (our past calls, Book a call, all tasks) and the Account sheets
+// (onboarding answers, documents, access & logins, billing, notifications, getting started, profile).
+// Booked meetings and call feedback moved to the Leads tab (Leads.tsx, the "Meetings" chip).
 import { useMemo, useState, type FormEvent } from 'react';
 import { api } from '../api';
 import { Button, Card, cx, Empty, ErrorBox, go, Icon, Markdown, Pill, Progress, SectionHeader } from '../ui';
-import { Done, Field, Files, Initial, inputCls, money, niceDate, Page, StarRow, TextArea, Updated, useLoad } from './kit';
-import type { Bill, Doc, Feedback, Meeting, Note, OnbField, OurMeeting, Session, Task } from './types';
+import { BackTo, Done, Field, Files, inputCls, money, niceDate, Page, TextArea, Updated, useLoad } from './kit';
+import type { Bill, Doc, Note, OnbField, OurMeeting, Session, Task } from './types';
 
-/* ---------- Meetings ---------- */
-export function Meetings() {
-  const s = useLoad<{ meetings: Meeting[]; days: number; readAt: string }>('/portal/meetings');
-  return (
-    <Page title="Booked meetings" sub={`Meetings booked for you in the last ${s.d?.days ?? 90} days.`} state={s}>
-      {(d) => (
-        <>
-          {!d.meetings.length ? <Card><Empty icon="calendar" title="No meetings booked yet" sub="Booked meetings show up here." /></Card> : (
-            <Card className="divide-y divide-line p-0">
-              {d.meetings.map((m) => (
-                <button key={m.key} onClick={() => go(`lead/${m.key}`)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-hover sm:px-5">
-                  <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent-ink"><Icon name="check" size={18} /></span>
-                  <div className="min-w-0 flex-1"><div className="truncate font-semibold text-fg">{m.name}</div><div className="truncate text-sm text-muted">{m.company || 'Company not given'}</div></div>
-                  <div className="shrink-0 text-right text-sm text-fg-2">Booked<div className="font-medium text-fg">{niceDate(m.bookedOn)}</div></div>
-                </button>
-              ))}
-            </Card>
-          )}
-          <Updated at={d.readAt} extra="The date is the day the meeting was booked." />
-        </>
-      )}
-    </Page>
-  );
-}
-
-export function FeedbackPage() {
-  const s = useLoad<Feedback>('/portal/feedback');
-  return (
-    <Page title="Call feedback" sub="After each call we booked, tell us in 30 seconds how it went. It helps us book better calls." state={s}>
-      {(d) => (
-        <div className="space-y-6">
-          <section>
-            <SectionHeader title={`Feedback missing · ${d.missing.length}`} icon="alert" />
-            {!d.missing.length ? <Card><Empty icon="check" tone="good" title="All caught up" sub="No call is waiting for your feedback." /></Card> : (
-              <div className="grid gap-3 md:grid-cols-2">
-                {d.missing.map((m) => (
-                  <Card key={m.key} onClick={() => go(`lead/${m.key}`)} className="flex items-center gap-3 border-accent/40" label={`Give feedback on ${m.name}`}>
-                    <Initial name={m.name} />
-                    <div className="min-w-0 flex-1"><div className="truncate font-semibold text-fg">{m.name}</div><div className="truncate text-sm text-muted">{[m.company, `booked ${niceDate(m.bookedOn)}`].filter(Boolean).join(' · ')}</div></div>
-                    <span className="text-sm font-semibold text-accent-ink">Give feedback</span>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </section>
-          <section>
-            <SectionHeader title={`Feedback you gave · ${d.given.length}`} icon="star" />
-            {!d.given.length ? <Card><Empty icon="star" title="No feedback yet" /></Card> : (
-              <Card className="divide-y divide-line p-0">
-                {d.given.map((g) => (
-                  <button key={g.key} disabled={!g.lead} onClick={() => g.lead && go(`lead/${g.lead}`)} className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-hover sm:px-5">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2"><span className="font-semibold text-fg">{g.name}</span><Pill tone={g.status === 'Qualified' ? 'good' : g.status === 'No Show' ? 'warn' : 'plain'}>{g.status}</Pill><StarRow n={g.rating} /></div>
-                      {g.comments && <div className="mt-1 line-clamp-2 text-sm text-fg-2">{g.comments}</div>}
-                    </div>
-                    <div className="shrink-0 text-xs text-muted">{niceDate(g.date)}</div>
-                  </button>
-                ))}
-              </Card>
-            )}
-          </section>
-          <Updated at={d.readAt} />
-        </div>
-      )}
-    </Page>
-  );
-}
-
+/* ---------- Under Home: our calls with you, booking, all tasks ---------- */
 export function OurMeetings() {
   const s = useLoad<{ upcoming: OurMeeting[]; past: OurMeeting[]; readAt: string }>('/portal/our-meetings');
   return (
-    <Page title="Meetings with Dulcy" sub="Our calls with you: summaries and recordings." right={<Button icon="calendar" onClick={() => go('schedule')}>Book a call</Button>} state={s}>
+    <>
+    <BackTo tab="home" />
+    <Page title="Calls with Dulcy" sub="Our calls with you: summaries and recordings." right={<Button icon="calendar" onClick={() => go('schedule')}>Book a call</Button>} state={s}>
       {(d) => (
         <div className="space-y-6">
           {d.upcoming.length > 0 && <section><SectionHeader title="Coming up" icon="calendar" /><div className="space-y-3">{d.upcoming.map((m) => <MeetingCard key={m.key} m={m} />)}</div></section>}
@@ -88,6 +25,7 @@ export function OurMeetings() {
         </div>
       )}
     </Page>
+    </>
   );
 }
 function MeetingCard({ m }: { m: OurMeeting }) {
@@ -112,6 +50,7 @@ export function Schedule({ session }: { session: Session }) {
   const url = session.go.meeting;
   return (
     <div>
+      <BackTo tab="home" />
       <h1 className="mb-1 text-[26px] font-bold leading-tight tracking-tight text-fg sm:text-[28px]">Book a call with us</h1>
       <p className="mb-6 text-[15px] text-muted">Pick a time that suits you. The booking page opens in a new tab.</p>
       <Card className="max-w-xl">
@@ -126,15 +65,17 @@ export function Schedule({ session }: { session: Session }) {
 }
 
 /* ---------- Tasks & onboarding ---------- */
-export function Tasks() {
+export function Tasks({ onChange }: { onChange?: () => void }) {
   const s = useLoad<{ tasks: Task[]; readAt: string }>('/portal/tasks');
   const [busy, setBusy] = useState(''); const [error, setError] = useState('');
   const done = async (t: Task) => {
     setBusy(t.key); setError('');
-    try { await api(`/portal/task/${t.key}/done`, { body: {} }); s.setD((d) => d && { ...d, tasks: d.tasks.map((x) => (x.key === t.key ? { ...x, stage: 'done' as const } : x)) }); }
+    try { await api(`/portal/task/${t.key}/done`, { body: {} }); s.setD((d) => d && { ...d, tasks: d.tasks.map((x) => (x.key === t.key ? { ...x, stage: 'done' as const } : x)) }); onChange?.(); }
     catch (e) { setError((e as Error).message); } finally { setBusy(''); }
   };
   return (
+    <>
+    <BackTo tab="home" />
     <Page title="Tasks for you" sub="What we need from you. When you finish one, mark it done here." state={s}>
       {(d) => {
         const open = d.tasks.filter((t) => t.stage !== 'done'); const closed = d.tasks.filter((t) => t.stage === 'done');
@@ -168,6 +109,7 @@ export function Tasks() {
         );
       }}
     </Page>
+    </>
   );
 }
 
@@ -184,7 +126,7 @@ export function Onboarding() {
     catch (err) { setError((err as Error).message); } finally { setBusy(false); }
   };
   return (
-    <Page title="Onboarding form" sub="Your company, offer and ideal clients: what we build your campaigns from. Keep it up to date." state={s}
+    <Page title="Onboarding answers" sub="Your company, offer and ideal clients: what we build your campaigns from. Keep it up to date." state={s}
       right={s.d?.ready && !edit ? <Button icon="pen" onClick={() => { setSaved(false); setEdit(Object.fromEntries(s.d!.fields.map((f) => [f.key, f.value]))); }}>Edit answers</Button> : undefined}>
       {(d) => !d.ready ? <Card><Empty icon="file" title="Your onboarding form is not set up yet" sub="Your Dulcy team will add it. Then your answers show up here and you can update them." /></Card> : (
         <form onSubmit={save} className="space-y-6">
@@ -209,7 +151,7 @@ export function Onboarding() {
             </Card>
           ))}
           {edit && (
-            <div className="safe-bottom sticky bottom-20 z-10 flex flex-col gap-2 rounded-2xl border border-line bg-surface/95 p-3 shadow-pop backdrop-blur md:bottom-4 sm:flex-row sm:justify-end">
+            <div className="sticky bottom-3 z-10 flex flex-col gap-2 rounded-2xl border border-line bg-surface/95 p-3 shadow-pop backdrop-blur sm:flex-row sm:justify-end">
               {error && <div className="flex-1"><ErrorBox error={error} /></div>}
               <Button onClick={() => setEdit(null)}>Cancel</Button>
               <Button type="submit" tone="accent" disabled={busy}>{busy ? 'Saving…' : 'Save answers'}</Button>
@@ -361,7 +303,7 @@ export function Notifications({ onChange }: { onChange: () => void }) {
 const NOTE_ICON: Record<string, string> = { Task: 'list', Lead: 'reply', Campaign: 'megaphone', 'Booked Meeting': 'calendar', Document: 'file', 'Call Feedback': 'star', System: 'bell' };
 
 /* ---------- Account ---------- */
-export function Account({ session, onRenamed }: { session: Session; onRenamed: (name: string) => void }) {
+export function Profile({ session, onRenamed }: { session: Session; onRenamed: (name: string) => void }) {
   const [name, setName] = useState(session.user.name);
   const [pw, setPw] = useState({ current: '', password: '', password2: '' });
   const [msg, setMsg] = useState(''); const [error, setError] = useState(''); const [busy, setBusy] = useState('');
@@ -372,7 +314,7 @@ export function Account({ session, onRenamed }: { session: Session; onRenamed: (
   };
   return (
     <div className="max-w-xl">
-      <h1 className="mb-1 text-[26px] font-bold leading-tight tracking-tight text-fg sm:text-[28px]">Account</h1>
+      <h1 className="mb-1 text-[26px] font-bold leading-tight tracking-tight text-fg sm:text-[28px]">Profile & password</h1>
       <p className="mb-6 text-[15px] text-muted">{session.user.email} · {session.client.name}</p>
       {msg && <Done title={msg} />}
       {error && <div className="mb-4"><ErrorBox error={error} /></div>}
