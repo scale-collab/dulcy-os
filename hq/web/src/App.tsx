@@ -16,7 +16,6 @@ import Users from './pages/Users';
 import Inbox, { ThreadPage } from './pages/Inbox';
 import Campaigns from './pages/Campaigns';
 import Deliverability from './pages/Deliverability';
-import Portal from './pages/Portal';
 import Content from './pages/Content';
 import Sales from './pages/Sales';
 
@@ -57,8 +56,8 @@ export default function App() {
 
   const [page, a, b, c] = route;
   const signOut = async () => { try { await api('/auth/logout', { body: {} }); } catch { /* signed out anyway */ } setUser(null); };
-  // Client logins: their own small app (no HQ sections at all). The server refuses them everything else.
-  if (user.role === 'client') return <Portal user={user} page={page} onSignOut={signOut} />;
+  // Client logins: their own app, the portal (its own bundle; the server refuses them everything else).
+  if (user.role === 'client') { window.location.replace(window.location.pathname.startsWith('/hq/') ? '/hq/portal/' : '/portal/'); return <Loading what="Opening your portal" />; }
   let body;
   switch (page) {
     case 'decisions': body = <Decisions user={user} pile={a} client={b} />; break;
