@@ -26,6 +26,7 @@ import { actOnThread, listInbox, threadDetail } from './inbox.js';
 import { calendarInvite, replierDetail, saveReplier } from './replier.js';
 import { campaignDetail, listCampaigns } from './campaigns.js';
 import { deliverabilityView } from './deliverability.js';
+import { dealDetail, salesView } from './sales.js';
 
 export interface HqDeps { at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string }
 
@@ -312,6 +313,23 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       // Deliverability: inboxes and domains, read only (sick first; tabs: inboxes, placement, domains).
       m = p.match(/^\/hq\/api\/deliverability(?:\/(inboxes|placement|domains))?$/);
       if (m && req.method === 'GET') { json(res, 200, await deliverabilityView(needAt(), db, cfg, m[1] ?? 'attention', url.searchParams)); return true; }
+
+      // Sales (Dulcy's own deals): owner only (money), checked here so members get 403. Read only.
+      if (p === '/hq/api/sales' || p.startsWith('/hq/api/sales/')) {
+        if (!owner) { json(res, 403, { error: 'only the owner sees sales (money)' }); return true; }
+        if (req.method !== 'GET') { json(res, 405, { error: 'method not allowed' }); return true; }
+        if (p === '/hq/api/sales') {
+          json(res, 200, await salesView(needAt(), db, owner, { days: Number(url.searchParams.get('days')) === 90 ? 90 : 30, refresh: url.searchParams.get('refresh') === '1' }));
+          return true;
+        }
+        m = p.match(/^\/hq\/api\/sales\/(rec[A-Za-z0-9]{14})$/);
+        if (m) {
+          const d = await dealDetail(needAt(), db, m[1], owner, cfg.airtableBaseId);
+          if (!d) json(res, 404, { error: 'no such deal' }); else json(res, 200, d);
+          return true;
+        }
+        json(res, 404, { error: 'not found' }); return true;
+      }
 
       if (p === '/hq/api/agents' && req.method === 'GET') {
         const agents = await agentCards(db, at, user);

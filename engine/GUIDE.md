@@ -594,7 +594,7 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
 - `RILEY=on`, and add `riley.collect,riley.apply` to `LIVE_STAGES`.
 - Optional, for n8n errors: `N8N_API_KEY` (n8n → Settings → n8n API → create key) and `N8N_BASE_URL` (default `http://localhost:5678`).
 
-## HQ: your private app (Step 1 "Today", Step 2 "Clients" and "Deliverability", Step 3 "Inbox", 2026-11-25)
+## HQ: your private app (Step 1 "Today", Step 2 "Clients" and "Deliverability", Step 3 "Inbox", "Campaigns" and "Sales", 2026-11-25/26)
 
 **What it is:** one calm screen at **https://hq.dulcy.io**, on the phone or the computer. It runs inside the engine (same server, same code), and Airtable stays the database. Only people with an HQ login get in. Plan: `hq/PLAN.md`.
 
@@ -707,6 +707,24 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
    - **Domains:** per client: each domain's inbox count (marked when not 2: every domain has 2 accounts), expiry, blacklist; replacements waiting (the Decide button opens Decisions → Campaigns) and open Buy Domains & Inboxes requests (Airtable link). Data gaps are noted on top (domains without a renewal date, inboxes without a Domains record, domains without 2 inboxes).
    - **Speed and cost:** one batched Airtable read for everyone (7 list calls plus the pending decisions, no per-row calls), kept 1 minute; placement tests (about 1,000 a week, last 21 days) are kept 10 minutes. Refresh re-reads after 10 seconds. Login passwords and money are never read.
    - Members (Josh) see it too.
+
+10. **Sales** (Step 3, 2026-11-26; **owner only**, because it has money in it): Dulcy's **own** deals, from booked call to signed and paid, in one place. In the sidebar after Deliverability; on the phone it's the **Sales** card at the top of **Clients** (the top bar has no room for another icon). What needs action comes first; the pipeline and each deal are one tap deeper. **HQ changes nothing here** and calls no outside tool (no Close, PandaDoc, SignWell, Fanbasis, Fathom or Calendly): it only reads what Airtable already stores, plus Cole's reports.
+   - **Top numbers:** booked, showed, closed (signed) and new MRR, this month so far vs last month (New York dates). New MRR = the monthly amount of the deals signed that month (on a pay-per-call deal, the monthly tech fee).
+   - **Needs action** (default): one line per deal, with the reason and who owns it:
+     - **Call today / tomorrow** (Cole), with **Cole's prep** when there is one (an HQ report of kind `call_prep`; Cole doesn't write preps yet, so it says "no prep from Cole yet").
+     - **No outcome** (Cole): the call date passed and Sales Data still says "Audit Call Scheduled", or a call marked done 2+ days ago with no offer, contract or Call Feedback.
+     - **Re-book** (Cole): a No Show or Reschedule (Sales Data or Call Feedback).
+     - **Not signed** (Cole follows up): a contract sent 2+ days ago and not signed. **Your signature** (Alex): the client signed in Dulcy Sign and Dulcy's signature is missing. **Not sent** (Alex): a contract drafted and not sent.
+     - **Not paid** (Ledger): signed, and no payment recorded in Airtable (Initial Payment Received, or a Successful / Paid Client Invoices row). With no client record, payment is UNKNOWN.
+     - **Start onboarding** (Atlas): paid, and no onboarding form or start.
+     - Calls and no-shows count for the last 30 days, contracts for 90; older ones are data notes, not today's work. An inactive client needs nothing.
+   - **Pipeline** (30 or 90 days, by the call date): Booked → Showed → Qualified → Contract sent → Signed → Paid → Onboarded. Each stage counts every deal that reached it; tap a stage for the deals that are at it now. **Show rate**, **qualified** and **close rate** are exact counts ("7 of 10 showed"): show rate = calls whose date passed, canceled ones left out; close rate = signed of the calls that showed.
+   - **How a stage is decided** (from what the Make and n8n flows write): Showed = Call Held? / Call Held Date (Fathom), or a stage like Call Done, Follow Up Call, Contract Sent (a No Show / Canceled / Reschedule stage wins over a stray Call Held? tick). Qualified = Offer Made?, Follow Up Call, or Call Feedback "Qualified". Contract sent = a SignWell / PandaDoc / Dulcy Sign agreement sent (or the Contract Sent stage). Signed = the agreement completed (or Won). Paid = see "Not paid". Onboarded = the client's onboarding form.
+   - **Tap a deal:** contact and company; the calls with the links Airtable stores (Call Feedback's call link, the Fathom link on Cole's review); **Cole's review** (score and summary; tap for the 3 fixes); Call Feedback; each agreement (SignWell, PandaDoc or Dulcy Sign) with sent / viewed / signed dates; and payment and onboarding as a checklist (signed, paid, started, form, the client's tasks). Buttons: **Close**, **Airtable**, the **signing tool** and the **client record** only: no send, sign, charge or record change.
+   - **How a deal is put together:** the Sales Data row; the agreements with the same email (New Client Intake, and Dulcy Sign contracts not marked Test Only), else the same company; an agreement with no Sales Data row is its own deal. The client record: the agreement's Workspace IDs link, else the same name.
+   - **Data notes** (Problem → Data → Fix → Why, with the owner): Call Feedback with no status; Call Feedback "No Show" vs a held call; a No Show stage with Call Held? ticked; a signed deal with no client record or linked only by name; old calls still "Audit Call Scheduled"; a Sales Data stage behind the contract; agreements with no Sales Data row; contracts open for 90+ days; the two signing paths disagreeing (intake Draft, Dulcy Sign sent); no Sales Data row marked Won.
+   - **Speed and cost:** six batched Airtable reads (Sales Data, New Client Intake, Contracts, Call Feedback and Client Invoices of the last 400 days, Workspace IDs), kept 1 minute for everyone; the client's tasks are read when you open a deal. Refresh re-reads after 10 seconds.
+   - **Members (Josh) get nothing:** the server answers 403 to every Sales request, and the money is also cut on the server for anyone but the owner.
 
 **Agent to-do lists:** kept in HQ (the Airtable Tasks table has no Agent field). For now one generator fills them, every 30 minutes:
 - A running campaign past 60% sent gives Atlas "Plan next campaign for <client>", due in 3 days.

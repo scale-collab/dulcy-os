@@ -137,3 +137,42 @@ export interface CampaignDetail {
   activity: { id: string; when: string; agent: string; type: string; event: string; details: string; on: 'campaign' | 'list' }[];
   links: { airtable: string; bison: string }; readAt: string;
 }
+
+// ---------- Sales (owner only; the server answers 403 to members) ----------
+export type SalesStage = 'booked' | 'showed' | 'qualified' | 'sent' | 'signed' | 'paid' | 'onboarded';
+export type SalesActionKind = 'call_today' | 'call_tomorrow' | 'no_outcome' | 'sign' | 'unsigned' | 'draft' | 'unpaid' | 'onboard' | 'rebook';
+export type SalesOwner = 'Cole' | 'Alex' | 'Ledger' | 'Atlas';
+export interface SalesAction { kind: SalesActionKind; owner: SalesOwner; text: string; link?: string }
+export type AgreementState = 'draft' | 'sent' | 'viewed' | 'signed' | 'declined' | 'expired' | 'error' | 'none';
+export interface SalesDealLite {
+  id: string; name: string; company: string; stage: SalesStage; stageLabel: string; airtableStage: string; callDate: string; lost: boolean; signedDay: string;
+  agreementState: AgreementState | null; client: string; needs: SalesAction[]; monthly?: number | null;
+}
+export interface SalesRate { n: number; of: number; text: string }
+export interface SalesMonth { month: string; label: string; booked: number; showed: number; closed: number; mrr?: number; mrrUnknown?: number }
+export interface SalesNote { problem: string; data: string; fix: string; why: string; owner: string }
+export interface SalesView {
+  today: string; top: { thisMonth: SalesMonth; lastMonth: SalesMonth }; action: SalesDealLite[];
+  pipeline: { days: number; from: string; deals: number; canceled: number; upcoming: number; stages: { key: SalesStage; label: string; count: number; deals: SalesDealLite[] }[]; showRate: SalesRate; qualifiedRate: SalesRate; closeRate: SalesRate };
+  notes: SalesNote[]; counts: { action: number; deals: number }; readAt: string; limits: { unsignedDays: number; callDays: number; contractDays: number };
+}
+export interface SalesAgreement {
+  id: string; table: 'intake' | 'contract'; tool: string; title: string; company: string; email: string; signer: string; state: AgreementState; review: string;
+  created: string; sentAt: string; viewedAt: string; signedAt: string; clientSignedAt: string; forwardedAt: string; error: string; monthly?: number | null; perCall?: number | null; type: string; currency: string;
+}
+export interface SalesDeal {
+  id: string; salesRec: string; name: string; company: string; email: string; source: string; rep: string; campaign: string; airtableStage: string; lossReason: string; notes: string;
+  callDate: string; heldDate: string; bookedAt: string; stage: SalesStage; stageLabel: string; lost: boolean; inactiveClient: boolean; signedDay: string;
+  stageList: { key: SalesStage; label: string; done: boolean }[]; agreements: SalesAgreement[]; agreement: SalesAgreement | null;
+  client: { id: string; name: string; status: string; paid: boolean; formDone: boolean; onboardingLinked: boolean; start: string } | null; clientMatch: 'link' | 'name' | null;
+  paidKnown: boolean; paidVia: string; onboardingStarted: boolean;
+  feedback: { id: string; status: string; rating: number | null; notes: string; link: string; newDate: string; created: string }[];
+  reviews: { id: number; kind: string; title: string; summary: string; link: string; score: number | null; created: string }[];
+  prep: { id: number; title: string; created: string } | null; needs: SalesAction[];
+  money?: { monthly: number | null; perCall: number | null; forecast: number | null; offer: number | null; cash: number | null; currency: string; paidTotal: number | null };
+}
+export interface SalesDetail {
+  deal: SalesDeal; calls: { what: string; day: string; link: string }[]; onboarding: { step: string; done: boolean; note: string }[]; tasks: { id: string; task: string; stage: string }[];
+  links: { airtable: string; close: string; client: string; feedback: string[]; agreements: { id: string; tool: string; title: string; state: AgreementState; url: string; reviewDoc: string; airtable: string }[] };
+  notes: SalesNote[]; readAt: string;
+}
