@@ -23,6 +23,8 @@ import { askVisible, finishAsk, getAsk, isSnooze, listAsks, quietItem, snoozeAsk
 import { loadNeeds, needCounts } from './needs.js';
 import { actOnThread, listInbox, threadDetail } from './inbox.js';
 import { calendarInvite, replierDetail, saveReplier } from './replier.js';
+import { campaignDetail, listCampaigns } from './campaigns.js';
+import { deliverabilityView } from './deliverability.js';
 
 export interface HqDeps { at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string }
 
@@ -275,6 +277,17 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         json(res, r.status, r.error ? { error: r.error } : { ok: true, status: r.result });
         return true;
       }
+      // Campaigns (Step 3): read only. Needs action first; pipeline, campaign page, Activity log. No money in it.
+      if (p === '/hq/api/campaigns' && req.method === 'GET') {
+        json(res, 200, await listCampaigns(needAt(), db, { client: url.searchParams.get('client') ?? undefined, refresh: url.searchParams.get('refresh') === '1' }));
+        return true;
+      }
+      m = p.match(/^\/hq\/api\/campaigns\/(rec[A-Za-z0-9]{14})$/);
+      if (m && req.method === 'GET') {
+        const d = await campaignDetail(needAt(), db, m[1], owner, cfg.airtableBaseId);
+        if (!d) json(res, 404, { error: 'no such campaign' }); else json(res, 200, d);
+        return true;
+      }
       // Client hub → AI replier: everyone reads; only the owner saves or asks for a calendar link (checked here).
       m = p.match(/^\/hq\/api\/clients\/(rec[A-Za-z0-9]{14})\/(replier|calendar-invite)$/);
       if (m) {
@@ -292,6 +305,10 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         json(res, status, error ? { error } : { ok: true, ...rest });
         return true;
       }
+
+      // Deliverability: inboxes and domains, read only (sick first; tabs: inboxes, placement, domains).
+      m = p.match(/^\/hq\/api\/deliverability(?:\/(inboxes|placement|domains))?$/);
+      if (m && req.method === 'GET') { json(res, 200, await deliverabilityView(needAt(), db, cfg, m[1] ?? 'attention', url.searchParams)); return true; }
 
       if (p === '/hq/api/agents' && req.method === 'GET') { json(res, 200, { agents: await agentCards(db, at, user) }); return true; }
       m = p.match(/^\/hq\/api\/agents\/([A-Za-z]+)$/);
