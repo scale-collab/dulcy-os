@@ -24,7 +24,6 @@ const TABS = [
   { key: 'campaigns', label: 'Campaigns', icon: 'megaphone', count: 'campaigns' },
   { key: 'deliverability', label: 'Deliverability', icon: 'mail', count: 'deliverability' },
   { key: 'clients', label: 'Clients', icon: 'briefcase', count: '' },
-  // Deliverability goes after Campaigns in the sidebar (on the phone: an icon at the top).
   { key: 'needs', label: 'Needs you', icon: 'bell', count: 'needs' },
   { key: 'agents', label: 'Team', icon: 'users', count: '' },
   { key: 'chat', label: 'Chat', icon: 'message', count: '' },
@@ -138,7 +137,7 @@ function MobileHeader({ onSignOut, owner, active }: { onSignOut: () => void; own
   return (
     <header className="sticky top-0 z-20 border-b border-line bg-bg/85 backdrop-blur-md md:hidden">
       <div className="flex h-14 items-center justify-between pl-4 pr-2">
-        <button onClick={() => go('today')} className="flex min-h-11 items-center gap-2.5 font-semibold tracking-tight"><Logo className="h-7 w-7" />Dulcy HQ</button>
+        <button onClick={() => go('today')} className="flex min-h-11 items-center gap-2.5 font-semibold tracking-tight"><Logo className="h-7 w-7" /><span className="sr-only">Dulcy HQ</span></button>
         <div className="flex items-center">
           <IconButton icon="megaphone" label="Campaigns" active={active === 'campaigns'} onClick={() => go('campaigns')} />
           <IconButton icon="users" label="Team" active={active === 'agents'} onClick={() => go('agents')} />
