@@ -9,7 +9,7 @@ import { NoteList } from './Inbox';
 export const CAMPAIGN_VIEWS = [
   { key: 'action', label: 'Needs action', short: 'Action' },
   { key: 'live', label: 'All live', short: 'Live' },
-  { key: 'building', label: 'Building', short: 'Building' },
+  { key: 'building', label: 'Building', short: 'Build' },
   { key: 'pipeline', label: 'Pipeline', short: 'Pipeline' },
 ] as const;
 type View = (typeof CAMPAIGN_VIEWS)[number]['key'];
@@ -49,13 +49,15 @@ function CampaignsList({ view, channel, client }: { view: View; channel: string;
   const ch = channels.find((c) => c.key === channel);
   const header = (
     <PageTitle title="Campaigns" kicker={d ? `${d.counts.live} live · ${d.counts.building} building${client ? ` · ${d.clients.find((c) => c.key === client)?.name ?? ''}` : ''}` : 'Every campaign, every client'}
-      sub="What needs action first. Everything else is one tap deeper."
-      right={<IconButton icon="refresh" label="Refresh" onClick={() => load(true)} className={cx('border border-line bg-surface', busy && '[&_svg]:animate-spin')} />} />
+      sub="What needs action first. Everything else is one tap deeper." />
   );
   return (
     <div>
       {header}
-      <ChannelSwitch channels={channels} on={channel} onPick={(k) => route(k === 'email' ? view : k)} />
+      <div className="flex items-center gap-2">
+        <ChannelSwitch channels={channels} on={channel} onPick={(k) => route(k === 'email' ? view : k)} />
+        <IconButton icon="refresh" label="Refresh" onClick={() => load(true)} className={cx('border border-line bg-surface', busy && '[&_svg]:animate-spin')} />
+      </div>
       {error && <div className="mt-4"><ErrorBox error={error} retry={() => load()} /></div>}
       {!d && !error && <div className="mt-4"><PageSkeleton kind="list" /></div>}
       {d && ch && !ch.live && (
@@ -69,11 +71,11 @@ function CampaignsList({ view, channel, client }: { view: View; channel: string;
 function ChannelSwitch({ channels, on, onPick }: { channels: Channel[]; on: string; onPick: (k: string) => void }) {
   const list = channels.length ? channels : [{ key: 'email', label: 'Email', live: true, reason: '' }, { key: 'linkedin', label: 'LinkedIn', live: false, reason: '' }, { key: 'caller', label: 'AI caller', live: false, reason: '' }] as Channel[];
   return (
-    <div role="tablist" aria-label="Channel" className="grid grid-cols-3 gap-1 rounded-xl border border-line bg-sunken p-1 sm:inline-grid sm:w-auto">
+    <div role="tablist" aria-label="Channel" className="grid min-w-0 flex-1 grid-cols-3 gap-1 rounded-xl border border-line bg-sunken p-1 sm:flex-none">
       {list.map((c) => (
         <button key={c.key} role="tab" aria-selected={on === c.key} onClick={() => onPick(c.key)}
-          className={cx('flex min-h-10 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-semibold transition', on === c.key ? 'bg-surface text-fg shadow-card' : 'text-muted hover:text-fg')}>
-          {c.label}{!c.live && <span className="text-xs font-medium text-faint">paused</span>}
+          className={cx('flex min-h-10 min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-semibold transition sm:px-3', on === c.key ? 'bg-surface text-fg shadow-card' : 'text-muted hover:text-fg')}>
+          <span className="truncate">{c.label}</span>{!c.live && <><span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-dot-idle sm:hidden" /><span className="hidden text-xs font-medium text-faint sm:inline">paused</span><span className="sr-only sm:hidden">paused</span></>}
         </button>
       ))}
     </div>
@@ -103,7 +105,7 @@ function EmailBody({ d, view, client, route }: { d: CampaignList; view: View; cl
           const on = x.key === view, n = count(x.key);
           return (
             <button key={x.key} role="tab" aria-selected={on} onClick={() => route(x.key)}
-              className={cx('flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 text-sm font-semibold transition sm:px-3.5', on ? 'bg-ink text-ink-fg shadow-card' : 'text-muted hover:bg-hover hover:text-fg')}>
+              className={cx('flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-xl px-1 text-sm font-semibold transition sm:gap-1.5 sm:px-3.5', on ? 'bg-ink text-ink-fg shadow-card' : 'text-muted hover:bg-hover hover:text-fg')}>
               <span className="truncate sm:hidden">{x.short}</span><span className="hidden sm:inline">{x.label}</span>
               {x.key !== 'pipeline' && <span className={cx('tabular rounded-full px-1.5 text-xs', on ? 'bg-ink-fg/15' : 'border border-line bg-sunken text-fg-2', x.key === 'action' && n > 0 && !on && 'border-transparent bg-accent text-accent-fg')}>{n}</span>}
             </button>
@@ -111,7 +113,7 @@ function EmailBody({ d, view, client, route }: { d: CampaignList; view: View; cl
         })}
       </div>
       {d.clients.length > 1 && (
-        <div aria-label="Filter by client" className="mt-3 flex flex-wrap gap-1.5">
+        <div aria-label="Filter by client" className="-mx-4 mt-3 flex gap-1.5 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0 [scrollbar-width:none]">
           <Chip on={!client} onClick={() => route(view, '')}>All clients</Chip>
           {d.clients.map((c) => <Chip key={c.key} on={client === c.key} onClick={() => route(view, client === c.key ? '' : c.key)}>{c.name} <span className="tabular opacity-70">{c.count}</span></Chip>)}
         </div>
@@ -134,7 +136,7 @@ const STEP_ORDER = ['list', 'copy', 'review', 'launch', 'live', 'sixty', 'next']
 const stepIndex = (r: CampaignRow) => (r.now ? STEP_ORDER.indexOf(r.now.key) : 7);
 
 function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: ReactNode }) {
-  return <button onClick={onClick} aria-pressed={on} className={cx('inline-flex min-h-9 max-w-full items-center gap-1.5 truncate rounded-full border px-3 text-sm font-medium transition', on ? 'border-accent bg-accent-soft text-accent-ink' : 'border-line bg-surface text-fg-2 hover:bg-hover')}>{children}</button>;
+  return <button onClick={onClick} aria-pressed={on} className={cx('inline-flex min-h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-sm font-medium transition', on ? 'border-accent bg-accent-soft text-accent-ink' : 'border-line bg-surface text-fg-2 hover:bg-hover')}>{children}</button>;
 }
 function NeedPill({ kind }: { kind: NeedKind }) { return <Pill tone={NEED[kind].tone}>{NEED[kind].label}</Pill>; }
 
@@ -261,14 +263,14 @@ function Pipeline({ rows, showClient }: { rows: CampaignRow[]; showClient: boole
   if (!rows.length) return <Card><Empty icon="layers" title="No campaigns" sub="Nothing live or being built." /></Card>;
   return (
     <Card className="overflow-hidden p-0">
-      <div className="hidden grid-cols-[minmax(0,14rem)_minmax(0,1fr)] gap-4 border-b border-line bg-sunken px-5 py-2.5 text-xs font-medium text-muted md:grid">
+      <div className="hidden grid-cols-[minmax(0,14rem)_minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] border-b border-line bg-sunken px-5 py-2.5 text-xs font-medium text-muted md:grid">
         <span>Campaign</span>
         <span className="grid grid-cols-7 gap-1 text-center">{['List', 'Copy', 'Review', 'Launch', 'Live', '60%', 'Next'].map((x) => <span key={x}>{x}</span>)}</span>
       </div>
       <ul className="divide-y divide-line">
         {rows.map((r) => (
           <li key={r.id}>
-            <button onClick={() => go(`campaigns/${r.id}`)} className="grid w-full gap-2 px-4 py-3 text-left transition hover:bg-hover sm:px-5 md:grid-cols-[minmax(0,14rem)_minmax(0,1fr)] md:items-center md:gap-4">
+            <button onClick={() => go(`campaigns/${r.id}`)} className="grid w-full gap-2 px-4 py-3 text-left transition hover:bg-hover sm:px-5 md:grid-cols-[minmax(0,14rem)_minmax(0,1fr)] md:items-center lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] md:gap-4">
               <div className="min-w-0">
                 <div className="truncate text-sm font-semibold text-fg">{r.name}</div>
                 <div className="truncate text-xs text-muted">{[showClient ? r.client : '', r.now ? `${r.now.label}${r.now.note ? ` · ${r.now.note}` : ''}` : 'done'].filter(Boolean).join(' · ')}</div>
@@ -290,7 +292,7 @@ function Steps({ steps, small, className, hideLabelsOnDesktop }: { steps: Campai
     <ol aria-label="Steps" className={cx('grid grid-cols-7 gap-1', className)}>
       {steps.map((x) => (
         <li key={x.key} title={`${x.label}: ${STATE_WORD[x.state]}${x.note ? ` (${x.note})` : ''}`} className="min-w-0">
-          <span className={cx('block rounded-full', small ? 'h-1.5' : 'h-2', x.state === 'done' ? 'bg-accent' : x.state === 'now' ? 'bg-warn' : x.state === 'bad' ? 'bg-bad' : 'bg-line')} />
+          <span className={cx('block rounded-full', small ? 'h-1.5' : 'h-2', x.state === 'done' ? 'bg-accent' : x.state === 'now' ? 'bg-accent/35 ring-1 ring-inset ring-accent' : x.state === 'bad' ? 'bg-bad' : 'bg-line')} />
           <span className={cx('mt-1 block truncate text-center', small ? 'text-[10px]' : 'text-xs', x.state === 'now' || x.state === 'bad' ? 'font-semibold text-fg' : 'text-muted', hideLabelsOnDesktop && 'md:sr-only')}>{SHORT[x.key]}</span>
           <span className="sr-only">{STATE_WORD[x.state]}</span>
         </li>
