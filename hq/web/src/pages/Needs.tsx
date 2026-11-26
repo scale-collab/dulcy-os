@@ -1,10 +1,42 @@
 // "Needs you": only what the agents need from you, each with why and one action.
 // Phone: one column, the action full width at the bottom of each card. Computer: Do now | When you can.
+// Day switcher (Alex 2026-11-25): Yesterday = what got handled; Today = what is due now, ranked
+// (money and client-facing first, then the oldest); Tomorrow = back from "Not now" + due tomorrow.
 import { useCallback, useEffect, useState } from 'react';
-import { api, type Need, type NeedCounts, type NeedLink, type User } from '../api';
-import { Avatar, Button, cx, Empty, ErrorBox, go, Icon, IconButton, Label, Markdown, PageSkeleton, PageTitle, setCount, timeAgo } from '../ui';
+import { api, type Need, type NeedCounts, type NeedDay, type NeedLink, type User } from '../api';
+import { Avatar, Button, cx, Empty, ErrorBox, go, Icon, IconButton, Label, Markdown, PageSkeleton, PageTitle, Pill, setCount, timeAgo, useRoute } from '../ui';
 
-interface NeedsData { items: Need[]; counts: NeedCounts; errors: string[] }
+interface NeedsData { day?: NeedDay; date?: string; items: Need[]; counts: NeedCounts; errors: string[] }
+const DAYS: NeedDay[] = ['yesterday', 'today', 'tomorrow'];
+const DAY_LABEL: Record<NeedDay, string> = { yesterday: 'Yesterday', today: 'Today', tomorrow: 'Tomorrow' };
+/** "Wed, Nov 25" for a YYYY-MM-DD (New York) date. */
+const dateLabel = (ymd?: string) => (ymd ? new Date(`${ymd}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }) : '');
+const nyToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+const shift = (ymd: string, n: number) => { const d = new Date(`${ymd}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+
+function DaySwitch({ day, onPick }: { day: NeedDay; onPick: (d: NeedDay) => void }) {
+  const today = nyToday();
+  return (
+    <div role="tablist" aria-label="Day" className="mb-5 grid grid-cols-3 gap-1 rounded-2xl border border-line bg-sunken p-1 sm:inline-grid sm:w-auto sm:min-w-[420px]">
+      {DAYS.map((d, i) => {
+        const on = d === day;
+        return (
+          <button key={d} role="tab" aria-selected={on} onClick={() => onPick(d)}
+            className={cx('flex min-h-12 flex-col items-center justify-center rounded-xl px-2 leading-tight transition', on ? 'bg-surface text-fg shadow-card' : 'text-muted hover:text-fg')}>
+            <span className="text-[15px] font-semibold">{DAY_LABEL[d]}</span>
+            <span className="text-[11px] font-medium text-muted">{dateLabel(shift(today, i - 1))}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Small tags on Today's cards: why it ranks first. */
+function Tags({ n }: { n: Need }) {
+  if (!n.money && !n.clientFacing) return null;
+  return <>{n.money && <Pill tone="warn" className="px-2 py-0">Money</Pill>}{n.clientFacing && !n.money && <Pill tone="info" className="px-2 py-0">Client</Pill>}</>;
+}
 
 /** An action link: an https:// link opens in a new tab; anything else is an HQ route. */
 export const isExternal = (href: string) => /^https:\/\//i.test(href);
@@ -27,17 +59,21 @@ export function NeedFace({ n, size = 'md' }: { n: Pick<Need, 'agent' | 'icon'>; 
 export const whoLabel = (n: Pick<Need, 'agent' | 'kind'>) => (n.kind === 'signups' ? 'Sign-ups' : n.agent);
 
 export default function Needs({ user }: { user: User }) {
+  const route = useRoute();
+  const day: NeedDay = DAYS.includes(route[1] as NeedDay) ? (route[1] as NeedDay) : 'today';
   const [d, setD] = useState<NeedsData | null>(null);
   const [error, setError] = useState('');
   const [gone, setGone] = useState<string[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const load = useCallback(() => {
     setError(''); setRefreshing(true);
-    api<NeedsData>('/needs').then((x) => { setD(x); setGone([]); setCount('needs', x.counts.total); }).catch((e) => setError(e.message)).finally(() => setRefreshing(false));
-  }, []);
-  useEffect(load, [load]);
+    api<NeedsData>(`/needs${day === 'today' ? '' : `?day=${day}`}`).then((x) => { setD({ ...x, day }); setGone([]); if (day === 'today') setCount('needs', x.counts.total); })
+      .catch((e) => setError(e.message)).finally(() => setRefreshing(false));
+  }, [day]);
+  useEffect(() => { setD(null); load(); }, [load]);
   const items = (d?.items ?? []).filter((i) => !gone.includes(i.key));
-  useEffect(() => { if (d) setCount('needs', items.length); }, [d, items.length]);
+  useEffect(() => { if (d && day === 'today') setCount('needs', items.length); }, [d, day, items.length]);
+  const pick = (x: NeedDay) => go(x === 'today' ? 'needs' : `needs/${x}`);
 
   const act = async (n: Need, what: 'done' | 'tomorrow' | 'monday') => {
     setGone((g) => [...g, n.key]);
@@ -49,24 +85,57 @@ export default function Needs({ user }: { user: User }) {
   const refresh = <span className="hidden sm:block"><IconButton icon="refresh" label="Refresh" onClick={load} className={cx('border border-line bg-surface', refreshing && '[&_svg]:animate-spin')} /></span>;
   const refreshPhone = <button onClick={load} aria-label="Refresh" className="-my-2 -mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-xl text-muted hover:bg-hover hover:text-fg sm:hidden"><Icon name="refresh" size={17} className={refreshing ? 'animate-spin' : undefined} /></button>;
   const title = 'Needs you';
-  if (error && !d) return <><PageTitle title={title} right={refresh} /><ErrorBox error={error} retry={load} /></>;
-  if (!d) return <><PageTitle title={title} right={refresh} /><PageSkeleton kind="list" /></>;
+  const switcher = <DaySwitch day={day} onPick={pick} />;
+  if (error && !d) return <><PageTitle title={title} right={refresh} />{switcher}<ErrorBox error={error} retry={load} /></>;
+  if (!d || d.day !== day) return <><PageTitle title={title} right={refresh} />{switcher}<PageSkeleton kind="list" /></>;
 
   const now = items.filter((i) => i.group === 'now');
   const later = items.filter((i) => i.group === 'later');
   const first = (user.name || '').split(' ')[0] || 'you';
+  const kicker = day === 'yesterday' ? `${items.length ? `${items.length} thing${items.length === 1 ? '' : 's'}` : 'Nothing'} handled on ${dateLabel(d.date)}`
+    : day === 'tomorrow' ? `${items.length ? `${items.length} thing${items.length === 1 ? '' : 's'}` : 'Nothing'} coming up on ${dateLabel(d.date)}`
+      : items.length ? `${items.length} thing${items.length === 1 ? '' : 's'} the team needs from ${first}` : 'Nothing waiting';
+  const sub = day === 'yesterday' ? 'What you and the team finished, so nothing gets asked twice.'
+    : day === 'tomorrow' ? 'What comes back from "Not now", and what is due.'
+      : items.length ? 'Only what needs your hands. Money and client work first, then the oldest.' : undefined;
+  const warn = d.errors.length > 0 && (
+    <div role="status" className="mb-4 flex items-start gap-2.5 rounded-xl border border-line bg-warn-soft px-4 py-3 text-sm text-warn">
+      <Icon name="alert" size={16} className="mt-0.5" />
+      <span className="min-w-0">Couldn't read {d.errors.join(' and ')}. The rest is up to date.</span>
+    </div>
+  );
+  if (day !== 'today') {
+    return (
+      <div>
+        <PageTitle title={title} right={refresh} kicker={<span className="flex items-center justify-between gap-2"><span>{kicker}</span>{refreshPhone}</span>} sub={sub} />
+        {switcher}
+        {error && <div className="mb-4"><ErrorBox error={error} /></div>}
+        {warn}
+        {!items.length ? (
+          <div className="rounded-3xl border border-line bg-surface shadow-card">
+            {day === 'yesterday'
+              ? <Empty icon="history" title="Nothing was handled yesterday" sub="Decisions you made, asks you finished, Riley's fixes and the tasks the agents closed show up here." />
+              : <Empty icon="clock" tone="good" title="Nothing lined up for tomorrow" sub={'What you put off with "Not now" and what is due tomorrow shows up here.'} />}
+          </div>
+        ) : day === 'yesterday' ? (
+          <ul className="grid items-start gap-3 lg:grid-cols-2">{items.map((n) => <li key={n.key} className="min-w-0"><HandledCard n={n} /></li>)}</ul>
+        ) : (
+          <div className="grid items-start gap-8 lg:grid-cols-2 lg:gap-6">
+            <Group title="Due tomorrow" dot="bg-dot-warn" items={now} empty="Nothing due tomorrow." onAct={act} />
+            <Group title="Back tomorrow" dot="bg-dot-idle" items={later} empty="Nothing comes back tomorrow." onAct={act} />
+          </div>
+        )}
+      </div>
+    );
+  }
   return (
     <div>
       <PageTitle title={title} right={refresh}
-        kicker={<span className="flex items-center justify-between gap-2"><span>{items.length ? `${items.length} thing${items.length === 1 ? '' : 's'} the team needs from ${first}` : 'Nothing waiting'}</span>{refreshPhone}</span>}
-        sub={items.length ? 'Only what needs your hands. Each card says why, and the one thing to do.' : undefined} />
+        kicker={<span className="flex items-center justify-between gap-2"><span>{kicker}</span>{refreshPhone}</span>}
+        sub={sub} />
+      {switcher}
       {error && <div className="mb-4"><ErrorBox error={error} /></div>}
-      {d.errors.length > 0 && (
-        <div role="status" className="mb-4 flex items-start gap-2.5 rounded-xl border border-line bg-warn-soft px-4 py-3 text-sm text-warn">
-          <Icon name="alert" size={16} className="mt-0.5" />
-          <span className="min-w-0">Couldn't read {d.errors.join(' and ')}. The rest is up to date.</span>
-        </div>
-      )}
+      {warn}
 
       {!items.length ? (
         <div className="rounded-3xl border border-line bg-surface shadow-card">
@@ -125,7 +194,8 @@ function NeedCard({ n, onAct }: { n: Need; onAct: (n: Need, what: 'done' | 'tomo
         <div className="min-w-0 flex-1">
           <div className="flex min-h-5 flex-wrap items-center gap-x-1.5 text-xs text-muted">
             <span className="font-semibold text-fg-2">{whoLabel(n)}</span>
-            {n.at && <><span aria-hidden="true">·</span><span>{timeAgo(n.at)}</span></>}
+            {n.outcome ? <><span aria-hidden="true">·</span><span className="font-medium text-fg-2">{n.outcome}</span></> : n.at && <><span aria-hidden="true">·</span><span>{timeAgo(n.at)}</span></>}
+            <span className="ml-0.5 inline-flex gap-1"><Tags n={n} /></span>
           </div>
           <h3 className="mt-0.5 break-words text-base font-semibold leading-snug text-fg">{n.title}</h3>
           {n.why && <p className="mt-1 break-words text-sm leading-relaxed text-muted">{n.why}</p>}
@@ -167,6 +237,36 @@ function NeedCard({ n, onAct }: { n: Need; onAct: (n: Need, what: 'done' | 'tomo
             </Button>
           )}
         </div>
+      )}
+    </article>
+  );
+}
+
+/** Yesterday: one thing that got handled (read only). Steps (an agent's closed tasks) fold open. */
+function HandledCard({ n }: { n: Need }) {
+  const [open, setOpen] = useState(false);
+  const hasSteps = !!n.steps.trim();
+  return (
+    <article aria-label={`${whoLabel(n)}: ${n.title}`} className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-card sm:p-5">
+      <div className="flex items-start gap-3">
+        <NeedFace n={n} />
+        <div className="min-w-0 flex-1">
+          <div className="flex min-h-5 flex-wrap items-center gap-x-1.5 text-xs text-muted">
+            <span className="font-semibold text-fg-2">{whoLabel(n)}</span>
+            {n.when && <><span aria-hidden="true">·</span><span>{new Date(n.when).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' })}</span></>}
+          </div>
+          <h3 className="mt-0.5 break-words text-base font-semibold leading-snug text-fg">{n.title}</h3>
+          {n.why && <p className="mt-1 break-words text-sm leading-relaxed text-muted">{n.why}</p>}
+          {n.outcome && <div className="mt-2"><Pill tone="good" icon="check">{n.outcome}</Pill></div>}
+        </div>
+      </div>
+      {hasSteps && (
+        <>
+          {open && <div className="mt-4 rounded-xl border border-line bg-sunken px-4 py-3 anim-fade"><Markdown small text={n.steps} /></div>}
+          <div className="mt-3 flex justify-end">
+            <Button tone="ghost" compact icon="list" onClick={() => setOpen((v) => !v)} className={cx('border border-line sm:border-transparent', open && '[&_svg]:rotate-180')}>{open ? 'Hide' : 'See each one'}</Button>
+          </div>
+        </>
       )}
     </article>
   );

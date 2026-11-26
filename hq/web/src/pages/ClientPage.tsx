@@ -146,7 +146,7 @@ export default function ClientPage({ id, user, tab, sub }: { id: string; user: U
                 {d.tasks.map((t) => (
                   <li key={t.id} className="flex items-start gap-3 px-5 py-3">
                     <Avatar name={t.agent} size="sm" />
-                    <div className="min-w-0 flex-1"><div className="text-[15px] font-medium text-fg">{t.title}</div><div className="text-xs text-muted">{[t.agent, t.due ? dueLabel(t.due) : '', t.notes].filter(Boolean).join(' · ')}</div></div>
+                    <div className="min-w-0 flex-1"><div className="text-[15px] font-medium text-fg">{t.title}</div><div className="text-xs text-muted">{[t.agent, t.due ? dueLabel(t.due) : '', t.note || t.notes].filter(Boolean).join(' · ')}</div></div>
                   </li>
                 ))}
               </ul>

@@ -224,7 +224,7 @@ export async function clientDetail(at: HqAirtable, db: Db, id: string, canSeeMon
   if (!client) return null;
   const [activity, tasks] = await Promise.all([
     clientActivity(at, client.workspaces).catch(() => [] as ClientActivity[]),
-    agentTasks(db).then((ts) => ts.filter((t) => t.client && clientKey(t.client) === client.key)),
+    agentTasks(db).then((ts) => ts.filter((t) => t.client && clientKey(t.client) === client.key && (canSeeMoney || !OWNER_ONLY.includes(t.agent)))),
   ]);
   const decisions = src.decisions.filter((d) => clientKey(d.client) === client.key || client.workspaces.some((w) => clientKey(w.name) === clientKey(d.client)))
     .filter((d) => canSeeMoney || (d.pile !== 'Money' && !OWNER_ONLY.includes(d.agent)))
