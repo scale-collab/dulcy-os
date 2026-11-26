@@ -25,7 +25,11 @@
       "mcp__Google_Sheets__get_values",
       "mcp__Google_Sheets__get_spreadsheet",
       "mcp__github__pull_request_read",
-      "mcp__github__get_file_contents"
+      "mcp__github__get_file_contents",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push -u origin claude/:*)",
+      "Bash(git push origin claude/:*)"
     ]
   }
 }

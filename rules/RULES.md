@@ -243,3 +243,8 @@ Format: `- [date] rule. (why / source)`
 - **Rule:** work an agent does (new campaigns, bounce checks, inbox rests…) is a task on **that agent's** list in HQ (Team), with status, due date and a progress note. Alex sees it in "Needs you" only when the agent needs him. Ada's morning brief flags late or stuck tasks and re-queues them once a day.
 - **Owners:** campaigns, bounce checks and inbox rests → Atlas (matches Decisions and the Activity Log). Riley stays systems-only.
 - **Why:** Alex: "it all gets sent to my project management, it's a little too much… the task should be assigned to them, and we could see and ask for progress." And: "I need this to be very autonomous."
+
+## Agents may commit and push their own fixes (Alex, 2026-11-26)
+- **Rule:** agents (Riley's scheduled runs included) may `git add`, `git commit` and push to their own `claude/...` branches. Allowed in `.claude/settings.json`.
+- **Still needs Alex:** merging to `main` and deploying stay with Alex or the main session after tests pass; live system changes (n8n, Make, Airtable automations) still need Alex's ✅ until he says fix freely.
+- **Why:** Alex answered "yes" to "should Riley and the agents be allowed to push their own code fixes?"
