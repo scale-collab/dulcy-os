@@ -25,9 +25,9 @@ export function Pipeline() {
               ))}
             </div>
             {d.deals.count > 0 && <p className="text-sm text-fg-2"><Icon name="dollar" size={15} className="mr-1 inline text-good" />{d.deals.count} deal{d.deals.count === 1 ? '' : 's'} closed, worth {money(d.deals.value)} (as you recorded them).</p>}
-            <div className="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0 xl:grid-cols-4">
+            <div className="grid gap-6 md:grid-cols-2 md:gap-4 xl:grid-cols-4">
               {shown.map((col) => (
-                <section key={col.stage} className="w-[82%] shrink-0 snap-start md:w-auto">
+                <section key={col.stage} className="min-w-0">
                   <SectionHeader title={<>{stageLabel(col.stage)} <span className="tabular font-normal text-muted">{col.leads.length}</span></>} />
                   <div className="space-y-2">
                     {!col.leads.length && <div className="rounded-xl border border-dashed border-line p-4 text-center text-sm text-muted">None yet</div>}

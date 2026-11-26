@@ -22,6 +22,12 @@ export function Home({ session }: { session: Session }) {
             </div>
           </Card>
 
+          {(d.todo.review > 0 || d.todo.feedback > 0) && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {d.todo.review > 0 && <Todo icon="megaphone" title={`${d.todo.review === 1 ? 'A campaign is' : `${d.todo.review} campaigns are`} waiting for your review`} sub="Read the plan and the emails, then approve or ask for changes." onClick={() => go('campaigns')} />}
+              {d.todo.feedback > 0 && <Todo icon="star" title={`${d.todo.feedback} call${d.todo.feedback === 1 ? '' : 's'} need${d.todo.feedback === 1 ? 's' : ''} your feedback`} sub="30 seconds each: how did the call go?" onClick={() => go('feedback')} />}
+            </div>
+          )}
           <div className="grid gap-4 lg:grid-cols-3">
             <Card className="flex flex-col">
               <SectionHeader title="Next meeting with us" icon="calendar" />
@@ -49,12 +55,6 @@ export function Home({ session }: { session: Session }) {
             </Card>
           </div>
 
-          {(d.todo.review > 0 || d.todo.feedback > 0) && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {d.todo.review > 0 && <Todo icon="megaphone" title={`${d.todo.review === 1 ? 'A campaign is' : `${d.todo.review} campaigns are`} waiting for your review`} sub="Read the plan and the emails, then approve or ask for changes." onClick={() => go('campaigns')} />}
-              {d.todo.feedback > 0 && <Todo icon="star" title={`${d.todo.feedback} call${d.todo.feedback === 1 ? '' : 's'} need${d.todo.feedback === 1 ? 's' : ''} your feedback`} sub="30 seconds each: how did the call go?" onClick={() => go('feedback')} />}
-            </div>
-          )}
           <HealthLine h={d.health} />
           <Updated at={d.readAt} />
         </div>
@@ -82,6 +82,17 @@ function Todo({ icon, title, sub, onClick }: { icon: string; title: string; sub:
   );
 }
 
+/** The four channels as tabs at the top of each results page (the phone's Results tab opens Email). */
+function Channels({ on }: { on: string }) {
+  return (
+    <nav aria-label="Channels" className="mb-5 flex gap-1 overflow-x-auto rounded-xl border border-line bg-sunken p-1 md:hidden">
+      {([['email', 'Email'], ['linkedin', 'LinkedIn'], ['ai-caller', 'AI caller'], ['mail', 'Direct mail']] as const).map(([k, l]) => (
+        <button key={k} onClick={() => go(k)} aria-current={on === k ? 'page' : undefined} className={cx('min-h-10 shrink-0 flex-1 rounded-lg px-3 text-sm font-medium', on === k ? 'bg-surface text-fg shadow-card' : 'text-muted')}>{l}</button>
+      ))}
+    </nav>
+  );
+}
+
 /* ---------- Email ---------- */
 const PERIOD_OPTS = [['Last 10 days', '10 days'], ['Last 30 days', '30 days'], ['Last 60 days', '60 days'], ['Last 120 days', '120 days'], ['All time', 'All time']] as const;
 type PeriodKey = (typeof PERIOD_OPTS)[number][0];
@@ -89,6 +100,8 @@ export function Email() {
   const s = useLoad<EmailResults>('/portal/email');
   const [p, setP] = useState<PeriodKey>('Last 30 days');
   return (
+    <>
+    <Channels on="email" />
     <Page title="Email results" sub="Your cold email campaigns: what was sent, who replied, and the meetings booked." state={s} kind="grid">
       {(d) => {
         if (!d.active) return <NotActive channel="Cold email" icon="mail" />;
@@ -118,6 +131,7 @@ export function Email() {
         );
       }}
     </Page>
+    </>
   );
 }
 
@@ -170,6 +184,8 @@ export function Linkedin() {
   const s = useLoad<LinkedinResults>('/portal/linkedin');
   const [p, setP] = useState<PeriodKey>('Last 30 days');
   return (
+    <>
+    <Channels on="linkedin" />
     <Page title="LinkedIn results" sub="Connection requests, replies and meetings from LinkedIn." state={s} kind="grid">
       {(d) => {
         if (!d.active) return <NotActive channel="LinkedIn" icon="users" />;
@@ -207,6 +223,7 @@ export function Linkedin() {
         );
       }}
     </Page>
+    </>
   );
 }
 
@@ -214,6 +231,8 @@ export function Linkedin() {
 export function AiCallerPage() {
   const s = useLoad<AiCaller>('/portal/ai-caller');
   return (
+    <>
+    <Channels on="ai-caller" />
     <Page title="AI caller results" sub="Calls our AI caller made to your leads." state={s} kind="grid">
       {(d) => !d.active ? <NotActive channel="The AI caller" icon="phone" /> : (
         <div className="space-y-6">
@@ -226,12 +245,14 @@ export function AiCallerPage() {
         </div>
       )}
     </Page>
+    </>
   );
 }
 
 export function DirectMail({ session }: { session: Session }) {
   return (
     <div>
+      <Channels on="mail" />
       <h1 className="mb-6 text-[26px] font-bold leading-tight tracking-tight text-fg sm:text-[28px]">Direct mail results</h1>
       {session.channels.directMail
         ? <Card><Empty icon="mail" title="Direct mail numbers are not in your portal yet" sub="Ask your Dulcy team for the latest direct mail report." /></Card>

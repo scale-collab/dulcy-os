@@ -159,7 +159,7 @@ function PortalRequest({ u, act }: { u: HqUserRow; act: (u: HqUserRow, a: string
       )}
       <div className="mt-4 grid grid-cols-2 gap-2">
         <Button tone="danger" icon="x" disabled={busy} onClick={() => void run('deny')}>Deny</Button>
-        <Button tone="accent" icon="check" disabled={busy || !rec} onClick={() => void run('link', { clientRec: rec })}>{u.suggest && rec === u.suggest.id ? `Link to ${u.suggest.name}` : 'Link'}</Button>
+        <Button tone="accent" icon="check" disabled={busy || !rec} onClick={() => void run('link', { clientRec: rec })}>{u.suggest && rec === u.suggest.id ? <><span className="sm:hidden">Link</span><span className="hidden truncate sm:inline">Link to {u.suggest.name}</span></> : 'Link'}</Button>
       </div>
     </Card>
   );

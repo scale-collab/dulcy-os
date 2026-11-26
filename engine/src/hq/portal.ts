@@ -197,6 +197,17 @@ export function findMine(rows: AirtableRecord[], key: string): AirtableRecord | 
 }
 
 const bookedAt = (f: Record<string, unknown>) => val(f[XF.meetingBookedAt]) || val(f[XF.callBookedAt]);
+/**
+ * The call has happened, so feedback is due: "Date of Call Booked" is the call's day (Airtable's Call
+ * Feedback Sync writes a new date there), so the day after it; with only "Meeting Booked At" (the day
+ * it was booked, not held: UNKNOWN when the call is), two days after booking.
+ */
+export const callHappened = (f: Record<string, unknown>, now: number) => {
+  const callDay = val(f[XF.callBookedAt]).slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(callDay)) return callDay < new Date(now).toISOString().slice(0, 10);
+  const t = Date.parse(val(f[XF.meetingBookedAt]));
+  return Number.isFinite(t) && t <= now - 2 * DAY;
+};
 const isBooked = (f: Record<string, unknown>) => BOOKED_STAGES.includes(val(f[EF.stage])) || !!bookedAt(f);
 const isHanded = (f: Record<string, unknown>) => f[EF.clientHandling] === true || val(f[RA.ownership]) === 'Handoff';
 const isPositive = (f: Record<string, unknown>) => INTERESTED.includes(val(f[EF.leadStatus])) || POSITIVE_INTENT.includes(val(f[RA.intent]));
@@ -352,7 +363,7 @@ export function buildLead(mine: Mine, key: string, now = Date.now()) {
   const e = findMine(mine.emails.filter((x) => visibleLead(x.fields)), key);
   if (!e) return null;
   const f = e.fields; const booked = bookedAt(f); const stage = stageOf(f);
-  const past = booked ? Date.parse(booked) <= now : false;
+  const past = booked ? callHappened(f, now) : false;
   return {
     key, name: val(f[EF.leadName]) || 'Unknown name', company: val(f[EF.company]), email: val(f[EF.leadEmail]), campaign: val(f[EF.campaign]),
     message: oneLine(val(f[EF.latestReply]), 3000), date: val(f[EF.latestReplyAt]), stage, bookedOn: booked,
@@ -364,7 +375,7 @@ export function buildLead(mine: Mine, key: string, now = Date.now()) {
 
 /** Call Feedback: booked calls that already happened with no feedback yet (90 days), and feedback given. */
 export function buildFeedback(mine: Mine, now = Date.now()) {
-  const missing = mine.emails.filter((e) => e.fields[EF.dnc] !== true && bookedAt(e.fields) && Date.parse(bookedAt(e.fields)) <= now && recent(bookedAt(e.fields), now) && lastFeedbackOf(mine.callFeedback, e.id).length === 0)
+  const missing = mine.emails.filter((e) => e.fields[EF.dnc] !== true && bookedAt(e.fields) && callHappened(e.fields, now) && recent(bookedAt(e.fields), now) && lastFeedbackOf(mine.callFeedback, e.id).length === 0)
     .map((e) => ({ key: opaque(e.id), name: val(e.fields[EF.leadName]) || 'Unknown name', company: val(e.fields[EF.company]), bookedOn: bookedAt(e.fields) }))
     .sort((a, b) => b.bookedOn.localeCompare(a.bookedOn));
   const byId = new Map(mine.emails.map((e) => [e.id, e]));
