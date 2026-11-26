@@ -593,13 +593,13 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
 - `RILEY=on`, and add `riley.collect,riley.apply` to `LIVE_STAGES`.
 - Optional, for n8n errors: `N8N_API_KEY` (n8n → Settings → n8n API → create key) and `N8N_BASE_URL` (default `http://localhost:5678`).
 
-## HQ: your private app (Step 1 "Today", Step 2 "Clients", Step 3 "Inbox", 2026-11-25)
+## HQ: your private app (Step 1 "Today", Step 2 "Clients" and "Deliverability", Step 3 "Inbox", 2026-11-25)
 
 **What it is:** one calm screen at **https://hq.dulcy.io**, on the phone or the computer. It runs inside the engine (same server, same code), and Airtable stays the database. Only people with an HQ login get in. Plan: `hq/PLAN.md`.
 
 **Look:** a sidebar on the computer, tabs at the bottom on the phone (on the phone, Inbox has Team's place in the bottom bar; Team is the people icon at the top). Light or dark follows your phone/computer; the System / Light / Dark switch (bottom of the sidebar, or the screen icon at the top on the phone) pins one on that device.
 
-**The seven tabs** (plus Users for you):
+**The tabs** (plus Users for you):
 1. **Today**
    - First things: how many decisions wait on you, and the top 3 of **Needs you** in the "Do now" card (tap one to go straight to it).
    - Ada's brief: the two key lines first ("Waiting on you" and "Top 3"); tap for the rest.
@@ -663,6 +663,26 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
      - Only you (owner) can change it; members see it read only. Save sends only what changed, checks it (times as HH:MM, a real IANA timezone, percent 0-100, known reply types, https links) and writes those fields to Airtable. Every save is logged (who, when, from → to) under **Changes** (table `hq_settings_log`).
      - Notes on top say what is off (Problem → Data → Fix), e.g. "Echo can't offer two times · times are switched off and the calendar is not connected · get the calendar link".
      - **Get calendar link** asks the calendar service for a one-time "connect your calendar" link for the client's email (Google Calendar or Calendly). You get **Copy** and **Email to client** (your mail app opens with "Connect your calendar so we can offer your prospects two real times: <link>"). HQ never sends email. It needs `CALENDAR_ADMIN_TOKEN` in the server `.env` (a calendar-service token allowed to call `/calendar/admin/request-invite`; the service's inviter token is enough). Without it the button is off and says so.
+
+8. **Deliverability** (2026-11-25): your inboxes and domains in one place. It replaces the Airtable Spam Center, Email Account Center, Domain & Inbox Inventory, Email Accounts / Warm Up, Inbox Placement Tests and Buy Domains & Inboxes screens. **Only what's sick shows first; the rest is one tap deeper.** In the sidebar after Campaigns; on the phone it's the envelope icon at the top. HQ only reads here: it changes nothing in Airtable, n8n, Make, EmailBison or EmailGuard and buys nothing. Buttons open the Decisions pile or the Airtable record.
+   - **Four tabs:** Needs attention (default), All inboxes, Placement tests, Domains. The client chips filter every tab (the two Twenty West records count as one client). Inactive clients (e.g. Lead Flo) are left out.
+   - **Needs attention:**
+     - 4 tiles: healthy / watch / sick / resting inboxes (tap one to see those inboxes), and the same 4 numbers per client.
+     - Notes on top (Problem → Data → Fix → Why, with who owns it), e.g. the placement scores being late (below).
+     - One line per problem: the inbox or domain, the reason, the owner (Atlas or Riley), and **what the engine is already doing**, read from its own fields and jobs, e.g. "Rested 11-24, retest Fri 12-04 · limit 0 (was 30)", "Replacement waiting for your OK in Decisions", "Health loop rests it on its next run", "Nothing automatic: reconnect it in EmailBison".
+     - A domain problem (blacklisted, expiring) is one line for the domain, not one per inbox.
+     - Sick and resting show; **Watch** is folded underneath.
+   - **When is an inbox sick?**
+     - Sick: placement under 60% (the rest line), disconnected (Riley), warm-up stopped for causing bounces, warm-up score under 50, bounce over 4% (100+ contacted), its domain blacklisted or expired, failed its retest (replacement), Manual Review, or marked Spam in Airtable.
+     - Watch: placement 60-74%, warm-up off or paused, warm-up score 50-69 (new campaigns need 70+), bounce over 2.5%, domain expiring within 30 days, a failed blacklist check or EmailGuard error (Riley), a health-loop error (Riley).
+     - Resting: the health loop or the bounce agent rested it (Spam Protocol Stage "Resting 7 Days"). While it rests, its bad score or bounce doesn't count as sick (the rest is the fix); a disconnect or a blacklist still does.
+     - The 60% / 4% / 2.5% lines are your rules. The watch lines (75%, 70, 30 days) are HQ's display choices, taken from the Airtable screens it replaces; say if you want them changed.
+   - **All inboxes:** search (inbox, domain or client), status chips, grouped by domain, worst first. Each inbox shows placement, warm-up, bounce and daily limit, and the Airtable link.
+   - **Placement tests:** the newest test per client and domain (the worst inbox is the domain's score; tap a domain for each inbox and Google / Outlook), and how fresh the scores are:
+     - **Late scores warning:** red when the newest score is more than 7 days old, or when Friday's scores are still missing on Sunday; amber before Friday while no scores came in since the 11-25 audit (it found the n8n Inbox Placement "Check Results" workflow `xcteI9ofNLOqC0GO` no longer visible, and the health loop only reads tests from 11-26, so it needs Friday 11-27's). It goes away by itself when new scores land.
+   - **Domains:** per client: each domain's inbox count (marked when not 2: every domain has 2 accounts), expiry, blacklist; replacements waiting (the Decide button opens Decisions → Campaigns) and open Buy Domains & Inboxes requests (Airtable link). Data gaps are noted on top (domains without a renewal date, inboxes without a Domains record, domains without 2 inboxes).
+   - **Speed and cost:** one batched Airtable read for everyone (7 list calls plus the pending decisions, no per-row calls), kept 1 minute; placement tests (about 1,000 a week, last 21 days) are kept 10 minutes. Refresh re-reads after 10 seconds. Login passwords and money are never read.
+   - Members (Josh) see it too.
 
 **Agent to-do lists:** kept in HQ (the Airtable Tasks table has no Agent field). For now one generator fills them, every 30 minutes:
 - A running campaign past 60% sent gives Atlas "Plan next campaign for <client>", due in 3 days.
