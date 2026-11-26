@@ -13,6 +13,8 @@ import { logActivity } from '../activity.js';
 import { restAccount, ACCOUNTS, EA } from './accountHealth.js';
 import { bounceRate, statsFrom } from '../campaign/bounce.js';
 import { resolveMx } from 'node:dns/promises';
+import type { Db } from '../db/pool.js';
+import { dueIn, trackClose, trackTask } from '../hq/agentTasks.js';
 
 /** MX lookups (step 3: where the bounces land). Swappable in tests. */
 let mxLookup: (domain: string) => Promise<string> = async (domain) => {
@@ -20,6 +22,19 @@ let mxLookup: (domain: string) => Promise<string> = async (domain) => {
   return [...r].sort((a, b) => a.priority - b.priority)[0]?.exchange ?? '';
 };
 export function setMxLookup(f: typeof mxLookup) { mxLookup = f; }
+
+// HQ: each bounce investigation is one of Riley's tasks (Alex 2026-11-25: bounce protection is the
+// agents' work, not Alex's to-do). Opened when the check queues it, moved while it runs, closed when
+// fixed; waiting on Alex when the fix needs his ✅. Live runs only.
+export const bounceTaskKey = (teamId: number, campaignId: number) => `bounce:${teamId}:${campaignId}`;
+const bounceTitle = (i: { name?: string; bounce?: number; campaignId?: number }) => `Bounce check: ${String(i.name ?? `campaign ${i.campaignId}`).replace(/^\[[^\]]+\]\s*/, '').slice(0, 80)}${i.bounce ? ` (${i.bounce}%)` : ''}`;
+export async function bounceTaskQueued(db: Db, i: { teamId?: number; campaignId: number; name?: string; workspaceName?: string; bounce?: number }, recordId: string): Promise<void> {
+  await trackTask(db, {
+    agent: 'Atlas', key: bounceTaskKey(Number(i.teamId), i.campaignId), title: bounceTitle(i), client: i.workspaceName ?? '', status: 'in_progress',
+    note: 'Queued: read the bounce codes, inboxes and mail servers', due: dueIn(1), priority: 'high', link: null, decision: null,
+    job: { kind: 'bounce.investigate', recordId, input: i as Record<string, unknown> }, waitingUntil: null,
+  });
+}
 
 async function providersFor(domains: string[]): Promise<Map<string, string>> {
   const out = new Map<string, string>();
@@ -45,6 +60,9 @@ export const bounceInvestigateStage: Stage = async (ctx) => {
   const teamId = Number(i.teamId), id = Number(i.campaignId);
   if (!(id > 0)) throw new PermanentError('input.campaignId is required');
   const b = bison(ctx, teamId);
+  const track = !ctx.dryRun && i.post !== false; // a check by hand (no decision posted) is not a task
+  const taskKey = bounceTaskKey(teamId, id);
+  if (track) await trackTask(ctx.db, { agent: 'Atlas', key: taskKey, title: bounceTitle({ ...i, campaignId: id }), client: String(i.workspaceName ?? ''), status: 'in_progress', note: 'Reading the bounce codes, inboxes and mail servers', job: { kind: 'bounce.investigate', recordId: `bounce-investigate:${id}`, input: i }, priority: 'high' });
   const inboxes = await ctx.step('inboxes', () => b.campaignSenderStats(id));
   const ours = new Set(inboxes.map((x) => x.email));
   const notices = await ctx.step('notices', async () => {
@@ -106,6 +124,10 @@ export const bounceInvestigateStage: Stage = async (ctx) => {
       [DF.actionInput]: JSON.stringify({ teamId, campaignId: id, removeSenderIds: d.removeSenderIds, name: i.name }),
     }));
   }
+  if (track) {
+    if (autoDone) await trackClose(ctx.db, taskKey, `Fixed: ${autoDone}`);
+    else await trackTask(ctx.db, { agent: 'Atlas', key: taskKey, title: bounceTitle({ ...i, campaignId: id }), status: 'waiting_alex', note: `${d.headline}. Fix waiting for your OK`, link: 'decisions/Campaigns', decision: decisionId || null, job: null });
+  }
   return { message: `${i.name}: ${d.headline}. ${autoDone ? `Done automatically: ${autoDone}` : d.fix}${ctx.dryRun || i.post === false ? ' (check only: no decision posted)' : ''}`, cause: d.cause, action: d.action, stopSendingTo: d.stopSendingTo, facts: d.facts, decisionId };
 };
 
@@ -141,5 +163,6 @@ export const bounceFixStage: Stage = async (ctx) => {
   }
   const done = await resumeAndMark(ctx, b, id);
   await logActivity(ctx.cfg, { event: `Campaign ${remove.length ? 'inboxes removed and ' : ''}resumed`, type: 'Fixed', agent: 'Atlas', details: done, bisonCampaignId: id, jobId: ctx.job.id });
+  await trackClose(ctx.db, bounceTaskKey(teamId, id), `Fixed: ${remove.length ? `${remove.length} inbox(es) removed, ` : ''}${done}`);
   return { message: `${i.name ?? `Campaign ${id}`}: ${remove.length ? `${remove.length} inbox(es) removed, ` : ''}${done}` };
 };

@@ -17,6 +17,10 @@ import { DECISIONS, DF } from '../decisions/fields.js';
 import { logActivity } from '../activity.js';
 import { alert } from '../log.js';
 import { saveReport, slackReports } from '../hq/reports.js';
+import { trackClose, trackTask } from '../hq/agentTasks.js';
+
+/** HQ: one Riley task per rested account (rest → retest → recovered or replaced). */
+export const restTaskKey = (accountRecordId: string) => `rest:${accountRecordId}`;
 
 export const PLACEMENT = 'tblGjv6A5r7md3kxX';
 export const PT = {
@@ -98,6 +102,13 @@ export async function restAccount(ctx: JobContext, at: Pick<AirtableClient, 'upd
     ...(i.score !== undefined ? { [EA.lastScore]: i.score } : {}), ...(i.testId ? { [EA.lastTestId]: i.testId } : {}),
   });
   await logActivity(ctx.cfg, { event: `Account rested 7 days: ${i.email}`, type: 'Fixed', agent: 'Atlas', details: `${i.reason}\nDaily limit ${previous} → ${limit} until the next weekly placement test.`, emailAccountRecordIds: [i.accountRecordId], clientRecordIds: i.clientIds ?? links(f[EA.client]), campaignRecordIds: i.campaignIds ?? links(f[EA.campaigns]), jobId: ctx.job.id });
+  // HQ: Riley's task until the retest (a planned wait: not "stalled" before the retest is due).
+  const retest = new Date(Date.parse(start) + 6.5 * DAY);
+  await trackTask(ctx.db, {
+    agent: 'Atlas', key: restTaskKey(i.accountRecordId), title: `Rest ${i.email} until its retest`, status: 'in_progress', priority: 'normal',
+    note: `Resting: daily limit ${previous} → ${limit}. ${i.reason}`, due: retest, waitingUntil: retest, link: null, decision: null,
+    job: { kind: 'account.health', recordId: 'account-health', input: {} },
+  });
   return { limit, previous };
 }
 
@@ -131,6 +142,7 @@ export const accountHealthStage: Stage = async (ctx) => {
         await at.update(ACCOUNTS, acct.id, { [EA.stage]: 'Recovered', [EA.status]: 'Healthy', [EA.dailyLimit]: back, [EA.lastScore]: score, [EA.lastTestId]: v(tf[PT.testId]),
           [EA.healthReason]: (Array.isArray(af[EA.healthReason]) ? (af[EA.healthReason] as any[]).map(v) : []).filter((r) => r !== 'Poor Inbox Placement' && r !== 'High Bounce Rate'), [EA.lastAction]: `Recovered at ${new Date().toISOString()}: retest ${score}%` });
         await logActivity(cfg, { event: `Account recovered: ${email}`, type: 'Fixed', agent: 'Atlas', details: `Retest ${score}% (${PASS_SCORE}%+). Daily limit back to ${back}.`, emailAccountRecordIds: [acct.id], clientRecordIds: clients, campaignRecordIds: camps, jobId: ctx.job.id });
+        await trackClose(ctx.db, restTaskKey(acct.id), `Recovered: retest ${score}%, daily limit back to ${back}`);
         await mark('Recovered'); out.recovered.push(`${email} (${score}%)`);
       } else if (action === 'replace') {
         // Step: check the domain blacklist again before replacing.
@@ -143,13 +155,14 @@ export const accountHealthStage: Stage = async (ctx) => {
         const spec = `Replace with 1 new .com domain ($9.99) + 2 Google accounts (Cheap Inboxes). Every domain keeps 2 accounts.`;
         const key = `${acct.id}:${v(tf[PT.testId]) || t.id}:replace`;
         const exists = (await at.list(QUEUE, `{Automation Key}='${key}'`, [SQ.key], 1)).length > 0;
+        let decisionId = '';
         if (!exists) {
           const qId = await at.create(QUEUE, {
             [SQ.name]: `Replace Domain — ${email}`, [SQ.account]: [acct.id], ...(domainId ? { [SQ.domain]: [domainId] } : {}), ...(clients.length ? { [SQ.client]: clients } : {}),
             [SQ.action]: 'Replace Domain', [SQ.reason]: `${reason}\n${spec}`, [SQ.score]: score, [SQ.failed]: n(af[EA.failedTests]) + 1, [SQ.status]: 'Pending Review',
             [SQ.approve]: false, [SQ.key]: key, [SQ.createdAt]: new Date().toISOString(),
           });
-          await at.create(DECISIONS, {
+          decisionId = await at.create(DECISIONS, {
             [DF.title]: `Replace ${dom}? (${email} failed its retest at ${score}%)`, [DF.agent]: 'Atlas', [DF.status]: 'New',
             [DF.issue]: reason, [DF.checked]: `${blText} The account stays at 0/day meanwhile.`, [DF.fix]: spec,
             [DF.details]: `Spam Remediation Queue record ${qId}. ✅ ticks Approve Purchase there; the card is charged only in Buy Domains & Inboxes.`,
@@ -158,6 +171,11 @@ export const accountHealthStage: Stage = async (ctx) => {
         }
         await at.update(ACCOUNTS, acct.id, { [EA.stage]: 'Replace Domain', [EA.status]: 'Spam', [EA.lastScore]: score, [EA.failedTests]: n(af[EA.failedTests]) + 1, [EA.lastAction]: `Replacement queued at ${new Date().toISOString()}` });
         await logActivity(cfg, { event: `Replacement waiting for approval: ${dom}`, type: 'Waiting for approval', agent: 'Atlas', details: `${reason}\n${spec}`, emailAccountRecordIds: [acct.id], clientRecordIds: clients, campaignRecordIds: camps, jobId: ctx.job.id });
+        await trackTask(ctx.db, {
+          agent: 'Atlas', key: restTaskKey(acct.id), title: `Rest ${email} until its retest`, status: 'waiting_alex',
+          note: `Failed the retest at ${score}%: replace ${dom} (1 .com + 2 Google accounts)? Waiting for your OK`, link: 'decisions/Campaigns',
+          job: null, waitingUntil: null, ...(decisionId ? { decision: decisionId } : {}),
+        });
         await mark('Replace Domain'); out.replace.push(`${email} (${score}%)`);
       } else {
         if (action === 'hold') out.held++; else out.ok++;
@@ -198,5 +216,6 @@ export const approvePurchaseStage: Stage = async (ctx) => {
   await at.update(QUEUE, id, { [SQ.approve]: true, [SQ.status]: 'Approved' });
   const q = await at.get(QUEUE, id, [SQ.account, SQ.client, SQ.name]);
   await logActivity(cfg, { event: `Replacement approved: ${v(q?.fields[SQ.name]).replace(/^Replace Domain — /, '')}`, type: 'Approved', agent: 'Alex', emailAccountRecordIds: links(q?.fields[SQ.account]), clientRecordIds: links(q?.fields[SQ.client]), jobId: ctx.job.id });
+  for (const acc of links(q?.fields[SQ.account])) await trackClose(ctx.db, restTaskKey(acc), 'Replacement approved: the purchase request is prepared next');
   return { message: 'Approve Purchase ticked: the purchase request is prepared next (the card is charged only after the final approval in Buy Domains & Inboxes).' };
 };

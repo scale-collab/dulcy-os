@@ -118,6 +118,7 @@ async function main() {
         const r = await A.addAsk(db, {
           agent: opt('agent') ?? '', title: opt('title') ?? '', why: opt('why'), steps, actionLabel: opt('action-label'), actionUrl: opt('action-url'),
           priority: (opt('priority') ?? 'normal') as 'high' | 'normal', audience: (opt('for') ?? 'owner') as 'owner' | 'everyone', dedupeKey: opt('key'),
+          due: opt('due'), clientFacing: rest.includes('--client-facing'), money: rest.includes('--money'),
         });
         console.log(`${r.created ? 'Added' : 'Already there (same key), unchanged:'} ask ${r.ask.id}: ${r.ask.agent}: ${r.ask.title}${r.ask.done ? ` (done ${r.ask.done.slice(0, 10)})` : ''}`);
       } else if (sub === 'list') {
@@ -129,7 +130,30 @@ async function main() {
         if (!Number.isInteger(id) || id <= 0) throw new Error('usage: ask done <id>');
         console.log(await A.finishAsk(db, id, 'CLI') ? `Ask ${id} done.` : `Ask ${id} not found or already done.`);
       } else {
-        throw new Error('usage: ask add --agent=Atlas --title="Reply to Pete about Twenty West" [--why=...] [--steps=... | --steps-stdin] [--action-label=Open] [--action-url=decisions/Replies|https://...] [--priority=high|normal] [--for=owner|everyone] [--key=...]\n       ask list [--all]\n       ask done <id>');
+        throw new Error('usage: ask add --agent=Atlas --title="Reply to Pete about Twenty West" [--why=...] [--steps=... | --steps-stdin] [--action-label=Open] [--action-url=decisions/Replies|https://...] [--priority=high|normal] [--for=owner|everyone] [--key=...] [--due=YYYY-MM-DD] [--client-facing] [--money]\n       ask list [--all]\n       ask done <id>');
+      }
+    } else if (cmd === 'agent-task') {
+      // An agent's own task list in HQ (for Claude sessions such as Riley's runbook): open/update, list, close.
+      const [sub, ...rest] = args;
+      const opt = (n: string) => rest.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3);
+      const T = await import('./hq/agentTasks.js');
+      if (sub === 'upsert') {
+        const r = await T.upsertAgentTask(db, {
+          agent: opt('agent') ?? '', key: opt('key') ?? '', title: opt('title') ?? '', note: opt('note'), due: opt('due'), link: opt('link'), client: opt('client'),
+          status: opt('status') as never, priority: opt('priority') as never,
+        });
+        if ('error' in r) throw new Error(r.error);
+        console.log(`${r.created ? 'Opened' : r.changed ? 'Updated' : 'Unchanged'}: task ${r.id} (${r.status})`);
+      } else if (sub === 'done') {
+        console.log(await T.closeAgentTask(db, opt('key') ?? '', opt('note') ?? 'Done') ? 'Closed.' : 'No open task with that key.');
+      } else if (sub === 'list') {
+        const a = opt('agent');
+        const { agentByName } = await import('./hq/agents.js');
+        const list = await T.listAgentTasks(db, { agent: a ? agentByName(a) ?? undefined : undefined });
+        if (!list.length) console.log('No open agent tasks.');
+        for (const t of list) console.log(`${t.id}\t${t.agent}\t${t.status}${t.overdue ? ' (overdue)' : ''}${t.stalled ? ' (stalled)' : ''}\t${t.due ?? '-'}\t${t.title}\t${t.note}`);
+      } else {
+        throw new Error('usage: agent-task upsert --agent=Riley --key=<key> --title="..." [--status=open|in_progress|waiting_alex|done] [--note="..."] [--due=YYYY-MM-DD] [--link=decisions/Fixes] [--client=...] [--priority=high|normal|low]\n       agent-task done --key=<key> [--note="..."]\n       agent-task list [--agent=Riley]');
       }
     } else if (cmd === 'verify') {
       const recordId = args[0];

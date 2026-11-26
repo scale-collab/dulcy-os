@@ -20,7 +20,8 @@ import { canTalkTo, chatTurn, listThreads, readThread, type ChatModel } from './
 import { clientDetail, listClients } from './clients.js';
 import { SIGNUP_SENT, addUser, googleSignUp, listUsers, manageUser, pendingCount, signUp } from './users.js';
 import { askVisible, finishAsk, getAsk, isSnooze, listAsks, quietItem, snoozeAsk } from './asks.js';
-import { loadNeeds, needCounts } from './needs.js';
+import { isNeedDay, loadNeeds, loadNeedsDay, needCounts } from './needs.js';
+import { workSummary } from './agentTasks.js';
 import { actOnThread, listInbox, threadDetail } from './inbox.js';
 import { calendarInvite, replierDetail, saveReplier } from './replier.js';
 import { campaignDetail, listCampaigns } from './campaigns.js';
@@ -202,8 +203,10 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
 
       // Needs you: what the agents need from this person (one item per Decisions pile, Riley's manual fixes, sign-ups, asks).
       if (p === '/hq/api/needs' && req.method === 'GET') {
-        const n = await loadNeeds(db, at, user);
-        json(res, 200, { items: n.items, counts: needCounts(n.items), errors: n.errors });
+        // ?day=yesterday|today|tomorrow (default today): what got handled / what is due now / what comes back.
+        const day = url.searchParams.get('day') ?? 'today';
+        if (!isNeedDay(day)) { json(res, 400, { error: 'day must be yesterday, today or tomorrow' }); return true; }
+        json(res, 200, await loadNeedsDay(db, at, user, day));
         return true;
       }
       m = p.match(/^\/hq\/api\/needs\/issue\/(rec[A-Za-z0-9]{14})\/snooze$/);
@@ -310,7 +313,11 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       m = p.match(/^\/hq\/api\/deliverability(?:\/(inboxes|placement|domains))?$/);
       if (m && req.method === 'GET') { json(res, 200, await deliverabilityView(needAt(), db, cfg, m[1] ?? 'attention', url.searchParams)); return true; }
 
-      if (p === '/hq/api/agents' && req.method === 'GET') { json(res, 200, { agents: await agentCards(db, at, user) }); return true; }
+      if (p === '/hq/api/agents' && req.method === 'GET') {
+        const agents = await agentCards(db, at, user);
+        json(res, 200, { agents, work: agents.map((a) => ({ agent: a.name, ...a.work })) });
+        return true;
+      }
       m = p.match(/^\/hq\/api\/agents\/([A-Za-z]+)$/);
       if (m && req.method === 'GET') {
         const a = agentByName(m[1]);
@@ -422,10 +429,15 @@ async function agentCards(db: Db, at: HqAirtable | undefined, user: HqUser) {
   const visible = AGENT_NAMES.filter((a) => canTalkTo(user, a));
   const [decisions, health, tasks] = await Promise.all([at ? pendingDecisions(at).catch(() => []) : Promise.resolve([]), jobHealth(db), agentTasks(db)]);
   const check = teamCheck(health, decisions, Date.now(), visible);
-  return visible.map((a) => ({
-    ...AGENTS[a], status: check.find((c) => c.agent === a), waiting: decisions.filter((d) => d.agent === a).length,
-    openTasks: tasks.filter((t) => t.agent === a).length, lastOk: health.get(a)?.lastOk ?? null, lastFail: health.get(a)?.lastFail ?? null,
-  }));
+  const work = workSummary(tasks, visible);
+  return visible.map((a) => {
+    const w = work.find((x) => x.agent === a)!;
+    return {
+      ...AGENTS[a], status: check.find((c) => c.agent === a), waiting: decisions.filter((d) => d.agent === a).length,
+      openTasks: w.open, lastOk: health.get(a)?.lastOk ?? null, lastFail: health.get(a)?.lastFail ?? null,
+      work: { open: w.open, inProgress: w.inProgress, waitingAlex: w.waitingAlex, overdue: w.overdue, stalled: w.stalled },
+    };
+  });
 }
 
 async function agentDetail(db: Db, at: HqAirtable | undefined, user: HqUser, a: AgentName) {
@@ -433,9 +445,9 @@ async function agentDetail(db: Db, at: HqAirtable | undefined, user: HqUser, a: 
     agentRuns(db, a, 10),
     at ? pendingDecisions(at).then((d) => d.filter((x) => x.agent === a)).catch(() => []) : Promise.resolve([]),
     at ? agentActivity(at, a, 10).catch(() => []) : Promise.resolve([]),
-    agentTasks(db, a),
+    agentTasks(db, a, true),
     reports(db, user.role === 'owner', a, 10),
     jobHealth(db),
   ]);
-  return { agent: AGENTS[a], status: teamCheck(health, decisions, Date.now(), [a])[0], lastOk: health.get(a)?.lastOk ?? null, lastFail: health.get(a)?.lastFail ?? null, runs, decisions, activity, tasks, reports: recent };
+  return { agent: AGENTS[a], status: teamCheck(health, decisions, Date.now(), [a])[0], lastOk: health.get(a)?.lastOk ?? null, lastFail: health.get(a)?.lastFail ?? null, runs, decisions, activity, tasks, work: workSummary(tasks, [a])[0], reports: recent };
 }

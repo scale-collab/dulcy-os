@@ -16,6 +16,7 @@ import { saveReport, slackReports } from '../hq/reports.js';
 import { enqueue } from '../queue.js';
 import { logActivity } from '../activity.js';
 import { STAGES } from './index.js';
+import { bounceTaskQueued } from './bounceAgent.js';
 
 type Row = { id: number; name: string; bounce: number; progress: number; note?: string; workspace?: string; teamId?: number; contacted?: number; bounced?: number };
 
@@ -100,12 +101,14 @@ export const bounceCheckStage: Stage = async (ctx) => {
   for (const { r, key } of toInvestigate) {
     if (!r.teamId) continue;
     const def = STAGES['bounce.investigate'];
+    const input = { teamId: r.teamId, campaignId: r.id, name: r.name, workspaceName: targets.find((t) => t.teamId === r.teamId)?.name ?? '', bounce: r.bounce, progress: r.progress, contacted: r.contacted, bounced: r.bounced, paused: !r.note };
     const q = await enqueue(ctx.db, {
       kind: 'bounce.investigate', recordId: `bounce-investigate:${r.id}`, requestId: `bounce-investigate:${r.teamId}:${r.id}:${key}`,
-      input: { teamId: r.teamId, campaignId: r.id, name: r.name, workspaceName: targets.find((t) => t.teamId === r.teamId)?.name ?? '', bounce: r.bounce, progress: r.progress, contacted: r.contacted, bounced: r.bounced, paused: !r.note },
-      dryRun: ctx.cfg.dryRun && !ctx.cfg.liveStages.includes('bounce.investigate'), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs,
+      input, dryRun: ctx.cfg.dryRun && !ctx.cfg.liveStages.includes('bounce.investigate'), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs,
     });
     if (q.status === 'queued') investigating++;
+    // HQ: the bounce investigation is Riley's task until it is fixed or waits on Alex (live runs only).
+    if (q.status === 'queued' && !q.job.dry_run) await bounceTaskQueued(ctx.db, input, `bounce-investigate:${r.id}`);
   }
 
   // Fresh numbers into Airtable Campaigns (all campaigns, paused too). A failed write never stops the check.

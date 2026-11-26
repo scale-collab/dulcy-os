@@ -238,3 +238,8 @@ Format: `- [date] rule. (why / source)`
 ## AI caller: no automatic calls on positive replies for now (Alex, 2026-11-26)
 - **Rule:** the automatic AI call on positive email replies (n8n "1.2 Positive Email Reply") stays off until Alex decides the AI caller's direction.
 - **Why:** 141 logged calls: 89 voicemail, 23 answered with no outcome, 1 booked. These are warm leads; Echo's email reply is the better path.
+
+## Agent work lives on the agents' own lists, not Alex's board (Alex, 2026-11-25)
+- **Rule:** work an agent does (new campaigns, bounce checks, inbox rests…) is a task on **that agent's** list in HQ (Team), with status, due date and a progress note. Alex sees it in "Needs you" only when the agent needs him. Ada's morning brief flags late or stuck tasks and re-queues them once a day.
+- **Owners:** campaigns, bounce checks and inbox rests → Atlas (matches Decisions and the Activity Log). Riley stays systems-only.
+- **Why:** Alex: "it all gets sent to my project management, it's a little too much… the task should be assigned to them, and we could see and ask for progress." And: "I need this to be very autonomous."

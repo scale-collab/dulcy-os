@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react';
-import { api, type AgentCard } from '../api';
+import { api, type AgentCard, type AgentWork } from '../api';
 import { Avatar, Card, cleanLine, cx, ErrorBox, go, Icon, PageSkeleton, PageTitle, StatusDot, teamTone, toneLabel } from '../ui';
+import { WorkChips, WorkSummary } from './AgentWork';
 
 export default function Agents() {
   const [agents, setAgents] = useState<AgentCard[] | null>(null);
+  const [work, setWork] = useState<({ agent: string } & AgentWork)[]>([]);
   const [error, setError] = useState('');
-  useEffect(() => { api<{ agents: AgentCard[] }>('/agents').then((r) => setAgents(r.agents)).catch((e) => setError(e.message)); }, []);
+  useEffect(() => { api<{ agents: AgentCard[]; work?: ({ agent: string } & AgentWork)[] }>('/agents').then((r) => { setAgents(r.agents); setWork(r.work ?? []); }).catch((e) => setError(e.message)); }, []);
   const title = <PageTitle title="Team" kicker={agents ? `${agents.length} agents` : 'Agents'} sub="Everyone reports to Ada. Atlas runs Scribe and Scout." />;
   if (error) return <>{title}<ErrorBox error={error} /></>;
   if (!agents) return <>{title}<PageSkeleton kind="grid" /></>;
   return (
     <div>
       {title}
+      {work.length > 0 && <WorkSummary work={work} />}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {agents.map((a) => {
           const tone = teamTone(a.status?.ok, a.status?.line);
@@ -32,10 +35,10 @@ export default function Agents() {
                 <div className={cx('flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs', tone === 'bad' ? 'bg-bad-soft text-bad' : tone === 'warn' ? 'bg-warn-soft text-warn' : 'bg-sunken text-muted')}>
                   <StatusDot tone={tone} /><span className="truncate">{cleanLine(a.status?.line) || 'No status yet'}</span>
                 </div>
-                <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
+                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted">
                   <span>reports to <span className="font-medium text-fg-2">{a.reportsTo}</span></span>
-                  {a.waiting > 0 && <span className="font-medium text-warn">{a.waiting} waiting</span>}
-                  {a.openTasks > 0 && <span>{a.openTasks} to-do</span>}
+                  {a.waiting > 0 && <span className="font-medium text-warn">{a.waiting} decision{a.waiting === 1 ? '' : 's'} waiting</span>}
+                  {a.work ? <WorkChips w={a.work} /> : a.openTasks > 0 && <span>{a.openTasks} tasks</span>}
                 </div>
               </div>
             </Card>

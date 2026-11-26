@@ -4,6 +4,7 @@ import type { Db } from '../db/pool.js';
 import { ACTIVITY, AF, agentFormula } from '../activity.js';
 import { AGENTS, AGENT_NAMES, agentForJob, jobPatternsFor, type AgentName } from './agents.js';
 import type { DecisionCard, HqAirtable } from './decisions.js';
+import { listAgentTasks, type AgentTask } from './agentTasks.js';
 
 export interface JobRun { id: number; kind: string; status: string; at: string; message: string; dryRun: boolean }
 export interface AgentStatus { agent: AgentName; ok: boolean | null; line: string }
@@ -73,16 +74,14 @@ export async function agentActivity(at: Pick<HqAirtable, 'list'>, agent: AgentNa
   return rows.map((r) => ({ id: r.id, event: s(r.fields[AF.event]), when: s(r.fields[AF.when]), type: s(r.fields[AF.type]), details: short(s(r.fields[AF.details]), 600) }));
 }
 
-export interface AgentTask { id: number; agent: string; title: string; due: string | null; status: string; client: string; notes: string; link: string | null; created: string }
+export type { AgentTask } from './agentTasks.js';
+/** An agent's open tasks (with includeDone, also those finished in the last 7 days), with overdue / stalled flags. */
 export async function agentTasks(db: Db, agent?: AgentName, includeDone = false): Promise<AgentTask[]> {
-  const r = await db.query(
-    `SELECT id, agent, title, to_char(due_date,'YYYY-MM-DD') AS due, status, client, notes, link, created_at FROM hq_agent_tasks
-     WHERE ($1::text IS NULL OR agent=$1) AND ($2 OR status='open') ORDER BY status, due_date NULLS LAST, id LIMIT 100`, [agent ?? null, includeDone]);
-  return r.rows.map((x) => ({ id: Number(x.id), agent: String(x.agent), title: String(x.title), due: x.due ?? null, status: String(x.status), client: String(x.client), notes: String(x.notes), link: x.link ?? null, created: new Date(x.created_at).toISOString() }));
+  return listAgentTasks(db, { agent, doneDays: includeDone ? 7 : 0, limit: 100 });
 }
 
 export async function finishAgentTask(db: Db, id: number, note = 'Done in HQ'): Promise<boolean> {
-  return ((await db.query(`UPDATE hq_agent_tasks SET status='done', done_at=now(), done_note=$2 WHERE id=$1 AND status='open'`, [id, note])).rowCount ?? 0) > 0;
+  return ((await db.query(`UPDATE hq_agent_tasks SET status='done', done_at=now(), done_note=$2, progress_note=$2, updated_at=now(), job_kind=NULL, waiting_until=NULL WHERE id=$1 AND status<>'done'`, [id, note.slice(0, 300)])).rowCount ?? 0) > 0;
 }
 
 export { AGENTS };

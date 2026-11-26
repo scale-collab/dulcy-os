@@ -1,6 +1,8 @@
 // Ada, the COO (Alex 2026-11-25): one short business brief every weekday morning in Slack — what
 // happened, what is waiting on Alex, what to do first. Fridays add the weekly scorecard.
-// Read only: Ada changes nothing. Everything comes from Airtable (the engine's own source of truth).
+// Read only: Ada changes nothing in Airtable. Everything comes from Airtable (the engine's own source
+// of truth), plus HQ's agent task lists: the "Agent work" section lists tasks that are overdue or
+// have not moved for 2+ days, and re-queues the engine job behind a stuck one (the only write).
 // The brief itself is plain code (exact numbers, no AI guesses); see agents/ada-morning-brief.md.
 import type { Stage } from '../stages/index.js';
 import { PermanentError } from '../errors.js';
@@ -11,6 +13,7 @@ import { EMAILS } from './emailsFields.js';
 import { ACTIVITY, canonAgent } from '../activity.js';
 import { ACCOUNTS, QUEUE } from '../stages/accountHealth.js';
 import { saveReport, slackReports } from '../hq/reports.js';
+import { agentWorkLines, checkStaleTasks } from '../hq/agentTasks.js';
 
 const CAMPAIGNS = 'tblAVAA6uBPaMj28P';
 const WORKSPACES = 'tblcjRBGJEWh5KgOt';
@@ -47,6 +50,8 @@ export interface BriefData {
   clientName: (ws: string) => string;
   /** Friday only: this week vs last week, per client. */
   week?: { client: string; interested: [number, number]; booked: [number, number]; sent: [number, number] }[];
+  /** Agent tasks that are overdue or have not moved for 2+ days (HQ), one line each (agentWorkLines). */
+  agentWork?: string[];
 }
 
 /** The brief text (Slack mrkdwn). Pure, so it is tested with fixed data. */
@@ -95,6 +100,9 @@ export function writeBrief(d: BriefData): string {
   // What the agents did.
   const byAgent = tally(d.activity.map((a) => a.agent));
   if (byAgent.length) lines.push(`*Agents (24 h):* ${byAgent.map(([agent, n]) => { const fixed = d.activity.filter((a) => a.agent === agent && a.type === 'Fixed').length; return `${agent} ${n} step${n === 1 ? '' : 's'}${fixed ? ` (${fixed} fixed)` : ''}`; }).join(' · ')}`);
+
+  // Agent work: tasks late or not moving (HQ task lists), one line each. Nothing late = one short line.
+  if (d.agentWork) lines.push(d.agentWork.length ? `*Agent work (late or stuck):*\n${d.agentWork.join('\n')}` : '*Agent work:* every task is on time and moving');
 
   // Top 3: what only Alex can unblock, most impact first.
   const top: string[] = [];
@@ -161,7 +169,10 @@ export const adaBriefStage: Stage = async (ctx) => {
   const at = createAirtableClient({ apiKey: cfg.airtableApiKey, baseId: cfg.airtableBaseId, baseUrl: cfg.airtableBaseUrl });
   const now = new Date();
   const weekly = ctx.job.input.weekly === true || new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' })).getDay() === 5;
-  const text = writeBrief(await gather(at, now, weekly));
+  // Ada's daily stale-task check: late or stuck agent tasks; a stuck one with an engine job is
+  // re-queued (only when this brief runs live; each job's own LIVE_STAGES switch still applies).
+  const stale = await checkStaleTasks(ctx.db, cfg, { now, apply: !ctx.dryRun }).catch(() => null);
+  const text = writeBrief({ ...(await gather(at, now, weekly)), agentWork: stale ? agentWorkLines(stale) : undefined });
   // HQ keeps every brief (Today shows the latest); Slack only while SLACK_REPORTS=on.
   const lines = text.split('\n');
   await saveReport(ctx.db, {

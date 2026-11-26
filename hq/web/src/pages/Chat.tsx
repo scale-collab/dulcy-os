@@ -17,7 +17,8 @@ export default function Chat({ user, agent, threadId }: { user: User; agent: str
   const name = agents.find((a) => a.toLowerCase() === agent.toLowerCase()) ?? 'Ada';
   const [threads, setThreads] = useState<Thread[]>([]);
   const [thread, setThread] = useState<FullThread | null>(null);
-  const [text, setText] = useState('');
+  // "Ask for an update" (Team) leaves a question typed in, read once.
+  const [text, setText] = useState(() => { try { const d = sessionStorage.getItem('hq:chat-draft') ?? ''; sessionStorage.removeItem('hq:chat-draft'); return d; } catch { return ''; } });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [showList, setShowList] = useState(false);
