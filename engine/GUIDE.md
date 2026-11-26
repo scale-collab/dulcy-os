@@ -395,6 +395,7 @@ Every weekday at `ADA_BRIEF_HOUR` (default 8 AM ET) the engine posts one brief t
 - **Accounts:** resting, to replace, purchases waiting.
 - **Agents:** steps per agent from the Activity Log.
 - **Top 3** things only Alex can unblock. **Fridays:** weekly scorecard per client (interested, booked, sent; this week vs last).
+- **Agent work** (2026-11-25): every agent task that is late (past its due date) or stuck (no update for 2+ days), one line each, at most 5 ("• Atlas: New campaign for MJJ (no update for 3 d) → re-queued"). A stuck task with an engine job behind it is re-queued through the normal queue (only when the brief runs live). Nothing late: one line, "every task is on time and moving".
 - Switch: `ADA_BRIEF=on` and `ada.brief` in LIVE_STAGES. Today's calendar is not in v1 (the engine has no calendar read yet).
 
 ## Ledger, the accountant (2026-11-25)
@@ -619,9 +620,15 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
    - **Sign-ups waiting** → Approve (Users).
    - **Asks:** something an agent or a Claude session needs you to do, e.g. "Atlas: reply to Pete about Twenty West", "Setup: publish the Google calendar app" (with steps). **Done** clears it; **Not now** hides it until tomorrow or Monday 8 a.m. (New York).
    - A card disappears by itself when it's resolved: the pile is empty, the issue left "Waiting for Alex", the ask is done.
-   - Atlas's own to-dos are not here (none is assigned to a person); they stay on his Team page.
+   - **An agent's task waiting on you with no decision behind it** (e.g. "Atlas: New campaign for MJJ · Stuck: … Retry: campaign-plan-retry 5"). Owner only. The agents' other tasks stay on their Team pages (tab 4).
+   - **Order on Today** (Alex 2026-11-25, plain rules, no AI call on each load): "Do now" before "When you can"; inside each, **money and client-facing first** (a small Money / Client tag says why), then **the oldest**, then the agent's priority.
+   - **Day switcher** at the top: **Yesterday · Today · Tomorrow** (with the dates, New York time).
+     - **Yesterday** = what got handled, so you can see nothing was dropped: decisions you (or Josh) made, one card per pile ("3 replies handled · 2 sent · 1 skipped"); asks marked done; Riley's fixes; the tasks each agent closed (one card per agent, "See each one" lists them); sign-ups. Read only.
+     - **Today** = what is due now (everything above).
+     - **Tomorrow** = what comes back from **Not now** tomorrow, plus asks and agent tasks waiting on you that are **due tomorrow**. An ask can still be marked Done early.
+     - Links: `#/needs/yesterday`, `#/needs`, `#/needs/tomorrow`.
    - Members see only the piles they can act on (no Money, nothing from Ledger or Sienna), asks sent to everyone, and no Riley manual fixes or sign-ups.
-   - **Add an ask (server):** `docker compose exec engine node dist/src/cli.js ask add --agent=Atlas --title="Reply to Pete about Twenty West" --why="He asked twice for the October numbers." --action-url=clients --action-label="Open the client"`. Options: `--steps="1. ...\n2. ..."` (or `--steps-stdin`), `--action-url=` an HQ page (`decisions/Replies`, `users`, `clients`) or an `https://` link, `--priority=high` for "Do now", `--for=everyone` so members see it too, `--key=` to set the duplicate key (default: agent + title; the same key never adds a second ask, even after it was done). `ask list [--all]` and `ask done <id>`. In code: `addAsk(db, {...})` in `engine/src/hq/asks.ts`.
+   - **Add an ask (server):** `docker compose exec engine node dist/src/cli.js ask add --agent=Atlas --title="Reply to Pete about Twenty West" --why="He asked twice for the October numbers." --action-url=clients --action-label="Open the client"`. Options: `--steps="1. ...\n2. ..."` (or `--steps-stdin`), `--action-url=` an HQ page (`decisions/Replies`, `users`, `clients`) or an `https://` link, `--priority=high` for "Do now", `--for=everyone` so members see it too, `--due=YYYY-MM-DD` (shown on that day, on Tomorrow the day before), `--client-facing` and `--money` (ranked first; Ledger's asks are always money), `--key=` to set the duplicate key (default: agent + title; the same key never adds a second ask, even after it was done). `ask list [--all]` and `ask done <id>`. In code: `addAsk(db, {...})` in `engine/src/hq/asks.ts`.
    - The old four-box to-do (below) is still at `#/tasks`, out of the menu.
    **Old to-do** (Airtable Tasks, open ones only; at `#/tasks`). It's sorted into four boxes:
    - **Do now:** urgent and important.
@@ -631,8 +638,8 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
    - **Urgent** means overdue, due today or tomorrow, or Priority Urgent. **Important** means Priority Urgent or High, or Client Facing.
    - A task sitting in Review/QA for 7+ days asks "Done already?". Answer **Not yet** and it won't ask again for 7 days.
    - **Add a task** at the top. **▶ Start** gives you one task at a time with a timer, like the Daily Run.
-4. **Team:** one card per agent: what it does, who it reports to, its status, decisions waiting and its own to-do list. Open one to see:
-   - its to-do list (tick to finish);
+4. **Team:** one card per agent: what it does, who it reports to, its status, decisions waiting and its tasks ("4 tasks · 1 stuck · 2 for you"). On top, **Agent work**: per agent the open tasks, how many are **late** (past their due date) and **stuck** (no update for 2+ days). Tap an agent to open it. Open one to see:
+   - its **tasks** (Alex 2026-11-25: "the task should be assigned to them, and we could see and ask for progress"): each with its status (**Not started · In progress · Waiting on you · Done**), a one-line progress note ("Reading the bounce codes", "With the client for approval"), the due date, when it last moved, and "Open what it needs" when it waits on you. Tick to finish one by hand. The tasks done in the last 7 days fold open below. **Ask for an update** opens chat with that agent, the question already typed;
    - decisions waiting from it;
    - its reports;
    - its Activity Log rows;
@@ -705,6 +712,17 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
 - A running campaign past 60% sent gives Atlas "Plan next campaign for <client>", due in 3 days.
 - It is skipped if a campaign plan already exists, and the task closes itself when the plan starts.
 
+**Agent task lists** (2026-11-25): kept in HQ's own database, never in the Airtable Tasks table (it has no Agent field, and Alex's project management stays his). The agents open, move and close their own tasks; nobody has to ask "what are you doing?":
+- **Atlas, plan next:** a running campaign past 60% sent gives "Plan next campaign for <client>", due in 3 days (skipped if a plan exists; closes itself when the plan starts). Checked every 30 minutes.
+- **Atlas, new campaigns:** every campaign plan is one task, "New campaign for <client>", due a week after it started (a default: tell us another target if you want one). It follows the plan step by step: writing the plan → sample → **waiting on you (approval 1)** → contacts → verify (Scribe writes the copy) → QA → **waiting on you (approval 2)** → with the client (48 business hours, not counted as stuck) → build and launch → done when live. Stopped by ❌ = done; stuck = waiting on you, with the retry command.
+- **Riley, bounce checks:** a campaign the bounce check pauses (or flags over 4%) opens "Bounce check: <campaign> (5.2%)" the moment it is queued, due the next day. Fixed automatically = done; otherwise **waiting on you** with the fix in Decisions → Campaigns; ✅ moves it to in progress and the fix closes it; ❌ closes it.
+- **Riley, account rests:** a rested inbox is "Rest <email> until its retest", due on the retest day (a planned wait: not stuck before then). Recovered = done; failed the retest = waiting on you (the replacement purchase); approved = done.
+- Only real (live) runs make tasks; a dry run or a check by hand does not.
+- **Last update** moves only when something changes (status, note, due date, link). A task nobody moves goes stuck after 2 days.
+- **Ada watches every list** (see "Ada, the morning brief"): what is late or stuck gets one line in her brief, and a stuck task with an engine job behind it is **re-queued** (once a day per task, at most 3 times; the normal queue, so a stage not in `LIVE_STAGES` re-runs as a dry run, and a job still running is left alone).
+- **In code:** `upsertAgentTask(db, { agent, key, title, due, status, note, link })` in `engine/src/hq/agentTasks.ts` (one task per key; `closeAgentTask(db, key, note)`). **Server:** `agent-task upsert --agent=Riley --key=<key> --title="..." [--status=in_progress] [--note="..."] [--due=YYYY-MM-DD] [--link=decisions/Fixes]`, `agent-task done --key=<key> --note="..."`, `agent-task list [--agent=Riley]` (for Claude sessions such as Riley's runbook).
+- **Chat:** ask "where is the GMG campaign?" or "what is Riley doing?": the answer comes from these tasks (status, note, last update, due) and cites "HQ task #12".
+
 **Less Slack:**
 - Every report (Ada's brief, Atlas health, Cole reviews, Ledger, Sienna, Riley, account health, bounce pauses, refused launches) is saved in HQ.
 - `SLACK_REPORTS=on` (default) still posts reports to Slack too. Set `off` once HQ works for you: then they go to HQ only. Urgent alerts always go to Slack (a campaign paused for bounces, a refused launch, a failed engine job).
@@ -758,4 +776,5 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
 ### Server commands
 - `hq-user <email> --role=owner|member [--name=Josh] [--password-stdin] [--google-only]`: create or update a login.
 - `ask add --agent=<name> --title="..." [...]`, `ask list [--all]`, `ask done <id>`: the "Needs you" asks (see tab 3 above).
+- `agent-task upsert|done|list`: an agent's own task list (see "Agent task lists" above).
 - Local development: `npm run build:hq` in `engine/` builds the app to `hq/web/dist`. Start the engine with `HQ_WEB_DIR=../hq/web/dist`, then open http://localhost:8080/hq/. Or run `npm run dev` in `hq/web`; it sends API calls to the engine on :8080.

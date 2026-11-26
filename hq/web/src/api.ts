@@ -26,17 +26,31 @@ export type Box = 'doNow' | 'schedule' | 'delegate' | 'later';
 /** One thing an agent needs from you (GET /needs). The server builds it; text is shown escaped. */
 export interface NeedLink { label: string; href: string }
 export interface Need {
-  key: string; kind: 'decisions' | 'issue' | 'signups' | 'ask'; group: 'now' | 'later';
+  key: string; kind: 'decisions' | 'issue' | 'signups' | 'ask' | 'task' | 'handled'; group: 'now' | 'later';
   agent: string; icon?: string; title: string; why: string; steps: string;
   action: NeedLink | null; link: NeedLink | null; canDone: boolean; canSnooze: boolean; count?: number; at: string;
+  /** Today's order: money and client-facing first. */
+  money?: boolean; clientFacing?: boolean;
+  /** Yesterday: what happened. Tomorrow: "Back tomorrow" / "Due tomorrow". */
+  outcome?: string; when?: string;
 }
 export interface NeedCounts { total: number; now: number; later: number }
+export type NeedDay = 'yesterday' | 'today' | 'tomorrow';
 export interface Report { id: number; agent: string; kind: string; title: string; summary: string; link: string | null; urgent: boolean; dryRun: boolean; created: string; data: any; body?: string }
 export interface TeamLine { agent: string; ok: boolean | null; line: string }
+/** Per agent: tasks not done, in progress, waiting on you, overdue, stalled (no update for 2+ days). */
+export interface AgentWork { open: number; inProgress: number; waitingAlex: number; overdue: number; stalled: number }
 export interface AgentCard {
   name: string; role: string; does: string; reportsTo: string; manages: string[]; status?: TeamLine; waiting: number; openTasks: number; lastOk: string | null; lastFail: string | null;
+  work?: AgentWork;
 }
-export interface AgentTask { id: number; agent: string; title: string; due: string | null; status: string; client: string; notes: string }
+export type AgentTaskStatus = 'open' | 'in_progress' | 'waiting_alex' | 'done';
+export interface AgentTask {
+  id: number; agent: string; title: string; due: string | null; status: AgentTaskStatus; client: string; notes: string;
+  /** One line: where it is now. */
+  note: string; link: string | null; priority: 'high' | 'normal' | 'low'; created: string; updated: string; done: string | null;
+  overdue: boolean; stalled: boolean; daysLate: number; daysQuiet: number;
+}
 export interface ChatMessage { id: number; role: 'user' | 'assistant'; author: string; text: string; sources: string[]; tools: { name: string; input: any; note: string; threadId?: number }[]; created: string }
 export type Light = 'red' | 'yellow' | 'green' | 'inactive';
 export interface ClientCampaign { id: string; name: string; progress: number; bounce: number; sent: number; interested: number; perThousand: number | null; flag: 'pause' | 'watch' | null; next: boolean; planExists: boolean }

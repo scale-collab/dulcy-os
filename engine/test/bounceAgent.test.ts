@@ -6,7 +6,7 @@ import { loadConfig, type Config } from '../src/config.js';
 import { enqueue, getJob } from '../src/queue.js';
 import { runOnce } from '../src/worker.js';
 import { classifyBounce, gatewayOf, diagnose, readBounce, codeOf, providerOfMx, type Bounce } from '../src/campaign/bounceDiagnosis.js';
-import { setMxLookup } from '../src/stages/bounceAgent.js';
+import { bounceTaskQueued, setMxLookup } from '../src/stages/bounceAgent.js';
 import { startFakeBison, type FakeBison } from './fakes/bison.js';
 
 const url = process.env.TEST_DATABASE_URL;
@@ -117,9 +117,14 @@ test('bounce check → bounce agent: the paused campaign is investigated once an
   ] };
   (bison as any).senderStats = { 13: { emails_sent_count: 300, bounced_count: 40 }, 11: { emails_sent_count: 300, bounced_count: 3 }, 12: { emails_sent_count: 300, bounced_count: 2 }, 14: { emails_sent_count: 300, bounced_count: 1 } };
   const conf = cfg();
+  await db.query(`DELETE FROM hq_agent_tasks`);
   const chk = await run(conf, 'bounce.check', { workspace: 'all' });
   assert.equal(chk.job.status, 'succeeded', chk.job.error ?? '');
   assert.match(chk.job.result.message, /1 sent to the bounce agent/);
+  // HQ: the investigation is Riley's task from the moment it is queued (with the job to re-queue).
+  const queued = (await db.query(`SELECT agent, status, progress_note, job_kind, job_record FROM hq_agent_tasks WHERE source_key='bounce:66:604'`)).rows[0];
+  assert.deepEqual([queued.agent, queued.status, queued.job_kind, queued.job_record], ['Riley', 'in_progress', 'bounce.investigate', 'bounce-investigate:604']);
+  assert.match(queued.progress_note, /Queued/);
   for (let i = 0; i < 10; i++) await runOnce(db, conf);
   const inv = (await db.query(`SELECT status, result, input FROM jobs WHERE kind='bounce.investigate'`)).rows;
   assert.equal(inv.length, 1);
@@ -127,6 +132,10 @@ test('bounce check → bounce agent: the paused campaign is investigated once an
   assert.equal(inv[0].result.cause, 'account');
   assert.equal(inv[0].result.action, 'Remove Inboxes and Resume');
   assert.equal(inv[0].input.teamId, 66);
+  // Diagnosed; the fix needs Alex (no Airtable here, so nothing was fixed automatically): waiting on him, nothing to re-queue.
+  const t = (await db.query(`SELECT status, progress_note, job_kind, link FROM hq_agent_tasks WHERE source_key='bounce:66:604'`)).rows[0];
+  assert.deepEqual([t.status, t.job_kind, t.link], ['waiting_alex', null, 'decisions/Campaigns']);
+  assert.match(t.progress_note, /Fix waiting for your OK/);
   // The next check (campaign is paused now) does not investigate again.
   const again = await run(conf, 'bounce.check', { workspace: 'all' });
   assert.doesNotMatch(again.job.result.message, /bounce agent/);
@@ -141,11 +150,17 @@ test('old paused campaigns are not swept up (only what this check pauses or flag
 
 test('✅ fix: the burned inbox is removed and the campaign resumes; never left with no inboxes', { skip }, async () => {
   bison.campaigns[0].status = 'paused';
+  await db.query(`DELETE FROM hq_agent_tasks`);
+  await bounceTaskQueued(db, { teamId: 66, campaignId: 604, name: '[TW] TW Contractors', bounce: 6 }, 'bounce-investigate:604');
   const j = await run(cfg(), 'bounce.fix', { teamId: 66, campaignId: 604, removeSenderIds: ['13'], name: 'TW Contractors' });
   assert.equal(j.job.status, 'succeeded', j.job.error ?? '');
   assert.deepEqual(bison.campaigns[0].senders, ['11', '12', '14']);
   assert.equal(bison.campaigns[0].status, 'active');
   assert.match(j.job.result.message, /1 inbox\(es\) removed, resumed/);
+  const task = (await db.query(`SELECT title, status, progress_note, done_at FROM hq_agent_tasks WHERE source_key='bounce:66:604'`)).rows[0];
+  assert.deepEqual([task.title, task.status], ['Bounce check: TW Contractors (6%)', 'done']);
+  assert.match(task.progress_note, /^Fixed: 1 inbox\(es\) removed/);
+  assert.ok(task.done_at, 'the fix closes Riley\'s task');
 
   await db.query('TRUNCATE jobs, steps, receipts, events RESTART IDENTITY CASCADE');
   bison.campaigns[0].status = 'paused';

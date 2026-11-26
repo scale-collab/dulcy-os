@@ -372,6 +372,29 @@ CREATE TABLE IF NOT EXISTS hq_agent_tasks (
   done_at     TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS hq_agent_tasks_open ON hq_agent_tasks (agent, status, due_date);
+-- Agent task lists (Alex, 2026-11-25: "the task should be assigned to them, and we could see and
+-- ask for progress"). Status: open (not started) | in_progress | waiting_alex | done. Each task has a
+-- one-line progress note and the time it last changed (updated_at: only bumped when the title,
+-- status, note, due date or link changes, so a task nobody touches goes stale). The engine opens,
+-- updates and closes them with upsertAgentTask() (engine/src/hq/agentTasks.ts), one row per source_key.
+-- job_kind/job_record/job_input: the engine job that moves it; Ada re-queues it when it stalls.
+-- waiting_until: a planned wait (an account resting until its retest) is not "stalled" before then.
+ALTER TABLE hq_agent_tasks DROP CONSTRAINT IF EXISTS hq_agent_tasks_status_check;
+ALTER TABLE hq_agent_tasks ADD CONSTRAINT hq_agent_tasks_status_check CHECK (status IN ('open','in_progress','waiting_alex','done'));
+ALTER TABLE hq_agent_tasks ADD COLUMN IF NOT EXISTS progress_note TEXT NOT NULL DEFAULT '';
+ALTER TABLE hq_agent_tasks ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ;
+UPDATE hq_agent_tasks SET updated_at = COALESCE(done_at, created_at) WHERE updated_at IS NULL;
+ALTER TABLE hq_agent_tasks ALTER COLUMN updated_at SET DEFAULT now();
+ALTER TABLE hq_agent_tasks ALTER COLUMN updated_at SET NOT NULL;
+ALTER TABLE hq_agent_tasks ADD COLUMN IF NOT EXISTS priority TEXT NOT NULL DEFAULT 'normal';
+ALTER TABLE hq_agent_tasks ADD COLUMN IF NOT EXISTS job_kind TEXT;
+ALTER TABLE hq_agent_tasks ADD COLUMN IF NOT EXISTS job_record TEXT;
+ALTER TABLE hq_agent_tasks ADD COLUMN IF NOT EXISTS job_input JSONB;
+ALTER TABLE hq_agent_tasks ADD COLUMN IF NOT EXISTS waiting_until TIMESTAMPTZ;
+ALTER TABLE hq_agent_tasks ADD COLUMN IF NOT EXISTS requeues INT NOT NULL DEFAULT 0;
+ALTER TABLE hq_agent_tasks ADD COLUMN IF NOT EXISTS requeued_at TIMESTAMPTZ;
+ALTER TABLE hq_agent_tasks ADD COLUMN IF NOT EXISTS decision_rec TEXT;          -- the Airtable Decision a waiting_alex task waits on
+CREATE INDEX IF NOT EXISTS hq_agent_tasks_done ON hq_agent_tasks (done_at DESC) WHERE status = 'done';
 
 -- HQ sign-up and user management (2026-11-25). A sign-up is a row with pending=true AND
 -- disabled=true: every login path refuses disabled and pending users, so a request can never get
@@ -420,6 +443,11 @@ CREATE TABLE IF NOT EXISTS hq_asks (
   snoozed_until TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS hq_asks_open ON hq_asks (created_at DESC) WHERE done_at IS NULL;
+-- Needs you day switcher (2026-11-25): an ask can be due on a day (shown on that day, "Tomorrow"
+-- the day before), and flagged money or client-facing (those come first on Today).
+ALTER TABLE hq_asks ADD COLUMN IF NOT EXISTS due_date DATE;
+ALTER TABLE hq_asks ADD COLUMN IF NOT EXISTS client_facing BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE hq_asks ADD COLUMN IF NOT EXISTS money BOOLEAN NOT NULL DEFAULT false;
 
 -- "Not now" on a Needs-you item that lives elsewhere (a Riley System Issue): hidden until quiet_until.
 CREATE TABLE IF NOT EXISTS hq_needs_quiet (

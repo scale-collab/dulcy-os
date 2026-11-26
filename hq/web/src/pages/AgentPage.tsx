@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, type AgentTask, type Decision, type Report, type TeamLine } from '../api';
-import { Avatar, BackLink, Button, Card, cleanLine, cx, dueLabel, ErrorBox, go, Icon, PageSkeleton, Pill, SectionHeader, StatusDot, teamTone, timeAgo } from '../ui';
+import { api, type AgentTask, type AgentWork, type Decision, type Report, type TeamLine } from '../api';
+import { Avatar, BackLink, Button, Card, cleanLine, cx, ErrorBox, go, Icon, PageSkeleton, Pill, SectionHeader, StatusDot, teamTone, timeAgo } from '../ui';
 import { ReportList } from './Reports';
+import { askForProgress, TaskList } from './AgentWork';
 
 interface Run { id: number; kind: string; status: string; at: string; message: string; dryRun: boolean }
 interface Activity { id: string; event: string; when: string; type: string; details: string }
 interface Detail {
   agent: { name: string; role: string; does: string; reportsTo: string; manages: string[] };
   status: TeamLine; lastOk: string | null; lastFail: string | null;
-  runs: Run[]; decisions: Decision[]; activity: Activity[]; tasks: AgentTask[]; reports: Report[];
+  runs: Run[]; decisions: Decision[]; activity: Activity[]; tasks: AgentTask[]; reports: Report[]; work?: AgentWork;
 }
 const runTone = (s: string) => (s === 'succeeded' ? 'good' : s === 'failed' || s === 'needs_review' ? 'bad' : 'plain') as 'good' | 'bad' | 'plain';
 
@@ -24,6 +25,7 @@ export default function AgentPage({ name }: { name: string }) {
   if (!d) return <>{back}<PageSkeleton kind="list" /></>;
   const a = d.agent;
   const tone = teamTone(d.status.ok, d.status.line);
+  const openTasks = d.tasks.filter((t) => t.status !== 'done');
   return (
     <div>
       {back}
@@ -47,21 +49,15 @@ export default function AgentPage({ name }: { name: string }) {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <section className="min-w-0">
-          <SectionHeader title={`To-do · ${d.tasks.length}`} icon="grid" />
-          <Card className="p-0">
-            {d.tasks.length ? (
-              <ul className="divide-y divide-line">
-                {d.tasks.map((t) => (
-                  <li key={t.id} className="flex items-start gap-1 pr-4">
-                    <button aria-label={`Mark "${t.title}" done`} onClick={() => void finish(t.id)} className="group grid h-12 w-12 shrink-0 place-items-center">
-                      <span className="grid h-[22px] w-[22px] place-items-center rounded-full border-2 border-line-strong text-transparent transition group-hover:border-accent group-hover:text-accent-ink"><Icon name="check" size={13} strokeWidth={3} /></span>
-                    </button>
-                    <div className="min-w-0 flex-1 py-3"><div className="text-[15px] font-medium text-fg">{t.title}</div><div className="text-xs text-muted">{[t.due ? dueLabel(t.due) : '', t.client, t.notes].filter(Boolean).join(' · ')}</div></div>
-                  </li>
-                ))}
-              </ul>
-            ) : <div className="px-5 py-4 text-sm text-muted">Nothing on {a.name}'s list.</div>}
-          </Card>
+          <SectionHeader title={`Tasks · ${openTasks.length} open`} icon="grid"
+            right={<button onClick={() => askForProgress(a.name)} className="-my-2 -mr-2 inline-flex min-h-11 items-center gap-1.5 rounded-xl px-2 text-sm font-semibold text-accent-ink hover:bg-hover"><Icon name="message" size={15} />Ask for an update</button>} />
+          {d.work && (d.work.overdue > 0 || d.work.stalled > 0) && (
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {d.work.overdue > 0 && <Pill tone="bad">{d.work.overdue} late</Pill>}
+              {d.work.stalled > 0 && <Pill tone="warn">{d.work.stalled} stuck (no update for 2+ days)</Pill>}
+            </div>
+          )}
+          <TaskList tasks={d.tasks} agent={a.name} onDone={(id) => void finish(id)} />
         </section>
 
         <section className="min-w-0">

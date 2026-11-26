@@ -42,6 +42,7 @@ function guide(agent: AgentName, asked: boolean): string {
     '- Result first, exact numbers, a short list at most. No walls of text, no invented numbers or percentages.',
     '- Look facts up with the read-only tools before stating anything about clients, campaigns, replies, decisions, tasks, jobs or reports. Never guess; unknown = say UNKNOWN.',
     '- End with one line "Sources: ..." naming what you read (the tool and table, e.g. "Airtable Campaigns, engine jobs").',
+    '- "Where is X?" / "what is <agent> doing?": read agent_todo first and answer from the task: its status, its progress note, when it last moved, and its due date. Cite it as "HQ task #<id>". If it is stalled or overdue, say so plainly and what moves it next.',
     '- If the data does not answer the question or you are not sure, start with "Here\'s what I found:", give what you found, and say who should handle it (one agent from the roster, or Alex / Josh).',
     '- From chat you cannot send, launch, pause, spend credits, delete or change anything. If asked to, say exactly what would be done and that it needs the owner\'s approval in Decisions or the right screen.',
     '- Never reveal keys, tokens or passwords. Money, finance and content only for the owner.',
@@ -57,7 +58,7 @@ const TOOLS: Tool[] = [
   { name: 'recent_activity', description: 'Activity Log rows (what the engine and agents did), newest first.', input_schema: { type: 'object', properties: { agent: { type: 'string' }, days: { type: 'integer', minimum: 1, maximum: 14 } }, additionalProperties: false } },
   { name: 'reply_counts', description: 'Prospect replies in the last N days from Airtable Emails, counted by client and lead status, plus meetings booked.', input_schema: { type: 'object', properties: { client: { type: 'string' }, days: { type: 'integer', minimum: 1, maximum: 30 } }, additionalProperties: false } },
   { name: 'engine_jobs', description: 'Recent engine jobs (agent runs): kind, status, time, message.', input_schema: { type: 'object', properties: { agent: { type: 'string' }, status: { type: 'string', enum: ['queued', 'running', 'succeeded', 'failed', 'needs_review'] }, limit: { type: 'integer', minimum: 1, maximum: 20 } }, additionalProperties: false } },
-  { name: 'agent_todo', description: "The agents' own to-do lists in HQ (open tasks with deadlines).", input_schema: { type: 'object', properties: { agent: { type: 'string' } }, additionalProperties: false } },
+  { name: 'agent_todo', description: "The agents' own task lists in HQ: each task's id, status (open / in_progress / waiting_alex / done), due date, last update, one-line progress note, and whether it is overdue or stalled (no update for 2+ days). Use it FIRST for \"where is X?\" / \"what is <agent> doing?\" / \"how far is the <client> campaign?\" questions, and cite the task as \"HQ task #<id>\".", input_schema: { type: 'object', properties: { agent: { type: 'string' }, search: { type: 'string', description: 'Words in the title, client or note (e.g. a client or campaign name)' }, include_done: { type: 'boolean', description: 'Also tasks finished in the last 7 days. Default true.' } }, additionalProperties: false } },
   { name: 'agent_reports', description: 'Recent agent reports saved in HQ (brief, client health, call reviews, ...): title, summary, date.', input_schema: { type: 'object', properties: { agent: { type: 'string' }, limit: { type: 'integer', minimum: 1, maximum: 10 } }, additionalProperties: false } },
 ];
 const ASK_TOOL: Tool = { name: 'ask_agent', description: 'Ask another agent a question; their answer comes back and the conversation is saved for the owner to read.', input_schema: { type: 'object', properties: { agent: { type: 'string', enum: AGENT_NAMES.filter((a) => a !== 'Ada') as string[] }, question: { type: 'string' } }, required: ['agent', 'question'], additionalProperties: false } };
@@ -128,8 +129,19 @@ async function runTool(deps: ChatDeps, name: string, input: any, ctx: { asks: nu
       return { source: 'Engine jobs', data: rows.map((x) => ({ id: Number(x.id), kind: x.kind, status: x.status, at: new Date(x.updated_at).toISOString(), dry_run: x.dry_run, message: x.message })), note: `${rows.length} jobs` };
     }
     case 'agent_todo': {
-      const t = (await agentTasks(db, agentArg ?? undefined)).filter((x) => canSeeMoney(user) || !OWNER_ONLY.includes(x.agent));
-      return { source: 'HQ agent to-do lists', data: t.map((x) => ({ agent: x.agent, title: x.title, due: x.due, client: x.client, notes: x.notes })), note: `${t.length} open` };
+      const words = String(input?.search ?? '').toLowerCase().split(/\s+/).filter((w) => w.length > 1);
+      const t = (await agentTasks(db, agentArg ?? undefined, input?.include_done !== false))
+        .filter((x) => canSeeMoney(user) || !OWNER_ONLY.includes(x.agent))
+        .filter((x) => !words.length || words.every((w) => `${x.title} ${x.client} ${x.note} ${x.notes}`.toLowerCase().includes(w)));
+      const open = t.filter((x) => x.status !== 'done').length;
+      return {
+        source: 'HQ agent task lists',
+        data: t.slice(0, 40).map((x) => ({
+          task: `HQ task #${x.id}`, agent: x.agent, title: x.title, status: x.status, due: x.due, client: x.client, progress: x.note || x.notes,
+          last_update: x.updated, done_at: x.done, overdue: x.overdue, stalled: x.stalled, link: x.link,
+        })),
+        note: `${open} open${t.length > open ? `, ${t.length - open} done in 7 days` : ''}`,
+      };
     }
     case 'agent_reports': {
       const limit = Math.min(10, Math.max(1, Number(input?.limit) || 5));

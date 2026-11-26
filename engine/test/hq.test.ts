@@ -843,8 +843,10 @@ test('needs: one item per pile (never per decision), Riley manual fixes, sign-up
   assert.equal(items.find((i) => i.key === 'signups')!.action?.href, 'users');
   assert.deepEqual(keys.filter((k) => k.startsWith('ask:')).sort(), ['ask:1', 'ask:2', 'ask:5'], 'done and snoozed asks are gone; an ended snooze is back');
   assert.equal(items.find((i) => i.key === 'ask:2')!.icon, 'sparkles', 'a label, not an agent, gets an icon');
-  // Order: every "now" before every "later"; replies first.
-  assert.equal(keys[0], 'pile:Replies');
+  // Order: every "now" before every "later"; inside, client-facing first, then the oldest (Alex 2026-11-25):
+  // the Campaigns pile (oldest 05:00) before Replies (oldest 06:00), both before Riley's issue.
+  assert.deepEqual(keys.slice(0, 2), ['pile:Campaigns', 'pile:Replies']);
+  assert.ok(keys.indexOf('issue:recISSUE000000001') > keys.indexOf('pile:Replies'));
   const groups = items.map((i) => i.group);
   assert.deepEqual(groups, [...groups].sort((a, b) => (a === b ? 0 : a === 'now' ? -1 : 1)));
   assert.equal(items.find((i) => i.key === 'ask:1')!.group, 'later');
