@@ -191,7 +191,7 @@
 
 ### Client portal (2026-11-26): built, not deployed
 - **What it is:** a client signs in at hq.dulcy.io and sees only their own results: Overview (interested and booked, 7 and 30 days; live campaigns; deliverability in words), Leads (yes-replies handed to them or booked, 90 days), Meetings (booked, 90 days). Phone and computer, light and dark.
-- **How Alex adds one:** Users → Add client login (pick the client, name, email, temporary password or Google only). Disable on the same page. How to use it: `engine/GUIDE.md` → "HQ" → "Client logins".
+- **How Alex adds one:** Users → Add client login (pick the client, name, email, temporary password or Google only). Disable on the same page. How to use it: `engine/GUIDE.md` → "HQ" → "Client portal".
 - **Isolation:** role `client` linked to one client record (Twenty West's two records are one client). The server lets a client reach only `/hq/api/portal/*` (an allow-list, so new HQ pages are closed to clients by default); the client always comes from the login. No money, drafts, notes, agents, Decisions or Airtable links, and no writes. A test walks every HQ route with a client login and expects "no".
 - **Where:** `engine/src/hq/portal.ts`, the guard `clientMayCall` in `engine/src/hq/server.ts`, `hq/web/src/pages/Portal.tsx`, Users page.
 - **Not yet:**
@@ -199,6 +199,17 @@
   2. Meeting times: Airtable stores the day a meeting was booked, not when it happens (UNKNOWN which field, if any, holds the meeting time).
   3. Password reset by email: there is no email sending in HQ; Alex sets a temporary password.
   4. send.dulcy.io (EmailBison white-label) stays a separate login.
+
+### Client portal v2: portal.dulcy.io replaces Softr (Alex, 2026-11-26): built, not deployed
+- Alex: "I want the same portal but on our site so we can avoid paying for Softr. We can use portal.dulcy.io." "Functionality-wise I want it to be the same", and "you can make it better".
+- **Spec:** `hq/portal-softr-inventory.md`, read from the Softr app (40 pages incl. the system ones: page → blocks → table/fields → scope → actions). Nothing in Softr was changed.
+- **Built:** every Softr page as a portal screen, grouped: Home · Results (Email, LinkedIn, AI caller, Direct mail) · Campaigns (review, calendar) · Leads & pipeline (call feedback, close a deal) · Meetings (booked, feedback, with Dulcy, book a call) · Tasks & onboarding · Docs & access · Billing · Account. Its own bundle (`portal.html`), phone and desktop, light and dark. Home answers "is it working?" first.
+- **Writes:** the Softr ones only, to the same tables and fields (Campaign Feedback, Call Feedback, Client Closed Deals, Client Tasks Stage, Onboarding answers, Client Notifications Dismissed), each logged in `hq_portal_writes`.
+- **Accounts:** open sign-up → a request the owner links (suggested from Airtable Portal Users); Google-verified email matching one active client → linked at once; Softr users → "Make login + link" (one-time setup link, 7 days); forgot password → the owner sends a link.
+- **Host routing:** `PORTAL_HOST` (portal.dulcy.io) serves only the portal page, its files and the portal + sign-in routes; HQ's app and API answer "not found" there; staff are sent to hq.dulcy.io. Traefik labels added in `engine/deploy/docker-compose.yml`.
+- **Where:** `engine/src/hq/portal.ts` (reads), `portalWrites.ts`, `portalAccounts.ts`, `portalFields.ts`, `server.ts` (`clientMayCall`, `portalHostMayCall`); `hq/web/src/portal/`; tests `engine/test/hqPortal.test.ts`, `hqPortalV2.test.ts`.
+- **Left for Alex:** test at hq.dulcy.io/portal, set `PORTAL_MEETING_URL`, deploy, switch the `portal` DNS record, invite the Softr users (`engine/GUIDE.md` → "Switch portal.dulcy.io from Softr to HQ").
+- **Left out (not confirmable from Softr, or not safe):** pipeline drag-and-drop, client file upload, Mail Analytics / Call Details / SMS Details lists (table UNKNOWN), the Xero invoice link, the lead's full conversation history. See the inventory.
 
 ## Clean-up alongside (Riley)
 - Old and duplicate n8n, Make and Airtable automations.

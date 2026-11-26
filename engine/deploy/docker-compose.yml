@@ -1,7 +1,7 @@
 # Lead engine + its own Postgres. The server runs Coolify; its Traefik proxy
 # (coolify-proxy, also serving n8n.dulcy.io) routes ENGINE_HOST to the engine over
-# HTTPS via the labels below, and HQ_HOST (Dulcy HQ, the private web app) to the same
-# container. Port 127.0.0.1:8090 stays for local health checks.
+# HTTPS via the labels below, HQ_HOST (Dulcy HQ, the private web app) and PORTAL_HOST (the
+# client portal, portal.dulcy.io) to the same container. Port 127.0.0.1:8090 stays for local health checks.
 services:
   engine:
     # Built from the repo root so the image also holds the HQ web app (hq/web).
@@ -21,6 +21,7 @@ services:
       DATABASE_URL: postgres://engine:${POSTGRES_PASSWORD}@db:5432/engine
       GOOGLE_IMPERSONATE_USER: ${GOOGLE_IMPERSONATE_USER:-scale@dulcy.io}
       HQ_HOST: ${HQ_HOST:-hq.dulcy.io}
+      PORTAL_HOST: ${PORTAL_HOST:-portal.dulcy.io}
     ports:
       - "127.0.0.1:8090:8080"
     # n8n's network: reaches the calendar service (dulcy-calendar:8789) for client availability.
@@ -47,6 +48,16 @@ services:
       traefik.http.routers.dulcy-hq-http.rule: "Host(`${HQ_HOST:-hq.dulcy.io}`)"
       traefik.http.routers.dulcy-hq-http.entrypoints: http
       traefik.http.routers.dulcy-hq-http.middlewares: dulcy-engine-https
+      # Client portal: same container, its own host name and certificate. The engine serves only the
+      # portal shell and the portal + login APIs on this host (never HQ's app or the signed API).
+      traefik.http.routers.dulcy-portal.rule: "Host(`${PORTAL_HOST:-portal.dulcy.io}`)"
+      traefik.http.routers.dulcy-portal.entrypoints: https
+      traefik.http.routers.dulcy-portal.tls: "true"
+      traefik.http.routers.dulcy-portal.tls.certresolver: letsencrypt
+      traefik.http.routers.dulcy-portal.service: dulcy-engine
+      traefik.http.routers.dulcy-portal-http.rule: "Host(`${PORTAL_HOST:-portal.dulcy.io}`)"
+      traefik.http.routers.dulcy-portal-http.entrypoints: http
+      traefik.http.routers.dulcy-portal-http.middlewares: dulcy-engine-https
     depends_on:
       db:
         condition: service_healthy
