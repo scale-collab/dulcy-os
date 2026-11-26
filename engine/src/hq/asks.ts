@@ -11,10 +11,13 @@ export type AskAudience = 'owner' | 'everyone';
 export interface NewAsk {
   agent: string; title: string; why?: string; steps?: string; actionLabel?: string; actionUrl?: string;
   priority?: AskPriority; audience?: AskAudience; dedupeKey?: string;
+  /** YYYY-MM-DD: shown on that day (on "Tomorrow" the day before), not before. */
+  due?: string; clientFacing?: boolean; money?: boolean;
 }
 export interface Ask {
   id: number; agent: string; title: string; why: string; steps: string; actionLabel: string; actionUrl: string;
   priority: AskPriority; audience: AskAudience; dedupeKey: string; created: string; done: string | null; doneBy: string | null; snoozedUntil: string | null;
+  due?: string | null; clientFacing?: boolean; money?: boolean;
 }
 
 const clean = (x: unknown, max: number) => String(x ?? '').replace(/\r\n/g, '\n').trim().slice(0, max);
@@ -36,7 +39,7 @@ export function cleanActionUrl(raw: unknown): string | null {
 }
 
 /** Check and tidy a new ask. Returns the error text when it is not valid. */
-export function validAsk(x: any): Required<NewAsk> | string {
+export function validAsk(x: any): (Omit<Required<NewAsk>, 'due'> & { due: string | null }) | string {
   const agentRaw = oneLine(x?.agent, 40);
   const agent = agentByName(agentRaw) ?? agentRaw;
   if (!agent || !/^[A-Za-z][A-Za-z ]{0,39}$/.test(agent)) return 'Which agent asks? (an agent name such as Atlas, or a short label such as Setup)';
@@ -50,12 +53,16 @@ export function validAsk(x: any): Required<NewAsk> | string {
   if (audience !== 'owner' && audience !== 'everyone') return 'Audience must be owner or everyone.';
   const actionLabel = oneLine(x?.actionLabel, 40) || (actionUrl ? 'Open' : '');
   const dedupeKey = oneLine(x?.dedupeKey, 200) || `${agent.toLowerCase()}:${title.toLowerCase()}`;
+  const due = String(x?.due ?? '').trim();
+  if (due && (!/^\d{4}-\d{2}-\d{2}$/.test(due) || !Number.isFinite(Date.parse(`${due}T12:00:00Z`)))) return 'Due must be a date, YYYY-MM-DD.';
   return {
     agent, title, why: oneLine(x?.why, 300), steps: clean(x?.steps, 4000), actionLabel, actionUrl,
     priority: priority as AskPriority,
     // Money and content stay owner-only (Alex, 2026-11-25), whatever the caller asked for.
     audience: OWNER_ONLY.includes(agent) ? 'owner' : (audience as AskAudience),
-    dedupeKey,
+    dedupeKey, due: due || null, clientFacing: x?.clientFacing === true,
+    // Ledger's asks are money by definition.
+    money: x?.money === true || agent === 'Ledger',
   };
 }
 
@@ -63,32 +70,42 @@ const toAsk = (r: any): Ask => ({
   id: Number(r.id), agent: String(r.agent), title: String(r.title), why: String(r.why), steps: String(r.steps), actionLabel: String(r.action_label), actionUrl: String(r.action_url),
   priority: r.priority, audience: r.audience, dedupeKey: String(r.dedupe_key), created: new Date(r.created_at).toISOString(),
   done: r.done_at ? new Date(r.done_at).toISOString() : null, doneBy: r.done_by ?? null, snoozedUntil: r.snoozed_until ? new Date(r.snoozed_until).toISOString() : null,
+  due: r.due ?? null, clientFacing: r.client_facing === true, money: r.money === true,
 });
+const ASK_COLS = `*, to_char(due_date,'YYYY-MM-DD') AS due`;
 
 /** Add an ask. The same dedupe key again returns the existing ask unchanged (created: false). */
 export async function addAsk(db: Db, x: NewAsk): Promise<{ ask: Ask; created: boolean }> {
   const a = validAsk(x);
   if (typeof a === 'string') throw Object.assign(new Error(a), { status: 400 });
   const ins = await db.query(
-    `INSERT INTO hq_asks (agent, title, why, steps, action_label, action_url, priority, audience, dedupe_key)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (dedupe_key) DO NOTHING RETURNING *`,
-    [a.agent, a.title, a.why, a.steps, a.actionLabel, a.actionUrl, a.priority, a.audience, a.dedupeKey]);
+    `INSERT INTO hq_asks (agent, title, why, steps, action_label, action_url, priority, audience, dedupe_key, due_date, client_facing, money)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) ON CONFLICT (dedupe_key) DO NOTHING RETURNING ${ASK_COLS}`,
+    [a.agent, a.title, a.why, a.steps, a.actionLabel, a.actionUrl, a.priority, a.audience, a.dedupeKey, a.due, a.clientFacing, a.money]);
   if (ins.rows[0]) return { ask: toAsk(ins.rows[0]), created: true };
-  const old = await db.query(`SELECT * FROM hq_asks WHERE dedupe_key=$1`, [a.dedupeKey]);
+  const old = await db.query(`SELECT ${ASK_COLS} FROM hq_asks WHERE dedupe_key=$1`, [a.dedupeKey]);
   return { ask: toAsk(old.rows[0]), created: false };
 }
 
 /** Open asks (not done, not snoozed), or every ask with all=true. */
 export async function listAsks(db: Db, opts: { all?: boolean; limit?: number } = {}): Promise<Ask[]> {
   const r = await db.query(
-    `SELECT * FROM hq_asks WHERE $1 OR (done_at IS NULL AND (snoozed_until IS NULL OR snoozed_until <= now()))
+    `SELECT ${ASK_COLS} FROM hq_asks WHERE $1 OR (done_at IS NULL AND (snoozed_until IS NULL OR snoozed_until <= now()))
      ORDER BY done_at IS NOT NULL, created_at DESC, id DESC LIMIT $2`, [opts.all === true, Math.min(500, opts.limit ?? 100)]);
   return r.rows.map(toAsk);
 }
 
 export async function getAsk(db: Db, id: number): Promise<Ask | null> {
-  const r = await db.query(`SELECT * FROM hq_asks WHERE id=$1`, [id]);
+  const r = await db.query(`SELECT ${ASK_COLS} FROM hq_asks WHERE id=$1`, [id]);
   return r.rows[0] ? toAsk(r.rows[0]) : null;
+}
+
+/** Asks for the day switcher: done in the last 3 days, snoozed (not done), or with a due date (not done). */
+export async function asksAroundToday(db: Db): Promise<Ask[]> {
+  const r = await db.query(
+    `SELECT ${ASK_COLS} FROM hq_asks WHERE done_at > now() - interval '3 days' OR (done_at IS NULL AND (snoozed_until > now() OR due_date IS NOT NULL))
+     ORDER BY id DESC LIMIT 500`);
+  return r.rows.map(toAsk);
 }
 
 /** Can this person see (and so finish or snooze) this ask? */

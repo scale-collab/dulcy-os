@@ -90,7 +90,7 @@ export async function upsertAgentTask(db: Db, t: UpsertAgentTask): Promise<{ id:
   const job = t.job === undefined ? undefined : t.job && t.job.kind && t.job.recordId ? { kind: oneLine(t.job.kind, 80), recordId: oneLine(t.job.recordId, 200), input: t.job.input ?? {} } : null;
   const decision = t.decision === undefined ? undefined : t.decision && /^rec[A-Za-z0-9]{14}$/.test(t.decision) ? t.decision : null;
 
-  const old = (await db.query(`SELECT * FROM hq_agent_tasks WHERE source_key=$1`, [key])).rows[0];
+  const old = (await db.query(`SELECT *, to_char(due_date,'YYYY-MM-DD') AS due_ymd FROM hq_agent_tasks WHERE source_key=$1`, [key])).rows[0];
   if (!old) {
     const status = t.status ?? 'open';
     const r = await db.query(
@@ -104,10 +104,10 @@ export async function upsertAgentTask(db: Db, t: UpsertAgentTask): Promise<{ id:
   }
   const next = {
     title, status: (t.status ?? old.status) as TaskStatus, note: note ?? String(old.progress_note ?? ''),
-    due: due === undefined ? (old.due_date ? nyDate(new Date(old.due_date)) : null) : due,
+    due: due === undefined ? (old.due_ymd ?? null) : due,
     link: link === undefined ? (old.link ?? null) : link,
   };
-  const oldDue = old.due_date ? nyDate(new Date(old.due_date)) : null;
+  const oldDue = old.due_ymd ?? null;
   const changed = next.title !== old.title || next.status !== old.status || next.note !== String(old.progress_note ?? '') || next.due !== oldDue || (next.link ?? null) !== (old.link ?? null);
   await db.query(
     `UPDATE hq_agent_tasks SET title=$2, status=$3, progress_note=$4, due_date=$5, link=$6,
