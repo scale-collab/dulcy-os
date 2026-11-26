@@ -59,7 +59,7 @@ export function recordLinkFor(kind: string, recordId: string): Pick<Activity, 'c
   return null;
 }
 
-const STEP_NAMES: Record<string, string> = {
+export const STEP_NAMES: Record<string, string> = {
   'leadlist.sample': 'Company sample', 'leadlist.expand': 'Expand companies', 'leadlist.refit': 'Refit companies', 'leadlist.contacts': 'Find contacts',
   'leadlist.verify': 'Verify and finalize', 'leadlist.enrichprompt': 'Enrichment prompt', 'leadlist.enrich': 'Enrichment', 'leadlist.deepreview': 'DiscoGen deep review',
   'leadlist.deepcontacts': 'Deep contacts', 'leadlist.qa': 'Automated QA', 'leadlist.filters': 'Generate filters', 'leadlist.restart': 'Restart companies',

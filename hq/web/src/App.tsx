@@ -14,11 +14,13 @@ import Clients from './pages/Clients';
 import ClientPage from './pages/ClientPage';
 import Users from './pages/Users';
 import Inbox, { ThreadPage } from './pages/Inbox';
+import Campaigns from './pages/Campaigns';
 
 const TABS = [
   { key: 'today', label: 'Today', icon: 'sun', count: '' },
   { key: 'decisions', label: 'Decisions', icon: 'inbox', count: 'decisions' },
   { key: 'inbox', label: 'Inbox', icon: 'reply', count: 'inbox' },
+  { key: 'campaigns', label: 'Campaigns', icon: 'megaphone', count: 'campaigns' },
   { key: 'clients', label: 'Clients', icon: 'briefcase', count: '' },
   { key: 'needs', label: 'Needs you', icon: 'bell', count: 'needs' },
   { key: 'agents', label: 'Team', icon: 'users', count: '' },
@@ -47,6 +49,7 @@ export default function App() {
     case 'clients': body = a ? <ClientPage id={a} user={user} tab={b} sub={c} /> : <Clients user={user} />; break;
     case 'inbox': body = <Inbox tab={a} client={b} />; break;
     case 'thread': body = <ThreadPage id={a ?? ''} />; break;
+    case 'campaigns': body = <Campaigns a={a} b={b} />; break;
     case 'users': body = <Users user={user} />; break;
     case 'needs': body = <Needs user={user} />; break;
     // The old Eisenhower to-do (Airtable Tasks): still at #/tasks, out of the main navigation.
@@ -57,7 +60,7 @@ export default function App() {
     default: body = <Today user={user} />;
   }
   const active = page === 'report' ? 'today' : page === 'thread' ? 'inbox' : page === 'users' ? 'users' : page === 'tasks' ? 'needs' : TABS.some((t) => t.key === page) ? page : 'today';
-  const viewKey = page === 'agents' || page === 'clients' || page === 'thread' ? `${page}/${a ?? ''}` : page === 'report' ? `report/${a}` : page;
+  const viewKey = page === 'agents' || page === 'clients' || page === 'thread' || page === 'campaigns' ? `${page}/${a ?? ''}` : page === 'report' ? `report/${a}` : page;
   return (
     <div className="min-h-dvh">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2 focus:shadow-pop">Skip to content</a>
@@ -91,7 +94,7 @@ function Sidebar({ active, user, onSignOut }: { active: string; user: User; onSi
               className={cx('group flex min-h-11 items-center gap-3 rounded-xl px-3 text-[15px] font-medium transition', on ? 'bg-hover text-fg' : 'text-muted hover:bg-hover hover:text-fg')}>
               <Icon name={t.icon} size={18} className={on ? 'text-fg' : 'text-muted group-hover:text-fg'} />
               <span className="flex-1 text-left">{t.label}</span>
-              {!!n && <span className={cx('tabular rounded-full px-2 py-0.5 text-xs font-semibold', t.key === 'decisions' ? 'bg-ink text-ink-fg' : t.key === 'needs' || t.key === 'inbox' ? 'bg-accent text-accent-fg' : 'bg-sunken text-fg-2 border border-line')}>{n}</span>}
+              {!!n && <span className={cx('tabular rounded-full px-2 py-0.5 text-xs font-semibold', t.key === 'decisions' ? 'bg-ink text-ink-fg' : t.key === 'needs' || t.key === 'inbox' || t.key === 'campaigns' ? 'bg-accent text-accent-fg' : 'bg-sunken text-fg-2 border border-line')}>{n}</span>}
             </button>
           );
         })}
@@ -133,6 +136,7 @@ function MobileHeader({ onSignOut, owner, active }: { onSignOut: () => void; own
       <div className="flex h-14 items-center justify-between pl-4 pr-2">
         <button onClick={() => go('today')} className="flex min-h-11 items-center gap-2.5 font-semibold tracking-tight"><Logo className="h-7 w-7" />Dulcy HQ</button>
         <div className="flex items-center">
+          <IconButton icon="megaphone" label="Campaigns" active={active === 'campaigns'} onClick={() => go('campaigns')} />
           <IconButton icon="users" label="Team" active={active === 'agents'} onClick={() => go('agents')} />
           {owner && (
             <span className="relative">
@@ -153,7 +157,8 @@ function TabBar({ active }: { active: string }) {
   return (
     <nav aria-label="Main" className="safe-bottom fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/90 backdrop-blur-md md:hidden">
       <div className="mx-auto grid max-w-lg grid-cols-6">
-        {TABS.filter((t) => t.key !== 'agents').map((t) => {
+        {/* Phone: Team and Campaigns are icons in the top bar (six tabs fit). */}
+        {TABS.filter((t) => t.key !== 'agents' && t.key !== 'campaigns').map((t) => {
           const on = active === t.key;
           const n = t.key === 'decisions' || t.key === 'needs' || t.key === 'inbox' ? c[t.key] : 0;
           return (

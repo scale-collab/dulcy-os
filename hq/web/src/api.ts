@@ -91,3 +91,35 @@ export interface ReplierDetail {
   history: { by: string; action: string; at: string; changes: ReplierChange[] | { provider: string; email: string; expiresAt: string } }[];
   invite: { ready: boolean; why: string; provider: 'google' | 'calendly'; email: string };
 }
+
+/* ---------- Campaigns (Step 3) ---------- */
+export type CampaignGroup = 'live' | 'building' | 'done';
+export type StepKey = 'list' | 'copy' | 'review' | 'launch' | 'live' | 'sixty' | 'next';
+export type StepState = 'done' | 'now' | 'todo' | 'bad';
+export interface CampaignStep { key: StepKey; label: string; state: StepState; note: string }
+export type NeedKind = 'pause' | 'failed' | 'stuck' | 'watch' | 'next' | 'review' | 'low';
+export interface CampaignNeed { kind: NeedKind; agent: string; text: string }
+export interface CampaignRow {
+  id: string; name: string; client: string; clientKey: string; clientRec: string; clientActive: boolean | null;
+  status: string; stage: string; group: CampaignGroup; old: boolean;
+  progress: number; sent: number; replies: number; interested: number; booked: number; bounce: number; contacted: number; totalLeads: number; perThousand: number | null;
+  flag: 'pause' | 'watch' | null; planned: boolean; steps: CampaignStep[]; now: { key: StepKey; label: string; note: string; state: StepState } | null;
+  lastChange: string | null; needs: CampaignNeed[]; owner: string | null; listIds: string[];
+}
+export interface Channel { key: 'email' | 'linkedin' | 'caller'; label: string; live: boolean; reason: string }
+export interface CampaignList {
+  rows: CampaignRow[]; counts: { action: number; live: number; building: number }; client: string;
+  clients: { key: string; name: string; count: number; action: number }[]; notes: Note[]; channels: Channel[];
+  limits: { watch: number; pause: number; next: number; stuckDays: number; oldDays: number; lowShare: number; minSentToJudge: number };
+  agencyPerThousand: number | null; readAt: string;
+}
+export interface CampaignLeadList { id: string; name: string; stage: string; qa: string; processing: string; leads: number; engineStatus: string; message: string; airtableUrl: string }
+export interface CampaignPlanRef { id: number; state: string; label: string; client: string; campaignRec: string; error: string; created: string; updated: string }
+export interface CampaignDetail {
+  campaign: CampaignRow;
+  detail: { approvalSource: string; approvalException: boolean; approvalDecision: string; reviewSubmitted: string; autoApprove: string; engineStatus: string; engineMessage: string; workflowError: string; processing: string; skipBouncePause: boolean };
+  lists: CampaignLeadList[]; plan: CampaignPlanRef | null; next: CampaignPlanRef | null;
+  history: { at: string; source: 'engine' | 'plan'; what: string; status: string; message: string; dryRun: boolean }[];
+  activity: { id: string; when: string; agent: string; type: string; event: string; details: string; on: 'campaign' | 'list' }[];
+  links: { airtable: string; bison: string }; readAt: string;
+}
