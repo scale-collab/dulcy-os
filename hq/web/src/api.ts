@@ -148,3 +148,68 @@ export interface PortalOverview {
 }
 export interface PortalLead { key: string; name: string; company: string; email: string; message: string; date: string; status: 'booked' | 'sent'; bookedOn: string }
 export interface PortalMeeting { key: string; name: string; company: string; bookedOn: string }
+
+/* ---------- Content (Step 3, owner only) ---------- */
+export type ContentStage = 'idea' | 'approved' | 'script' | 'recorded' | 'editing' | 'review' | 'final' | 'posted';
+export interface ContentNote { problem: string; data: string; fix: string; why: string; owner: string }
+export interface ContentIdea {
+  id: string; title: string; score: number | null; decision: string; proposed: string; recordFor: string; by: string; source: string; sourceUrl: string;
+  angle: string; hook: string; why: string; airtable: string;
+}
+export interface ContentFinal { parentId: string; title: string; channel: string; airtable: string; clips: { id: string; name: string; score: number | null; qa: string; hook: string; caption: string; watchUrl: string; airtable: string }[] }
+export interface ContentNext { title: string; who: string; how: 'hq' | 'engine' | 'field' | 'button' | 'manual'; automation: string; detail: string }
+export interface FridayIdea {
+  id: string; title: string; recordingDate: string; publishDate: string; late: boolean; scriptReady: boolean; script: string; angle: string; ideaHook: string;
+  titles: string[]; hooks: string[]; thumbnail: string; gamma: string; gammaUrl: string; youtube: string; checks: string[]; airtable: string;
+}
+export interface ContentPipelineRow { id: string; title: string; channel: string; key: string; stage: ContentStage; recordingDate: string; publishDate: string; status: string; productionStage: string; next: ContentNext | null; flags: string[]; airtable: string }
+export interface ContentView {
+  readAt: string;
+  needs: { ideas: { channel: string; key: string; label: string; count: number; items: ContentIdea[] }[]; finals: ContentFinal[]; alexSteps: { id: string; title: string; channel: string; step: string; how: string; airtable: string }[]; waitingForSienna: number };
+  friday: { date: string; week: { start: string; end: string }; channels: { channel: string; key: string; label: string; target: number; approved: number; ready: number; items: FridayIdea[] }[] };
+  pipeline: { stages: { key: ContentStage; label: string }[]; rows: ContentPipelineRow[]; leftOut: number };
+  week: { start: string; end: string; channels: { channel: string; key: string; label: string; target: number; ideaTarget: number; proposed: number; bySienna: number; approved: number; recorded: number; posted: number }[] };
+  counts: { ideas: number; finals: number; steps: number; total: number };
+  notes: ContentNote[]; overlaps: string[]; links: { contentCenter: string };
+  log: { by: string; action: string; record: string; title: string; changes: { field: string; from: unknown; to: unknown }[]; at: string }[];
+}
+export interface ContentSummary { counts: ContentView['counts']; friday: { date: string; channels: { key: string; label: string; ready: number; approved: number; target: number }[] } }
+
+// ---------- Sales (owner only; the server answers 403 to members) ----------
+export type SalesStage = 'booked' | 'showed' | 'qualified' | 'sent' | 'signed' | 'paid' | 'onboarded';
+export type SalesActionKind = 'call_today' | 'call_tomorrow' | 'no_outcome' | 'sign' | 'unsigned' | 'draft' | 'unpaid' | 'onboard' | 'rebook';
+export type SalesOwner = 'Cole' | 'Alex' | 'Ledger' | 'Atlas';
+export interface SalesAction { kind: SalesActionKind; owner: SalesOwner; text: string; link?: string }
+export type AgreementState = 'draft' | 'sent' | 'viewed' | 'signed' | 'declined' | 'expired' | 'error' | 'none';
+export interface SalesDealLite {
+  id: string; name: string; company: string; stage: SalesStage; stageLabel: string; airtableStage: string; callDate: string; lost: boolean; signedDay: string;
+  agreementState: AgreementState | null; client: string; needs: SalesAction[]; monthly?: number | null;
+}
+export interface SalesRate { n: number; of: number; text: string }
+export interface SalesMonth { month: string; label: string; booked: number; showed: number; closed: number; mrr?: number; mrrUnknown?: number }
+export interface SalesNote { problem: string; data: string; fix: string; why: string; owner: string }
+export interface SalesView {
+  today: string; top: { thisMonth: SalesMonth; lastMonth: SalesMonth }; action: SalesDealLite[];
+  pipeline: { days: number; from: string; deals: number; canceled: number; upcoming: number; stages: { key: SalesStage; label: string; count: number; deals: SalesDealLite[] }[]; showRate: SalesRate; qualifiedRate: SalesRate; closeRate: SalesRate };
+  notes: SalesNote[]; counts: { action: number; deals: number }; readAt: string; limits: { unsignedDays: number; callDays: number; contractDays: number };
+}
+export interface SalesAgreement {
+  id: string; table: 'intake' | 'contract'; tool: string; title: string; company: string; email: string; signer: string; state: AgreementState; review: string;
+  created: string; sentAt: string; viewedAt: string; signedAt: string; clientSignedAt: string; forwardedAt: string; error: string; monthly?: number | null; perCall?: number | null; type: string; currency: string;
+}
+export interface SalesDeal {
+  id: string; salesRec: string; name: string; company: string; email: string; source: string; rep: string; campaign: string; airtableStage: string; lossReason: string; notes: string;
+  callDate: string; heldDate: string; bookedAt: string; stage: SalesStage; stageLabel: string; lost: boolean; inactiveClient: boolean; signedDay: string;
+  stageList: { key: SalesStage; label: string; done: boolean }[]; agreements: SalesAgreement[]; agreement: SalesAgreement | null;
+  client: { id: string; name: string; status: string; paid: boolean; formDone: boolean; onboardingLinked: boolean; start: string } | null; clientMatch: 'link' | 'name' | null;
+  paidKnown: boolean; paidVia: string; onboardingStarted: boolean;
+  feedback: { id: string; status: string; rating: number | null; notes: string; link: string; newDate: string; created: string }[];
+  reviews: { id: number; kind: string; title: string; summary: string; link: string; score: number | null; created: string }[];
+  prep: { id: number; title: string; created: string } | null; needs: SalesAction[];
+  money?: { monthly: number | null; perCall: number | null; forecast: number | null; offer: number | null; cash: number | null; currency: string; paidTotal: number | null };
+}
+export interface SalesDetail {
+  deal: SalesDeal; calls: { what: string; day: string; link: string }[]; onboarding: { step: string; done: boolean; note: string }[]; tasks: { id: string; task: string; stage: string }[];
+  links: { airtable: string; close: string; client: string; feedback: string[]; agreements: { id: string; tool: string; title: string; state: AgreementState; url: string; reviewDoc: string; airtable: string }[] };
+  notes: SalesNote[]; readAt: string;
+}

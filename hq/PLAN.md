@@ -95,8 +95,8 @@
 ## Step 3: Work areas
 - **Campaigns:** the Lead List and Campaign Centers rebuilt without Airtable's size limit, with the Activity log inside each campaign (code ready: `airtable/custom-elements/campaign-center/activity-log.pending.tsx`).
 - **Inbox:** one inbox, per client, replacing New Replies, Follow Ups, Positive Replies, Won/Lost, Meeting Requests and the Reply Agent pages. (Built 2026-11-25, see "Step 3 status" below.)
-- **Sales:** contracts and agreements (the same flow that works now, with cleaner screens), plus the executive dashboard.
-- **Content:** the Content Center and OpusClip (Sienna).
+- **Sales:** contracts and agreements (the same flow that works now, with cleaner screens), plus the executive dashboard. (Built 2026-11-26, see "Step 3 status: Sales" below.)
+- **Content:** the Content Center and OpusClip (Sienna). (Built 2026-11-26, see "Step 3 status: Content" below.)
 
 ### Step 3 status (2026-11-25): Inbox built, not deployed
 - **Built:** `engine/src/hq/inbox.ts` (API `/hq/api/inbox`, `/hq/api/inbox/<rec>`), `engine/src/hq/replier.ts` (API `/hq/api/clients/<rec>/replier`, `/hq/api/clients/<rec>/calendar-invite`), `hq/web/src/pages/Inbox.tsx` and `Replier.tsx`, and the client hub tabs (Overview · Inbox · AI replier). How to use it: `engine/GUIDE.md` → "HQ" → 7. Inbox.
@@ -118,6 +118,72 @@
 - **Read only:** no writes anywhere. Buttons open Airtable or EmailBison; Campaign Center keeps its buttons until an HQ-safe action exists for them.
 - **Not yet:** HQ buttons for Build / Launch / Pause / Top up (need an engine action that writes exactly what the Airtable button writes); LinkedIn and AI caller numbers (channels paused); the Lead List Center's own screens (sample review, contact decisions) for lists not tied to a campaign.
 - **UNKNOWN until checked on live data:** which fields "Status Last Modified" watches (used for "stuck"); the Activity Log's link field name ("Campaign" is assumed for the by-name read; the shared newest-500 read does not depend on it).
+
+### Step 3 status (2026-11-26): Content built, not deployed
+- **Alex's rule:** show what needs Alex first; everything else is one tap deeper. Keep the Content Center's workflow and the n8n automations; only simpler.
+- **Built:** `engine/src/hq/content.ts` (API `/hq/api/content`, `/content/summary`, `/content/ideas/<rec>`; owner only, members get 403) and `hq/web/src/pages/Content.tsx` (sidebar after Deliverability; on the phone a card on Today). How to use it: `engine/GUIDE.md` → "HQ" → 10. Content.
+- **Screens:**
+  - Needs you: ideas to approve per channel; final clips Sienna passed; other steps waiting on Alex.
+  - Friday: one idea per screen, big type, Previous / Next, count vs target (main 2, Raw 5).
+  - Pipeline: Idea → Approved → Script ready → Recorded → Editing → Final review → Final approved → Posted, with the Content Center's next step and the automation behind it.
+  - This week: proposed / approved / recorded / posted vs target, plus data problems.
+- **The one write:** Approve / Reject an idea, exactly the Content Center's "Approve & schedule" / "Reject idea" fields:
+  - Idea Decision;
+  - Production Stage "Idea Approved";
+  - Recording + Publish Date, from the same rule (`nextIdeaDates`).
+  - Logged in `hq_content_log`. After Approve, the engine's `sienna.prep` writes the script.
+- **Links only:** clip approval (the Content Center's approve goes through the n8n Current Clip Review flow, which checks who wrote the request), thumbnail approval, editing route, YouTube upload, posts. HQ never posts, schedules, deletes or calls n8n, OpusClip, Gamma, Frame.io, YouTube or Discord.
+- **Data problems it shows (demo-checked, live numbers on deploy):**
+  1. rows "Scheduled" with no proof of posting (17 known);
+  2. approved ideas with no script after 1 day;
+  3. clips without Sienna's QA note;
+  4. main recording dates not on Friday;
+  5. ideas waiting 14+ days.
+- **For Riley's clean-up (same job twice):**
+  - scripts: `sienna.prep` + 2 copies of the n8n Teleprompter Script;
+  - ideas: `sienna.ideas` + 5 n8n Reddit intakes;
+  - final edits: Sienna's editor + the OpusClip buttons.
+- **Open for Alex:**
+  1. **Recording day.** The Content Center's approve sets the main channel's recording date to the Sunday before the publish week (or today), not Friday. HQ writes the same dates, so the two agree, and it flags the mismatch. Confirm Friday, then Riley changes the rule in both.
+  2. **Clip approve / send back in HQ.** This needs an engine path the n8n review flow accepts. UNKNOWN until Riley checks the ledger.
+  3. **Gamma links.** Only outlines exist (content-system.md, Next 4).
+
+### Step 3 status (2026-11-26): Sales built, not deployed
+- **Alex's rule:** show what needs action first; everything else one tap deeper. Dulcy's **own** sales only.
+- **Built:** `engine/src/hq/sales.ts` (API `/hq/api/sales`, `/hq/api/sales/<rec>`) and `hq/web/src/pages/Sales.tsx`. In the sidebar after Deliverability; on the phone a Sales card at the top of Clients. How to use it: `engine/GUIDE.md` → "HQ" → 10. Sales.
+- **Owner only:** members get 403 from the server; money is also cut on the server for anyone but the owner.
+- **Screens:**
+  - Top numbers: booked, showed, closed and new MRR, this month vs last.
+  - Needs action, one line each with the owner: calls today/tomorrow (Cole), no outcome (Cole), re-book (Cole), not signed after 2+ days (Cole), your signature / not sent (Alex), not paid (Ledger), start onboarding (Atlas).
+  - Pipeline (30/90 days) with exact-count rates.
+  - Deal page (links only: Close, Airtable, signing tool, client record).
+  - Data notes.
+- **Read only:** no writes, no Close / PandaDoc / SignWell / Fanbasis / Fathom / Calendly call. Airtable reads batched and cached 60 seconds.
+- **Airtable used:**
+  - Sales Data (the Sales Center), New Client Intake (SignWell / PandaDoc agreement fields), Contracts (Dulcy Sign), Call Feedback.
+  - Workspace IDs (Initial Payment Received, Onboarding, Onboarding_form_submitted, Current Agreement, Contracts), Client Invoices (Fanbasis payments), Client Tasks (onboarding steps).
+  - Cole's reviews come from HQ's own reports.
+- **Data problems found in Airtable (read only, 2026-11-26; for Cole / Atlas / Riley / Ledger to fix):**
+  1. **No Sales Data row is Won:** 0 of 23 rows have Won, Deal Closed? or Deal Closed Date, though MJJ (Oct 6), The Marketing Cartel (Sep 16) and Collabor (Sep 2) signed in SignWell. Sales Goals shows 0 closed; "Closed Month Text" is #ERROR on every row.
+  2. **Signed deals with no Sales Data row:** MJJ (Chris Awad), The Marketing Cartel (Wilbur Hilton), Collabor (Jordan Tew); Tutor Intelligence (Andreas) has a Dulcy Sign contract sent Nov 18 and no row of its own. So their calls are missing from the show and close rates.
+  3. **MJJ signed Oct 6, no payment recorded:** Initial Payment Received is unticked and there is no Client Invoices row (payment UNKNOWN in Airtable; Ledger to check Xero).
+  4. **Signed agreements not linked to the client:** MJJ's intake row has no Workspace IDs link (the client is found by name); Collabor's intake has none and its client record is Inactive.
+  5. **Two signing paths disagree:** BigPxl and Protek CNC have a Dulcy Sign contract sent Nov 15 (viewed Nov 17 and Nov 19, not signed) while their New Client Intake rows still say SignWell "Draft". The 11-25 audit already proposes "2 signing paths into 1".
+  6. **Stage behind the contract:** Alex Solomon (BigPxl) is still "Audit Call Scheduled" (call Nov 12) after the contract was sent Nov 15.
+  7. **Old contracts still open:** SignWell sent Sep 2 to Oct 2 and never signed: GLOBALMEDIAGROUP (Jordan Tew), The Data Hub (Larry Carstensen), Firehouse Design (Lance Finley), Tutor Intelligence (Youssef Ouifak, 2 agreements), MJJ (Jason Yakubovich, replaced by Chris's signed one). They show as "Not signed" until they are 90 days old or marked lost.
+  8. **Calls with no outcome:**
+     - Usman Haider (Nov 24) still "Audit Call Scheduled".
+     - Yash Chavda (Oct 19) and Boris Davidson (Sep 30) are still "Audit Call Scheduled".
+     - David Crews (Nov 25) is "Reschedule" with no new date.
+  9. **Stage vs held disagree:**
+     - Haig Ter-Martirosian: Call Feedback "No Show" (Oct 6), while Sales Data says "Call Done" with Call Held? ticked.
+     - Wajahat Ali Abbasi: Sales Data "No Show" with Call Held? ticked.
+  10. **Call Feedback is barely used for Dulcy's own calls:** of the 30 newest rows (128 in all), 1 (Haig) is a Dulcy call; the rest are clients' calls. UNKNOWN whether Alex wants feedback rows for Dulcy's calls.
+- **Not yet / UNKNOWN:**
+  - Cole writes no call **prep** yet. HQ shows one when Cole saves an HQ report of kind `call_prep`.
+  - Sales Data stores the call **date** only (no time), so "today" has no hour.
+  - The Fathom link is stored in Close (not Airtable) except on Cole's reviews and Call Feedback, so a call without either has no recording link.
+  - Which signing path is live (SignWell or Dulcy Sign) is UNKNOWN until Alex confirms; HQ shows both.
 
 ## Step 4: People and clients
 - Josh's login with permissions.
