@@ -474,3 +474,16 @@ UPDATE hq_reports SET agent = 'Echo' WHERE agent = 'Sean';
 UPDATE hq_chat_threads SET agent = 'Echo' WHERE agent = 'Sean';
 UPDATE hq_agent_tasks SET agent = 'Echo' WHERE agent = 'Sean';
 UPDATE hq_asks SET agent = 'Echo' WHERE agent = 'Sean';
+
+-- HQ client portal (2026-11-26): role 'client' = one client's own login. It sees only that client's
+-- results (/hq/api/portal/*); every other HQ route refuses it. client_rec is the client's main
+-- Workspace IDs record (workspaces that are one client, like Twenty West + "(Internal)", count as
+-- one: the server finds the group from any of its records). Only the owner makes one (Users page);
+-- a sign-up is always a pending member, and no owner/member row can become a client.
+ALTER TABLE hq_users ADD COLUMN IF NOT EXISTS client_rec TEXT;
+ALTER TABLE hq_users ADD COLUMN IF NOT EXISTS client_name TEXT NOT NULL DEFAULT '';
+ALTER TABLE hq_users DROP CONSTRAINT IF EXISTS hq_users_role_check;
+ALTER TABLE hq_users ADD CONSTRAINT hq_users_role_check CHECK (role IN ('owner','member','client'));
+ALTER TABLE hq_users DROP CONSTRAINT IF EXISTS hq_users_client_link;
+ALTER TABLE hq_users ADD CONSTRAINT hq_users_client_link CHECK (
+  (role = 'client') = (client_rec IS NOT NULL AND client_rec ~ '^rec[A-Za-z0-9]{14}$') AND NOT (role = 'client' AND pending));

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, type User } from './api';
+import { api, ApiError, type PortalMe, type User } from './api';
 import { cx, go, Icon, IconButton, Loading, Logo, setCount, useCounts, useRoute, useTheme, type ThemeMode } from './ui';
 import Login from './pages/Login';
 import Today from './pages/Today';
@@ -16,6 +16,7 @@ import Users from './pages/Users';
 import Inbox, { ThreadPage } from './pages/Inbox';
 import Campaigns from './pages/Campaigns';
 import Deliverability from './pages/Deliverability';
+import Portal from './pages/Portal';
 
 const TABS = [
   { key: 'today', label: 'Today', icon: 'sun', count: '' },
@@ -37,14 +38,21 @@ const THEMES: { mode: ThemeMode; icon: string; label: string }[] = [
 export default function App() {
   const [user, setUser] = useState<User | null | undefined>(undefined);
   const route = useRoute();
-  const load = useCallback(() => { api<{ user: User; signups?: number }>('/me').then((r) => { setUser(r.user); setCount('signups', r.signups ?? 0); }).catch(() => setUser(null)); }, []);
+  const load = useCallback(() => {
+    api<{ user: User; signups?: number }>('/me').then((r) => { setUser(r.user); setCount('signups', r.signups ?? 0); })
+      // A client login gets 403 on every HQ route: it has the portal instead (/portal/me).
+      .catch((e) => (e instanceof ApiError && e.status === 403 ? api<PortalMe>('/portal/me').then((r) => setUser(r.user)) : Promise.reject(e)))
+      .catch(() => setUser(null));
+  }, []);
   useEffect(() => { load(); const out = () => setUser(null); window.addEventListener('hq:signed-out', out); return () => window.removeEventListener('hq:signed-out', out); }, [load]);
 
   if (user === undefined) return <Loading what="Opening HQ" />;
-  if (!user) return <Login onIn={(u) => { setUser(u); go('today'); }} />;
+  if (!user) return <Login onIn={(u) => { setUser(u); go(u.role === 'client' ? 'overview' : 'today'); }} />;
 
   const [page, a, b, c] = route;
   const signOut = async () => { try { await api('/auth/logout', { body: {} }); } catch { /* signed out anyway */ } setUser(null); };
+  // Client logins: their own small app (no HQ sections at all). The server refuses them everything else.
+  if (user.role === 'client') return <Portal user={user} page={page} onSignOut={signOut} />;
   let body;
   switch (page) {
     case 'decisions': body = <Decisions user={user} pile={a} client={b} />; break;
