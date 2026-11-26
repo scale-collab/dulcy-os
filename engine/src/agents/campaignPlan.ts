@@ -290,6 +290,8 @@ export const campaignPipelineStage: Stage = async (ctx) => {
     }
   }
   const planning = (await ctx.db.query(`SELECT id FROM campaign_plans WHERE state='planning'`)).rows.map((x) => Number(x.id));
+  // HQ: Atlas's task per plan follows its state (loaded on use; a task-list problem never stops the pipeline).
+  await (await import('../hq/generators.js')).syncPlanTasks(ctx.db).catch((e) => console.error(JSON.stringify({ level: 'warn', message: 'plan tasks not synced', err: String(e).slice(0, 200) })));
   return { message: out.length ? out.join('; ') : 'Nothing to do', planning };
 };
 
