@@ -245,7 +245,7 @@ test('two clients cannot see each other\'s data (the client comes from the sessi
   // Path and query tricks change nothing; writes are refused; a client whose record is gone gets nothing.
   assert.equal((await call('GET', `/hq/api/portal/overview/${B1}`, { cookie: tw })).status, 403);
   assert.equal((await call('GET', '/hq/api/portal/clients', { cookie: tw })).status, 404);
-  assert.equal((await call('POST', '/hq/api/portal/leads', { cookie: tw, body: {} })).status, 405);
+  assert.equal((await call('POST', '/hq/api/portal/leads', { cookie: tw, body: {} })).status, 404, 'leads is not a write');
   delete tables[WORKSPACES][B1]; _resetPortalCache();
   const gone = await call('GET', '/hq/api/portal/overview', { cookie: bolt });
   assert.equal(gone.status, 404);

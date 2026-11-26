@@ -184,6 +184,12 @@ export interface Config {
    *  optional Google sign-in, where the built web files are, and the chat cost guard. */
   hqHost: string;
   hqPublicUrl: string;
+  /** The client portal's own host (portal.dulcy.io): only the portal shell and the portal + login APIs answer there. */
+  portalHost: string;
+  /** Where setup / reset links point (default https://PORTAL_HOST; before the DNS switch https://hq.dulcy.io/portal). */
+  portalPublicUrl: string;
+  /** Schedule Meeting: the booking page the portal links to (Softr's page was a custom-code block; the URL is Alex's to set). */
+  portalMeetingUrl: string;
   hqSessionSecret?: string;
   hqGoogleClientId?: string;
   hqGoogleClientSecret?: string;
@@ -331,6 +337,9 @@ export function loadConfig(env = process.env): Config {
     hqGoogleAuthUrl: env.HQ_GOOGLE_AUTH_URL || 'https://accounts.google.com/o/oauth2/v2/auth',
     hqGoogleTokenUrl: env.HQ_GOOGLE_TOKEN_URL || 'https://oauth2.googleapis.com/token',
     hqWebDir: env.HQ_WEB_DIR || '/app/hq-web',
+    portalHost: (env.PORTAL_HOST || 'portal.dulcy.io').trim().toLowerCase(),
+    portalPublicUrl: (env.PORTAL_PUBLIC_URL || `https://${(env.PORTAL_HOST || 'portal.dulcy.io').trim().toLowerCase()}`).replace(/\/+$/, ''),
+    portalMeetingUrl: /^https:\/\/[^\s"'<>]+$/.test(env.PORTAL_MEETING_URL ?? '') ? String(env.PORTAL_MEETING_URL) : '',
     hqChatMaxRounds: num('HQ_CHAT_MAX_ROUNDS', 4, env),
     hqChatMaxTokens: num('HQ_CHAT_MAX_TOKENS', 4000, env),
     slackReportsOn: (env.SLACK_REPORTS || 'on').toLowerCase() !== 'off',

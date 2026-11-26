@@ -500,3 +500,40 @@ CREATE TABLE IF NOT EXISTS hq_content_log (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS hq_content_log_at ON hq_content_log (created_at DESC);
+
+-- HQ client portal v2 (2026-11-26): portal.dulcy.io replaces Softr.
+-- A sign-up on the portal host is a pending request (portal_signup) the owner links to a client; it
+-- never becomes a client by itself (only a Google-verified email matching Airtable Portal Users can).
+ALTER TABLE hq_users ADD COLUMN IF NOT EXISTS portal_signup BOOLEAN NOT NULL DEFAULT false;
+-- One-time set-password links (setup for existing Softr users, and password resets). Only the
+-- token's sha256 is kept; a link works once and expires.
+CREATE TABLE IF NOT EXISTS hq_portal_tokens (
+  id_hash     TEXT PRIMARY KEY,
+  user_id     INT NOT NULL REFERENCES hq_users(id) ON DELETE CASCADE,
+  purpose     TEXT NOT NULL,                    -- 'setup' | 'reset'
+  created_by  TEXT NOT NULL,
+  expires_at  TIMESTAMPTZ NOT NULL,
+  used_at     TIMESTAMPTZ,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- "Forgot password" asks from the portal: the owner sees them on Users and makes a link.
+CREATE TABLE IF NOT EXISTS hq_portal_resets (
+  id          BIGSERIAL PRIMARY KEY,
+  user_id     INT NOT NULL REFERENCES hq_users(id) ON DELETE CASCADE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  handled_at  TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS hq_portal_resets_open ON hq_portal_resets (user_id) WHERE handled_at IS NULL;
+-- Every write a client makes from the portal: who, when, what (table, record, field names; no values).
+CREATE TABLE IF NOT EXISTS hq_portal_writes (
+  id          BIGSERIAL PRIMARY KEY,
+  user_id     INT REFERENCES hq_users(id) ON DELETE SET NULL,
+  user_email  TEXT NOT NULL,
+  client_rec  TEXT NOT NULL,
+  action      TEXT NOT NULL,
+  table_id    TEXT NOT NULL,
+  record_id   TEXT NOT NULL,
+  fields      TEXT[] NOT NULL DEFAULT '{}',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS hq_portal_writes_at ON hq_portal_writes (created_at DESC);
