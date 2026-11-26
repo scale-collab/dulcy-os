@@ -349,6 +349,11 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
           if (!['approve', 'reject'].includes(b.verdict)) { json(res, 400, { error: 'verdict must be approve or reject' }); return true; }
           const r = await decideIdea(needAt(), db, cm[1], b.verdict, user.name);
           json(res, r.status, r.error ? { error: r.error } : { ok: true, ...r.result });
+          return true;
+        }
+        json(res, 404, { error: 'not found' }); return true;
+      }
+
       // Sales (Dulcy's own deals): owner only (money), checked here so members get 403. Read only.
       if (p === '/hq/api/sales' || p.startsWith('/hq/api/sales/')) {
         if (!owner) { json(res, 403, { error: 'only the owner sees sales (money)' }); return true; }

@@ -106,7 +106,6 @@ function Sidebar({ active, user, onSignOut }: { active: string; user: User; onSi
       </button>
       <nav aria-label="Main" className="mt-6 flex flex-col gap-0.5 px-3">
         {TABS.filter((t) => !t.ownerOnly || user.role === 'owner').map((t) => {
-        {TABS.filter((t) => t.key !== 'sales' || user.role === 'owner').map((t) => {
           const on = active === t.key;
           const n = t.count ? c[t.count] : undefined;
           return (
@@ -180,8 +179,7 @@ function TabBar({ active }: { active: string }) {
     <nav aria-label="Main" className="safe-bottom fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/90 backdrop-blur-md md:hidden">
       <div className="mx-auto grid max-w-lg grid-cols-6">
         {/* Phone: Team, Campaigns and Deliverability are icons in the top bar (six tabs fit). */}
-        {TABS.filter((t) => t.key !== 'agents' && t.key !== 'campaigns' && t.key !== 'deliverability' && t.key !== 'content').map((t) => {
-        {TABS.filter((t) => t.key !== 'agents' && t.key !== 'campaigns' && t.key !== 'deliverability' && t.key !== 'sales').map((t) => {
+        {TABS.filter((t) => t.key !== 'agents' && t.key !== 'campaigns' && t.key !== 'deliverability' && t.key !== 'content' && t.key !== 'sales').map((t) => {
           const on = active === t.key;
           const n = t.key === 'decisions' || t.key === 'needs' || t.key === 'inbox' ? c[t.key] : 0;
           return (
