@@ -234,3 +234,7 @@ Format: `- [date] rule. (why / source)`
 - **What stays the same on purpose:** stage ids (`sean.draft`, `sean.followup`), `SEAN_*` server settings, the `sean_drafts` table and `engine/src/agents/sean.ts`. Renaming those would break the live server config for no gain.
 - **Old records:** Airtable Decisions and Activity rows that say "Sean" are read as Echo. Skill: `skills/echo-reply-handling/`, agent: `.claude/agents/echo.md`.
 - **Why:** Alex picked the name ("Echo": answers everyone back).
+
+## AI caller: no automatic calls on positive replies for now (Alex, 2026-11-26)
+- **Rule:** the automatic AI call on positive email replies (n8n "1.2 Positive Email Reply") stays off until Alex decides the AI caller's direction.
+- **Why:** 141 logged calls: 89 voicemail, 23 answered with no outcome, 1 booked. These are warm leads; Echo's email reply is the better path.

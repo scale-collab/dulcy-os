@@ -7,6 +7,10 @@
 //   followup-arm-on  : switch that node back on (undo)
 //   spam-protocol-off: switch off '[Email Accounts] Automated Spam Protocol' (the engine's account.health loop replaces it)
 //   spam-protocol-on : switch it back on (undo)
+//   ai-call-off / ai-call-on : '1.2 Positive Email Reply' (starts an AI call on every positive reply). Alex 2026-11-26: off for now
+//   60pct-off / 60pct-on     : 'Campaign Over 60%' (makes ~16 Tasks/week; the engine's campaign.pipeline + Atlas tasks replace it)
+//   linkedin-off / linkedin-on : the 6 '[Analytics - LinkedIn]' workflows (LinkedIn is paused)
+//   stubs-off / stubs-on     : 2 empty workflows ('Converted Make.com Workflow', 'My workflow 11')
 // Usage:
 //   read -s -p "n8n API key: " K; echo; docker exec -i -e N8N_API_KEY="$K" -e FIX=placement-30 deploy-engine-1 node --input-type=module - < /opt/dulcy-os/automations/n8n-fix.mjs
 const BASE = process.env.N8N_URL || 'https://n8n.dulcy.io';
@@ -25,6 +29,14 @@ async function save(w) {
   await api('PUT', `/workflows/${w.id}`, { name: w.name, nodes: w.nodes, connections: w.connections, settings });
   if (w.active) { await api('POST', `/workflows/${w.id}/deactivate`).catch(() => {}); await api('POST', `/workflows/${w.id}/activate`); }
 }
+
+// Whole-workflow on/off groups (from automations/audit-2026-11-25.md). Each is undone with the matching -on.
+const GROUPS = {
+  'ai-call': ['QVK0WeDOVcpJLavy'],
+  '60pct': ['foSoGQ1odW0puayH617Yp'],
+  linkedin: ['NxF38kL7Tz6KchGp', 'PQ3A8czz1QkTScif', 'vRDEdXR37eT9DNTh', 'r4FVMEChie0SwKVG', 'MicAQklk3XLTFStL', 'nTPrWgKOfuitSHyn'],
+  stubs: ['tlhIcY03OjA8PFo5', 'uNNBBnnrgowiVZOznJXOC'],
+};
 
 if (FIX === 'placement-30') {
   const w = await api('GET', '/workflows/xcteI9ofNLOqC0GO');
@@ -64,4 +76,10 @@ if (FIX === 'placement-30') {
   const verb = FIX.endsWith('off') ? 'deactivate' : 'activate';
   const w = await api('POST', `/workflows/M3Hq5fkTvZLaJg9jVeq9X/${verb}`);
   console.log(`Done: "${w.name ?? 'Automated Spam Protocol'}" ${verb}d (active: ${w.active}).`);
+} else if (GROUPS[FIX.replace(/-(off|on)$/, '')] && /-(off|on)$/.test(FIX)) {
+  const verb = FIX.endsWith('-off') ? 'deactivate' : 'activate';
+  for (const id of GROUPS[FIX.replace(/-(off|on)$/, '')]) {
+    try { const w = await api('POST', `/workflows/${id}/${verb}`); console.log(`Done: "${w.name ?? id}" ${verb}d (active: ${w.active}).`); }
+    catch (e) { console.log(`Skipped ${id}: ${e.message}`); }
+  }
 } else throw new Error(`unknown FIX ${FIX}`);
