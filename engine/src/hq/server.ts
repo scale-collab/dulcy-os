@@ -23,6 +23,7 @@ import { askVisible, finishAsk, getAsk, isSnooze, listAsks, quietItem, snoozeAsk
 import { loadNeeds, needCounts } from './needs.js';
 import { actOnThread, listInbox, threadDetail } from './inbox.js';
 import { calendarInvite, replierDetail, saveReplier } from './replier.js';
+import { campaignDetail, listCampaigns } from './campaigns.js';
 
 export interface HqDeps { at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string }
 
@@ -273,6 +274,17 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         if (!['approve', 'reject', 'edited'].includes(b.verdict)) { json(res, 400, { error: 'verdict must be approve, edited or reject' }); return true; }
         const r = await actOnThread(needAt(), m[1], b.verdict, user.name, owner, typeof b.text === 'string' ? b.text : undefined);
         json(res, r.status, r.error ? { error: r.error } : { ok: true, status: r.result });
+        return true;
+      }
+      // Campaigns (Step 3): read only. Needs action first; pipeline, campaign page, Activity log. No money in it.
+      if (p === '/hq/api/campaigns' && req.method === 'GET') {
+        json(res, 200, await listCampaigns(needAt(), db, { client: url.searchParams.get('client') ?? undefined, refresh: url.searchParams.get('refresh') === '1' }));
+        return true;
+      }
+      m = p.match(/^\/hq\/api\/campaigns\/(rec[A-Za-z0-9]{14})$/);
+      if (m && req.method === 'GET') {
+        const d = await campaignDetail(needAt(), db, m[1], owner, cfg.airtableBaseId);
+        if (!d) json(res, 404, { error: 'no such campaign' }); else json(res, 200, d);
         return true;
       }
       // Client hub → AI replier: everyone reads; only the owner saves or asks for a calendar link (checked here).
