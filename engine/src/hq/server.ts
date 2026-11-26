@@ -26,6 +26,7 @@ import { actOnThread, listInbox, threadDetail } from './inbox.js';
 import { calendarInvite, replierDetail, saveReplier } from './replier.js';
 import { campaignDetail, listCampaigns } from './campaigns.js';
 import { deliverabilityView } from './deliverability.js';
+import { portalRoute, resolvePortalClient } from './portal.js';
 
 export interface HqDeps { at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string }
 
@@ -91,6 +92,19 @@ function serveStatic(res: http.ServerResponse, webDir: string, rel: string) {
     'cache-control': isIndex ? 'no-cache' : 'public, max-age=31536000, immutable',
   });
   res.end(body);
+}
+
+/**
+ * The client-portal route guard (Step 4, 2026-11-26). A client login (role client) may call ONLY the
+ * API paths on this allow-list; every other HQ route answers 403, including routes added later
+ * (blocked by default). The login routes run before the session check, so they are not listed.
+ * Owners and members are not affected here (the portal routes refuse them themselves).
+ */
+export const CLIENT_API_ALLOW: readonly RegExp[] = [/^\/hq\/api\/portal\/[a-z]+$/];
+export const CLIENT_REFUSED = 'This page is not part of your client portal.';
+export function clientMayCall(user: Pick<HqUser, 'role'>, pathname: string): boolean {
+  if (user.role !== 'client') return true;
+  return CLIENT_API_ALLOW.some((re) => re.test(pathname));
 }
 
 const PUBLIC = new Set(['/hq/api/auth/signup', '/hq/api/auth/login', '/hq/api/auth/config', '/hq/api/auth/google/start', '/hq/api/auth/google/callback', '/hq/api/auth/logout']);
@@ -170,8 +184,17 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       // ---- Everything else needs a session ----
       const user = await sessionUser(db, cfg, req.headers.cookie);
       if (!user) { json(res, 401, { error: 'sign in first' }); return true; }
+      if (!clientMayCall(user, p)) { json(res, 403, { error: CLIENT_REFUSED, portal: true }); return true; }
       if (PUBLIC.has(p)) { json(res, 405, { error: 'method not allowed' }); return true; }
       const owner = user.role === 'owner';
+
+      // ---- Client portal (Step 4): read only; the client is the session's, never the URL's ----
+      if (p.startsWith('/hq/api/portal/')) {
+        if (req.method !== 'GET') { json(res, 405, { error: 'method not allowed' }); return true; }
+        const r = await portalRoute(needAt(), user, p.slice('/hq/api/portal'.length));
+        json(res, r.status, r.body);
+        return true;
+      }
 
       if (p === '/hq/api/me' && req.method === 'GET') { json(res, 200, { user: publicUser(user), google: googleOn(cfg), ...(owner ? { signups: await pendingCount(db) } : {}) }); return true; }
 
@@ -179,7 +202,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       if (p === '/hq/api/users' || p.startsWith('/hq/api/users/')) {
         if (!owner) { json(res, 403, { error: 'only the owner manages users' }); return true; }
         if (p === '/hq/api/users' && req.method === 'GET') { json(res, 200, await listUsers(db)); return true; }
-        if (p === '/hq/api/users' && req.method === 'POST') { const r = await addUser(db, user, await readJson(req, 5_000)); json(res, r.status, r.error ? { error: r.error } : { ok: true, id: r.id }); return true; }
+        if (p === '/hq/api/users' && req.method === 'POST') { const r = await addUser(db, user, await readJson(req, 5_000), (rec) => resolvePortalClient(needAt(), rec)); json(res, r.status, r.error ? { error: r.error } : { ok: true, id: r.id }); return true; }
         const um = p.match(/^\/hq\/api\/users\/(\d{1,9})\/(approve|deny|role|disable|enable|password)$/);
         if (um && req.method === 'POST') { const r = await manageUser(db, user, Number(um[1]), um[2], await readJson(req, 5_000)); json(res, r.status, r.error ? { error: r.error } : { ok: true }); return true; }
         json(res, 404, { error: 'not found' }); return true;

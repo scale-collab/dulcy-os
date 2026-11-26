@@ -16,8 +16,22 @@ export const MAX_FAILS_PER_EMAIL = 5;
 export const MAX_FAILS_PER_IP = 20;
 export const FAIL_WINDOW_MIN = 15;
 
-export interface HqUser { id: number; email: string; name: string; role: 'owner' | 'member' }
+/**
+ * role client (2026-11-26) = one client's portal login: clientRec is its Workspace IDs record. The
+ * server's route guard (server.ts clientMayCall) lets it reach /hq/api/portal/* only.
+ */
+export interface HqUser { id: number; email: string; name: string; role: 'owner' | 'member' | 'client'; clientRec?: string }
 export const MIN_PASSWORD = 12;
+const REC_RE = /^rec[A-Za-z0-9]{14}$/;
+
+/** A database row → the signed-in user. A client row without a valid client record gets no user at all (fail closed). */
+export function toUser(u: any): HqUser | null {
+  if (!u) return null;
+  const base = { id: Number(u.id), email: String(u.email), name: String(u.name || firstName(String(u.email))) };
+  if (u.role === 'owner') return { ...base, role: 'owner' };
+  if (u.role === 'client') return REC_RE.test(String(u.client_rec ?? '')) ? { ...base, role: 'client', clientRec: String(u.client_rec) } : null;
+  return { ...base, role: 'member' };
+}
 
 export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16);
@@ -77,9 +91,8 @@ export async function sessionUser(db: Db, cfg: Pick<Config, 'hqSessionSecret'>, 
   const r = await db.query(
     `UPDATE hq_sessions s SET last_seen=now() FROM hq_users u
      WHERE s.id_hash=$1 AND s.expires_at > now() AND u.id = s.user_id AND NOT u.disabled AND NOT u.pending
-     RETURNING u.id, u.email, u.name, u.role`, [sha(id)]);
-  const u = r.rows[0];
-  return u ? { id: Number(u.id), email: String(u.email), name: String(u.name || u.email.split('@')[0]), role: u.role === 'owner' ? 'owner' : 'member' } : null;
+     RETURNING u.id, u.email, u.name, u.role, u.client_rec`, [sha(id)]);
+  return toUser(r.rows[0]);
 }
 
 export async function endSession(db: Db, cfg: Pick<Config, 'hqSessionSecret'>, cookieHeader: string | undefined): Promise<void> {
@@ -109,11 +122,12 @@ export async function passwordLogin(db: Db, email: string, password: string, ip:
   const e = normEmail(email);
   if (!e || !password || password.length > 500) return { error: 'Email and password, please.', status: 400 };
   if (await loginBlocked(db, e, ip)) return { error: `Too many tries. Wait ${FAIL_WINDOW_MIN} minutes and try again.`, status: 429 };
-  const u = (await db.query(`SELECT id, email, name, role, password_hash, disabled, pending FROM hq_users WHERE email=$1`, [e])).rows[0];
+  const u = (await db.query(`SELECT id, email, name, role, client_rec, password_hash, disabled, pending FROM hq_users WHERE email=$1`, [e])).rows[0];
   const ok = await verifyPassword(password, u && !u.disabled && !u.pending ? u.password_hash : null);
   await recordLogin(db, e, ip, ok);
-  if (!ok) return { error: 'That email and password do not match.', status: 401 };
-  return { status: 200, user: { id: Number(u.id), email: String(u.email), name: String(u.name || firstName(u.email)), role: u.role === 'owner' ? 'owner' : 'member' } };
+  const user = ok ? toUser(u) : null;
+  if (!user) return { error: 'That email and password do not match.', status: 401 };
+  return { status: 200, user };
 }
 
 /** Create or update a login (CLI only). The password is hashed here and never logged. */
@@ -121,12 +135,16 @@ export async function upsertUser(db: Db, email: string, role: 'owner' | 'member'
   const e = normEmail(email);
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) throw new Error('not an email address');
   if (password !== null && password.length < 12) throw new Error('the password must be at least 12 characters');
+  if (role !== 'owner' && role !== 'member') throw new Error('role must be owner or member');
   const hash = password === null ? null : await hashPassword(password);
+  // A client login is never turned into an owner/member here (that would open all of HQ to a client).
   const r = await db.query(
     `INSERT INTO hq_users (email, name, role, password_hash) VALUES ($1,$2,$3,$4)
      ON CONFLICT (email) DO UPDATE SET role=EXCLUDED.role, name=COALESCE(NULLIF($2,''), hq_users.name),
        password_hash=COALESCE(EXCLUDED.password_hash, hq_users.password_hash), disabled=false, pending=false, updated_at=now()
+     WHERE hq_users.role <> 'client'
      RETURNING (xmax = 0) AS created`, [e, name ?? firstName(e), role, hash]);
+  if (!r.rows.length) throw new Error('that email is a client portal login: manage it on the HQ Users page');
   if (password !== null) await db.query(`DELETE FROM hq_sessions WHERE user_id=(SELECT id FROM hq_users WHERE email=$1)`, [e]);
   return { created: Boolean(r.rows[0]?.created) };
 }
@@ -169,6 +187,6 @@ export async function googleFinish(cfg: Config, query: URLSearchParams, cookieHe
 }
 
 export async function userByEmail(db: Db, email: string): Promise<HqUser | null> {
-  const u = (await db.query(`SELECT id, email, name, role FROM hq_users WHERE email=$1 AND NOT disabled AND NOT pending`, [normEmail(email)])).rows[0];
-  return u ? { id: Number(u.id), email: String(u.email), name: String(u.name || firstName(u.email)), role: u.role === 'owner' ? 'owner' : 'member' } : null;
+  const u = (await db.query(`SELECT id, email, name, role, client_rec FROM hq_users WHERE email=$1 AND NOT disabled AND NOT pending`, [normEmail(email)])).rows[0];
+  return toUser(u);
 }
