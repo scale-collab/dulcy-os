@@ -340,6 +340,60 @@ test('client writes are exactly the Softr writes, and each is logged (who, when,
   assert.equal((await call('GET', '/hq/api/users/portal-writes', { cookie: tw })).status, 403);
 });
 
+test('v3 Home and Leads are one read each: needs, 30-day results per active channel, active campaigns, lead rows; all the session\'s own', { skip }, async () => {
+  tables[T.emailOverview][rec('EaoTW60')] = { [EAO.period]: 'Last 60 days', [EAO.client]: [A1], [EAO.sent]: 2000, [EAO.replies]: 50, [EAO.interested]: 10, [EAO.booked]: 3 };
+  const tw = await clientCookie('pat@twentywest.com', A2);
+  const bolt = await clientCookie('ben@boltlegal.com', B1);
+  const home = (await portalGet(tw, 'home')).body;
+  // Needs you: the open task, the campaign to review, the call that happened with no feedback; onboarding is submitted.
+  assert.deepEqual(home.needs.tasks.map((t: any) => [t.name, t.stage, t.details]), [['Upload your pitch deck', 'open', 'The newest one, please.']]);
+  assert.deepEqual(home.needs.review, [{ key: opaque(C.twReview), name: 'TW Dentists Q1' }]);
+  assert.deepEqual(home.needs.feedback.map((m: any) => [m.key, m.name]), [[opaque(E.ann), 'Ann Prospect']]);
+  assert.equal(home.needs.onboarding, false);
+  assert.equal(home.needs.count, 3);
+  assert.equal((await portalGet(tw, 'session')).body.badges.needs, 3, 'the one badge counts exactly what the Needs you card lists');
+  // Results: the last 30 days against the 30 before (60 minus 30), only for channels that are on.
+  assert.deepEqual(home.results.email.now, { sent: 900, replies: 30, interested: 7, booked: 2 });
+  assert.deepEqual(home.results.email.before, { sent: 1100, replies: 20, interested: 3, booked: 1 });
+  assert.equal(home.results.email.label, 'Last 30 days');
+  assert.equal(home.results.linkedin, null, 'LinkedIn is off for Twenty West: no section');
+  assert.deepEqual([home.results.aiCaller.calls, home.results.aiCaller.answered, home.results.aiCaller.interested], [40, 12, 3]);
+  assert.equal(home.results.directMail, false);
+  assert.deepEqual(home.campaigns.map((c: any) => [c.name, c.state]), [['TW Dentists Q1', 'review'], ['TW Clinics', 'live']]);
+  // Bolt: its own needs only (the onboarding form is linked but not submitted), LinkedIn on, AI caller off.
+  const bh = (await portalGet(bolt, 'home')).body;
+  assert.deepEqual([bh.needs.tasks.map((t: any) => t.name), bh.needs.review.map((r: any) => r.name), bh.needs.feedback.map((m: any) => m.name), bh.needs.onboarding, bh.needs.count],
+    [['Bolt: sign the DPA'], ['Bolt Law Firms v2'], ['Bea Bolt'], true, 4]);
+  assert.deepEqual(bh.results.linkedin, { label: 'Last 30 days', now: { sent: 120, accepted: 40, replies: 9, booked: 1 }, before: null });
+  assert.equal(bh.results.aiCaller, null);
+  assert.equal(bh.results.email.now.sent, 777777);
+  const bAll = JSON.stringify(bh), twAll = JSON.stringify(home);
+  for (const x of ['Twenty West', 'TW ', 'Ann', 'pitch deck', '2000']) assert.ok(!bAll.includes(x), `Bolt's Home has ${x}`);
+  for (const x of ['Bolt', 'Bea', 'DPA', '777777']) assert.ok(!twAll.includes(x), `Twenty West's Home has ${x}`);
+  // Leads: every row carries what they wrote, whether feedback is due, and the last feedback.
+  const rows = (await portalGet(tw, 'pipeline')).body.stages.flatMap((s: any) => s.leads);
+  const ann = rows.find((l: any) => l.name === 'Ann Prospect');
+  assert.deepEqual([ann.message, ann.feedbackDue, ann.lastFeedback], ['Yes, Tuesday works.', true, null]);
+  assert.equal(rows.find((l: any) => l.name === 'Hank Handed').feedbackDue, false, 'not booked: no feedback due');
+  assert.ok(!rows.some((l: any) => l.name === 'Bea Bolt'));
+  // A call booked for a day still to come stays in the list (and no feedback is due yet).
+  tables[EMAILS][rec('EmSoon')] = { [EF.leadName]: 'Sue Soon', [EF.latestReply]: 'Friday works', [EF.latestReplyAt]: ago(2), [EF.leadStatus]: 'Interested', [EF.workspace]: '11', [EF.stage]: 'Booked Meeting', [XF.callBookedAt]: day(4) };
+  _resetPortalCache();
+  const soon = (await portalGet(tw, 'pipeline')).body.stages.flatMap((s: any) => s.leads).find((l: any) => l.name === 'Sue Soon');
+  assert.deepEqual([soon?.stage, soon?.feedbackDue], ['Booked Meeting', false]);
+  // Feedback given from the lead page clears it from Needs you and shows on the row at once.
+  assert.equal((await call('POST', `/hq/api/portal/lead/${opaque(E.ann)}/feedback`, { cookie: tw, body: { status: 'Qualified', rating: 4 } })).status, 200);
+  const after2 = (await portalGet(tw, 'pipeline')).body.stages.flatMap((s: any) => s.leads).find((l: any) => l.name === 'Ann Prospect');
+  assert.deepEqual([after2.feedbackDue, after2.lastFeedback], [false, { status: 'Qualified', rating: 4 }]);
+  const h2 = (await portalGet(tw, 'home')).body;
+  assert.deepEqual([h2.needs.feedback.length, h2.needs.count], [0, 2]);
+  // Marking the task done from Home is the same write as before (Stage = Done) and leaves Needs you.
+  assert.equal((await call('POST', `/hq/api/portal/task/${opaque(K.twTask)}/done`, { cookie: tw, body: {} })).status, 200);
+  assert.deepEqual(writes.at(-1), { op: 'update', table: T.tasks, id: K.twTask, fields: { [TASK.stage]: 'Done' } });
+  assert.equal((await portalGet(tw, 'home')).body.needs.count, 1);
+  assert.ok(!/\brec[A-Za-z0-9]{14}\b/.test(JSON.stringify(h2) + bAll), 'no Airtable record ID');
+});
+
 test('account settings: a client changes its own name and password', { skip }, async () => {
   const tw = await clientCookie('pat@twentywest.com', A1);
   assert.equal((await call('POST', '/hq/api/portal/account', { cookie: tw, body: { name: 'Pat W' } })).status, 200);

@@ -3,6 +3,8 @@
 //   Home ("is this working?"), Email / LinkedIn / AI caller results, campaigns (review, calendar),
 //   leads and pipeline (call feedback, close a deal), meetings, tasks, onboarding, documents,
 //   access & credentials, billing, notifications.
+// v3 (2026-11-26): the same reads regrouped into 3 tabs (Home · Leads · Account); Home and the
+// Leads list are each one read (/portal/home, /portal/pipeline).
 // Isolation:
 //   - The client comes from the session (user.clientRec) only, never from the URL or the query.
 //   - The server's route guard (server.ts clientMayCall) sends every other route a 403.
@@ -347,11 +349,22 @@ const stageOf = (f: Record<string, unknown>): string => {
   return bookedAt(f) ? 'Booked Meeting' : 'New Interested';
 };
 
-/** Pipeline: every lead shown to the client, by stage (the Softr kanban), last 12 months. */
+/**
+ * Pipeline: every lead shown to the client, by stage (the Softr kanban), last 12 months. v3
+ * (2026-11-26): each row also carries the start of what they wrote, whether call feedback is due and
+ * the last feedback's status and stars, so the Leads tab is one read (the same rows, nothing new shown).
+ */
 export function buildPipeline(mine: Mine, now = Date.now()) {
-  const rows = mine.emails.filter((e) => visibleLead(e.fields) && within(bookedAt(e.fields) || val(e.fields[EF.latestReplyAt]), now, PIPELINE_DAYS)).map((e) => {
-    const f = e.fields;
-    return { key: opaque(e.id), name: val(f[EF.leadName]) || 'Unknown name', company: val(f[EF.company]), stage: stageOf(f), date: val(f[EF.latestReplyAt]), bookedOn: bookedAt(f), feedback: lastFeedbackOf(mine.callFeedback, e.id).length > 0, deal: dealOf(mine.deals, e.id) !== null };
+  // In the 12 months: booked or replied in them, or a call still to come ("Date of Call Booked" can be
+  // the call's future day; v3 fix: such a lead used to drop out of the list until the day came).
+  const inWindow = (f: Record<string, unknown>) => within(bookedAt(f), now, PIPELINE_DAYS) || within(val(f[EF.latestReplyAt]), now, PIPELINE_DAYS) || Date.parse(bookedAt(f)) > now;
+  const rows = mine.emails.filter((e) => visibleLead(e.fields) && inWindow(e.fields)).map((e) => {
+    const f = e.fields; const fb = lastFeedbackOf(mine.callFeedback, e.id); const booked = bookedAt(f);
+    return {
+      key: opaque(e.id), name: val(f[EF.leadName]) || 'Unknown name', company: val(f[EF.company]), stage: stageOf(f), date: val(f[EF.latestReplyAt]), bookedOn: booked,
+      message: oneLine(val(f[EF.latestReply]), 280), feedback: fb.length > 0, deal: dealOf(mine.deals, e.id) !== null,
+      feedbackDue: !!booked && callHappened(f, now) && recent(booked, now) && fb.length === 0, lastFeedback: fb[0] ? { status: fb[0].status, rating: fb[0].rating } : null,
+    };
   }).sort((a, b) => (b.bookedOn || b.date).localeCompare(a.bookedOn || a.date));
   const stages = PIPELINE_STAGES.map((s) => ({ stage: s, leads: rows.filter((r) => r.stage === s) }));
   const won = mine.deals.map((d) => n(d.fields[DEAL.value]));
@@ -454,6 +467,45 @@ export function buildPathway(mine: Mine) {
   return { steps, done: steps.filter((s) => s.done).length };
 }
 
+/**
+ * What waits on the client (v3 Home "Needs you"): open tasks (Mark done), campaigns waiting for their
+ * review, booked calls that happened with no feedback yet, and the onboarding form when it is linked
+ * but not submitted yet (Workspace IDs Onboarding_form_submitted, as Getting started uses).
+ */
+export function needsOf(mine: Mine, now = new Date()) {
+  const tasks = buildTasks(mine).filter((t) => t.stage !== 'done');
+  const review = buildCampaigns(mine).filter((c) => c.state === 'review').map((c) => ({ key: c.key, name: c.name }));
+  const feedback = buildFeedback(mine, now.getTime()).missing;
+  const onboarding = mine.group.some((w) => recIds(w.fields.Onboarding).length > 0) && !mine.group.some((w) => w.fields.Onboarding_form_submitted === true);
+  return { tasks, review, feedback, onboarding, count: tasks.length + review.length + feedback.length + (onboarding ? 1 : 0) };
+}
+
+/**
+ * The last 30 days against the 30 days before, from the analytics rows Softr charted ("Last 30
+ * days" and "Last 60 days": the 30 before = 60 minus 30). null when there is no "Last 30 days" row.
+ */
+function window30(rows: AirtableRecord[], F: Record<string, string>, pick: (f: Record<string, unknown>) => Record<string, number>) {
+  const p30 = rows.find((r) => val(r.fields[F.period]) === 'Last 30 days');
+  if (!p30) return null;
+  const p60 = rows.find((r) => val(r.fields[F.period]) === 'Last 60 days');
+  const now = pick(p30.fields);
+  const before = p60 ? Object.fromEntries(Object.entries(pick(p60.fields)).map(([k, v]) => [k, Math.max(0, v - (now[k] ?? 0))])) : null;
+  return { label: 'Last 30 days', now, before };
+}
+/** Home results for the channels that are on for this client only (an off channel is null, never an empty section). */
+export function homeResults(mine: Mine) {
+  const em = buildEmailResults(mine), li = buildLinkedin(mine), ai = buildAiCaller(mine);
+  const emailPick = (f: Record<string, unknown>) => ({ sent: n(f[EAO.sent]), replies: n(f[EAO.replies]), interested: n(f[EAO.interested]), booked: n(f[EAO.booked]) });
+  const liPick = (f: Record<string, unknown>) => ({ sent: n(f[LAO.sent]), accepted: n(f[LAO.accepted]), replies: n(f[LAO.replies]), booked: n(f[LAO.booked]) });
+  const liTotal = li.campaigns.reduce((a, c) => ({ sent: a.sent + c.sent, accepted: a.accepted + c.accepted, replies: a.replies + c.replies, booked: a.booked + c.booked }), { sent: 0, accepted: 0, replies: 0, booked: 0 });
+  return {
+    email: em.active ? { ...(window30(mine.emailOverview, EAO, emailPick) ?? { label: 'All time', now: { sent: em.total.sent, replies: em.total.replies, interested: em.total.interested, booked: em.total.booked }, before: null }), health: em.health } : null,
+    linkedin: li.active ? (window30(mine.linkedinOverview, LAO, liPick) ?? { label: 'All time', now: liTotal, before: null }) : null,
+    aiCaller: ai.active ? { label: 'All time', calls: ai.calls, answered: ai.answered, interested: ai.interested } : null,
+    directMail: mine.group.some((w) => w.fields['Direct Mail'] === true),
+  };
+}
+
 /** Home: "is this working?" in five seconds. */
 export function buildHome(mine: Mine, user: HqUser, now = new Date()) {
   const month = mine.emails.filter((e) => e.fields[EF.dnc] !== true);
@@ -479,6 +531,11 @@ export function buildHome(mine: Mine, user: HqUser, now = new Date()) {
     tasks: { open: tasks.length, top: tasks.slice(0, 3).map((t) => ({ key: t.key, name: t.name, stage: t.stage })) },
     todo: { review, feedback, unread: mine.notifications.length },
     health: healthText(liveCampaigns(mine).map((x) => x.deliverability)),
+    // v3 (2026-11-26): the one-scroll Home reads everything it shows from this one answer.
+    needs: needsOf(mine, now),
+    results: homeResults(mine),
+    campaigns: buildCampaigns(mine).filter((c) => c.state !== 'finished').map((c) => ({ key: c.key, name: c.name, state: c.state, label: c.label, sent: c.sent, replies: c.replies, interested: c.interested, booked: c.booked })),
+    finishedCampaigns: buildCampaigns(mine).filter((c) => c.state === 'finished').length,
   };
 }
 
@@ -488,7 +545,7 @@ export function buildSession(mine: Mine, user: HqUser, go: PortalLinks, now = ne
   return {
     user: { email: user.email, name: user.name, role: 'client' as const }, client: { name: groupName(mine.group) },
     channels: { email: buildEmailResults(mine).active, linkedin: buildLinkedin(mine).active, aiCaller: buildAiCaller(mine).active, directMail: mine.group.some((w) => w.fields['Direct Mail'] === true) },
-    go, badges: { unread: mine.notifications.length, tasks: buildTasks(mine).filter((t) => t.stage === 'open').length, review: mine.allCampaigns.filter((c) => campaignState(c.fields) === 'review').length, feedback: buildFeedback(mine, now.getTime()).missing.length },
+    go, badges: { unread: mine.notifications.length, tasks: buildTasks(mine).filter((t) => t.stage === 'open').length, review: mine.allCampaigns.filter((c) => campaignState(c.fields) === 'review').length, feedback: buildFeedback(mine, now.getTime()).missing.length, needs: needsOf(mine, now).count },
   };
 }
 
