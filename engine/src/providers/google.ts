@@ -16,6 +16,8 @@ export interface SheetsClient {
   header(sheetId: string, tab: string): Promise<string[]>;
   /** A whole tab (header row first), columns A:ZZ. */
   tab(sheetId: string, tab: string): Promise<string[][]>;
+  /** A whole tab as written (formulas like "=B2*B3", constants as typed), A:ZZ. Read only (HQ pricing calculator). */
+  formulas?(sheetId: string, tab: string): Promise<string[][]>;
   /** Whole columns (by 0-based index) of a tab, header cell included. */
   columns(sheetId: string, tab: string, indexes: number[]): Promise<string[][]>;
   /** Create a new spreadsheet with one tab; returns its ID. */
@@ -131,6 +133,10 @@ export function createSheetsClient(o: GoogleOptions): SheetsClient {
     async tab(sheetId, tab) {
       const r = await get(`/v4/spreadsheets/${encodeURIComponent(sheetId)}/values/${encodeURIComponent(`${quoteTab(tab)}!A:ZZ`)}`);
       return ((r.values as string[][] | undefined) ?? []).map((row) => row.map((v) => String(v ?? '')));
+    },
+    async formulas(sheetId, tab) {
+      const r = await get(`/v4/spreadsheets/${encodeURIComponent(sheetId)}/values/${encodeURIComponent(`${quoteTab(tab)}!A:ZZ`)}?valueRenderOption=FORMULA`);
+      return ((r.values as unknown[][] | undefined) ?? []).map((row) => row.map((v) => String(v ?? '')));
     },
     async create(title, tab) {
       const r = await get('/v4/spreadsheets', 'POST', { properties: { title }, sheets: [{ properties: { title: tab } }] });
