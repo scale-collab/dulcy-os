@@ -290,3 +290,5 @@ Format: `- [date] rule. (why / source)`
 - **Dates in HQ use slashes** (11/27).
 - **Campaigns and Lead lists in HQ follow the Airtable Campaign Center and Lead List Center** (same sections and actions), cleaner; Alex must always see which accounts are sending and how many are free.
 - **Bulk edits, not one by one** (inbox limits per client / selection / all).
+- **Cole keeps Close current (Alex, 2026-11-27):** after each call review, Cole updates that opportunity's close likelihood and value in Close (Alex no longer does it by hand). Reads/writes only Dulcy's own sales records; never sends anything to a prospect.
+- **Inbox cost:** Dulcy's inboxes cost about $2.50/month each (Cheap Inboxes); real renewal dates come from Cheap Inboxes.
