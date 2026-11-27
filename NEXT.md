@@ -4,6 +4,7 @@ Last updated: 2026-11-27
 
 ## Done 2026-11-27 (live)
 - **Echo books meetings itself:** prospect picks a time → live re-check → booked on the client's calendar (Google event + Meet + invite, or Calendly booking) → confirmation reply; follows each client's approval mode (all are approval now: one card books + sends). Airtable marks WON / Booked Meeting. Phone from Airtable or signature fills Calendly's phone question.
+- **All 6 calendars set up:** Google, Calendly (tested, booked), Outlook (Entra app + secret saved), HubSpot (project app 64024527 uploaded, keys saved), Cal.com and GHL (client pastes own key). Outlook/HubSpot/Cal.com/GHL not yet tested with a real booking; first real test: Twenty West GHL.
 - **Calendars:** Google app published (calendar.events.owned added, sensitive → video + verification still to submit); Calendly OAuth app live. Dulcy's Calendly connected; test booking succeeded (Tue Dec 1 11 AM ET, cancel it).
 - **Privacy policy** on dulcy.io: section 9 "Calendar Data" (Google + Calendly, Limited Use).
 - **Client portal v3** (3 tabs) on hq.dulcy.io/portal; switch portal.dulcy.io from Softr when tested.
