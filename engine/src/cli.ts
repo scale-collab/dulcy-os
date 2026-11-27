@@ -62,6 +62,7 @@
 //       Free: download a MillionVerifier job and compare its verdicts with DiscoLike's own email
 //       check on the list's DiscoLike Contacts-run contacts (counts; emails masked).
 import { loadConfig } from './config.js';
+import { bookSlot, calendarStatus, openTimes } from './agents/calendar.js';
 import { createPool, migrate } from './db/pool.js';
 import { enqueue, getJob } from './queue.js';
 import { STAGES } from './stages/index.js';
@@ -331,6 +332,24 @@ async function main() {
         await createSlackClient({ token: cfg.slackBotToken, baseUrl: cfg.slackBaseUrl }).post(cfg.atlasChannel, text);
         console.log(`\n(posted to ${cfg.atlasChannel})`);
       }
+    } else if (cmd === 'calendar-test') {
+      // Check a client's calendar connection and, with --book <email>, book ONE real test meeting
+      // on the first open slot (Alex, 2026-11-27: test booking end to end on Dulcy's own calendar).
+      const ws = args[0] ?? '';
+      if (!/^rec[A-Za-z0-9]{14}$/.test(ws)) throw new Error('usage: calendar-test <workspace record id> [--book <prospect email>] [--name "Test Prospect"]');
+      const st = await calendarStatus(cfg, ws);
+      console.log('Status:', st ? `${st.status} · provider ${st.provider ?? '?'} · can book: ${st.canBook ? 'yes' : 'NO (reconnect)'} · tz ${st.timezone ?? '?'}` : 'no calendar connected (or CALENDAR_READER_TOKEN missing)');
+      const open = await openTimes(cfg, ws);
+      console.log('Open times:', open?.slots.length ? open.slots.slice(0, 4).join(' | ') : 'none found');
+      const email = flag(args, '--book');
+      if (email) {
+        if (!st?.canBook) throw new Error('this calendar cannot book yet: reconnect it from HQ (AI replier → Get calendar link)');
+        if (!cfg.calendarBookerToken) throw new Error('CALENDAR_BOOKER_TOKEN is not set in the engine .env');
+        const start = open?.slots[0];
+        if (!start) throw new Error('no open slot to book');
+        const r = await bookSlot(cfg, { workspace: ws, start, tz: open!.timezone, prospect: { name: flag(args, '--name') ?? 'Test Prospect', email }, title: 'Dulcy booking test', description: 'Test booking made from the engine (calendar-test).', idempotencyKey: `test:${ws}:${start.slice(0, 16)}` });
+        console.log('Booking:', JSON.stringify(r, null, 2));
+      }
     } else if (cmd === 'discord-check') {
       // Read-only: can Sienna's bot see Agency Ignition? Per channel: messages in 30 days, empty ones, questions. No Claude, no posting.
       if (!cfg.discordBotToken) throw new Error('no DISCORD_BOT_TOKEN in the server .env');
@@ -410,7 +429,7 @@ async function main() {
         for (const e of d.errors) console.log(`(couldn't read ${e})`);
       }
     } else {
-      throw new Error('commands: hq-user, ask, discord-check, jobs, job, campaign-plans, campaign-plan-retry, campaign-copy, atlas-health, agent, xero-connect, ledger-report, ledger-prep, ledger-ask, verify, mv-compare, campaign, topup, senders, bounce, whereis, cleanup-test, cancel');
+      throw new Error('commands: hq-user, ask, calendar-test, discord-check, jobs, job, campaign-plans, campaign-plan-retry, campaign-copy, atlas-health, agent, xero-connect, ledger-report, ledger-prep, ledger-ask, verify, mv-compare, campaign, topup, senders, bounce, whereis, cleanup-test, cancel');
     }
   } finally {
     await db.end();
