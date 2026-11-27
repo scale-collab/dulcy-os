@@ -18,6 +18,7 @@ import { EMAILS, EF, RA, SETTINGS, REPLY_LEARNING, val, wsRecordOf } from './ema
 import { DECISIONS, DF } from '../decisions/fields.js';
 import { armFields, parsePlan, policyOf, shouldArm } from './followups.js';
 import { loadSettings, inOfficeHours, type ClientSettings } from './settings.js';
+import { bookingOf, needsBooking } from './booking.js';
 
 const STOP = /\b(unsubscribe|remove me|take me off|stop emailing|do not contact)\b/i;
 const DONE_STATES = ['Sent', 'Sending', 'Suppressed', 'Thread Complete'];
@@ -85,6 +86,8 @@ export const replySendStage: Stage = async (ctx) => {
   };
 
   if (!['Approve Draft', 'Send Edited Reply'].includes(action)) return { message: `nothing to send (Human Action is "${action || 'None'}")` };
+  // A booking confirmation goes out only after the meeting is booked (calendar.book queues this send).
+  if (bookingOf(policy)?.status === 'pending') return { message: 'not sent: the meeting is not booked yet; calendar.book books first, then queues this send' };
   if (DONE_STATES.includes(val(f[RA.state]))) return { message: `already ${val(f[RA.state])}; nothing sent again` };
   if (val(f[RA.ownership]) === 'Handoff' || f[EF.clientHandling] === true) throw await fail('the client handles this thread; Dulcy does not send here');
   const body = (action === 'Send Edited Reply' ? val(f[RA.customReply]) : val(f[RA.draft])).trim();
@@ -170,7 +173,6 @@ export async function repliesTick(db: Db, cfg: Config, at: Pick<AirtableClient, 
       [RA.humanAction, RA.updatedAt, EF.latestReplyAt, RA.policy, RA.clients, RA.wsRecord], 20);
     const office = new Map<string, ClientSettings>();
     for (const r of approved) {
-      const def = STAGES['reply.send'];
       // Automatic sends (client settings) go out inside the client's office hours only; approvals by a person go now.
       if (policyOf(r.fields).auto === true) {
         const wsRec = wsRecordOf(r.fields);
@@ -178,10 +180,17 @@ export async function repliesTick(db: Db, cfg: Config, at: Pick<AirtableClient, 
         if (!inOfficeHours(office.get(wsRec)!.office)) continue;
       }
       const via = policyOf(r.fields).auto === true ? 'auto-send, client settings' : (await at.list(DECISIONS, `AND({Emails Record}='${r.id}',{Status}='Approved')`, [DF.status], 1)).length ? 'Slack' : 'Airtable';
+      // One approve, two steps in order (Alex 2026-11-27): a booking draft books first (calendar.book),
+      // which queues the confirmation send itself. A booked one sends under the same request id.
+      // A taken / failed booking was already redrafted as a normal reply (two other times, or "I'll send the invite").
+      const policy = policyOf(r.fields), booking = bookingOf(policy);
+      const book = needsBooking(policy);
+      const kind = book ? 'calendar.book' : 'reply.send';
       const q = await enqueue(db, {
-        kind: 'reply.send', recordId: r.id, input: { emailsRecordId: r.id, via },
-        requestId: `send:${r.id}:${val(r.fields[RA.humanAction])}:${val(r.fields[RA.updatedAt])}:${val(r.fields[EF.latestReplyAt])}`,
-        dryRun: cfg.dryRun && !cfg.liveStages.includes('reply.send'), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs,
+        kind, recordId: r.id, input: { emailsRecordId: r.id, via },
+        requestId: book ? `book:${r.id}:${booking!.key}:${val(r.fields[RA.humanAction])}` : booking?.status === 'booked' ? `send:${r.id}:booked:${booking.key}`
+          : `send:${r.id}:${val(r.fields[RA.humanAction])}:${val(r.fields[RA.updatedAt])}:${val(r.fields[EF.latestReplyAt])}`,
+        dryRun: cfg.dryRun && !cfg.liveStages.includes(kind), maxAttempts: STAGES[kind].maxAttempts, deadlineMs: STAGES[kind].deadlineMs,
       });
       if (q.status === 'queued') queued++;
     }

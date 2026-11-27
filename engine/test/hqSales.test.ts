@@ -289,8 +289,11 @@ test('sales API: a session is needed; members get 403 on every sales route', { s
   assert.deepEqual(reads, [], 'a member never triggers an Airtable read');
 });
 
-test('sales API: owner sees top numbers, needs action first, pipeline with exact counts, notes; cached 60 s; no writes', { skip }, async () => {
+test('sales API: owner sees top numbers, needs action first, pipeline with exact counts, notes; cached 60 s; no writes', { skip }, async (t) => {
+  // The fixtures are dated around TODAY: pin the server's clock to it (only Date; real timers keep running).
+  t.mock.timers.enable({ apis: ['Date'], now: NOW });
   await db.query(`INSERT INTO hq_reports (agent, kind, title, summary, link, data) VALUES ('Cole','call_review','Call review: Ann Lee (Acme)','Score 7/10 · Good','https://fathom.video/calls/1','{"score":7}'), ('Cole','call_prep','Prep: Bob Ray (Bolt)','Ready','', null), ('Ledger','money_report','Money','x','', null)`);
+  await db.query(`UPDATE hq_reports SET created_at = to_timestamp($1 / 1000.0) - interval '1 hour'`, [NOW]);
   const cookie = await login('alex@dulcy.io', PW);
   const r = await call('/hq/api/sales', cookie);
   assert.equal(r.status, 200, r.text);

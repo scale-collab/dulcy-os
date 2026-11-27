@@ -301,7 +301,7 @@ This covers paused campaigns too, and runs every day of the week. Only records w
    - the client's own file;
    - that client's real threads that **booked a meeting**;
    - the replies you approved before.
-3. **Times.** Two real open times come from the client's own connected calendar, never a time already offered to another prospect in the last 3 days. If there's none, Echo uses the client's saved booking link.
+3. **Times.** Two real open times come from the client's own connected calendar, never a time already offered to another prospect in the last 3 days. If there's none, Echo uses the client's saved booking link. When the prospect picks a time, Echo books it (see "Echo books the meeting itself" below).
    - **Per-client controls (Inbox Manager → Dulcy Reply Agent screen):** Echo follows each client's own settings:
      - **Enabled** off → Echo drafts nothing for that client (Lead Flo, cancelled).
      - **Reply Controls → Client reply handoff:** *All replies* = the client answers its own replies, Echo stays out (MJJ). *After first agent reply* = Echo answers once, then the client takes over (no follow-ups).
@@ -361,6 +361,68 @@ Your rule: keep following up on a positive reply until they answer or say stop.
 3. **Approve.** Same as replies: the draft lands on the row (Reply Queue) and in Slack as "Follow-up N to …". ✅ or Approve sends it. Nothing goes out without you.
 4. **How many.** The client's **Follow-up Plan JSON** (Reply Agent settings: steps with a delay and what each should do). No plan saved: 3 follow-ups at 2, 3 and 5 business days. Then one polite close-the-loop note 7 days later, then the thread is marked **Thread Complete**. A plan with `enabled: false` means no follow-ups for that client.
 5. **Stops.** Any answer from the prospect, a stop or unsubscribe, booked/closed, Not Interested, DNC or client-handled. If the prospect wrote, it becomes a normal reply for Echo. If someone already followed up by hand after the draft, the sender refuses to send a second one.
+
+### Echo books the meeting itself (Alex, 2026-11-27)
+Your words: "If they respond 'yes, could we do Wednesday at 5 PM' and it's still available, the AI agent should say 'you're all squared away' and have it automatically book."
+
+**How it works:**
+1. **The prospect picks a time.** One of the 2 times Echo offered ("Wednesday at 5 works"), or their own exact day and hour ("could we do Thursday 10:30?").
+   - Echo works out the exact slot in the client's time zone.
+   - It checks it: the day they named matches; 1 hour to 30 days away; inside the client's office hours; not a weekend or US holiday if the client turned those off.
+2. **Live check.** Echo asks the client's own calendar if that slot is still free.
+   - **Free:** the draft is a short confirmation: "Hi Jane, you're all set for Wednesday, Dec 3 at 5:00 PM ET. A calendar invite with the video link is on its way."
+   - **Taken or outside hours:** the draft offers 2 other specific times. Never a booking link unless nothing else works.
+   - **Vague** ("sometime next week", "Tuesday works" with no hour): 2 specific times, no booking.
+   - **No calendar, or connected before booking existed:** the draft says "Wednesday, Dec 3 at 5:00 PM ET works. I'll send the calendar invite over shortly." A person sends the invite. You get one HQ ask per client: "Reconnect <client>'s calendar so Echo can book meetings".
+3. **Approval.** Same as every reply, per client (Reply Agent settings):
+   - *Approval Required* (the default): **one card**, "Book Wed Dec 3, 5:00 PM ET + send confirmation". One approve (Airtable, Slack ✅ or HQ Send) does both, in that order: book, then send.
+   - *Autopilot / Auto High Confidence*: Echo books and confirms by itself, inside office hours only.
+   - A "send the invite by hand" draft always waits for a person.
+4. **Booking** (job `calendar.book`):
+   - The calendar service checks free/busy again right before booking.
+   - **Google:** an event on the client's main calendar, the prospect invited, a Google Meet link. Google emails the invite.
+   - **Calendly:** a booking on the client's chosen meeting type. Calendly sends its own confirmation.
+   - Same approval never books twice (fixed booking key). It books only on the thread's own client calendar.
+   - **If the time is gone or the booking fails, nothing is sent.** The draft changes to 2 other times and a new card comes back.
+5. **After booking**, the Emails row gets what a booked meeting always gets:
+   - **Opportunity Status = WON.** Your existing Airtable automation "Webhook to Make for WON" then sets Pipeline Stage, tags the EmailBison lead "Meeting Booked", adds 1 to the campaign's Meetings Booked, and posts "New Meeting Booked" to the client's Slack (Make "[9.0 CLIENT] Booked Meetings").
+   - **Pipeline Stage = Booked Meeting.**
+   - **Date of Call Booked** = the call's day.
+   - **Meeting Booked At** = when it was booked.
+   - Follow-ups closed, an Activity Log row ("Meeting booked: Jane Doe at Acme, Wed Dec 3, 5:00 PM ET").
+   - Then the confirmation goes out through the normal sender.
+6. **HQ Inbox:** a draft that books shows "Books Wed Dec 3, 5:00 PM ET". A booked thread shows "Booked: Wed Dec 3, 5:00 PM ET (Google Meet)" with an **Open** link.
+
+**Client settings it follows:** Default Mode, routing groups, Minimum Auto Confidence, Max Automatic Replies, Always Require Human Review (same as replies), and Timezone, Office Start/End, Exclude Weekends, Exclude US Holidays (when a meeting may be booked). The calendar's own rules (working days, hours, meeting length, buffer, notice) apply on top.
+
+**Switches (server .env):** `calendar.book` in LIVE_STAGES (until then, an approve is a dry run: nothing is booked or sent), and `CALENDAR_BOOKER_TOKEN` (without it Echo drafts "I'll send the invite over").
+
+#### What Alex must do (once)
+1. **Google Cloud console** (the OAuth app the calendar service uses):
+   - Google Auth Platform → **Data Access** → Add or remove scopes → add `https://www.googleapis.com/auth/calendar.events.owned` ("See, create, change and delete events on Google calendars you own"). Save.
+   - It is a **sensitive** scope. **Verification Center** → submit for verification: a short justification ("Dulcy's reply agent books the meeting time a prospect agreed, on the client's own calendar, with a Google Meet link and the prospect invited; it reads free/busy to offer open times") and an **unlisted YouTube demo video** showing the consent screen and a booking.
+   - Until Google approves, clients see an "unverified app" screen. They click **Advanced → Go to (app)**. This works for up to 100 users.
+2. **Calendly developer app:** tick users:read, event_types:read, availability:read, scheduled_events:read, **scheduled_events:write** (this one books), locations:read. Save.
+3. **Every connected client reconnects once.** HQ → client → AI replier → Calendar → **Get calendar link** → send it. Until then their status says "Connected – reconnect to allow booking" and Echo drafts "I'll send the invite over".
+4. **Booker token + deploy** (SSH in: `ssh -o ServerAliveInterval=30 root@178.156.132.86`), after this branch is merged to main:
+   ```
+   cd /opt/dulcy-os && git pull
+   # 1. a new token only the engine holds; it can book, nothing else
+   TOKEN=$(openssl rand -hex 32)
+   cp /opt/dulcy-calendar/data/private/config.json /opt/dulcy-calendar/data/private/config.json.bak-$(date +%F)
+   python3 -c "import json,sys; p='/opt/dulcy-calendar/data/private/config.json'; c=json.load(open(p)); c['bookerToken']=sys.argv[1]; json.dump(c,open(p,'w'),indent=1)" "$TOKEN"
+   # 2. deploy the calendar service code
+   cp /opt/dulcy-calendar/app/calendar-http.mjs /opt/dulcy-calendar/app/calendar-http.mjs.bak-$(date +%F)
+   cp services/dulcy-calendar/*.mjs /opt/dulcy-calendar/app/
+   docker restart dulcy-calendar
+   docker logs --tail 5 dulcy-calendar        # expect "Calendar connection service ready"
+   # 3. the engine: token, then the live stage
+   echo "CALENDAR_BOOKER_TOKEN=$TOKEN" >> /opt/dulcy-os/engine/deploy/.env
+   # edit LIVE_STAGES in that .env: add calendar.book (comma-separated, next to sean.draft and reply.send)
+   bash engine/deploy/deploy.sh
+   ```
+   - The calendar service's `/calendar/admin/*` routes are not public (Traefik leaves them out); the engine reaches them inside the Docker network.
+   - A failed connect or booking now writes one line to `docker logs dulcy-calendar` with the route and the reason (no tickets, codes or emails).
 
 ## Bounce agent (Atlas, 2026-11-25)
 Follows Alex's method (RULES.md 2026-11-25). Over 4% bounce = pause and investigate.

@@ -11,6 +11,7 @@ import { DECISIONS, DF } from '../decisions/fields.js';
 import { shortClient } from '../agents/ada.js';
 import { clientKey } from './clients.js';
 import { decide, replyButtons, type HqAirtable, type Verdict } from './decisions.js';
+import { bookingOf, bookedLine } from '../agents/booking.js';
 
 export const WORKSPACES = 'tblcjRBGJEWh5KgOt';
 /** Emails fields only the Inbox reads (kept here so Echo's own read lists stay as they are). */
@@ -70,6 +71,10 @@ export interface InboxRow {
   id: string; tab: InboxTab | null; prospect: string; email: string; company: string; client: string; clientKey: string; wsRec: string;
   intent: string; at: string; theySaid: string; followup: number; followupType: string; nextFollowUp: string | null; bookedAt: string;
   state: string; pressed: string; error: string; bookingLink: boolean; gap: boolean;
+  /** Echo booked it: "Booked: Wed Dec 3, 5:00 PM ET (Google Meet)" and the event / meeting link ('' = none). */
+  bookedLine: string; bookedUrl: string;
+  /** Echo will book this on approve: "Wed Dec 3, 5:00 PM ET" ('' = no booking on this draft). */
+  booksAt: string;
 }
 export interface Note { problem: string; data: string; fix: string }
 
@@ -89,6 +94,7 @@ export function toRow(r: AirtableRecord, names: WorkspaceName, any = false): Inb
   const wsName = names.rec.get(wsRec) || names.bison.get(val(f[EF.workspace])) || '';
   const draft = val(f[RA.draft]);
   const kind = p.kind === 'followup';
+  const booking = bookingOf(p);
   return {
     id: r.id, tab, prospect: val(f[EF.leadName]) || val(f[EF.leadEmail]) || 'Unknown prospect', email: val(f[EF.leadEmail]), company: val(f[EF.company]),
     client: wsName ? shortClient(wsName) : (val(f[EF.workspace]) ? `Workspace ${val(f[EF.workspace])}` : 'UNKNOWN client'), clientKey: wsName ? clientKey(wsName) : '', wsRec,
@@ -99,6 +105,8 @@ export function toRow(r: AirtableRecord, names: WorkspaceName, any = false): Inb
     bookedAt: val(f[XF.meetingBookedAt]) || val(f[XF.callBookedAt]),
     state: val(f[RA.state]), pressed: ['', 'None'].includes(val(f[RA.humanAction])) ? '' : val(f[RA.humanAction]), error: val(f[RA.lastError]),
     bookingLink: tab === 'approve' && bookingLinks(draft, String(p.calendarEvidence?.link ?? '')).length > 0, gap: /\[GAP|\{\{/.test(draft),
+    bookedLine: bookedLine(booking), bookedUrl: booking?.status === 'booked' ? String(booking.meetLink || booking.htmlLink || '') : '',
+    booksAt: booking?.status === 'pending' ? booking.label : '',
   };
 }
 
@@ -216,6 +224,9 @@ export async function threadDetail(at: HqAirtable, id: string) {
   if (val(f[RA.lastError]) && canAct) notes.push({ problem: 'Not sent last time', data: val(f[RA.lastError]).slice(0, 300), fix: 'Fix the draft below, then Send edited.' });
   if (links.length && canAct) notes.push({ problem: 'Booking link instead of two times', data: `${links[0].replace(/^https?:\/\//, '').slice(0, 60)}${times.length ? '' : ' · no open times were read from the client\'s calendar'}`, fix: 'Replace it with two specific times (RULES 2026-11-25), or send as is if the prospect asked for a link.' });
   if (/\[GAP|\{\{/.test(draft) && canAct) notes.push({ problem: 'The draft has a gap', data: (/\[GAP[^\]]*\]/.exec(draft)?.[0] ?? 'a {{placeholder}}').slice(0, 200), fix: 'Fill it in and press Send edited (the sender refuses a [GAP]).' });
+  const booking = bookingOf(p);
+  if (booking?.status === 'pending' && canAct) notes.push({ problem: `Send = book ${booking.label}, then send this`, data: 'The time was open on the client\'s calendar when Echo drafted it; it is checked again right before booking.', fix: 'If it is gone by then, nothing is booked or sent and a draft with two other times comes back.' });
+  if (['taken', 'failed'].includes(String(booking?.status)) && booking?.error && canAct && !val(f[RA.lastError])) notes.push({ problem: `${booking.label} was not booked`, data: booking.error.slice(0, 300), fix: 'The draft below replaces the confirmation; send it or edit it.' });
   if (!canAct && val(f[RA.state]) === 'Needs Approval') notes.push({ problem: 'Already pressed', data: `Human Action is "${val(f[RA.humanAction])}"`, fix: 'The engine sender picks it up within a minute; nothing to do.' });
   return {
     row, subject: val(f[EF.subject]), campaign: val(f[EF.campaign]), latest, messages, draft, reason: val(f[RA.seanReason]) || String(p.reason ?? ''),

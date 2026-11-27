@@ -80,6 +80,10 @@ export interface InboxRow {
   id: string; tab: InboxTab | null; prospect: string; email: string; company: string; client: string; clientKey: string; wsRec: string;
   intent: string; at: string; theySaid: string; followup: number; followupType: string; nextFollowUp: string | null; bookedAt: string;
   state: string; pressed: string; error: string; bookingLink: boolean; gap: boolean;
+  /** "Booked: Wed Dec 3, 5:00 PM ET (Google Meet)" + its link, when Echo booked it. */
+  bookedLine: string; bookedUrl: string;
+  /** "Wed Dec 3, 5:00 PM ET": Send books this time first. */
+  booksAt: string;
 }
 export interface InboxList {
   tab: InboxTab; client: string; rows: InboxRow[]; total: number; page: number; pages: number; counts: Record<InboxTab, number>;

@@ -49,7 +49,7 @@ export function agentByName(x: string): AgentName | null {
 export function agentForJob(kind: string): AgentName | null {
   const k = String(kind ?? '');
   const p = k.split('.')[0];
-  if (p === 'sean' || p === 'reply' || k === 'decision.send_reply') return 'Echo';
+  if (p === 'sean' || p === 'reply' || k === 'decision.send_reply' || k === 'calendar.book') return 'Echo';
   if (p === 'atlas' || p === 'campaign' || p === 'bounce' || p === 'account') return 'Atlas';
   if (p === 'scribe') return 'Scribe';
   if (p === 'leadlist') return 'Scout';

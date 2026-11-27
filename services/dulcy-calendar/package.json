@@ -1,0 +1,8 @@
+{
+  "name": "dulcy-calendar",
+  "private": true,
+  "description": "Dulcy calendar service: client calendar connections, availability and booking. No dependencies.",
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}

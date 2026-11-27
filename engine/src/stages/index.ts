@@ -60,6 +60,7 @@ const selfTest: Stage = async (ctx) => {
 };
 
 export const STAGES: Record<string, StageDef> = {
+  'calendar.book': { run: async (ctx) => (await import('../agents/booking.js')).calendarBookStage(ctx), deadlineMs: 10 * 60_000, maxAttempts: 3, description: 'Echo: book the time the prospect agreed on the thread\'s own client calendar (live free/busy re-check, never twice), record it like any booked meeting, close the follow-ups, then queue the confirmation reply. Taken or failed = nothing sent.' },
   'reply.send': { run: replySendStage, deadlineMs: 10 * 60_000, maxAttempts: 3, description: 'Send one approved reply from its Airtable row (every workspace, client CC/BCC), then update the row, Reply Learning and Slack. Never sends twice.' },
   'ada.brief': { run: adaBriefStage, deadlineMs: 10 * 60_000, maxAttempts: 2, description: 'Ada: weekday morning brief in Slack (waiting on Alex, overnight replies and meetings, campaign and account health, agent activity, top 3). Fridays add the weekly scorecard. Read only.' },
   'ledger.report': { run: ledgerReportStage, deadlineMs: 10 * 60_000, maxAttempts: 2, description: 'Ledger: Saturday money report from Xero (buckets vs 40/30/15/10/5, spend vs the OPEX cap, late invoices, bills due, books health, next payout). Read only.' },

@@ -16,6 +16,16 @@ export const RA = {
   seanReason: 'fldoRsrNu5VGArdmV', seanInput: 'fldRLOKZdWYkgZjgU',
   dueAt: 'fldgqdIguhudcKI8Z', followupType: 'fldDB9nVzj6mSprZP',
 } as const;
+/**
+ * How the system already records a booked meeting on the Emails row (checked 2026-11-27 in
+ * airtable/SCHEMA.md and the automation exports): Opportunity Status = WON is what GHL two-way and
+ * people set; the Airtable automation "Webhook to Make for WON" (wfljdbk1BZXSmpGZI) then sets Pipeline
+ * Stage = Booked Meeting, tags the EmailBison lead "Meeting Booked", adds 1 to the Campaign's Meetings
+ * Booked and fires Make "[9.0 CLIENT] Booked Meetings" (Slack + client notification). Date of Call
+ * Booked = the call's day (Call Feedback Sync writes it too). Meeting Booked At = when it was booked
+ * (read by Ada, Atlas, HQ and the portal).
+ */
+export const BK = { opportunity: 'fldfPPfvAoXw04LVs', callDate: 'fldTFmYUnIXPxgJQS', meetingBookedAt: 'fld7kOIDWTVycZtdA' } as const;
 export const INTENTS = ['Interested', 'Info Request', 'Meeting Request', 'Cost Objection', 'Process Objection', 'Not Interested', 'Do Not Contact', 'Out of Office', 'Check Back Later', 'Referred', 'Wrong Person', 'Automatic Reply', 'Other'] as const;
 /** Per-workspace Reply Agent settings (CC/BCC, booking link, calendar preferences). Read by field name. */
 export const SETTINGS = 'tbl5nmzPUcNEBSWxH';

@@ -105,6 +105,8 @@ export interface Config {
   calendarReaderToken?: string;
   /** Optional: token that may call the calendar service's /calendar/admin/request-invite (HQ "Get calendar link"). The service's inviter token is enough. */
   calendarAdminToken?: string;
+  /** Calendar service token that may book (POST /calendar/admin/book). Without it Echo never books: it drafts "I'll send the invite over" for a person. */
+  calendarBookerToken?: string;
   /** Engine sends approved replies for every workspace (off until the n8n sender is switched off). */
   replySenderOn: boolean;
   /** Max provider units (credits/rows) per job, per provider. */
@@ -281,6 +283,7 @@ export function loadConfig(env = process.env): Config {
     calendarUrl: env.CALENDAR_URL || 'http://dulcy-calendar:8789',
     calendarReaderToken: env.CALENDAR_READER_TOKEN || undefined,
     calendarAdminToken: env.CALENDAR_ADMIN_TOKEN || undefined,
+    calendarBookerToken: env.CALENDAR_BOOKER_TOKEN || undefined,
     replySenderOn: (env.REPLY_SENDER || 'off').toLowerCase() === 'on',
     capPerJob: num('CAP_PER_JOB', 100_000, env),
     capPerDay: num('CAP_PER_DAY', 100_000, env),
