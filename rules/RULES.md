@@ -248,3 +248,9 @@ Format: `- [date] rule. (why / source)`
 - **Rule:** agents (Riley's scheduled runs included) may `git add`, `git commit` and push to their own `claude/...` branches. Allowed in `.claude/settings.json`.
 - **Still needs Alex:** merging to `main` and deploying stay with Alex or the main session after tests pass; live system changes (n8n, Make, Airtable automations) still need Alex's ✅ until he says fix freely.
 - **Why:** Alex answered "yes" to "should Riley and the agents be allowed to push their own code fixes?"
+
+## Echo books the agreed time itself (Alex, 2026-11-27)
+- **Rule:** when a prospect agrees a time (one of the 2 offered, or their own exact day and hour), Echo books it on that client's own calendar after a live availability check, following each client's approval mode: Approval Required = one card "Book <time> + send confirmation" (one approve books, then sends); auto modes = by itself inside the client's office hours. Then a short confirmation in Alex's style.
+- **Limits:** only the thread's own client calendar; only the next 30 days; only inside the client's office hours; no weekends or US holidays when the client turned them off. A vague reply ("sometime next week") gets 2 specific times, never a booking. Taken or failed = nothing sent, 2 new times drafted. No calendar or no booking permission = "I'll send the invite over" for a person, plus an HQ ask to reconnect.
+- **Recorded** like every booked meeting: Opportunity Status WON (the existing WON automation does the rest), Pipeline Stage Booked Meeting, Date of Call Booked, Meeting Booked At, Activity Log row, follow-ups closed.
+- **Why:** Alex: "It's going to automatically suggest times... If they respond 'yes, could we do Wednesday at 5 PM' and it's still available, the AI agent should say 'you're all squared away, we'll book you in' and have it automatically book. The AI agent needs to go through this whole thing on its own."
