@@ -4,6 +4,7 @@ import { Avatar, BackLink, Button, Card, cx, dueLabel, ErrorBox, go, Icon, Label
 import { dealLine, HealthPill, InsightLines, num, pct1, WINDOW_LABEL } from './Clients';
 import { InboxPanel, INBOX_TABS } from './Inbox';
 import ReplierPanel from './Replier';
+import { FixItButton } from '../fixIt';
 
 interface Detail {
   client: Client;
@@ -59,6 +60,9 @@ export default function ClientPage({ id, user, tab, sub }: { id: string; user: U
           <Button icon="message" onClick={() => askAtlas(c.name)} className="w-full sm:w-auto">Ask Atlas</Button>
         </div>
         {c.insight && <InsightLines i={c.insight} className="mt-5 rounded-xl bg-sunken px-4 py-3 text-[15px]" />}
+        {c.insight && c.active && c.health !== 'safe' && /^(Atlas|Echo):/.test(c.insight.decision) && (
+          <div className="mt-3"><FixItButton agent={c.insight.decision.split(':')[0]} title={`${c.name}: ${c.insight.decision.split(':').slice(1).join(':').trim()}`} detail={`${c.insight.problem} ${c.insight.support}`} client={c.name} /></div>
+        )}
       </Card>
 
       <div role="tablist" aria-label="Client sections" className="mt-5 flex gap-1 border-b border-line">
