@@ -350,7 +350,9 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         const b = await readJson(req);
         if (!['approve', 'reject', 'edited'].includes(b.verdict)) { json(res, 400, { error: 'verdict must be approve, edited or reject' }); return true; }
         const r = await decide(needAt(), m[1], b.verdict, user.name, { canSeeMoney: owner, editedText: typeof b.text === 'string' ? b.text : undefined });
-        json(res, r.status, r.error ? { error: r.error, ...(r.placeholders ? { placeholders: r.placeholders } : {}) } : { ok: true, status: r.result });
+        let task: unknown;
+        if (!r.error && r.todo) task = (await fixIt(db, user, r.todo)).task; // approve = the agent does it
+        json(res, r.status, r.error ? { error: r.error, ...(r.placeholders ? { placeholders: r.placeholders } : {}) } : { ok: true, status: r.result, ...(task ? { task } : {}) });
         return true;
       }
 
