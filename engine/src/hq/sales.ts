@@ -11,16 +11,20 @@
 //     feedback, contract status and links, payment, onboarding steps. Links only: no send, sign,
 //     charge or record change exists here.
 //   - Top numbers: booked, showed, closed and new MRR, this month vs last month.
-//   - Data notes (Problem → Data → Fix → Why) for real data problems.
+//   - "Data to fix" (Problem → Data → Fix → Why): records that disagree, to fix at the source.
 // Owner only (money): members get 403 at the route. The money is also cut here (cutMoney) for anyone
-// but the owner, so the view itself never carries it. HQ reads only what Airtable already stores:
-// no Close, PandaDoc, SignWell, Fanbasis, Fathom or Calendly call. Reads are batched, one cache for
-// everyone, 60 seconds. Nothing is written anywhere.
+// but the owner, so the view itself never carries it. Airtable reads are batched, one cache for
+// everyone, 60 seconds. Nothing is written here.
+// Batch 4a (Alex 2026-11-27): SignWell and PandaDoc are retired (Dulcy Sign is the one signing tool):
+// their never-sent intake drafts are ignored, old signed ones still count. No Airtable links and no
+// client tasks on the sales view. Xero payments (read only, when connected) count as paid. One deal
+// shows ONE current agreement; the other records are folded with the reason (agreementRoles).
+// Periods, capacity, hottest deals (Close) and the contract draft live in salesInsights.ts / contracts.ts.
 import type { Db } from '../db/pool.js';
 import type { AirtableRecord } from '../providers/airtable.js';
 import type { HqAirtable } from './decisions.js';
 import { clientKey } from './clients.js';
-import { WORKSPACES_T, airtableUrl } from './campaigns.js';
+import { WORKSPACES_T } from './campaigns.js';
 
 // ---------- tables and fields (airtable/SCHEMA.md; field IDs, so a rename never breaks HQ) ----------
 export const SALES_T = 'tblmEyHVAXDRwPxN9'; // Sales Data: one row per opportunity (Make 1.0 Booked Meeting; stage from Close)
@@ -179,7 +183,9 @@ export function stagesOf(x: StageFacts): Record<StageKey, boolean> {
   const showed = sent || (!missed && (x.heldFlag || !!x.heldDate || HELD_STAGES.has(st) || /^(qualified|unqualified)/i.test(x.feedbackStatus)));
   const qualified = sent || (showed && (x.offerMade || QUALIFIED_STAGES.has(st) || /^qualified/i.test(x.feedbackStatus)));
   const paid = signed && (x.clientPaid || x.cash > 0);
-  const onboarded = paid && x.onboarded;
+  // The onboarding form is its own fact (Alex 2026-11-27: MJJ's form was in but showed unchecked
+  // because the payment was missing). It needs a signed deal, not a recorded payment.
+  const onboarded = signed && x.onboarded;
   return { booked: true, showed, qualified, sent, signed, paid, onboarded };
 }
 export const furthest = (r: Record<StageKey, boolean>): StageKey => [...STAGE_KEYS].reverse().find((k) => r[k]) ?? 'booked';
@@ -195,7 +201,7 @@ export const ACTION_LABEL: Record<ActionKind, string> = {
 export interface ActionLine { kind: ActionKind; owner: Owner; text: string; link?: string }
 
 export interface FeedbackRow { id: string; status: string; rating: number | null; notes: string; link: string; newDate: string; created: string }
-export interface ColeReport { id: number; kind: string; title: string; summary: string; link: string; score: number | null; created: string }
+export interface ColeReport { id: number; kind: string; title: string; summary: string; link: string; score: number | null; created: string; temperature?: string; nextStep?: string; verdict?: string }
 export interface ClientRef { id: string; name: string; status: string; paid: boolean; formDone: boolean; onboardingLinked: boolean; start: string }
 export interface InvoiceRow { id: string; amount: number | null; date: string; type: string; status: string; client: string }
 
@@ -208,7 +214,15 @@ export interface Deal {
   client: ClientRef | null; clientMatch: 'link' | 'name' | null; paidKnown: boolean; paidVia: string; onboardingStarted: boolean;
   feedback: FeedbackRow[]; reviews: ColeReport[]; prep: ColeReport | null; emailRecs: string[];
   needs: ActionLine[]; money?: DealMoney; closeUrl: string;
+  /** The day the first payment was seen (Airtable invoice, Xero), '' when unknown. */
+  paidDay: string;
+  /** Close lead id (lead_…) from a Dulcy Sign contract, '' when none. */
+  closeLead: string;
+  /** Why each agreement is on the deal: the current one first, the others folded with a reason. */
+  agreementRoles: AgreementRole[];
 }
+/** A payment seen in Xero (read only): an invoice with money paid, or money received. */
+export interface XeroPayment { contact: string; day: string; amount: number | null; kind: 'invoice' | 'received' }
 
 export interface SalesSource {
   sales: AirtableRecord[]; intake: AirtableRecord[]; contracts: AirtableRecord[]; feedback: AirtableRecord[]; ws: AirtableRecord[]; invoices: AirtableRecord[]; readAt: string;
@@ -235,7 +249,31 @@ export function reportMatches(title: string, d: { name: string; company: string;
   return keys.some((k) => flat.includes(k));
 }
 
-export interface BuildCtx { now: number; reports: ColeReport[] }
+export interface BuildCtx { now: number; reports: ColeReport[]; xero?: XeroPayment[] | null }
+
+export interface AgreementRole { id: string; primary: boolean; why: string }
+/** One current agreement per deal; every other record gets the reason it is folded. Pure. */
+export function agreementRoles(xs: Agreement[], lead: Agreement | null): AgreementRole[] {
+  if (!lead) return xs.map((a) => ({ id: a.id, primary: false, why: 'No current agreement' }));
+  const twin = (a: Agreement, b: Agreement) => a.table !== b.table && (a.intakeIds.includes(b.id) || b.intakeIds.includes(a.id) || a.contractIds.includes(b.id) || b.contractIds.includes(a.id));
+  const when = (a: Agreement) => latest([a.signedAt, a.sentAt, a.created]);
+  const roles = xs.map((a): AgreementRole => {
+    if (a.id === lead.id) return { id: a.id, primary: true, why: 'Current agreement' };
+    if (twin(a, lead)) return { id: a.id, primary: false, why: `Same agreement, second record (${a.table === 'intake' ? 'New Client Intake row' : 'Dulcy Sign copy'})` };
+    if (a.state === 'declined' || a.state === 'expired') return { id: a.id, primary: false, why: a.state === 'declined' ? 'Declined' : 'Expired or voided' };
+    if (a.state === 'draft' || a.state === 'none' || a.state === 'error') return { id: a.id, primary: false, why: 'Draft, never sent' };
+    if (lead.state === 'signed' && a.state !== 'signed') return { id: a.id, primary: false, why: 'Sent, never signed: replaced by the signed one' };
+    return { id: a.id, primary: false, why: Date.parse(when(a) || '0') < Date.parse(when(lead) || '0') ? 'Older version' : 'Another version' };
+  });
+  return [...roles.filter((r) => r.primary), ...roles.filter((r) => !r.primary)];
+}
+
+/** Xero payments that belong to a deal: the contact matches the company, client, legal name or signer. Pure. */
+export function xeroMatches(rows: XeroPayment[], d: { name: string; company: string; client: { name: string } | null; agreements: Agreement[] }, fromDay: string): XeroPayment[] {
+  const keys = new Set([d.company, d.client?.name ?? '', ...d.agreements.map((a) => a.company)].map(companyKey).filter((k) => k.length >= 4));
+  const people = new Set([d.name, ...d.agreements.map((a) => a.signer)].map((x) => String(x ?? '').trim().toLowerCase()).filter((x) => x.split(/\s+/).length >= 2));
+  return rows.filter((r) => (keys.has(companyKey(r.contact)) || people.has(r.contact.trim().toLowerCase())) && (!fromDay || r.day >= fromDay)).sort((a, b) => a.day.localeCompare(b.day));
+}
 
 /** Every deal: Sales Data rows, with their agreements, client, payment, onboarding and feedback. Pure. */
 export function buildDeals(src: SalesSource, ctx: BuildCtx): Deal[] {
@@ -246,7 +284,8 @@ export function buildDeals(src: SalesSource, ctx: BuildCtx): Deal[] {
   // Agreements: intake rows that track an agreement, and Dulcy Sign contracts that are not tests.
   const contracts = src.contracts.map(contractAgreement).filter((c) => !c.test);
   const intakeRows = src.intake.map(intakeAgreement);
-  const tracked = intakeRows.filter((a) => a.state !== 'none' || a.url || a.contractIds.length);
+  // SignWell / PandaDoc are retired (Alex 2026-11-27): an intake row that never went out is not an agreement.
+  const tracked = intakeRows.filter((a) => (a.state !== 'none' || a.url || a.contractIds.length) && !(['draft', 'none', 'error'].includes(a.state) && !a.sentAt));
   const agreements: Agreement[] = [...tracked];
   // A Dulcy Sign contract linked to an intake row is shown beside it (both are on the deal page).
   agreements.push(...contracts);
@@ -292,8 +331,11 @@ export function buildDeals(src: SalesSource, ctx: BuildCtx): Deal[] {
     const signedDay = signedAt ? dayOf(signedAt) : '';
     const paidInvoices = client ? invoices.filter((v) => v.client === client.id && isPaidInvoice(v) && (!signedDay || dayOf(v.date) >= nyDay(dayMs(signedDay) - 45 * DAY))) : [];
     const cash = n(f[SF.cash]) ?? 0;
-    const clientPaid = !!client && (client.paid || paidInvoices.length > 0);
+    const fromDay = signedDay ? nyDay(dayMs(signedDay) - 45 * DAY) : '';
+    const xeroPaid = ctx.xero && (lead?.state === 'signed' || yes(f[SF.closed])) ? xeroMatches(ctx.xero, { name: s(f[SF.contact]) || lead?.signer || '', company: s(f[SF.company]) || lead?.company || '', client, agreements: dr.agreements }, fromDay) : [];
+    const clientPaid = (!!client && (client.paid || paidInvoices.length > 0)) || xeroPaid.length > 0;
     const onboarded = !!client && (client.formDone || client.onboardingLinked);
+    const paidDay = paidInvoices.length ? dayOf(paidInvoices.map((v) => v.date).sort()[0]) : xeroPaid.length ? xeroPaid[0].day : client?.paid ? signedDay : cash > 0 ? signedDay : '';
     const feedbackStatus = fb[0]?.status ?? '';
     const stages = stagesOf({
       airtableStage: s(f[SF.stage]), callDate: s(f[SF.callDate]), heldDate: s(f[SF.heldDate]), heldFlag: yes(f[SF.held]), offerMade: yes(f[SF.offerMade]),
@@ -313,12 +355,13 @@ export function buildDeals(src: SalesSource, ctx: BuildCtx): Deal[] {
       campaign: names(f[SF.campaign])[0] ?? '', airtableStage: s(f[SF.stage]), lossReason: s(f[SF.lossReason]), notes: s(f[SF.notes]).slice(0, 2000),
       callDate, heldDate: s(f[SF.heldDate]), bookedAt: s(f[SF.created]) || dr.rec?.createdTime || '', startDay,
       stages, stage, lost, inactiveClient, agreements: [...dr.agreements].sort((a, b) => (b.sentAt || b.created).localeCompare(a.sentAt || a.created)), agreement: lead, signedDay,
-      client, clientMatch: linked ? 'link' : named ? 'name' : null, paidKnown: !!client, paidVia: client?.paid ? 'Initial Payment Received' : paidInvoices.length ? `${plural(paidInvoices.length, 'paid invoice')}` : cash > 0 ? 'Total Cash Collected' : '',
+      client, clientMatch: linked ? 'link' : named ? 'name' : null, paidKnown: !!client || xeroPaid.length > 0,
+      paidVia: client?.paid ? 'Initial Payment Received' : paidInvoices.length ? `${plural(paidInvoices.length, 'paid invoice')}` : xeroPaid.length ? `Xero: ${xeroPaid[0].contact} ${xeroPaid[0].kind === 'invoice' ? 'invoice paid' : 'payment received'} ${shortDay(xeroPaid[0].day)}` : cash > 0 ? 'Total Cash Collected' : '',
       onboardingStarted: onboarded || dr.agreements.some((a) => !!a.forwardedAt), feedback: fb, reviews, prep, emailRecs,
-      needs: [], closeUrl: closeLead ? `https://app.close.com/lead/${closeLead}/` : '',
+      needs: [], closeUrl: closeLead ? `https://app.close.com/lead/${closeLead}/` : '', closeLead, paidDay, agreementRoles: agreementRoles(dr.agreements, lead),
       money: {
         monthly: lead?.monthly ?? null, perCall: lead?.perCall ?? null, forecast: n(f[SF.forecast]), offer: n(f[SF.offer]), cash: n(f[SF.cash]), currency: lead?.currency ?? 'USD',
-        paidTotal: paidInvoices.length ? paidInvoices.reduce((a, v) => a + (v.amount ?? 0), 0) : null,
+        paidTotal: paidInvoices.length ? paidInvoices.reduce((a, v) => a + (v.amount ?? 0), 0) : xeroPaid.length ? xeroPaid.reduce((a, v) => a + (v.amount ?? 0), 0) : null,
       },
     };
     deal.needs = needsFor(deal, today);
@@ -372,14 +415,54 @@ export function needsFor(d: Pick<Deal, 'callDate' | 'heldDate' | 'airtableStage'
 }
 
 // ---------- the views ----------
+export interface ReviewLite { id: number; score: number | null; temperature: string; verdict: string; nextStep: string; created: string; link: string }
 export interface DealLite {
   id: string; name: string; company: string; stage: StageKey; stageLabel: string; airtableStage: string; callDate: string; lost: boolean; signedDay: string;
   agreementState: AgreementState | null; client: string; needs: ActionLine[]; monthly?: number | null;
+  /** The latest call review (Cole, from Fathom) and Cole's one line for the next step. */
+  review: ReviewLite | null; coleNext: string;
 }
-const lite = (d: Deal): DealLite => ({
+export const latestReview = (d: Pick<Deal, 'reviews'>): ReviewLite | null => {
+  const r = [...d.reviews].sort((a, b) => b.created.localeCompare(a.created))[0];
+  return r ? { id: r.id, score: r.score, temperature: r.temperature ?? '', verdict: r.verdict ?? r.summary, nextStep: r.nextStep ?? '', created: r.created, link: r.link } : null;
+};
+export const lite = (d: Deal, today = nyDay(Date.now())): DealLite => ({
   id: d.id, name: d.name, company: d.company, stage: d.stage, stageLabel: STAGE_LABEL[d.stage], airtableStage: d.airtableStage, callDate: d.callDate, lost: d.lost,
   signedDay: d.signedDay, agreementState: d.agreement?.state ?? null, client: d.client?.name ?? '', needs: d.needs, ...(d.money ? { monthly: d.money.monthly } : {}),
+  review: latestReview(d), coleNext: coleNext(d, today),
 });
+
+/**
+ * Cole's one line for the next step on a deal, from the stage, the contract and the latest call review.
+ * Rules (Closers.io: one clear next step after every call; follow up an open contract fast). Pure.
+ */
+export function coleNext(d: Pick<Deal, 'stages' | 'lost' | 'inactiveClient' | 'agreement' | 'callDate' | 'airtableStage' | 'reviews' | 'feedback' | 'signedDay' | 'onboardingStarted'>, today: string): string {
+  const r = latestReview(d);
+  const said = r?.nextStep && !/^(none|n\/?a|-)?$/i.test(r.nextStep.trim()) ? r.nextStep.trim().replace(/\.$/, '') : '';
+  const a = d.agreement;
+  if (d.inactiveClient) return '';
+  if (d.lost) return r?.temperature === 'warm' ? 'Lost for now: add to the 90-day nurture, then check in.' : '';
+  if (d.stages.paid && !d.stages.onboarded && !d.onboardingStarted) return 'Paid: Atlas starts onboarding (form and kickoff call).';
+  if (d.stages.signed && !d.stages.paid) return `Signed ${shortDay(d.signedDay)}: Ledger confirms the first payment (Commas / Xero).`;
+  if (d.stages.signed) return '';
+  if (a?.clientSignedAt && a.state !== 'signed') return 'The client signed: countersign in Dulcy Sign today.';
+  if (a && (a.state === 'sent' || a.state === 'viewed')) {
+    const age = a.sentAt ? daysBetween(dayOf(a.sentAt), today) : 0;
+    return a.state === 'viewed'
+      ? `They opened the contract${a.viewedAt ? ` ${shortDay(a.viewedAt)}` : ''}: call and ask what is left to decide${said ? ` (agreed: ${said})` : ''}.`
+      : `Contract sent ${age} day${age === 1 ? '' : 's'} ago, not opened: send a short nudge with the link.`;
+  }
+  if (a && a.state === 'draft') return 'A draft is waiting: review it and send it from Dulcy Sign.';
+  if (d.airtableStage === 'No Show' || /no show/i.test(d.feedback[0]?.status ?? '')) return 'No-show: send two new times today.';
+  if (d.airtableStage === 'Reschedule') return 'Asked to reschedule: send two new times today.';
+  if (r?.temperature === 'hot' && d.stages.showed) return `Hot call: draft the contract now${said ? ` (agreed: ${said})` : ''}.`;
+  if (said && d.stages.showed) return `Do what was agreed: ${said}.`;
+  if (d.callDate && d.callDate >= today && !d.stages.showed) return d.callDate === today ? 'Call today: read the replies and the prep first.' : `Call ${shortDay(d.callDate)}: confirm it the day before.`;
+  if (d.stages.qualified) return 'Qualified, no contract yet: send the proposal or book the follow-up.';
+  if (d.stages.showed) return 'Call done, no next step logged: send the recap and one clear next step.';
+  if (d.callDate && d.callDate < today) return 'Log what happened on the call (Close stage).';
+  return '';
+}
 
 export interface Rate { n: number; of: number; text: string }
 const rate = (k: number, of: number, word: string): Rate => ({ n: k, of, text: `${k} of ${of} ${word}` });
@@ -390,7 +473,7 @@ export function pipelineOf(deals: Deal[], days: number, today: string) {
   const inWin = deals.filter((d) => d.startDay && d.startDay >= from && d.startDay <= nyDay(dayMs(today) + 60 * DAY));
   const stages = STAGE_KEYS.map((k) => ({
     key: k, label: STAGE_LABEL[k], count: inWin.filter((d) => d.stages[k]).length,
-    deals: inWin.filter((d) => d.stage === k).sort((a, b) => (b.callDate || b.startDay).localeCompare(a.callDate || a.startDay)).map(lite),
+    deals: inWin.filter((d) => d.stage === k).sort((a, b) => (b.callDate || b.startDay).localeCompare(a.callDate || a.startDay)).map((d) => lite(d, today)),
   }));
   // Show rate: calls whose date has passed, canceled ones left out (they never were a call).
   const held = inWin.filter((d) => d.salesRec && d.callDate && d.callDate < today && d.airtableStage !== 'Canceled');
@@ -451,8 +534,17 @@ export function salesNotes(deals: Deal[], src: Pick<SalesSource, 'sales' | 'feed
   if (noRow.length) out.push({ problem: `${noRow.length === 1 ? 'Agreement' : 'Agreements'} with no Sales Data row`, data: few(noRow.map((d) => `${label(d)} · ${d.agreement!.state}`)), fix: 'Riley: check Make "1.0 Booked Meeting" and the Close → Sales Data sync for these leads.', why: 'The booked call is missing, so the show and close rates leave these deals out.', owner: 'Riley' });
   const oldUnsigned = deals.filter((d) => d.agreement && ['sent', 'viewed'].includes(d.agreement.state) && !d.stages.signed && daysBetween(dayOf(d.agreement.sentAt), today) > L.contractDays);
   if (oldUnsigned.length) out.push({ problem: `Contracts sent ${L.contractDays}+ days ago, still open`, data: few(oldUnsigned.map((d) => `${label(d)} · sent ${shortDay(d.agreement!.sentAt)}`)), fix: 'Cole: mark the deal Lost in Close, or Alex voids the agreement.', why: 'They sit in "Contract sent" and make the pipeline look bigger than it is.', owner: 'Cole' });
-  const twoPaths = deals.filter((d) => d.agreements.some((a) => a.tool === 'Dulcy Sign' && ['sent', 'viewed', 'signed'].includes(a.state)) && d.agreements.some((a) => a.tool !== 'Dulcy Sign' && a.state === 'draft'));
-  if (twoPaths.length) out.push({ problem: 'Two signing paths disagree', data: few(twoPaths.map((d) => `${label(d)}: Dulcy Sign ${d.agreements.find((a) => a.tool === 'Dulcy Sign')!.state} · New Client Intake "Draft"`)), fix: 'Alex: confirm Dulcy Sign is the live path; Riley then retires the SignWell draft step (audit 11-25: "2 signing paths into 1").', why: 'The intake row still says Draft while the client already has the contract.', owner: 'Alex' });
+  // Paid in Xero but not in Airtable (Brilliant / MJJ, Alex 2026-11-27): the n8n payment flow
+  // ("Fanbasis Transaction Successful") matches the client by the buyer's name / email; when the
+  // name on the payment is not the Workspace IDs name, nothing is ticked and no invoice row is written.
+  const xeroOnly = deals.filter((d) => d.stages.signed && d.client && !d.client.paid && /^Xero:/.test(d.paidVia));
+  if (xeroOnly.length) out.push({ problem: `Paid in Xero, "not paid" in Airtable`, data: few(xeroOnly.map((d) => `${label(d)} → "${d.client!.name}": ${d.paidVia}; Initial Payment Received unticked, no Client Invoices row`)), fix: 'Ledger: tick Initial Payment Received on the client record. Riley: make the n8n "Fanbasis Transaction Successful" flow match this payer (its name or email is not the client\'s name), so the next payment lands.', why: 'Clients, Needs you and the old Sales Center read the Airtable tick, so they say "not paid". HQ Sales now also checks Xero.', owner: 'Ledger' });
+  // Onboarding form in, checkbox unticked: nothing live ticks Onboarding_form_submitted (Make 2.3 is off,
+  // the n8n 2.3 flow does not map it). HQ counts the linked Onboarding record instead.
+  const formBox = deals.filter((d) => d.stages.signed && d.client && d.client.onboardingLinked && !d.client.formDone);
+  if (formBox.length) out.push({ problem: 'Onboarding form submitted, checkbox unticked', data: few(formBox.map((d) => `${label(d)} → "${d.client!.name}": Onboarding record linked, Onboarding_form_submitted unticked`)), fix: 'Riley: add "Onboarding_form_submitted = true" to the n8n "2.3 POSTCALL Onboarding Form Complete" update (the old Make scenario that ticked it is off). Atlas: tick it for these clients.', why: 'Screens that read the checkbox show the form as not done. HQ Sales counts the linked record.', owner: 'Riley' });
+  const dupes = deals.filter((d) => d.agreementRoles.filter((r) => !r.primary).length >= 2);
+  if (dupes.length) out.push({ problem: 'One deal, several agreement records', data: few(dupes.map((d) => `${label(d)}: ${d.agreements.length} records (${[...new Set(d.agreementRoles.filter((r) => !r.primary).map((r) => r.why))].join('; ')})`)), fix: 'Nothing to send. Atlas: void or mark Test Only the old ones in Dulcy Sign / New Client Intake if they are not needed.', why: 'HQ shows the current agreement and folds the others with the reason.', owner: 'Atlas' });
   const signedDeals = deals.filter((d) => d.salesRec && d.stages.signed);
   const won = src.sales.filter((r) => s(r.fields[SF.stage]) === 'Won' || yes(r.fields[SF.closed]) || s(r.fields[SF.closedDate]));
   if (signedDeals.length && !won.length) out.push({ problem: 'No Sales Data row is marked Won', data: `${signedDeals.length} signed · 0 of ${src.sales.length} Sales Data rows have Won, Deal Closed? or Deal Closed Date`, fix: 'Cole: move signed deals to Won in Close.', why: 'Sales Goals (close rate, revenue to goal) read those fields, so they show 0 closed. HQ counts signed agreements instead.', owner: 'Cole' });
@@ -487,8 +579,7 @@ export async function readSalesSource(at: Pick<HqAirtable, 'list'>): Promise<Sal
   return { sales, intake, contracts, feedback, ws, invoices, readAt: new Date().toISOString() };
 }
 let cache: { at: number; data: Promise<SalesSource> } | null = null;
-const tasksCache = new Map<string, { at: number; rows: Promise<OnboardingTask[]> }>();
-export function _resetSalesCache() { cache = null; tasksCache.clear(); }
+export function _resetSalesCache() { cache = null; }
 /** The cached source (60 seconds); refresh=true re-reads if the copy is older than 10 seconds. */
 export function cachedSales(at: Pick<HqAirtable, 'list'>, refresh = false, now = Date.now()): Promise<SalesSource> {
   if (cache && now - cache.at < (refresh ? 10_000 : SALES_CACHE_MS)) return cache.data;
@@ -500,73 +591,71 @@ export function cachedSales(at: Pick<HqAirtable, 'list'>, refresh = false, now =
 /** Cole's call reviews and preps (hq_reports), newest first. */
 export async function coleReports(db: Db): Promise<ColeReport[]> {
   const r = await db.query(`SELECT id, kind, title, summary, link, data, created_at FROM hq_reports WHERE agent='Cole' AND kind IN ('call_review','call_prep') ORDER BY id DESC LIMIT 300`);
-  return r.rows.map((x) => ({ id: Number(x.id), kind: x.kind, title: x.title, summary: x.summary, link: httpsOnly(String(x.link ?? '')), score: Number.isFinite(Number(x.data?.score)) ? Number(x.data.score) : null, created: new Date(x.created_at).toISOString() }));
+  return r.rows.map((x) => ({
+    id: Number(x.id), kind: x.kind, title: x.title, summary: x.summary, link: httpsOnly(String(x.link ?? '')),
+    score: x.data?.score !== undefined && x.data?.score !== null && Number.isFinite(Number(x.data.score)) ? Number(x.data.score) : null, created: new Date(x.created_at).toISOString(),
+    temperature: typeof x.data?.temperature === 'string' ? x.data.temperature : '', nextStep: typeof x.data?.nextStep === 'string' ? x.data.nextStep.slice(0, 300) : '',
+    verdict: typeof x.data?.verdict === 'string' ? x.data.verdict.slice(0, 300) : '',
+  }));
 }
 
-async function allDeals(at: Pick<HqAirtable, 'list'>, db: Db, refresh: boolean, now: number) {
-  const [src, reports] = await Promise.all([cachedSales(at, refresh, now), coleReports(db)]);
-  return { src, deals: buildDeals(src, { now, reports }) };
+/** Optional read-only extras: Xero payments (null = Xero not connected). */
+export interface SalesExtras { xero?: () => Promise<XeroPayment[] | null> }
+export async function allDeals(at: Pick<HqAirtable, 'list'>, db: Db, refresh: boolean, now: number, extras: SalesExtras = {}) {
+  const [src, reports, xero] = await Promise.all([cachedSales(at, refresh, now), coleReports(db), extras.xero ? extras.xero().catch(() => null) : Promise.resolve(null)]);
+  return { src, deals: buildDeals(src, { now, reports, xero }), xeroConnected: xero !== null };
 }
 
 /** GET /sales: top numbers, needs action, the pipeline (30 or 90 days) and data notes. */
-export async function salesView(at: Pick<HqAirtable, 'list'>, db: Db, canSeeMoney: boolean, opts: { days?: number; refresh?: boolean; now?: number } = {}) {
+export async function salesView(at: Pick<HqAirtable, 'list'>, db: Db, canSeeMoney: boolean, opts: { days?: number; refresh?: boolean; now?: number; extras?: SalesExtras } = {}) {
   const now = opts.now ?? Date.now();
   const today = nyDay(now);
-  const { src, deals } = await allDeals(at, db, opts.refresh === true, now);
+  const { src, deals, xeroConnected } = await allDeals(at, db, opts.refresh === true, now, opts.extras);
   const days = opts.days === 90 ? 90 : 30;
   const action = deals.filter((d) => d.needs.length).sort((a, b) => ACTION_ORDER.indexOf(a.needs[0].kind) - ACTION_ORDER.indexOf(b.needs[0].kind) || (a.callDate || a.startDay).localeCompare(b.callDate || b.startDay));
   const view = {
-    today, top: topNumbers(deals, today, canSeeMoney), action: action.map(lite), pipeline: pipelineOf(deals, days, today),
+    today, top: topNumbers(deals, today, canSeeMoney), action: action.map((d) => lite(d, today)), pipeline: pipelineOf(deals, days, today),
     notes: salesNotes(deals, src, today), counts: { action: action.length, deals: deals.length }, readAt: src.readAt,
-    limits: SALES_LIMITS,
+    limits: SALES_LIMITS, xeroConnected,
   };
   return canSeeMoney ? view : cutMoney(view);
 }
 
-export interface OnboardingTask { id: string; task: string; stage: string; modified: string }
-function onboardingTasks(at: Pick<HqAirtable, 'list'>, ws: ClientRef): Promise<OnboardingTask[]> {
-  const hit = tasksCache.get(ws.id);
-  if (hit && Date.now() - hit.at < SALES_CACHE_MS) return hit.rows;
-  const q = ws.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-  const rows = at.list(CLIENT_TASKS_T, `FIND('${q}', ARRAYJOIN({Client}))`, Object.values(TF), 100)
-    .then((rs) => rs.filter((r) => ids(r.fields[TF.client]).includes(ws.id)).map((r) => ({ id: r.id, task: s(r.fields[TF.task]) || 'Task', stage: s(r.fields[TF.stage]) || 'New Task', modified: s(r.fields[TF.modified]) })));
-  tasksCache.set(ws.id, { at: Date.now(), rows });
-  rows.catch(() => tasksCache.delete(ws.id));
-  return rows;
-}
-
-/** GET /sales/:id (a Sales Data, New Client Intake or Contracts record id). Links only, no actions. */
-export async function dealDetail(at: Pick<HqAirtable, 'list'>, db: Db, id: string, canSeeMoney: boolean, baseId: string, opts: { now?: number } = {}) {
+/** GET /sales/:id (a Sales Data, New Client Intake or Contracts record id). No Airtable links, no client tasks. */
+export async function dealDetail(at: Pick<HqAirtable, 'list'>, db: Db, id: string, canSeeMoney: boolean, opts: { now?: number; extras?: SalesExtras } = {}) {
   const now = opts.now ?? Date.now();
-  const { src, deals } = await allDeals(at, db, false, now);
+  const today = nyDay(now);
+  const { src, deals } = await allDeals(at, db, false, now, opts.extras);
   const deal = deals.find((d) => d.id === id || d.salesRec === id || d.agreements.some((a) => a.id === id));
   if (!deal) return null;
-  const tasks = deal.client ? await onboardingTasks(at, deal.client).catch(() => [] as OnboardingTask[]) : [];
   const a = deal.agreement;
   const onboarding = [
     { step: 'Agreement signed', done: deal.stages.signed, note: deal.signedDay ? `${shortDay(deal.signedDay)}${a ? ` · ${a.tool}` : ''}` : a ? `${a.tool}: ${a.state}` : 'No agreement yet' },
-    { step: 'Payment received', done: deal.stages.paid, note: deal.stages.paid ? deal.paidVia : !deal.stages.signed ? 'Not signed yet' : deal.client ? 'Nothing recorded in Airtable (Initial Payment Received, Client Invoices)' : 'UNKNOWN: no client record' },
+    { step: 'Payment received', done: deal.stages.paid, note: deal.stages.paid ? deal.paidVia : !deal.stages.signed ? 'Not signed yet' : deal.paidKnown ? 'Nothing recorded (Initial Payment Received, Client Invoices, Xero)' : 'UNKNOWN: no client record' },
     { step: 'Onboarding started', done: deal.onboardingStarted, note: a?.forwardedAt ? `n8n started it ${shortDay(a.forwardedAt)}` : deal.client ? `Client record "${deal.client.name}"` : '' },
-    { step: 'Onboarding form', done: deal.stages.onboarded, note: deal.client?.formDone ? 'Submitted' : deal.client?.onboardingLinked ? 'Onboarding record linked' : 'Not submitted' },
-    ...(tasks.length ? [{ step: 'Client tasks', done: tasks.every((t) => t.stage === 'Done'), note: `${tasks.filter((t) => t.stage === 'Done').length} of ${tasks.length} done${tasks.some((t) => t.stage === 'Blocked') ? ` · ${tasks.filter((t) => t.stage === 'Blocked').length} blocked` : ''}` }] : []),
+    { step: 'Onboarding form', done: deal.stages.onboarded, note: deal.client?.formDone ? 'Submitted' : deal.client?.onboardingLinked ? 'Submitted (Onboarding record linked; the checkbox is not ticked)' : 'Not submitted' },
   ];
   const calls = [
-    ...(deal.callDate ? [{ what: deal.stages.showed ? 'Call held' : deal.airtableStage === 'Canceled' ? 'Call canceled' : deal.callDate >= nyDay(now) ? 'Call booked' : 'Call (no outcome)', day: deal.heldDate || deal.callDate, link: '' }] : []),
+    ...(deal.callDate ? [{ what: deal.stages.showed ? 'Call held' : deal.airtableStage === 'Canceled' ? 'Call canceled' : deal.callDate >= today ? 'Call booked' : 'Call (no outcome)', day: deal.heldDate || deal.callDate, link: '' }] : []),
     ...deal.feedback.filter((f) => f.newDate).map((f) => ({ what: 'New date (Call Feedback)', day: f.newDate, link: '' })),
     ...deal.reviews.map((r) => ({ what: `Recorded call · Cole ${r.score ?? '?'}/10`, day: dayOf(r.created), link: r.link })),
     ...deal.feedback.filter((f) => f.link).map((f) => ({ what: 'Sales call link (Call Feedback)', day: dayOf(f.created), link: f.link })),
   ].sort((x, y) => y.day.localeCompare(x.day));
+  const roles = new Map(deal.agreementRoles.map((r) => [r.id, r]));
   const out = {
-    deal: { ...deal, stageLabel: STAGE_LABEL[deal.stage], stageList: STAGE_KEYS.map((k) => ({ key: k, label: STAGE_LABEL[k], done: deal.stages[k] })) },
-    calls, onboarding, tasks,
-    links: {
-      airtable: deal.salesRec ? airtableUrl(baseId, SALES_T, deal.salesRec) : '',
-      close: deal.closeUrl,
-      agreements: deal.agreements.map((x) => ({ id: x.id, tool: x.tool, title: x.title, state: x.state, url: x.url, reviewDoc: x.reviewDoc, airtable: airtableUrl(baseId, x.table === 'intake' ? INTAKE_T : CONTRACTS_T, x.id) })),
-      client: deal.client ? airtableUrl(baseId, WORKSPACES_T, deal.client.id) : '',
-      feedback: deal.feedback.map((f) => airtableUrl(baseId, FEEDBACK_T, f.id)),
+    deal: {
+      ...deal, stageLabel: STAGE_LABEL[deal.stage], stageList: STAGE_KEYS.map((k) => ({ key: k, label: STAGE_LABEL[k], done: deal.stages[k] })),
+      // Current agreement first, then the folded ones with the reason.
+      agreements: [...deal.agreements].sort((x, y) => Number(roles.get(y.id)?.primary ?? false) - Number(roles.get(x.id)?.primary ?? false)).map((g) => ({ ...g, primary: roles.get(g.id)?.primary ?? false, why: roles.get(g.id)?.why ?? '' })),
+      review: latestReview(deal), coleNext: coleNext(deal, today),
     },
-    notes: salesNotes([deal], src, nyDay(now)),
+    calls, onboarding,
+    links: {
+      close: deal.closeUrl,
+      // Dulcy Sign only (SignWell / PandaDoc are retired): the manage page and the review document.
+      agreements: deal.agreements.filter((x) => x.tool === 'Dulcy Sign').map((x) => ({ id: x.id, tool: x.tool, title: x.title, state: x.state, url: x.url, reviewDoc: x.reviewDoc })),
+    },
+    notes: salesNotes([deal], src, today),
     readAt: src.readAt,
   };
   return canSeeMoney ? out : cutMoney(out);

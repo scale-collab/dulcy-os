@@ -81,6 +81,8 @@ export interface Config {
   coleChannel: string;
   fathomApiKey?: string;
   fathomBaseUrl: string;
+  /** Close CRM API key (read only, HQ Sales: hottest deals, touches per close). Optional: without it HQ says "Connect Close". */
+  closeApiKey?: string;
   /** Sienna: Monday content ideas (SIENNA_IDEAS_HOUR) and Thursday scripts for Friday (SIENNA_PREP_HOUR), ET. */
   siennaOn: boolean;
   /** Riley (RILEY=on): logs failed/stuck engine jobs and n8n errors to System Issues every RILEY_EVERY_MIN. */
@@ -264,6 +266,7 @@ export function loadConfig(env = process.env): Config {
     coleChannel: (env.COLE_CHANNEL || env.ADA_CHANNEL || 'U070Z26377C').trim(),
     fathomApiKey: env.FATHOM_API_KEY || undefined,
     fathomBaseUrl: env.FATHOM_BASE_URL || 'https://api.fathom.ai/external/v1',
+    closeApiKey: env.CLOSE_API_KEY || undefined,
     siennaOn: (env.SIENNA || 'off').toLowerCase() === 'on',
     rileyOn: (env.RILEY || 'off').toLowerCase() === 'on',
     rileyEveryMin: num('RILEY_EVERY_MIN', 15, env),

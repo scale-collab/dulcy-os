@@ -88,7 +88,7 @@ export interface HealthRows { ws: HealthRow[]; emails: HealthRow[]; campaigns: H
 export async function readHealthRows(at: Pick<AirtableClient, 'list'>, opts: { inactive?: boolean; wsFields?: string[] } = {}): Promise<HealthRows> {
   const [ws, emails, campaigns] = await Promise.all([
     at.list(WORKSPACES, opts.inactive ? `{Name}!=''` : `{Status}='Active'`, [...new Set([...HEALTH_WS_FIELDS, ...(opts.wsFields ?? [])])], 200, { byName: true }),
-    at.list(EMAILS, `OR(IS_AFTER({Latest Reply Time},DATEADD(NOW(),-31,'days')),IS_AFTER({Meeting Booked At},DATEADD(NOW(),-31,'days')),IS_AFTER({Date of Call Booked},DATEADD(NOW(),-31,'days')))`, ['Workspace ID (Bison)', 'Lead Status', 'Latest Reply Time', 'Meeting Booked At', 'Date of Call Booked'], 20000, { byName: true }),
+    at.list(EMAILS, `OR(IS_AFTER({Latest Reply Time},DATEADD(NOW(),-31,'days')),IS_AFTER({Meeting Booked At},DATEADD(NOW(),-31,'days')),IS_AFTER({Date of Call Booked},DATEADD(NOW(),-31,'days')))`, ['Workspace ID (Bison)', 'Lead Status', 'Latest Reply Time', 'Meeting Booked At', 'Date of Call Booked', 'Opportunity Status', 'Pipeline Stage'], 20000, { byName: true }),
     at.list(CAMPAIGNS, `{Campaign Status}='Active'`, ['Name', 'Client', 'Bounced %', 'Progress', 'Campaign Status', 'Emails Sent', 'Interested'], 1000, { byName: true }),
   ]);
   return { ws, emails, campaigns };
@@ -101,6 +101,18 @@ export const campaignBounce = (c: HealthRow) => num(c.fields['Bounced %']) ?? 0;
 export const campaignsOf = (wsIds: string[], campaigns: HealthRow[]) => campaigns.filter((c) => (Array.isArray(c.fields.Client) ? c.fields.Client : [c.fields.Client]).map(v).some((id) => wsIds.includes(id)));
 
 /**
+ * When a meeting was booked. Most bookings (GHL two-way, people) only set Opportunity Status = WON /
+ * Pipeline Stage = Booked Meeting and leave both dates empty (Twenty West 2026-11: 9 of 9), so the
+ * latest reply time stands in for the booking day then (HQ fix 2026-11-27).
+ */
+export function bookedAt(e: HealthRow): string {
+  const dated = v(e.fields['Meeting Booked At']) || v(e.fields['Date of Call Booked']);
+  if (dated) return dated;
+  const won = v(e.fields['Opportunity Status']) === 'WON' || ['Booked Meeting', 'Completed Meeting', 'Closed Deal'].includes(v(e.fields['Pipeline Stage']));
+  return won ? v(e.fields['Latest Reply Time']) : '';
+}
+
+/**
  * One client's health numbers from one or more Workspace IDs records (the same client in two
  * workspaces counts once: the first record is the main one; results and campaigns add up). Pure.
  */
@@ -111,7 +123,7 @@ export function clientFrom(group: HealthRow[], rows: Pick<HealthRows, 'emails' |
   const bisons = group.map(bisonIdOf).filter(Boolean);
   const mine = rows.emails.filter((e) => bisons.includes(v(e.fields['Workspace ID (Bison)'])));
   const interested = (a: number, b: number) => mine.filter((e) => INTERESTED.includes(v(e.fields['Lead Status'])) && within(v(e.fields['Latest Reply Time']), a, b)).length;
-  const booked = (a: number, b: number) => mine.filter((e) => within(v(e.fields['Meeting Booked At']) || v(e.fields['Date of Call Booked']), a, b)).length;
+  const booked = (a: number, b: number) => mine.filter((e) => within(bookedAt(e), a, b)).length;
   const own = campaignsOf(group.map((x) => x.id), rows.campaigns);
   const first = (k: string) => group.map((x) => num(x.fields[k])).find((n) => (n ?? 0) > 0);
   return {

@@ -537,3 +537,13 @@ CREATE TABLE IF NOT EXISTS hq_portal_writes (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS hq_portal_writes_at ON hq_portal_writes (created_at DESC);
+
+-- Batch 4b (2026-11-27): chat like Slack. Several chats per agent; HQ opens the one you had open
+-- last (opened_at); old chats can be archived (hidden, restorable). Additive and idempotent: every
+-- chat saved before this keeps its messages and becomes a chat in the list, and the last one used
+-- per agent is the one that opens (opened_at starts as its last message time).
+ALTER TABLE hq_chat_threads ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ;
+ALTER TABLE hq_chat_threads ADD COLUMN IF NOT EXISTS opened_at TIMESTAMPTZ;
+UPDATE hq_chat_threads SET opened_at = updated_at WHERE opened_at IS NULL;
+ALTER TABLE hq_chat_threads ALTER COLUMN opened_at SET DEFAULT now();
+CREATE INDEX IF NOT EXISTS hq_chat_threads_open ON hq_chat_threads (user_id, agent, opened_at DESC) WHERE archived_at IS NULL;

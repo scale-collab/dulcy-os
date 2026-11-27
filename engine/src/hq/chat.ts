@@ -165,7 +165,7 @@ async function runTool(deps: ChatDeps, name: string, input: any, ctx: { asks: nu
 }
 
 async function loadThread(db: Db, id: number) {
-  return (await db.query(`SELECT id, user_id, agent, asked_by, parent_id, title FROM hq_chat_threads WHERE id=$1`, [id])).rows[0] ?? null;
+  return (await db.query(`SELECT id, user_id, agent, asked_by, parent_id, title, archived_at FROM hq_chat_threads WHERE id=$1`, [id])).rows[0] ?? null;
 }
 
 async function saveMessage(db: Db, m: Omit<SavedMessage, 'id' | 'created'> & { usage?: unknown }): Promise<SavedMessage> {
@@ -200,7 +200,7 @@ export function defaultModel(cfg: Config): ChatModel {
 export interface TurnInput { agent: AgentName; message: string; threadId?: number; askedBy?: string; parentId?: number }
 
 /** One chat turn: save the question, run the agent with its read-only tools, save and return the answer. */
-export async function chatTurn(deps: ChatDeps, t: TurnInput): Promise<{ threadId: number; question: SavedMessage; reply: SavedMessage }> {
+export async function chatTurn(deps: ChatDeps, t: TurnInput): Promise<{ threadId: number; agent: AgentName; question: SavedMessage; reply: SavedMessage }> {
   const { db, cfg, user } = deps;
   const model = deps.model ?? defaultModel(cfg);
   if (!canTalkTo(user, t.agent)) throw Object.assign(new Error(`${t.agent} is owner-only`), { status: 403 });
@@ -208,7 +208,12 @@ export async function chatTurn(deps: ChatDeps, t: TurnInput): Promise<{ threadId
   let threadId = t.threadId;
   if (threadId) {
     const th = await loadThread(db, threadId);
-    if (!th || th.agent !== t.agent || (user.role !== 'owner' && th.user_id !== user.id)) throw Object.assign(new Error('thread not found'), { status: 404 });
+    if (!th || (user.role !== 'owner' && th.user_id !== user.id)) throw Object.assign(new Error('thread not found'), { status: 404 });
+    // The chat belongs to one agent: a message for another agent never lands in it (Batch 4b bug: the
+    // screen asked Riley inside Ada's chat after switching agents mid-answer).
+    if (th.agent !== t.agent) throw Object.assign(new Error(`This chat is with ${th.agent}, not ${t.agent}. Open a chat with ${t.agent}.`), { status: 409 });
+    // Asking again in a chat brings it back from the archive and makes it the one that opens next.
+    await db.query(`UPDATE hq_chat_threads SET archived_at=NULL, opened_at=now(), title=CASE WHEN title='' THEN $2 ELSE title END WHERE id=$1`, [threadId, t.message.replace(/\s+/g, ' ').slice(0, 80)]);
   } else {
     threadId = Number((await db.query(`INSERT INTO hq_chat_threads (user_id, agent, asked_by, parent_id, title) VALUES ($1,$2,$3,$4,$5) RETURNING id`,
       [user.id, t.agent, t.askedBy ?? 'user', t.parentId ?? null, t.message.replace(/\s+/g, ' ').slice(0, 80)])).rows[0].id);
@@ -257,24 +262,215 @@ export async function chatTurn(deps: ChatDeps, t: TurnInput): Promise<{ threadId
     messages.push({ role: 'user', content: results });
   }
   const reply = await saveMessage(db, { threadId, role: 'assistant', author: t.agent, text: finalText, sources: [...sources], tools: used, usage });
-  return { threadId, question, reply };
+  return { threadId, agent: t.agent, question, reply };
 }
 
-export async function listThreads(db: Db, user: HqUser, agent?: AgentName) {
+/**
+ * Chats, newest first. archived=false (default) leaves archived chats out; true lists only those.
+ * Ada's own asks (asked_by Ada) are never archived. `mine` = this person's own chat.
+ */
+export async function listThreads(db: Db, user: HqUser, agent?: AgentName, opts: { archived?: boolean; limit?: number } = {}) {
   const r = await db.query(
-    `SELECT t.id, t.agent, t.asked_by, t.parent_id, t.title, t.updated_at, (SELECT count(*)::int FROM hq_chat_messages m WHERE m.thread_id=t.id) AS messages
-     FROM hq_chat_threads t WHERE ($1::text IS NULL OR t.agent=$1) AND ($2 OR t.user_id=$3) ORDER BY t.updated_at DESC LIMIT 50`, [agent ?? null, user.role === 'owner', user.id]);
-  return r.rows.filter((x) => canTalkTo(user, x.agent)).map((x) => ({ id: Number(x.id), agent: x.agent, askedBy: x.asked_by, parentId: x.parent_id ? Number(x.parent_id) : null, title: x.title, updated: new Date(x.updated_at).toISOString(), messages: x.messages }));
+    `SELECT t.id, t.user_id, t.agent, t.asked_by, t.parent_id, t.title, t.updated_at, t.opened_at, t.archived_at, (SELECT count(*)::int FROM hq_chat_messages m WHERE m.thread_id=t.id) AS messages
+     FROM hq_chat_threads t WHERE ($1::text IS NULL OR t.agent=$1) AND ($2 OR t.user_id=$3) AND (CASE WHEN $4 THEN t.archived_at IS NOT NULL ELSE t.archived_at IS NULL END)
+     ORDER BY t.updated_at DESC, t.id DESC LIMIT $5`, [agent ?? null, user.role === 'owner', user.id, opts.archived === true, Math.min(200, opts.limit ?? 80)]);
+  return r.rows.filter((x) => canTalkTo(user, x.agent)).map((x) => ({
+    id: Number(x.id), agent: x.agent, askedBy: x.asked_by, parentId: x.parent_id ? Number(x.parent_id) : null, title: x.title,
+    updated: new Date(x.updated_at).toISOString(), opened: x.opened_at ? new Date(x.opened_at).toISOString() : null, archived: !!x.archived_at,
+    mine: x.user_id === user.id, messages: x.messages,
+  }));
 }
 
-export async function readThread(db: Db, user: HqUser, id: number) {
+/** The chat to open for this person and agent: the one they had open last (not archived). Null = start a new chat. */
+export async function latestThread(db: Db, user: HqUser, agent: AgentName): Promise<number | null> {
+  if (!canTalkTo(user, agent)) return null;
+  const r = await db.query(`SELECT id FROM hq_chat_threads WHERE user_id=$1 AND agent=$2 AND asked_by='user' AND archived_at IS NULL ORDER BY opened_at DESC NULLS LAST, updated_at DESC, id DESC LIMIT 1`, [user.id, agent]);
+  return r.rows[0] ? Number(r.rows[0].id) : null;
+}
+
+/** Archive (hide) or restore one of this person's own chats. False when it is not theirs. */
+export async function archiveThread(db: Db, user: HqUser, id: number, archived: boolean): Promise<boolean> {
+  const r = await db.query(`UPDATE hq_chat_threads SET archived_at = CASE WHEN $3 THEN COALESCE(archived_at, now()) ELSE NULL END, opened_at = CASE WHEN $3 THEN opened_at ELSE now() END
+    WHERE id=$1 AND user_id=$2 AND asked_by='user'`, [id, user.id, archived]);
+  return (r.rowCount ?? 0) > 0;
+}
+
+export async function readThread(db: Db, user: HqUser, id: number, opts: { open?: boolean } = {}) {
   const th = await loadThread(db, id);
   if (!th || (user.role !== 'owner' && th.user_id !== user.id) || !canTalkTo(user, th.agent)) return null;
+  // Opening your own chat makes it the one that opens next time.
+  if (opts.open && th.user_id === user.id && th.asked_by === 'user') await db.query(`UPDATE hq_chat_threads SET opened_at=now() WHERE id=$1`, [id]);
   const msgs = (await db.query(`SELECT id, role, author, text, sources, tools, created_at FROM hq_chat_messages WHERE thread_id=$1 ORDER BY id`, [id])).rows;
   const children = (await db.query(`SELECT id, agent, title FROM hq_chat_threads WHERE parent_id=$1 ORDER BY id`, [id])).rows;
   return {
     id: Number(th.id), agent: th.agent, askedBy: th.asked_by, parentId: th.parent_id ? Number(th.parent_id) : null, title: th.title,
+    archived: !!th.archived_at, mine: th.user_id === user.id,
     messages: msgs.map((m) => ({ id: Number(m.id), role: m.role, author: m.author, text: m.text, sources: m.sources ?? [], tools: m.tools ?? [], created: new Date(m.created_at).toISOString() })),
     children: children.map((c) => ({ id: Number(c.id), agent: c.agent, title: c.title })),
   };
+}
+
+// ---------- Batch 4b: suggested questions, changing daily ----------
+// Alex, 2026-11-27: suggested questions per agent that change every day. Each agent has a pool;
+// the day (New York) and the agent pick them (the same all day, a different mix tomorrow), plus
+// at most 1 built from live data (the client with the most replies waiting, the next campaign
+// that is due, a late task, a failed run). Ledger and Sienna are owner-only (the route checks).
+export const QUESTION_POOLS: Record<AgentName, string[]> = {
+  Ada: [
+    'Which agent had problems this week?',
+    'What needs me first today?',
+    'Which tasks are late or stuck, and who owns them?',
+    'What did the team finish yesterday?',
+    'Ask Atlas which campaigns are past 60%',
+    'Which client needs my attention most this week?',
+    'What is waiting on me, and what happens if I wait a day?',
+    'Give me the 3 things to fix this week, most important first.',
+  ],
+  Atlas: [
+    'Which campaigns are past 60%, and which have a next campaign ready?',
+    'Any bounce rates over 2.5%?',
+    'Which client is furthest from their promised meetings this month?',
+    'Which campaign has the best reply rate right now?',
+    'Which clients have no campaign sending today?',
+    'What should the next campaign be for our weakest client?',
+    'Which inboxes are resting, and when do they come back?',
+  ],
+  Scribe: [
+    'Which offers are getting the most success?',
+    'Which industries does Dulcy target best?',
+    'Which subject lines get the most replies?',
+    'Which first lines get interested replies, not just replies?',
+    'Which campaign copy should we rewrite first?',
+    'What do the best follow-ups have in common?',
+  ],
+  Scout: [
+    'Hyper-personalised vs regular lead lists: which works better?',
+    'Which lead source gives the lowest bounce rate?',
+    'Which job titles reply the most?',
+    'Which lists are almost used up?',
+    'Which company sizes book the most meetings?',
+    'Where do our bounces come from: the list or the inboxes?',
+  ],
+  Echo: [
+    'How did replies come in this week?',
+    'What would tighten interested → booked?',
+    'How many replies are waiting for approval?',
+    'Which replies came in overnight?',
+    'Which objections come up most, and how do we answer them?',
+    'Which interested leads have not booked yet?',
+  ],
+  Riley: [
+    'Did any engine job fail in the last 24 h?',
+    'Which automations broke this week, and are they fixed?',
+    'Is the reply sync working?',
+    'What fixes are waiting for my OK?',
+    'Which system breaks most often?',
+    'Is anything running late or stuck right now?',
+  ],
+  Cole: [
+    'What was the score of my last sales call?',
+    'Where do deals leak: show rate, qualify rate or close rate?',
+    'Which objection cost us the most deals?',
+    'Which deals should I follow up on this week?',
+    'What should I practise before my next call?',
+    'How many calls does it take to close one client?',
+  ],
+  Ledger: [
+    'How much did we spend on tools this month?',
+    'Which invoices are unpaid?',
+    'What is our cash position this week?',
+    'Which purchases are waiting for my yes or no?',
+    'Which tools could we cut?',
+    'How does this month compare with last month?',
+  ],
+  Sienna: [
+    'Which video ideas have real demand this week?',
+    'What should I post this week?',
+    'Which content did best last month?',
+    'Which script is ready to record?',
+    'What are people asking about cold email right now?',
+    'Which clip should become a Short?',
+  ],
+};
+
+/** A small stable hash (FNV-1a) of a string. */
+function hash(x: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < x.length; i++) { h ^= x.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return h >>> 0;
+}
+/** A seeded shuffle (mulberry32). Pure. */
+function shuffled<T>(xs: readonly T[], seed: number): T[] {
+  let a = seed || 1;
+  const rnd = () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const out = [...xs];
+  for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
+  return out;
+}
+
+/** What live data can turn into a question today. */
+export interface QuestionFacts {
+  /** The client with the most replies waiting for approval, and how many. */
+  topReplies?: { client: string; n: number } | null;
+  /** Clients with a campaign past 60% and no next campaign (Atlas's open "Plan next campaign" tasks). */
+  nextCampaigns?: string[];
+  /** The most late task the person may see. */
+  lateTask?: { agent: string; title: string } | null;
+  /** The agent's last failed run (last 24 h). */
+  failedKind?: string | null;
+  /** Money decisions waiting (owner only). */
+  moneyWaiting?: number;
+}
+
+/** Live questions for one agent, from today's facts. Pure. */
+export function liveQuestions(agent: AgentName, f: QuestionFacts): string[] {
+  const out: string[] = [];
+  const top = f.topReplies && f.topReplies.n > 0 ? f.topReplies : null;
+  if (agent === 'Echo' && top) out.push(`${top.client} has ${top.n} repl${top.n === 1 ? 'y' : 'ies'} waiting: which should go first?`);
+  if (agent === 'Atlas' && top) out.push(`How is ${top.client}'s health?`);
+  if (agent === 'Atlas' && f.nextCampaigns?.length) out.push(`When does the next campaign for ${f.nextCampaigns[0]} start?`);
+  if (agent === 'Ada' && f.lateTask) out.push(`Why is ${f.lateTask.agent} late on "${f.lateTask.title.slice(0, 60)}"?`);
+  if (agent === 'Ada' && top && !f.lateTask) out.push(`${top.client} has the most replies waiting: is anyone on it?`);
+  if (agent === 'Ledger' && (f.moneyWaiting ?? 0) > 0) out.push(`What do you recommend on the ${f.moneyWaiting} money decision${f.moneyWaiting === 1 ? '' : 's'} waiting?`);
+  if (f.failedKind && agent !== 'Ada') out.push(`Why did ${f.failedKind} fail, and is it fixed?`);
+  return out;
+}
+
+/**
+ * Today's suggested questions for one agent: up to 1 live question first, then from the pool.
+ * The pool is walked in a fixed per-agent order (seeded by the agent), starting at a new place each
+ * day (seeded by the date), so it is the same all day, changes tomorrow, and every question comes
+ * up within a few days. Pure.
+ */
+export function dailyQuestions(agent: AgentName, ymd: string, facts: QuestionFacts = {}, n = 4): string[] {
+  const live = liveQuestions(agent, facts).slice(0, 1);
+  const order = shuffled(QUESTION_POOLS[agent].filter((q) => !live.includes(q)), hash(`hq-questions:${agent}`));
+  const take = Math.min(Math.max(0, n - live.length), order.length);
+  const day = Math.floor(Date.parse(`${ymd}T12:00:00Z`) / 86_400_000);
+  const start = Number.isFinite(day) ? (((day * take) % order.length) + order.length) % order.length : 0;
+  return [...live, ...Array.from({ length: take }, (_, i) => order[(start + i) % order.length])];
+}
+
+/** Read today's facts (cheap; a source that fails is left out) and pick the questions. */
+export async function suggestQuestions(db: Db, at: HqAirtable | undefined, user: HqUser, agent: AgentName, now = new Date()): Promise<{ agent: AgentName; date: string; questions: string[] }> {
+  const date = now.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  const wantsDecisions = agent === 'Echo' || agent === 'Atlas' || agent === 'Ada' || agent === 'Ledger';
+  const [decisions, tasks, fails] = await Promise.all([
+    at && wantsDecisions ? pendingDecisions(at).catch(() => []) : Promise.resolve([]),
+    agentTasks(db, undefined, false).catch(() => []),
+    db.query(`SELECT kind FROM jobs WHERE status='failed' AND updated_at > now() - interval '24 hours' AND kind LIKE ANY($1) ORDER BY id DESC LIMIT 1`, [jobPatternsFor(agent)])
+      .then((r) => r.rows as { kind: string }[]).catch(() => [] as { kind: string }[]),
+  ]);
+  const replies = new Map<string, number>();
+  for (const d of decisions) if (d.pile === 'Replies' && d.client) replies.set(d.client, (replies.get(d.client) ?? 0) + 1);
+  const top = [...replies].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0];
+  const late = tasks.filter((t) => t.overdue && (canSeeMoney(user) || !OWNER_ONLY.includes(t.agent))).sort((a, b) => b.daysLate - a.daysLate || a.id - b.id)[0];
+  const facts: QuestionFacts = {
+    topReplies: top ? { client: top[0], n: top[1] } : null,
+    nextCampaigns: tasks.filter((t) => t.agent === 'Atlas' && t.status !== 'done' && t.key.startsWith('plan-next:')).map((t) => t.client).filter(Boolean),
+    lateTask: late ? { agent: late.agent, title: late.title } : null,
+    failedKind: fails[0]?.kind ?? null,
+    moneyWaiting: canSeeMoney(user) ? decisions.filter((d) => d.pile === 'Money').length : 0,
+  };
+  return { agent, date, questions: dailyQuestions(agent, date, facts) };
 }
