@@ -5,11 +5,17 @@
 // the owner only.
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import {
-  api, ApiError, type SalesAction, type SalesActionKind, type SalesCapacity, type SalesCapacitySettings, type SalesDealLite4a, type SalesDetail4a, type SalesHotDeal, type SalesInsights,
-  type SalesMonth, type SalesNote, type SalesPeriod, type SalesRate, type SalesReviewLite, type SalesStage, type SalesView4a, type User,
+  api, ApiError, type SalesAction, type SalesActionKind, type SalesDealLite4a, type SalesDetail4a, type SalesHotDeal, type SalesInsights,
+  type SalesMonth, type SalesNote, type SalesReviewLite, type SalesStage, type SalesView4a, type User,
 } from '../api';
 import { Avatar, BackLink, Button, Card, cx, Empty, ErrorBox, ExtLink, go, Icon, IconButton, Label, PageSkeleton, PageTitle, Pill, SectionHeader, setCount, timeAgo, usd } from '../ui';
 import SalesContract from './SalesContract';
+// Round 3 (Alex 2026-11-27): Numbers with a period picker and charts, Pipeline + Funnel from Close, Pricing, Cole's Close updates.
+import SalesNumbers from './sales/SalesNumbers';
+import { CloseFunnel, ClosePipeline } from './sales/SalesClose';
+import SalesPricing from './sales/SalesPricing';
+import DealCloseUpdates from './sales/DealCloseUpdates';
+import type { CloseUpdateRow } from '../api';
 
 const ACTION: Record<SalesActionKind, { label: string; tone: 'bad' | 'warn' | 'info' | 'accent' | 'good' }> = {
   call_today: { label: 'Call today', tone: 'accent' }, call_tomorrow: { label: 'Tomorrow', tone: 'info' }, no_outcome: { label: 'No outcome', tone: 'warn' },
@@ -20,8 +26,8 @@ const STATE_LABEL: Record<string, string> = { draft: 'Draft', sent: 'Sent', view
 const STATE_TONE: Record<string, 'good' | 'warn' | 'bad' | 'info' | 'plain'> = { signed: 'good', viewed: 'info', sent: 'info', draft: 'plain', declined: 'bad', expired: 'bad', error: 'bad', none: 'plain' };
 const day = (d: string) => (d ? new Date(`${d.slice(0, 10)}T12:00:00Z`).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric' }) : '');
 const when = (iso: string) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '');
-type View = 'action' | 'hot' | 'numbers' | 'pipeline';
-const VIEWS: { key: View; label: string }[] = [{ key: 'action', label: 'Needs action' }, { key: 'hot', label: 'Hottest' }, { key: 'numbers', label: 'Numbers' }, { key: 'pipeline', label: 'Pipeline' }];
+type View = 'action' | 'hot' | 'numbers' | 'pipeline' | 'funnel' | 'pricing';
+const VIEWS: { key: View; label: string }[] = [{ key: 'action', label: 'Needs action' }, { key: 'hot', label: 'Hottest' }, { key: 'numbers', label: 'Numbers' }, { key: 'pipeline', label: 'Pipeline' }, { key: 'funnel', label: 'Funnel' }, { key: 'pricing', label: 'Pricing' }];
 const viewPath = (v: View, days: number) => (v === 'action' ? 'sales' : v === 'pipeline' ? `sales/pipeline${days === 90 ? '/90' : ''}` : `sales/${v}`);
 /** Old SignWell / PandaDoc agreements still count; the tool name is history, not a link. */
 const toolLabel = (tool: string) => (tool === 'Dulcy Sign' ? 'Dulcy Sign' : 'Old agreement');
@@ -30,7 +36,7 @@ const toolLabel = (tool: string) => (tool === 'Dulcy Sign' ? 'Dulcy Sign' : 'Old
 export default function Sales({ user, a, b }: { user: User; a?: string; b?: string }) {
   if (user.role !== 'owner') return <><PageTitle title="Sales" /><Card><Empty icon="lock" title="Owner only" sub="Sales has money in it, so only the owner sees it." /></Card></>;
   if (a && /^rec[A-Za-z0-9]{14}$/.test(a)) return b === 'contract' ? <SalesContract id={a} /> : <DealPage id={a} />;
-  const view: View = a === 'pipeline' || a === 'hot' || a === 'numbers' ? a : 'action';
+  const view: View = a === 'pipeline' || a === 'hot' || a === 'numbers' || a === 'funnel' || a === 'pricing' ? a : 'action';
   return <SalesHome view={view} days={b === '90' ? 90 : 30} />;
 }
 
@@ -58,7 +64,7 @@ function SalesHome({ view, days }: { view: View; days: 30 | 90 }) {
     <div>
       {title}
       <TopNumbers now={d.top.thisMonth} last={d.top.lastMonth} />
-      <div role="tablist" aria-label="Sales views" className="mt-5 grid grid-cols-2 gap-1 sm:flex">
+      <div role="tablist" aria-label="Sales views" className="mt-5 grid grid-cols-3 gap-1 sm:flex">
         {VIEWS.map((x) => {
           const on = x.key === view;
           return (
@@ -72,10 +78,13 @@ function SalesHome({ view, days }: { view: View; days: 30 | 90 }) {
       </div>
       <div className="mt-4">
         {view === 'action' && <ActionList rows={d.action} />}
-        {view === 'pipeline' && <Pipeline p={d.pipeline} days={days} />}
-        {wantInsights && (insError && !ins ? <ErrorBox error={insError} retry={() => load()} /> : !ins ? <PageSkeleton kind="list" /> : view === 'hot' ? <Hottest ins={ins} /> : <Numbers ins={ins} onSaved={() => load(true)} />)}
+        {view === 'pipeline' && <ClosePipeline fallback={<Pipeline p={d.pipeline} days={days} />} />}
+        {view === 'funnel' && <CloseFunnel />}
+        {view === 'pricing' && <SalesPricing />}
+        {view === 'numbers' && (insError && !ins ? <ErrorBox error={insError} retry={() => load()} /> : <SalesNumbers ins={ins} onSaved={() => load(true)} />)}
+        {view === 'hot' && (insError && !ins ? <ErrorBox error={insError} retry={() => load()} /> : !ins ? <PageSkeleton kind="list" /> : <Hottest ins={ins} />)}
       </div>
-      {d.notes.length > 0 && view !== 'hot' && view !== 'numbers' && (
+      {d.notes.length > 0 && (view === 'action' || view === 'pipeline') && (
         <div className="mt-6">
           <SectionHeader title="Data to fix" icon="alert" right={<span className="text-xs text-muted">{d.notes.length}</span>} />
           <p className="-mt-1 mb-2 text-xs text-muted">Records in Airtable or Close that disagree. Fixing them at the source makes these numbers right; each says who fixes it.</p>
@@ -225,106 +234,7 @@ function HotRow({ h, rank }: { h: SalesHotDeal; rank: number }) {
   );
 }
 
-// ---------- Numbers: periods and capacity ----------
-function Numbers({ ins, onSaved }: { ins: SalesInsights; onSaved: () => void }) {
-  const [k, setK] = useState<SalesPeriod['key']>('month');
-  const p = ins.periods.find((x) => x.key === k) ?? ins.periods[0];
-  return (
-    <div className="space-y-6">
-      <section>
-        <SectionHeader title="Compare periods" icon="activity" />
-        <Card className="mb-3 py-3.5"><div className="text-[15px] font-semibold leading-snug text-fg">{ins.conclusion}</div></Card>
-        <div role="radiogroup" aria-label="Period" className="grid grid-cols-3 gap-1 rounded-xl border border-line bg-sunken p-1">
-          {ins.periods.map((x) => (
-            <button key={x.key} role="radio" aria-checked={k === x.key} onClick={() => setK(x.key)}
-              className={cx('min-h-10 rounded-lg px-2 text-sm font-semibold transition', k === x.key ? 'bg-surface text-fg shadow-card' : 'text-muted hover:text-fg')}>{x.key === 'month' ? 'Month' : x.key === 'half' ? 'Half-year' : 'Year'}</button>
-          ))}
-        </div>
-        <Card className="mt-3 overflow-hidden p-0">
-          <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 border-b border-line px-4 py-2.5 text-xs font-medium text-muted sm:px-5">
-            <span>{p.title}</span><span className="w-16 text-right">{p.nowLabel.replace(' so far', '')}</span><span className="w-16 text-right">{p.prevLabel}</span><span className="w-14 text-right">Change</span>
-          </div>
-          <ul className="divide-y divide-line">
-            {p.rows.map((r) => <PeriodLine key={r.key} label={r.label} now={String(r.now)} prev={String(r.prev)} diff={r.diff} dir={r.dir} />)}
-            {p.money && <PeriodLine label="New monthly money" now={usd(p.money.now)} prev={usd(p.money.prev)} diff={p.money.diff} dir={p.money.dir} money note={p.money.unknownNow || p.money.unknownPrev ? `${p.money.unknownNow + p.money.unknownPrev} signed with no amount` : ''} />}
-          </ul>
-        </Card>
-        <p className="mt-2 text-xs text-muted">{p.nowLabel} vs {p.prevLabel}. Calls by call date, signed by signing date, paid by the first payment. Money = the monthly fee of deals signed in the period.</p>
-      </section>
-      <CapacityBlock c={ins.capacity} settings={ins.settings} onSaved={onSaved} />
-    </div>
-  );
-}
-function PeriodLine({ label, now, prev, diff, dir, money, note }: { label: string; now: string; prev: string; diff: number; dir: 'up' | 'down' | 'same'; money?: boolean; note?: string }) {
-  return (
-    <li className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 px-4 py-2.5 sm:px-5">
-      <span className="min-w-0"><span className="block truncate text-[15px] text-fg">{label}</span>{note && <span className="block truncate text-xs text-muted">{note}</span>}</span>
-      <span className="tabular w-16 text-right text-[15px] font-bold text-fg">{now}</span>
-      <span className="tabular w-16 text-right text-sm text-muted">{prev}</span>
-      <span className={cx('tabular inline-flex w-14 items-center justify-end gap-0.5 text-sm font-semibold', dir === 'up' ? 'text-good' : dir === 'down' ? 'text-bad' : 'text-muted')}>
-        {dir !== 'same' && <Icon name={dir === 'up' ? 'trendUp' : 'trendDown'} size={13} />}{dir === 'same' ? '=' : `${diff > 0 ? '+' : '−'}${money ? usd(Math.abs(diff)) : Math.abs(diff)}`}
-      </span>
-    </li>
-  );
-}
-function CapacityBlock({ c, settings, onSaved }: { c: SalesCapacity; settings: SalesCapacitySettings; onSaved: () => void }) {
-  const r = (x: SalesRate) => (x.of ? `${Math.round((x.n / x.of) * 100)}%` : '–');
-  const tiles: { label: string; v: string; sub: string }[] = [
-    { label: 'Calendars', v: String(c.calendars), sub: c.calendars === 1 ? "Alex's" : 'closers' },
-    { label: 'Open slots, 30 days', v: c.open.n === null ? '?' : String(c.open.n), sub: c.open.source === 'calendar' ? `free ${c.slotMinutes}-min slots` : c.open.source === 'setting' ? 'from the setting' : 'UNKNOWN' },
-    { label: 'Booked', v: c.bookedPct === null ? '–' : `${c.bookedPct}%`, sub: c.booked?.text ?? `${c.bookedNext30} calls booked` },
-    { label: 'Show rate', v: r(c.showRate), sub: c.showRate.text },
-    { label: 'Qualified', v: r(c.qualifiedRate), sub: c.qualifiedRate.text },
-    { label: 'Close rate', v: r(c.closeRate), sub: `${c.closeRate.text} (of shows)` },
-    { label: 'Days to close', v: c.daysToClose.median === null ? '?' : String(c.daysToClose.median), sub: c.daysToClose.median === null ? 'no signed deal yet' : `middle of ${c.daysToClose.n}` },
-    { label: 'Touches per close', v: c.touchesPerClose.avg === null ? '?' : String(c.touchesPerClose.avg), sub: c.touchesPerClose.source === 'close' ? `last ${c.touchesPerClose.n} won (Close)` : 'Connect Close' },
-  ];
-  const tone = c.limit.key === 'volume' ? 'info' : c.limit.key === 'unknown' ? 'plain' : 'warn';
-  return (
-    <section>
-      <SectionHeader title="Capacity" icon="calendar" right={<span className="text-xs text-muted">Closers.io math</span>} />
-      <Card className={cx('mb-3 py-3.5', tone === 'warn' ? 'border-warn/30 bg-warn-soft' : tone === 'info' ? 'border-info/25 bg-info-soft' : '')}>
-        <div className="text-[15px] font-semibold leading-snug text-fg">{c.limit.text}</div>
-        {c.atCapacity && <div className="mt-1 text-sm text-fg-2">A full calendar at today's rates: {c.atCapacity.text}.</div>}
-      </Card>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {tiles.map((t) => (
-          <div key={t.label} className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-card">
-            <div className="truncate text-xs font-medium text-muted">{t.label}</div>
-            <div className="tabular mt-1 text-[24px] font-bold leading-none tracking-tight text-fg">{t.v}</div>
-            <div className="mt-1.5 truncate text-xs text-muted" title={t.sub}>{t.sub}</div>
-          </div>
-        ))}
-      </div>
-      <p className="mt-2 text-xs text-muted">{c.open.note}. Booked = calls in the next 30 days of all slots (booked + open). Rates: the last 90 days. {c.touchesPerClose.note}</p>
-      <CapacitySettingsForm s={settings} onSaved={onSaved} />
-    </section>
-  );
-}
-function CapacitySettingsForm({ s, onSaved }: { s: SalesCapacitySettings; onSaved: () => void }) {
-  const [v, setV] = useState({ calendars: String(s.calendars), slotMinutes: String(s.slotMinutes), slotsPerMonth: s.slotsPerMonth === null ? '' : String(s.slotsPerMonth) });
-  const [msg, setMsg] = useState('');
-  const save = () => {
-    setMsg('');
-    api('/sales/settings', { body: { calendars: Number(v.calendars), slotMinutes: Number(v.slotMinutes), slotsPerMonth: v.slotsPerMonth === '' ? null : Number(v.slotsPerMonth) } })
-      .then(() => { setMsg('Saved.'); onSaved(); }).catch((e) => setMsg(e.message));
-  };
-  const field = (k: keyof typeof v, label: string, help: string) => (
-    <label className="min-w-0 text-sm"><span className="block font-semibold text-fg">{label}</span><span className="block text-xs text-muted">{help}</span>
-      <input type="number" inputMode="numeric" value={v[k]} onChange={(e) => setV({ ...v, [k]: e.target.value })} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-surface px-3 text-[15px] text-fg outline-none focus:border-accent focus:ring-4 focus:ring-accent-soft" /></label>
-  );
-  return (
-    <details className="mt-3 rounded-2xl border border-line bg-surface">
-      <summary className="flex min-h-11 cursor-pointer items-center px-4 text-sm font-semibold text-fg-2 hover:bg-hover sm:px-5">Capacity settings</summary>
-      <div className="grid gap-3 px-4 pb-4 sm:grid-cols-3 sm:px-5">
-        {field('calendars', 'Calendars', 'People taking sales calls')}
-        {field('slotMinutes', 'Call length (minutes)', 'One slot = one call')}
-        {field('slotsPerMonth', 'Slots a month', 'Only used when the calendar cannot be read')}
-        <div className="flex items-center gap-3 sm:col-span-3"><Button tone="primary" onClick={save}>Save</Button>{msg && <span className="text-sm text-muted">{msg}</span>}</div>
-      </div>
-    </details>
-  );
-}
+// Numbers (period picker, charts, capacity): sales/SalesNumbers.tsx (Round 3).
 
 // ---------- Pipeline ----------
 function Pipeline({ p, days }: { p: SalesView4a['pipeline']; days: 30 | 90 }) {
@@ -559,6 +469,7 @@ function DealPage({ id }: { id: string }) {
         </section>
       )}
 
+      <DealCloseUpdates rows={(d as SalesDetail4a & { closeUpdates?: CloseUpdateRow[] }).closeUpdates} />
       {x.notes && <section className="mt-6"><SectionHeader title="Notes (Sales Data)" icon="pen" /><Card><div className="whitespace-pre-wrap break-words text-sm text-fg-2">{x.notes}</div></Card></section>}
       {d.notes.length > 0 && <section className="mt-6"><SectionHeader title="Data to fix" icon="alert" /><p className="-mt-1 mb-2 text-xs text-muted">Records that disagree for this deal; each says who fixes it at the source.</p><Notes notes={d.notes} /></section>}
       <p className="mt-6 text-xs text-muted">Read {timeAgo(d.readAt) || 'just now'} from Airtable, Xero (when connected) and Cole's reviews; kept for 1 minute. Sending, signing and charging stay in Dulcy Sign, Close and Commas.</p>
