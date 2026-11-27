@@ -1,6 +1,10 @@
 // HQ Step 3: Campaigns (Alex 2026-11-25: "too many screens"; show what needs action first, everything
 // else one tap deeper). One read-only area replacing Campaign Center, Lead List Center and the
-// campaign statistics screens for daily use:
+// campaign statistics screens for daily use. Batch 3 (Alex 2026-11-27): laid out like the Airtable
+// Campaign Center (name, strategy / stage, status, sending accounts, statistics), active clients only
+// in the client dropdown, a Direct mail channel, a Lead lists view (lists in progress and done per
+// client, including a client who buys only a list), no "Open in Airtable" links. The old Pipeline view
+// is folded into the list (each row shows its step bar).
 //   - Needs action: bounce pause (> 4%) / watch (> 2.5%), 60%+ with no next plan, stuck in a stage,
 //     copy waiting for client review, low interested per 1,000 sent, a failed engine step.
 //     One line each, with the reason and the agent that owns it.
@@ -42,6 +46,7 @@ export const KF = {
   reviewSubmitted: 'fldTwdx8HHei9LeQp', autoApprove: 'fldC3vCiTcqhGaZrK', approvalSource: 'fldgHA5CcgM885Itp', approvalException: 'fld1vE0Exqlw7MMvq', approvalDecision: 'fldPEueEsGaqJRX5h',
   bisonUrl: 'fldkCJDOFglvhcvD6', processing: 'fldCebt3IMI8ZxdQq', workflowError: 'fld1ZYViMpvLDoBy2',
   engineStatus: 'fldBIuY7HML1wycLr', engineMessage: 'fldtsSMcX9XX4h1Vc', skipBouncePause: 'fldjpNVGqOLFJbcEX',
+  thesis: 'fldlixHfhzrd7nuSc', approach: 'fldclFGDzjg4nvfxL', launchDate: 'fldhyq0anpSO1r0bV', emailAccounts: 'fldi906rwZ9YOpU64',
 } as const;
 /** Lead Lists field IDs (airtable/SCHEMA.md; engine fields from airtable/bridge.ts F). */
 export const LF = {
@@ -98,7 +103,10 @@ export interface CampaignFacts {
   approvalSource: string; approvalException: boolean; approvalDecision: string; reviewSubmitted: string; autoApprove: string;
   processing: string; workflowError: string; engineStatus: string; engineMessage: string; skipBouncePause: boolean; bisonUrl: string;
   created: string; statusModified: string; updatedAt: string; startedAt: string; completedAt: string;
+  /** The strategy (Campaign Center "Campaign strategy"): thesis in plain text, approach, planned launch. */
+  thesis: string; approach: string; launchDate: string; accountIds: string[];
 }
+const plain = (x: string) => x.replace(/<[^>]*>/g, ' ').replace(/[*_#>`]/g, '').replace(/\s+/g, ' ').trim();
 export function factsOf(r: AirtableRecord): CampaignFacts {
   const f = r.fields;
   return {
@@ -109,6 +117,7 @@ export function factsOf(r: AirtableRecord): CampaignFacts {
     reviewSubmitted: s(f[KF.reviewSubmitted]), autoApprove: s(f[KF.autoApprove]), processing: s(f[KF.processing]), workflowError: s(f[KF.workflowError]),
     engineStatus: s(f[KF.engineStatus]), engineMessage: s(f[KF.engineMessage]), skipBouncePause: f[KF.skipBouncePause] === true, bisonUrl: s(f[KF.bisonUrl]),
     created: s(f[KF.created]) || r.createdTime || '', statusModified: s(f[KF.statusModified]), updatedAt: s(f[KF.updatedAt]), startedAt: s(f[KF.startedAt]), completedAt: s(f[KF.completedAt]),
+    thesis: plain(s(f[KF.thesis])).slice(0, 1200), approach: s(f[KF.approach]), launchDate: s(f[KF.launchDate]).slice(0, 10), accountIds: ids(f[KF.emailAccounts]),
   };
 }
 export function listOf(r: AirtableRecord): ListInfo {
@@ -208,6 +217,18 @@ export interface CampaignRow {
   progress: number; sent: number; replies: number; interested: number; booked: number; bounce: number; contacted: number; totalLeads: number; perThousand: number | null;
   flag: 'pause' | 'watch' | null; planned: boolean; steps: Step[]; now: { key: StepKey; label: string; note: string; state: StepState } | null;
   lastChange: string | null; needs: NeedLine[]; owner: AgentName | null; listIds: string[];
+  /** Campaign Center columns: the strategy line and the sending accounts. */
+  approach: string; strategy: string; launchDate: string; accounts: number; sending: SendingSummary | null;
+}
+/** The campaign's sending inboxes by status (from Deliverability), when that read is there. */
+export interface SendingSummary { total: number; healthy: number; risk: number; spam: number; resting: number; warmupOff: number; unknown: number }
+export interface InboxLite { status: 'healthy' | 'risk' | 'spam' | 'resting'; warmupOff: boolean; email: string; dailyLimit: number | null; warmupLimit: number | null; warmup: number | null; score: number | null }
+/** Sending accounts summary from an inbox index. Pure. */
+export function sendingOf(accountIds: string[], inboxes?: Map<string, InboxLite>): SendingSummary | null {
+  if (!inboxes) return null;
+  const out: SendingSummary = { total: accountIds.length, healthy: 0, risk: 0, spam: 0, resting: 0, warmupOff: 0, unknown: 0 };
+  for (const id of accountIds) { const i = inboxes.get(id); if (!i) { out.unknown++; continue; } out[i.status]++; if (i.warmupOff) out.warmupOff++; }
+  return out;
 }
 
 /** Workspace record → client (the Twenty West pair and Dulcy + Dulcy Free Campaigns count once). Pure. */
@@ -231,7 +252,7 @@ export function nextPlanFor(c: Pick<CampaignFacts, 'id' | 'clientRec'>, plans: P
 }
 
 /** Rows from the source. Pure (now passed in). */
-export function buildRows(src: CampaignsSource, now = Date.now()): CampaignRow[] {
+export function buildRows(src: CampaignsSource, now = Date.now(), inboxes?: Map<string, InboxLite>): CampaignRow[] {
   const clients = clientIndex(src.ws);
   const listsById = new Map(src.lists.map((l) => [l.id, listOf(l)]));
   const facts = src.campaigns.map(factsOf);
@@ -255,6 +276,7 @@ export function buildRows(src: CampaignsSource, now = Date.now()): CampaignRow[]
       flag: group === 'live' && c.bounce > CAMPAIGN_LIMITS.pause ? 'pause' : group === 'live' && c.bounce > CAMPAIGN_LIMITS.watch ? 'watch' : null,
       planned: !!next && !PLAN_ENDED.has(next.state), steps, now: cur ? { key: cur.key, label: cur.label, note: cur.note, state: cur.state } : null,
       lastChange, needs, owner: needs[0]?.agent ?? null, listIds: c.listIds,
+      approach: c.approach, strategy: c.thesis.slice(0, 220), launchDate: c.launchDate, accounts: c.accountIds.length, sending: sendingOf(c.accountIds, inboxes),
     };
   });
 }
@@ -325,7 +347,7 @@ export async function readCampaignsSource(at: Pick<HqAirtable, 'list'>, db: Db):
 
 let cache: { at: number; data: Promise<CampaignsSource> } | null = null;
 const activityCache = new Map<string, { at: number; rows: Promise<AirtableRecord[]> }>();
-export function _resetCampaignsCache() { cache = null; activityCache.clear(); }
+export function _resetCampaignsCache() { cache = null; activityCache.clear(); _resetListsCache(); }
 /** The cached source (60 s). refresh=true re-reads if the copy is older than 10 seconds. */
 export function cachedCampaigns(at: Pick<HqAirtable, 'list'>, db: Db, refresh = false, now = Date.now()): Promise<CampaignsSource> {
   if (cache && now - cache.at < (refresh ? 10_000 : CAMPAIGNS_CACHE_MS)) return cache.data;
@@ -336,12 +358,13 @@ export function cachedCampaigns(at: Pick<HqAirtable, 'list'>, db: Db, refresh = 
 }
 
 // ---------- channels ----------
-export interface Channel { key: 'email' | 'linkedin' | 'caller'; label: string; live: boolean; reason: string }
+export interface Channel { key: 'email' | 'linkedin' | 'caller' | 'mail'; label: string; live: boolean; reason: string }
 /** Only cold email works right now (CLAUDE.md, company/channels-status.md). */
 export const CHANNELS: Channel[] = [
   { key: 'email', label: 'Email', live: true, reason: '' },
   { key: 'linkedin', label: 'LinkedIn', live: false, reason: 'LinkedIn needs system fixes first: the HeyReach flow was left unfinished and its reporting has duplicate rows. Only cold email works right now.' },
   { key: 'caller', label: 'AI caller', live: false, reason: 'The AI caller underperforms (wrong outcome labels, missed routing) and its direction is undecided: fix it or replace it with people. Only cold email works right now.' },
+  { key: 'mail', label: 'Direct mail', live: false, reason: 'Direct mail is not running yet: it needs system fixes first. Only cold email works right now.' },
 ];
 
 // ---------- GET /campaigns ----------
@@ -350,15 +373,17 @@ const sortRows = (rows: CampaignRow[]) => [...rows].sort((a, b) => {
   return ka - kb || b.bounce - a.bounce || b.progress - a.progress || a.name.localeCompare(b.name);
 });
 
-export async function listCampaigns(at: Pick<HqAirtable, 'list'>, db: Db, opts: { client?: string; refresh?: boolean } = {}) {
+export async function listCampaigns(at: Pick<HqAirtable, 'list'>, db: Db, opts: { client?: string; refresh?: boolean; inboxes?: Map<string, InboxLite> } = {}) {
   const src = await cachedCampaigns(at, db, opts.refresh);
-  const all = buildRows(src);
+  const all = buildRows(src, Date.now(), opts.inboxes);
   const visible = all.filter((r) => r.group !== 'done' && !r.old);
-  const client = opts.client && visible.some((r) => r.clientKey === opts.client) ? opts.client : '';
+  // The client dropdown offers ACTIVE clients only (Alex 2026-11-27: no Lucky DMs, no Lead Flo).
+  const active = [...new Map([...clientIndex(src.ws).values()].filter((c) => c.active).map((c) => [c.key, c])).values()];
+  const client = opts.client && active.some((c) => c.key === opts.client) ? opts.client : '';
   const mine = client ? visible.filter((r) => r.clientKey === client) : visible;
-  const byKey = new Map<string, { key: string; name: string; count: number; action: number }>();
+  const byKey = new Map<string, { key: string; name: string; count: number; action: number }>(active.map((c) => [c.key, { key: c.key, name: c.name, count: 0, action: 0 }]));
   for (const r of visible) {
-    if (!r.clientKey) continue;
+    if (!r.clientKey || !byKey.has(r.clientKey)) continue;
     const e = byKey.get(r.clientKey) ?? { key: r.clientKey, name: r.client, count: 0, action: 0 };
     e.count++; if (r.needs.length) e.action++;
     byKey.set(r.clientKey, e);
@@ -425,9 +450,11 @@ export async function engineHistory(db: Db, recs: string[], plans: PlanInfo[], l
   return [...jobs, ...planRows].sort((a, b) => Date.parse(b.at) - Date.parse(a.at)).slice(0, limit);
 }
 
+/** Kept for other screens (Sales); Campaigns shows no Airtable links any more. */
 export const airtableUrl = (baseId: string, table: string, rec: string) => `https://airtable.com/${baseId}/${table}/${rec}`;
+const ACC_RANK = (s: string | null) => (s === 'spam' ? 0 : s === 'resting' ? 1 : s === 'risk' ? 2 : s === 'healthy' ? 3 : 4);
 
-export async function campaignDetail(at: Pick<HqAirtable, 'list' | 'get'>, db: Db, id: string, owner: boolean, baseId: string) {
+export async function campaignDetail(at: Pick<HqAirtable, 'list' | 'get'>, db: Db, id: string, owner: boolean, inboxes?: Map<string, InboxLite>) {
   const src = await cachedCampaigns(at, db);
   let rec = src.campaigns.find((r) => r.id === id) ?? null;
   if (!rec) rec = await at.get(CAMPAIGNS_T, id, C_READ);
@@ -436,7 +463,7 @@ export async function campaignDetail(at: Pick<HqAirtable, 'list' | 'get'>, db: D
   const missing = f.listIds.filter((l) => !src.lists.some((x) => x.id === l));
   const lists = [...src.lists.filter((l) => f.listIds.includes(l.id)), ...(await readLists(at, missing))];
   const one: CampaignsSource = { ...src, campaigns: [rec, ...src.campaigns.filter((r) => r.id !== id && n(r.fields[KF.sent]) >= CAMPAIGN_LIMITS.minSentToJudge)], lists };
-  const row = buildRows(one).find((r) => r.id === id)!;
+  const row = buildRows(one, Date.now(), inboxes).find((r) => r.id === id)!;
   const ownPlans = src.plans.filter((p) => p.campaignRec === id || (p.leadListRec && f.listIds.includes(p.leadListRec)));
   const next = nextPlanFor(f, src.plans, Date.now());
   const [history, activity] = await Promise.all([
@@ -448,11 +475,87 @@ export async function campaignDetail(at: Pick<HqAirtable, 'list' | 'get'>, db: D
     detail: {
       approvalSource: f.approvalSource, approvalException: f.approvalException, approvalDecision: f.approvalDecision, reviewSubmitted: f.reviewSubmitted, autoApprove: f.autoApprove,
       engineStatus: f.engineStatus, engineMessage: f.engineMessage.slice(0, 600), workflowError: f.workflowError.slice(0, 600), processing: f.processing, skipBouncePause: f.skipBouncePause,
+      thesis: f.thesis, approach: f.approach, launchDate: f.launchDate,
     },
-    lists: lists.map(listOf).map((l) => ({ ...l, airtableUrl: airtableUrl(baseId, LEAD_LISTS_T, l.id) })),
+    lists: lists.map(listOf),
+    // Campaign Center "Sender accounts": each sending inbox with its Deliverability status (worst first).
+    accounts: f.accountIds.map((rec) => ({ id: rec, ...(inboxes?.get(rec) ?? { status: null, warmupOff: false, email: '', dailyLimit: null, warmupLimit: null, warmup: null, score: null }) }))
+      .sort((a, b) => ACC_RANK(a.status) - ACC_RANK(b.status) || Number(b.warmupOff) - Number(a.warmupOff) || a.email.localeCompare(b.email)),
     plan: ownPlans[0] ?? null, next,
     history, activity,
-    links: { airtable: airtableUrl(baseId, CAMPAIGNS_T, id), bison: /^https:\/\//i.test(f.bisonUrl) ? f.bisonUrl : '' },
+    links: { bison: /^https:\/\//i.test(f.bisonUrl) ? f.bisonUrl : '' },
     readAt: src.readAt,
+  };
+}
+
+// ---------- GET /campaigns/lists: the Lead List Center in HQ (Batch 3) ----------
+/** Lead Lists fields for the list view (the build only: Build Campaign lives in Campaign Center). */
+export const LLF = {
+  ...LF, client: 'fldEujtSLqwdpOyGD', campaigns: 'fldepbn71awSjmZPV', hide: 'fldCc86NCikq5LCVe', added: 'fldDQMHHfYUJrA16S', progress: 'fldaUFUWOLtKIovQE',
+  companies: 'fldRLtvugIxH9qun1', verifiedDirect: 'fldf3pl1RYHishCKV', verifiedGeneric: 'fldd5zmRzTjz5bvPy', directVerifier: 'fldlJtYONrHGdyXoh', genericVerifier: 'fldX8cOpx3TcGX2jf',
+  contactSource: 'fldwoK7IcKH6NYgVJ', thesis: 'fldg6HZIKqe8c8RtW', leadsWanted: 'fld2G5D1yCPFGFiVF',
+} as const;
+/** In progress → done. Ready / Uploaded = done (the list is built); Failed = needs a fix; Archived is left out. */
+export const LIST_DONE = new Set(['Ready', 'Uploaded']);
+export const LIST_ORDER = ['Draft', 'Source & ICP', 'Targeting', 'Searching', 'Source Imported', 'Contacts Ready', 'Verification', 'Enrichment', 'QA', 'Ready', 'Uploaded'] as const;
+export const LIST_DONE_DAYS = 60;
+export type ListGroup = 'building' | 'done' | 'failed';
+export interface LeadListRow {
+  id: string; name: string; client: string; clientKey: string; stage: string; group: ListGroup; step: number; steps: number; qa: string; processing: string; progress: number | null;
+  companies: number; direct: number; generic: number; leads: number; verifiers: string; source: string; thesis: string;
+  campaigns: { id: string; name: string }[]; listOnly: boolean; added: string; updated: string; message: string; owner: AgentName;
+}
+/** One Lead Lists record → one row (null = left out: hidden, archived, or done long ago). Pure. */
+export function leadListRow(r: AirtableRecord, clients: Map<string, ClientRef>, campaignName: Map<string, string>, now = Date.now()): LeadListRow | null {
+  const f = r.fields;
+  if (f[LLF.hide] === true) return null;
+  const stage = s(f[LLF.stage]);
+  if (stage === 'Archived') return null;
+  const ref = clients.get(ids(f[LLF.client])[0] ?? '');
+  const processing = s(f[LLF.processing]);
+  const group: ListGroup = stage === 'Failed' || /fail/i.test(processing) || /fail/i.test(s(f[LF.engineStatus])) ? 'failed' : LIST_DONE.has(stage) ? 'done' : 'building';
+  const updated = latest([s(f[LF.completedAt]), s(f[LF.startedAt]), s(f[LLF.added]), r.createdTime]) ?? '';
+  if (group === 'done' && updated && now - Date.parse(updated) > LIST_DONE_DAYS * DAY) return null;
+  const camps = ids(f[LLF.campaigns]);
+  const direct = n(f[LF.finalDirect]), generic = n(f[LF.finalGeneric]);
+  const verifiers = [...new Set([direct || n(f[LLF.verifiedDirect]) ? s(f[LLF.directVerifier]) : '', generic || n(f[LLF.verifiedGeneric]) ? s(f[LLF.genericVerifier]) : ''].filter((x) => x && x !== 'None'))].join(' + ');
+  const at = LIST_ORDER.indexOf(stage as (typeof LIST_ORDER)[number]);
+  const p = n(f[LLF.progress]);
+  return {
+    id: r.id, name: s(f[LF.name]) || s(f[LF.fileName]) || 'Lead list', client: ref?.name ?? 'No client', clientKey: ref?.key ?? '', stage: stage || 'Not started', group,
+    step: at < 0 ? 0 : at + 1, steps: LIST_ORDER.length, qa: s(f[LF.qa]), processing, progress: processing === 'Running' && p ? (p > 1 ? p / 100 : p) : null,
+    companies: n(f[LLF.companies]), direct, generic, leads: direct + generic, verifiers, source: s(f[LLF.contactSource]), thesis: plain(s(f[LLF.thesis])).slice(0, 240),
+    campaigns: camps.map((id) => ({ id, name: campaignName.get(id) ?? '' })), listOnly: camps.length === 0, added: s(f[LLF.added]) || r.createdTime || '', updated,
+    message: (s(f[LF.lastError]) || s(f[LF.engineMessage])).replace(/\s+/g, ' ').slice(0, 240), owner: group === 'failed' ? 'Riley' : 'Scout',
+  };
+}
+const LL_READ = [...new Set(Object.values(LLF))];
+let listsCache: { at: number; data: Promise<{ lists: AirtableRecord[]; ws: AirtableRecord[]; names: Map<string, string>; readAt: string }> } | null = null;
+export function _resetListsCache() { listsCache = null; }
+/** Lists in progress and done (last 60 days) per client, including a client who buys only a list (no campaign linked). */
+export async function listLeadLists(at: Pick<HqAirtable, 'list'>, db: Db, opts: { client?: string; refresh?: boolean } = {}) {
+  if (!listsCache || Date.now() - listsCache.at >= (opts.refresh ? 10_000 : CAMPAIGNS_CACHE_MS)) {
+    const data = (async () => {
+      const [lists, src] = await Promise.all([
+        at.list(LEAD_LISTS_T, `AND(NOT({Hide}),{Lead List Stage}!='Archived')`, LL_READ, 1500),
+        cachedCampaigns(at, db, opts.refresh),
+      ]);
+      return { lists, ws: src.ws, names: new Map(src.campaigns.map((c) => [c.id, s(c.fields[KF.name])])), readAt: new Date().toISOString() };
+    })();
+    listsCache = { at: Date.now(), data };
+    data.catch(() => { if (listsCache?.data === data) listsCache = null; });
+  }
+  const d = await listsCache.data;
+  const clients = clientIndex(d.ws);
+  const activeKeys = new Set([...clients.values()].filter((c) => c.active).map((c) => c.key));
+  const rows = d.lists.map((r) => leadListRow(r, clients, d.names)).filter((x): x is LeadListRow => !!x && (!x.clientKey || activeKeys.has(x.clientKey)));
+  const active = [...new Map([...clients.values()].filter((c) => c.active).map((c) => [c.key, c])).values()];
+  const client = opts.client && activeKeys.has(opts.client) ? opts.client : '';
+  const G = ['failed', 'building', 'done'];
+  const mine = (client ? rows.filter((r) => r.clientKey === client) : rows).sort((a, b) => G.indexOf(a.group) - G.indexOf(b.group) || b.step - a.step || (Date.parse(b.updated) || 0) - (Date.parse(a.updated) || 0));
+  return {
+    rows: mine, counts: { building: mine.filter((r) => r.group === 'building').length, done: mine.filter((r) => r.group === 'done').length, failed: mine.filter((r) => r.group === 'failed').length, listOnly: mine.filter((r) => r.listOnly).length },
+    client, clients: active.map((c) => ({ key: c.key, name: c.name, count: rows.filter((r) => r.clientKey === c.key).length })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+    stages: LIST_ORDER, doneDays: LIST_DONE_DAYS, readAt: d.readAt,
   };
 }

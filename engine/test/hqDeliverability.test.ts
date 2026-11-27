@@ -80,36 +80,36 @@ const codes = (f: Partial<InboxFacts>) => inboxReasons({ ...base, ...f }).map((r
 
 test('sick rules: placement under 60% sick, 60-74 watch; disconnected (Riley); warm-up; bounce over 4% / 2.5% with a floor', () => {
   assert.deepEqual(codes({}), [], 'a healthy inbox has no reasons');
-  assert.deepEqual(codes({ score: 59 }), ['placement:sick:Atlas']);
-  assert.deepEqual(codes({ score: LIMITS.placementRest }), ['placement:watch:Atlas'], '60 is not under 60');
+  assert.deepEqual(codes({ score: 59 }), ['placement:spam:Atlas']);
+  assert.deepEqual(codes({ score: LIMITS.placementRest }), ['placement:risk:Atlas'], '60 is not under 60');
   assert.deepEqual(codes({ score: 75 }), []);
-  assert.deepEqual(codes({ connection: 'Disconnected' }), ['disconnected:sick:Riley']);
+  assert.deepEqual(codes({ connection: 'Disconnected' }), ['disconnected:spam:Riley']);
   assert.deepEqual(codes({ connection: '' }), [], 'no connection data is not a disconnect');
-  assert.deepEqual(codes({ warmupDisable: 'Warmup disabled for causing bounces' }), ['warmup:sick:Atlas']);
-  assert.deepEqual(codes({ warmupDisable: 'Warmup disabled for receiving bounces. You can enable after 24 hours.' }), ['warmup:watch:Atlas']);
-  assert.deepEqual(codes({ warmupOn: false }), ['warmup:watch:Atlas']);
+  assert.deepEqual(codes({ warmupDisable: 'Warmup disabled for causing bounces' }), ['warmup:spam:Atlas']);
+  assert.deepEqual(codes({ warmupDisable: 'Warmup disabled for receiving bounces. You can enable after 24 hours.' }), ['warmup:risk:Atlas']);
+  assert.deepEqual(codes({ warmupOn: false }), ['warmupOff:risk:Atlas']);
   assert.deepEqual(codes({ warmupOn: null }), [], 'never synced: unknown, not "off"');
-  assert.deepEqual(codes({ warmupScore: 49 }), ['warmupScore:sick:Atlas']);
-  assert.deepEqual(codes({ warmupScore: 69 }), ['warmupScore:watch:Atlas']);
+  assert.deepEqual(codes({ warmupScore: 49 }), ['warmupScore:spam:Atlas']);
+  assert.deepEqual(codes({ warmupScore: 69 }), ['warmupScore:risk:Atlas']);
   assert.deepEqual(codes({ warmupScore: 70 }), []);
-  assert.deepEqual(codes({ bounced: 9, contacted: 150 }), ['bounce:sick:Atlas'], '6%');
-  assert.deepEqual(codes({ bounced: 4, contacted: 130 }), ['bounce:watch:Atlas'], '3.1%');
+  assert.deepEqual(codes({ bounced: 9, contacted: 150 }), ['bounce:spam:Atlas'], '6%');
+  assert.deepEqual(codes({ bounced: 4, contacted: 130 }), ['bounce:risk:Atlas'], '3.1%');
   assert.deepEqual(codes({ bounced: 4, contacted: 99 }), [], 'under 100 contacted: too early to judge');
-  assert.deepEqual(codes({ stage: 'Replace Domain', score: 30, airtableStatus: 'Spam' }), ['replace:sick:Atlas'], 'a replacement is one reason, not three');
-  assert.deepEqual(codes({ airtableStatus: 'Spam' }), ['airtable:sick:Atlas']);
-  assert.deepEqual(codes({ protocolError: 'no EmailBison key' }), ['loopError:watch:Riley']);
+  assert.deepEqual(codes({ stage: 'Replace Domain', score: 30, airtableStatus: 'Spam' }), ['replace:spam:Atlas'], 'a replacement is one reason, not three');
+  assert.deepEqual(codes({ airtableStatus: 'Spam' }), ['airtable:spam:Atlas']);
+  assert.deepEqual(codes({ protocolError: 'no EmailBison key' }), ['loopError:risk:Riley']);
 });
 
 test('status: sick beats resting; resting covers its own placement / bounce; watch; healthy', () => {
-  const r = (code: string, level: 'sick' | 'watch') => ({ code, level, text: code, owner: 'Atlas' as const });
+  const r = (code: string, level: 'spam' | 'risk') => ({ code, level, text: code, owner: 'Atlas' as const });
   assert.equal(statusOf([], false), 'healthy');
-  assert.equal(statusOf([r('placement', 'sick')], false), 'sick');
-  assert.equal(statusOf([r('placement', 'sick')], true), 'resting', 'the rest is the fix for a bad score');
-  assert.equal(statusOf([r('bounce', 'sick')], true), 'resting');
-  assert.equal(statusOf([r('disconnected', 'sick')], true), 'sick', 'a disconnect while resting still needs a person');
-  assert.equal(statusOf([r('blacklist', 'sick')], true), 'sick');
-  assert.equal(statusOf([r('warmupScore', 'watch')], false), 'watch');
-  assert.equal(statusOf([r('warmupScore', 'watch')], true), 'resting');
+  assert.equal(statusOf([r('placement', 'spam')], false), 'spam');
+  assert.equal(statusOf([r('placement', 'spam')], true), 'resting', 'the rest is the fix for a bad score');
+  assert.equal(statusOf([r('bounce', 'spam')], true), 'resting');
+  assert.equal(statusOf([r('disconnected', 'spam')], true), 'spam', 'a disconnect while resting still needs a person');
+  assert.equal(statusOf([r('blacklist', 'spam')], true), 'spam');
+  assert.equal(statusOf([r('warmupScore', 'risk')], false), 'risk');
+  assert.equal(statusOf([r('warmupScore', 'risk')], true), 'resting');
 });
 
 test('domain rules: blacklisted sick, check failed / monitoring error (Riley) watch, expired sick, expiring in 30 days watch', () => {
@@ -117,12 +117,12 @@ test('domain rules: blacklisted sick, check failed / monitoring error (Riley) wa
   const d = { blacklist: 'Clean', blacklistCount: 0, found: '', monitoring: 'Active', health: 'Healthy', renewal: '', purchaseStatus: 'Provisioned' };
   const c = (f: Partial<typeof d>) => domainReasons({ ...d, ...f }, now).map((r) => `${r.code}:${r.level}:${r.owner}`);
   assert.deepEqual(c({}), []);
-  assert.deepEqual(c({ blacklist: 'Listed', blacklistCount: 2, found: 'spamhaus\nbarracuda' }), ['blacklist:sick:Atlas']);
+  assert.deepEqual(c({ blacklist: 'Listed', blacklistCount: 2, found: 'spamhaus\nbarracuda' }), ['blacklist:spam:Atlas']);
   assert.match(domainReasons({ ...d, blacklist: 'Listed', blacklistCount: 2, found: 'spamhaus\nbarracuda' }, now)[0].text, /^Blacklisted on 2: spamhaus barracuda$/);
-  assert.deepEqual(c({ blacklist: 'Check Failed' }), ['blacklistCheck:watch:Riley']);
-  assert.deepEqual(c({ monitoring: 'Error' }), ['monitoring:watch:Riley']);
-  assert.deepEqual(c({ renewal: '2026-11-20' }), ['expired:sick:Atlas']);
-  assert.deepEqual(c({ renewal: '2026-12-06' }), ['expiring:watch:Atlas']);
+  assert.deepEqual(c({ blacklist: 'Check Failed' }), ['blacklistCheck:risk:Riley']);
+  assert.deepEqual(c({ monitoring: 'Error' }), ['monitoring:risk:Riley']);
+  assert.deepEqual(c({ renewal: '2026-11-20' }), ['expired:spam:Atlas']);
+  assert.deepEqual(c({ renewal: '2026-12-06' }), ['expiring:risk:Atlas']);
   assert.equal(domainReasons({ ...d, renewal: '2026-12-06' }, now)[0].text, 'Expires in 10 days (12-06)');
   assert.deepEqual(c({ renewal: '2027-01-30' }), [], 'more than 30 days away');
   assert.deepEqual(c({ renewal: '2026-11-20', purchaseStatus: 'Cancelled' }), [], 'a cancelled domain does not expire on us');
@@ -244,14 +244,14 @@ test('deliverability API: session needed; tiles; Needs attention shows sick + re
   const cookie = await login();
   const r = await call('GET', '/hq/api/deliverability', cookie);
   assert.equal(r.status, 200, r.text);
-  assert.deepEqual(r.body.tiles, { healthy: 1, watch: 1, sick: 6, resting: 1, total: 9 }, 'Lead Flo (inactive) is left out; the Twenty West pair counts once');
+  assert.deepEqual(r.body.tiles, { healthy: 1, risk: 1, spam: 6, resting: 1, total: 9 }, 'Lead Flo (inactive) is left out; the Twenty West pair counts once');
   assert.equal(r.body.hidden.inactiveInboxes, 1);
   const twm = r.body.clients.find((c: any) => c.key === 'twentywestmedia');
-  assert.deepEqual([twm.name, twm.tiles.total, twm.tiles.sick, twm.tiles.resting, twm.tiles.watch], ['Twenty West', 6, 4, 1, 1], 'c@ is on the old Twenty West record and still counts here');
+  assert.deepEqual([twm.name, twm.tiles.total, twm.tiles.spam, twm.tiles.resting, twm.tiles.risk], ['Twenty West', 6, 4, 1, 1], 'c@ is on the old Twenty West record and still counts here');
   const byTitle = Object.fromEntries(r.body.items.map((i: any) => [i.title, i]));
   assert.deepEqual(Object.keys(byTitle).sort(), ['a@twm-mail.com', 'b@twm-mail.com', 'c@twm-reach.com', 'd@twm-reach.com', 'dulcy-ok.com', 'h@dulcy-ok.com', 'listed.com', 'x@dulcy-try.com'],
     'listed.com is one line (its 2 inboxes are not repeated); healthy inboxes are not listed');
-  assert.deepEqual(r.body.items.map((i: any) => i.status), ['sick', 'sick', 'sick', 'sick', 'sick', 'resting', 'watch', 'watch'], 'sick, then resting, then watch');
+  assert.deepEqual(r.body.items.map((i: any) => i.status), ['spam', 'spam', 'spam', 'spam', 'spam', 'resting', 'risk', 'risk'], 'spam, then resting, then at risk');
   assert.deepEqual([byTitle['listed.com'].kind, byTitle['listed.com'].inboxes, byTitle['listed.com'].reason], ['domain', 2, 'Blacklisted on 2: spamhaus barracuda']);
   assert.deepEqual([byTitle['a@twm-mail.com'].reason, byTitle['a@twm-mail.com'].owner], ['Placement 45% (11-21)', 'Atlas']);
   assert.match(byTitle['a@twm-mail.com'].doing, /before the health loop started/);
@@ -259,16 +259,16 @@ test('deliverability API: session needed; tiles; Needs attention shows sick + re
   assert.deepEqual([byTitle['c@twm-reach.com'].owner, byTitle['c@twm-reach.com'].client], ['Riley', 'Twenty West']);
   assert.match(byTitle['h@dulcy-ok.com'].reason, /^Bounce 6% \(9 of 150\)$/);
   assert.match(byTitle['dulcy-ok.com'].reason, /^Expires in 10 days/);
-  assert.equal(byTitle['dulcy-ok.com'].status, 'watch');
+  assert.equal(byTitle['dulcy-ok.com'].status, 'risk');
   const x = byTitle['x@dulcy-try.com'];
   assert.equal(x.doing, 'Replacement waiting for your OK in Decisions. The inbox stays at 0/day.');
-  assert.deepEqual(x.links.map((l: any) => l.href), ['decisions/Campaigns', 'https://airtable.com/appxqINt5XKw7a76A/tblMSOBJ0wMgxSg4l/recACCX0000000001'], 'buttons only link to Decisions or the Airtable record');
+  assert.deepEqual(x.links.map((l: any) => l.href), ['decisions/Campaigns'], 'buttons only link to Decisions; no Airtable record links (Alex 2026-11-27)');
   assert.equal(r.body.replacementsWaiting, 1);
   assert.deepEqual(r.body.engine.runs.map((j: any) => [j.kind, j.message]), [['account.health', '0 placement tests: 0 rested']]);
   assert.equal(r.body.engine.healthLoop.everyMin, 60);
   // One client only.
   const one = await call('GET', '/hq/api/deliverability?client=dulcy', cookie);
-  assert.deepEqual(one.body.tiles, { healthy: 1, watch: 0, sick: 2, resting: 0, total: 3 });
+  assert.deepEqual(one.body.tiles, { healthy: 1, risk: 0, spam: 2, resting: 0, total: 3 });
   assert.ok(one.body.items.every((i: any) => i.clientKey === 'dulcy'));
 });
 
@@ -285,9 +285,9 @@ test('deliverability API: read only, batched (no per-row calls), no passwords, c
   assert.ok(!lists.some((l) => l.fields.includes(LOGIN_PASSWORD_FIELD) || l.fields.includes('fldXadpWkyEanTp1t')), 'password fields are never asked for');
   // Cached: a change shows only after 60 seconds (or the cache is cleared).
   (tables[ACCOUNTS].recACCD0000000001 as any)[EX.warmupScore] = 95;
-  assert.equal((await call('GET', '/hq/api/deliverability', cookie)).body.tiles.watch, 1, 'still the cached copy');
+  assert.equal((await call('GET', '/hq/api/deliverability', cookie)).body.tiles.risk, 1, 'still the cached copy');
   _resetDelivCache();
-  assert.equal((await call('GET', '/hq/api/deliverability', cookie)).body.tiles.watch, 0);
+  assert.equal((await call('GET', '/hq/api/deliverability', cookie)).body.tiles.risk, 0);
   // Members (Josh) read it too.
   await upsertUser(db, 'josh@dulcy.io', 'member', 'josh long password 1', 'Josh');
   assert.equal((await call('GET', '/hq/api/deliverability', await login('josh@dulcy.io', 'josh long password 1'))).status, 200);
@@ -299,10 +299,10 @@ test('All inboxes: grouped by domain (worst first), search, client filter, statu
   const r = await call('GET', '/hq/api/deliverability/inboxes', cookie);
   assert.equal(r.body.total, 9);
   assert.deepEqual(r.body.groups.map((g: any) => [g.domain, g.status, g.inboxes.length]), [
-    ['dulcy-ok.com', 'sick', 2], ['dulcy-try.com', 'sick', 1], ['listed.com', 'sick', 2], ['twm-mail.com', 'sick', 2], ['twm-reach.com', 'sick', 2],
+    ['dulcy-ok.com', 'spam', 2], ['dulcy-try.com', 'spam', 1], ['listed.com', 'spam', 2], ['twm-mail.com', 'spam', 2], ['twm-reach.com', 'spam', 2],
   ]);
   assert.deepEqual(r.body.groups[0].inboxes.map((i: any) => i.email), ['h@dulcy-ok.com', 'g@dulcy-ok.com'], 'worst inbox first');
-  assert.equal(r.body.groups[2].inboxes[0].reasons[0].fromDomain, true, 'a listed domain makes its inboxes sick too');
+  assert.equal(r.body.groups[2].inboxes[0].reasons[0].fromDomain, true, 'a listed domain makes its inboxes Spam too');
   assert.deepEqual(r.body.clients.map((c: any) => c.key).sort(), ['dulcy', 'twentywestmedia'], 'one chip for the Twenty West pair');
   const q = await call('GET', '/hq/api/deliverability/inboxes?q=REACH', cookie);
   assert.deepEqual(q.body.groups.map((g: any) => g.domain), ['twm-reach.com']);
@@ -320,7 +320,7 @@ test('Placement tests: newest per client and domain, worst first, freshness; Dom
   assert.equal(p.status, 200);
   assert.equal(p.body.freshness.newest, '2026-11-21');
   const twm = p.body.clients.find((c: any) => c.key === 'twentywestmedia');
-  assert.deepEqual(twm.domains.map((d: any) => [d.domain, d.score, d.date, d.status, d.inboxes.length]), [['twm-mail.com', 40, '2026-11-21', 'sick', 2]], 'the 11-14 test of a@ is older: not shown');
+  assert.deepEqual(twm.domains.map((d: any) => [d.domain, d.score, d.date, d.status, d.inboxes.length]), [['twm-mail.com', 40, '2026-11-21', 'spam', 2]], 'the 11-14 test of a@ is older: not shown');
   assert.equal(twm.newest, '2026-11-21');
   const dulcy = p.body.clients.find((c: any) => c.key === 'dulcy');
   assert.deepEqual(dulcy.domains.map((d: any) => [d.domain, d.score]), [['dulcy-ok.com', 92]], 'matched by the EmailBison workspace id');
@@ -333,9 +333,9 @@ test('Placement tests: newest per client and domain, worst first, freshness; Dom
   assert.equal(d.status, 200);
   const dc = d.body.clients.find((c: any) => c.key === 'dulcy');
   assert.deepEqual(dc.domains.map((x: any) => [x.name, x.inboxes, x.daysToRenewal]), [['dulcy-ok.com', 2, 10], ['dulcy-try.com', 1, null]]);
-  assert.equal(dc.domains[0].status, 'watch');
+  assert.equal(dc.domains[0].status, 'risk');
   assert.deepEqual(d.body.replacements.map((x: any) => [x.title, x.status, x.score, x.decisionId, x.link.href]), [['x@dulcy-try.com', 'Pending Review', 31, 'recDEC00000000001', 'decisions/Campaigns']], 'completed ones are left out');
-  assert.deepEqual(d.body.purchases.map((x: any) => [x.request, x.status, x.domains, x.mailboxes, x.link.href]), [['Twenty West: 5 domains', 'Ready for Approval', 5, 10, 'https://airtable.com/appxqINt5XKw7a76A/tblU6OstDVWeuYBxL/recBUY00000000001']]);
+  assert.deepEqual(d.body.purchases.map((x: any) => [x.request, x.status, x.domains, x.mailboxes, x.link?.href]), [['Twenty West: 5 domains', 'Ready for Approval', 5, 10, undefined]]);
   const dt = d.body.clients.find((c: any) => c.key === 'twentywestmedia');
   assert.deepEqual(dt.domains.map((x: any) => x.name), ['listed.com', 'twm-mail.com', 'twm-reach.com']);
 });

@@ -228,6 +228,9 @@ export function createBisonClient(o: BisonOptions) {
     /** Set the cold-email daily limit of sender inboxes (0 = rest the account). */
     setDailyLimit: (senderIds: (string | number)[], limit: number) =>
       call('PATCH', '/api/sender-emails/daily-limits/bulk', { sender_email_ids: senderIds.map(Number), daily_limit: limit }, { write: true }),
+    /** Set the warm-up emails per day of sender inboxes (the same call n8n "Email Accounts Bulk Controls" makes). */
+    setWarmupLimit: (senderIds: (string | number)[], limit: number) =>
+      call('PATCH', '/api/warmup/sender-emails/update-daily-warmup-limits', { sender_email_ids: senderIds.map(Number), daily_limit: limit }, { write: true }),
     /** One inbox's current settings (daily limit, status). */
     async senderEmailDetails(id: number): Promise<{ id: number; email: string; dailyLimit: number; status: string }> {
       const r = await call('GET', `/api/sender-emails/${id}`);

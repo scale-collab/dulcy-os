@@ -32,8 +32,11 @@ import { isNeedDay, loadNeeds, loadNeedsDay, needCounts } from './needs.js';
 import { workSummary } from './agentTasks.js';
 import { actOnThread, listInbox, threadDetail } from './inbox.js';
 import { calendarInvite, replierDetail, saveReplier } from './replier.js';
-import { campaignDetail, listCampaigns } from './campaigns.js';
-import { deliverabilityView } from './deliverability.js';
+import { campaignDetail, listCampaigns, listLeadLists } from './campaigns.js';
+import { deliverabilityView, inboxIndex } from './deliverability.js';
+// Batch 3: inbox limits + ramp, bounce analytics, verification (Fix it is Batch 1's fixIt.ts).
+import { limitsView, requestLimitChange } from './inboxLimits.js';
+import { bouncesView, verificationView } from './bounceStats.js';
 import { portalRoute, resolvePortalClient } from './portal.js';
 import { contentSummary, contentView, decideIdea } from './content.js';
 import { allDeals, dealDetail, nyDay, salesView } from './sales.js';
@@ -444,14 +447,34 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         json(res, r.status, r.error ? { error: r.error } : { ok: true, status: r.result });
         return true;
       }
-      // Campaigns (Step 3): read only. Needs action first; pipeline, campaign page, Activity log. No money in it.
+      // ---- Batch 3: Campaigns + Deliverability (lead lists, limits, ramp, bounces, verification) ----
+      if (p === '/hq/api/campaigns/lists' && req.method === 'GET') {
+        json(res, 200, await listLeadLists(needAt(), db, { client: url.searchParams.get('client') ?? undefined, refresh: url.searchParams.get('refresh') === '1' }));
+        return true;
+      }
+      m = p.match(/^\/hq\/api\/deliverability\/(bounces|verification|limits)$/);
+      if (m && req.method === 'GET') {
+        if (m[1] === 'bounces') json(res, 200, await bouncesView(needAt(), url.searchParams));
+        else if (m[1] === 'verification') json(res, 200, await verificationView(needAt(), db, url.searchParams));
+        else json(res, 200, { ...(await limitsView(needAt(), db, cfg, url.searchParams)), canEdit: owner });
+        return true;
+      }
+      if (p === '/hq/api/deliverability/limits' && req.method === 'POST') {
+        // A live write to EmailBison: owner only, confirm: true, dry run unless inbox.limits is in LIVE_STAGES.
+        if (!owner) { json(res, 403, { error: 'only the owner changes inbox limits' }); return true; }
+        const r = await requestLimitChange(needAt(), db, cfg, await readJson(req, 60_000), user.name);
+        json(res, r.status, r.body);
+        return true;
+      }
+
+      // Campaigns (Step 3): read only. Needs action first; campaign page, Activity log. No money in it.
       if (p === '/hq/api/campaigns' && req.method === 'GET') {
-        json(res, 200, await listCampaigns(needAt(), db, { client: url.searchParams.get('client') ?? undefined, refresh: url.searchParams.get('refresh') === '1' }));
+        json(res, 200, await listCampaigns(needAt(), db, { client: url.searchParams.get('client') ?? undefined, refresh: url.searchParams.get('refresh') === '1', inboxes: await inboxIndex(needAt(), db, cfg) }));
         return true;
       }
       m = p.match(/^\/hq\/api\/campaigns\/(rec[A-Za-z0-9]{14})$/);
       if (m && req.method === 'GET') {
-        const d = await campaignDetail(needAt(), db, m[1], owner, cfg.airtableBaseId);
+        const d = await campaignDetail(needAt(), db, m[1], owner, await inboxIndex(needAt(), db, cfg));
         if (!d) json(res, 404, { error: 'no such campaign' }); else json(res, 200, d);
         return true;
       }

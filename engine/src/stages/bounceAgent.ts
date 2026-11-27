@@ -36,7 +36,8 @@ export async function bounceTaskQueued(db: Db, i: { teamId?: number; campaignId:
   });
 }
 
-async function providersFor(domains: string[]): Promise<Map<string, string>> {
+/** The recipient mail provider per domain (MX lookup, 8 at a time). Also used by HQ bounce analytics (Batch 3). */
+export async function providersFor(domains: string[]): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   const queue = [...new Set(domains.filter(Boolean))];
   await Promise.all(Array.from({ length: 8 }, async () => {
