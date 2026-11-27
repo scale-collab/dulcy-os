@@ -32,6 +32,12 @@ export const KNOWN_TERMS: Record<string, { lines: DealLine[]; source: string; st
   globalmediagroupltd: { lines: [{ label: 'Per qualified call', monthly: 0, perCall: 280 }], source: 'billing terms, owner-confirmed (clients/global-media-group-scroll-stop.md)' },
   leadflomarketing: { lines: [{ label: 'Monthly tech fee', monthly: 1000, perCall: 250 }], source: 'call summaries (clients/lead-flo-marketing.md)', endDate: '2026-11-25' },
 };
+/**
+ * Clients with no fixed meetings target (Alex, 2026-11-27): Global Media Group moved from retainer to
+ * pay per qualified call after results were not consistent, so the goal is "as many as possible".
+ * Judged against their own previous 30 days instead of a KPI.
+ */
+export const NO_FIXED_KPI: Record<string, string> = { globalmediagroupltd: 'no fixed KPI: pay per call, as many as possible (Alex 2026-11-27)' };
 /** P/L sheet names that are not the Airtable name. */
 export const SHEET_ALIASES: Record<string, string> = { mjjjewerly: 'brilliantjewelersmjjinc', mjjjewelry: 'brilliantjewelersmjjinc', mjjbrilliant: 'brilliantjewelersmjjinc', scrollstop: 'globalmediagroupltd' };
 
@@ -186,10 +192,19 @@ export function kpiNumber(x: unknown): number | null {
  * Safe (on pace for the KPI), At risk (50-99% of pace), Needs attention (under 50%, or nothing
  * sending). A client in its first 30 days is judged on the days it has had. Pure.
  */
-export function healthOf(c: { active: boolean; kpi: number | null; meetings30: number; interested30: number; sent30: number | null; activeCampaigns: number; startDate: string }, now: Date): { health: Health; insight: Insight | null; pace: number | null } {
+export function healthOf(c: { active: boolean; kpi: number | null; meetings30: number; interested30: number; sent30: number | null; activeCampaigns: number; startDate: string; maxMode?: boolean; prevMeetings30?: number | null }, now: Date): { health: Health; insight: Insight | null; pace: number | null } {
   if (!c.active) return { health: 'inactive', insight: null, pace: null };
   const met = `${c.meetings30} meeting${c.meetings30 === 1 ? '' : 's'} booked in 30 days`;
   if (!c.activeCampaigns) return { health: 'attention', pace: null, insight: { problem: 'Nothing is sending.', decision: 'Atlas: launch the next campaign.', support: `0 active campaigns; ${met}.` } };
+  if (c.maxMode) {
+    // No fixed target (pay per call): more meetings than the 30 days before = safe.
+    const prev = c.prevMeetings30 ?? null;
+    const line = `${c.meetings30} meetings in the last 30 days${prev !== null ? ` vs ${prev} the 30 days before` : ''} (no fixed KPI: as many as possible)`;
+    if (c.meetings30 > 0 && (prev === null || c.meetings30 >= prev)) return { health: 'safe', pace: prev ? c.meetings30 / prev : null, insight: { problem: `Growing or steady: ${line}.`, decision: 'Atlas: keep adding volume while results hold.', support: support(c) } };
+    const pace = prev ? c.meetings30 / prev : 0;
+    const health: Health = c.meetings30 > 0 && pace >= 0.5 ? 'at_risk' : 'attention';
+    return { health, pace, insight: { problem: `Fewer meetings: ${line}.`, decision: 'Atlas: change the angle or add volume (offer, list or copy).', support: support(c) } };
+  }
   if (!c.kpi) return { health: 'unknown', pace: null, insight: { problem: 'No promised meetings KPI on record.', decision: 'Atlas: confirm the KPI with Alex.', support: `${met}.` } };
   const days = c.startDate ? (now.getTime() - day(c.startDate)) / DAY : 30;
   const expected = c.kpi * Math.min(1, Math.max(days, 1) / 30);

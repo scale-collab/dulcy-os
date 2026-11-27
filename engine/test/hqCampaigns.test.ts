@@ -29,7 +29,7 @@ const facts = (o: Partial<CampaignFacts> = {}): CampaignFacts => ({
   id: 'recC00000000000001', name: 'X', status: 'Active', stage: 'Live', clientRec: 'recW00000000000001', listIds: [],
   progress: 0.3, sent: 1000, replies: 20, interested: 5, booked: 1, bounce: 1, contacted: 1000, totalLeads: 3000,
   approvalSource: '', approvalException: false, approvalDecision: '', reviewSubmitted: '', autoApprove: '', processing: '', workflowError: '', engineStatus: '', engineMessage: '',
-  skipBouncePause: false, bisonUrl: '', created: D(40, NOW), statusModified: '', updatedAt: '', startedAt: '', completedAt: '', ...o,
+  skipBouncePause: false, bisonUrl: '', created: D(40, NOW), statusModified: '', updatedAt: '', startedAt: '', completedAt: '', thesis: '', approach: '', launchDate: '', accountIds: [], ...o,
 });
 const list = (o: Partial<ListInfo> = {}): ListInfo => ({ id: 'recL00000000000001', name: 'L', stage: 'Ready', qa: 'Passed', processing: 'Completed', leads: 2400, engineStatus: '', message: '', startedAt: '', completedAt: '', ...o });
 const plan = (o: Partial<PlanInfo> = {}): PlanInfo => ({ id: 1, triggerKey: 'next:recC00000000000001', wsRec: 'recW00000000000001', client: 'C', state: 'sample', label: 'Company sample', campaignRec: 'recC00000000000009', leadListRec: '', error: '', created: D(1, NOW), updated: D(1, NOW), ...o });
@@ -218,7 +218,7 @@ test('campaigns API: needs a session; needs action first, the Twenty West pair o
   const roofers = r.body.rows[2];
   assert.deepEqual([roofers.group, roofers.now.key, roofers.needs.length], ['building', 'copy', 0]);
   assert.deepEqual(r.body.clients.map((c: any) => [c.key, c.count, c.action]), [['mjjbrilliant', 1, 1], ['twentywestmedia', 2, 1]]);
-  assert.deepEqual(r.body.channels.map((c: any) => [c.key, c.live]), [['email', true], ['linkedin', false], ['caller', false]]);
+  assert.deepEqual(r.body.channels.map((c: any) => [c.key, c.live]), [['email', true], ['linkedin', false], ['caller', false], ['mail', false]], 'Direct mail is a channel tab (not running yet)');
   assert.match(r.body.channels[1].reason, /Only cold email works right now/);
 
   const one = await call('/hq/api/campaigns?client=twentywestmedia', cookie);
@@ -255,7 +255,8 @@ test('campaigns API: the campaign page (stats, steps, engine history, Activity l
   assert.deepEqual(r.body.history.map((h: any) => h.what), ['Campaign plan #1: Live', 'Launch', 'Verify and finalize', 'Campaign plan #1 started'], 'its jobs, its lead list\'s jobs and its plan; not other records');
   assert.equal(r.body.history[1].message, 'Launched 2 parts');
   assert.deepEqual(r.body.activity.map((a: any) => [a.event, a.on]), [['Bounce check: paused', 'campaign'], ['Ledger note', 'campaign'], ['Verify and finalize: done', 'list']], 'campaign and lead list rows, newest first');
-  assert.equal(r.body.links.airtable, 'https://airtable.com/appxqINt5XKw7a76A/tblAVAA6uBPaMj28P/recCTWM0000000001');
+  assert.equal(r.body.links.airtable, undefined, 'no Open in Airtable (Alex 2026-11-27)');
+  assert.ok(!/airtable\.com/.test(r.text), 'no Airtable links anywhere');
   assert.equal(r.body.links.bison, 'https://send.dulcy.io/campaigns/1');
   assert.equal(r.body.plan.state, 'live');
 
@@ -266,7 +267,7 @@ test('campaigns API: the campaign page (stats, steps, engine history, Activity l
   // A building campaign's lead list.
   const b = await call('/hq/api/campaigns/recCTWM0000000002', cookie);
   assert.deepEqual(b.body.lists.map((l: any) => [l.name, l.leads]), [['TWM Roofers list', 1200]]);
-  assert.match(b.body.lists[0].airtableUrl, /tblVOg9BkPOMmnitt\/recLTWM0000000002$/);
+  assert.equal(b.body.lists[0].airtableUrl, undefined);
   assert.equal((await call('/hq/api/campaigns/recNOPE0000000001', cookie)).status, 404);
   assert.deepEqual(writes, [], 'nothing written to Airtable');
 });

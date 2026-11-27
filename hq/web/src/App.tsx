@@ -184,7 +184,7 @@ function MobileHeader({ onSignOut, owner, active }: { onSignOut: () => void; own
         <div className="flex items-center">
           <IconButton icon="megaphone" label="Campaigns" active={active === 'campaigns'} onClick={() => go('campaigns')} />
           <IconButton icon="users" label="Team" active={active === 'agents'} onClick={() => go('agents')} />
-          <IconButton icon="mail" label={c.deliverability ? `Deliverability: ${c.deliverability} sick` : 'Deliverability'} active={active === 'deliverability'} onClick={() => go('deliverability')} />
+          <IconButton icon="mail" label={c.deliverability ? `Deliverability: ${c.deliverability} need attention` : 'Deliverability'} active={active === 'deliverability'} onClick={() => go('deliverability')} />
           {owner && (
             <span className="relative">
               <IconButton icon="shield" label={c.signups ? `Users: ${c.signups} sign-up${c.signups === 1 ? '' : 's'} waiting` : 'Users'} onClick={() => go('users')} />
