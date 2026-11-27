@@ -1,6 +1,6 @@
 import {randomBytes,createHash,timingSafeEqual} from 'node:crypto';
-import {beginConnection,exchangeConnection,workspaceId,seal,unseal} from './calendar.mjs';
-import {CalendarProvider,providerJson} from './calendar-provider.mjs';
+import {beginConnection,exchangeConnection,keyConnection,workspaceId,seal,unseal,PROVIDERS,PASTE_PROVIDERS} from './calendar.mjs';
+import {CalendarProvider,providerJson,choiceItems} from './calendar-provider.mjs';
 
 const digest=x=>createHash('sha256').update(String(x)).digest('hex');
 const secret=()=>randomBytes(32).toString('base64url');
@@ -17,7 +17,8 @@ export class CalendarFlow {
     CREATE TABLE IF NOT EXISTS calendar_sessions(hash TEXT PRIMARY KEY,workspace TEXT NOT NULL,payload TEXT NOT NULL,expires INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS calendar_invite_requests(hash TEXT PRIMARY KEY,workspace TEXT NOT NULL,payload TEXT NOT NULL,expires INTEGER NOT NULL);`);
  }
- configured(provider){const a=this.apps[provider];return Boolean(a?.clientId&&a?.clientSecret);}
+ // Cal.com and GoHighLevel need no app on Dulcy's side: the client pastes their own key.
+ configured(provider){if(PASTE_PROVIDERS.includes(provider))return true;const a=this.apps[provider];return Boolean(PROVIDERS[provider]&&a?.clientId&&a?.clientSecret);}
  requestInvite(input){
   const {workspace,requestId,provider,expectedEmail}=input;workspaceId(workspace);
   if(!/^[A-Za-z0-9_-]{12,100}$/.test(requestId||''))throw Error('Valid request ID required');
@@ -60,6 +61,25 @@ export class CalendarFlow {
   }catch(e){this.store.db.exec('ROLLBACK');throw e;}
   return {session,authorizationUrl:started.authorizationUrl};
  }
+ /**
+  * Paste flow (Cal.com, GoHighLevel): the key is checked against the provider's account endpoint, then stored
+  * sealed. The one-time link is used up only when the key works, so a mistyped key can be pasted again.
+  */
+ async startKey(ticket,fields){
+  const invited=this.invitation(ticket);if(!PASTE_PROVIDERS.includes(invited.provider))throw Error('This provider connects by signing in');
+  const current=this.store.get(invited.workspace);if((current?.revision||0)!==invited.revision)throw Error('Connection changed; request a new invitation');
+  const c=await keyConnection({workspace:invited.workspace,provider:invited.provider,expectedEmail:invited.expectedEmail,fields,fetchJson:this.fetchJson,now:this.now()});
+  const session=secret(),csrf=secret(),sessionHash=digest(session);
+  this.store.db.exec('BEGIN IMMEDIATE');
+  try{
+   const deleted=this.store.db.prepare('DELETE FROM calendar_invites WHERE hash=? AND expires>?').run(digest(ticket),this.now());
+   if(deleted.changes!==1)throw Error('Invitation already used');
+   this.store.save(c,invited.revision);
+   this.store.db.prepare('INSERT INTO calendar_sessions VALUES(?,?,?,?)').run(sessionHash,invited.workspace,seal({...invited,csrf,phase:'selection'},this.store.key,invited.workspace),this.now()+1800000);
+   this.store.db.exec('COMMIT');
+  }catch(e){this.store.db.exec('ROLLBACK');throw e;}
+  return {session};
+ }
  session(token){
   if(typeof token!=='string'||token.length>100)throw Error('Client session required');
   const r=this.store.db.prepare('SELECT * FROM calendar_sessions WHERE hash=?').get(digest(token));
@@ -81,7 +101,7 @@ export class CalendarFlow {
   this.store.db.prepare('UPDATE calendar_sessions SET payload=? WHERE hash=?').run(seal({...s,phase:'selection'},this.store.key,s.workspace),s.hash);
   return this.provider.status(s.workspace);
  }
- async choices(token){const s=this.session(token);if(s.phase!=='selection')throw Error('Authorize the calendar first');const {items}=await this.provider.choices(s.workspace);return {workspace:s.workspace,label:s.label,provider:s.provider,csrf:s.csrf,items:items.map(x=>s.provider==='calendly'?{id:x.uri,name:x.name}:{id:x.id,name:x.summary})};}
+ async choices(token){const s=this.session(token);if(s.phase!=='selection')throw Error('Authorize the calendar first');const {connection,items}=await this.provider.choices(s.workspace);return {workspace:s.workspace,label:s.label,provider:s.provider,csrf:s.csrf,timezone:connection.timezone||'',items:choiceItems(s.provider,items)};}
  async select(token,csrf,selection){
   const s=this.session(token);if(s.phase!=='selection'||!equal(csrf,s.csrf))throw Error('Invalid selection request');
   const c=this.store.get(s.workspace)?.connection;if(c?.accountEmail!==s.expectedEmail||c?.provider!==s.provider)throw Error('Account changed; reconnect');
