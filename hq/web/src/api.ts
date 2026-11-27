@@ -390,3 +390,18 @@ export interface LimitsB3 {
   history: { id: number; at: string; status: string; dryRun: boolean; by: string; client: string; clientKey: string; source: string; message: string; changes: { email: string; what: string }[] }[];
 }
 export interface LimitResultB3 { ok: true; jobId: number; dryRun: boolean; duplicate: boolean; summary: string; changes: number; skipped: { email: string; why: string }[] }
+
+/* ---------- Round 2/3 Deliverability (2026-11-27): warm-up reasons, SMTP codes, stats, placement bands, bulk limits, cost, Buy ---------- */
+export type WarmupWhyR2 = 'resting' | 'replacing' | 'spam' | 'bounces' | 'unexpected';
+export interface WarmupSummaryR2 { off: number; expected: number; unexpected: number; disconnected: number; byWhy: Record<WarmupWhyR2, number>; line: string; owner: 'Atlas' }
+export interface RenewalGapR2 { missing: number; total: number; fromCheapInboxes: number; taskKey: string }
+export interface CodeRowR2 { key: string; label: string; n: number; share: number; code: string; meaning: string; detail: string; soft: boolean | null; enhanced: { code: string; n: number; meaning: string }[] }
+export interface StatsRowR2 { sent: number | null; contacted: number | null; campaigns: number; replies: number; interested: number; meetings: number; bounces: number; bounceRate: number | null; note: string }
+export interface TestRunR2 { date: string; tested: number; bands: number[]; avg: number | null; underRest: number }
+export interface ClientCostR2 { key: string; name: string; domains: number; inboxes: number; monthly: number; perInbox: number; source: 'cheapinboxes' | 'default' | 'mixed' }
+export interface PurchaseR2 {
+  id: string; request: string; status: string; domains: number | null; mailboxes: number | null; provider: string; approved: boolean; error: string; created: string;
+  quoteToday: number | null; monthly: number | null; quoteAt: string; selected: number; available: number | null; tlds: string[]; next: 'quote' | 'wait' | 'approve' | 'buying' | 'done' | 'fix'; clientKey: string; client: string;
+}
+export interface LimitPreviewR2 { ok: true; live: boolean; changes: number; summary: string; clients: string[]; skipped: number; skippedWhy: { why: string; n: number }[]; sample: { email: string; what: string }[]; max: number }
+export interface BuyResultR2 { ok: true; id: string; status: string; summary: string }
