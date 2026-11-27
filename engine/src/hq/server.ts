@@ -16,9 +16,14 @@ import {
 import { fixIt } from './fixIt.js';
 import { decide, groupByPile, pendingDecisions, type HqAirtable } from './decisions.js';
 import { listTasks, markDone, notYet, quickAdd, validNewTask } from './tasks.js';
-import { agentActivity, agentRuns, agentTasks, finishAgentTask, jobHealth, teamCheck } from './team.js';
-import { canTalkTo, chatTurn, listThreads, readThread, type ChatModel } from './chat.js';
-import { clientDetail, listClients } from './clients.js';
+import { agentActivity, agentRuns, agentTasks, finishAgentTask, jobHealth, teamCheck, isBoardDue, isBoardStatus, loadTeamBoard } from './team.js';
+import { archiveThread, canTalkTo, chatTurn, latestThread, listThreads, readThread, suggestQuestions, type ChatModel } from './chat.js';
+import { clientDetail, clientFinance, clientNumbers, listClients, parseWindow } from './clients.js';
+// Batch 2: owner money on Clients (Xero via Ledger's client, the P/L sheet via the Google provider).
+import { createSheetsClient, type SheetsClient } from '../providers/google.js';
+import { createXeroClient, type XeroClient } from '../providers/xero.js';
+import { PERIODS, type Period } from './clientDeals.js';
+import type { FinanceDeps } from './finance.js';
 import { PORTAL_SIGNUP_SENT, SIGNUP_SENT, addUser, googleSignUp, listUsers, manageUser, pendingCount, signUp } from './users.js';
 import { portalWrite, recentPortalWrites } from './portalWrites.js';
 import { forgotPassword, inviteSoftrUser, linkPortalUser, listSoftrUsers, makeSetupLink, portalGoogleNewUser, setPasswordWithToken, suggestedClient, updateOwnAccount } from './portalAccounts.js';
@@ -34,9 +39,18 @@ import { limitsView, requestLimitChange } from './inboxLimits.js';
 import { bouncesView, verificationView } from './bounceStats.js';
 import { portalRoute, resolvePortalClient } from './portal.js';
 import { contentSummary, contentView, decideIdea } from './content.js';
-import { dealDetail, salesView } from './sales.js';
+import { allDeals, dealDetail, nyDay, salesView } from './sales.js';
+// Batch 4a: Sales insights (periods, capacity, Close hottest deals) and the contract draft.
+import { insightsView, saveCapacitySettings, salesDeps, type SalesDeps } from './salesInsights.js';
+import { createInDulcySign, draftForm, saveDraft } from './contracts.js';
 
-export interface HqDeps { at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string }
+export interface HqDeps {
+  at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string;
+  // Batch 2: read-only money sources for the owner's Clients screen (fakes in tests).
+  sheets?: Pick<SheetsClient, 'tab'>; xero?: Pick<XeroClient, 'get' | 'pages'>;
+  // Batch 4a: Sales insights deps (Close, calendar; fakes in tests).
+  sales?: SalesDeps;
+}
 
 const SECURITY_HEADERS: Record<string, string> = {
   'x-content-type-options': 'nosniff',
@@ -150,6 +164,8 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
   const webDir = deps.webDir ?? cfg.hqWebDir;
   const needAt = () => { if (!at) throw Object.assign(new Error('Airtable is not connected on this server (AIRTABLE_API_KEY)'), { status: 503 }); return at; };
   const home = (req: http.IncomingMessage) => (hostOf(req) === cfg.hqHost ? '/' : '/hq/');
+  // Batch 4a: read-only Close / Xero / calendar readers for Sales (tests pass fakes).
+  const sales: SalesDeps = deps.sales ?? salesDeps(db, cfg, deps.fetchImpl);
 
   return async function handle(req: http.IncomingMessage, res: http.ServerResponse, url: URL): Promise<boolean> {
     const host = hostOf(req);
@@ -387,13 +403,27 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       }
 
       // Clients (Step 2): money is cut server-side for members.
+      // Batch 2: ?window=10|30|60|120|all (EmailBison results); owner money from Xero + the P/L sheet.
+      const financeDeps = (): FinanceDeps => ({
+        sheets: deps.sheets ?? createSheetsClient({ keyFile: cfg.googleKeyFile, impersonate: cfg.googleImpersonateUser, scope: cfg.googleScope, sheetsBaseUrl: cfg.googleSheetsBaseUrl, fetchImpl: deps.fetchImpl }),
+        xero: deps.xero ?? (cfg.xeroClientId && cfg.xeroClientSecret ? createXeroClient(db, cfg, deps.fetchImpl) : undefined),
+      });
       if (p === '/hq/api/clients' && req.method === 'GET') {
-        json(res, 200, await listClients(needAt(), db, owner, { all: url.searchParams.get('all') === '1', refresh: url.searchParams.get('refresh') === '1' }));
+        json(res, 200, await listClients(needAt(), db, owner, { all: url.searchParams.get('all') === '1', refresh: url.searchParams.get('refresh') === '1', window: parseWindow(url.searchParams.get('window')), finance: owner ? financeDeps() : undefined }));
+        return true;
+      }
+      // Batch 2: agency numbers and money, owner only (members get 403, nothing else).
+      if ((p === '/hq/api/clients/numbers' || p === '/hq/api/clients/finance') && req.method === 'GET') {
+        if (!owner) { json(res, 403, { error: 'only the owner sees money' }); return true; }
+        if (p.endsWith('/numbers')) {
+          const per = url.searchParams.get('period') ?? 'this-month';
+          json(res, 200, await clientNumbers(needAt(), db, ((PERIODS as readonly string[]).includes(per) ? per : 'this-month') as Period, financeDeps()));
+        } else json(res, 200, await clientFinance(needAt(), db, financeDeps(), url.searchParams.get('refresh') === '1'));
         return true;
       }
       m = p.match(/^\/hq\/api\/clients\/(rec[A-Za-z0-9]{14})$/);
       if (m && req.method === 'GET') {
-        const d = await clientDetail(needAt(), db, m[1], owner);
+        const d = await clientDetail(needAt(), db, m[1], owner, { finance: owner ? financeDeps() : undefined, window: parseWindow(url.searchParams.get('window')) });
         if (!d) json(res, 404, { error: 'no such client' }); else json(res, 200, d);
         return true;
       }
@@ -486,17 +516,42 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         json(res, 404, { error: 'not found' }); return true;
       }
 
-      // Sales (Dulcy's own deals): owner only (money), checked here so members get 403. Read only.
+      // Sales (Dulcy's own deals): owner only (money), checked here so members get 403.
       if (p === '/hq/api/sales' || p.startsWith('/hq/api/sales/')) {
         if (!owner) { json(res, 403, { error: 'only the owner sees sales (money)' }); return true; }
+        const extras = { xero: sales.xero };
+        // ---- Batch 4a: insights, capacity setting, contract draft (the only writes: Postgres, and one Contracts row on "Create") ----
+        if (p === '/hq/api/sales/insights' && req.method === 'GET') {
+          const now = Date.now();
+          const { deals } = await allDeals(needAt(), db, url.searchParams.get('refresh') === '1', now, extras);
+          json(res, 200, await insightsView(deals, db, sales, owner, { now, refresh: url.searchParams.get('refresh') === '1' }));
+          return true;
+        }
+        if (p === '/hq/api/sales/settings' && req.method === 'POST') {
+          json(res, 200, { settings: await saveCapacitySettings(db, await readJson(req, 2_000), user.name) });
+          return true;
+        }
+        m = p.match(/^\/hq\/api\/sales\/(rec[A-Za-z0-9]{14})\/contract$/) ?? p.match(/^\/hq\/api\/sales\/(rec[A-Za-z0-9]{14})\/contract\/create$/);
+        if (m) {
+          const create = p.endsWith('/create');
+          const now = Date.now();
+          const { deals } = await allDeals(needAt(), db, false, now, extras);
+          const deal = deals.find((d) => d.id === m![1] || d.salesRec === m![1] || d.agreements.some((a) => a.id === m![1]));
+          if (!deal) { json(res, 404, { error: 'no such deal' }); return true; }
+          if (!create && req.method === 'GET') { json(res, 200, await draftForm(db, deal, nyDay(now))); return true; }
+          if (!create && req.method === 'POST') { const r = await saveDraft(db, deal, await readJson(req, 20_000), user.name, nyDay(now)); json(res, r.status, r.body); return true; }
+          if (create && req.method === 'POST') { const b = await readJson(req, 2_000); const r = await createInDulcySign(needAt(), db, deal, Number(b.draftId), user.name, nyDay(now)); json(res, r.status, r.body); return true; }
+          json(res, 405, { error: 'method not allowed' }); return true;
+        }
+        // ---- end Batch 4a ----
         if (req.method !== 'GET') { json(res, 405, { error: 'method not allowed' }); return true; }
         if (p === '/hq/api/sales') {
-          json(res, 200, await salesView(needAt(), db, owner, { days: Number(url.searchParams.get('days')) === 90 ? 90 : 30, refresh: url.searchParams.get('refresh') === '1' }));
+          json(res, 200, await salesView(needAt(), db, owner, { days: Number(url.searchParams.get('days')) === 90 ? 90 : 30, refresh: url.searchParams.get('refresh') === '1', extras }));
           return true;
         }
         m = p.match(/^\/hq\/api\/sales\/(rec[A-Za-z0-9]{14})$/);
         if (m) {
-          const d = await dealDetail(needAt(), db, m[1], owner, cfg.airtableBaseId);
+          const d = await dealDetail(needAt(), db, m[1], owner, { extras });
           if (!d) json(res, 404, { error: 'no such deal' }); else json(res, 200, d);
           return true;
         }
@@ -537,14 +592,46 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         return true;
       }
 
+      // Batch 4b: Team board ("what everyone is working on"), chat like Slack (latest chat, archive),
+      // suggested questions per agent per day. All read-only except archive (HQ's own chat table).
+      if (p === '/hq/api/team/work' && req.method === 'GET') {
+        const visible = AGENT_NAMES.filter((x) => canTalkTo(user, x));
+        const q = (k: string) => url.searchParams.get(k) ?? '';
+        const agent = q('agent') ? agentByName(q('agent')) : null;
+        if (q('agent') && (!agent || !visible.includes(agent))) { json(res, 404, { error: 'no such agent' }); return true; }
+        const status = q('status') || 'all', due = q('due') || 'any';
+        if (!isBoardStatus(status) || !isBoardDue(due)) { json(res, 400, { error: 'status or due filter not known' }); return true; }
+        json(res, 200, await loadTeamBoard(db, owner, visible, { agent, client: q('client').slice(0, 120), status, due }));
+        return true;
+      }
+      if (p === '/hq/api/chat/latest' && req.method === 'GET') {
+        const a = agentByName(url.searchParams.get('agent') ?? 'Ada');
+        if (!a || !canTalkTo(user, a)) { json(res, 404, { error: 'no such agent' }); return true; }
+        json(res, 200, { agent: a, threadId: await latestThread(db, user, a) });
+        return true;
+      }
+      if (p === '/hq/api/chat/suggestions' && req.method === 'GET') {
+        const a = agentByName(url.searchParams.get('agent') ?? 'Ada');
+        if (!a || !canTalkTo(user, a)) { json(res, 404, { error: 'no such agent' }); return true; }
+        json(res, 200, await suggestQuestions(db, at, user, a));
+        return true;
+      }
+      m = p.match(/^\/hq\/api\/chat\/threads\/(\d+)\/archive$/);
+      if (m && req.method === 'POST') {
+        const b = await readJson(req, 1_000);
+        const ok = await archiveThread(db, user, Number(m[1]), b.archived !== false);
+        json(res, ok ? 200 : 404, ok ? { ok: true, archived: b.archived !== false } : { error: 'not found' });
+        return true;
+      }
+
       if (p === '/hq/api/chat/threads' && req.method === 'GET') {
         const a = url.searchParams.get('agent') ? agentByName(url.searchParams.get('agent')!) : null;
-        json(res, 200, { threads: await listThreads(db, user, a ?? undefined) });
+        json(res, 200, { threads: await listThreads(db, user, a ?? undefined, { archived: url.searchParams.get('archived') === '1' }) });
         return true;
       }
       m = p.match(/^\/hq\/api\/chat\/threads\/(\d+)$/);
       if (m && req.method === 'GET') {
-        const t = await readThread(db, user, Number(m[1]));
+        const t = await readThread(db, user, Number(m[1]), { open: true });
         if (!t) json(res, 404, { error: 'not found' }); else json(res, 200, { thread: t });
         return true;
       }

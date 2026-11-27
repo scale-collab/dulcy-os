@@ -26,6 +26,7 @@ import { clientKey, groupWorkspaces, noteFor, _resetClientsCache } from '../src/
 import { ACTIVITY, AF } from '../src/activity.js';
 import { addAsk, cleanActionUrl, type Ask } from '../src/hq/asks.js';
 import { aggregateNeeds } from '../src/hq/needs.js';
+import type { AgentTask } from '../src/hq/agentTasks.js';
 import type { DecisionCard } from '../src/hq/decisions.js';
 import { ISSUES, IF } from '../src/agents/riley.js';
 import { EF, SETTINGS } from '../src/agents/emailsFields.js';
@@ -582,7 +583,7 @@ test('chat: read-only tool, sources saved, history per agent', { skip }, async (
   await call('POST', '/hq/api/chat', { body: { message: 'Only one?', threadId: r.body.threadId }, cookie });
   assert.equal(modelCalls.at(-1)!.messages.length, 3);
   // A thread belongs to its agent.
-  assert.equal((await call('POST', '/hq/api/chat', { body: { agent: 'Atlas', message: 'hi', threadId: r.body.threadId }, cookie })).status, 404);
+  assert.equal((await call('POST', '/hq/api/chat', { body: { agent: 'Atlas', message: 'hi', threadId: r.body.threadId }, cookie })).status, 409, 'a chat belongs to its agent: never answered by another');
 });
 
 test('chat: Ada asks Atlas (saved as its own thread); cost guard stops the tool loop', { skip }, async () => {
@@ -686,6 +687,18 @@ function clientTables() {
     recCLFM0000000001: { Name: 'Lead Flo - Events', Client: ['recLFM00000000001'], 'Campaign Status': 'Inactive', 'Bounced %': 9, Progress: 1 },
     recCDUL0000000001: { Name: 'Dulcy - Agencies', Client: ['recDUL00000000001'], 'Campaign Status': 'Active', 'Bounced %': 1, Progress: 0.2, 'Emails Sent': 1000, Interested: 5 },
   };
+  const ov = (id: string, period: string, sent: number, int: number, mtg: number, upd = new Date().toISOString()) => ({ 'Client ID': id, 'Date Period': period, 'Emails Sent': sent, 'Unique Replies': Math.round(sent / 50), Interested: int, 'Meetings Booked': mtg, 'Updated At': upd });
+  tables.tblZkEi6qylqfOj9Z = {
+    recOV000000000001: ov('66', 'Last 30 days', 71893, 277, 11), recOV000000000002: ov('66', 'Last 10 days', 21455, 70, 1), recOV000000000003: ov('66', 'All time', 344601, 1037, 59),
+    recOV000000000004: ov('65', 'Last 30 days', 5000, 9, 3, d(70)), recOV000000000005: ov('65', 'All time', 74044, 108, 13, d(90)),
+  };
+  tables.tbljJ0uWryVMuilXn = {
+    recCF000000000001: { fldXNEJcG9LUnR73H: 'Qualified', fld1KGADNp3pX2mLi: 4, fldiZYJuFW6Sa4wN5: [66], fldKRdKwzeOHvYM7n: d(3) },
+    recCF000000000002: { fldXNEJcG9LUnR73H: 'No Show', fldiZYJuFW6Sa4wN5: [66], fldKRdKwzeOHvYM7n: d(4) },
+    recCF000000000003: { fldXNEJcG9LUnR73H: 'Qualified', fld1KGADNp3pX2mLi: 1, fldiZYJuFW6Sa4wN5: [80], fldKRdKwzeOHvYM7n: d(4) },
+  };
+  tables.tbljhM1JmUwr99tu4 = { recONB0000000001: { fld1AjmO7gSRAZTnw: 'Digital Growth Engine', fldKCtXxGgpSdXb2D: '$50k', fld30MCMI88q4c3VE: 'hunter2', fldRvFwsA7NtTwG1e: 'JBSWY3DP' } };
+  Object.assign(tables[WS_T].recTWMINT00000001, { 'Calls Booked KPI (from Onboarding)': ['15'], Onboarding: ['recONB0000000001'] });
   tables[DECISIONS] = { recSEANTWM0000001: decision({ [DF.client]: 'Client: Twenty West Media (Internal)' }) };
   tables[ACTIVITY] = {
     recACT00000000001: { [AF.event]: 'Atlas saw bounce 4.6%', [AF.when]: d(1), [AF.agent]: 'Atlas', [AF.type]: 'Detected', [AF.client]: ['recTWMINT00000001'] },
@@ -693,7 +706,7 @@ function clientTables() {
   };
 }
 
-test('clients API: active by default, the Twenty West pair counted once, numbers, notes, flags, cache', { skip }, async () => {
+test('clients API: active by default, the Twenty West pair counted once, health on the KPI, results, cache', { skip }, async () => {
   clientTables();
   assert.equal((await call('GET', '/hq/api/clients')).status, 401, 'needs a session');
   assert.equal((await call('GET', '/hq/api/clients/recTWMINT00000001')).status, 401, 'needs a session');
@@ -703,60 +716,74 @@ test('clients API: active by default, the Twenty West pair counted once, numbers
   const names = r.body.clients.map((c: any) => c.name);
   assert.deepEqual([...names].sort(), ['Brilliant Jewelers / MJJ Inc. (MJJ Brilliant)', 'Dulcy', 'Twenty West Media']);
   assert.deepEqual({ active: r.body.summary.active, internal: r.body.summary.internal, inactive: r.body.summary.inactive }, { active: 2, internal: 1, inactive: 1 });
-  assert.equal(r.body.clients[0].name, 'Twenty West Media', 'worst health first');
-  const twm = r.body.clients[0];
+  const twm = r.body.clients.find((c: any) => c.name === 'Twenty West Media');
   assert.equal(twm.id, 'recTWMINT00000001', 'the active record leads');
   assert.equal(twm.workspaces.length, 2);
-  assert.equal(twm.light, 'red');
   assert.deepEqual([twm.interested30, twm.booked30, twm.waitingApproval, twm.seanWaiting], [22, 1, 3, 1], 'both workspaces add up; only Needs Approval counts');
-  assert.deepEqual({ ...twm.money, feeNote: '' }, { fee: 2500, feeNote: '', ltv: 8985, ltvSource: 'actual', receivables: 4995, months: null });
-  assert.match(twm.money.feeNote, /\$2,500 is on the inactive record "Twenty West Media"/);
-  assert.equal(r.body.summary.mrr, 2500);
-  assert.match(twm.note[0], /^Bounce 4\.6% on TWM - Contractors/);
-  assert.match(twm.note[1], /^3 replies waiting for approval/);
-  const camp = twm.campaigns[0];
-  assert.deepEqual([camp.flag, camp.next, camp.planExists, camp.perThousand], ['pause', true, false, 5]);
+  assert.deepEqual([twm.kpi, twm.kpiSource], [15, 'onboarding form'], 'KPI from the onboarding answer');
+  assert.equal(twm.meetings30, 11, 'EmailBison (Email Analytics Overview) beats the Emails table: 11, not 1');
+  assert.deepEqual([twm.health, twm.healthLabel], ['at_risk', 'At risk'], '11 of 15 = 73% of pace');
+  assert.match(twm.insight.problem, /^Under KPI: 11 of 15 meetings/);
+  assert.equal(twm.results.emailsPerMeeting, Math.round(71893 / 11), 'emails per meeting');
+  assert.equal(twm.results.emailsPerPositive, Math.round(71893 / 277));
+  assert.equal(twm.results.sent, 71893, 'the stale old workspace row (stopped syncing) counts as nothing sent');
+  assert.deepEqual([twm.dealType, twm.type], ['retainer', 'Paying Client']);
+  assert.equal(twm.money.fee, 2995, 'Twenty West: $1,500 + $1,495 assets (contract on file), not $2,500 from the inactive record');
+  assert.equal(twm.money.invoicesSource, 'Airtable (Xero sync): open invoices, coming up', 'not "owes"');
+  assert.match(twm.money.feeNote, /Airtable Monthly Fee says \$2,500; the deal is \$2,995\/mo/);
+  assert.equal(r.body.summary.mrr, 2995 + 2000, 'MRR = Twenty West + MJJ (from the signed agreement)');
   const mjj = r.body.clients.find((c: any) => /MJJ/.test(c.name));
-  assert.equal(mjj.campaigns[0].flag, 'watch');
   assert.equal(mjj.waitingApproval, 1, 'matched by Bison workspace id');
-  assert.ok(mjj.dataIssues.some((x: string) => /Client Type is empty/.test(x)));
+  assert.deepEqual([mjj.type, mjj.typeSource], ['Paying Client', 'filled from the signed agreement 2026-10-06 (clients/mjj-brilliant.md)'], 'Atlas fills the client type from the contract');
+  assert.equal(mjj.health, 'unknown', 'no KPI on record = UNKNOWN');
   const dulcy = r.body.clients.find((c: any) => c.name === 'Dulcy');
   assert.equal(dulcy.internal, true);
   assert.equal(dulcy.workspaces.length, 2, 'Dulcy Free Campaigns folds into Dulcy');
   assert.equal(dulcy.booked30, 1);
-  assert.ok(!dulcy.reasons.some((x: string) => /fee/.test(x)), 'no fee nag for Dulcy itself');
+  assert.equal(dulcy.money, undefined, 'no money block for Dulcy itself');
+
+  const w10 = await call('GET', '/hq/api/clients?window=10', { cookie });
+  assert.equal(w10.body.clients.find((c: any) => c.name === 'Twenty West Media').results.meetings, 1, 'window filter');
 
   const all = await call('GET', '/hq/api/clients?all=1', { cookie });
   const lfm = all.body.clients.find((c: any) => c.name === 'Lead Flo Marketing');
-  assert.deepEqual([lfm.active, lfm.light, lfm.inactiveReason, lfm.campaigns.length, lfm.note.length], [false, 'inactive', 'Churned', 0, 0]);
+  assert.deepEqual([lfm.active, lfm.health, lfm.inactiveReason, lfm.campaigns.length, lfm.endDate], [false, 'inactive', 'Churned', 0, '2026-11-25']);
   assert.equal(all.body.clients.at(-1).name, 'Lead Flo Marketing', 'inactive last');
 
   // Cached for 5 minutes: a change shows only after the cache is cleared.
   await db.query(`INSERT INTO campaign_plans (trigger_key, ws_rec, client, state) VALUES ('next:recCTWM0000000001','recTWMINT00000001','Twenty West Media','planning')`);
-  assert.equal((await call('GET', '/hq/api/clients', { cookie })).body.clients[0].campaigns[0].planExists, false, 'cached');
+  const tw = async () => (await call('GET', '/hq/api/clients', { cookie })).body.clients.find((c: any) => c.name === 'Twenty West Media');
+  assert.equal((await tw()).campaigns[0].planExists, false, 'cached');
   _resetClientsCache();
-  assert.equal((await call('GET', '/hq/api/clients', { cookie })).body.clients[0].campaigns[0].planExists, true, 'plan found after the cache');
+  assert.equal((await tw()).campaigns[0].planExists, true, 'plan found after the cache');
 
   const d = await call('GET', '/hq/api/clients/recTWMOLD00000001', { cookie });
   assert.equal(d.status, 200);
   assert.equal(d.body.client.id, 'recTWMINT00000001', 'any workspace id of the client opens it');
   assert.deepEqual(d.body.activity.map((x: any) => x.event), ['Atlas saw bounce 4.6%']);
   assert.equal(d.body.decisions.length, 1);
+  assert.deepEqual(d.body.results.windows.map((x: any) => [x.window, x.meetings]), [['10', 1], ['30', 11], ['all', 72]], 'results over time');
+  assert.deepEqual([d.body.results.feedback.calls, d.body.results.feedback.qualified, d.body.results.feedback.avgStars], [2, 1, 4]);
+  assert.deepEqual(d.body.results.onboarding.answers.map((x: any) => x.label), ['What they sell', 'Their monthly revenue now'], 'whitelisted answers only');
+  assert.ok(!/hunter2|JBSWY3DP/.test(d.text), 'no onboarding logins, passwords or 2FA secrets ever');
+  assert.equal(d.body.client.money.ltvSource, 'deal');
   assert.equal((await call('GET', '/hq/api/clients/recNOPE0000000001', { cookie })).status, 404);
 });
 
-test('clients API: members get no money (fee, LTV, receivables, money reasons)', { skip }, async () => {
+test('clients API: members get no money (fee, LTV, invoices, deal values, onboarding money answers) and 403 on numbers/finance', { skip }, async () => {
   clientTables();
   await upsertUser(db, 'josh@dulcy.io', 'member', 'josh long password 1', 'Josh');
   const { cookie } = await login('josh@dulcy.io', 'josh long password 1');
   for (const p of ['/hq/api/clients?all=1', '/hq/api/clients/recTWMINT00000001']) {
     const r = await call('GET', p, { cookie });
     assert.equal(r.status, 200);
-    assert.ok(!/"money"|"mrr"|4995|4,995|8985|8,985|2500|2,500|\$/.test(r.text), `no money in ${p}: ${r.text.slice(0, 300)}`);
+    const hit = /"money"|"mrr"|"total"|"roi"|"value"|4995|4,995|8985|8,985|2500|2,500|2995|2,995|\$|monthly revenue/i.exec(r.text);
+    assert.equal(hit, null, `no money in ${p}: ${hit ? r.text.slice(Math.max(0, hit.index - 150), hit.index + 50) : ''}`);
   }
-  const twm = (await call('GET', '/hq/api/clients', { cookie })).body.clients[0];
-  assert.equal(twm.airtableReasons, 'Bounce high');
+  for (const p of ['/hq/api/clients/numbers?period=3m', '/hq/api/clients/finance']) assert.equal((await call('GET', p, { cookie })).status, 403, p);
+  const twm = (await call('GET', '/hq/api/clients', { cookie })).body.clients.find((c: any) => c.name === 'Twenty West Media');
   assert.equal(twm.interested30, 22, 'results are still there');
+  assert.equal(twm.dealType, 'retainer', 'the deal type (no amounts) is fine for members');
 });
 
 // ---------- Sign-up and users ----------
@@ -913,7 +940,13 @@ test('Google sign-up: a pending request, never a session; Google login refuses i
 const card = (over: Partial<DecisionCard> = {}): DecisionCard => ({ id: 'recD', title: 'Reply to Jane', agent: 'Echo', client: '', pile: 'Replies', status: 'New', isReply: true, issue: '', checked: '', fix: '', details: '', action: 'Approve Reply', created: '2026-11-25T05:00:00.000Z', threadUrl: '', latestMessage: '', canEdit: true, placeholders: [], ...over });
 const askRow = (over: Partial<Ask> = {}): Ask => ({ id: 1, agent: 'Atlas', title: 'Reply to Pete about Twenty West', why: 'He asked for the October numbers.', steps: '', actionLabel: '', actionUrl: '', priority: 'normal', audience: 'owner', dedupeKey: 'k', created: '2026-11-25T12:00:00.000Z', done: null, doneBy: null, snoozedUntil: null, ...over });
 
-test('needs: one item per pile (never per decision), Riley manual fixes, sign-ups, asks; Do now first', () => {
+const atask = (over: Partial<AgentTask> = {}): AgentTask => ({
+  id: 1, key: 'k', agent: 'Atlas', title: 'A task', due: null, status: 'in_progress', client: '', note: '', notes: '', link: null, priority: 'normal',
+  created: '2026-11-21T10:00:00.000Z', updated: '2026-11-25T10:00:00.000Z', done: null, jobKind: null, waitingUntil: null, decision: null, requeues: 0,
+  overdue: false, stalled: false, daysLate: 0, daysQuiet: 0, ...over,
+});
+
+test("needs = today's to-do (Batch 4b): ONE decisions line, campaigns to start, money with Ledger, check-ins, fixes, asks; Ada's order", () => {
   const decisions = [
     ...Array.from({ length: 105 }, (_, i) => card({ id: `recR${String(i).padStart(13, '0')}`, created: new Date(Date.parse('2026-11-25T06:00:00.000Z') + i * 60_000).toISOString() })),
     card({ id: 'recCAMP0000000001', agent: 'Atlas', pile: 'Campaigns', title: 'Bounce 4.6% on Fleet Ops', isReply: false }),
@@ -929,41 +962,71 @@ test('needs: one item per pile (never per decision), Riley manual fixes, sign-up
     askRow({ id: 3, title: 'Done one', done: '2026-11-25T10:00:00.000Z' }),
     askRow({ id: 4, title: 'Snoozed one', snoozedUntil: '2026-11-26T15:00:00.000Z' }),
     askRow({ id: 5, title: 'Snooze ended', snoozedUntil: '2026-11-25T14:00:00.000Z' }),
+    askRow({ id: 6, title: 'Airtable link', actionUrl: 'https://airtable.com/appX/tblY/recZ', actionLabel: 'Open in Airtable' }),
+  ];
+  const tasks = [
+    atask({ id: 1, key: 'plan-next:recC1', title: 'Plan next campaign for GMG', client: 'GMG', status: 'open', overdue: true, daysLate: 1 }),
+    atask({ id: 2, key: 'plan-next:recC2', title: 'Plan next campaign for Twenty West', client: 'Twenty West', status: 'open' }),
+    atask({ id: 3, agent: 'Riley', key: 'bounce:x', title: 'Bounce check: TW', stalled: true, daysQuiet: 3, updated: '2026-11-22T10:00:00.000Z' }),
+    atask({ id: 4, agent: 'Echo', key: 'e', title: 'Tidy the reply rules', overdue: true, daysLate: 2, due: '2026-11-23' }),
+    atask({ id: 5, agent: 'Ledger', key: 'l', title: 'Reconcile November', overdue: true, daysLate: 1 }),
+    atask({ id: 6, agent: 'Atlas', key: 'w', title: 'New campaign for MJJ', status: 'waiting_alex', link: 'decisions/Campaigns', overdue: true }),
+  ];
+  const failed = [
+    { agent: 'Riley', fails: [{ kind: 'riley.watch', at: '2026-11-25T12:00:00.000Z', error: 'n8n said 500. Retry later.' }] },
+    { agent: 'Ledger', fails: [{ kind: 'ledger.check', at: '2026-11-25T11:00:00.000Z', error: 'Xero token expired.' }] },
   ];
   const now = Date.parse('2026-11-25T15:00:00.000Z');
-  const items = aggregateNeeds({ owner: true, decisions, issues, signups: 1, asks, now });
-  const keys = items.map((i) => i.key);
-  assert.deepEqual(keys.filter((k) => k.startsWith('pile:')).sort(), ['pile:Campaigns', 'pile:Content', 'pile:Fixes', 'pile:Money', 'pile:Replies']);
-  const replies = items.find((i) => i.key === 'pile:Replies')!;
-  assert.deepEqual([replies.agent, replies.title, replies.count, replies.group, replies.action], ['Echo', '105 replies waiting for your OK', 105, 'now', { label: 'Open Replies', href: 'decisions/Replies' }]);
-  assert.match(replies.why, /Oldest 9 h ago/);
-  assert.equal(items.find((i) => i.key === 'pile:Fixes')!.count, 1, "the manual fix's decision is covered by the issue card");
+  const items = aggregateNeeds({ owner: true, decisions, issues, signups: 1, asks, tasks, failed, now });
+  assert.deepEqual(items.map((i) => i.key), [
+    'decisions', 'campaigns', 'ask:2', 'money', 'issue:recISSUE000000001', 'checkin:failed:Ledger', 'checkin:failed:Riley',
+    'checkin:late:Ledger', 'checkin:late:Echo', 'checkin:late:Riley', 'ask:1', 'ask:5', 'ask:6', 'signups',
+  ], "Ada's order: importance, then Do now, then money / client-facing, then the oldest");
+  const d = items[0];
+  assert.deepEqual([d.agent, d.title, d.count, d.group, d.action], ['Ada', '108 decisions waiting (oldest 10 h old)', 108, 'now', { label: 'Open Decisions', href: 'decisions/Replies' }],
+    'ONE line for every pile (never per decision or pile); the manual fix is on its issue card; money is on the Ledger item');
+  assert.equal(d.todo, 'Open Decisions and clear them, replies first.');
+  assert.match(d.why, /^105 prospects are waiting on an answer/);
+  const c = items.find((i) => i.key === 'campaigns')!;
+  assert.deepEqual([c.agent, c.title, c.count, c.group, c.clientFacing], ['Atlas', 'Check with Atlas: 2 campaigns past 60% have no next campaign', 2, 'now', true]);
+  assert.match(c.todo!, /GMG and Twenty West/);
+  assert.match(c.action!.href, /^chat\/Atlas\?ask=/);
+  assert.match(decodeURIComponent(c.action!.href.split('ask=')[1]), /GMG and Twenty West/);
+  const m = items.find((i) => i.key === 'money')!;
+  assert.deepEqual([m.agent, m.title, m.money, m.action?.href], ['Ledger', '1 money decision waiting with Ledger', true, 'decisions/Money']);
+  const late = items.find((i) => i.key === 'checkin:late:Echo')!;
+  assert.deepEqual([late.title, late.why, late.action?.label, late.link?.href], ['Check with Echo: 1 task late', 'Tidy the reply rules (2 d overdue).', 'Ask for an update', 'agents/Echo']);
+  assert.match(items.find((i) => i.key === 'checkin:late:Riley')!.title, /1 task stuck/);
+  assert.equal(items.find((i) => i.key === 'checkin:failed:Riley')!.why, 'n8n said 500.');
+  assert.ok(!items.some((i) => i.key === 'task:6'), 'a task behind a Decision is in the decisions line, not twice');
+  assert.equal(items.find((i) => i.key === 'ask:6')!.action, null, 'no Open in Airtable links');
   const issue = items.find((i) => i.key === 'issue:recISSUE000000001')!;
   assert.deepEqual([issue.agent, issue.title, issue.why, issue.action, issue.link?.href, issue.canDone, issue.canSnooze], ['Riley', 'EmailBison key expired', 'The API key was rotated on Nov 24.', null, 'decisions/Fixes', false, true]);
   assert.match(issue.steps, /Copy the new key/);
+  assert.ok(items.every((i) => i.title && (i.why || i.kind === 'ask') && (i.action || i.steps || i.canDone)), 'every item: problem, why, one action (a link, its steps, or Done)');
+  assert.ok(items.every((i) => i.todo), 'every item says what to do');
   assert.equal(items.find((i) => i.key === 'signups')!.action?.href, 'users');
-  assert.deepEqual(keys.filter((k) => k.startsWith('ask:')).sort(), ['ask:1', 'ask:2', 'ask:5'], 'done and snoozed asks are gone; an ended snooze is back');
   assert.equal(items.find((i) => i.key === 'ask:2')!.icon, 'sparkles', 'a label, not an agent, gets an icon');
-  // Order: every "now" before every "later"; inside, client-facing first, then the oldest (Alex 2026-11-25):
-  // the Campaigns pile (oldest 05:00) before Replies (oldest 06:00), both before Riley's issue.
-  assert.deepEqual(keys.slice(0, 2), ['pile:Campaigns', 'pile:Replies']);
-  assert.ok(keys.indexOf('issue:recISSUE000000001') > keys.indexOf('pile:Replies'));
-  const groups = items.map((i) => i.group);
-  assert.deepEqual(groups, [...groups].sort((a, b) => (a === b ? 0 : a === 'now' ? -1 : 1)));
-  assert.equal(items.find((i) => i.key === 'ask:1')!.group, 'later');
-  assert.equal(items.find((i) => i.key === 'ask:2')!.group, 'now');
-  // Resolved = gone: no decisions, no issues, no asks.
+  // Resolved = gone.
   assert.deepEqual(aggregateNeeds({ owner: true, decisions: [], issues: [], signups: 0, asks: [], now }), []);
-  // "Not now" on the issue.
   assert.ok(!aggregateNeeds({ owner: true, decisions, issues, signups: 0, asks: [], now, quiet: new Set(['issue:recISSUE000000001']) }).some((i) => i.kind === 'issue'));
 });
 
-test('needs: a member gets only the piles they can act on; no money, content, Riley manual fixes or sign-ups', () => {
+test("needs: a member (Josh) gets their own to-do: their decisions, their asks, Echo's check-ins; never money or owner-only agents", () => {
   const decisions = [card(), card({ id: 'recMONEY000000001', agent: 'Ledger', pile: 'Money' }), card({ id: 'recSIENNA00000001', agent: 'Sienna', pile: 'Content' })];
   const issues = [{ id: 'recISSUE000000001', title: 'Key expired', why: '', fix: '', decision: '', seen: '' }];
   const asks = [askRow({ id: 1 }), askRow({ id: 2, audience: 'everyone', title: 'For Josh' }), askRow({ id: 3, agent: 'Ledger', audience: 'everyone', title: 'Money ask' })];
-  const items = aggregateNeeds({ owner: false, decisions, issues, signups: 3, asks });
-  assert.deepEqual(items.map((i) => i.key), ['pile:Replies', 'ask:2']);
+  const tasks = [
+    atask({ id: 1, key: 'plan-next:recC1', title: 'Plan next campaign for GMG', client: 'GMG', status: 'open' }),
+    atask({ id: 2, agent: 'Echo', key: 'e', title: 'Tidy the reply rules', overdue: true, daysLate: 2 }),
+    atask({ id: 3, agent: 'Riley', key: 'r', title: 'Bounce check', overdue: true, daysLate: 2 }),
+    atask({ id: 4, agent: 'Ledger', key: 'l', title: 'Reconcile', overdue: true, daysLate: 2 }),
+  ];
+  const failed = [{ agent: 'Echo', fails: [{ kind: 'sean.reply', at: '2026-11-25T12:00:00.000Z', error: 'Model timed out.' }] }, { agent: 'Ledger', fails: [{ kind: 'ledger.check', at: '2026-11-25T12:00:00.000Z', error: 'x' }] }];
+  const items = aggregateNeeds({ owner: false, decisions, issues, signups: 3, asks, tasks, failed, now: Date.parse('2026-11-25T15:00:00.000Z') });
+  assert.deepEqual(items.map((i) => i.key), ['decisions', 'checkin:failed:Echo', 'checkin:late:Echo', 'ask:2']);
+  assert.equal(items[0].count, 1, 'only the pile Josh can act on');
+  assert.ok(!JSON.stringify(items).match(/Ledger|Sienna|Money|money decision|Key expired|sign-up/), 'nothing owner-only in a member to-do');
 });
 
 test('needs API: owner and member views, Riley issues from System Issues, Today shows the top 3', { skip }, async () => {
@@ -985,23 +1048,25 @@ test('needs API: owner and member views, Riley issues from System Issues, Today 
   const r = await call('GET', '/hq/api/needs', { cookie });
   assert.equal(r.status, 200);
   const keys = r.body.items.map((i: any) => i.key);
-  assert.deepEqual([...keys].sort(), ['ask:1', 'ask:2', 'issue:recISSUE000000001', 'pile:Money', 'pile:Replies', 'signups']);
-  assert.equal(r.body.items.find((i: any) => i.key === 'pile:Replies').title, '2 replies waiting for your OK');
+  assert.deepEqual(keys, ['decisions', 'ask:2', 'money', 'issue:recISSUE000000001', 'ask:1', 'signups']);
+  assert.match(r.body.items[0].title, /^2 decisions waiting/);
+  assert.equal(r.body.items[0].todo, 'Open Decisions and clear them, replies first.');
   assert.equal(r.body.items.find((i: any) => i.key === 'ask:1').action.href, 'clients', 'stored as a relative HQ route');
   assert.equal(r.body.items.find((i: any) => i.key === 'ask:1').agent, 'Atlas');
   assert.deepEqual(r.body.counts, { total: 6, now: 4, later: 2 });
   assert.deepEqual(r.body.errors, []);
   const t = await call('GET', '/hq/api/today', { cookie });
   assert.equal(t.body.needs.top.length, 3);
-  assert.equal(t.body.needs.top[0].key, 'pile:Replies');
+  assert.equal(t.body.needs.top[0].key, 'decisions');
   assert.equal(t.body.needs.counts.total, 6);
   assert.equal(t.body.tasks, undefined, 'Today no longer reads the Airtable to-do');
 
   await upsertUser(db, 'josh@dulcy.io', 'member', 'josh long password 1', 'Josh');
   const j = await login('josh@dulcy.io', 'josh long password 1');
   const mr = await call('GET', '/hq/api/needs', { cookie: j.cookie });
-  assert.deepEqual(mr.body.items.map((i: any) => i.key).sort(), ['ask:2', 'pile:Replies']);
+  assert.deepEqual(mr.body.items.map((i: any) => i.key), ['decisions', 'ask:2']);
   assert.ok(!JSON.stringify(mr.body).includes('Xero'), 'nothing of the owner-only items in the answer');
+  assert.ok(!JSON.stringify(mr.body).includes('Ledger'), 'no Ledger in a member answer');
   assert.equal((await call('POST', '/hq/api/asks/1/done', { body: {}, cookie: j.cookie })).status, 404, "a member cannot touch the owner's ask");
   assert.equal((await call('POST', '/hq/api/needs/issue/recISSUE000000001/snooze', { body: { until: 'tomorrow' }, cookie: j.cookie })).status, 404);
   assert.equal((await call('GET', '/hq/api/asks', { cookie: j.cookie })).body.asks.length, 1);

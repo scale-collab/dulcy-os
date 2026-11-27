@@ -256,3 +256,6 @@ Source caveats:
   quote was not pinned down in every case (marked S25/S26/S27).
 - X post dates are inferred from snippet metadata and may be off.
 - None of these sources was contacted, and nothing was signed up for.
+
+## 2026-11-27 (first weekly run; recovered from the run report, item URLs were not saved because the run could not push. Video transcripts were blocked, so these come from descriptions and public posts.)
+- Stefan Conic (LinkedIn): **track every reply through to meeting, show and close**; one client lost 87 of 100 interested replies by not doing this. Evidence: single creator claim. Do: Echo keeps every interested thread open until it is booked or closed (already Echo's follow-up plan); HQ Sales/Clients show interested → booked → showed.
