@@ -16,6 +16,7 @@ import { createAirtableClient, type AirtableClient } from '../providers/airtable
 import { val } from './emailsFields.js';
 import { logActivity } from '../activity.js';
 import { saveReport } from '../hq/reports.js';
+import { maskEmail } from '../verify/rules.js';
 
 export const ISSUES = 'tblZvXQongRlV0vsl';
 export const IF = {
@@ -53,6 +54,31 @@ export async function engineProblems(db: Db, since: Date): Promise<Found[]> {
   });
 }
 
+
+/**
+ * What came into a failed n8n run, so Riley can see which lead/reply it was without opening n8n
+ * (Alex 2026-11-27: "why can't she open the node and check herself?"). From the trigger node's
+ * first item: up to 25 short "path: value" lines; emails masked; anything key/token/secret/password dropped.
+ */
+export function executionInput(x: any): string[] {
+  const run = x?.data?.resultData?.runData ?? {};
+  const first = Object.values(run)[0] as any;
+  const item = first?.[0]?.data?.main?.[0]?.[0]?.json;
+  if (!item || typeof item !== 'object') return [];
+  const out: string[] = [];
+  const walk = (v: any, path: string, depth: number) => {
+    if (out.length >= 25) return;
+    if (/key|token|secret|password|auth|cookie|signature/i.test(path)) return;
+    if (v && typeof v === 'object' && depth < 4) { for (const [k, c] of Object.entries(v).slice(0, 30)) walk(c, path ? `${path}.${k}` : k, depth + 1); return; }
+    if (v === null || v === undefined || v === '' || typeof v === 'object') return;
+    let t = String(v).replace(/\s+/g, ' ');
+    t = t.replace(/[^\s@<>"']+@[^\s@<>"']+\.[a-z]{2,}/gi, (m) => maskEmail(m));
+    out.push(`${path}: ${t.slice(0, 120)}`);
+  };
+  walk(item, '', 0);
+  return out;
+}
+
 /** n8n executions that errored since `since` (n8n public API; needs N8N_API_KEY). */
 export async function n8nProblems(base: string, key: string, since: Date, fetchImpl: typeof fetch = fetch): Promise<Found[]> {
   const out: Found[] = [];
@@ -61,17 +87,38 @@ export async function n8nProblems(base: string, key: string, since: Date, fetchI
   if (!r.ok) throw new Error(`n8n executions: HTTP ${r.status}`);
   const list = ((await r.json()) as { data?: any[] }).data ?? [];
   for (const e of list.filter((x) => new Date(x.stoppedAt ?? x.startedAt ?? 0) > since).slice(0, 20)) {
-    let msg = 'error (no message)'; let node = '';
+    let msg = 'error (no message)'; let node = ''; let input: string[] = [];
     try {
       const d = await fetchImpl(`${base.replace(/\/+$/, '')}/api/v1/executions/${e.id}?includeData=true`, { headers: h, signal: AbortSignal.timeout(30_000) });
       const x = (await d.json()) as any; const err = x?.data?.resultData?.error;
-      msg = String(err?.message ?? msg).slice(0, 1500); node = String(x?.data?.resultData?.lastNodeExecuted ?? err?.node?.name ?? '');
+      msg = String(err?.message ?? msg).slice(0, 1500); node = String(x?.data?.resultData?.lastNodeExecuted ?? err?.node?.name ?? ''); input = executionInput(x);
     } catch { /* keep the short form */ }
     const wf = String(e.workflowData?.name ?? e.workflowId);
     out.push({ source: 'n8n', where: `${wf}${node ? ` › ${node}` : ''}`, title: `n8n: ${wf} failed${node ? ` at ${node}` : ''}`, error: msg,
-      details: { workflowId: e.workflowId, executionIds: [String(e.id)], node }, key: `n8n:${e.id}`, at: new Date(e.stoppedAt ?? e.startedAt).toISOString() });
+      details: { workflowId: e.workflowId, executionIds: [String(e.id)], node, ...(input.length ? { input } : {}) }, key: `n8n:${e.id}`, at: new Date(e.stoppedAt ?? e.startedAt).toISOString() });
   }
   return out;
+}
+
+
+/** Open n8n issues with an execution but no input yet (e.g. ones Riley logged herself): read the run once and attach it. */
+export async function enrichOpenN8nIssues(at: Pick<AirtableClient, 'list' | 'update'>, base: string, key: string, fetchImpl: typeof fetch = fetch): Promise<number> {
+  const rows = await at.list(ISSUES, `AND({Source}='n8n', OR({Status}='New', {Status}='Waiting for Alex', {Status}='Approved'))`, [IF.details, IF.error, IF.fixRef], 30);
+  let n = 0;
+  for (const r of rows) {
+    let d: any = {}; try { d = JSON.parse(val(r.fields[IF.details]) || '{}'); } catch { d = { note: val(r.fields[IF.details]) }; }
+    if (d.input) continue;
+    const id = (d.executionIds ?? [])[0] ?? (/execution[s]?\s*#?(\d{5,})/i.exec(`${val(r.fields[IF.error])} ${val(r.fields[IF.fixRef])} ${val(r.fields[IF.details])}`)?.[1]);
+    if (!id) continue;
+    try {
+      const res = await fetchImpl(`${base.replace(/\/+$/, '')}/api/v1/executions/${id}?includeData=true`, { headers: { 'X-N8N-API-KEY': key, accept: 'application/json' }, signal: AbortSignal.timeout(30_000) });
+      if (!res.ok) { d.input = [`execution ${id} not readable (HTTP ${res.status}; n8n keeps runs 7 days)`]; }
+      else { const x = await res.json(); d.input = executionInput(x); d.node = d.node || String((x as any)?.data?.resultData?.lastNodeExecuted ?? ''); if (!d.input.length) d.input = [`execution ${id}: no trigger data`]; }
+      d.executionIds = [...new Set([...(d.executionIds ?? []), String(id)])];
+      await at.update(ISSUES, r.id, { [IF.details]: JSON.stringify(d).slice(0, 20_000) }); n++;
+    } catch { /* try again next sweep */ }
+  }
+  return n;
 }
 
 /** Add or update the System Issues rows. Returns how many new issues were opened (or reopened). */
@@ -108,6 +155,7 @@ export const rileyCollectStage: Stage = async (ctx) => {
   let n8nNote = '';
   if (cfg.n8nApiKey) { try { found.push(...await n8nProblems(cfg.n8nBaseUrl, cfg.n8nApiKey, since)); } catch (e) { n8nNote = ` (n8n not read: ${(e as Error).message})`; } }
   if (ctx.dryRun) return { message: `Would log ${found.length} problem(s) to System Issues (dry run)${n8nNote}` };
+  if (cfg.n8nApiKey) { try { const e = await enrichOpenN8nIssues(at, cfg.n8nBaseUrl, cfg.n8nApiKey); if (e) n8nNote += ` (${e} open n8n issue(s): run input attached)`; } catch { /* next sweep */ } }
   const r = found.length ? await upsertIssues(at, found) : { opened: [], repeated: 0 };
   if (r.opened.length) await saveReport(ctx.db, { agent: 'Riley', kind: 'system_issues', title: `Riley: ${r.opened.length} new system issue${r.opened.length === 1 ? '' : 's'}`,
     summary: r.opened.slice(0, 2).join(' · '), body: `${r.opened.map((x) => `• ${x}`).join('\n')}\n\nRiley prepares a fix for each one and asks you in Decisions (Fixes).${r.repeated ? `\n${r.repeated} repeat(s) of known issues.` : ''}`,

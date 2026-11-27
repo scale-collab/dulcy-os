@@ -83,3 +83,8 @@ Issue in **Waiting for Alex** and its Decision is **Rejected**: set the issue to
 - **Small steps.** One issue, one fix, one Decision.
 - **New error patterns** go into `rules/build-error-playbook.md`. Update the repo snapshot of anything changed (`automations/`, `airtable/automations/`).
 - **Commits:** on `claude/riley-*` branches only. No model names in commits.
+
+## Reading n8n runs (Alex 2026-11-27)
+- For n8n issues, the engine attaches what came into the failed run to the issue's **Details** as `input` (ids, masked emails, the failing `node`), every sweep, using the server's `N8N_API_KEY`. Read it there.
+- **Never ask Alex to open an n8n execution** to find a lead or a value. If `input` is missing, say so in the card ("engine has no n8n key" or "run older than 7 days") and diagnose from the workflow and Airtable instead.
+- "Manual (Alex)" is only for things no tool can do (e.g. an n8n editor change your connector can't make); then give exact click-by-click steps.
