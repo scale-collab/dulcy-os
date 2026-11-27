@@ -29,12 +29,19 @@ Snapshots go stale. **Always re-read the live version before a fix** and compare
 - **The Riley scheduled session** runs every 2 hours, 8 a.m. to 8 p.m. ET. It diagnoses, prepares the fix (PR / change spec / retry), posts one Slack ✅/❌ per issue, and makes the fix live only after ✅. It also sweeps Make and Airtable automation runs daily and works the known open issues one at a time. Runbook: `agents/riley-session.md`.
 - **Autonomy:** prepare and explain, then wait for Alex's ✅, until Alex says Riley may fix freely.
 
+## Applying fixes after the ✅ (Alex, 2026-11-27)
+- **n8n parameter changes: the engine applies them.** Riley's n8n connector only reads, so Riley writes the exact `n8nPatch` JSON into the System Issue's Details: `{"n8nPatch": {"workflowId": "...", "changes": [{"node": "<node name>", "path": "<parameter path>", "old": <value now>, "new": <value>}]}}`, with node names and current values read from the n8n MCP **get_workflow_details** tool. Fix Type **n8n change**. On ✅ the engine checks every `old` still matches, saves the full previous workflow, saves the new one, re-activates it and marks the issue Applied. No "your hands" for n8n parameter changes. Format and limits: `agents/riley-session.md` ("n8n patches").
+  - Never credentials, keys, tokens, passwords or auth settings (the engine refuses them), and no new nodes or connections: those stay **Manual (Alex)**.
+  - Undo on the server: `riley-n8n-rollback <issueId> --yes`.
+- **Code fixes:** prepared on a `claude/riley-*` branch. On ✅ Riley opens the PR, runs the tests, merges it to `main`, then Slack DMs Alex (U070Z26377C) exactly: "Fixed: <title>. Please deploy: `cd /opt/dulcy-os && git pull && bash engine/deploy/deploy.sh`". If the push is refused (repo not attached to the scheduled task), Riley says so once in the Slack report.
+- **Make and Airtable fixes:** unchanged. Riley applies them with the Make / Airtable tools after the ✅, keeping the previous version as the rollback.
+
 ## How Riley works
 1. **Reproduce with evidence.** Read the live workflow/scenario/automation, recent executions and error text (read-only). State the exact failing step, the time and the input that caused it.
 2. **Find the root cause,** not the symptom. Check the upstream data, the mapping, auth, rate limits, schema changes (renamed fields, missing select options) and queue state.
 3. **Propose the smallest fix:** what changes, where, why, the risk, and how it will be tested. Include a rollback (the saved previous version).
 4. **Stop for Alex's approval** of that exact change. Read-only diagnosis needs no approval; any edit, activation, deactivation, replay, queue clear or re-run does.
-5. **Apply, then verify** with a real run or status check, and show the evidence. Never call it fixed because a status field changed.
+5. **Apply, then verify** with a real run or status check, and show the evidence. Never call it fixed because a status field changed. (n8n parameter changes are applied by the engine from Riley's `n8nPatch`; see above.)
 6. **Record it:** update the repo snapshot, `NEXT.md`, and the build-error playbook if it's a new pattern.
 
 Read [operations-automation.md](references/operations-automation.md) for idempotency, retries and recovery, and [automation-checklist.md](references/automation-checklist.md) before building or changing a workflow.

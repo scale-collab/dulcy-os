@@ -176,6 +176,11 @@ Format: `- [date] rule. (why / source)`
 - For each problem he posts in Slack: why it happens, the prepared fix (a PR, an exact change spec or a retry) and the rollback. **Nothing goes live until Alex's ✅.** This holds until Alex says Riley may fix freely.
 - Read-only checks need no approval. A ✅ on a Retry re-runs the failed engine job. Other fixes are made live by Riley's next scheduled run, then verified.
 - **Reason:** Alex wants the fixes ready for him, and to approve them until he trusts Riley to fix freely.
+- **2026-11-27 (Alex): after the ✅ Riley finishes the fix end to end.**
+  - **n8n:** Riley writes the exact `n8nPatch` (workflow, node, parameter, old → new) on the System Issue; the engine applies it through the n8n API on Alex's ✅ (checks old values, saves the full previous workflow, re-activates). Never credentials/keys/tokens/passwords. Live with `riley.n8n_apply` in `LIVE_STAGES`. Undo: `riley-n8n-rollback <issueId> --yes`. No more "your hands" for n8n parameter changes.
+  - **Code:** on ✅ Riley opens the PR from his `claude/riley-*` branch, runs the tests, merges to `main` and DMs Alex exactly "Fixed: <title>. Please deploy: `cd /opt/dulcy-os && git pull && bash engine/deploy/deploy.sh`". If the push is refused, he says so once in his Slack report.
+  - **Make / Airtable:** unchanged (Riley applies them with his tools after the ✅).
+  - **Why:** Alex wants n8n fixed end to end after he presses Approve, and only a "please deploy" ping for code.
 
 ## Campaign creation, last step: client approval → live (Alex, 2026-11-25)
 - **Inboxes:** Atlas gives a new campaign the client's free healthy inboxes: Healthy or ungraded, connected, not resting or being replaced, warmup 70+ when scored, and not sending in another Active or Uploaded campaign. If none are free, Atlas asks Alex (Daily Run / Slack) and builds as soon as he picks them in Campaign Center.
