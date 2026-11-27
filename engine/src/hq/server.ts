@@ -292,7 +292,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       // "View as member" (Batch 1, 2026-11-27): the owner's request handled as a member's. Downgrade
       // only (auth.ts viewAs) and read only: every write is refused while viewing.
       const { user, viewing } = viewAs(signedIn, req.headers[VIEW_HEADER]);
-      if (viewing && write) { json(res, 403, { error: 'Viewing as a member is read only. Exit "View as member" to make changes.', viewing: true }); return true; }
+      if (viewing && write) { json(res, 403, { error: 'Read only while you view as someone else. Press Exit in the top bar to make changes.', viewing: true }); return true; }
       if (!clientMayCall(user, p)) { json(res, 403, { error: CLIENT_REFUSED, portal: true }); return true; }
       if (onPortalHost && user.role !== 'client') { json(res, 403, { error: 'Dulcy team logins sign in at HQ.', redirect: `${cfg.hqPublicUrl}/` }); return true; }
       if (PUBLIC.has(p)) { json(res, 405, { error: 'method not allowed' }); return true; }

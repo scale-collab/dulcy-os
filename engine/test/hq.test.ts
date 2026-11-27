@@ -388,7 +388,7 @@ test('view as member: owner only, downgrade only, read only; money and owner scr
   // Read only: every write is refused, nothing written.
   const w = await call('POST', '/hq/api/decisions/recREPLY000000001', { body: { verdict: 'approve' }, cookie, headers: view });
   assert.equal(w.status, 403);
-  assert.match(w.body.error, /read only/);
+  assert.match(w.body.error, /read only/i);
   assert.equal((await call('POST', '/hq/api/fix-it', { body: { agent: 'Riley', title: 'x' }, cookie, headers: view })).status, 403);
   assert.equal(writes.length, 0);
   // A member sending "owner" (or anything) is still a member.

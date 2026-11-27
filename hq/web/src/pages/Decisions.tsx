@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, type Client, type Decision, type Pile, type User } from '../api';
 import { ClientPicker, rememberedClient, type ClientOption } from '../clientPicker';
 import { findPlaceholders } from '../placeholders';
-import { Avatar, BackLink, Button, Card, clientKey, cx, Empty, ErrorBox, ExtLink, go, Icon, Kbd, Label, Marked, PageSkeleton, PageTitle, Pill, Progress, setCount, showToast, timeAgo } from '../ui';
+import { Avatar, BackLink, Button, Card, clientKey, cx, Empty, ErrorBox, ExtLink, go, Icon, IconButton, Kbd, Label, Marked, PageSkeleton, PageTitle, Pill, Progress, setCount, showToast, timeAgo } from '../ui';
 
 // The piles (Alex, 2026-11-27): no "Other". Money and Content are owner-only (the server leaves them out for members).
 const PILES: { key: Pile; who: string; icon: string }[] = [
@@ -26,14 +26,17 @@ const noAirtable = (s: string) => s.split('\n').filter((l) => !/airtable\.com\//
 export default function Decisions({ user: _user, pile, client }: { user: User; pile?: string; client?: string }) {
   const [data, setData] = useState<{ piles: Record<string, Decision[]>; order: Pile[] } | null>(null);
   const [error, setError] = useState('');
+  // handled = decided in this deck (for the progress bar); later = put off, in the order they went to the back.
   const [handled, setHandled] = useState<string[]>([]);
+  const [later, setLater] = useState<string[]>([]);
+  const [cursor, setCursor] = useState(0);
   const [decided, setDecided] = useState<string[]>([]);
   const [stats, setStats] = useState({ approved: 0, rejected: 0, skipped: 0 });
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [pick, setPick] = useState(() => rememberedClient('decisions', client));
   const load = useCallback(() => { setError(''); api<{ piles: Record<string, Decision[]>; order: Pile[] }>('/decisions').then((x) => { setData(x); setDecided([]); }).catch((e) => setError(e.message)); }, []);
   useEffect(load, [load]);
-  useEffect(() => { setHandled([]); setStats({ approved: 0, rejected: 0, skipped: 0 }); }, [pile, client]);
+  useEffect(() => { setHandled([]); setLater([]); setCursor(0); setStats({ approved: 0, rejected: 0, skipped: 0 }); }, [pile, client]);
   // The client dropdown: active clients only (the Clients API answers active ones).
   useEffect(() => { api<{ clients: Client[] }>('/clients').then((r) => setClients(r.clients.filter((c) => c.active).map((c) => ({ key: c.key, name: c.name })))).catch(() => setClients([])); }, []);
   useEffect(() => { if (pile) setPick(client ?? ''); }, [pile, client]);
@@ -100,10 +103,15 @@ export default function Decisions({ user: _user, pile, client }: { user: User; p
   // decisions/<pile>/<client key>: only that client's cards.
   const inDeck = (deck === 'all' ? data.order.flatMap((p) => data.piles[p] ?? []) : data.piles[deck] ?? []).filter((d) => mine(d, client ?? ''));
   const source = focus ? [focus, ...inDeck.filter((d) => d.id !== focus.id)] : inDeck;
-  const queue = source.filter((d) => !handled.includes(d.id) && !(decided.includes(d.id)));
+  // The queue: cards not decided yet, in pile order; "Later" ones go to the back (in the order put off).
+  const open = source.filter((d) => !handled.includes(d.id) && !decided.includes(d.id));
+  const queue = [...open.filter((d) => !later.includes(d.id)), ...later.map((id) => open.find((d) => d.id === id)).filter((d): d is Decision => !!d)];
   const total = source.filter((d) => !decided.includes(d.id) || handled.includes(d.id)).length;
   const done = total - queue.length;
-  const current = queue[0];
+  const at = queue.length ? Math.min(cursor, queue.length - 1) : 0;
+  const current = queue[at];
+  // ← → move between cards without deciding (Alex, 2026-11-27).
+  const move = (step: number) => setCursor(queue.length ? (at + step + queue.length) % queue.length : 0);
   const clientName = client ? options.find((o) => o.key === client)?.name || source[0]?.client || client : '';
   const title = `${deck === 'all' ? 'All decisions' : deck}${client ? ` · ${clientName}` : ''}`;
   const back = <BackLink label="Piles" onClick={() => go('decisions')} />;
@@ -135,11 +143,19 @@ export default function Decisions({ user: _user, pile, client }: { user: User; p
   }
 
   const leave = (id: string, kind: Outcome) => {
-    setHandled((h) => [...h, id]);
-    if (kind !== 'skipped') setDecided((x) => [...x, id]);
+    if (kind === 'skipped') {
+      // Later: to the back of the queue; the next card takes this place (the last one wraps to the first).
+      setLater((l) => [...l.filter((x) => x !== id), id]);
+      if (at >= queue.length - 1) setCursor(0);
+    } else {
+      setHandled((h) => [...h, id]);
+      setDecided((x) => [...x, id]);
+      if (at >= queue.length - 1) setCursor(Math.max(0, queue.length - 2));
+    }
     setStats((s) => ({ ...s, [kind]: s[kind] + 1 }));
   };
   const comeBack = (id: string, kind: Outcome) => {
+    if (kind === 'skipped') setLater((l) => l.filter((x) => x !== id));
     setHandled((h) => h.filter((x) => x !== id));
     setDecided((x) => x.filter((y) => y !== id));
     setStats((s) => ({ ...s, [kind]: Math.max(0, s[kind] - 1) }));
@@ -149,7 +165,7 @@ export default function Decisions({ user: _user, pile, client }: { user: User; p
     flush();
     if (verdict === 'skip') {
       leave(d.id, 'skipped');
-      showToast({ text: 'Moved to later. It stays in the pile.', undo: () => comeBack(d.id, 'skipped') });
+      showToast({ text: queue.length > 1 ? 'Moved to the back of the queue. Nothing was decided.' : 'Kept for later. Nothing was decided.', undo: () => comeBack(d.id, 'skipped') });
       return true;
     }
     if (verdict === 'reject') {
@@ -183,12 +199,12 @@ export default function Decisions({ user: _user, pile, client }: { user: User; p
       <div className="flex flex-wrap items-center justify-between gap-3">{back}<span className="mb-3 text-sm font-semibold text-fg">{title}</span></div>
       {clients.length > 0 && <div className="mb-3">{picker(changeClient, client ?? '')}</div>}
       <Progress done={done} total={total} />
-      <DecisionDeckCard key={current.id} d={current} decide={decide} position={`${done + 1} of ${total}`} />
+      <DecisionDeckCard key={current.id} d={current} decide={decide} position={`${at + 1} of ${queue.length} left`} onMove={queue.length > 1 ? move : undefined} />
     </div>
   );
 }
 
-function DecisionDeckCard({ d, decide, position }: { d: Decision; decide: (d: Decision, v: Verdict | 'skip', text?: string) => Promise<boolean>; position: string }) {
+function DecisionDeckCard({ d, decide, position, onMove }: { d: Decision; decide: (d: Decision, v: Verdict | 'skip', text?: string) => Promise<boolean>; position: string; onMove?: (step: number) => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [more, setMore] = useState(false);
@@ -225,6 +241,8 @@ function DecisionDeckCard({ d, decide, position }: { d: Decision; decide: (d: De
       const tag = el?.tagName;
       if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') { if (e.key === 'Escape') el?.blur(); return; }
       if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+      if (e.key === 'ArrowLeft' && onMove) { e.preventDefault(); onMove(-1); return; }
+      if (e.key === 'ArrowRight' && onMove) { e.preventDefault(); onMove(1); return; }
       const k = e.key.toLowerCase();
       if (k === 'r') void send('reject');
       else if (k === 's') void send('skip');
@@ -233,7 +251,7 @@ function DecisionDeckCard({ d, decide, position }: { d: Decision; decide: (d: De
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [send, edited, d.isReply, d.canEdit, editNow, holes]);
+  }, [send, edited, d.isReply, d.canEdit, editNow, holes, onMove]);
 
   return (
     <>
@@ -244,7 +262,11 @@ function DecisionDeckCard({ d, decide, position }: { d: Decision; decide: (d: De
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"><span className="font-semibold text-fg">{d.agent || 'Agent'}</span>{d.client && <Pill>{d.client}</Pill>}</div>
             <div className="text-xs text-muted">{d.pile} · {timeAgo(d.created)}</div>
           </div>
-          <span className="tabular shrink-0 text-xs font-medium text-muted">{position}</span>
+          <div className="flex shrink-0 items-center gap-1">
+            {onMove && <IconButton icon="arrowLeft" label="Previous card (←). Nothing is decided." onClick={() => onMove(-1)} className="h-9 w-9 border border-line" />}
+            <span className="tabular min-w-[4.5rem] text-center text-xs font-medium text-muted">{position}</span>
+            {onMove && <IconButton icon="arrowRight" label="Next card (→). Nothing is decided." onClick={() => onMove(1)} className="h-9 w-9 border border-line" />}
+          </div>
         </div>
 
         <div className="px-5 pb-6 pt-5 sm:px-6">
@@ -316,7 +338,7 @@ function DecisionDeckCard({ d, decide, position }: { d: Decision; decide: (d: De
         {error && <p role="alert" className="mb-2 text-center text-sm font-medium text-bad">{error}</p>}
         <div className="grid grid-cols-[1fr_1fr_1.4fr] gap-2">
           <Button tone="danger" disabled={busy} onClick={() => void send('reject')} icon="x" kbd="R" compact>{d.isReply ? 'Skip reply' : 'Reject'}</Button>
-          <Button disabled={busy} onClick={() => void send('skip')} icon="clock" kbd="S" compact>Later</Button>
+          <Button disabled={busy} onClick={() => void send('skip')} icon="clock" kbd="S" compact title="Later: sends this card to the back of the queue. Nothing is decided.">Later</Button>
           <Button tone="accent" disabled={busy || blocked} title={blocked ? 'Replace the placeholder first' : undefined} onClick={() => void send(edited ? 'edited' : 'approve')} icon={d.isReply ? 'send' : 'check'} kbd="A" compact>
             {busy ? 'Saving…' : blocked ? 'Fill it in first' : d.isReply ? (edited ? 'Send edited' : 'Send') : 'Approve'}
           </Button>
@@ -325,12 +347,13 @@ function DecisionDeckCard({ d, decide, position }: { d: Decision; decide: (d: De
       <div className="mt-2 hidden items-center justify-center gap-3 text-xs text-muted md:flex">
         <Icon name="keyboard" size={15} />
         <span className="flex items-center gap-1"><Kbd>R</Kbd> {d.isReply ? 'skip reply' : 'reject'}</span>
-        <span className="flex items-center gap-1"><Kbd>S</Kbd> later</span>
+        <span className="flex items-center gap-1"><Kbd>S</Kbd> later (to the back)</span>
         <span className="flex items-center gap-1"><Kbd>A</Kbd> {d.isReply ? 'send' : 'approve'}</span>
+        {onMove && <span className="flex items-center gap-1"><Kbd>←</Kbd><Kbd>→</Kbd> move</span>}
         {d.isReply && d.canEdit && <span className="flex items-center gap-1"><Kbd>E</Kbd> edit</span>}
         {d.isReply && d.canEdit && <span className="flex items-center gap-1"><Kbd>Esc</Kbd> stop editing</span>}
       </div>
-      {d.isReply && <p className="mt-2 text-center text-xs text-muted">The engine sends it from the right inbox and closes this card. "Later" keeps it for another time.</p>}
+      {d.isReply && <p className="mt-2 text-center text-xs text-muted">The engine sends it from the right inbox and closes this card. "Later" puts it at the back of the queue.</p>}
     </>
   );
 }
