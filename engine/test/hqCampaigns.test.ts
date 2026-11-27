@@ -57,7 +57,7 @@ test('campaigns: needs action rules (bounce, 60%, low interest, client review, s
   // Building.
   const review = facts({ status: 'Waiting for Approval', stage: 'Client Review', reviewSubmitted: D(1, NOW), autoApprove: new Date(NOW + 86_400_000).toISOString() });
   assert.deepEqual(kinds(review), ['review:Atlas'], 'copy waiting for client review');
-  assert.match(needsFor(review, stepsOf(review, [], null), ctx())[0].text, /^Copy waiting for client review since Nov 25 · auto-approves Nov 27\.$/);
+  assert.match(needsFor(review, stepsOf(review, [], null), ctx())[0].text, /^Copy waiting for client review since 11\/25 · auto-approves 11\/27\.$/);
   assert.deepEqual(kinds({ ...review, autoApprove: D(1, NOW) }), ['stuck:Atlas'], 'past the auto-approve time = stuck');
   const copy = facts({ status: 'Draft', stage: 'Internal Review', listIds: ['recL00000000000001'] });
   assert.deepEqual(kinds(copy, [list()], { lastChange: D(2, NOW) }), [], '2 days: not stuck yet');

@@ -64,7 +64,8 @@ const ids = (v: unknown): string[] => (Array.isArray(v) ? v : v ? [v] : []).map(
 const prog = (v: unknown) => { const p = n(v); return p > 1 ? p / 100 : p; };
 const pct = (x: number) => `${Number.isInteger(x) ? x : x.toFixed(1)}%`;
 const DAY = 86_400_000;
-export const shortDate = (iso: string) => (iso ? new Date(iso).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' }) : '');
+/** Dates in HQ use slashes (Round 2 rule, Alex 2026-11-27): 11/27, New York time. */
+export const shortDate = (iso: string) => (iso && Number.isFinite(Date.parse(iso)) ? new Date(iso).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'numeric', day: 'numeric' }) : '');
 const latest = (xs: (string | null | undefined)[]) => xs.filter((x): x is string => !!x && Number.isFinite(Date.parse(x))).sort((a, b) => Date.parse(b) - Date.parse(a))[0] ?? null;
 
 // ---------- stages ----------

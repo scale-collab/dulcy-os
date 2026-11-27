@@ -353,7 +353,7 @@ export async function listPlans(at: HqAirtable, db: Db, cfg: Config, opts: { cli
   const keyOf = (rec: string) => ws.get(rec)?.key ?? '';
   const rows = (await db.query(`SELECT ${PLAN_COLS} FROM campaign_plans WHERE state <> ALL($1) OR updated_at > now() - interval '30 days' ORDER BY id DESC LIMIT 100`, [[...ENDED]])).rows;
   const plans = rows.map((x) => planViewOf(x, keyOf, opts.canAct, cfg)).filter((p) => !opts.client || p.clientKey === opts.client);
-  return { plans, atlasOn: cfg.atlasCampaignsOn, planDryRun: dry(cfg, 'atlas.plan'), readAt: new Date().toISOString() };
+  return { plans, atlasOn: cfg.atlasCampaignsOn, planDryRun: dry(cfg, 'atlas.plan'), canAct: opts.canAct, readAt: new Date().toISOString() };
 }
 
 /** The plan behind one campaign (its own, or the one it is the 60% trigger of is NOT it). */
