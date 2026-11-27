@@ -6,8 +6,11 @@
 //     (link only, see below), and the other Content Center steps that wait on Alex (link only).
 //   - Friday: this week's approved ideas per channel in recording order, with the script, hooks,
 //     titles, thumbnail idea and Gamma outline that sienna.prep wrote; count vs target.
-//   - Pipeline: Idea → Approved → Script ready → Recorded → Editing → Final review → Final approved →
-//     Posted, plus the Content Center's own "next step" for each video and which automation runs it.
+//   - Content + Calendar (Batch 5, 2026-11-27): laid out like the Content Center itself. Each item has the
+//     Content Center's 10-stage label (normalizedStage / displayedContentStage, ported), its order
+//     (earliest date first), its "next step" and the same blocks (schedule, video, repurposing, latest
+//     update, details). No Airtable links (RULES 2026-11-27); only the Content Center page link stays,
+//     for the clip approval HQ cannot do. The older 8-stage key (stage) is kept for the Today card.
 //   - Week: ideas proposed / approved / recorded / posted vs target, and Problem → Data → Fix notes.
 // Writes: only the Content Center's idea decision ("Approve & schedule" / "Reject idea"), field for
 // field (decideIdea in source.tsx): Idea Decision, Production Stage "Idea Approved", Recording Date and
@@ -16,7 +19,7 @@
 // is logged in hq_content_log. Clip approval is NOT written from HQ: the Content Center's "Approve
 // reviewed copy" writes Review Intent JSON and then calls an n8n webhook ([Content OS] Current Clip
 // Review and Preview) that checks the intent's Airtable author (Review Intent Author, lastModifiedBy)
-// against the owner; HQ can't do that (and never calls n8n), so those items link to Airtable.
+// against the owner; HQ can't do that (and never calls n8n), so those items link to the Content Center.
 // Nothing here posts, schedules, deletes, or calls OpusClip, Gamma, Frame.io, YouTube, Discord or n8n.
 // Airtable reads: batched (6 list calls, no per-row calls), one cache for everyone, 60 seconds.
 import type { Db } from '../db/pool.js';
@@ -50,8 +53,9 @@ export const KL = {
 /** Content Automation Settings field IDs (the Content Center's AUTOMATION_SETTINGS_FIELD_IDS). */
 export const SF = { channel: 'fldp2ykUFPYYFXPlu', enabled: 'fldzz1f3NRV2keDdM', videosPerWeek: 'fldhV1C8j1LDsCoVJ', clipsPerWeek: 'fldMuMZED81iWQWg4', minimumSpacingDays: 'fldaAPHI6CNgIfMsO' } as const;
 
+// CF.ytTitle is light too (Batch 5): nextStep's "Prepare the YouTube title" check reads it.
 const LIGHT = [CF.title, CF.status, CF.stage, CF.channel, CF.recordingDate, XF.publishDate, CF.ideaDecision, CF.ideaScore, CF.ideaKey, CF.ideaCommunity, CF.ideaUrl, CF.source,
-  CF.date, CF.recordThisWeek, CF.style, ...Object.values(XF)];
+  CF.date, CF.recordThisWeek, CF.style, CF.ytTitle, ...Object.values(XF)];
 const HEAVY = [CF.script, CF.notes, CF.description, CF.ideaReason];
 
 // ---------- small helpers (pure) ----------
@@ -64,7 +68,6 @@ const addDays = (ymd: string, n: number) => new Date(Date.parse(`${ymd}T12:00:00
 const dow = (ymd: string) => new Date(`${ymd}T12:00:00Z`).getUTCDay();
 const dateKey = (v: unknown) => { const t = s(v); const m = /^(\d{4}-\d{2}-\d{2})/.exec(t); if (m) return m[1]; const p = Date.parse(t); return Number.isFinite(p) ? etYmd(p) : ''; };
 const isChannel = (c: string): c is Channel => (CHANNELS as readonly string[]).includes(c);
-export const airtableUrl = (baseId: string, table: string, rec: string) => `https://airtable.com/${baseId}/${table}/${rec}`;
 const q = (x: string) => x.replace(/'/g, "\\'");
 
 // ---------- the Content Center's own rules, ported as is ----------
@@ -209,6 +212,42 @@ export const STAGES = ['idea', 'approved', 'script', 'recorded', 'editing', 'rev
 export type StageKey = (typeof STAGES)[number];
 export const STAGE_LABEL: Record<StageKey, string> = { idea: 'Idea', approved: 'Approved', script: 'Script ready', recorded: 'Recorded', editing: 'Editing', review: 'Final review', final: 'Final approved', posted: 'Posted' };
 
+// ---------- the Content Center's own 10 stages (Batch 5: the HQ screen follows the Content Center) ----------
+export const CC_STAGES = ['Idea', 'Script', 'Record', 'Edit', 'Finalize', 'Thumbnail', 'Upload', 'Clips', 'Distribute', 'Published'] as const;
+export type CcStage = (typeof CC_STAGES)[number];
+/** The Content Center's normalizedStage (source.tsx), unchanged: Production Stage → one of its 10 stages. Pure. */
+export function normalizedStage(savedStage: string): CcStage {
+  const value = savedStage.toLowerCase();
+  if (value === 'published' || value.includes('complete')) return 'Published';
+  if (value.includes('ready to publish') || value.includes('youtube') || value.includes('upload')) return 'Upload';
+  if (value.includes('distribution') || value.includes('distribut')) return 'Distribute';
+  if (value.includes('clip') || value.includes('short')) return 'Clips';
+  if (value.includes('thumbnail')) return 'Thumbnail';
+  if (value.includes('final')) return 'Finalize';
+  if (value.includes('edit') || value === 'recorded') return 'Edit';
+  if (value.includes('record')) return 'Record';
+  if (value.includes('script')) return 'Script';
+  return 'Idea';
+}
+/**
+ * Done = posted with proof and distribution finished. The Content Center's own check also reads the
+ * Content Distribution rows, which HQ does not read; this is the same test nextStep uses for "nothing left".
+ */
+export const contentComplete = (v: Video) => postedWithProof(v) && (v.distributionStatus === 'Published' || /complete/i.test(v.distributionStatus));
+/** The Content Center's displayedContentStage (source.tsx): the stage label it shows on each item. Pure. */
+export function ccStageOf(v: Video): CcStage {
+  if (contentComplete(v)) return 'Published';
+  if (v.youtubeUrl) return v.clipIds.length > 0 ? 'Distribute' : 'Clips';
+  if (/approved|complete/i.test(v.thumbnailStatus)) return 'Upload';
+  const stage = normalizedStage(v.stage);
+  return stage === 'Published' ? 'Distribute' : stage;
+}
+/** The Content Center's item order: earliest of recording / publish date first, undated last, then title. */
+export const scheduleOrder = (a: { recordingDate: string; publishDate: string; title: string }, b: { recordingDate: string; publishDate: string; title: string }) => {
+  const first = (x: { recordingDate: string; publishDate: string }) => [x.recordingDate, x.publishDate].filter(Boolean).sort()[0] ?? '9999';
+  return first(a).localeCompare(first(b)) || a.title.localeCompare(b.title);
+};
+
 /**
  * Where a video is, from the Content Center's fields (Idea Decision, Production Stage, Status,
  * Script, Thumbnail Status, Publishing Status, YouTube URL) and its clips' Clip Status. Pure.
@@ -239,7 +278,7 @@ const BUTTON = (button: string, wf: string) => ({ how: 'button' as How, automati
  * which HQ does not read: a posted video (proof of posting) counts as done. Pure.
  */
 export function nextStep(v: Video, clips: Clip[]): NextStep | null {
-  if (postedWithProof(v) && (v.distributionStatus === 'Published' || /complete/i.test(v.distributionStatus))) return null;
+  if (contentComplete(v)) return null;
   if (needsApproval(v)) return { title: 'Review this idea', who: 'Alex', how: 'hq', automation: 'HQ Approve / Reject (writes Idea Decision); after Approve the engine\'s sienna.prep writes the script within 30 minutes', detail: '' };
   // HQ's two additions to the Content Center order: a row marked Scheduled needs its proof of posting
   // first, and a video already recorded never goes back to "write the script" (old rows have none).
@@ -369,9 +408,27 @@ export const recordingOrder = (a: Video, b: Video) => (a.recordingDate || '9999'
 
 export interface Note { problem: string; data: string; fix: string; why: string; owner: AgentName | 'Alex' }
 
+/** What HQ shows for one item, the same blocks the Content Center shows (no Airtable links: Batch 5). */
+export interface ItemFacts {
+  decision: string; score: number | null; source: string; sourceUrl: string; script: boolean;
+  video: { folder: boolean; finished: boolean; youtube: boolean; youtubeUrl: string };
+  repurposing: { shortProject: boolean; clips: number; drafts: boolean };
+  update: string; error: string;
+  details: { productionStage: string; status: string; editingRoute: string; opusStatus: string; shortJobState: string; thumbnailStatus: string; publishingStatus: string };
+}
+export function itemFacts(v: Video, clips: Clip[]): ItemFacts {
+  const clipCount = clips.filter((c) => c.parentId === v.id).length || v.clipIds.length;
+  return {
+    decision: v.decision, score: v.score, source: v.community.replace(/^Sienna:\s*/, '') || v.source, sourceUrl: /^https?:\/\//.test(v.sourceUrl) ? v.sourceUrl : '', script: v.hasScript,
+    video: { folder: !!v.rawFolderUrl, finished: !!v.finalAssetUrl, youtube: !!v.youtubeUrl, youtubeUrl: /^https:\/\//.test(v.youtubeUrl) ? v.youtubeUrl : '' },
+    repurposing: { shortProject: !!v.shortProjectId, clips: clipCount, drafts: /^(Drafts Ready|Scheduled|Published)$/i.test(v.distributionStatus) || /complete/i.test(v.distributionStatus) },
+    update: v.message.slice(0, 400), error: v.error.slice(0, 400),
+    details: { productionStage: v.stage, status: v.status, editingRoute: v.editingRoute, opusStatus: v.opusStatus, shortJobState: v.shortJobState, thumbnailStatus: v.thumbnailStatus, publishingStatus: v.publishingStatus },
+  };
+}
+
 export function buildContent(src: ContentSource, baseId: string, now = Date.now()) {
   const targets = targetsOf(src.settingsRows);
-  const rec = (id: string) => airtableUrl(baseId, CONTENT, id);
   const heavyOf = (id: string) => src.heavy.get(id)?.fields ?? {};
   const byId = new Map(src.videos.map((v) => [v.id, v]));
   const today = etYmd(now);
@@ -391,7 +448,7 @@ export function buildContent(src: ContentSource, baseId: string, now = Date.now(
           id: v.id, title: v.title, score: v.score, decision: v.decision, proposed: v.created || v.date, recordFor: v.date,
           by: v.ideaKey.startsWith('sienna:') ? 'Sienna' : /^r\/|reddit/i.test(v.community) ? 'Reddit intake (n8n)' : v.community || v.source || 'UNKNOWN',
           source: v.community.replace(/^Sienna:\s*/, ''), sourceUrl: /^https?:\/\//.test(v.sourceUrl) ? v.sourceUrl : '',
-          angle: parts.angle, hook: parts.hook, why: s(h[CF.ideaReason]).split(/\n\s*\n|\nEvidence:/)[0].trim().slice(0, 400), airtable: rec(v.id),
+          angle: parts.angle, hook: parts.hook, why: s(h[CF.ideaReason]).split(/\n\s*\n|\nEvidence:/)[0].trim().slice(0, 400),
         };
       }),
     };
@@ -402,9 +459,9 @@ export function buildContent(src: ContentSource, baseId: string, now = Date.now(
   const finals = parents.map((pid) => {
     const v = byId.get(pid);
     return {
-      parentId: pid, title: v?.title ?? 'Video not found', channel: v?.channel ?? '', airtable: pid ? rec(pid) : '',
+      parentId: pid, title: v?.title ?? 'Video not found', channel: v?.channel ?? '',
       clips: passed.filter((c) => c.parentId === pid).sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).map((c) => ({
-        id: c.id, name: c.name, score: c.score, qa: c.notes.split('\n')[0].slice(0, 200), hook: c.hook, caption: c.caption, watchUrl: c.watchUrl, airtable: airtableUrl(baseId, CLIPS, c.id),
+        id: c.id, name: c.name, score: c.score, qa: c.notes.split('\n')[0].slice(0, 200), hook: c.hook, caption: c.caption, watchUrl: c.watchUrl,
       })),
     };
   });
@@ -412,7 +469,7 @@ export function buildContent(src: ContentSource, baseId: string, now = Date.now(
   // Pipeline: recent rows (any date in the last 60 days or ahead), and everything still open.
   const since = addDays(today, -60);
   const recent = (v: Video) => [v.recordingDate, v.publishDate, v.date, v.created ? etYmd(Date.parse(v.created)) : ''].some((d) => d && d >= since);
-  const pipeRows: { id: string; title: string; channel: string; key: string; stage: StageKey; recordingDate: string; publishDate: string; status: string; productionStage: string; next: NextStep | null; flags: string[]; airtable: string }[] = [];
+  const pipeRows: { id: string; title: string; channel: string; key: string; stage: StageKey; cc: CcStage; thisWeek: boolean; awaiting: boolean; done: boolean; recordingDate: string; publishDate: string; status: string; productionStage: string; next: NextStep | null; flags: string[]; facts: ItemFacts }[] = [];
   let leftOut = 0;
   for (const v of src.videos) {
     const st = v.channel ? stageOf(v, src.clips) : null;
@@ -422,14 +479,15 @@ export function buildContent(src: ContentSource, baseId: string, now = Date.now(
     if (v.error) flags.push('Automation error');
     if (v.status === 'Scheduled' && !postedWithProof(v)) flags.push('Scheduled, no proof');
     pipeRows.push({
-      id: v.id, title: v.title, channel: v.channel, key: CHANNEL_KEY[v.channel as Channel], stage: st, recordingDate: v.recordingDate, publishDate: v.publishDate,
-      status: v.status, productionStage: v.stage, next: st === 'posted' ? null : nextStep(v, src.clips), flags, airtable: rec(v.id),
+      id: v.id, title: v.title, channel: v.channel, key: CHANNEL_KEY[v.channel as Channel], stage: st, cc: ccStageOf(v), thisWeek: inRange(v.recordingDate, week.start, week.end),
+      awaiting: needsApproval(v), done: contentComplete(v), recordingDate: v.recordingDate, publishDate: v.publishDate,
+      status: v.status, productionStage: v.stage, next: st === 'posted' ? null : nextStep(v, src.clips), flags, facts: itemFacts(v, src.clips),
     });
   }
-  pipeRows.sort((a, b) => STAGES.indexOf(a.stage) - STAGES.indexOf(b.stage) || (a.recordingDate || '9999').localeCompare(b.recordingDate || '9999') || a.title.localeCompare(b.title));
+  pipeRows.sort(scheduleOrder);
   // Needs you: the other Content Center steps waiting on Alex (link only).
   const alexSteps = pipeRows.filter((r) => r.next && r.next.who === 'Alex' && r.next.how !== 'hq')
-    .map((r) => ({ id: r.id, title: r.title, channel: r.channel, step: r.next!.title, how: r.next!.automation, airtable: r.airtable }));
+    .map((r) => ({ id: r.id, title: r.title, channel: r.channel, step: r.next!.title, how: r.next!.automation }));
 
   // Friday.
   const candidates = fridayCandidates(src.videos, now);
@@ -440,7 +498,7 @@ export function buildContent(src: ContentSource, baseId: string, now = Date.now(
       const parts = ideaParts(s(h[CF.description]));
       return {
         id: v.id, title: v.title, recordingDate: v.recordingDate, publishDate: v.publishDate, late: !!v.recordingDate && v.recordingDate < fweek.start,
-        scriptReady: v.hasScript, script: s(h[CF.script]), angle: parts.angle, ideaHook: parts.hook, ...prep, airtable: rec(v.id),
+        scriptReady: v.hasScript, script: s(h[CF.script]), angle: parts.angle, ideaHook: parts.hook, ...prep,
       };
     });
     return { channel: ch, key: CHANNEL_KEY[ch], label: CHANNEL_LABEL[ch], target: targets[ch], approved: items.length, ready: items.filter((x) => x.scriptReady).length, items };
@@ -467,7 +525,7 @@ export function buildContent(src: ContentSource, baseId: string, now = Date.now(
   return {
     readAt: src.readAt, friday: { date: fri, week: fweek, channels: friday }, week: { ...week, channels: weekStats },
     needs: { ideas, finals, alexSteps, waitingForSienna: src.clips.filter((c) => c.status === 'Needs Review' && !siennaChecked(c)).length },
-    pipeline: { stages: STAGES.map((k) => ({ key: k, label: STAGE_LABEL[k] })), rows: pipeRows, leftOut },
+    pipeline: { stages: STAGES.map((k) => ({ key: k, label: STAGE_LABEL[k] })), ccStages: [...CC_STAGES], rows: pipeRows, leftOut },
     counts: { ideas: ideaCount, finals: finalCount, steps: alexSteps.length, total: ideaCount + finalCount + alexSteps.length },
     notes, links: { contentCenter: `https://airtable.com/${baseId}/${CONTENT_CENTER_PAGE}` },
   };

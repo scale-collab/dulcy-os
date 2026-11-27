@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, type Need, type NeedCounts, type Report, type TeamLine, type User } from '../api';
 import {
-  Avatar, Button, Card, cleanLine, cx, ErrorBox, go, Icon, IconButton, Inline, Markdown, PageSkeleton, PageTitle, SectionHeader,
+  Avatar, Button, Card, cleanLine, cx, ErrorBox, go, Icon, IconButton, Inline, Markdown, PageSkeleton, PageTitle,
   setCount, StatusDot, teamTone, timeAgo, toneLabel, type Tone,
 } from '../ui';
 import { ReportList } from './Reports';
 import { NeedFace, whoLabel } from './Needs';
 import { ContentCard } from './Content';
+import { FixItButton } from '../fixIt';
 
 interface TodayData {
   signups?: number;
@@ -16,7 +17,7 @@ interface TodayData {
   needs: { top: Need[]; counts: NeedCounts; errors: string[] };
   reports: Report[];
 }
-export const PILE_ICON: Record<string, string> = { Replies: 'reply', Campaigns: 'megaphone', Fixes: 'wrench', Money: 'dollar', Other: 'layers' };
+export const PILE_ICON: Record<string, string> = { Replies: 'reply', Campaigns: 'megaphone', Fixes: 'wrench', Money: 'dollar', Sales: 'trendUp', Content: 'film', Orchestrator: 'sparkles' };
 
 export default function Today({ user }: { user: User }) {
   const [d, setD] = useState<TodayData | null>(null);
@@ -47,6 +48,8 @@ export default function Today({ user }: { user: User }) {
   if (!d) return <><PageTitle kicker={date} title={`${hello}, ${first}.`} right={actions} /><PageSkeleton kind="today" /></>;
 
   const waiting = Object.values(d.decisions).reduce((a, b) => a + b, 0);
+  const reports = d.reports.filter((r) => r.kind !== 'brief');
+  const suggestions = suggestionsOf(d);
   const needYou = d.needs.counts.total;
   const off = d.team.filter((t) => t.ok === false);
 
@@ -62,23 +65,86 @@ export default function Today({ user }: { user: User }) {
 
       {error && <div className="mb-4"><ErrorBox error={error} retry={load} /></div>}
 
-      <DecisionHero waiting={waiting} piles={d.decisions} />
+      {/* Each block has its own heading, icon and colour, so it is clear what each part is (Alex, 2026-11-27). */}
+      <Block icon="inbox" tone="ink" title="Decisions" sub="Cards waiting for your OK">
+        <DecisionHero waiting={waiting} piles={d.decisions} />
+      </Block>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="min-w-0 space-y-6">
-          <Brief brief={d.brief} />
-          <section>
-            <SectionHeader title="Reports" icon="file" right={d.reports.length > 0 && <span className="text-xs text-muted">latest {d.reports.filter((r) => r.kind !== 'brief').length}</span>} />
-            <ReportList reports={d.reports.filter((r) => r.kind !== 'brief')} empty="No reports yet. They appear here as the agents write them." />
-          </section>
+      <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="min-w-0 space-y-8">
+          <Block icon="sparkles" tone="accent" title="Ada's morning brief" sub="Top 3 and what happened overnight">
+            <Brief brief={d.brief} />
+          </Block>
+          {suggestions.length > 0 && (
+            <Block icon="wrench" tone="warn" title="Agent suggestions" sub="Hand it to the agent, or look yourself">
+              <Suggestions items={suggestions} />
+            </Block>
+          )}
+          <Block icon="file" tone="plain" title="Reports" sub="What the agents wrote" right={reports.length > 0 && <span className="text-xs text-muted">latest {reports.length}</span>}>
+            <ReportList reports={reports} empty="No reports yet. They appear here as the agents write them." />
+          </Block>
         </div>
-        <div className="order-first min-w-0 space-y-6 lg:order-none">
-          <NeedsNow items={d.needs.top} counts={d.needs.counts} />
+        <div className="order-first min-w-0 space-y-8 lg:order-none">
+          <Block icon="bell" tone="info" title="Do now" sub={d.needs.counts.total ? `Top ${Math.min(3, d.needs.top.length)} of ${d.needs.counts.total} in Needs you` : 'From Needs you'}>
+            <NeedsNow items={d.needs.top} counts={d.needs.counts} />
+          </Block>
           {user.role === 'owner' && <ContentCard />}
-          <TeamCheck team={d.team} />
+          <Block icon="users" tone="good" title="Team check" sub="Did every agent do its job?">
+            <TeamCheck team={d.team} />
+          </Block>
         </div>
       </div>
     </div>
+  );
+}
+
+const TONES: Record<'ink' | 'accent' | 'warn' | 'info' | 'good' | 'plain', string> = {
+  ink: 'bg-ink text-ink-fg', accent: 'bg-accent-soft text-accent-ink', warn: 'bg-warn-soft text-warn', info: 'bg-info-soft text-info', good: 'bg-good-soft text-good', plain: 'border border-line bg-sunken text-fg',
+};
+/** One Today block: icon, heading and a short line, then its card. */
+function Block({ icon, tone, title, sub, right, children }: { icon: string; tone: keyof typeof TONES; title: string; sub?: string; right?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section aria-label={title}>
+      <div className="mb-3 flex items-center gap-3">
+        <span aria-hidden="true" className={cx('grid h-9 w-9 shrink-0 place-items-center rounded-xl', TONES[tone])}><Icon name={icon} size={18} strokeWidth={2} /></span>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-[17px] font-semibold leading-tight tracking-tight text-fg">{title}</h2>
+          {sub && <div className="truncate text-xs text-muted">{sub}</div>}
+        </div>
+        {right}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+interface Suggestion { key: string; agent: string; title: string; detail: string; from: string }
+/** What the agents flag: an agent whose runs failed (Riley fixes systems) and urgent reports (the writer fixes it). */
+function suggestionsOf(d: TodayData): Suggestion[] {
+  const failed = d.team.filter((t) => t.ok === false && teamTone(t.ok, t.line) === 'bad').map((t) => ({
+    key: `team:${t.agent}`, agent: 'Riley', title: `${t.agent}'s runs failed: ${cleanLine(t.line)}`.slice(0, 200), detail: cleanLine(t.line), from: 'Team check',
+  }));
+  const urgent = d.reports.filter((r) => r.kind !== 'brief' && r.urgent).slice(0, 4).map((r) => ({
+    key: `report:${r.id}`, agent: r.agent, title: r.title, detail: r.summary, from: `${r.agent}'s report · ${timeAgo(r.created)}`,
+  }));
+  return [...urgent, ...failed];
+}
+
+function Suggestions({ items }: { items: Suggestion[] }) {
+  return (
+    <Card className="divide-y divide-line p-0">
+      {items.map((s) => (
+        <div key={s.key} className="flex gap-3 px-5 py-4">
+          <Avatar name={s.agent} size="sm" />
+          <div className="min-w-0 flex-1">
+            <div className="text-[15px] font-semibold leading-snug text-fg">{s.title}</div>
+            {s.detail && s.detail !== s.title && <div className="mt-0.5 line-clamp-2 text-sm text-fg-2">{s.detail}</div>}
+            <div className="mt-0.5 text-xs text-muted">{s.from}</div>
+            <FixItButton agent={s.agent} title={s.title} detail={s.detail} className="mt-3" />
+          </div>
+        </div>
+      ))}
+    </Card>
   );
 }
 
@@ -162,7 +228,7 @@ function Brief({ brief }: { brief: TodayData['brief'] }) {
     );
   }
   const sections = briefSections(brief.body);
-  const isKey = (s: BriefSection) => /^(Waiting on you|Top \d)/i.test(s.title);
+  const isKey = (s: BriefSection) => /^(Waiting on you|Top \d|Overnight)/i.test(s.title);
   const key = sections.filter(isKey);
   const rest = sections.filter((s) => !isKey(s));
   return (
@@ -219,10 +285,11 @@ function NeedsNow({ items, counts }: { items: Need[]; counts: NeedCounts }) {
   const open = (n: Need) => (n.action && !/^https:\/\//i.test(n.action.href) ? go(n.action.href) : go('needs'));
   return (
     <Card className="p-0">
-      <div className="flex items-center justify-between px-5 pb-2 pt-4">
-        <h2 className="flex items-center gap-2 text-sm font-semibold"><Icon name="bell" size={16} className="text-muted" />Do now</h2>
-        <span className="tabular text-xs font-medium text-muted">{counts.total ? `${counts.total} need${counts.total === 1 ? 's' : ''} you` : 'all clear'}</span>
-      </div>
+      {counts.total > 0 && (
+        <div className="flex items-center justify-end px-5 pb-1 pt-3">
+          <span className="tabular text-xs font-medium text-muted">{`${counts.total} need${counts.total === 1 ? 's' : ''} you`}</span>
+        </div>
+      )}
       {items.length ? (
         <ul className="px-2">
           {items.map((n) => (
@@ -238,7 +305,7 @@ function NeedsNow({ items, counts }: { items: Need[]; counts: NeedCounts }) {
             </li>
           ))}
         </ul>
-      ) : <div className="flex items-center gap-2 px-5 pb-3 text-sm text-muted"><Icon name="check" size={15} />Nothing needs you right now.</div>}
+      ) : <div className="flex items-center gap-2 px-5 py-4 text-sm text-muted"><Icon name="check" size={15} />Nothing needs you right now.</div>}
       <div className="border-t border-line p-3"><Button onClick={() => go('needs')} className="w-full" icon="bell">{counts.total > items.length ? `See all ${counts.total}` : 'Open Needs you'}</Button></div>
     </Card>
   );
@@ -257,8 +324,7 @@ function TeamCheck({ team }: { team: TeamLine[] }) {
   const issues = team.filter((t) => t.ok === false);
   return (
     <Card className="p-0">
-      <div className="flex items-center justify-between px-5 pb-1 pt-4">
-        <h2 className="flex items-center gap-2 text-sm font-semibold"><Icon name="users" size={16} className="text-muted" />Team check</h2>
+      <div className="flex items-center justify-end px-5 pb-1 pt-3">
         <span className={cx('text-xs font-medium', issues.length ? 'text-warn' : 'text-good')}>{issues.length ? `${issues.length} need a look` : 'all fine'}</span>
       </div>
       <div className="grid grid-cols-3 gap-1 p-2">

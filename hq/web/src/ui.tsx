@@ -394,3 +394,42 @@ export function Markdown({ text, className, small }: { text: string; className?:
   flush();
   return <div className={cx('whitespace-pre-line break-words leading-relaxed text-fg-2', small ? 'text-sm' : 'text-[15px]', className)}>{blocks}</div>;
 }
+
+/* ---------- Toast (Batch 1, 2026-11-27): a clear result for every button, with Undo when it is cheap ---------- */
+export interface ToastMsg { text: string; tone?: 'good' | 'bad' | 'plain'; undo?: () => void; ms?: number }
+let toastNow: (ToastMsg & { id: number }) | null = null;
+let toastSeq = 0;
+const toastSubs = new Set<() => void>();
+/** Show one short result line (the newest replaces the last). Undo shows a button. */
+export function showToast(t: ToastMsg) { toastNow = { ...t, id: ++toastSeq }; toastSubs.forEach((f) => f()); }
+export function hideToast() { toastNow = null; toastSubs.forEach((f) => f()); }
+/** Mounted once (App). Phone: under the header; desktop: bottom centre. */
+export function Toaster() {
+  const t = useSyncExternalStore((f) => { toastSubs.add(f); return () => { toastSubs.delete(f); }; }, () => toastNow);
+  useEffect(() => {
+    if (!t) return;
+    const id = t.id;
+    const timer = window.setTimeout(() => { if (toastNow?.id === id) hideToast(); }, t.ms ?? (t.undo ? 6000 : 4000));
+    return () => window.clearTimeout(timer);
+  }, [t]);
+  if (!t) return null;
+  return (
+    <div className="pointer-events-none fixed inset-x-0 top-16 z-50 flex justify-center px-4 md:bottom-6 md:top-auto md:pl-64">
+      <div role="status" aria-live="polite" className={cx('anim-in pointer-events-auto flex min-h-12 max-w-lg items-center gap-3 rounded-2xl px-4 py-2.5 text-[15px] font-medium shadow-pop',
+        t.tone === 'bad' ? 'bg-bad text-surface' : 'bg-ink text-ink-fg')}>
+        <Icon name={t.tone === 'bad' ? 'alert' : t.tone === 'good' ? 'check' : 'sparkles'} size={17} strokeWidth={2.2} />
+        <span className="min-w-0 flex-1">{t.text}</span>
+        {t.undo && <button onClick={() => { const u = t.undo; hideToast(); u?.(); }} className="min-h-9 shrink-0 rounded-lg px-2.5 text-sm font-semibold underline-offset-2 hover:underline">Undo</button>}
+        <button onClick={hideToast} aria-label="Close" className="-mr-1 grid h-9 w-9 shrink-0 place-items-center rounded-lg opacity-80 hover:opacity-100"><Icon name="x" size={15} /></button>
+      </div>
+    </div>
+  );
+}
+
+/** Text with the given bits marked (e.g. unfilled placeholders), as escaped React text. */
+export function Marked({ text, marks }: { text: string; marks: string[] }) {
+  if (!marks.length) return <>{text}</>;
+  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${marks.map(esc).join('|')})`, 'g'));
+  return <>{parts.map((p, i) => (marks.includes(p) ? <mark key={i} className="rounded bg-warn-soft px-0.5 font-semibold text-warn">{p}</mark> : <span key={i}>{p}</span>))}</>;
+}

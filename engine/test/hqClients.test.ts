@@ -202,10 +202,10 @@ const xero = {
   async pages() { return [{ Type: 'ACCREC', Contact: { Name: 'Acme Co LLC' }, AmountDue: 1500, DueDateString: '2026-12-01T00:00:00' }, { Type: 'ACCREC', Contact: { Name: 'Acme Co' }, AmountDue: 500, DueDateString: '2026-11-01T00:00:00' }, { Type: 'ACCPAY', Contact: { Name: 'Tool' }, AmountDue: 99 }]; },
 };
 function cfg(): Config { return { ...loadConfig({ ENGINE_SECRET: 'x'.repeat(40), DATABASE_URL: url ?? 'postgres://x', HQ_SESSION_SECRET: 's'.repeat(40), HQ_HOST: 'hq.test.local' } as NodeJS.ProcessEnv), airtableApiKey: undefined }; }
-function call(method: string, p: string, cookie?: string): Promise<{ status: number; body: any; text: string; headers: http.IncomingHttpHeaders }> {
+function call(method: string, p: string, cookie?: string, extra: Record<string, string> = {}): Promise<{ status: number; body: any; text: string; headers: http.IncomingHttpHeaders }> {
   return new Promise((resolve, reject) => {
     const host = `127.0.0.1:${port}`;
-    const headers: Record<string, string> = { host, ...(cookie ? { cookie } : {}) };
+    const headers: Record<string, string> = { host, ...(cookie ? { cookie } : {}), ...extra };
     const req = http.request({ host: '127.0.0.1', port, method, path: p, headers }, (res) => {
       const chunks: Buffer[] = []; res.on('data', (c) => chunks.push(c));
       res.on('end', () => { const text = Buffer.concat(chunks).toString('utf8'); let body: any = null; try { body = JSON.parse(text); } catch { /* */ } resolve({ status: res.statusCode ?? 0, body, text, headers: res.headers }); });
@@ -276,17 +276,20 @@ test('owner: deals from the P/L sheet, money from Xero (coming up vs late), agen
   assert.ok(!/Personal line/.test(fin.text));
 });
 
-test('members: no money anywhere, including the P/L sheet and Xero; 403 on numbers and finance', { skip }, async () => {
-  const c = await login('josh@dulcy.io', 'josh long password 1');
+for (const who of ['member', 'owner viewing as member'] as const) test(`${who}: no money anywhere, including the P/L sheet and Xero; 403 on numbers and finance`, { skip }, async () => {
+  const c = who === 'member' ? await login('josh@dulcy.io', 'josh long password 1') : await login('alex@dulcy.io', PW);
+  const view: Record<string, string> = who === 'member' ? {} : { 'x-hq-view': 'member' };
+  const call0 = call;
+  const call1 = (m: string, p: string, ck?: string) => call0(m, p, ck, view);
   for (const p of ['/hq/api/clients?all=1', '/hq/api/clients/recACME0000000001', '/hq/api/clients/recGMG00000000001']) {
-    const r = await call('GET', p, c);
+    const r = await call1('GET', p, c);
     assert.equal(r.status, 200, r.text);
     const hit = /"money"|"mrr"|"roi"|"total"|1,?500|2,?900|"fee"|"perCall"|\$|Card One|invoice/i.exec(r.text);
     assert.equal(hit, null, `no money in ${p}: ${hit ? r.text.slice(Math.max(0, hit.index - 100), hit.index + 40) : ''}`);
   }
   assert.deepEqual(sheetCalls, [], 'the P/L sheet is never even read for a member');
   for (const p of ['/hq/api/clients/numbers', '/hq/api/clients/finance']) {
-    const r = await call('GET', p, c);
+    const r = await call1('GET', p, c);
     assert.equal(r.status, 403, p);
     assert.ok(!/Card|7100|1500/.test(r.text));
   }
