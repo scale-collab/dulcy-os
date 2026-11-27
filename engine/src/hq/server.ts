@@ -15,8 +15,8 @@ import {
 } from './auth.js';
 import { decide, groupByPile, pendingDecisions, type HqAirtable } from './decisions.js';
 import { listTasks, markDone, notYet, quickAdd, validNewTask } from './tasks.js';
-import { agentActivity, agentRuns, agentTasks, finishAgentTask, jobHealth, teamCheck } from './team.js';
-import { canTalkTo, chatTurn, listThreads, readThread, type ChatModel } from './chat.js';
+import { agentActivity, agentRuns, agentTasks, finishAgentTask, jobHealth, teamCheck, isBoardDue, isBoardStatus, loadTeamBoard } from './team.js';
+import { archiveThread, canTalkTo, chatTurn, latestThread, listThreads, readThread, suggestQuestions, type ChatModel } from './chat.js';
 import { clientDetail, listClients } from './clients.js';
 import { PORTAL_SIGNUP_SENT, SIGNUP_SENT, addUser, googleSignUp, listUsers, manageUser, pendingCount, signUp } from './users.js';
 import { portalWrite, recentPortalWrites } from './portalWrites.js';
@@ -502,14 +502,46 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         return true;
       }
 
+      // Batch 4b: Team board ("what everyone is working on"), chat like Slack (latest chat, archive),
+      // suggested questions per agent per day. All read-only except archive (HQ's own chat table).
+      if (p === '/hq/api/team/work' && req.method === 'GET') {
+        const visible = AGENT_NAMES.filter((x) => canTalkTo(user, x));
+        const q = (k: string) => url.searchParams.get(k) ?? '';
+        const agent = q('agent') ? agentByName(q('agent')) : null;
+        if (q('agent') && (!agent || !visible.includes(agent))) { json(res, 404, { error: 'no such agent' }); return true; }
+        const status = q('status') || 'all', due = q('due') || 'any';
+        if (!isBoardStatus(status) || !isBoardDue(due)) { json(res, 400, { error: 'status or due filter not known' }); return true; }
+        json(res, 200, await loadTeamBoard(db, owner, visible, { agent, client: q('client').slice(0, 120), status, due }));
+        return true;
+      }
+      if (p === '/hq/api/chat/latest' && req.method === 'GET') {
+        const a = agentByName(url.searchParams.get('agent') ?? 'Ada');
+        if (!a || !canTalkTo(user, a)) { json(res, 404, { error: 'no such agent' }); return true; }
+        json(res, 200, { agent: a, threadId: await latestThread(db, user, a) });
+        return true;
+      }
+      if (p === '/hq/api/chat/suggestions' && req.method === 'GET') {
+        const a = agentByName(url.searchParams.get('agent') ?? 'Ada');
+        if (!a || !canTalkTo(user, a)) { json(res, 404, { error: 'no such agent' }); return true; }
+        json(res, 200, await suggestQuestions(db, at, user, a));
+        return true;
+      }
+      m = p.match(/^\/hq\/api\/chat\/threads\/(\d+)\/archive$/);
+      if (m && req.method === 'POST') {
+        const b = await readJson(req, 1_000);
+        const ok = await archiveThread(db, user, Number(m[1]), b.archived !== false);
+        json(res, ok ? 200 : 404, ok ? { ok: true, archived: b.archived !== false } : { error: 'not found' });
+        return true;
+      }
+
       if (p === '/hq/api/chat/threads' && req.method === 'GET') {
         const a = url.searchParams.get('agent') ? agentByName(url.searchParams.get('agent')!) : null;
-        json(res, 200, { threads: await listThreads(db, user, a ?? undefined) });
+        json(res, 200, { threads: await listThreads(db, user, a ?? undefined, { archived: url.searchParams.get('archived') === '1' }) });
         return true;
       }
       m = p.match(/^\/hq\/api\/chat\/threads\/(\d+)$/);
       if (m && req.method === 'GET') {
-        const t = await readThread(db, user, Number(m[1]));
+        const t = await readThread(db, user, Number(m[1]), { open: true });
         if (!t) json(res, 404, { error: 'not found' }); else json(res, 200, { thread: t });
         return true;
       }
