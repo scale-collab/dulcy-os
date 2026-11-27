@@ -6,7 +6,8 @@
 import type { AirtableClient, AirtableRecord } from '../providers/airtable.js';
 import { DECISIONS, DF } from '../decisions/fields.js';
 import { EMAILS, RA } from '../agents/emailsFields.js';
-import { OWNER_ONLY, PILES, pileFor, type Pile } from './agents.js';
+import { OWNER_ONLY, OWNER_PILES, PILES, pileFor, type Pile } from './agents.js';
+import { findPlaceholders, placeholderProblem } from '../agents/placeholders.js';
 import { canonAgent } from '../activity.js';
 
 export type HqAirtable = Pick<AirtableClient, 'list' | 'get' | 'create' | 'update'>;
@@ -16,6 +17,8 @@ export interface DecisionCard {
   isReply: boolean; issue: string; checked: string; fix: string; details: string; action: string; created: string;
   /** Echo reply cards: the EmailBison thread link and the prospect's latest message (from Details). */
   threadUrl: string; latestMessage: string; canEdit: boolean;
+  /** Unfilled placeholders in the reply draft ("[link]", "{{first_name}}"): Send stays off until they are replaced. */
+  placeholders: string[];
 }
 
 /** "Thread: <url>" and "Latest message:" / "Their last message:" from a Echo decision's Details. Pure. */
@@ -27,7 +30,9 @@ export function replyContext(details: string): { threadUrl: string; latestMessag
 
 const text = (v: unknown): string => (v === undefined || v === null ? '' : Array.isArray(v) ? v.map(text).filter(Boolean).join(', ') : typeof v === 'object' ? String((v as any).name ?? '') : String(v)).trim();
 const PENDING = ['New', 'Waiting'];
-const FIELDS = [DF.title, DF.agent, DF.status, DF.client, DF.issue, DF.checked, DF.fix, DF.details, DF.action, DF.emailsRecord, DF.decidedBy, DF.decidedAt];
+const FIELDS = [DF.title, DF.agent, DF.status, DF.client, DF.issue, DF.checked, DF.fix, DF.details, DF.action, DF.actionInput, DF.emailsRecord, DF.decidedBy, DF.decidedAt];
+/** Actions that send a message to a prospect: approving them sends text, so the placeholder guard applies. */
+const SENDS = ['Approve Reply', 'Send Reply'];
 
 export function toCard(r: AirtableRecord): DecisionCard {
   const f = r.fields;
@@ -36,13 +41,14 @@ export function toCard(r: AirtableRecord): DecisionCard {
   const ctx = isReply ? replyContext(text(f[DF.details])) : { threadUrl: '', latestMessage: '' };
   return {
     ...ctx, canEdit: isReply && /^rec[A-Za-z0-9]{14}$/.test(text(f[DF.emailsRecord])),
+    placeholders: SENDS.includes(text(f[DF.action])) ? findPlaceholders(text(f[DF.fix])) : [],
     id: r.id, title: text(f[DF.title]) || 'Decision', agent, client: text(f[DF.client]).replace(/^Client:\s*/i, ''), pile: pileFor(agent), status: text(f[DF.status]),
     isReply, issue: text(f[DF.issue]), checked: text(f[DF.checked]), fix: text(f[DF.fix]), details: text(f[DF.details]),
     action: text(f[DF.action]), created: r.createdTime ?? '',
   };
 }
 
-/** Pending decisions, oldest first within the pile order Replies, Campaigns, Fixes, Money, Other. */
+/** Pending decisions, oldest first within the pile order (Replies, Campaigns, Fixes, Money, Sales, Content, Orchestrator). */
 export async function pendingDecisions(at: Pick<HqAirtable, 'list'>): Promise<DecisionCard[]> {
   const rows = await at.list(DECISIONS, `OR({Status}='New',{Status}='Waiting')`, FIELDS, 300);
   return rows.map(toCard).filter((c) => PENDING.includes(c.status))
@@ -51,8 +57,8 @@ export async function pendingDecisions(at: Pick<HqAirtable, 'list'>): Promise<De
 
 export function groupByPile(cards: DecisionCard[], canSeeMoney: boolean): Record<Pile, DecisionCard[]> {
   const out = Object.fromEntries(PILES.map((p) => [p, [] as DecisionCard[]])) as Record<Pile, DecisionCard[]>;
-  for (const c of cards) if (canSeeMoney || (c.pile !== 'Money' && !OWNER_ONLY.includes(c.agent))) out[c.pile].push(c);
-  if (!canSeeMoney) delete (out as Partial<Record<Pile, DecisionCard[]>>).Money;
+  for (const c of cards) if (canSeeMoney || (!OWNER_PILES.includes(c.pile) && !OWNER_ONLY.includes(c.agent))) out[c.pile].push(c);
+  if (!canSeeMoney) for (const p of OWNER_PILES) delete (out as Partial<Record<Pile, DecisionCard[]>>)[p];
   return out;
 }
 
@@ -71,7 +77,7 @@ export function replyButtons(verdict: Verdict, edited = ''): Record<string, stri
  * Echo's replies: only the Emails row's buttons are pressed (Approve Draft / Send Edited Reply with the
  * text in Custom Reply / Skip); the engine's reply sender sends and closes the decision.
  */
-export async function decide(at: Pick<HqAirtable, 'get' | 'update'>, id: string, verdict: Verdict, decidedBy: string, opts: { canSeeMoney: boolean; editedText?: string }, now = new Date()): Promise<{ status: number; error?: string; result?: string }> {
+export async function decide(at: Pick<HqAirtable, 'get' | 'update'>, id: string, verdict: Verdict, decidedBy: string, opts: { canSeeMoney: boolean; editedText?: string }, now = new Date()): Promise<{ status: number; error?: string; result?: string; placeholders?: string[] }> {
   if (!/^rec[A-Za-z0-9]{14}$/.test(id)) return { status: 400, error: 'not a decision id' };
   const r = await at.get(DECISIONS, id, FIELDS);
   if (!r) return { status: 404, error: 'decision not found' };
@@ -84,6 +90,20 @@ export async function decide(at: Pick<HqAirtable, 'get' | 'update'>, id: string,
     if (!card.canEdit) return { status: 400, error: 'only a reply draft can be edited' };
     if (!edited || edited.length > 20_000) return { status: 400, error: 'the edited reply is empty or too long' };
     if (edited === card.fix.trim()) { verdict = 'approve'; edited = ''; } // unchanged: send the draft
+  }
+  // Placeholder guard (Alex 2026-11-27): the exact text that would go out must have none.
+  if (verdict !== 'reject' && SENDS.includes(card.action)) {
+    let outgoing = edited;
+    if (verdict === 'approve') {
+      if (card.isReply && /^rec[A-Za-z0-9]{14}$/.test(emailRec)) {
+        const row = await at.get(EMAILS, emailRec, [RA.draft]);
+        outgoing = text(row?.fields[RA.draft]) || card.fix;
+      } else if (card.action === 'Send Reply') {
+        try { outgoing = String(JSON.parse(text(r.fields[DF.actionInput]) || '{}').message ?? ''); } catch { outgoing = ''; }
+      } else outgoing = card.fix;
+    }
+    const problem = placeholderProblem(outgoing);
+    if (problem) return { status: 422, error: problem[0].toUpperCase() + problem.slice(1) + '.', placeholders: findPlaceholders(outgoing) };
   }
   const status = verdict === 'reject' ? 'Rejected' : 'Approved';
   if (card.isReply && /^rec[A-Za-z0-9]{14}$/.test(emailRec)) {

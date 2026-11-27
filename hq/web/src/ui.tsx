@@ -92,6 +92,7 @@ const ICONS: Record<string, ReactNode> = {
   calendar: <><rect x="3" y="4" width="18" height="18" rx="2" />{P('M16 2v4M8 2v4M3 10h18')}</>,
   phone: P('M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z'),
   star: P('m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z'),
+  'chevron-down': P('m6 9 6 6 6-6'),
   menu: P('M4 6h16M4 12h16M4 18h16'),
   target: <><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" /></>,
   folder: P('M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'),
@@ -392,4 +393,43 @@ export function Markdown({ text, className, small }: { text: string; className?:
   }
   flush();
   return <div className={cx('whitespace-pre-line break-words leading-relaxed text-fg-2', small ? 'text-sm' : 'text-[15px]', className)}>{blocks}</div>;
+}
+
+/* ---------- Toast (Batch 1, 2026-11-27): a clear result for every button, with Undo when it is cheap ---------- */
+export interface ToastMsg { text: string; tone?: 'good' | 'bad' | 'plain'; undo?: () => void; ms?: number }
+let toastNow: (ToastMsg & { id: number }) | null = null;
+let toastSeq = 0;
+const toastSubs = new Set<() => void>();
+/** Show one short result line (the newest replaces the last). Undo shows a button. */
+export function showToast(t: ToastMsg) { toastNow = { ...t, id: ++toastSeq }; toastSubs.forEach((f) => f()); }
+export function hideToast() { toastNow = null; toastSubs.forEach((f) => f()); }
+/** Mounted once (App). Phone: under the header; desktop: bottom centre. */
+export function Toaster() {
+  const t = useSyncExternalStore((f) => { toastSubs.add(f); return () => { toastSubs.delete(f); }; }, () => toastNow);
+  useEffect(() => {
+    if (!t) return;
+    const id = t.id;
+    const timer = window.setTimeout(() => { if (toastNow?.id === id) hideToast(); }, t.ms ?? (t.undo ? 6000 : 4000));
+    return () => window.clearTimeout(timer);
+  }, [t]);
+  if (!t) return null;
+  return (
+    <div className="pointer-events-none fixed inset-x-0 top-16 z-50 flex justify-center px-4 md:bottom-6 md:top-auto md:pl-64">
+      <div role="status" aria-live="polite" className={cx('anim-in pointer-events-auto flex min-h-12 max-w-lg items-center gap-3 rounded-2xl px-4 py-2.5 text-[15px] font-medium shadow-pop',
+        t.tone === 'bad' ? 'bg-bad text-surface' : 'bg-ink text-ink-fg')}>
+        <Icon name={t.tone === 'bad' ? 'alert' : t.tone === 'good' ? 'check' : 'sparkles'} size={17} strokeWidth={2.2} />
+        <span className="min-w-0 flex-1">{t.text}</span>
+        {t.undo && <button onClick={() => { const u = t.undo; hideToast(); u?.(); }} className="min-h-9 shrink-0 rounded-lg px-2.5 text-sm font-semibold underline-offset-2 hover:underline">Undo</button>}
+        <button onClick={hideToast} aria-label="Close" className="-mr-1 grid h-9 w-9 shrink-0 place-items-center rounded-lg opacity-80 hover:opacity-100"><Icon name="x" size={15} /></button>
+      </div>
+    </div>
+  );
+}
+
+/** Text with the given bits marked (e.g. unfilled placeholders), as escaped React text. */
+export function Marked({ text, marks }: { text: string; marks: string[] }) {
+  if (!marks.length) return <>{text}</>;
+  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${marks.map(esc).join('|')})`, 'g'));
+  return <>{parts.map((p, i) => (marks.includes(p) ? <mark key={i} className="rounded bg-warn-soft px-0.5 font-semibold text-warn">{p}</mark> : <span key={i}>{p}</span>))}</>;
 }
