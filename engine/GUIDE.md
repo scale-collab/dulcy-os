@@ -382,6 +382,11 @@ Your words: "If they respond 'yes, could we do Wednesday at 5 PM' and it's still
    - The calendar service checks free/busy again right before booking.
    - **Google:** an event on the client's main calendar, the prospect invited, a Google Meet link. Google emails the invite.
    - **Calendly:** a booking on the client's chosen meeting type. Calendly sends its own confirmation.
+   - **Outlook / Microsoft 365:** an event on the client's main Outlook calendar, the prospect invited, a Teams link when their account has Teams (work accounts; a personal Outlook.com account gets no video link). Outlook emails the invite.
+   - **Cal.com:** a booking on the client's chosen event type. Cal.com sends its own confirmation.
+   - **GoHighLevel:** the prospect is added (or updated) as a contact, then an appointment on the client's chosen calendar. GoHighLevel's own confirmations and workflows run.
+   - **HubSpot:** a booking on the client's chosen meeting link. HubSpot sends its own confirmation and logs the meeting on the contact.
+   - A required question on the booking form that Echo can't answer truthfully (a dropdown, a consent checkbox) stops the booking with a clear reason: make that question optional in the client's tool.
    - Same approval never books twice (fixed booking key). It books only on the thread's own client calendar.
    - **If the time is gone or the booking fails, nothing is sent.** The draft changes to 2 other times and a new card comes back.
 5. **After booking**, the Emails row gets what a booked meeting always gets:
@@ -423,6 +428,82 @@ Your words: "If they respond 'yes, could we do Wednesday at 5 PM' and it's still
    ```
    - The calendar service's `/calendar/admin/*` routes are not public (Traefik leaves them out); the engine reaches them inside the Docker network.
    - A failed connect or booking now writes one line to `docker logs dulcy-calendar` with the route and the reason (no tickets, codes or emails).
+
+#### More calendars: Outlook, Cal.com, GoHighLevel, HubSpot (2026-11-27)
+HQ → client → AI replier → Calendar → **Get calendar link** now offers 6 calendars: Google Calendar, Outlook / Microsoft 365, Calendly, Cal.com, GoHighLevel, HubSpot Meetings. Echo reads open times and books on all 6 the same way.
+
+| Calendar | How the client connects | Setup on your side |
+|---|---|---|
+| Outlook / Microsoft 365 | Signs in with Microsoft | Once: a Microsoft (Entra) app, below |
+| HubSpot Meetings | Signs in with HubSpot | Once: a HubSpot developer app, below |
+| Cal.com | Pastes an API key on our page | Nothing |
+| GoHighLevel | Pastes a Private Integration token + Location ID | Nothing |
+
+**Status in HQ / `calendar-test`:** "Connected – booking allowed", "Connected – reconnect to allow booking" (a permission is missing), or "Reconnect required" (the key was deleted or access expired). Then send the client a new link.
+
+##### 1. Microsoft app (Outlook / Microsoft 365), once
+1. Go to **entra.microsoft.com** (sign in as Dulcy's Microsoft admin) → **Applications → App registrations → New registration**.
+   - Name: `Dulcy Calendar`.
+   - Supported account types: **Accounts in any organizational directory (Any Microsoft Entra ID tenant – Multitenant) and personal Microsoft accounts (e.g. Skype, Xbox)**. Booking works for both kinds; personal accounts just get no Teams link.
+   - Redirect URI: platform **Web**, `https://n8n.dulcy.io/calendar/callback`.
+   - Click **Register**.
+2. **Overview** → copy the **Application (client) ID**.
+3. **Certificates & secrets → Client secrets → New client secret**. Description `dulcy-calendar`, expiry 24 months → **Add**. Copy the **Value** (not the Secret ID); it is shown once. Put a reminder in your calendar to renew it before it expires.
+4. **API permissions → Add a permission → Microsoft Graph → Delegated permissions** → tick **offline_access**, **User.Read** (usually already there) and **Calendars.ReadWrite** → **Add permissions**. No application permissions. You don't need "Grant admin consent" for Dulcy's own tenant.
+5. **Branding & properties** → Publisher domain `dulcy.io` (verify it if asked). UNKNOWN: some client companies block apps from unverified publishers. If a client sees "Need admin approval", their IT admin approves "Dulcy Calendar" once (Enterprise applications → Admin consent requests), or you finish **Publisher verification** (needs a Microsoft Partner ID).
+6. Put the ID and secret on the server (below, `PROVIDER=microsoft`).
+
+##### 2. HubSpot developer app, once
+1. Go to **developers.hubspot.com** → sign in to (or create) Dulcy's **developer account**.
+2. **Apps → Create app** (a public app, left unlisted; no Marketplace listing).
+   - **App info:** name `Dulcy Calendar`.
+   - **Auth** tab: Redirect URL `https://n8n.dulcy.io/calendar/callback`.
+   - **Scopes** → add as **Required**: `scheduler.meetings.meeting-link.read` (meeting links and their availability), `crm.objects.contacts.write` (a booking creates the contact) and `oauth` if it isn't already there.
+   - **Create app** / Save. Copy the **Client ID** and **Client secret** from the Auth tab.
+   - UNKNOWN: HubSpot is moving apps to its new "projects" developer platform. If your account only offers that, create the app there with the same redirect URL and the same 3 scopes as required scopes.
+3. Put the ID and secret on the server (below, `PROVIDER=hubspot`).
+
+##### 3. Put a client ID and secret on the server (Microsoft or HubSpot)
+SSH in (`ssh -o ServerAliveInterval=30 root@178.156.132.86`), then run this once per provider. Neither value is shown on screen or saved in the shell history:
+```
+PROVIDER=microsoft          # or: hubspot
+cp /opt/dulcy-calendar/data/private/config.json /opt/dulcy-calendar/data/private/config.json.bak-$(date +%F-%H%M)
+read -r -p "Client ID: " CID; read -r -s -p "Client secret: " CSEC; echo
+CID="$CID" CSEC="$CSEC" PROVIDER="$PROVIDER" python3 -c "import json,os; p='/opt/dulcy-calendar/data/private/config.json'; c=json.load(open(p)); c.setdefault('apps',{})[os.environ['PROVIDER']]={'clientId':os.environ['CID'],'clientSecret':os.environ['CSEC']}; json.dump(c,open(p,'w'),indent=1)"
+unset CID CSEC
+python3 -c "import json; print(sorted(json.load(open('/opt/dulcy-calendar/data/private/config.json'))['apps']))"   # expect your provider in the list
+docker restart dulcy-calendar
+docker logs --tail 5 dulcy-calendar        # expect "Calendar connection service ready"
+```
+Deploy the new code first (after this branch is merged to main):
+```
+cd /opt/dulcy-os && git pull
+mkdir -p /opt/dulcy-calendar/app/bak-$(date +%F) && cp /opt/dulcy-calendar/app/*.mjs /opt/dulcy-calendar/app/bak-$(date +%F)/
+cp services/dulcy-calendar/*.mjs /opt/dulcy-calendar/app/
+docker restart dulcy-calendar
+bash engine/deploy/deploy.sh               # the engine and HQ (new provider list)
+```
+Cal.com and GoHighLevel work right after the deploy: there is nothing to add to `apps`.
+
+##### 4. What the client does (Cal.com and GoHighLevel)
+The link's page shows these steps too.
+- **Cal.com:**
+  1. Sign in to Cal.com as the invited email.
+  2. **Settings → Developer → API keys → New** (or **+ Add**). Name it `Dulcy`, choose **Never expires** (or the longest option), **Save**.
+  3. Copy the key (it starts with `cal_`) and paste it on the Dulcy page.
+  4. Pick the event type and their time zone. The event type's own hours, length and buffers decide the times.
+  - The key must belong to the invited email, or the page refuses it.
+  - To stop Dulcy: delete the key in Cal.com.
+- **GoHighLevel** (Twenty West):
+  1. Open the sub-account that has the booking calendar.
+  2. **Settings → Private Integrations → Create new Integration**, name `Dulcy`.
+  3. Tick **View Calendars** (calendars.readonly), **View Calendar Events** (calendars/events.readonly), **Edit Calendar Events** (calendars/events.write) and **Edit Contacts** (contacts.write). **Create**, then copy the token.
+  4. Paste the token and the **Location ID** (Settings → Business Profile, or the part after `/location/` in the address bar) on the Dulcy page.
+  5. Pick the calendar and the time zone.
+  - UNKNOWN: GoHighLevel's exact scope labels may read slightly differently. The scope codes in brackets are the ones that matter.
+  - GoHighLevel shows no account email for a token, so the check is that the token works on that Location ID, plus the one-time link.
+  - Without Edit Calendar Events / Edit Contacts, the first booking is refused and the status says "reconnect to allow booking". Then they make a new token with all 4 scopes and use a new link.
+  - To stop Dulcy: delete the Private Integration.
 
 ## Bounce agent (Atlas, 2026-11-25)
 Follows Alex's method (RULES.md 2026-11-25). Over 4% bounce = pause and investigate.
