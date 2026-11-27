@@ -1,0 +1,37 @@
+services:
+  dulcy-calendar:
+    image: node:24-alpine
+    container_name: dulcy-calendar
+    restart: unless-stopped
+    user: '1000:1000'
+    command: ['node','/app/calendar-server.mjs']
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 192m
+    cpus: 0.5
+    volumes:
+      - ./app:/app:ro
+      - ./data:/data
+    networks: [n8n]
+    labels:
+      traefik.enable: 'true'
+      traefik.docker.network: jo00woww0kwo840gs0o08wgg
+      traefik.http.routers.dulcy-calendar.rule: 'Host(`n8n.dulcy.io`) && PathPrefix(`/calendar/`) && !PathPrefix(`/calendar/admin/`)'
+      traefik.http.routers.dulcy-calendar.entrypoints: https
+      traefik.http.routers.dulcy-calendar.priority: '100'
+      traefik.http.routers.dulcy-calendar.tls: 'true'
+      traefik.http.routers.dulcy-calendar.tls.certresolver: letsencrypt
+      traefik.http.routers.dulcy-calendar.middlewares: dulcy-calendar-limit
+      traefik.http.middlewares.dulcy-calendar-limit.ratelimit.average: '10'
+      traefik.http.middlewares.dulcy-calendar-limit.ratelimit.burst: '20'
+      traefik.http.services.dulcy-calendar.loadbalancer.server.port: '8789'
+    healthcheck:
+      test: ['CMD','node','-e',"fetch('http://127.0.0.1:8789/calendar/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+networks:
+  n8n:
+    external: true
+    name: jo00woww0kwo840gs0o08wgg
