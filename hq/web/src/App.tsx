@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, ApiError, setViewAsMember, switchViewAsMember, viewingAsMember, type PortalMe, type User } from './api';
+import { api, ApiError, setViewAsMember, switchViewAsMember, viewingAsMember, viewingAsWho, type PortalMe, type User } from './api';
 import { cx, go, Icon, IconButton, Loading, Logo, setCount, Toaster, useCounts, useRoute, useTheme, type ThemeMode } from './ui';
 import Login from './pages/Login';
 import Today from './pages/Today';
@@ -44,7 +44,7 @@ const THEMES: { mode: ThemeMode; icon: string; label: string }[] = [
 
 export default function App() {
   const [user, setUser] = useState<User | null | undefined>(undefined);
-  // "View as member": the owner sees what a member (Josh) sees, read only. The server decides (X-HQ-View).
+  // "View as" (started on Users → a person): the owner sees HQ as that role, read only. The server decides (X-HQ-View).
   const [viewing, setViewing] = useState(false);
   const route = useRoute();
   const load = useCallback(() => {
@@ -109,11 +109,12 @@ export default function App() {
 }
 
 function ViewingBanner() {
+  const who = viewingAsWho();
   return (
     <div role="status" className="sticky top-14 z-20 border-b border-warn/40 bg-warn-soft md:top-0">
       <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 py-2 sm:px-6 lg:px-10">
         <Icon name="user" size={17} className="shrink-0 text-warn" />
-        <span className="min-w-0 flex-1 text-sm font-medium text-fg">Viewing as a member (what Josh sees). Read only.</span>
+        <span className="min-w-0 flex-1 text-sm font-medium text-fg">Viewing as {who.name} ({who.role}). Read only.</span>
         <button onClick={() => switchViewAsMember(false)} className="min-h-10 shrink-0 rounded-xl bg-ink px-4 text-sm font-semibold text-ink-fg hover:bg-ink-hover">Exit</button>
       </div>
     </div>
@@ -151,13 +152,8 @@ function Sidebar({ active, user, onSignOut, viewing }: { active: string; user: U
           </button>
         )}
       </nav>
+      {/* "View as" lives on Users only (Alex, 2026-11-27): no switch here. */}
       <div className="mt-auto space-y-3 p-3">
-        {(user.role === 'owner' || viewing) && (
-          <button onClick={() => switchViewAsMember(!viewing)} aria-pressed={viewing}
-            className={cx('flex min-h-10 w-full items-center gap-2.5 rounded-xl border px-3 text-sm font-medium transition', viewing ? 'border-warn/40 bg-warn-soft text-fg' : 'border-line text-muted hover:bg-hover hover:text-fg')}>
-            <Icon name="user" size={16} /><span className="flex-1 text-left">{viewing ? 'Exit member view' : 'View as member'}</span>
-          </button>
-        )}
         <button onClick={() => go('notifications')} aria-current={active === 'notifications' ? 'page' : undefined}
           className={cx('flex min-h-10 w-full items-center gap-2.5 rounded-xl border px-3 text-sm font-medium transition', active === 'notifications' ? 'border-line-strong bg-hover text-fg' : 'border-line text-muted hover:bg-hover hover:text-fg')}>
           <Icon name="bell" size={16} /><span className="flex-1 text-left">Notifications</span>
@@ -172,7 +168,7 @@ function Sidebar({ active, user, onSignOut, viewing }: { active: string; user: U
         </div>
         <div className="flex items-center gap-3 rounded-xl px-2 py-1.5">
           <span aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-sunken text-sm font-semibold text-fg-2 border border-line">{(user.name || user.email).slice(0, 1).toUpperCase()}</span>
-          <div className="min-w-0 flex-1"><div className="truncate text-sm font-medium">{user.name}</div><div className="truncate text-xs text-muted">{viewing ? 'Owner, viewing as member' : user.role === 'owner' ? 'Owner' : 'Member'}</div></div>
+          <div className="min-w-0 flex-1"><div className="truncate text-sm font-medium">{user.name}</div><div className="truncate text-xs text-muted">{viewing ? `Viewing as ${viewingAsWho().name}` : user.role === 'owner' ? 'Owner' : 'Member'}</div></div>
           <IconButton icon="logout" label="Sign out" onClick={onSignOut} />
         </div>
       </div>

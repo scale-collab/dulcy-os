@@ -99,7 +99,8 @@ export function writeBrief(d: BriefData): string {
 
   // What the agents did.
   const byAgent = tally(d.activity.map((a) => a.agent));
-  if (byAgent.length) lines.push(`*Agents (24 h):* ${byAgent.map(([agent, n]) => { const fixed = d.activity.filter((a) => a.agent === agent && a.type === 'Fixed').length; return `${agent} ${n} step${n === 1 ? '' : 's'}${fixed ? ` (${fixed} fixed)` : ''}`; }).join(' · ')}`);
+  // Plain words (Alex 2026-11-27: "Atlas 9 steps" was unclear): what was logged, per agent.
+  if (byAgent.length) lines.push(`*What the agents did (last 24 h):* ${byAgent.map(([agent, n]) => { const fixed = d.activity.filter((a) => a.agent === agent && a.type === 'Fixed').length; return `${agent}: ${n} thing${n === 1 ? '' : 's'} done${fixed ? `, ${fixed} of them fixes` : ''}`; }).join(' · ')}`);
 
   // Agent work: tasks late or not moving (HQ task lists), one line each. Nothing late = one short line.
   if (d.agentWork) lines.push(d.agentWork.length ? `*Agent work (late or stuck):*\n${d.agentWork.join('\n')}` : '*Agent work:* every task is on time and moving');
@@ -115,8 +116,9 @@ export function writeBrief(d: BriefData): string {
   lines.push(`*Top ${Math.min(3, top.length)} for you:* ${top.slice(0, 3).map((t, i) => `${i + 1}. ${t}`).join('  ')}`);
 
   if (d.week?.length) {
-    lines.push('', '*Weekly scorecard (this week vs last)*');
-    for (const w of d.week) lines.push(`• ${w.client}: interested ${w.interested[0]} (${w.interested[1]}), booked ${w.booked[0]} (${w.booked[1]}), sent ${w.sent[0]} (${w.sent[1]})`);
+    // "sent" here = replies sent by the inbox agent; "last week" is spelled out (Alex 2026-11-27).
+    lines.push('', '*Weekly scorecard (last 7 days, last week = the 7 days before)*');
+    for (const w of d.week) lines.push(`• ${w.client}: ${w.interested[0]} interested (last week ${w.interested[1]}), ${w.booked[0]} booked (last week ${w.booked[1]}), ${w.sent[0]} replies sent (last week ${w.sent[1]})`);
   }
   return lines.join('\n');
 }
@@ -159,7 +161,8 @@ async function gather(at: Pick<AirtableClient, 'list'>, now: Date, weekly: boole
     replies: rows,
     campaigns: campaigns.map((c) => ({ name: v(c.fields.Name), client: clientOf(c.fields.Client) || 'unknown', bounce: num(c.fields['Bounced %']), progress: num(c.fields.Progress), status: v(c.fields['Campaign Status']), changed: v(c.fields['Status Last Modified']) })),
     accounts: accounts.map((a) => ({ stage: v(a.fields['Spam Protocol Stage']) })),
-    activity: activity.map((a) => ({ agent: canonAgent(v(a.fields.Agent)), type: v(a.fields.Type), event: v(a.fields.Event) })),
+    // Engine rows (lead list and campaign steps) count for Atlas, who runs those stages (same as HQ Today).
+    activity: activity.map((a) => ({ agent: canonAgent(v(a.fields.Agent)) === 'Engine' ? 'Atlas' : canonAgent(v(a.fields.Agent)), type: v(a.fields.Type), event: v(a.fields.Event) })),
   };
 }
 

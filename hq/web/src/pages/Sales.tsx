@@ -10,6 +10,7 @@ import {
 } from '../api';
 import { Avatar, BackLink, Button, Card, cx, Empty, ErrorBox, ExtLink, go, Icon, IconButton, Label, PageSkeleton, PageTitle, Pill, SectionHeader, setCount, timeAgo, usd } from '../ui';
 import SalesContract from './SalesContract';
+import { slashDate } from '../dates';
 
 const ACTION: Record<SalesActionKind, { label: string; tone: 'bad' | 'warn' | 'info' | 'accent' | 'good' }> = {
   call_today: { label: 'Call today', tone: 'accent' }, call_tomorrow: { label: 'Tomorrow', tone: 'info' }, no_outcome: { label: 'No outcome', tone: 'warn' },
@@ -18,8 +19,9 @@ const ACTION: Record<SalesActionKind, { label: string; tone: 'bad' | 'warn' | 'i
 };
 const STATE_LABEL: Record<string, string> = { draft: 'Draft', sent: 'Sent', viewed: 'Viewed', signed: 'Signed', declined: 'Declined', expired: 'Expired', error: 'Error', none: 'No status' };
 const STATE_TONE: Record<string, 'good' | 'warn' | 'bad' | 'info' | 'plain'> = { signed: 'good', viewed: 'info', sent: 'info', draft: 'plain', declined: 'bad', expired: 'bad', error: 'bad', none: 'plain' };
-const day = (d: string) => (d ? new Date(`${d.slice(0, 10)}T12:00:00Z`).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric' }) : '');
-const when = (iso: string) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '');
+// Dates with slashes (11/27), RULES 2026-11-27.
+const day = (d: string) => (d ? slashDate(d.slice(0, 10)) : '');
+const when = (iso: string) => (iso ? slashDate(iso) : '');
 type View = 'action' | 'hot' | 'numbers' | 'pipeline';
 const VIEWS: { key: View; label: string }[] = [{ key: 'action', label: 'Needs action' }, { key: 'hot', label: 'Hottest' }, { key: 'numbers', label: 'Numbers' }, { key: 'pipeline', label: 'Pipeline' }];
 const viewPath = (v: View, days: number) => (v === 'action' ? 'sales' : v === 'pipeline' ? `sales/pipeline${days === 90 ? '/90' : ''}` : `sales/${v}`);
@@ -41,12 +43,14 @@ function SalesHome({ view, days }: { view: View; days: 30 | 90 }) {
   const [insError, setInsError] = useState('');
   const [busy, setBusy] = useState(false);
   const wantInsights = view === 'hot' || view === 'numbers';
+  // Round 2 (Alex, 2026-11-27: "nothing changed"): the first view also shows the Hottest 3, so insights load there too (not blocking).
+  const wantStrip = view === 'action';
   const load = useCallback((refresh = false) => {
     setBusy(true); setError('');
     api<SalesView4a>(`/sales?days=${days}${refresh ? '&refresh=1' : ''}`).then((x) => { setD(x); setCount('sales', x.counts.action); })
       .catch((e) => setError(e instanceof ApiError && e.status === 403 ? 'Only the owner sees Sales.' : e.message)).finally(() => setBusy(false));
-    if (refresh || wantInsights) { setInsError(''); api<SalesInsights>(`/sales/insights${refresh ? '?refresh=1' : ''}`).then(setIns).catch((e) => setInsError(e.message)); }
-  }, [days, wantInsights]);
+    if (refresh || wantInsights || wantStrip) { setInsError(''); api<SalesInsights>(`/sales/insights${refresh ? '?refresh=1' : ''}`).then(setIns).catch((e) => setInsError(e.message)); }
+  }, [days, wantInsights, wantStrip]);
   useEffect(() => load(), [load]);
   const title = (
     <PageTitle title="Sales" kicker={d ? `Dulcy's own deals · ${d.counts.action} need action` : "Dulcy's own deals"} sub="Booked call to signed and paid. What needs action first."
@@ -57,7 +61,12 @@ function SalesHome({ view, days }: { view: View; days: 30 | 90 }) {
   return (
     <div>
       {title}
-      <TopNumbers now={d.top.thisMonth} last={d.top.lastMonth} />
+      {view === 'action' ? (
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] [&>*]:min-w-0">
+          <TopNumbers now={d.top.thisMonth} last={d.top.lastMonth} compact />
+          <HotStrip ins={ins} error={insError} />
+        </div>
+      ) : <TopNumbers now={d.top.thisMonth} last={d.top.lastMonth} />}
       <div role="tablist" aria-label="Sales views" className="mt-5 grid grid-cols-2 gap-1 sm:flex">
         {VIEWS.map((x) => {
           const on = x.key === view;
@@ -90,7 +99,7 @@ function SalesHome({ view, days }: { view: View; days: 30 | 90 }) {
   );
 }
 
-function TopNumbers({ now, last }: { now: SalesMonth; last: SalesMonth }) {
+function TopNumbers({ now, last, compact }: { now: SalesMonth; last: SalesMonth; compact?: boolean }) {
   const tiles: { label: string; v: number | undefined; prev: number | undefined; money?: boolean; sub?: string }[] = [
     { label: 'Booked', v: now.booked, prev: last.booked },
     { label: 'Showed', v: now.showed, prev: last.showed },
@@ -99,7 +108,10 @@ function TopNumbers({ now, last }: { now: SalesMonth; last: SalesMonth }) {
   ];
   return (
     <section aria-label={`${now.label} vs ${last.label}`}>
-      <div className="mb-2 text-xs font-medium text-muted">{now.label} so far vs {last.label}</div>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-xs font-medium text-muted">This month vs last ({now.label} so far vs {last.label})</span>
+        {compact && <button onClick={() => go('sales/numbers')} className="inline-flex min-h-8 items-center gap-1 text-xs font-semibold text-accent-ink hover:underline">All numbers<Icon name="chevronRight" size={13} /></button>}
+      </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {tiles.map((t) => {
           const up = (t.v ?? 0) > (t.prev ?? 0), down = (t.v ?? 0) < (t.prev ?? 0);
@@ -116,6 +128,47 @@ function TopNumbers({ now, last }: { now: SalesMonth; last: SalesMonth }) {
         })}
       </div>
     </section>
+  );
+}
+
+/** The first view's "Hottest 3" (the Hottest tab has all of them, with the reasons). */
+function HotStrip({ ins, error }: { ins: SalesInsights | null; error: string }) {
+  const top = ins?.hottest.slice(0, 3) ?? [];
+  return (
+    <section aria-label="Hottest 3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-xs font-medium text-muted">Hottest 3{ins && !ins.close.connected ? ' (Close not connected)' : ''}</span>
+        <button onClick={() => go('sales/hot')} className="inline-flex min-h-8 items-center gap-1 text-xs font-semibold text-accent-ink hover:underline">All hottest<Icon name="chevronRight" size={13} /></button>
+      </div>
+      <Card className="overflow-hidden p-0">
+        {!ins ? <div className="px-4 py-3.5 text-sm text-muted">{error ? `Not read: ${error}` : 'Reading the hottest deals…'}</div>
+          : !top.length ? <div className="px-4 py-3.5 text-sm text-muted">No hot deal right now.</div> : (
+            <ol className="divide-y divide-line">
+              {top.map((h, i) => (
+                <li key={h.key} className="flex items-center gap-3 px-4 py-2.5">
+                  <span className="tabular grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-accent-soft text-xs font-bold text-accent-ink">{i + 1}</span>
+                  <button onClick={() => (h.dealId ? go(`sales/${h.dealId}`) : go('sales/hot'))} className="min-w-0 flex-1 text-left">
+                    <span className="block truncate text-sm font-semibold text-fg">{h.name || h.company}{h.name && h.company && <span className="font-normal text-muted"> · {h.company}</span>}</span>
+                    <span className="block truncate text-xs text-fg-2">{h.reasons[0] ?? ''}{h.next ? ` · Next: ${h.next}` : ''}</span>
+                  </button>
+                  {h.dealId && <DraftButton id={h.dealId} accent />}
+                </li>
+              ))}
+            </ol>
+          )}
+      </Card>
+    </section>
+  );
+}
+/** A deal with no contract out yet can get one drafted (Dulcy Sign DRAFT, never sent). */
+const canDraft = (r: Pick<SalesDealLite4a, 'lost' | 'stage' | 'agreementState'>) => !r.lost && !['signed', 'paid', 'onboarded'].includes(r.stage) && (!r.agreementState || r.agreementState === 'draft' || r.agreementState === 'none');
+function DraftButton({ id, accent }: { id: string; accent?: boolean; small?: boolean }) {
+  return (
+    <button type="button" onClick={() => go(`sales/${id}/contract`)} title="Draft a contract in Dulcy Sign (a draft, never sent)"
+      className={cx('inline-flex min-h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-[13px] font-semibold transition active:scale-[0.98]',
+        accent ? 'bg-accent text-accent-fg hover:bg-accent-hover' : 'border border-line-strong bg-surface text-fg hover:bg-hover')}>
+      <Icon name="file" size={14} strokeWidth={2.1} />Draft contract
+    </button>
   );
 }
 
@@ -141,8 +194,8 @@ function ActionList({ rows }: { rows: SalesDealLite4a[] }) {
         {rows.map((r) => {
           const top = r.needs[0];
           return (
-            <li key={r.id}>
-              <button onClick={() => go(`sales/${r.id}`)} className="group flex w-full items-start gap-3 px-4 py-3.5 text-left transition hover:bg-hover sm:px-5">
+            <li key={r.id} className="flex flex-wrap items-start gap-x-2 pr-3 transition hover:bg-hover sm:flex-nowrap sm:pr-4">
+              <button onClick={() => go(`sales/${r.id}`)} className="group flex min-w-0 flex-1 basis-[calc(100%-1rem)] items-start gap-3 py-3.5 pl-4 text-left sm:basis-0 sm:pl-5">
                 <Avatar name={top.owner} size="sm" className="mt-0.5" />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
@@ -161,6 +214,7 @@ function ActionList({ rows }: { rows: SalesDealLite4a[] }) {
                 </div>
                 <Icon name="chevronRight" size={18} className="mt-1 text-faint group-hover:text-muted" />
               </button>
+              {canDraft(r) && <span className="mb-3 ml-14 sm:mb-0 sm:ml-0 sm:mt-3"><DraftButton id={r.id} small /></span>}
             </li>
           );
         })}
@@ -363,8 +417,8 @@ function Pipeline({ p, days }: { p: SalesView4a['pipeline']; days: 30 | 90 }) {
                 {isOpen && s.deals.length > 0 && (
                   <ul className="mx-4 mb-3 space-y-1 sm:mx-5">
                     {s.deals.map((d) => (
-                      <li key={d.id}>
-                        <button onClick={() => go(`sales/${d.id}`)} className="flex min-h-11 w-full items-center gap-3 rounded-xl bg-sunken px-3 py-2 text-left transition hover:bg-hover">
+                      <li key={d.id} className="flex items-center gap-2 rounded-xl bg-sunken pr-2 transition hover:bg-hover">
+                        <button onClick={() => go(`sales/${d.id}`)} className="flex min-h-11 min-w-0 flex-1 items-center gap-3 px-3 py-2 text-left">
                           <div className="min-w-0 flex-1">
                             <div className="truncate text-sm font-medium text-fg">{d.name}{who(d) && <span className="font-normal text-muted"> · {who(d)}</span>}</div>
                             <div className="truncate text-xs text-muted">{[d.callDate ? `call ${day(d.callDate)}` : 'no call in Sales Data', d.airtableStage, d.lost ? 'lost' : ''].filter(Boolean).join(' · ')}</div>
@@ -373,6 +427,7 @@ function Pipeline({ p, days }: { p: SalesView4a['pipeline']; days: 30 | 90 }) {
                           {d.needs[0] && <ActionPill kind={d.needs[0].kind} />}
                           <Icon name="chevronRight" size={16} className="shrink-0 text-faint" />
                         </button>
+                        {canDraft(d) && <DraftButton id={d.id} small />}
                       </li>
                     ))}
                   </ul>

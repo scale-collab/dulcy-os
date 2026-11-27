@@ -39,7 +39,7 @@ test('the brief: waiting decisions, overnight replies and meetings, campaign and
   assert.match(b, /2 new interested replies \(Twenty West 2\) · 1 meeting booked \(Twenty West 1\) · 1 reply sent · 1 draft waiting/);
   assert.match(b, /\*Campaigns \(2 active\):\* ⚠️ 1 over 4% bounce \(Twenty West: TW Food Direct 5\.2%\) · 👀 1 to watch \(2\.5-4%\) · ⏸ 1 paused in the last 24 h · 📈 1 past 60%: plan the next one \(Twenty West 1\)/);
   assert.match(b, /\*Accounts:\* 2 resting · 1 to replace · 1 purchase waiting for your ✅/);
-  assert.match(b, /\*Agents \(24 h\):\* Atlas 1 step \(1 fixed\) · Engine 1 step/);
+  assert.match(b, /\*What the agents did \(last 24 h\):\* Atlas: 1 thing done, 1 of them fixes · Engine: 1 thing done/);
   assert.match(b, /1\. Approve or skip the 2 waiting replies in Decisions/);
   assert.doesNotMatch(b, /@/, 'no email addresses');
 });
@@ -50,8 +50,8 @@ test('a quiet morning says so; Friday adds the weekly scorecard', () => {
   assert.match(quiet, /all healthy/);
   assert.match(quiet, /Nothing blocking/);
   const fri = writeBrief(data({ week: [{ client: 'Twenty West', interested: [12, 9], booked: [3, 1], sent: [20, 14] }] }));
-  assert.match(fri, /Weekly scorecard \(this week vs last\)/);
-  assert.match(fri, /Twenty West: interested 12 \(9\), booked 3 \(1\), sent 20 \(14\)/);
+  assert.match(fri, /Weekly scorecard \(last 7 days, last week = the 7 days before\)/);
+  assert.match(fri, /Twenty West: 12 interested \(last week 9\), 3 booked \(last week 1\), 20 replies sent \(last week 14\)/);
 });
 
 test('timer: weekdays after the brief hour only (no database needed when it is off or a weekend)', async () => {
