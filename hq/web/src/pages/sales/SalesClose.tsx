@@ -89,7 +89,7 @@ export function CloseFunnel() {
             <Tile label="Average value per win" v={f.avgWinValue === null ? '–' : `${usd(f.avgWinValue)}${f.valuePeriod === 'monthly' ? '/mo' : ''}`} sub={`before ${f.prev.avgWinValue === null ? '–' : usd(f.prev.avgWinValue)}${f.valuePeriod === 'mixed' ? ' · mixed periods' : ''}`} />
           </div>
           <Card className="overflow-hidden p-0">
-            <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] gap-x-3 border-b border-line px-4 py-2.5 text-xs font-medium text-muted sm:px-5"><span>Step</span><span className="w-14 text-right">Reached</span><span className="w-14 text-right">From step before</span><span className="w-16 text-right">Days to get here</span></div>
+            <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] gap-x-3 border-b border-line px-4 py-2.5 text-xs font-medium text-muted sm:px-5"><span>Step</span><span className="w-20 text-right">Reached</span><span className="w-14 text-right">From step before</span><span className="w-16 text-right">Days to get here</span></div>
             <ol className="divide-y divide-line">
               {f.steps.map((s, i) => <FunnelRow key={s.key} s={s} i={i} total={f.total} prev={f.prev} />)}
             </ol>
@@ -109,7 +109,7 @@ function FunnelRow({ s, i, total, prev }: { s: SalesFunnelSide['steps'][number];
         <span className="flex items-center gap-1.5"><span className="truncate text-[15px] font-medium text-fg">{s.label}</span>{i > 0 && <Icon name="chevronRight" size={13} className="hidden text-faint sm:block" />}<span className="hidden truncate text-xs text-muted sm:inline">{s.stages.join(', ')}</span></span>
         <span className="mt-1 block h-2 rounded-full bg-sunken" aria-hidden="true"><span className="block h-2 rounded-full bg-accent" style={{ width: `${Math.max(s.reached ? 2 : 0, s.pctOfTotal ?? 0)}%` }} /></span>
       </span>
-      <span className="w-14 text-right"><span className="tabular block text-[15px] font-bold text-fg">{pct(s.pctOfTotal)}</span><span className="tabular block text-[11px] text-muted">{s.reached} · was {p ? pct(p.pctOfTotal) : '–'}</span></span>
+      <span className="w-20 text-right"><span className="tabular block text-[15px] font-bold text-fg">{pct(s.pctOfTotal)}</span><span className="tabular block text-[11px] text-muted">{s.reached} · was {p ? pct(p.pctOfTotal) : '–'}</span></span>
       <span className="tabular w-14 text-right text-sm text-fg-2">{i === 0 ? '' : pct(s.pctOfPrev)}</span>
       <span className="w-16 text-right"><span className="tabular block text-sm font-semibold text-fg">{i === 0 ? '' : days(s.daysFromPrev)}</span>{i > 0 && <span className="tabular block text-[11px] text-muted">{s.daysN ? `${s.daysN} deal${s.daysN === 1 ? '' : 's'}` : ''}</span>}</span>
     </li>

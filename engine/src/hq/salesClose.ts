@@ -102,6 +102,8 @@ function side(opps: CloseOpportunity[], changes: CloseStatusChange[], steps: { k
     if (o.statusType === 'won' && !events.some((e) => e.step === 'won')) events.push({ at: Date.parse(o.won || o.updated), step: 'won' });
     const ent = new Map<number, number>();
     for (const e of events) { const i = idx.get(e.step); if (i !== undefined && Number.isFinite(e.at) && !ent.has(i)) ent.set(i, e.at); }
+    // Every opportunity entered the funnel when it was created (a booked call), even one that went straight to lost or no-show.
+    if (!ent.size && steps.length && Number.isFinite(Date.parse(o.created))) ent.set(0, Date.parse(o.created));
     entered.push(ent);
     reachedIdx.push(ent.size ? Math.max(...ent.keys()) : -1);
   }

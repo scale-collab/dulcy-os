@@ -63,7 +63,10 @@ export function CompareChart({ title, now, prev, labels, nowLabel, prevLabel, fm
   const path = (xs: number[]) => xs.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
   const at = hover ?? null;
   const tick = (i: number) => labels.now[i] ?? labels.prev[i] ?? '';
-  const ticks = [0, Math.floor((n - 1) / 2), n - 1].filter((v, i, a) => a.indexOf(v) === i);
+  // x ticks from this period (its own dates); the period before is compared position by position.
+  const lastNow = Math.max(0, now.length - 1);
+  const ticks = [0, Math.floor(lastNow / 2), lastNow].filter((v, i, a) => a.indexOf(v) === i);
+  const grid = Number.isInteger(nice / 2) ? [0, 0.5, 1] : [0, 1];
   return (
     <figure className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-card">
       <figcaption className="flex items-baseline justify-between gap-2">
@@ -78,7 +81,7 @@ export function CompareChart({ title, now, prev, labels, nowLabel, prevLabel, fm
         <svg viewBox={`0 0 ${W} ${H}`} className="mt-1 block h-auto w-full overflow-visible" role="img" aria-label={`${title}: ${fmt(now.at(-1) ?? 0)} ${nowLabel} vs ${fmt(prev.at(-1) ?? 0)} ${prevLabel}`}
           onMouseLeave={() => setHover(null)}
           onMouseMove={(e) => { const r = (e.currentTarget as SVGSVGElement).getBoundingClientRect(); const px = ((e.clientX - r.left) / r.width) * W; setHover(Math.max(0, Math.min(n - 1, Math.round(((px - L) / (W - L - R)) * (n - 1))))); }}>
-          {[0, 0.5, 1].map((f) => <g key={f}><line x1={L} x2={W - R} y1={y(nice * f)} y2={y(nice * f)} stroke="var(--line)" strokeWidth="1" /><text x={L - 4} y={y(nice * f) + 3} textAnchor="end" fontSize="9" fill="var(--muted)">{fmt(nice * f)}</text></g>)}
+          {grid.map((f) => <g key={f}><line x1={L} x2={W - R} y1={y(nice * f)} y2={y(nice * f)} stroke="var(--line)" strokeWidth="1" /><text x={L - 4} y={y(nice * f) + 3} textAnchor="end" fontSize="9" fill="var(--muted)">{fmt(nice * f)}</text></g>)}
           {ticks.map((i) => <text key={i} x={x(i)} y={H - 6} textAnchor={i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'} fontSize="9" fill="var(--muted)">{tick(i)}</text>)}
           {prev.length > 0 && <path d={path(prev)} fill="none" stroke="var(--muted)" strokeWidth="2" strokeDasharray="4 3" strokeLinejoin="round" strokeLinecap="round" />}
           {now.length > 0 && <path d={path(now)} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />}

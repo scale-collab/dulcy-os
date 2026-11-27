@@ -77,7 +77,7 @@ function CapacityBlock({ c, settings, onSaved }: { c: SalesCapacityR3; settings:
           </div>
         ))}
       </div>
-      <p className="mt-2 text-xs text-muted">{c.open.note}. Booked = calls in the next 30 days of all slots (booked + open). Rates: the last 90 days. {c.touchesPerClose.note}</p>
+      <p className="mt-2 text-xs text-muted">{c.open.note.replace(/\.+$/, '')}. Booked = calls in the next 30 days of all slots (booked + open). Rates: the last 90 days. {c.touchesPerClose.note}</p>
       <CapacitySettingsForm s={settings} onSaved={onSaved} />
     </section>
   );
