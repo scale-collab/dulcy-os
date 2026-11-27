@@ -1054,6 +1054,33 @@ Where this differs from the two sections above, this wins.
 - **Open a chat with a question typed in** (other screens use this): `#/chat/Atlas?ask=How%20is%20GMG's%20health%3F` opens a new chat with Atlas and the question ready to send.
 - Fixed: the "… is looking it up" line showed the agent on screen (Riley) instead of the one asked (Ada). It now shows only in the chat the question was asked in, with that agent's name; a chat can never be answered by another agent.
 
+### Phone notifications (2026-11-27)
+HQ can ping your iPhone (and any computer with Chrome, Edge or Safari). Tap a ping and HQ opens that exact item. Slack pings stay exactly as they are.
+
+**Turn it on on your iPhone (once):**
+1. If HQ is already on your Home Screen from before 27 Nov 2026: press and hold that icon → **Remove App** → **Delete from Home Screen**. (The old icon was a plain bookmark; only the new one can get pings.)
+2. In **Safari**, open https://hq.dulcy.io and sign in.
+3. Tap **Share** (the square with the arrow) → **Add to Home Screen** → **Add**.
+4. Open HQ **from the new icon**. Tap the **bell** at the top (on a computer: **Notifications** at the bottom of the left menu; owner: also on **Users**).
+5. Tap **Turn on notifications on this device** → **Allow**.
+6. Tap **Send a test**. A "Dulcy HQ test" ping arrives within seconds. Tap it: HQ opens on Notifications.
+- On a computer: open Notifications, tap Turn on, Allow. Each phone or computer is turned on by itself; all of them show under **Your devices**.
+- Blocked by mistake? iPhone: **Settings → Notifications → HQ → Allow Notifications**. Chrome: the lock icon left of the address → Notifications → Allow, then reload.
+
+**What pings you (each can be switched off on that screen; all on by default, always on, no quiet hours):**
+| Switch | When | Tap opens |
+|---|---|---|
+| New decisions | each new Decisions card; several within 3 minutes come as one ("4 new decisions") | that card (or Decisions) |
+| Agent messages to you | an agent's chat answer when you are not on that chat; an ask or a task waiting on you | the chat / the ask's screen / the agent |
+| Urgent problems | an active campaign over 4% bounce, a campaign paused for bounces, an inbox in spam, warm-up off, a run that failed or needs review (once per kind per day) | the campaign / Deliverability / the report / the agent |
+| Good news | a meeting booked (Echo, or WON in Emails), a client signed or paid | the reply thread / the deal |
+
+**Josh (members)** gets only his own items: new **reply** decisions, asks for the team, his own chat answers, meetings booked. Never money (signed/paid, Ledger), Sienna, urgent problems or the owner's own work. The server decides, the same way HQ hides those screens.
+
+**Limits:** at most 1 ping a minute per person (what waits is grouped into the next one), at most 60 a day. A ping that waited more than 30 minutes is dropped. The same thing is never pinged twice. When notifications are first turned on, nothing that already existed is pinged: only what is new from then on.
+
+**How it works (for Riley):** `engine/src/hq/push.ts` (keys, devices, `notify()`, sending, limits) and `engine/src/hq/pushWatch.ts` (the watch loop, every minute while at least one device is on: asks, waiting tasks, urgent reports, failed runs, `calendar.book` bookings every minute; Decisions every 2 minutes; campaigns over 4% and booked Emails every 10; Deliverability and Sales every 15). The web side is `hq/web/src/notifications.tsx` and `hq/web/public/sw.js`. The VAPID key pair is made on the first start and kept in Postgres (`hq_push_keys`); nothing to set. Optional settings: `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` (your own pair), `VAPID_SUBJECT` (a `mailto:` address or `https://` URL; default `HQ_PUBLIC_URL`), `HQ_PUSH=off` (stops the watch loop). A device the push service says is gone (404/410) is removed; 10 failures in a row also remove it.
+
 ### Switch HQ on (Alex, once)
 1. **DNS:** where dulcy.io's DNS is managed, add an **A record**: name `hq`, value = the server's IP (the same IP as the `engine` record), proxy off / DNS only.
 2. **Settings:** in `engine/deploy/.env` on the server, add:
