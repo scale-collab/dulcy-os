@@ -1,34 +1,44 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { api, type AgentTask, type Client, type ClientCampaign, type User } from '../api';
-import { Avatar, BackLink, Button, Card, cx, dueLabel, ErrorBox, go, Icon, Label, lightLabel, lightTone, PageSkeleton, Pill, SectionHeader, StatusDot, timeAgo, usd } from '../ui';
-import { noteBox } from './Clients';
+import { api, type AgentTask, type Client, type ClientCampaign, type ClientDetailResults, type InboxTab, type User } from '../api';
+import { Avatar, BackLink, Button, Card, cx, dueLabel, ErrorBox, go, Icon, Label, PageSkeleton, Pill, SectionHeader, timeAgo, usd } from '../ui';
+import { dealLine, HealthPill, InsightLines, num, pct1, WINDOW_LABEL } from './Clients';
 import { InboxPanel, INBOX_TABS } from './Inbox';
 import ReplierPanel from './Replier';
-import type { InboxTab } from '../api';
 
 interface Detail {
   client: Client;
   activity: { id: string; event: string; when: string; agent: string; type: string; details: string }[];
   tasks: AgentTask[];
   decisions: { id: string; title: string; agent: string; pile: string; created: string }[];
+  results: ClientDetailResults;
   readAt: string;
 }
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
-const HUB_TABS = [{ key: 'overview', label: 'Overview', icon: 'briefcase' }, { key: 'inbox', label: 'Inbox', icon: 'inbox' }, { key: 'replier', label: 'AI replier', icon: 'sparkles' }] as const;
+const HUB_TABS = [{ key: 'overview', label: 'Overview', icon: 'briefcase' }, { key: 'inbox', label: 'Inbox', icon: 'inbox' }] as const;
 
-/** #/clients/<id>[/inbox[/<inbox tab>] | /replier] */
+/** Ask Atlas: Chat opens on Atlas with a ready question (Chat reads the draft once, on open). */
+function askAtlas(name: string) {
+  try { sessionStorage.setItem('hq:chat-draft', `How is ${name}'s health?`); } catch { /* private mode */ }
+  go('chat/Atlas');
+}
+
+/**
+ * #/clients/<id>[/inbox[/<inbox tab>]]. #/clients/<id>/replier still opens the AI replier settings on
+ * their own (moved out of the client page, Alex 2026-11-27; Inbox links there).
+ */
 export default function ClientPage({ id, user, tab, sub }: { id: string; user: User; tab?: string; sub?: string }) {
   const [d, setD] = useState<Detail | null>(null);
   const [error, setError] = useState('');
   const load = useCallback(() => { setError(''); api<Detail>(`/clients/${encodeURIComponent(id)}`).then(setD).catch((e) => setError(e.message)); }, [id]);
   useEffect(load, [load]);
+  if (tab === 'replier') {
+    return <><BackLink label={d?.client.name ?? 'Client'} onClick={() => go(`clients/${id}`)} /><h1 className="mb-4 text-[22px] font-bold tracking-tight">AI replier settings{d ? ` · ${d.client.name}` : ''}</h1><ReplierPanel clientId={id} /></>;
+  }
   const back = <BackLink label="Clients" onClick={() => go('clients')} />;
   if (error) return <>{back}<ErrorBox error={error} retry={load} /></>;
   if (!d) return <>{back}<PageSkeleton kind="list" /></>;
   const c = d.client;
-  const tone = lightTone[c.light];
-  const conv = c.interested30 ? c.booked30 / c.interested30 : null;
   const owner = user.role === 'owner';
 
   return (
@@ -39,36 +49,25 @@ export default function ClientPage({ id, user, tab, sub }: { id: string; user: U
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-[26px] font-bold leading-tight tracking-tight">{c.name}</h1>
-              <Pill tone={tone === 'bad' ? 'bad' : tone === 'warn' ? 'warn' : tone === 'good' ? 'good' : 'plain'}><StatusDot tone={tone} />{lightLabel[c.light]}</Pill>
-              {c.internal && <Pill>Dulcy itself</Pill>}
+              <HealthPill c={c} />
             </div>
             <div className="mt-1 text-sm text-muted">
-              {[c.type || 'Client Type not set', c.startDate ? `since ${c.startDate}` : '', !c.active && c.endDate ? `ended ${c.endDate}` : '', !c.active && c.inactiveReason ? c.inactiveReason : ''].filter(Boolean).join(' · ')}
+              {[c.internal ? 'Dulcy itself' : c.dealLabel, c.startDate ? `paying since ${c.startDate}` : '', !c.active && c.endDate ? `ended ${c.endDate}` : '', !c.active && c.inactiveReason ? c.inactiveReason : '', c.kpi ? `KPI ${c.kpi} meetings/mo (${c.kpiSource})` : 'KPI UNKNOWN'].filter(Boolean).join(' · ')}
             </div>
             <div className="mt-1 text-xs text-muted">Workspaces: {c.workspaces.map((w) => `${w.name} (${w.status || 'no status'}${w.bisonId ? `, #${w.bisonId}` : ''})`).join(' · ')}</div>
           </div>
-          <Button icon="message" onClick={() => go('chat/Atlas')} className="w-full sm:w-auto">Ask Atlas</Button>
+          <Button icon="message" onClick={() => askAtlas(c.name)} className="w-full sm:w-auto">Ask Atlas</Button>
         </div>
-        {c.note.length > 0 && (
-          <div className={cx('mt-5 rounded-xl px-4 py-3 text-[15px] font-medium leading-snug', noteBox[c.light])}>
-            <Label className="mb-1 !text-current opacity-80">Today</Label>
-            {c.note.map((n) => <div key={n}>{n}</div>)}
-          </div>
-        )}
-        {c.reasons.length > 0 && (
-          <ul className="mt-4 space-y-1.5 text-sm text-fg-2">
-            {c.reasons.map((r) => <li key={r} className="flex gap-2"><Icon name="flag" size={14} className="mt-0.5 text-muted" />{r}</li>)}
-          </ul>
-        )}
+        {c.insight && <InsightLines i={c.insight} className="mt-5 rounded-xl bg-sunken px-4 py-3 text-[15px]" />}
       </Card>
 
       <div role="tablist" aria-label="Client sections" className="mt-5 flex gap-1 border-b border-line">
         {HUB_TABS.map((t) => {
-          const on = (tab && HUB_TABS.some((x) => x.key === tab) ? tab : 'overview') === t.key;
+          const on = (tab === 'inbox' ? 'inbox' : 'overview') === t.key;
           return (
             <button key={t.key} role="tab" aria-selected={on} onClick={() => go(`clients/${id}${t.key === 'overview' ? '' : `/${t.key}`}`)}
               className={cx('-mb-px flex min-h-11 items-center gap-2 border-b-2 px-3 text-sm font-semibold transition', on ? 'border-accent text-fg' : 'border-transparent text-muted hover:text-fg')}>
-              <Icon name={t.icon} size={16} />{t.label}{t.key === 'inbox' && c.waitingApproval > 0 && <span className="tabular rounded-full bg-accent px-1.5 text-xs text-accent-fg">{c.waitingApproval}</span>}
+              <Icon name={t.icon} size={16} />{t.label}
             </button>
           );
         })}
@@ -76,48 +75,35 @@ export default function ClientPage({ id, user, tab, sub }: { id: string; user: U
 
       {tab === 'inbox' ? (
         <div className="mt-5"><InboxPanel fixedClient={{ key: c.key, name: c.name }} tab={(INBOX_TABS.some((x) => x.key === sub) ? sub : 'approve') as InboxTab} client="" route={(t) => go(`clients/${id}/inbox/${t}`)} /></div>
-      ) : tab === 'replier' ? (
-        <div className="mt-5"><ReplierPanel clientId={id} /></div>
       ) : <>
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <Stat label="Interested · 7 d" n={c.interested7} trend={c.interested7 - c.interestedPrev7} prev={c.interestedPrev7} />
-        <Stat label="Booked · 7 d" n={c.booked7} trend={c.booked7 - c.bookedPrev7} prev={c.bookedPrev7} />
-        <Stat label="Interested · 30 d" n={c.interested30} />
-        <Stat label={c.kpi ? `Booked · 30 d / KPI ${c.kpi}` : 'Booked · 30 d'} n={c.booked30} tone={c.kpi && c.booked30 < c.kpi ? 'warn' : undefined} />
-        <Stat label="Interested → booked" text={conv === null ? '–' : pct(conv)} tone={conv !== null && c.interested30 >= 10 && conv < 0.2 ? 'warn' : undefined} />
-        <Stat label="Replies waiting" n={c.waitingApproval} tone={c.waitingApproval ? 'warn' : undefined}
-          action={c.waitingApproval || c.seanWaiting ? <button onClick={() => go(`decisions/Replies/${encodeURIComponent(c.key)}`)} className="mt-1 inline-flex min-h-8 items-center gap-1 text-xs font-semibold text-accent-ink hover:underline">Open replies<Icon name="chevronRight" size={13} /></button> : undefined}
-          sub={c.seanWaiting ? `${c.seanWaiting} Echo decision${c.seanWaiting === 1 ? '' : 's'}` : undefined} />
-      </div>
+      <section className="mt-6">
+        <SectionHeader title="Results over time" icon="trendUp" right={<span className="text-xs text-muted">EmailBison</span>} />
+        <ResultsOverTime d={d} />
+      </section>
 
       {owner && c.money && (
         <section className="mt-6">
           <SectionHeader title="Money" icon="dollar" right={<span className="text-xs text-muted">owner only</span>} />
           <Card className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <Money label="Monthly fee" v={c.money.fee ? `${usd(c.money.fee)}/mo` : c.internal ? 'none' : 'UNKNOWN'} />
-            <Money label={c.money.ltvSource === 'estimated' ? 'LTV (estimated)' : 'Lifetime revenue'} v={c.money.ltv === null ? 'UNKNOWN' : usd(c.money.ltv)} />
-            <Money label="Outstanding" v={c.money.receivables ? usd(c.money.receivables) : '$0'} bad={!!c.money.receivables} />
-            <Money label="Months active" v={c.money.months === null ? '–' : String(c.money.months)} />
-            {c.money.feeNote && <div className="col-span-2 text-xs text-warn sm:col-span-4">{c.money.feeNote}</div>}
+            <Money label="Deal" v={dealLine(c)} sub={c.money.dealLines.length > 1 ? c.money.dealLines.map((l) => `${l.label} ${usd(l.monthly || l.perCall)}`).join(' + ') : c.money.dealSource} />
+            <Money label="LTV so far" v={usd(c.money.ltv)} sub={c.money.ltvNote} />
+            <Money label={c.money.invoices.some((i) => i.late) ? 'Open invoices (some late)' : 'Coming up'} v={c.money.receivables ? usd(c.money.receivables) : '$0'} bad={c.money.invoices.some((i) => i.late)}
+              sub={c.money.invoices.length ? c.money.invoices.map((i) => `${usd(i.amount)} ${i.late ? 'late' : 'due'} ${i.due}`).join(' · ') : c.money.invoicesSource} />
+            <Money label="Months paying" v={c.money.months === null ? '–' : String(c.money.months)} sub={d.results.deals.roi ? `client ROI ${d.results.deals.roi}x` : undefined} />
+            {c.money.feeNote && <div className="col-span-2 flex gap-2 text-xs text-muted sm:col-span-4"><Icon name="wrench" size={13} className="mt-0.5" />Atlas to fix in Airtable: {c.money.feeNote}</div>}
           </Card>
         </section>
       )}
 
       <section className="mt-6">
+        <SectionHeader title="Client results" icon="star" right={<span className="text-xs text-muted">their deals, calls and onboarding</span>} />
+        <ClientResults d={d} owner={owner} />
+      </section>
+
+      <section className="mt-6">
         <SectionHeader title={`Active campaigns · ${c.campaigns.length}`} icon="megaphone" right={<span className="text-xs text-muted">watch &gt; 2.5% · pause &gt; 4%</span>} />
         <Campaigns list={c.campaigns} />
       </section>
-
-      {(c.dataIssues.length > 0 || c.airtableHealth || c.airtableReasons) && (
-        <section className="mt-6">
-          <SectionHeader title="Data check" icon="database" right={<span className="text-xs text-muted">Atlas keeps this right</span>} />
-          <Card className="space-y-2 text-sm text-fg-2">
-            {c.dataIssues.map((x) => <div key={x} className="flex gap-2"><Icon name="alert" size={15} className="mt-0.5 text-warn" />{x}</div>)}
-            {c.airtableHealth && <div className="text-muted">Airtable Client Health: <span className="font-medium text-fg-2">{c.airtableHealth}</span></div>}
-            {c.airtableReasons && <div className="whitespace-pre-wrap text-xs text-muted">{c.airtableReasons}</div>}
-          </Card>
-        </section>
-      )}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <section className="min-w-0">
@@ -182,24 +168,55 @@ export default function ClientPage({ id, user, tab, sub }: { id: string; user: U
   );
 }
 
-function Stat({ label, n, text, trend, prev, tone, action, sub }: { label: string; n?: number; text?: string; trend?: number; prev?: number; tone?: 'warn' | 'bad'; action?: ReactNode; sub?: string }) {
+function ResultsOverTime({ d }: { d: Detail }) {
+  const ws = d.results.windows;
+  if (!ws.length) return <Card className="text-sm text-muted">No EmailBison numbers for this client yet (UNKNOWN).</Card>;
+  const rows: [string, (r: Detail['results']['windows'][number]) => string][] = [
+    ['Emails sent', (r) => num(r.sent)], ['Interested', (r) => num(r.interested)], ['Meetings booked', (r) => num(r.meetings)],
+    ['Emails per meeting', (r) => num(r.emailsPerMeeting)], ['Emails per positive reply', (r) => num(r.emailsPerPositive)], ['Interested → booked', (r) => pct1(r.interestedToBooked)],
+  ];
   return (
-    <div className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-card">
-      <div className="truncate text-xs font-medium text-muted">{label}</div>
-      <div className={cx('tabular mt-1 text-[26px] font-bold leading-none tracking-tight', tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn' : 'text-fg')}>{text ?? (n ?? 0).toLocaleString('en-US')}</div>
-      {trend !== undefined && prev !== undefined && (
-        <div className={cx('mt-1.5 flex items-center gap-1 text-xs', trend > 0 ? 'text-good' : trend < 0 ? 'text-bad' : 'text-muted')}>
-          {trend !== 0 && <Icon name={trend > 0 ? 'trendUp' : 'trendDown'} size={13} />}{trend === 0 ? 'same as the week before' : `from ${prev} the week before`}
-        </div>
-      )}
-      {sub && <div className="mt-1.5 text-xs text-muted">{sub}</div>}
-      {action}
+    <Card className="overflow-x-auto p-0">
+      <table className="w-full min-w-[560px] text-left text-sm">
+        <thead className="border-b border-line bg-sunken text-xs text-muted"><tr><th className="px-5 py-2.5 font-medium"><span className="sr-only">Number</span></th>{ws.map((r) => <th key={r.window} className="px-3 py-2.5 text-right font-medium">{WINDOW_LABEL[r.window]}{r.stale ? ' (stale)' : ''}</th>)}</tr></thead>
+        <tbody className="divide-y divide-line">
+          {rows.map(([label, f]) => <tr key={label}><td className="px-5 py-2.5 font-medium text-fg">{label}</td>{ws.map((r) => <td key={r.window} className="tabular px-3 py-2.5 text-right text-fg-2">{f(r)}</td>)}</tr>)}
+        </tbody>
+      </table>
+    </Card>
+  );
+}
+
+function ClientResults({ d, owner }: { d: Detail; owner: boolean }) {
+  const { feedback: f, deals, onboarding } = d.results;
+  return (
+    <div className="grid gap-3 lg:grid-cols-3">
+      <Card className="text-sm">
+        <Label>Deals they closed</Label>
+        <div className="tabular mt-1 text-[22px] font-bold text-fg">{deals.count}{owner && deals.total ? <span className="ml-2 text-sm font-semibold text-fg-2">{usd(deals.total)}</span> : null}</div>
+        {owner && deals.roi ? <div className="text-xs text-muted">ROI {deals.roi}x on what they paid Dulcy</div> : null}
+        {deals.list.length ? (
+          <ul className="mt-2 space-y-1">{deals.list.slice(0, 5).map((x, i) => <li key={i} className="text-fg-2">{x.lead || 'Lead'} · {x.date}{x.type ? ` · ${x.type}` : ''}{owner && x.value ? ` · ${usd(x.value)}` : ''}</li>)}</ul>
+        ) : <div className="mt-1 text-xs text-muted">None recorded in Airtable (Client Closed Deals) yet.</div>}
+      </Card>
+      <Card className="text-sm">
+        <Label>Call feedback</Label>
+        <div className="tabular mt-1 text-[22px] font-bold text-fg">{f.avgStars === null ? '–' : `${f.avgStars} ★`}<span className="ml-2 text-xs font-medium text-muted">{f.rated ? `average of ${f.rated} rated` : 'no stars yet'}</span></div>
+        <div className="text-xs text-muted">{f.calls} calls: {f.qualified} qualified · {f.unqualified} unqualified · {f.noShow} no-show</div>
+        {f.recent.length > 0 && <ul className="mt-2 space-y-1.5">{f.recent.slice(0, 3).map((x, i) => <li key={i} className="text-fg-2"><span className="font-medium">{x.status}</span>{x.stars ? ` · ${x.stars}★` : ''}{x.notes ? `: ${x.notes}` : ''} <span className="text-xs text-muted">{timeAgo(x.when)}</span></li>)}</ul>}
+      </Card>
+      <Card className="text-sm">
+        <Label>Onboarding form</Label>
+        {onboarding.answers.length ? (
+          <dl className="mt-1 space-y-1.5">{onboarding.answers.map((a) => <div key={a.label}><dt className="text-xs text-muted">{a.label}</dt><dd className="line-clamp-3 text-fg-2">{a.text}</dd></div>)}</dl>
+        ) : <div className="mt-1 text-xs text-muted">{onboarding.linked ? 'Linked, but no answers read.' : 'No onboarding form linked in Airtable.'}</div>}
+      </Card>
     </div>
   );
 }
 
-function Money({ label, v, bad }: { label: string; v: string; bad?: boolean }) {
-  return <div className="min-w-0"><Label>{label}</Label><div className={cx('tabular mt-1 text-lg font-semibold', bad ? 'text-bad' : 'text-fg')}>{v}</div></div>;
+function Money({ label, v, bad, sub }: { label: string; v: string; bad?: boolean; sub?: ReactNode }) {
+  return <div className="min-w-0"><Label>{label}</Label><div className={cx('tabular mt-1 text-lg font-semibold', bad ? 'text-bad' : 'text-fg')}>{v}</div>{sub && <div className="mt-0.5 text-xs text-muted">{sub}</div>}</div>;
 }
 
 function FlagPill({ c }: { c: ClientCampaign }) {

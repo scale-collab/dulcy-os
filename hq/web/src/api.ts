@@ -55,15 +55,23 @@ export interface ChatMessage { id: number; role: 'user' | 'assistant'; author: s
 export type Light = 'red' | 'yellow' | 'green' | 'inactive';
 export interface ClientCampaign { id: string; name: string; progress: number; bounce: number; sent: number; interested: number; perThousand: number | null; flag: 'pause' | 'watch' | null; next: boolean; planExists: boolean }
 /** Only in the owner's answers: the server leaves it out for members. */
-export interface ClientMoney { fee: number | null; feeNote: string; ltv: number | null; ltvSource: 'actual' | 'estimated' | null; receivables: number | null; months: number | null }
+export interface ClientMoney {
+  /** Monthly retainer (all retainer lines); 0 = pay per call only; null = UNKNOWN. */
+  fee: number | null; perCall: number | null; dealType: DealType; dealLines: { label: string; monthly: number; perCall: number }[]; dealSource: string;
+  ltv: number | null; ltvSource: 'deal' | 'recorded' | null; ltvNote: string; recorded: number | null;
+  /** Open invoices: coming up (not due yet) or late. */
+  receivables: number | null; invoices: { amount: number; due: string; late: boolean }[]; invoicesSource: string;
+  months: number | null; feeNote: string;
+}
 export interface Client {
   id: string; key: string; name: string; workspaces: { id: string; name: string; status: string; bisonId: string }[];
-  active: boolean; internal: boolean; type: string; startDate: string; endDate: string; inactiveReason: string;
-  light: Light; reasons: string[]; airtableHealth: string; airtableReasons: string;
-  interested7: number; interestedPrev7: number; interested30: number; booked7: number; bookedPrev7: number; booked30: number; kpi: number | null;
-  waitingApproval: number; seanWaiting: number; campaigns: ClientCampaign[]; note: string[]; dataIssues: string[]; money?: ClientMoney;
+  active: boolean; internal: boolean; type: string; typeSource: string; startDate: string; endDate: string; inactiveReason: string;
+  health: ClientHealth; healthLabel: string; light: Light; insight: ClientInsight | null; pace: number | null;
+  kpi: number | null; kpiSource: string; meetings30: number; results: ClientResults | null; dealType: DealType; dealLabel: string;
+  interested7: number; interestedPrev7: number; interested30: number; booked7: number; bookedPrev7: number; booked30: number;
+  waitingApproval: number; seanWaiting: number; campaigns: ClientCampaign[]; note: string[]; money?: ClientMoney;
 }
-export interface ClientsSummary { active: number; internal: number; inactive: number; mrr?: number; readAt: string }
+export interface ClientsSummary { active: number; internal: number; inactive: number; attention: number; atRisk: number; safe: number; unknown: number; mrr?: number; readAt: string }
 export interface HqUserRow { id: number; email: string; name: string; role: 'owner' | 'member' | 'client'; clientName?: string; status: 'pending' | 'active' | 'disabled'; google: boolean; hasPassword: boolean; lastSeen: string | null; created: string; requested: string | null;
   /** A sign-up from the client portal: linked to a client, never approved as member/owner. */
   portalRequest?: boolean; resetAsked?: string | null; suggest?: { id: string; name: string } | null }
@@ -226,4 +234,34 @@ export interface SalesDetail {
   deal: SalesDeal; calls: { what: string; day: string; link: string }[]; onboarding: { step: string; done: boolean; note: string }[]; tasks: { id: string; task: string; stage: string }[];
   links: { airtable: string; close: string; client: string; feedback: string[]; agreements: { id: string; tool: string; title: string; state: AgreementState; url: string; reviewDoc: string; airtable: string }[] };
   notes: SalesNote[]; readAt: string;
+}
+
+/* ---------- Clients, Batch 2 (2026-11-27): health on the KPI, results, deals, owner money ---------- */
+export type ClientHealth = 'safe' | 'at_risk' | 'attention' | 'unknown' | 'inactive';
+export type DealType = 'retainer' | 'per_call' | 'both' | 'unknown';
+/** Problem → Decision → what supports it. */
+export interface ClientInsight { problem: string; decision: string; support: string }
+export type ResultsWindow = '10' | '30' | '60' | '120' | 'all';
+export interface ClientResults {
+  window: ResultsWindow; sent: number; replies: number; interested: number; meetings: number;
+  emailsPerMeeting: number | null; emailsPerPositive: number | null; interestedToBooked: number | null; stale: boolean;
+}
+export interface ClientFeedback { calls: number; qualified: number; unqualified: number; noShow: number; rated: number; avgStars: number | null; recent: { status: string; stars: number | null; notes: string; when: string }[] }
+export interface ClientDetailResults {
+  windows: ClientResults[]; feedback: ClientFeedback;
+  /** total and roi only for the owner. */
+  deals: { count: number; total?: number; roi?: number | null; list: { lead: string; value?: number | null; date: string; type: string; why: string }[] };
+  onboarding: { linked: boolean; answers: { label: string; text: string }[] };
+}
+export type ClientPeriod = 'this-month' | 'last-month' | '3m' | '6m' | '12m' | 'this-year';
+export interface ClientRangeNumbers { label: string; from: string; to: string; newClients: number; lost: number; net: number; activeAtStart: number; churnRate: number | null; newNames: string[]; lostNames: string[] }
+/** Owner only (members get 403). */
+export interface AgencyNumbers { period: ClientPeriod; mrr: number; activeClients: number; avgLtv: number | null; avgRetentionMonths: number | null; cur: ClientRangeNumbers; prev: ClientRangeNumbers; counted: number; noEndDate: string[] }
+export interface ClientFinance {
+  mrr: number;
+  xero: { thisMonth: { from: string; to: string; income: number; costs: number }; lastMonth: { from: string; to: string; income: number; costs: number }; invoices: { contact: string; amount: number; due: string; late: boolean }[] } | null;
+  cards: { card: string; dueDate: string; statement: number; balance: number; minimum: number; available: number | null; apr: string }[] | null;
+  cardTotals: { statement: number; balance: number; minimum: number } | null;
+  billing: { name: string; day: string; monthly: number; perCall: number; processor: string }[] | null;
+  notInAirtable: string[]; errors: string[]; readAt: string;
 }
