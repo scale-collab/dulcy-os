@@ -133,6 +133,23 @@ test('scopes: Microsoft offline_access User.Read Calendars.ReadWrite; HubSpot me
   for (const p of ['calcom', 'ghl']) assert.throws(() => beginConnection({workspace: WS, provider: p, clientId: 'x', redirectUri: ORIGIN + '/calendar/callback', expectedEmail: 'a@b.co', now: NOW}), /not configured/);
 });
 
+test('Microsoft and HubSpot connect pages: sign-in button, then a redirect to the provider with PKCE; not configured = no link', async () => {
+  for (const [p, host, button] of [['microsoft', 'login.microsoftonline.com', 'Continue to Microsoft'], ['hubspot', 'app.hubspot.com', 'Continue to HubSpot']]) {
+    const ticket = new URL(flow.invite({workspace: WS, provider: p, expectedEmail: 'owner@client.com', label: 'Client Co'}).url).searchParams.get('ticket');
+    const html = await (await fetch(base + '/calendar/connect?ticket=' + ticket)).text();
+    assert.match(html, new RegExp(button));
+    const r = await form('/calendar/start', {ticket});
+    assert.equal(r.status, 303);
+    const to = new URL(r.headers.get('location'));
+    assert.equal(to.hostname, host);
+    assert.equal(to.searchParams.get('code_challenge_method'), 'S256');
+  }
+  const bare = new CalendarFlow({store, apps: {}, origin: ORIGIN, fetchJson: fakeFetch, now: () => NOW});
+  assert.throws(() => bare.invite({workspace: WS2, provider: 'microsoft', expectedEmail: 'a@b.co'}), /registration is required/);
+  assert.ok(bare.invite({workspace: WS2, provider: 'calcom', expectedEmail: 'a@b.co'}).url, 'Cal.com needs no app on Dulcy\'s side');
+  assert.throws(() => bare.invite({workspace: WS2, provider: 'outlook', expectedEmail: 'a@b.co'}), /registration is required/, 'unknown provider');
+});
+
 test('Microsoft connect: scope forms, mail or userPrincipalName must be the invited email; Calendars.Read alone = read only', async () => {
   const pending = {workspace: WS, provider: 'microsoft', expectedEmail: 'owner@client.com', redirectUri: ORIGIN + '/calendar/callback', verifier: 'v', expiresAt: NOW + 60_000};
   const seen = [];
