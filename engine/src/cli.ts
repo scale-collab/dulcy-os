@@ -58,6 +58,10 @@
 //       The same key (default: agent + title) never adds a second one. --priority=high = "Do now".
 //   ask list [--all]      Open asks (--all: done and snoozed too).
 //   ask done <id>         Mark an ask done.
+//   riley-n8n-rollback <System Issue record ID> [--yes] [--force]
+//       Put an n8n workflow back as it was before Riley's engine-applied fix on that issue (the full
+//       previous version is saved in the engine). Without --yes it only says what it would do.
+//       Refuses if the workflow was edited again after the fix, unless --force.
 //   mv-compare <recordId> <millionVerifierJobId>
 //       Free: download a MillionVerifier job and compare its verdicts with DiscoLike's own email
 //       check on the list's DiscoLike Contacts-run contacts (counts; emails masked).
@@ -133,6 +137,11 @@ async function main() {
       } else {
         throw new Error('usage: ask add --agent=Atlas --title="Reply to Pete about Twenty West" [--why=...] [--steps=... | --steps-stdin] [--action-label=Open] [--action-url=decisions/Replies|https://...] [--priority=high|normal] [--for=owner|everyone] [--key=...] [--due=YYYY-MM-DD] [--client-facing] [--money]\n       ask list [--all]\n       ask done <id>');
       }
+    } else if (cmd === 'riley-n8n-rollback') {
+      const issueId = args[0] ?? '';
+      if (!/^rec[A-Za-z0-9]{14}$/.test(issueId)) throw new Error('usage: riley-n8n-rollback <System Issue record ID rec...> [--yes] [--force]');
+      const { rollbackN8nFix } = await import('./agents/rileyN8n.js');
+      console.log(await rollbackN8nFix(db, cfg, issueId, { yes: args.includes('--yes'), force: args.includes('--force') }));
     } else if (cmd === 'agent-task') {
       // An agent's own task list in HQ (for Claude sessions such as Riley's runbook): open/update, list, close.
       const [sub, ...rest] = args;
@@ -429,7 +438,7 @@ async function main() {
         for (const e of d.errors) console.log(`(couldn't read ${e})`);
       }
     } else {
-      throw new Error('commands: hq-user, ask, calendar-test, discord-check, jobs, job, campaign-plans, campaign-plan-retry, campaign-copy, atlas-health, agent, xero-connect, ledger-report, ledger-prep, ledger-ask, verify, mv-compare, campaign, topup, senders, bounce, whereis, cleanup-test, cancel');
+      throw new Error('commands: hq-user, ask, riley-n8n-rollback, calendar-test, discord-check, jobs, job, campaign-plans, campaign-plan-retry, campaign-copy, atlas-health, agent, xero-connect, ledger-report, ledger-prep, ledger-ask, verify, mv-compare, campaign, topup, senders, bounce, whereis, cleanup-test, cancel');
     }
   } finally {
     await db.end();

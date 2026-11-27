@@ -547,3 +547,21 @@ ALTER TABLE hq_chat_threads ADD COLUMN IF NOT EXISTS opened_at TIMESTAMPTZ;
 UPDATE hq_chat_threads SET opened_at = updated_at WHERE opened_at IS NULL;
 ALTER TABLE hq_chat_threads ALTER COLUMN opened_at SET DEFAULT now();
 CREATE INDEX IF NOT EXISTS hq_chat_threads_open ON hq_chat_threads (user_id, agent, opened_at DESC) WHERE archived_at IS NULL;
+
+-- Riley n8n fixes (Alex 2026-11-27): the full workflow as it was before the engine changed it on
+-- Alex's ✅, so `riley-n8n-rollback <issueId>` can put it back. Never printed (it can hold old
+-- hardcoded keys); the System Issue's Rollback field only gets a short pointer to the row.
+CREATE TABLE IF NOT EXISTS riley_n8n_rollbacks (
+  id             BIGSERIAL PRIMARY KEY,
+  issue_id       TEXT NOT NULL,
+  workflow_id    TEXT NOT NULL,
+  workflow_name  TEXT NOT NULL DEFAULT '',
+  job_id         BIGINT,
+  previous       JSONB NOT NULL,
+  patch          JSONB NOT NULL,
+  was_active     BOOLEAN NOT NULL DEFAULT false,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  applied_at     TIMESTAMPTZ,
+  rolled_back_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS riley_n8n_rollbacks_issue ON riley_n8n_rollbacks (issue_id, id DESC);

@@ -7,8 +7,10 @@
 //     the fix (a PR, an n8n/Make/Airtable change spec, or a retry), writes Why/Fix/Rollback, and
 //     posts a Decision ("Apply Riley Fix") that goes to Slack. It also sweeps Make and Airtable
 //     automation runs and works the known open issues one at a time.
-//   riley.apply (on ✅): a Retry fix re-runs the failed engine job(s) here; any other fix is marked
-//     Approved and the Riley session makes it live on its next run, then verifies it.
+//   riley.apply (on ✅): a Retry fix re-runs the failed engine job(s) here; an "n8n change" with an
+//     exact n8nPatch is applied here through the n8n API (rileyN8n.ts, live with riley.n8n_apply in
+//     LIVE_STAGES); any other fix is marked Approved and the Riley session makes it live on its next
+//     run, then verifies it.
 import type { Stage } from '../stages/index.js';
 import type { Db } from '../db/pool.js';
 import { PermanentError } from '../errors.js';
@@ -167,10 +169,16 @@ export const rileyCollectStage: Stage = async (ctx) => {
 export const rileyApplyStage: Stage = async (ctx) => {
   const cfg = ctx.cfg; const i = ctx.job.input as { issueId: string };
   const at = createAirtableClient({ apiKey: cfg.airtableApiKey, baseId: cfg.airtableBaseId, baseUrl: cfg.airtableBaseUrl });
-  const issue = await at.get(ISSUES, i.issueId, [IF.title, IF.status, IF.fixType, IF.details]);
+  const issue = await at.get(ISSUES, i.issueId, [IF.title, IF.status, IF.fixType, IF.details, IF.fix, IF.rollback]);
   if (!issue) throw new PermanentError(`System Issue ${i.issueId} not found`);
   if (val(issue.fields[IF.status]) !== 'Waiting for Alex') return { message: `Issue is ${val(issue.fields[IF.status])}; nothing to do` };
   const type = val(issue.fields[IF.fixType]);
+  // n8n change with an exact n8nPatch: the engine applies it through the n8n API (Alex 2026-11-27).
+  if (type === 'n8n change') {
+    const { applyN8nPatch } = await import('./rileyN8n.js');
+    const r = await applyN8nPatch(ctx, at, issue);
+    if (r) return r;
+  }
   if (type !== 'Retry') {
     if (!ctx.dryRun) await at.update(ISSUES, issue.id, { [IF.status]: 'Approved' });
     return { message: `Approved: ${val(issue.fields[IF.title])}. Riley makes it live on his next run and reports back.` };
