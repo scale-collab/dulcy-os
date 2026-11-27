@@ -263,3 +263,7 @@ Format: `- [date] rule. (why / source)`
 - **Decision piles:** Replies, Campaigns, Fixes, Money, Sales (Cole), Content (Sienna), Orchestrator (Ada). No "Other".
 - **Campaigns screen** follows the Airtable Campaign Center layout (name, strategy draft, status, sending accounts, stats), cleaner.
 - **Why:** Alex: "we're combining every single tool into one… I want everything to be here, for me and my team. It really just depends on your role, on what you're able to see." Full walkthrough list: `hq/feedback-2026-11-27.md`.
+
+## New client inbox ramp (Alex, 2026-11-27)
+- **Rule:** a new client's inboxes start at **5 cold emails / 10 warm-up per day**. After one week of sending: **10 / 20**. After another week: **15 / 30**, and that is the cap.
+- **Why:** Alex's standard ramp for every new client ("when I start a new client, it's always 5 cold emails, 10 warm up…").
