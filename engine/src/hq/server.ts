@@ -415,7 +415,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       if (m && req.method === 'GET') {
         if (m[1] === 'bounces') json(res, 200, await bouncesView(needAt(), url.searchParams));
         else if (m[1] === 'verification') json(res, 200, await verificationView(needAt(), db, url.searchParams));
-        else json(res, 200, await limitsView(needAt(), db, cfg, url.searchParams));
+        else json(res, 200, { ...(await limitsView(needAt(), db, cfg, url.searchParams)), canEdit: owner });
         return true;
       }
       if (p === '/hq/api/deliverability/limits' && req.method === 'POST') {
