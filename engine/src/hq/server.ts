@@ -43,6 +43,8 @@ import { allDeals, dealDetail, nyDay, salesView } from './sales.js';
 // Batch 4a: Sales insights (periods, capacity, Close hottest deals) and the contract draft.
 import { insightsView, saveCapacitySettings, salesDeps, type SalesDeps } from './salesInsights.js';
 import { createInDulcySign, draftForm, saveDraft } from './contracts.js';
+// Phone notifications (Web Push), Alex 2026-11-27.
+import { kickFlush, notifyChatReply, pushRoute, webPushSender, type PushSender } from './push.js';
 
 export interface HqDeps {
   at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string;
@@ -50,6 +52,8 @@ export interface HqDeps {
   sheets?: Pick<SheetsClient, 'tab'>; xero?: Pick<XeroClient, 'get' | 'pages'>;
   // Batch 4a: Sales insights deps (Close, calendar; fakes in tests).
   sales?: SalesDeps;
+  /** Phone notifications: the push sender (tests pass a fake; nothing goes out from tests). */
+  pushSender?: PushSender;
 }
 
 const SECURITY_HEADERS: Record<string, string> = {
@@ -109,9 +113,14 @@ function serveStatic(res: http.ServerResponse, webDir: string, rel: string, fall
     res.writeHead(503, { 'content-type': 'text/plain; charset=utf-8', ...SECURITY_HEADERS });
     return res.end('Dulcy HQ is not built on this server yet (hq/web). Run the deploy again.');
   }
+  // The service worker and the app manifest keep their names across builds: always revalidated. The
+  // worker (at /hq/sw.js) may control the whole site, so the app works at / (HQ_HOST) and at /hq/.
+  const base = path.basename(file);
+  const fixedName = base === 'sw.js' || base === 'manifest.webmanifest';
   res.writeHead(200, {
     'content-type': MIME[path.extname(file)] ?? 'application/octet-stream', ...SECURITY_HEADERS,
-    'cache-control': isIndex ? 'no-cache' : 'public, max-age=31536000, immutable',
+    'cache-control': isIndex || fixedName ? 'no-cache' : 'public, max-age=31536000, immutable',
+    ...(base === 'sw.js' ? { 'service-worker-allowed': '/' } : {}),
   });
   res.end(body);
 }
@@ -166,6 +175,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
   const home = (req: http.IncomingMessage) => (hostOf(req) === cfg.hqHost ? '/' : '/hq/');
   // Batch 4a: read-only Close / Xero / calendar readers for Sales (tests pass fakes).
   const sales: SalesDeps = deps.sales ?? salesDeps(db, cfg, deps.fetchImpl);
+  const pushSender: PushSender = deps.pushSender ?? webPushSender();
 
   return async function handle(req: http.IncomingMessage, res: http.ServerResponse, url: URL): Promise<boolean> {
     const host = hostOf(req);
@@ -305,6 +315,13 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       }
 
       if (p === '/hq/api/me' && req.method === 'GET') { json(res, 200, { user: publicUser(user), google: googleOn(cfg), ...(owner ? { signups: await pendingCount(db) } : {}), ...(viewing ? { viewing: 'member' } : {}) }); return true; }
+
+      // ---- Phone notifications (2026-11-27): key, settings, devices, test, presence (push.ts pushRoute) ----
+      if (p.startsWith('/hq/api/push/')) {
+        const r = await pushRoute(db, cfg, pushSender, user, req.method ?? 'GET', p.slice('/hq/api/push'.length), write ? await readJson(req, 10_000) : {}, String(req.headers['user-agent'] ?? ''));
+        json(res, r.status, r.body);
+        return true;
+      }
 
       // ---- Batch 1 (2026-11-27): Fix it = put an agent's suggestion on that agent's own task list ----
       if (p === '/hq/api/fix-it' && req.method === 'POST') {
@@ -645,6 +662,8 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         if (!text || text.length > 4000) { json(res, 400, { error: 'a message (up to 4,000 characters), please' }); return true; }
         if (!deps.chatModel && !cfg.anthropicApiKey) { json(res, 503, { error: 'Chat is off: no ANTHROPIC_API_KEY on the server.' }); return true; }
         const r = await chatTurn({ db, cfg, at, model: deps.chatModel, user }, { agent: a, message: text, threadId: b.threadId ? Number(b.threadId) : undefined });
+        // Phone notification when the person is no longer on this chat (a push problem never fails the answer).
+        try { if (await notifyChatReply(db, user, r)) void kickFlush(db, cfg, pushSender); } catch (e) { console.error(JSON.stringify({ level: 'warn', message: 'chat push not queued', err: String((e as Error).message ?? e).slice(0, 200) })); }
         json(res, 200, r);
         return true;
       }

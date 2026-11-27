@@ -218,6 +218,11 @@
 - **Same writes, same routes, same isolation.** Two reads were widened (additive, same session-scoped slice): `/hq/api/portal/home` adds `needs` (tasks, reviews, feedback due, onboarding not submitted), `results` (30 days vs the 30 before from the "Last 30 / 60 days" analytics rows, only for channels that are on), `campaigns` (not finished); `/portal/session` adds `badges.needs`; `/portal/pipeline` rows add the start of the message, `feedbackDue` and the last feedback. Fix: a lead whose call is booked for a future day no longer drops out of the Leads list. Test: `hqPortalV2.test.ts` "v3 Home and Leads are one read each".
 - **Where:** `hq/web/src/portal/` (`PortalApp.tsx` shell, `Home.tsx`, `Leads.tsx`, `Account.tsx`; `Results.tsx`, `Campaigns.tsx`, `More.tsx` hold the pages under the tabs), `engine/src/hq/portal.ts` (`needsOf`, `homeResults`).
 
+### Phone notifications (Alex, 2026-11-27): built, not deployed
+- Web Push to Alex's iPhone (HQ on the Home Screen) and any computer: new decisions (grouped), agent messages to you, urgent problems, good news. Tap = that item. Always on; 4 switches per person; Josh only his own items; Slack unchanged. At most 1 ping a minute and 60 a day per person.
+- **Where:** `engine/src/hq/push.ts`, `engine/src/hq/pushWatch.ts`, `hq/web/src/notifications.tsx`, `hq/web/public/sw.js`, `hq/web/public/manifest.webmanifest`; tests `engine/test/hqPush.test.ts`. Guide: `engine/GUIDE.md` → "Phone notifications".
+- **Left for Alex:** deploy, then on the iPhone delete the old HQ icon, add HQ to the Home Screen again, Notifications → Turn on → Send a test.
+
 ## Clean-up alongside (Riley)
 - Old and duplicate n8n, Make and Airtable automations.
 - Unused pages: Client Offers, Internal Lead Requests, the old mobile pages, Inbox Manager backups.

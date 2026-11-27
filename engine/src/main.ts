@@ -3,6 +3,7 @@ import { createPool, migrate } from './db/pool.js';
 import { createServer } from './http.js';
 import { workLoop } from './worker.js';
 import { startAirtableBridge, startDecisions, startScheduler } from './scheduler.js';
+import { startPushLoop } from './hq/pushWatch.js';
 
 const cfg = loadConfig();
 const db = createPool(cfg.databaseUrl);
@@ -17,6 +18,8 @@ const loop = Promise.all(Array.from({ length: Math.max(1, Number(process.env.WOR
 startScheduler(db, cfg, stop.signal);
 startAirtableBridge(db, cfg, stop.signal);
 startDecisions(db, cfg, stop.signal);
+// HQ phone notifications (Web Push): the watch loop, every minute while a device has them on.
+startPushLoop(db, cfg, stop.signal);
 
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {
   process.on(sig, async () => {

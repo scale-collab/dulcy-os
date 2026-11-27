@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { api, switchViewAsMember, type Client, type HqUserRow, type SoftrUser, type User, type UserEvent } from '../api';
-import { Button, Card, cx, Empty, ErrorBox, Icon, Label, PageSkeleton, PageTitle, Pill, SectionHeader, setCount, timeAgo } from '../ui';
+import { Button, Card, cx, Empty, ErrorBox, go, Icon, Label, PageSkeleton, PageTitle, Pill, SectionHeader, setCount, timeAgo } from '../ui';
 
 interface UsersData { users: HqUserRow[]; events: UserEvent[] }
 export const field = 'min-h-11 w-full rounded-xl border border-line-strong bg-surface px-3 text-[16px] text-fg outline-none transition placeholder:text-faint focus:border-accent focus:ring-4 focus:ring-accent-soft';
@@ -22,6 +22,7 @@ export default function Users({ user }: { user: User }) {
   };
   const right = (
     <>
+      <Button icon="bell" onClick={() => go('notifications')} title="Phone notifications for you and your team">Notifications</Button>
       <Button icon="briefcase" onClick={() => setAdding((v) => (v === 'client' ? '' : 'client'))}>Add client login</Button>
       <Button tone="primary" icon="userPlus" onClick={() => setAdding((v) => (v === 'user' ? '' : 'user'))}>Add user</Button>
     </>

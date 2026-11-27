@@ -58,13 +58,19 @@ export default function Decisions({ user: _user, pile, client }: { user: User; p
   if (error && !data) return <><PageTitle title="Decisions" /><ErrorBox error={error} retry={load} /></>;
   if (!data) return <><PageTitle title="Decisions" /><PageSkeleton kind={pile ? 'deck' : 'grid'} /></>;
 
-  if (!pile) {
+  // #/decisions/<id> (a tapped phone notification, 2026-11-27): that card first, in its own pile.
+  // undefined = not such a link; null = the card is not waiting any more.
+  const focus = pile && /^rec[A-Za-z0-9]{14}$/.test(pile) ? data.order.flatMap((p) => data.piles[p] ?? []).find((d) => d.id === pile) ?? null : undefined;
+  const deck = focus === undefined ? pile : focus?.pile;
+
+  if (!deck) {
     const shown = all.filter((d) => mine(d, pick));
     return (
       <div>
         <PageTitle title="Decisions" kicker={shown.length ? `${shown.length} waiting on you` : 'Nothing waiting'}
           right={shown.length > 0 && <Button tone="accent" icon="play" onClick={() => go(`decisions/all${pick ? `/${pick}` : ''}`)}>Go through all {shown.length}</Button>} />
         {clients.length > 0 && <div className="mb-4">{picker(setPick, pick)}</div>}
+        {focus === null && <Card className="mb-4"><p className="text-sm text-muted">That decision is not waiting any more: it was decided or removed.</p></Card>}
         {!shown.length && <Card className="mb-6"><Empty icon="check" tone="good" title="All clear" sub={pick ? 'No decisions waiting for this client.' : 'No decisions waiting on you. New cards land here when an agent needs your OK.'} /></Card>}
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {PILES.filter((p) => data.order.includes(p.key)).map((p) => {
@@ -92,15 +98,16 @@ export default function Decisions({ user: _user, pile, client }: { user: User; p
   }
 
   // decisions/<pile>/<client key>: only that client's cards.
-  const source = (pile === 'all' ? data.order.flatMap((p) => data.piles[p] ?? []) : data.piles[pile] ?? []).filter((d) => mine(d, client ?? ''));
+  const inDeck = (deck === 'all' ? data.order.flatMap((p) => data.piles[p] ?? []) : data.piles[deck] ?? []).filter((d) => mine(d, client ?? ''));
+  const source = focus ? [focus, ...inDeck.filter((d) => d.id !== focus.id)] : inDeck;
   const queue = source.filter((d) => !handled.includes(d.id) && !(decided.includes(d.id)));
   const total = source.filter((d) => !decided.includes(d.id) || handled.includes(d.id)).length;
   const done = total - queue.length;
   const current = queue[0];
   const clientName = client ? options.find((o) => o.key === client)?.name || source[0]?.client || client : '';
-  const title = `${pile === 'all' ? 'All decisions' : pile}${client ? ` · ${clientName}` : ''}`;
+  const title = `${deck === 'all' ? 'All decisions' : deck}${client ? ` · ${clientName}` : ''}`;
   const back = <BackLink label="Piles" onClick={() => go('decisions')} />;
-  const changeClient = (k: string) => go(`decisions/${pile}${k ? `/${k}` : ''}`);
+  const changeClient = (k: string) => go(`decisions/${deck}${k ? `/${k}` : ''}`);
 
   if (!current) {
     const any = stats.approved + stats.rejected + stats.skipped > 0;
@@ -109,7 +116,7 @@ export default function Decisions({ user: _user, pile, client }: { user: User; p
         {back}
         <Card className="mt-2 flex flex-col items-center px-6 py-12 text-center">
           <span className="anim-pop grid h-20 w-20 place-items-center rounded-full bg-accent text-accent-fg shadow-pop"><Icon name="check" size={40} strokeWidth={2.6} /></span>
-          <h1 className="mt-6 text-2xl font-bold tracking-tight anim-in">{pile === 'all' ? 'All decisions cleared' : `${pile} cleared`}</h1>
+          <h1 className="mt-6 text-2xl font-bold tracking-tight anim-in">{deck === 'all' ? 'All decisions cleared' : `${deck} cleared`}</h1>
           <p className="mt-1.5 text-[15px] text-muted anim-in">{any ? 'Nice work. The engine runs what you approved.' : 'Nothing left in this pile.'}</p>
           {any && (
             <div className="mt-5 flex flex-wrap justify-center gap-2 anim-in">
