@@ -726,16 +726,31 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
 - **Every 15 minutes:** the engine puts every failed, stuck (15+ minutes past its lease) or needs-review job into the Airtable **System Issues** table. n8n errors go in too, once `N8N_API_KEY` is set. It's one row per problem: the same error again raises Occurrences. A problem marked Fixed that comes back is reopened.
 - **Every 2 hours, 8 a.m. to 8 p.m. ET:** Riley (a Claude scheduled task, runbook `agents/riley-session.md`):
   1. works out why each new issue happens;
-  2. prepares the fix: a retry, a PR (not merged), or an exact n8n / Make / Airtable change with a rollback;
+  2. prepares the fix: a retry, a code fix on a branch (not merged), or an exact n8n / Make / Airtable change with a rollback;
   3. posts one Slack ✅/❌ per issue.
   Once a day he also sweeps Make and Airtable automation errors, and works one known open issue.
 - **✅ on a Retry:** the engine re-runs the failed job right away.
-- **✅ on any other fix:** Riley makes it live on his next run, checks it worked, and marks it Fixed. For code, he tells you to run the deploy line. n8n changes come as exact steps for you, since the connector can't edit n8n.
+- **✅ on an n8n fix (2026-11-27):** the engine makes the change in n8n itself, right away. See "How n8n fixes are applied" below.
+- **✅ on a code fix:** on his next run Riley opens the PR, runs the tests, merges it, and DMs you: "Fixed: <title>. Please deploy: `cd /opt/dulcy-os && git pull && bash engine/deploy/deploy.sh`". You only run that line on the server. If he can't push (the repo isn't attached to his scheduled task), his Slack report says so once.
+- **✅ on a Make or Airtable fix:** Riley makes it live on his next run with his Make / Airtable tools, checks it worked, and marks it Fixed.
 - **❌:** nothing changes.
+
+**How n8n fixes are applied (2026-11-27):**
+- Riley reads the workflow and writes the exact change on the System Issue: which workflow, which node, which setting, the value now and the new value.
+- When you press ✅, the engine (it has the n8n key):
+  1. reads the workflow again;
+  2. stops if anything Riley read has changed since ("changed since diagnosis": nothing is changed, Riley looks again);
+  3. saves the whole workflow as it was, in the engine (this is the rollback);
+  4. saves the change in n8n, and switches the workflow off and on again if it was on, so n8n picks it up;
+  5. marks the issue Applied, with what changed and the undo line.
+- It never touches passwords, keys, tokens or logins in n8n. A fix that would is refused, and stays a manual step for you.
+- **Undo:** on the server, `docker compose exec engine node dist/src/cli.js riley-n8n-rollback <System Issue record ID>`. That shows what it would put back; add `--yes` to do it. It refuses if someone edited the workflow again after the fix (add `--force` to put it back anyway). The issue goes to Fix failed so Riley looks again.
+- Until `riley.n8n_apply` is in `LIVE_STAGES`, a ✅ only checks the change still fits, changes nothing in n8n, and Riley sends you the steps as before.
 
 **Switch on:**
 - `RILEY=on`, and add `riley.collect,riley.apply` to `LIVE_STAGES`.
-- Optional, for n8n errors: `N8N_API_KEY` (n8n → Settings → n8n API → create key) and `N8N_BASE_URL` (default `http://localhost:5678`).
+- For n8n errors and n8n fixes: `N8N_API_KEY` (n8n → Settings → n8n API → create key) and `N8N_BASE_URL` (default `http://localhost:5678`).
+- For the engine to make n8n fixes on your ✅: add `riley.n8n_apply` to `LIVE_STAGES`.
 
 ## HQ: your private app (Step 1 "Today", Step 2 "Clients" and "Deliverability", Step 3 "Inbox", "Campaigns", "Content" and "Sales", 2026-11-25/26)
 
