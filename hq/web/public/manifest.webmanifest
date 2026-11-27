@@ -1,0 +1,15 @@
+{
+  "id": "/hq/",
+  "name": "Dulcy HQ",
+  "short_name": "HQ",
+  "description": "Dulcy HQ: decisions, inbox, agents.",
+  "start_url": "/hq/#/today",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0d0e11",
+  "theme_color": "#0d0e11",
+  "icons": [
+    { "src": "/hq/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/hq/dulcy-mark.png", "sizes": "256x256", "type": "image/png", "purpose": "any" }
+  ]
+}

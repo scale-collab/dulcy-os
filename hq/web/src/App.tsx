@@ -18,6 +18,7 @@ import Campaigns from './pages/Campaigns';
 import Deliverability from './pages/Deliverability';
 import Content from './pages/Content';
 import Sales from './pages/Sales';
+import Notifications, { usePush } from './notifications';
 
 // Menu order (Alex, 2026-11-27): agency first, Content at the bottom, then Users (owner).
 const TABS: { key: string; label: string; icon: string; count: string; ownerOnly?: boolean }[] = [
@@ -58,6 +59,8 @@ export default function App() {
       .catch(() => setUser(null));
   }, []);
   useEffect(() => { load(); const out = () => setUser(null); window.addEventListener('hq:signed-out', out); return () => window.removeEventListener('hq:signed-out', out); }, [load]);
+  // Phone notifications: service worker, fresh push address, open screen, tap → item (2026-11-27).
+  usePush(user && user.role !== 'client' ? route.join('/') : null);
 
   if (user === undefined) return <Loading what="Opening HQ" />;
   if (!user) return <Login onIn={(u) => { setUser(u); go(u.role === 'client' ? 'overview' : 'today'); }} />;
@@ -83,9 +86,10 @@ export default function App() {
     case 'agents': body = a ? <AgentPage name={a} /> : <Agents />; break;
     case 'chat': body = <Chat user={user} agent={a || 'Ada'} threadId={b ? Number(b) : undefined} />; break;
     case 'report': body = <ReportPage id={Number(a)} />; break;
+    case 'notifications': body = <Notifications user={user} />; break;
     default: body = <Today user={user} />;
   }
-  const active = page === 'report' ? 'today' : page === 'thread' ? 'inbox' : page === 'users' ? 'users' : page === 'tasks' ? 'needs' : TABS.some((t) => t.key === page) ? page : 'today';
+  const active = page === 'notifications' ? 'notifications' : page === 'report' ? 'today' : page === 'thread' ? 'inbox' : page === 'users' ? 'users' : page === 'tasks' ? 'needs' : TABS.some((t) => t.key === page) ? page : 'today';
   const viewKey = page === 'agents' || page === 'clients' || page === 'thread' || page === 'campaigns' || page === 'sales' ? `${page}/${a ?? ''}` : page === 'report' ? `report/${a}` : page;
   return (
     <div className="min-h-dvh">
@@ -154,6 +158,10 @@ function Sidebar({ active, user, onSignOut, viewing }: { active: string; user: U
             <Icon name="user" size={16} /><span className="flex-1 text-left">{viewing ? 'Exit member view' : 'View as member'}</span>
           </button>
         )}
+        <button onClick={() => go('notifications')} aria-current={active === 'notifications' ? 'page' : undefined}
+          className={cx('flex min-h-10 w-full items-center gap-2.5 rounded-xl border px-3 text-sm font-medium transition', active === 'notifications' ? 'border-line-strong bg-hover text-fg' : 'border-line text-muted hover:bg-hover hover:text-fg')}>
+          <Icon name="bell" size={16} /><span className="flex-1 text-left">Notifications</span>
+        </button>
         <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-1 rounded-xl border border-line bg-sunken p-1">
           {THEMES.map((t) => (
             <button key={t.mode} role="radio" aria-checked={mode === t.mode} onClick={() => setMode(t.mode)} title={t.label}
@@ -191,6 +199,7 @@ function MobileHeader({ onSignOut, owner, active }: { onSignOut: () => void; own
               {!!c.signups && <span aria-hidden="true" className="tabular pointer-events-none absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-bad px-1 text-[10px] font-bold leading-none text-surface">{c.signups}</span>}
             </span>
           )}
+          <IconButton icon="bell" label="Notifications" active={active === 'notifications'} onClick={() => go('notifications')} />
           <IconButton icon={THEMES[i].icon} label={`Theme: ${THEMES[i].label}. Switch to ${next.label}`} onClick={() => setMode(next.mode)} />
           <IconButton icon="logout" label="Sign out" onClick={onSignOut} />
         </div>
