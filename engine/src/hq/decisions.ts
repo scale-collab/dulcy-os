@@ -77,7 +77,7 @@ export function replyButtons(verdict: Verdict, edited = ''): Record<string, stri
  * Echo's replies: only the Emails row's buttons are pressed (Approve Draft / Send Edited Reply with the
  * text in Custom Reply / Skip); the engine's reply sender sends and closes the decision.
  */
-export async function decide(at: Pick<HqAirtable, 'get' | 'update'>, id: string, verdict: Verdict, decidedBy: string, opts: { canSeeMoney: boolean; editedText?: string }, now = new Date()): Promise<{ status: number; error?: string; result?: string; placeholders?: string[] }> {
+export async function decide(at: Pick<HqAirtable, 'get' | 'update'>, id: string, verdict: Verdict, decidedBy: string, opts: { canSeeMoney: boolean; editedText?: string }, now = new Date()): Promise<{ status: number; error?: string; result?: string; placeholders?: string[]; todo?: { agent: string; title: string; detail: string; client: string } }> {
   if (!/^rec[A-Za-z0-9]{14}$/.test(id)) return { status: 400, error: 'not a decision id' };
   const r = await at.get(DECISIONS, id, FIELDS);
   if (!r) return { status: 404, error: 'decision not found' };
@@ -111,5 +111,10 @@ export async function decide(at: Pick<HqAirtable, 'get' | 'update'>, id: string,
     await at.update(EMAILS, emailRec, replyButtons(verdict, edited));
   }
   await at.update(DECISIONS, id, { [DF.status]: status, [DF.decidedBy]: decidedBy, [DF.decidedAt]: now.toISOString() });
+  // Alex 2026-11-27: approving a card that runs nothing means "go do it": it becomes a task on that agent's list.
+  const runsNothing = !card.isReply && (!card.action || card.action === 'None');
+  if (verdict === 'approve' && runsNothing && card.fix) {
+    return { status: 200, result: status, todo: { agent: card.agent || 'Ada', title: card.title, detail: [card.issue, card.checked && `Checked: ${card.checked}`, `Approved fix: ${card.fix}`].filter(Boolean).join('\n\n'), client: card.client } };
+  }
   return { status: 200, result: verdict === 'edited' ? 'Approved (edited)' : status };
 }

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, type Client, type Decision, type Pile, type User } from '../api';
 import { ClientPicker, rememberedClient, type ClientOption } from '../clientPicker';
-import { FixItButton } from '../fixIt';
 import { findPlaceholders } from '../placeholders';
 import { Avatar, BackLink, Button, Card, clientKey, cx, Empty, ErrorBox, ExtLink, go, Icon, Kbd, Label, Marked, PageSkeleton, PageTitle, Pill, Progress, setCount, showToast, timeAgo } from '../ui';
 
@@ -290,10 +289,7 @@ function DecisionDeckCard({ d, decide, position }: { d: Decision; decide: (d: De
                 <div className="flex gap-2.5 rounded-xl bg-info-soft px-4 py-3 text-sm text-fg-2"><Icon name="play" size={15} className="mt-0.5 text-info" /><div><span className="font-semibold text-info">On approve: </span>{d.action}</div></div>
               )}
               {noAction && d.fix && (
-                <div className="rounded-xl border border-line px-4 py-3">
-                  <div className="mb-2 text-sm text-fg-2">Approving only records your OK. To have it done:</div>
-                  <FixItButton agent={d.agent || 'Ada'} title={d.title} detail={[d.issue, d.fix].filter(Boolean).join('\n\n')} client={d.client || undefined} />
-                </div>
+                <div className="flex gap-2.5 rounded-xl bg-info-soft px-4 py-3 text-sm text-fg-2"><Icon name="wrench" size={15} className="mt-0.5 text-info" /><div><span className="font-semibold text-info">On approve: </span>{d.agent || 'Ada'} does it (it goes on {d.agent || 'Ada'}'s list).</div></div>
               )}
             </div>
           )}
