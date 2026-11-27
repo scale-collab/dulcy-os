@@ -248,7 +248,7 @@ test('decisions: piles, approve a reply (Emails first, then the decision), rejec
   assert.deepEqual(Object.fromEntries(Object.entries(list.body.piles).map(([k, v]) => [k, (v as any[]).map((x) => x.id)])), {
     Replies: ['recREPLY000000001'], Campaigns: ['recBOUNCE00000001'], Fixes: ['recFIX00000000001'], Money: ['recMONEY000000001'], Sales: ['recCOLE0000000001'], Content: [], Orchestrator: [],
   });
-  assert.deepEqual(list.body.order, ['Replies', 'Campaigns', 'Fixes', 'Money', 'Sales', 'Content', 'Orchestrator'], 'no "Other" pile');
+  assert.deepEqual(list.body.order, ['Orchestrator', 'Campaigns', 'Replies', 'Fixes', 'Sales', 'Money', 'Content'], 'no "Other" pile');
   assert.equal(list.body.piles.Replies[0].isReply, true);
 
   const ok = await call('POST', '/hq/api/decisions/recREPLY000000001', { body: { verdict: 'approve' }, cookie });
@@ -492,8 +492,8 @@ test('agent mapping: job kinds → agents, agents → piles', () => {
   assert.equal(pileFor('Cole'), 'Sales');
   assert.equal(pileFor('Sienna'), 'Content');
   for (const a of ['Ada', '', 'Someone']) assert.equal(pileFor(a), 'Orchestrator', 'no "Other" pile: Ada routes the rest');
-  assert.deepEqual(pilesFor(true), ['Replies', 'Campaigns', 'Fixes', 'Money', 'Sales', 'Content', 'Orchestrator']);
-  assert.deepEqual(pilesFor(false), ['Replies', 'Campaigns', 'Fixes', 'Sales', 'Orchestrator'], 'money and content are owner-only');
+  assert.deepEqual(pilesFor(true), ['Orchestrator', 'Campaigns', 'Replies', 'Fixes', 'Sales', 'Money', 'Content']);
+  assert.deepEqual(pilesFor(false), ['Orchestrator', 'Campaigns', 'Replies', 'Fixes', 'Sales'], 'money and content are owner-only');
 });
 
 test('team check: failed > waiting > ran fine > no runs', () => {

@@ -80,7 +80,8 @@ export function jobPatternsFor(agent: AgentName): string[] {
  * The Decisions piles (Alex, 2026-11-27: no "Other"). Money (Ledger) and Content (Sienna) are
  * owner-only: members never get those piles.
  */
-export const PILES = ['Replies', 'Campaigns', 'Fixes', 'Money', 'Sales', 'Content', 'Orchestrator'] as const;
+// Same order as the team (Team / Chat): Ada, Atlas·Scribe·Scout, Echo, Riley, Cole, Ledger, Sienna (Alex 2026-11-27).
+export const PILES = ['Orchestrator', 'Campaigns', 'Replies', 'Fixes', 'Sales', 'Money', 'Content'] as const;
 export type Pile = (typeof PILES)[number];
 export const OWNER_PILES: readonly Pile[] = ['Money', 'Content'];
 /** The piles this person sees, in order. */

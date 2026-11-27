@@ -6,13 +6,14 @@ import { Avatar, BackLink, Button, Card, clientKey, cx, Empty, ErrorBox, ExtLink
 
 // The piles (Alex, 2026-11-27): no "Other". Money and Content are owner-only (the server leaves them out for members).
 const PILES: { key: Pile; who: string; icon: string }[] = [
-  { key: 'Replies', who: 'Echo', icon: 'reply' },
-  { key: 'Campaigns', who: 'Atlas · Scribe · Scout', icon: 'megaphone' },
-  { key: 'Fixes', who: 'Riley', icon: 'wrench' },
-  { key: 'Money', who: 'Ledger', icon: 'dollar' },
-  { key: 'Sales', who: 'Cole', icon: 'trendUp' },
-  { key: 'Content', who: 'Sienna', icon: 'film' },
+  // Same order as the team (Team / Chat).
   { key: 'Orchestrator', who: 'Ada', icon: 'sparkles' },
+  { key: 'Campaigns', who: 'Atlas · Scribe · Scout', icon: 'megaphone' },
+  { key: 'Replies', who: 'Echo', icon: 'reply' },
+  { key: 'Fixes', who: 'Riley', icon: 'wrench' },
+  { key: 'Sales', who: 'Cole', icon: 'trendUp' },
+  { key: 'Money', who: 'Ledger', icon: 'dollar' },
+  { key: 'Content', who: 'Sienna', icon: 'film' },
 ];
 type Outcome = 'approved' | 'rejected' | 'skipped';
 type Verdict = 'approve' | 'reject' | 'edited';
