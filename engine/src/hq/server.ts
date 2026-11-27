@@ -29,10 +29,9 @@ import { actOnThread, listInbox, threadDetail } from './inbox.js';
 import { calendarInvite, replierDetail, saveReplier } from './replier.js';
 import { campaignDetail, listCampaigns, listLeadLists } from './campaigns.js';
 import { deliverabilityView, inboxIndex } from './deliverability.js';
-// Batch 3: inbox limits + ramp, bounce analytics, verification, Fix-it.
+// Batch 3: inbox limits + ramp, bounce analytics, verification (Fix it is Batch 1's fixIt.ts).
 import { limitsView, requestLimitChange } from './inboxLimits.js';
 import { bouncesView, verificationView } from './bounceStats.js';
-import { requestFix } from './fixRequests.js';
 import { portalRoute, resolvePortalClient } from './portal.js';
 import { contentSummary, contentView, decideIdea } from './content.js';
 import { dealDetail, salesView } from './sales.js';
@@ -418,7 +417,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         json(res, r.status, r.error ? { error: r.error } : { ok: true, status: r.result });
         return true;
       }
-      // ---- Batch 3: Campaigns + Deliverability (lead lists, limits, ramp, bounces, verification, Fix it) ----
+      // ---- Batch 3: Campaigns + Deliverability (lead lists, limits, ramp, bounces, verification) ----
       if (p === '/hq/api/campaigns/lists' && req.method === 'GET') {
         json(res, 200, await listLeadLists(needAt(), db, { client: url.searchParams.get('client') ?? undefined, refresh: url.searchParams.get('refresh') === '1' }));
         return true;
@@ -434,11 +433,6 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         // A live write to EmailBison: owner only, confirm: true, dry run unless inbox.limits is in LIVE_STAGES.
         if (!owner) { json(res, 403, { error: 'only the owner changes inbox limits' }); return true; }
         const r = await requestLimitChange(needAt(), db, cfg, await readJson(req, 60_000), user.name);
-        json(res, r.status, r.body);
-        return true;
-      }
-      if (p === '/hq/api/fix-it' && req.method === 'POST') {
-        const r = await requestFix(db, await readJson(req, 10_000), user.name, (a) => { const ag = agentByName(a); return !!ag && canTalkTo(user, ag); });
         json(res, r.status, r.body);
         return true;
       }

@@ -1,6 +1,6 @@
 // HQ Batch 3: the inbox limit edit (confirm required, owner only, dry run vs live, a fake EmailBison),
-// the new-client ramp proposals, bounce grouping and its one conclusion, verification stats, the
-// lead lists view and the Fix-it tasks. No real service is called.
+// the new-client ramp proposals, bounce grouping and its one conclusion, verification stats and the
+// lead lists view. No real service is called.
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
@@ -22,7 +22,6 @@ import {
 } from '../src/hq/bounceStats.js';
 import { CAMPAIGNS_T, KF, LEAD_LISTS_T, LF, LLF, WORKSPACES_T, _resetCampaignsCache, clientIndex, leadListRow } from '../src/hq/campaigns.js';
 import { EMAILS } from '../src/agents/emailsFields.js';
-import { parseFixRequest } from '../src/hq/fixRequests.js';
 import { startFakeBison, type FakeBison } from './fakes/bison.js';
 
 const url = process.env.TEST_DATABASE_URL;
@@ -171,7 +170,7 @@ test('verification: per campaign and verifier; many "address not found" = a veri
   assert.equal(ok.verdict, 'ok');
 });
 
-/* ---------- lead lists, domains, fix-it (pure) ---------- */
+/* ---------- lead lists, domains (pure) ---------- */
 test('lead lists: in progress, done (60 days), failed; a list bought without a campaign still shows', () => {
   const clients = clientIndex([{ id: 'recWS00000000001A', fields: { Name: 'MJJ Brilliant', Status: 'Active' } }] as any);
   const rec = (id: string, f: Record<string, unknown>, createdTime = ago(5)) => ({ id, fields: f, createdTime });
@@ -194,13 +193,6 @@ test('domains: renewal 1 year from the date added when unknown (estimated); the 
   const t = (blacklist: string, count = 0, monitoring = 'Active') => blacklistText({ blacklist, count, monitoring, lastCheck: '' }).text;
   assert.deepEqual([t('Clean'), t('Listed', 2), t('Check Failed'), t('Pending'), t('', 0, 'Not Added'), t('Unknown')], ['Clean', 'Listed (2)', 'Check failed', 'Checking', 'Not checked', 'Not checked']);
   assert.match(blacklistText({ blacklist: '', count: 0, monitoring: 'Not Added', lastCheck: '' }).why, /Not added to EmailGuard/);
-});
-
-test('fix it: a press names a known agent and a problem', () => {
-  assert.deepEqual(parseFixRequest({ agent: 'riley', problem: '  Friday scores may not arrive ', fix: 'Re-run it', link: 'deliverability' }), { ok: true, agent: 'Riley', problem: 'Friday scores may not arrive', data: '', fix: 'Re-run it', link: 'deliverability' });
-  assert.equal((parseFixRequest({ agent: 'Nobody', problem: 'x' }) as any).ok, false);
-  assert.equal((parseFixRequest({ agent: 'Riley' }) as any).ok, false);
-  assert.equal((parseFixRequest({ agent: 'Riley', problem: 'x', link: 'javascript:alert(1)' }) as any).link, null);
 });
 
 /* ---------- the API (fake Airtable in memory) and the job (fake EmailBison + fake Airtable over HTTP) ---------- */
@@ -397,7 +389,7 @@ test('bounces + verification API: grouping, one conclusion, filters; read only',
   assert.equal(writes.length, 0);
 });
 
-test('campaigns: Campaign Center fields, sending accounts with their status, the lead lists view, fix-it tasks', { skip }, async () => {
+test('campaigns: Campaign Center fields, sending accounts with their status, the lead lists view', { skip }, async () => {
   fixture();
   const cookie = await login();
   const r = await call('GET', '/hq/api/campaigns', cookie);
@@ -412,13 +404,4 @@ test('campaigns: Campaign Center fields, sending accounts with their status, the
   assert.equal(l.status, 200, l.text);
   assert.deepEqual(l.body.rows.map((x: any) => [x.name, x.group, x.listOnly]), [['Just a list', 'building', true], ['Roofers', 'done', false]], 'the list-only purchase shows; inactive clients do not');
   assert.equal(l.body.counts.listOnly, 1);
-  // Fix it: a task on Riley's own list, once per problem.
-  const f = await call('POST', '/hq/api/fix-it', cookie, { agent: 'Riley', problem: "Friday 11-27's placement scores may not arrive.", fix: 'Confirm the workflow runs', link: 'deliverability' });
-  assert.equal(f.status, 200, f.text);
-  const f2 = await call('POST', '/hq/api/fix-it', cookie, { agent: 'Riley', problem: "Friday 11-27's placement scores may not arrive." });
-  assert.equal(f2.body.taskId, f.body.taskId);
-  const t = (await db.query(`SELECT agent, status, title, priority FROM hq_agent_tasks`)).rows;
-  assert.deepEqual(t, [{ agent: 'Riley', status: 'open', title: "Fix: Friday 11-27's placement scores may not arrive.", priority: 'high' }]);
-  const josh = await login('josh@dulcy.io', 'josh long password 1');
-  assert.equal((await call('POST', '/hq/api/fix-it', josh, { agent: 'Ledger', problem: 'x' })).status, 404, 'members cannot hand work to owner-only agents');
 });
