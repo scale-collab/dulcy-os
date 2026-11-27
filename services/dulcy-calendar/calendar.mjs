@@ -186,9 +186,11 @@ export function bookingRequest(b, now = Date.now()) {
   const email = String(b?.prospect?.email || b?.email || '').trim().toLowerCase();
   if (!EMAIL.test(email) || email.length > 254) throw Error('A valid prospect email is required');
   const name = String(b?.prospect?.name || b?.name || '').replace(/\s+/g, ' ').trim().slice(0, 200) || email.split('@')[0];
+  const phoneRaw = String(b?.prospect?.phone || b?.phone || '').replace(/[^\d+]/g, '');
+  const phone = /^\+\d{8,15}$/.test(phoneRaw) ? phoneRaw : '';
   const key = String(b?.idempotencyKey || '');
   if (!/^[A-Za-z0-9_:.-]{8,200}$/.test(key)) throw Error('An idempotency key (8-200 letters, digits, _ : . -) is required');
-  return {workspace, start: new Date(start).toISOString(), end: Number.isFinite(end) ? new Date(end).toISOString() : null, timezone, email, name,
+  return {workspace, start: new Date(start).toISOString(), end: Number.isFinite(end) ? new Date(end).toISOString() : null, timezone, email, name, phone,
     title: String(b?.title || '').replace(/\s+/g, ' ').trim().slice(0, 200) || `Call with ${name}`,
     description: String(b?.description || '').slice(0, 4000), idempotencyKey: key};
 }
@@ -228,7 +230,7 @@ export function googleSlotFree({connection, workspace, response, start, end, rul
 /** The Google event: the prospect as attendee and a Meet link, on the client's own primary calendar. */
 export function googleEventBody(req, eventId) {
   return {
-    id: eventId, summary: req.title, ...(req.description ? {description: req.description} : {}),
+    id: eventId, summary: req.title, ...(req.description || req.phone ? {description: [req.description, req.phone ? `Phone: ${req.phone}` : ''].filter(Boolean).join('\n')} : {}),
     start: {dateTime: req.start, timeZone: req.timezone}, end: {dateTime: req.end, timeZone: req.timezone},
     attendees: [{email: req.email, displayName: req.name}],
     conferenceData: {createRequest: {requestId: eventId, conferenceSolutionKey: {type: 'hangoutsMeet'}}},
@@ -253,8 +255,11 @@ export function calendlyAnswers(event, req) {
   const qs = Array.isArray(event?.custom_questions) ? event.custom_questions : [];
   const out = [];
   for (const q of qs) {
-    if (!q || q.enabled === false || !q.required) continue;
+    if (!q || q.enabled === false) continue;
     const type = String(q.type || 'string');
+    // A phone question gets the prospect's number when we have one (required or not).
+    if (type === 'phone_number' && req.phone) { out.push({question: String(q.name || ''), answer: req.phone, position: Number(q.position) || 0}); continue; }
+    if (!q.required) continue;
     if (type === 'string' || type === 'text') {
       const answer = (req.description || `Meeting booked by email reply with ${req.name}`).slice(0, type === 'string' ? 255 : 10000);
       out.push({question: String(q.name || ''), answer, position: Number(q.position) || 0});

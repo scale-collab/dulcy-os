@@ -336,7 +336,7 @@ async function main() {
       // Check a client's calendar connection and, with --book <email>, book ONE real test meeting
       // on the first open slot (Alex, 2026-11-27: test booking end to end on Dulcy's own calendar).
       const ws = args[0] ?? '';
-      if (!/^rec[A-Za-z0-9]{14}$/.test(ws)) throw new Error('usage: calendar-test <workspace record id> [--book <prospect email>] [--name "Test Prospect"]');
+      if (!/^rec[A-Za-z0-9]{14}$/.test(ws)) throw new Error('usage: calendar-test <workspace record id> [--book <prospect email>] [--name "Test Prospect"] [--phone +15551234567]');
       const st = await calendarStatus(cfg, ws);
       console.log('Status:', st ? `${st.status} · provider ${st.provider ?? '?'} · can book: ${st.canBook ? 'yes' : 'NO (reconnect)'} · tz ${st.timezone ?? '?'}` : 'no calendar connected (or CALENDAR_READER_TOKEN missing)');
       const open = await openTimes(cfg, ws);
@@ -347,7 +347,7 @@ async function main() {
         if (!cfg.calendarBookerToken) throw new Error('CALENDAR_BOOKER_TOKEN is not set in the engine .env');
         const start = open?.slots[0];
         if (!start) throw new Error('no open slot to book');
-        const r = await bookSlot(cfg, { workspace: ws, start, tz: open!.timezone, prospect: { name: flag(args, '--name') ?? 'Test Prospect', email }, title: 'Dulcy booking test', description: 'Test booking made from the engine (calendar-test).', idempotencyKey: `test:${ws}:${start.slice(0, 16)}` });
+        const r = await bookSlot(cfg, { workspace: ws, start, tz: open!.timezone, prospect: { name: flag(args, '--name') ?? 'Test Prospect', email, phone: flag(args, '--phone') }, title: 'Dulcy booking test', description: 'Test booking made from the engine (calendar-test).', idempotencyKey: `test:${ws}:${start.slice(0, 16)}` });
         console.log('Booking:', JSON.stringify(r, null, 2));
       }
     } else if (cmd === 'discord-check') {

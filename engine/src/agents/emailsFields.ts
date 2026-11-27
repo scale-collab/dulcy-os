@@ -1,7 +1,7 @@
 // Airtable "Emails" table (reply threads), base appxqINt5XKw7a76A. IDs checked 2026-11-24.
 export const EMAILS = 'tblADFhWhTcLrl1UY';
 export const EF = {
-  leadEmail: 'fldVkWkLFCGP9O1Aw', leadName: 'fldQAcnN9PrbL7R81', company: 'fldRYOE8NaSKxs9tB', subject: 'fldNdJB5rvVpf8V9M',
+  leadEmail: 'fldVkWkLFCGP9O1Aw', phone: 'fld8K4zasLt6aaRfB', leadName: 'fldQAcnN9PrbL7R81', company: 'fldRYOE8NaSKxs9tB', subject: 'fldNdJB5rvVpf8V9M',
   latestReply: 'fldjG76LvUTv60Pzj', history: 'fldYocEhrAzRUw9sA', latestReplyAt: 'fldb1GEPgDTyJPm2v', lastSent: 'fldE9bxKtmeRsvG9f',
   leadStatus: 'fldr2uNiscZfeCNiT', intent: 'fldSgiv4CLnRBEJGc', stage: 'fldSuQyvPM3IlS5oD', workspace: 'fldCjo0mB0snziNZQ',
   campaign: 'fldEv7oM5BJPKJpiR', replyId: 'fldvARFWnr4H2wC8V', replyUuid: 'fldT2Nvl3qPmSMsgb', clientHandling: 'fldztj8riBd1MHclA', dnc: 'fldbme5e9wDtnVwrx',

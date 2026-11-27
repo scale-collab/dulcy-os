@@ -201,6 +201,28 @@ const STOP = /\b(unsubscribe|remove me|take me off|stop emailing|do not contact)
 const READ = [...new Set([...Object.values(EF), ...Object.values(RA), ...Object.values(BK)])];
 const policyOf = (f: Record<string, unknown>): Record<string, any> => { try { const j = JSON.parse(val(f[RA.policy]) || '{}'); return j && typeof j === 'object' ? j : {}; } catch { return {}; } };
 
+
+/**
+ * The prospect's phone, for booking forms that ask for one (Alex 2026-11-27): the lead's Phone Number
+ * in Airtable first, else a number in the prospect's own latest message (signature), quoted history cut off.
+ * Returned in E.164 (+15551234567), or '' when none is clear. Pure.
+ */
+export function prospectPhone(rowPhone: string, latestReply: string): string {
+  const norm = (raw: string): string => {
+    const plus = raw.trim().startsWith('+');
+    const d = raw.replace(/\D/g, '');
+    if (!plus && d.length === 10 && /^[2-9]/.test(d)) return `+1${d}`;
+    if (!plus && d.length === 11 && d.startsWith('1')) return `+${d}`;
+    if (plus && d.length >= 8 && d.length <= 15) return `+${d}`;
+    return '';
+  };
+  const fromRow = norm(String(rowPhone || ''));
+  if (fromRow) return fromRow;
+  const own = String(latestReply || '').split(/\n(?:On .{0,200}wrote:|-{2,}\s*Original Message|From: )/i)[0];
+  for (const m of own.matchAll(/(\+?\d[\d\s().-]{8,18}\d)/g)) { const n = norm(m[1]); if (n) return n; }
+  return '';
+}
+
 export const calendarBookStage: Stage = async (ctx) => {
   const cfg = ctx.cfg;
   if (!cfg.airtableApiKey) throw new PermanentError('no AIRTABLE_API_KEY on the server');
@@ -244,7 +266,7 @@ export const calendarBookStage: Stage = async (ctx) => {
   const client = clientFileFor(cfg.knowledgeDir, Number(val(f[EF.workspace])))?.name ?? 'the client';
   // The prospect sees the title and description on the invite: no agency or agent names in them.
   const req = {
-    workspace: wsRec, start: b.start, tz: b.tz, prospect: { name: val(f[EF.leadName]), email }, idempotencyKey: b.key,
+    workspace: wsRec, start: b.start, tz: b.tz, prospect: { name: val(f[EF.leadName]), email, phone: prospectPhone(val(f[EF.phone]), val(f[EF.latestReply])) }, idempotencyKey: b.key,
     title: `Intro call: ${val(f[EF.leadName]) || 'prospect'}${val(f[EF.company]) ? ` (${val(f[EF.company])})` : ''}`.slice(0, 200),
     description: val(f[EF.subject]) ? `Re: ${val(f[EF.subject]).replace(/^(re:\s*)+/i, '')}` : '',
   };
