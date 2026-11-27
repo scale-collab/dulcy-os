@@ -87,6 +87,10 @@ export async function openTimes(cfg: Pick<Config, 'calendarUrl' | 'calendarReade
 /** The two slots to offer: another day if possible, else at least 2 hours later the same day (never 4:00 and 4:05). */
 export function pickTwo(slots: string[], tz = 'America/New_York'): string[] {
   const day = (s: string) => new Date(s).toLocaleDateString('en-US', { timeZone: tz });
+  // Calendars like Outlook return 5-minute steps: offer :00 / :30 times when there are any (Alex, 2026-11-27: never "10:25").
+  const minute = (s: string) => Number(new Date(s).toLocaleString('en-US', { timeZone: tz, minute: '2-digit' }));
+  const round = slots.filter((s) => minute(s) % 30 === 0);
+  if (round.length) slots = round;
   const first = slots[0];
   if (!first) return [];
   const t0 = Date.parse(first);

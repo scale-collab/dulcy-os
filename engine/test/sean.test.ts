@@ -308,3 +308,9 @@ test('out of office: drafted only for a client that answers them; the return dat
   assert.equal(emails.recO[RA.state], 'Needs Approval');
   assert.equal(JSON.parse(String(emails.recO[RA.policy])).followUpOn, '2026-12-03');
 });
+
+test('Echo offers on-the-hour or half-hour times when a calendar returns 5-minute steps (Outlook)', () => {
+  const s = ['2026-11-30T15:25:00Z', '2026-11-30T15:30:00Z', '2026-11-30T15:35:00Z', '2026-12-01T14:05:00Z', '2026-12-01T14:30:00Z'];
+  assert.deepEqual(pickTwo(s), ['2026-11-30T15:30:00Z', '2026-12-01T14:30:00Z']);
+  assert.deepEqual(pickTwo(['2026-11-30T15:25:00Z', '2026-12-01T14:05:00Z']), ['2026-11-30T15:25:00Z', '2026-12-01T14:05:00Z'], 'odd times still offered when nothing else is free');
+});
