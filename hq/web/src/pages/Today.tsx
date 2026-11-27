@@ -1,20 +1,30 @@
+// Today, round 2 (Alex, 2026-11-27 evening; desktop first). One decisions summary only: the decisions
+// line in "Do now". Do now = the founder's to-do for today, the top of "Needs you" (the same ranked
+// list). Then campaigns grouped by how they are doing (not by bounce alone), the weekly scorecard
+// (this week vs the same days last week), Ada's brief, the team check (what each agent did in 24 h),
+// Content (once a week, so under the team check) and the reports.
 import { useCallback, useEffect, useState } from 'react';
-import { api, type Need, type NeedCounts, type Report, type TeamLine, type User } from '../api';
+import { api, type CampaignHow, type Need, type NeedCounts, type Report, type TeamLine, type TodayAgentDay, type TodayCampaigns, type TodayWeek, type User } from '../api';
 import {
   Avatar, Button, Card, cleanLine, cx, ErrorBox, go, Icon, IconButton, Inline, Markdown, PageSkeleton, PageTitle,
-  setCount, StatusDot, teamTone, timeAgo, toneLabel, type Tone,
+  Pill, setCount, StatusDot, teamTone, timeAgo, type Tone,
 } from '../ui';
 import { ReportList } from './Reports';
 import { NeedFace, whoLabel } from './Needs';
 import { ContentCard } from './Content';
 import { FixItButton } from '../fixIt';
+import { dayAndDate } from '../dates';
 
 interface TodayData {
   signups?: number;
   brief: { title: string; body: string; created: string; dryRun: boolean } | null;
   team: TeamLine[];
+  activity?: TodayAgentDay[] | null;
   decisions: Record<string, number>;
   needs: { top: Need[]; counts: NeedCounts; errors: string[] };
+  campaigns?: TodayCampaigns | null;
+  week?: TodayWeek | null;
+  blockErrors?: string[];
   reports: Report[];
 }
 export const PILE_ICON: Record<string, string> = { Replies: 'reply', Campaigns: 'megaphone', Fixes: 'wrench', Money: 'dollar', Sales: 'trendUp', Content: 'film', Orchestrator: 'sparkles' };
@@ -35,43 +45,37 @@ export default function Today({ user }: { user: User }) {
   useEffect(load, [load]);
   const hour = new Date().getHours();
   const hello = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-  const date = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
   const first = (user.name || '').split(' ')[0] || user.name;
   const actions = (
-    <div className="hidden items-center gap-2 sm:flex">
+    <div className="flex items-center gap-2">
       <IconButton icon="refresh" label="Refresh" onClick={load} className={cx('border border-line bg-surface', refreshing && '[&_svg]:animate-spin')} />
-      <Button icon="message" onClick={() => go('chat/Ada')}>Ask Ada</Button>
+      <span className="hidden sm:block"><Button icon="message" onClick={() => go('chat/Ada')}>Ask Ada</Button></span>
     </div>
   );
+  const head = <PageTitle kicker={dayAndDate()} title={`${hello}, ${first}.`} right={actions} />;
 
-  if (error && !d) return <><PageTitle kicker={date} title={`${hello}, ${first}.`} right={actions} /><ErrorBox error={error} retry={load} /></>;
-  if (!d) return <><PageTitle kicker={date} title={`${hello}, ${first}.`} right={actions} /><PageSkeleton kind="today" /></>;
+  if (error && !d) return <>{head}<ErrorBox error={error} retry={load} /></>;
+  if (!d) return <>{head}<PageSkeleton kind="today" /></>;
 
-  const waiting = Object.values(d.decisions).reduce((a, b) => a + b, 0);
   const reports = d.reports.filter((r) => r.kind !== 'brief');
   const suggestions = suggestionsOf(d);
-  const needYou = d.needs.counts.total;
-  const off = d.team.filter((t) => t.ok === false);
 
   return (
     <div>
-      <PageTitle kicker={date} title={`${hello}, ${first}.`} right={actions}
-        sub={<span className="mt-1 flex flex-wrap items-center gap-2">
-          <Stat n={waiting} label={waiting === 1 ? 'decision' : 'decisions'} tone={waiting ? 'warn' : 'good'} />
-          <Stat n={needYou} label={needYou === 1 ? 'needs you' : 'need you'} tone={needYou ? 'warn' : 'good'} />
-          <Stat n={off.length} label={off.length === 1 ? 'agent needs a look' : 'agents need a look'} tone={off.length ? 'bad' : 'good'} />
-          <button onClick={load} aria-label="Refresh" className="-my-2 grid h-11 w-11 place-items-center rounded-xl text-muted hover:bg-hover hover:text-fg sm:hidden"><Icon name="refresh" size={17} className={refreshing ? 'animate-spin' : undefined} /></button>
-        </span>} />
-
+      {head}
       {error && <div className="mb-4"><ErrorBox error={error} retry={load} /></div>}
 
-      {/* Each block has its own heading, icon and colour, so it is clear what each part is (Alex, 2026-11-27). */}
-      <Block icon="inbox" tone="ink" title="Decisions" sub="Cards waiting for your OK">
-        <DecisionHero waiting={waiting} piles={d.decisions} />
-      </Block>
-
-      <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0 space-y-8">
+          <Block icon="bell" tone="ink" title="Do now" sub={d.needs.counts.total ? `Your to-do for today · top ${d.needs.top.length} of ${d.needs.counts.total} in Needs you` : 'Your to-do for today'}>
+            <DoNow items={d.needs.top} counts={d.needs.counts} piles={d.decisions} errors={d.needs.errors} />
+          </Block>
+          <Block icon="megaphone" tone="accent" title="Campaigns" sub={d.campaigns ? `${d.campaigns.live} live, grouped by how they are doing` : 'How the live campaigns are doing'}>
+            <CampaignsBlock c={d.campaigns ?? null} />
+          </Block>
+          <Block icon="activity" tone="info" title="This week" sub={d.week ? `${d.week.thisWeek.label} vs last week (${d.week.lastWeek.label}, the same days)` : 'This week vs last week'}>
+            <WeekBlock w={d.week ?? null} />
+          </Block>
           <Block icon="sparkles" tone="accent" title="Ada's morning brief" sub="Top 3 and what happened overnight">
             <Brief brief={d.brief} />
           </Block>
@@ -83,15 +87,13 @@ export default function Today({ user }: { user: User }) {
           <Block icon="file" tone="plain" title="Reports" sub="What the agents wrote" right={reports.length > 0 && <span className="text-xs text-muted">latest {reports.length}</span>}>
             <ReportList reports={reports} empty="No reports yet. They appear here as the agents write them." />
           </Block>
+          {!!d.blockErrors?.length && <p className="text-xs text-muted">Could not read: {d.blockErrors.join(', ')}. The rest is up to date.</p>}
         </div>
-        <div className="order-first min-w-0 space-y-8 lg:order-none">
-          <Block icon="bell" tone="info" title="Do now" sub={d.needs.counts.total ? `Top ${Math.min(3, d.needs.top.length)} of ${d.needs.counts.total} in Needs you` : 'From Needs you'}>
-            <NeedsNow items={d.needs.top} counts={d.needs.counts} />
+        <div className="min-w-0 space-y-8">
+          <Block icon="users" tone="good" title="Team check" sub="What each agent did in the last 24 h">
+            <TeamCheck team={d.team} activity={d.activity ?? null} />
           </Block>
           {user.role === 'owner' && <ContentCard />}
-          <Block icon="users" tone="good" title="Team check" sub="Did every agent do its job?">
-            <TeamCheck team={d.team} />
-          </Block>
         </div>
       </div>
     </div>
@@ -118,6 +120,135 @@ function Block({ icon, tone, title, sub, right, children }: { icon: string; tone
   );
 }
 
+// ---------- Do now: the founder's to-do (the top of Needs you) ----------
+function DoNow({ items, counts, piles, errors }: { items: Need[]; counts: NeedCounts; piles: Record<string, number>; errors: string[] }) {
+  const open = (n: Need) => (n.action && !/^https:\/\//i.test(n.action.href) ? go(n.action.href) : go('needs'));
+  const pileChips = Object.entries(piles).filter(([, n]) => n);
+  return (
+    <Card className="p-0">
+      {items.length ? (
+        <ol className="divide-y divide-line">
+          {items.map((n, i) => (
+            <li key={n.key} className="flex gap-3 px-4 py-3.5 sm:px-5">
+              <span className="tabular mt-1 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-ink text-xs font-bold text-ink-fg">{i + 1}</span>
+              <NeedFace n={n} size="sm" />
+              <div className="min-w-0 flex-1">
+                <button onClick={() => open(n)} className="block text-left text-[15px] font-semibold leading-snug text-fg hover:underline">{n.title}</button>
+                {(n as Need & { todo?: string }).todo && <div className="mt-0.5 text-sm leading-snug text-fg-2">{(n as Need & { todo?: string }).todo}</div>}
+                <div className="mt-0.5 text-xs text-muted">{whoLabel(n)}{n.why ? ` · ${n.why}` : ''}</div>
+                {n.kind === 'decisions' && pileChips.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {pileChips.map(([k, c]) => (
+                      <button key={k} onClick={() => go(`decisions/${k}`)} className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-line bg-raised px-2.5 text-[13px] font-medium text-fg-2 transition hover:border-line-strong hover:text-fg">
+                        <Icon name={PILE_ICON[k] ?? 'layers'} size={14} className="text-muted" />{k}<span className="tabular font-semibold text-fg">{c}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {n.kind === 'decisions'
+                ? <span className="hidden shrink-0 self-center sm:block"><Button tone="accent" icon="play" onClick={() => go('decisions/all')}>Start deciding</Button></span>
+                : n.action && <span className="hidden shrink-0 self-center sm:block"><Button onClick={() => open(n)}>{n.action.label}</Button></span>}
+            </li>
+          ))}
+        </ol>
+      ) : <div className="flex items-center gap-2 px-5 py-4 text-sm text-muted"><Icon name="check" size={15} />Nothing on your list right now.</div>}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-4 py-3 sm:px-5">
+        <span className="text-xs text-muted">{errors.length ? `Not read: ${errors.join(', ')}` : 'Most important first. Done items drop off.'}</span>
+        <Button onClick={() => go('needs')} icon="bell">{counts.total > items.length ? `See all ${counts.total}` : 'Open Needs you'}</Button>
+      </div>
+    </Card>
+  );
+}
+
+// ---------- Campaigns, grouped by how they are doing ----------
+const HOW_TONE: Record<CampaignHow, { dot: Tone; ring: string; icon: string }> = {
+  look: { dot: 'bad', ring: 'hover:border-bad-line', icon: 'alert' },
+  well: { dot: 'good', ring: 'hover:border-good/40', icon: 'trendUp' },
+  pace: { dot: 'good', ring: 'hover:border-line-strong', icon: 'check' },
+  time: { dot: 'idle', ring: 'hover:border-line-strong', icon: 'clock' },
+};
+const DISPLAY: CampaignHow[] = ['well', 'pace', 'time', 'look'];
+/** Campaigns, filtered to one group (the Campaigns page reads ?how=). */
+const howHref = (k: CampaignHow) => `campaigns/live?how=${k}`;
+function CampaignsBlock({ c }: { c: TodayCampaigns | null }) {
+  if (!c) return <Card><div className="text-sm text-muted">Campaigns could not be read just now. Refresh in a minute.</div></Card>;
+  if (!c.live) return <Card><div className="text-sm text-muted">No live campaign right now.</div></Card>;
+  const by = Object.fromEntries(c.groups.map((g) => [g.key, g]));
+  const look = by.look?.campaigns ?? [];
+  const well = by.well?.campaigns ?? [];
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {DISPLAY.map((k) => {
+          const g = by[k];
+          if (!g) return null;
+          return (
+            <button key={k} onClick={() => go(howHref(k))} title={g.sub}
+              className={cx('min-w-0 rounded-2xl border border-line bg-surface p-4 text-left shadow-card transition', HOW_TONE[k].ring, k === 'look' && g.count > 0 && 'border-bad-line/60')}>
+              <div className="flex items-center gap-1.5 text-xs font-medium text-muted"><StatusDot tone={g.count ? HOW_TONE[k].dot : 'idle'} />{g.label}</div>
+              <div className="tabular mt-1.5 text-[28px] font-bold leading-none tracking-tight text-fg">{g.count}</div>
+              <div className="mt-1.5 line-clamp-2 text-xs leading-snug text-muted">{g.sub}</div>
+            </button>
+          );
+        })}
+      </div>
+      {(look.length > 0 || well.length > 0) && (
+        <Card className="p-0">
+          <ul className="divide-y divide-line">
+            {[...look.slice(0, 4), ...well.slice(0, 3)].map((x) => (
+              <li key={x.id}>
+                <button onClick={() => go(`campaigns/${x.id}`)} className="flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-hover sm:px-5">
+                  <Icon name={HOW_TONE[x.how].icon} size={16} className={cx('mt-0.5 shrink-0', x.how === 'look' ? 'text-bad' : 'text-good')} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[15px] font-semibold text-fg">{x.name}<span className="font-normal text-muted"> · {x.client || 'no client'}</span></span>
+                    <span className="block text-sm leading-snug text-fg-2">{x.why}</span>
+                    {x.signals.length > 0 && <span className="mt-1 flex flex-wrap gap-1.5">{x.signals.map((s) => <Pill key={s} tone="warn">{s}</Pill>)}</span>}
+                  </span>
+                  <Pill tone={x.how === 'look' ? 'bad' : 'good'} className="shrink-0">{x.how === 'look' ? 'Needs a look' : 'Performing well'}</Pill>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+      <p className="text-xs text-muted">Judged on interested replies and meetings for the emails sent{c.agencyPerThousand ? ` (agency average ${c.agencyPerThousand} interested per 1,000)` : ''}. Bounce over 4% always needs a look; 2.5–4% shows as a signal.</p>
+    </div>
+  );
+}
+
+// ---------- The weekly scorecard ----------
+function WeekBlock({ w }: { w: TodayWeek | null }) {
+  if (!w) return <Card><div className="text-sm text-muted">The scorecard could not be read just now. Refresh in a minute.</div></Card>;
+  const tiles: { label: string; now: number | null; last: number | null }[] = [
+    { label: 'Interested replies', now: w.thisWeek.interested, last: w.lastWeek.interested },
+    { label: 'Meetings booked', now: w.thisWeek.booked, last: w.lastWeek.booked },
+    { label: 'Emails sent', now: w.thisWeek.sent, last: w.lastWeek.sent },
+  ];
+  const n = (x: number | null) => (x === null ? '?' : x.toLocaleString('en-US'));
+  return (
+    <div>
+      <div className="grid grid-cols-3 gap-3">
+        {tiles.map((t) => {
+          const up = t.now !== null && t.last !== null && t.now > t.last, down = t.now !== null && t.last !== null && t.now < t.last;
+          return (
+            <div key={t.label} className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-card">
+              <div className="truncate text-xs font-medium text-muted">{t.label}</div>
+              <div className="tabular mt-1 text-[26px] font-bold leading-none tracking-tight text-fg">{n(t.now)}</div>
+              <div className="mt-1.5 flex items-center gap-1 truncate text-xs text-muted">
+                {(up || down) && <Icon name={up ? 'trendUp' : 'trendDown'} size={13} className={up ? 'text-good' : 'text-bad'} />}
+                <span className="truncate">Last week: {n(t.last)}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-2 text-xs text-muted">This week = Monday to today; last week = the same days one week earlier. {w.sentNote}</p>
+    </div>
+  );
+}
+
+// ---------- Ada's brief (the parts Today does not already show) ----------
 interface Suggestion { key: string; agent: string; title: string; detail: string; from: string }
 /** What the agents flag: an agent whose runs failed (Riley fixes systems) and urgent reports (the writer fixes it). */
 function suggestionsOf(d: TodayData): Suggestion[] {
@@ -125,7 +256,7 @@ function suggestionsOf(d: TodayData): Suggestion[] {
     key: `team:${t.agent}`, agent: 'Riley', title: `${t.agent}'s runs failed: ${cleanLine(t.line)}`.slice(0, 200), detail: cleanLine(t.line), from: 'Team check',
   }));
   const urgent = d.reports.filter((r) => r.kind !== 'brief' && r.urgent).slice(0, 4).map((r) => ({
-    key: `report:${r.id}`, agent: r.agent, title: r.title, detail: r.summary, from: `${r.agent}'s report · ${timeAgo(r.created)}`,
+    key: `report:${r.id}`, agent: r.kind === 'account_health' ? 'Riley' : r.agent, title: r.title, detail: r.summary, from: `${r.agent}'s report · ${timeAgo(r.created)}`,
   }));
   return [...urgent, ...failed];
 }
@@ -145,50 +276,6 @@ function Suggestions({ items }: { items: Suggestion[] }) {
         </div>
       ))}
     </Card>
-  );
-}
-
-function Stat({ n, label, tone }: { n: number; label: string; tone: 'good' | 'warn' | 'bad' }) {
-  return (
-    <span className="inline-flex min-h-7 items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 text-[13px] text-fg-2 shadow-card sm:min-h-8 sm:gap-2 sm:px-3 sm:text-sm">
-      <StatusDot tone={n ? tone : 'good'} />
-      <span className="tabular font-semibold text-fg">{n}</span>{label}
-    </span>
-  );
-}
-
-function DecisionHero({ waiting, piles }: { waiting: number; piles: Record<string, number> }) {
-  const parts = Object.entries(piles).filter(([, n]) => n);
-  if (!waiting) {
-    return (
-      <Card className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-accent-soft text-accent-ink"><Icon name="check" size={24} strokeWidth={2.4} /></span>
-        <div className="min-w-0 flex-1"><div className="text-lg font-semibold tracking-tight">You're all clear</div><div className="text-sm text-muted">No decisions waiting on you. The agents will add cards here when they need you.</div></div>
-        <Button onClick={() => go('needs')} icon="bell">Needs you</Button>
-      </Card>
-    );
-  }
-  return (
-    <section aria-label="Decisions waiting" className="relative overflow-hidden rounded-3xl border border-line bg-surface p-5 shadow-card sm:p-7">
-      <div aria-hidden="true" className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 bg-[radial-gradient(closest-side,var(--accent-soft),transparent)]" />
-      <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 text-sm font-medium text-muted"><Icon name="inbox" size={16} />Waiting on you</div>
-          <div className="mt-2 flex items-baseline gap-2.5">
-            <span className="tabular text-5xl font-bold tracking-tight sm:text-6xl">{waiting}</span>
-            <span className="text-xl font-semibold text-fg-2">{waiting === 1 ? 'decision' : 'decisions'}</span>
-          </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {parts.map(([k, n]) => (
-              <button key={k} onClick={() => go(`decisions/${k}`)} className="inline-flex min-h-9 items-center gap-2 rounded-full border border-line bg-raised px-3 text-sm font-medium text-fg-2 transition hover:border-line-strong hover:text-fg">
-                <Icon name={PILE_ICON[k] ?? 'layers'} size={15} className="text-muted" />{k}<span className="tabular font-semibold text-fg">{n}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-        <Button tone="accent" size="lg" icon="play" onClick={() => go('decisions/all')} className="w-full sm:w-auto">Start deciding</Button>
-      </div>
-    </section>
   );
 }
 
@@ -217,6 +304,8 @@ export function briefSections(body: string): BriefSection[] {
   }
   return out;
 }
+/** Brief parts Today already shows as their own blocks (decisions, campaigns, agents, the scorecard): left out here. */
+const SHOWN_ELSEWHERE = /^(Waiting on you|Campaigns|Agents|What the agents did|Weekly scorecard)/i;
 
 function Brief({ brief }: { brief: TodayData['brief'] }) {
   const [open, setOpen] = useState(false);
@@ -227,8 +316,8 @@ function Brief({ brief }: { brief: TodayData['brief'] }) {
       </Card>
     );
   }
-  const sections = briefSections(brief.body);
-  const isKey = (s: BriefSection) => /^(Waiting on you|Top \d|Overnight)/i.test(s.title);
+  const sections = briefSections(brief.body).filter((s) => !SHOWN_ELSEWHERE.test(s.title));
+  const isKey = (s: BriefSection) => /^(Top \d|Overnight)/i.test(s.title);
   const key = sections.filter(isKey);
   const rest = sections.filter((s) => !isKey(s));
   return (
@@ -260,7 +349,7 @@ function Brief({ brief }: { brief: TodayData['brief'] }) {
 function BriefBlock({ s, big }: { s: BriefSection; big?: boolean }) {
   return (
     <div>
-      {s.title && <div className={cx('font-semibold', big ? 'text-[15px] text-fg' : 'text-[11px] uppercase tracking-[0.08em] text-muted')}>{s.title}</div>}
+      {s.title && <div className={cx('font-semibold', big ? 'text-[15px] text-fg' : 'text-sm text-fg')}>{s.title}</div>}
       {s.text && <div className={cx('mt-1 whitespace-pre-line leading-relaxed text-fg-2', big ? 'text-[15px]' : 'text-sm')}><Inline text={s.text} /></div>}
       {s.items.length > 0 && (s.ordered ? (
         <ol className="mt-2 space-y-2">
@@ -280,84 +369,41 @@ function BriefBlock({ s, big }: { s: BriefSection; big?: boolean }) {
   );
 }
 
-/** The top 3 of "Needs you": tap one to do it (a route), or open the list. */
-function NeedsNow({ items, counts }: { items: Need[]; counts: NeedCounts }) {
-  const open = (n: Need) => (n.action && !/^https:\/\//i.test(n.action.href) ? go(n.action.href) : go('needs'));
-  return (
-    <Card className="p-0">
-      {counts.total > 0 && (
-        <div className="flex items-center justify-end px-5 pb-1 pt-3">
-          <span className="tabular text-xs font-medium text-muted">{`${counts.total} need${counts.total === 1 ? 's' : ''} you`}</span>
-        </div>
-      )}
-      {items.length ? (
-        <ul className="px-2">
-          {items.map((n) => (
-            <li key={n.key}>
-              <button onClick={() => open(n)} className="flex min-h-14 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-hover">
-                <NeedFace n={n} size="sm" />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[15px] leading-snug text-fg"><span className="font-semibold">{whoLabel(n)}:</span> {n.title}</span>
-                  {n.why && <span className="mt-0.5 block truncate text-xs text-muted">{n.why}</span>}
-                </span>
-                <Icon name="chevronRight" size={16} className="text-faint" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : <div className="flex items-center gap-2 px-5 py-4 text-sm text-muted"><Icon name="check" size={15} />Nothing needs you right now.</div>}
-      <div className="border-t border-line p-3"><Button onClick={() => go('needs')} className="w-full" icon="bell">{counts.total > items.length ? `See all ${counts.total}` : 'Open Needs you'}</Button></div>
-    </Card>
-  );
-}
-
-/** Short status for a team tile, from the team check line. */
-function shortStatus(t: TeamLine, tone: Tone): string {
-  const line = cleanLine(t.line);
-  if (tone === 'good') return /\(([^)]+)\)/.exec(line)?.[1] ?? 'ran fine';
-  if (tone === 'warn') { const n = /(\d+) decision/.exec(line)?.[1]; return n ? `${n} waiting` : 'needs you'; }
-  if (tone === 'bad') return 'failed';
-  return 'no runs';
-}
-
-function TeamCheck({ team }: { team: TeamLine[] }) {
+// ---------- Team check: what each agent did in the last 24 h ----------
+function TeamCheck({ team, activity }: { team: TeamLine[]; activity: TodayAgentDay[] | null }) {
   const issues = team.filter((t) => t.ok === false);
+  const by = new Map((activity ?? []).map((a) => [a.agent, a]));
   return (
     <Card className="p-0">
-      <div className="flex items-center justify-end px-5 pb-1 pt-3">
-        <span className={cx('text-xs font-medium', issues.length ? 'text-warn' : 'text-good')}>{issues.length ? `${issues.length} need a look` : 'all fine'}</span>
+      <div className="flex items-center justify-between gap-2 border-b border-line px-5 py-2.5">
+        <span className="text-xs text-muted">{activity ? 'From the Activity Log and the agents’ runs' : 'Runs only (the Activity Log could not be read)'}</span>
+        <span className={cx('text-xs font-medium', issues.length ? 'text-bad' : 'text-good')}>{issues.length ? `${issues.length} failed` : 'all ran fine'}</span>
       </div>
-      <div className="grid grid-cols-3 gap-1 p-2">
+      <ul className="divide-y divide-line">
         {team.map((t) => {
           const tone = teamTone(t.ok, t.line);
+          const a = by.get(t.agent);
+          const did = a?.count ? `${a.line}` : '';
+          const line = tone === 'bad' ? cleanLine(t.line) : did || (tone === 'good' ? `Ran fine, nothing logged (${/\(([^)]+)\)/.exec(cleanLine(t.line))?.[1] ?? 'recently'})` : 'No runs in the last 14 days');
           return (
-            <button key={t.agent} onClick={() => go(`agents/${t.agent}`)} title={cleanLine(t.line)} aria-label={`${t.agent}: ${toneLabel[tone]}. ${cleanLine(t.line)}`}
-              className="flex min-h-[5.5rem] flex-col items-center justify-center gap-1.5 rounded-xl px-1 py-2 text-center transition hover:bg-hover">
-              <span className="relative">
-                <Avatar name={t.agent} />
-                <StatusDot tone={tone} className="absolute -bottom-0.5 -right-0.5 h-3 w-3 ring-2 ring-surface" />
-              </span>
-              <span className="text-[13px] font-semibold leading-none text-fg">{t.agent}</span>
-              <span className={cx('w-full truncate text-[11px] leading-none', tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn' : 'text-muted')}>{shortStatus(t, tone)}</span>
-            </button>
+            <li key={t.agent}>
+              <button onClick={() => go(`agents/${t.agent}`)} className="flex w-full items-start gap-3 px-4 py-2.5 text-left transition hover:bg-hover">
+                <span className="relative shrink-0">
+                  <Avatar name={t.agent} size="sm" />
+                  <StatusDot tone={tone} className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 ring-2 ring-surface" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-baseline justify-between gap-2">
+                    <span className="text-sm font-semibold text-fg">{t.agent}</span>
+                    {a && a.count > 0 && <span className="tabular shrink-0 text-xs text-muted">{a.count} logged</span>}
+                  </span>
+                  <span className={cx('block text-[13px] leading-snug', tone === 'bad' ? 'text-bad' : 'text-fg-2')}>{line}</span>
+                </span>
+              </button>
+            </li>
           );
         })}
-      </div>
-      {issues.length > 0 && (
-        <ul className="border-t border-line px-2 py-2">
-          {issues.map((t) => {
-            const tone = teamTone(t.ok, t.line);
-            return (
-              <li key={t.agent}>
-                <button onClick={() => go(`agents/${t.agent}`)} className="flex min-h-11 w-full items-start gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-hover">
-                  <StatusDot tone={tone} className="mt-1.5" />
-                  <span className="min-w-0 flex-1"><span className="font-semibold text-fg">{t.agent}</span> <span className="text-fg-2">{cleanLine(t.line)}</span></span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      </ul>
     </Card>
   );
 }

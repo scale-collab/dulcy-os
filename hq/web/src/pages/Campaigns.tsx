@@ -115,16 +115,21 @@ function Shell({ channel, section, view = 'all', client }: { channel: string; se
   );
 }
 
+const HOW: Record<string, string> = { well: 'Performing well', pace: 'On pace', time: 'Needs more time', look: 'Needs a look' };
+/** Today links here with ?how=<group> (Performing well / On pace / Needs more time / Needs a look). */
+const howFromHash = () => { const h = new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('how') ?? ''; return HOW[h] ? h : ''; };
+
 function CampaignList({ d, view, client }: { d: CampaignListR2; view: View; client: string }) {
+  const how = howFromHash();
   const [q, setQ] = useState('');
   const [tests, setTests] = useState(false);
   const [allNotes, setAllNotes] = useState(false);
   const rows = useMemo(() => {
     const term = q.trim().toLowerCase();
     const base = (view === 'action' ? d.rows.filter((r) => r.needs.length) : view === 'live' ? d.rows.filter((r) => r.group === 'live') : view === 'building' ? d.rows.filter((r) => r.group === 'building') : d.rows)
-      .filter((r) => tests || !r.test);
+      .filter((r) => (tests || !r.test) && (!how || r.how === how));
     return term ? base.filter((r) => `${r.name} ${r.client} ${r.stage} ${r.approach}`.toLowerCase().includes(term)) : base;
-  }, [d, view, q, tests]);
+  }, [d, view, q, tests, how]);
   const testCount = d.rows.filter((r) => r.test).length;
   const count = (k: View) => (k === 'action' ? d.counts.action : k === 'live' ? d.counts.live : k === 'building' ? d.counts.building : d.counts.live + d.counts.building);
   const notes = allNotes ? d.notes : d.notes.slice(0, 2);
@@ -138,6 +143,7 @@ function CampaignList({ d, view, client }: { d: CampaignListR2; view: View; clie
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search campaigns" maxLength={100}
             className="min-h-10 w-full rounded-xl border border-line bg-surface px-3.5 text-sm text-fg outline-none placeholder:text-faint focus:border-accent focus:ring-4 focus:ring-accent-soft" />
         </label>
+        {how && <button onClick={() => go(`campaigns/${view}${client ? `/${encodeURIComponent(client)}` : ''}`)} className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-accent-soft px-3 text-sm font-semibold text-accent-ink" title="Show every campaign again">From Today: {HOW[how]} <span aria-hidden="true">✕</span><span className="sr-only">clear</span></button>}
         {testCount > 0 && <label className="inline-flex min-h-10 items-center gap-2 text-sm text-fg-2"><input type="checkbox" checked={tests} onChange={(e) => setTests(e.target.checked)} className="h-4 w-4 accent-[var(--accent)]" />Show tests ({testCount})</label>}
       </div>
       {d.notes.length > 0 && (

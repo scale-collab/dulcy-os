@@ -18,6 +18,14 @@ import type { HqAirtable } from './decisions.js';
 import type { HqUser } from './auth.js';
 import { campaignCenterView, campaignCopy, createPlan, leadListDetail, listPlans, pressCampaignAction, pressListAction, pressPlanAction } from './centerActions.js';
 import { sendingAccountsView } from './sendingAccounts.js';
+import { agencyRate, campaignHow } from './today.js';
+import type { CampaignRow } from './campaigns.js';
+
+/** How each live campaign is doing, the same groups as Today (well / pace / time / look), so #/campaigns/live?how= filters to Today's group. */
+export function howOfRows(all: CampaignRow[]): Map<string, string> {
+  const rate = agencyRate(all);
+  return new Map(all.filter((r) => r.group === 'live' && r.clientActive !== false).map((r) => [r.id, campaignHow(r, rate).how]));
+}
 
 export interface RouteAnswer { status: number; body: unknown }
 

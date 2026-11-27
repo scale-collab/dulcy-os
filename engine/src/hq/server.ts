@@ -28,12 +28,13 @@ import { PORTAL_SIGNUP_SENT, SIGNUP_SENT, addUser, googleSignUp, listUsers, mana
 import { portalWrite, recentPortalWrites } from './portalWrites.js';
 import { forgotPassword, inviteSoftrUser, linkPortalUser, listSoftrUsers, makeSetupLink, portalGoogleNewUser, setPasswordWithToken, suggestedClient, updateOwnAccount } from './portalAccounts.js';
 import { askVisible, finishAsk, getAsk, isSnooze, listAsks, quietItem, snoozeAsk } from './asks.js';
-import { isNeedDay, loadNeeds, loadNeedsDay, needCounts } from './needs.js';
+import { isNeedDay, loadNeeds, loadNeedsDay, needCounts, type NeedExtras } from './needs.js';
+import { todayBlocks } from './today.js';
 import { workSummary } from './agentTasks.js';
 import { actOnThread, listInbox, threadDetail } from './inbox.js';
 import { calendarInvite, replierDetail, saveReplier } from './replier.js';
 import { campaignDetail, listCampaigns, listLeadLists } from './campaigns.js';
-import { round2Campaigns } from './campaignRoutes.js';
+import { howOfRows, round2Campaigns } from './campaignRoutes.js';
 import { deliverabilityView, inboxIndex } from './deliverability.js';
 // Batch 3: inbox limits + ramp, bounce analytics, verification (Fix it is Batch 1's fixIt.ts).
 import { limitsView, requestLimitChange } from './inboxLimits.js';
@@ -292,7 +293,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       // "View as member" (Batch 1, 2026-11-27): the owner's request handled as a member's. Downgrade
       // only (auth.ts viewAs) and read only: every write is refused while viewing.
       const { user, viewing } = viewAs(signedIn, req.headers[VIEW_HEADER]);
-      if (viewing && write) { json(res, 403, { error: 'Viewing as a member is read only. Exit "View as member" to make changes.', viewing: true }); return true; }
+      if (viewing && write) { json(res, 403, { error: 'Read only while you view as someone else. Press Exit in the top bar to make changes.', viewing: true }); return true; }
       if (!clientMayCall(user, p)) { json(res, 403, { error: CLIENT_REFUSED, portal: true }); return true; }
       if (onPortalHost && user.role !== 'client') { json(res, 403, { error: 'Dulcy team logins sign in at HQ.', redirect: `${cfg.hqPublicUrl}/` }); return true; }
       if (PUBLIC.has(p)) { json(res, 405, { error: 'method not allowed' }); return true; }
@@ -379,7 +380,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         // ?day=yesterday|today|tomorrow (default today): what got handled / what is due now / what comes back.
         const day = url.searchParams.get('day') ?? 'today';
         if (!isNeedDay(day)) { json(res, 400, { error: 'day must be yesterday, today or tomorrow' }); return true; }
-        json(res, 200, await loadNeedsDay(db, at, user, day));
+        json(res, 200, await loadNeedsDay(db, at, user, day, new Date(), at ? needExtras(db, at) : undefined));
         return true;
       }
       m = p.match(/^\/hq\/api\/needs\/issue\/(rec[A-Za-z0-9]{14})\/snooze$/);
@@ -496,7 +497,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
 
       // Campaigns (Step 3): read only. Needs action first; campaign page, Activity log. No money in it.
       if (p === '/hq/api/campaigns' && req.method === 'GET') {
-        json(res, 200, await listCampaigns(needAt(), db, { client: url.searchParams.get('client') ?? undefined, refresh: url.searchParams.get('refresh') === '1', inboxes: await inboxIndex(needAt(), db, cfg) }));
+        json(res, 200, await listCampaigns(needAt(), db, { client: url.searchParams.get('client') ?? undefined, refresh: url.searchParams.get('refresh') === '1', inboxes: await inboxIndex(needAt(), db, cfg), how: howOfRows }));
         return true;
       }
       m = p.match(/^\/hq\/api\/campaigns\/(rec[A-Za-z0-9]{14})$/);
@@ -703,7 +704,31 @@ async function reports(db: Db, owner: boolean, agent: AgentName | null, limit: n
   return r.rows.map((x) => reportOut(x));
 }
 
-/** Today: Ada's latest brief, the team check, latest reports, decisions per pile, the top 3 of "Needs you". */
+/**
+ * The founder items in "Needs you" (Round 2): sales calls today (Sales Data) and clients at risk
+ * (Clients health). Both reads are cached (60 s / 5 min) and only run for the owner (needs.ts).
+ */
+function needExtras(db: Db, at: HqAirtable): NeedExtras {
+  return {
+    calls: async () => {
+      const now = Date.now();
+      const { deals } = await allDeals(at, db, false, now);
+      return deals.filter((d) => d.needs.some((x) => x.kind === 'call_today')).map((d) => ({ dealId: d.id, name: d.name, company: d.company, prep: !!d.prep }));
+    },
+    clients: async () => {
+      const r = await listClients(at, db, false);
+      return r.clients.filter((c) => c.active && !c.internal && (c.health === 'attention' || c.health === 'at_risk'))
+        .map((c) => ({ id: c.id, name: c.name, health: c.health as 'attention' | 'at_risk', problem: c.insight?.problem ?? c.note[0] ?? '' }));
+    },
+  };
+}
+
+/**
+ * Today (Round 2, Alex 2026-11-27): the founder's to-do (the top 5 of "Needs you", the same ranked
+ * list; decisions are ONE line in it), campaigns grouped by how they are doing, the weekly
+ * scorecard, Ada's brief, the team check (what each agent did in 24 h; decisions are not repeated
+ * there) and the latest reports.
+ */
 async function today(db: Db, at: HqAirtable, user: HqUser) {
   const owner = user.role === 'owner';
   const visible = AGENT_NAMES.filter((a) => canTalkTo(user, a));
@@ -720,14 +745,19 @@ async function today(db: Db, at: HqAirtable, user: HqUser) {
     if (t) { const [first, ...rest] = t.split('\n'); briefOut = { title: first.replace(/\*/g, ''), body: slackToMarkdown(rest.join('\n')), created: new Date(j.updated_at).toISOString(), dryRun: j.dry_run }; }
   }
   const piles = groupByPile(decisions, owner);
-  const needs = await loadNeeds(db, at, user, { decisions });
+  const [needs, blocks] = await Promise.all([loadNeeds(db, at, user, { decisions, extras: needExtras(db, at) }), todayBlocks(at, db, visible)]);
   return {
     user: publicUser(user),
     ...(owner ? { signups: await pendingCount(db) } : {}),
     brief: briefOut,
-    team: teamCheck(health, owner ? decisions : decisions.filter((x) => !OWNER_ONLY.includes(x.agent)), Date.now(), visible),
+    // The team check says whether each agent ran; decisions waiting are in the to-do line, not here.
+    team: teamCheck(health, [], Date.now(), visible),
+    activity: blocks.activity,
     decisions: Object.fromEntries(pilesFor(owner).map((k) => [k, piles[k]?.length ?? 0])),
-    needs: { top: needs.items.slice(0, 3), counts: needCounts(needs.items), errors: needs.errors },
+    needs: { top: needs.items.slice(0, 5), counts: needCounts(needs.items), errors: needs.errors },
+    campaigns: blocks.campaigns,
+    week: blocks.week,
+    blockErrors: blocks.errors,
     reports: recent,
   };
 }

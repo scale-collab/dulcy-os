@@ -8,7 +8,7 @@ import { loadConfig, type Config } from '../src/config.js';
 import { enqueue, getJob } from '../src/queue.js';
 import { upsertAgentTask } from '../src/hq/agentTasks.js';
 import { runOnce } from '../src/worker.js';
-import { decide, PLACEMENT, PT, ACCOUNTS, EA, DOMAINS, DM, QUEUE, SQ } from '../src/stages/accountHealth.js';
+import { decide, failureLines, failureReason, PLACEMENT, PT, ACCOUNTS, EA, DOMAINS, DM, QUEUE, SQ } from '../src/stages/accountHealth.js';
 import { ACTIVITY, AF } from '../src/activity.js';
 import { DECISIONS, DF } from '../src/decisions/fields.js';
 import { startFakeBison, type FakeBison } from './fakes/bison.js';
@@ -50,6 +50,9 @@ before(async () => {
     let raw = ''; req.on('data', (c) => (raw += c));
     req.on('end', () => {
       const b = JSON.parse(raw || '{}');
+      // Like Airtable: a dateTime field refuses text that is not a date (Last Spam Protocol Action, 2026-11-27 bug).
+      const bad = (b.records ?? []).find((r: any) => table === ACCOUNTS && r.fields?.[EA.lastAction] !== undefined && !/^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(String(r.fields[EA.lastAction])));
+      if (bad) { res.statusCode = 422; return res.end(JSON.stringify({ error: { type: 'INVALID_VALUE_FOR_COLUMN', message: 'Field "Last Spam Protocol Action" cannot accept the provided value' } })); }
       res.end(JSON.stringify({ records: (b.records ?? []).map((r: any) => {
         if (req.method === 'PATCH') { Object.assign((rows[r.id] ??= { fields: {} }).fields, r.fields); return r; }
         const id = `recNew${String(Object.keys(rows).length).padStart(11, '0')}`; rows[id] = { fields: { ...r.fields } }; return { id, fields: r.fields };
@@ -64,7 +67,7 @@ after(async () => { bison.close(); server.close(); if (!skip) await db.end(); })
 beforeEach(async () => {
   tables = { [PLACEMENT]: {}, [ACCOUNTS]: {}, [DOMAINS]: {}, [QUEUE]: {}, [DECISIONS]: {}, [ACTIVITY]: {} };
   (bison as any).dailyLimits = {}; (bison as any).rejectZeroLimit = false;
-  if (!skip) await db.query('TRUNCATE jobs, steps, receipts, events, hq_agent_tasks RESTART IDENTITY CASCADE');
+  if (!skip) await db.query('TRUNCATE jobs, steps, receipts, events, hq_agent_tasks, hq_reports RESTART IDENTITY CASCADE');
 });
 
 test('decision rules: under 60% rests; the next weekly test restores or replaces; a test before the due date holds', () => {
@@ -97,6 +100,28 @@ test('Friday: an account under 60% is rested at 0/day, its old limit saved; olde
   const t = (await db.query(`SELECT agent, title, status, to_char(due_date,'YYYY-MM-DD') AS due, waiting_until, job_kind FROM hq_agent_tasks WHERE source_key='rest:recAccount0000001'`)).rows[0];
   assert.deepEqual([t.agent, t.title, t.status, t.due, t.job_kind], ['Atlas', 'Rest a11@dulcyx.info until its retest', 'in_progress', '2026-12-03', 'account.health']);
   assert.equal(new Date(t.waiting_until).toISOString(), '2026-12-03T22:00:00.000Z');
+});
+
+test('a test that cannot be processed: the report says what failed and that Riley fixes it', { skip }, async () => {
+  tables[ACCOUNTS].recAccount0000001 = { fields: { [EA.email]: 'a11@dulcyx.info', [EA.emailId]: 11, [EA.workspaceId]: 2, [EA.dailyLimit]: 15 } };
+  const t = testRow(99, 30, '2026-11-27T10:00:00.000Z'); tables[PLACEMENT][t.id] = { fields: t.fields, createdTime: t.createdTime };
+  const j = await run(cfg());
+  assert.equal(j.job.status, 'succeeded', j.job.error ?? '');
+  const r = (await db.query(`SELECT title, body, urgent FROM hq_reports WHERE kind='account_health' ORDER BY id DESC LIMIT 1`)).rows[0];
+  assert.equal(r.title, 'Account health: 0 rested, 0 recovered, 0 to replace, 1 could not be processed (Riley)');
+  assert.match(r.body, /Could not process 1 test\. Riley fixes this/);
+  assert.match(r.body, /No Email Accounts row in Airtable for this inbox.*: 1 \(a99@dulcyx\.info\)/);
+  assert.equal(r.urgent, true);
+});
+
+test('failure reasons in plain words, grouped', () => {
+  assert.equal(failureReason('Airtable 422: INVALID_VALUE_FOR_COLUMN Field "Last Spam Protocol Action" cannot accept the provided value').key, 'airtable-refused');
+  assert.equal(failureReason('no Email Accounts record with Email ID 0').key, 'no-account');
+  assert.equal(failureReason('EmailBison 429 too many requests').key, 'emailbison');
+  const lines = failureLines(['a@x.io: Airtable 422 INVALID_VALUE_FOR_COLUMN', 'b@x.io: Airtable 422 INVALID_VALUE_FOR_COLUMN', 'c@x.io: no Email Accounts record with Email ID 5']);
+  assert.equal(lines.length, 4);
+  assert.match(lines[1], /Airtable refused the update.*: 2 \(a@x\.io, b@x\.io\)\. The daily limit may already be 0/);
+  assert.deepEqual(failureLines([]), []);
 });
 
 test('EmailBison will not take 0 → the limit is set to 1', { skip }, async () => {

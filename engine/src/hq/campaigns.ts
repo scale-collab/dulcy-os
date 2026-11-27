@@ -392,7 +392,11 @@ const sortRows = (rows: CampaignRow[]) => [...rows].sort((a, b) => {
   return ka - kb || b.bounce - a.bounce || b.progress - a.progress || a.name.localeCompare(b.name);
 });
 
-export async function listCampaigns(at: Pick<HqAirtable, 'list'>, db: Db, opts: { client?: string; refresh?: boolean; inboxes?: Map<string, InboxLite> } = {}) {
+/**
+ * opts.how: how each live campaign is doing (Today's groups, today.ts campaignHow; passed in by the
+ * server because today.ts imports this file). Today links to #/campaigns/live?how=<key>.
+ */
+export async function listCampaigns(at: Pick<HqAirtable, 'list'>, db: Db, opts: { client?: string; refresh?: boolean; inboxes?: Map<string, InboxLite>; how?: (all: CampaignRow[]) => Map<string, string> } = {}) {
   const src = await cachedCampaigns(at, db, opts.refresh);
   const all = buildRows(src, Date.now(), opts.inboxes);
   const visible = all.filter((r) => r.group !== 'done' && !r.old);
@@ -410,7 +414,7 @@ export async function listCampaigns(at: Pick<HqAirtable, 'list'>, db: Db, opts: 
   const facts = src.campaigns.map(factsOf);
   const agencyRate = rate(facts.map((c) => ({ id: c.id, name: c.name, client: c.clientRec, sent: c.sent, interested: c.interested, progress: c.progress, status: c.status, canNewOffer: false })));
   return {
-    rows: sortRows(mine),
+    rows: (() => { const how = opts.how?.(all); return sortRows(mine).map((r) => (how ? { ...r, how: how.get(r.id) ?? null } : r)); })(),
     counts: { action: mine.filter((r) => r.needs.length).length, live: mine.filter((r) => r.group === 'live').length, building: mine.filter((r) => r.group === 'building').length },
     client, clients: [...byKey.values()].sort((a, b) => b.action - a.action || a.name.localeCompare(b.name)),
     notes: campaignNotes(client ? all.filter((r) => r.clientKey === client) : all),

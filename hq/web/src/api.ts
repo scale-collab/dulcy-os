@@ -1,12 +1,24 @@
 // Calls to the HQ API (/hq/api, same origin). The session is an httpOnly cookie the page never sees.
 export class ApiError extends Error { constructor(public status: number, message: string) { super(message); } }
 
-/** "View as member" (owner only, per browser tab): every call says so; the server answers as for a member, read only. */
+/**
+ * "View as" (owner only, per browser tab), started from Users → a person → "View as member": every
+ * call says so; the server answers as for that role (member), read only. The person's name is only
+ * a label for the banner ("Viewing as Josh (member)").
+ */
 const VIEW_KEY = 'hq.viewAs';
+const WHO_KEY = 'hq.viewAsWho';
+export interface ViewAsWho { name: string; role: string }
 export function viewingAsMember(): boolean { try { return sessionStorage.getItem(VIEW_KEY) === 'member'; } catch { return false; } }
-export function setViewAsMember(on: boolean) { try { if (on) sessionStorage.setItem(VIEW_KEY, 'member'); else sessionStorage.removeItem(VIEW_KEY); } catch { /* private window */ } }
+export function viewingAsWho(): ViewAsWho { try { const w = JSON.parse(sessionStorage.getItem(WHO_KEY) ?? 'null'); if (w && typeof w.name === 'string') return { name: w.name.slice(0, 80), role: String(w.role ?? 'member') }; } catch { /* none */ } return { name: 'a member', role: 'member' }; }
+export function setViewAsMember(on: boolean, who?: ViewAsWho) {
+  try {
+    if (on) { sessionStorage.setItem(VIEW_KEY, 'member'); if (who) sessionStorage.setItem(WHO_KEY, JSON.stringify(who)); }
+    else { sessionStorage.removeItem(VIEW_KEY); sessionStorage.removeItem(WHO_KEY); }
+  } catch { /* private window */ }
+}
 /** Start or stop it, then reload so every screen reads as that role. */
-export function switchViewAsMember(on: boolean) { setViewAsMember(on); window.location.hash = on ? '#/today' : '#/users'; window.location.reload(); }
+export function switchViewAsMember(on: boolean, who?: ViewAsWho) { setViewAsMember(on, who); window.location.hash = on ? '#/today' : '#/users'; window.location.reload(); }
 
 export async function api<T = any>(path: string, opts: { method?: string; body?: unknown } = {}): Promise<T> {
   const res = await fetch(`/hq/api${path}`, {
@@ -35,7 +47,7 @@ export type Box = 'doNow' | 'schedule' | 'delegate' | 'later';
 /** One thing an agent needs from you (GET /needs). The server builds it; text is shown escaped. */
 export interface NeedLink { label: string; href: string }
 export interface Need {
-  key: string; kind: 'decisions' | 'issue' | 'signups' | 'ask' | 'task' | 'handled'; group: 'now' | 'later';
+  key: string; kind: 'decisions' | 'campaigns' | 'money' | 'checkin' | 'issue' | 'signups' | 'ask' | 'task' | 'handled' | 'calls' | 'clients'; group: 'now' | 'later';
   agent: string; icon?: string; title: string; why: string; steps: string;
   action: NeedLink | null; link: NeedLink | null; canDone: boolean; canSnooze: boolean; count?: number; at: string;
   /** Today's order: money and client-facing first. */
@@ -277,7 +289,7 @@ export interface ClientFinance {
 // ---------- Batch 4b: Needs you (to-do), Team board, Chat threads and suggestions ----------
 /** One to-do on "Needs you": the problem (title), what to do (todo), why (why), one action. */
 export interface TodoItem extends Omit<Need, 'kind'> {
-  kind: 'decisions' | 'campaigns' | 'money' | 'checkin' | 'issue' | 'signups' | 'ask' | 'task' | 'handled';
+  kind: 'decisions' | 'campaigns' | 'money' | 'checkin' | 'issue' | 'signups' | 'ask' | 'task' | 'handled' | 'calls' | 'clients';
   todo?: string; rank?: number;
 }
 /** A chat in the list (GET /chat/threads): `mine` = your own; archived chats only with ?archived=1. */
@@ -393,7 +405,8 @@ export interface LimitResultB3 { ok: true; jobId: number; dryRun: boolean; dupli
 
 /* ---------- Round 2 campaigns (2026-11-27): Campaign Center + Lead List Center buttons, sending accounts ---------- */
 export type SectionKeyR2 = 'live' | 'launch' | 'build' | 'review' | 'internal' | 'draft' | 'none';
-export type CampaignRowR2 = CampaignRowB3 & { section: SectionKeyR2; test: boolean };
+/** how: Today's group for a live campaign (well / pace / time / look); #/campaigns/live?how= filters to it. */
+export type CampaignRowR2 = CampaignRowB3 & { section: SectionKeyR2; test: boolean; how?: 'well' | 'pace' | 'time' | 'look' | null };
 export type CampaignListR2 = Omit<CampaignListB3, 'rows'> & { rows: CampaignRowR2[]; sections: { key: SectionKeyR2; label: string }[] };
 /** One button: what it does, what it spends, why it is off; comesNext = no engine path yet. */
 export interface ActionR2 { key: string; label: string; section: string; does: string; spends: string; enabled: boolean; why: string; comesNext: boolean; dryRun: boolean; tone: 'primary' | 'quiet' | 'danger'; needsNotes?: boolean }
@@ -431,3 +444,11 @@ export interface LeadListDetailR2 {
   };
   next: string; actions: ActionR2[]; history: CampaignDetailB3['history']; activity: CampaignDetailB3['activity']; canAct: boolean; readAt: string;
 }
+
+/* ---------- Today, round 2 (2026-11-27): campaigns by how they are doing, the weekly scorecard, agents' 24 h ---------- */
+export type CampaignHow = 'well' | 'pace' | 'time' | 'look';
+export interface TodayCampaign { id: string; name: string; client: string; how: CampaignHow; why: string; signals: string[]; sent: number; interested: number; booked: number; progress: number }
+export interface TodayCampaigns { live: number; agencyPerThousand: number | null; readAt: string; groups: { key: CampaignHow; label: string; sub: string; count: number; campaigns: TodayCampaign[] }[] }
+export interface TodayWeekSpan { from: string; to: string; label: string; interested: number; booked: number; sent: number | null }
+export interface TodayWeek { thisWeek: TodayWeekSpan; lastWeek: TodayWeekSpan; sentNote: string }
+export interface TodayAgentDay { agent: string; count: number; failed: number; line: string }

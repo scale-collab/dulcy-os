@@ -304,6 +304,9 @@ test('API: one lead list with its buttons; a press writes exactly what the Airta
 test('API: campaign buttons (Pause on a live campaign), copy view, refused when not ready', { skip }, async () => {
   fixture();
   const cookie = await login();
+  const list = await call('GET', '/hq/api/campaigns', cookie);
+  assert.deepEqual(list.body.rows.map((r: any) => [r.name, r.section, r.how ?? null]).sort(), [['TWM - Plumbers', 'internal', null], ['TWM - Roofers', 'live', 'time']], 'by stage; Today\'s group (400 sent = needs more time) for ?how=');
+  assert.deepEqual(list.body.sections.map((s: any) => s.key), ['live', 'launch', 'build', 'review', 'internal', 'draft', 'none']);
   const c = await call('GET', '/hq/api/campaigns/recCAMPTWM000010A/center', cookie);
   assert.equal(c.status, 200, c.text);
   assert.deepEqual(c.body.actions.filter((a: any) => a.enabled).map((a: any) => a.key), ['pause', 'senders']);
