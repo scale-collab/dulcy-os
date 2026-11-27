@@ -13,6 +13,7 @@ Last updated: 2026-11-27 (evening)
   - Proposal: A/B owner vs generic email (500+ each side) on one list.
   - Which menu items to drop (only reordered so far). Inbox limit edits are dry run until `inbox.limits` is in LIVE_STAGES.
   - Optional Airtable fixes: Monthly Fee (GMG, MJJ, Cartel, Twenty West), Client Type (MJJ, Cartel), Client End Dates.
+- **Phone notifications live (2026-11-27):** Web Push from HQ (decisions, agent messages, urgent, good news; always on; Josh own items; Slack kept). Test push reached Alex's iPhone. Riley n8n fixes live (`riley.n8n_apply`); Approve = agent does it.
 - **Echo reply cards:** 118 stale ones cleared 2026-11-27 (Josh handles replies by hand meanwhile).
 
 ## Done 2026-11-27 (live)
