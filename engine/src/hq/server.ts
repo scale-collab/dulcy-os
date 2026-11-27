@@ -583,9 +583,9 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         json(res, 200, { conversations: await agentConversations(db, user, { agent: a, limit: Number(url.searchParams.get('limit')) || 80 }) });
         return true;
       }
-      m = p.match(/^\/hq\/api\/team\/conversations\/((?:ask|handoff)-\d{1,12})$/);
+      m = p.match(/^\/hq\/api\/team\/conversations\/(ask|handoff)-(\d{1,12})$/);
       if (m && req.method === 'GET') {
-        const x = await agentConversation(db, user, m[1]);
+        const x = await agentConversation(db, user, `${m[1]}-${m[2]}`);
         if (!x) json(res, 404, { error: 'not found' }); else json(res, 200, x);
         return true;
       }
