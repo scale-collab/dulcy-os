@@ -276,22 +276,23 @@ test('Team API: per-agent counts (open, overdue, stalled) and each agent page li
 // ---------- Needs you: Today ranking, Yesterday, Tomorrow ----------
 const need = (over: Partial<NeedItem>): NeedItem => ({ key: 'k', kind: 'ask', group: 'now', agent: 'Atlas', title: 't', why: '', steps: '', action: null, link: null, canDone: true, canSnooze: true, at: ago(1), rank: 3, money: false, clientFacing: false, ...over });
 
-test('Today ranking (cheap rules): money and client-facing first, then the oldest, then the agent priority; Do now before When you can', () => {
+test("Ada's order (cheap rules): importance first, then Do now, then money and client-facing, then the oldest", () => {
   const ranked = rankNeeds([
-    need({ key: 'later-money', group: 'later', money: true, at: ago(50) }),
-    need({ key: 'old-plain', at: ago(40), rank: 1 }),
-    need({ key: 'new-client', clientFacing: true, at: ago(2) }),
-    need({ key: 'old-money', money: true, at: ago(30) }),
-    need({ key: 'same-age-low', at: ago(10), rank: 3 }),
-    need({ key: 'same-age-high', at: ago(10), rank: 2 }),
+    need({ key: 'low-rank-old', rank: 6, at: ago(50) }),
+    need({ key: 'r2-later-money', rank: 2, group: 'later', money: true, at: ago(60) }),
+    need({ key: 'r2-now-plain', rank: 2, at: ago(3) }),
+    need({ key: 'decisions', rank: 1, at: ago(1) }),
+    need({ key: 'r2-now-client', rank: 2, clientFacing: true, at: ago(1) }),
+    need({ key: 'r2-now-old', rank: 2, at: ago(30) }),
   ], NOW.getTime());
-  assert.deepEqual(ranked.map((n) => n.key), ['old-money', 'new-client', 'old-plain', 'same-age-high', 'same-age-low', 'later-money']);
+  assert.deepEqual(ranked.map((n) => n.key), ['decisions', 'r2-now-client', 'r2-now-old', 'r2-now-plain', 'r2-later-money', 'low-rank-old']);
   // An ask due later is not on Today; due today or late is "Do now"; money asks count as money.
   const ask = (id: number, over: object = {}) => ({ id, agent: 'Atlas', title: `Ask ${id}`, why: '', steps: '', actionLabel: '', actionUrl: '', priority: 'normal' as const, audience: 'owner' as const, dedupeKey: `k${id}`, created: ago(5), done: null, doneBy: null, snoozedUntil: null, ...over });
   const items = aggregateNeeds({ owner: true, decisions: [], issues: [], signups: 0, asks: [ask(1, { due: '2026-11-27' }), ask(2, { due: '2026-11-26' }), ask(3, { money: true }), ask(4)], now: NOW.getTime() });
   assert.deepEqual(items.map((i) => [i.key, i.group]), [['ask:2', 'now'], ['ask:3', 'later'], ['ask:4', 'later']]);
   assert.equal(items[1].money, true);
 });
+
 
 test('Yesterday: what got handled, one item per pile and per agent; Tomorrow: back from "Not now" and due tomorrow (pure)', () => {
   const y = '2026-11-25T18:00:00.000Z', older = '2026-11-23T18:00:00.000Z', today = '2026-11-26T14:00:00.000Z';
@@ -333,8 +334,8 @@ test('Yesterday: what got handled, one item per pile and per agent; Tomorrow: ba
   assert.deepEqual(handledItems({ ...src, owner: false }).map((i) => i.key).sort(), ['handled:pile:Replies', 'handled:tasks:Riley']);
 
   const tk = tomorrowItems(src);
-  // Due tomorrow first (client-facing first), then what comes back (same age: Riley's priority before a normal ask).
-  assert.deepEqual(tk.map((i) => [i.key, i.outcome]), [['ask:9', 'Due tomorrow'], ['task:4', 'Due tomorrow'], ['issue:recI3', 'Back tomorrow'], ['ask:8', 'Back tomorrow']]);
+  // Ada's order: the task waiting on you and Riley's fix (more important) before the asks; inside, due tomorrow before what comes back.
+  assert.deepEqual(tk.map((i) => [i.key, i.outcome]), [['task:4', 'Due tomorrow'], ['issue:recI3', 'Back tomorrow'], ['ask:9', 'Due tomorrow'], ['ask:8', 'Back tomorrow']]);
   assert.equal(tk.find((i) => i.key === 'ask:8')!.canDone, true, 'an ask can be finished early');
   assert.equal(tk.find((i) => i.key === 'ask:8')!.canSnooze, false);
   assert.deepEqual(tomorrowItems({ ...src, owner: false }).map((i) => i.key), ['ask:8'], 'members: only their asks');
@@ -357,7 +358,7 @@ test('Needs API: ?day=yesterday|today|tomorrow (default today), 400 otherwise; d
   assert.equal((await call('GET', '/hq/api/needs?day=someday', { cookie })).status, 400);
   const t = await call('GET', '/hq/api/needs', { cookie });
   assert.equal(t.body.day, 'today');
-  assert.deepEqual(t.body.items.map((i: any) => i.key), ['pile:Replies', 'ask:2'], 'the ask due tomorrow is not on Today');
+  assert.deepEqual(t.body.items.map((i: any) => i.key), ['decisions', 'ask:2'], 'the ask due tomorrow is not on Today');
   assert.equal(t.body.items[0].clientFacing, true);
   const y = await call('GET', '/hq/api/needs?day=yesterday', { cookie });
   assert.equal(y.body.date, new Date(Date.now() - 86_400_000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' }));

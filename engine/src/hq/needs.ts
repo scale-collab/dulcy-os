@@ -1,20 +1,22 @@
-// HQ "Needs you" (Alex, 2026-11-25: "the to-do shouldn't be like another project management, more
-// like 'this is what you need me to do'"). A short list of only what the agents need from the
-// person signed in, each with why and one action, built live from:
-//   1. Decisions waiting: ONE item per pile ("105 replies waiting for your OK", oldest age), never
-//      one per decision. Members get only the piles they can act on (no Money, no Ledger/Sienna).
-//   2. Riley's System Issues in "Waiting for Alex" with Fix Type "Manual (Alex)" (owner only): the
-//      title, the Why, and the Fix as steps. Done = approve its Decision (link); nothing is
-//      written to Airtable from here.
-//   3. Sign-ups waiting (owner only) → Users.
-//   4. Asks (hq_asks, engine/src/hq/asks.ts) an agent or a Claude session added (one due on a
-//      later day waits for that day).
-//   5. Agent tasks waiting on Alex that no Decision covers (a stuck campaign plan; owner only).
-//      The agents' other tasks stay on their Team pages.
-// Items disappear when resolved: the pile is empty, the issue left "Waiting for Alex", the ask is
-// done. "Not now" hides an ask or an issue for a day or until Monday.
-// Order on Today (Alex 2026-11-25, cheap rules, no AI call per load): money and client-facing
-// first, then the oldest, then the agent's priority.
+// HQ "Needs you" = Alex's to-do list for today (Alex, 2026-11-27: "what do I need to do today for
+// the business to succeed?"). Not a copy of Decisions: each item is one thing to DO, most important
+// first, written as Problem (title) → what to do (todo) → why (why), one line each, with one action.
+// Built live from cheap reads (no AI call per load):
+//   1. Decisions only he can make: ONE line for all piles ("12 decisions waiting → Open Decisions"),
+//      never one per decision or per pile. Money decisions go to the Ledger item instead.
+//   2. Campaigns to start: Atlas's open "Plan next campaign" tasks (a campaign past 60% with no next
+//      campaign) → ONE line "Check with Atlas: 3 campaigns past 60% have no next campaign".
+//   3. Money with Ledger (owner only): the Money pile, and an urgent Ledger report from the last 3 days.
+//   4. Riley's System Issues in "Waiting for Alex" with Fix Type "Manual (Alex)" (owner only).
+//   5. Asks (hq_asks) an agent or a Claude session added (one due on a later day waits for that day).
+//   6. Agent tasks waiting on Alex that no Decision covers (owner only).
+//   7. Check-ins with an agent: runs that failed in the last 24 h, and late or stuck tasks (one line
+//      per agent). Members (Josh) get only Echo's (the inbox is his job).
+//   8. Sign-ups waiting (owner only) → Users.
+// Members never get money, Ledger, Sienna, Riley's manual fixes or sign-ups (built server-side).
+// Order (Ada's rules, rankNeeds): importance (rank) first, then "Do now" before "When you can", then
+// money and client-facing, then the oldest. Items disappear when resolved; "Not now" hides an ask or
+// an issue for a day or until Monday.
 // Day switcher: Yesterday = what got handled (decisions decided, asks done, Riley's fixes, agent
 // tasks closed, sign-ups); Tomorrow = what comes back from "Not now" plus what is due tomorrow.
 import type { Db } from '../db/pool.js';
@@ -23,15 +25,20 @@ import { OWNER_ONLY, PILES, isAgent, type Pile } from './agents.js';
 import { groupByPile, pendingDecisions, toCard, type DecisionCard, type HqAirtable } from './decisions.js';
 import { askVisible, asksAroundToday, listAsks, quietKeys, type Ask } from './asks.js';
 import { pendingCount } from './users.js';
-import { listAgentTasks, type AgentTask } from './agentTasks.js';
+import { listAgentTasks, staleWhy, type AgentTask } from './agentTasks.js';
+import { jobHealth } from './team.js';
 import { addDays, nyDate } from './tasks.js';
 import { DECISIONS, DF } from '../decisions/fields.js';
 import { ISSUES, IF } from '../agents/riley.js';
 import { val } from '../agents/emailsFields.js';
 
 export type NeedGroup = 'now' | 'later';
-/** handled = done or decided (Yesterday); task = an agent's task waiting on Alex with no Decision behind it. */
-export type NeedKind = 'decisions' | 'issue' | 'signups' | 'ask' | 'task' | 'handled';
+/**
+ * decisions = the one Decisions line; campaigns = campaigns to start (Atlas); money = Ledger;
+ * checkin = talk to an agent (failed runs, late or stuck tasks); task = an agent's task waiting on
+ * Alex with no Decision behind it; handled = done or decided (Yesterday).
+ */
+export type NeedKind = 'decisions' | 'campaigns' | 'money' | 'checkin' | 'issue' | 'signups' | 'ask' | 'task' | 'handled';
 export type NeedDay = 'yesterday' | 'today' | 'tomorrow';
 export const isNeedDay = (x: unknown): x is NeedDay => x === 'yesterday' || x === 'today' || x === 'tomorrow';
 export interface NeedLink { label: string; href: string }
@@ -39,20 +46,25 @@ export interface NeedItem {
   key: string; kind: NeedKind; group: NeedGroup;
   /** Whose face is on the card: an agent name, or a label (Setup) with `icon`. */
   agent: string; icon?: string;
-  title: string; why: string;
+  /** The problem, one line. */
+  title: string;
+  /** What to do, one line. */
+  todo?: string;
+  /** Why it matters, one line. */
+  why: string;
   /** Shown under "See steps" (text, rendered escaped). */
   steps: string;
-  /** The one primary action (an HQ route such as decisions/Replies, or an https:// link). Null: "See steps", else "Done". */
+  /** The one primary action (an HQ route such as decisions, chat/Atlas?ask=…, or an https:// link). Null: "See steps", else "Done". */
   action: NeedLink | null;
-  /** A second link (a Riley issue → its Decision). */
+  /** A second link (a Riley issue → its Decision; a check-in → the agent's tasks). */
   link: NeedLink | null;
   canDone: boolean; canSnooze: boolean;
   count?: number;
-  /** ISO time the item started (a pile: its oldest decision). */
+  /** ISO time the item started (the decisions line: its oldest decision). */
   at: string;
-  /** The agent's priority: lower comes first (after money / client-facing and age). */
+  /** Importance (Ada's order): lower comes first. */
   rank: number;
-  /** Ranking (Today): money and client-facing come first. */
+  /** Ranking: money and client-facing come first inside the same importance. */
   money: boolean; clientFacing: boolean;
   /** Yesterday: what happened ("10 sent · 2 skipped", "Done by Alex"). Tomorrow: "Back tomorrow" / "Due tomorrow". */
   outcome?: string;
@@ -61,11 +73,15 @@ export interface NeedItem {
 }
 export interface RileyIssue { id: string; title: string; why: string; fix: string; decision: string; seen: string }
 
-/** The face and the one-line title for a pile. */
-export const PILE_AGENT: Record<Pile, string> = { Replies: 'Echo', Campaigns: 'Atlas', Fixes: 'Riley', Money: 'Ledger', Other: 'Ada' };
+/** Importance per kind (Ada's order, lower first). */
+export const RANK = { decisions: 1, askHigh: 2, campaigns: 2, money: 3, issue: 4, task: 4, failed: 5, late: 6, ask: 6, signups: 7 } as const;
+
+/** The face for a pile (Yesterday's items). Unknown piles (renamed later) → Ada. */
+const PILE_FACE: Record<string, string> = { Replies: 'Echo', Campaigns: 'Atlas', Fixes: 'Riley', Money: 'Ledger', Sales: 'Cole', Content: 'Sienna' };
+export const pileAgent = (pile: string) => PILE_FACE[pile] ?? 'Ada';
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 export function pileTitle(pile: Pile, n: number): string {
-  switch (pile) {
+  switch (pile as string) {
     case 'Replies': return `${plural(n, 'reply', 'replies')} waiting for your OK`;
     case 'Campaigns': return `${plural(n, 'campaign decision', 'campaign decisions')} waiting`;
     case 'Fixes': return `${plural(n, 'fix', 'fixes')} waiting for your OK`;
@@ -78,13 +94,32 @@ export const ago = (iso: string, now: number) => {
   if (!Number.isFinite(m)) return '';
   return m < 60 ? `${Math.max(1, m)} min ago` : m < 48 * 60 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`;
 };
+const old = (iso: string, now: number) => ago(iso, now).replace(/ ago$/, ' old');
 /** The first sentence (or line) of a longer text, at most n characters. */
 export function firstSentence(s: string, n = 160): string {
   const t = String(s ?? '').replace(/\s+/g, ' ').trim();
   const cut = /^(.+?[.!?])(\s|$)/.exec(t)?.[1] ?? t;
   return cut.length > n ? `${cut.slice(0, n - 1).trimEnd()}…` : cut;
 }
+/** "A", "A and B", "A, B and C", "A, B and 3 more". */
+export function listNames(xs: string[], max = 3): string {
+  const u = [...new Set(xs.filter(Boolean))];
+  if (u.length <= 1) return u[0] ?? '';
+  if (u.length <= max) return `${u.slice(0, -1).join(', ')} and ${u[u.length - 1]}`;
+  return `${u.slice(0, max - 1).join(', ')} and ${u.length - max + 1} more`;
+}
+/** An HQ chat route that opens a new chat with the question typed in (not sent). */
+export const chatAsk = (agent: string, question: string) => `chat/${agent}?ask=${encodeURIComponent(question)}`;
+/** Links on HQ screens never point into Airtable (Alex, 2026-11-27: HQ replaces it). */
+export function hqHref(href: string | null | undefined): string | null {
+  const h = String(href ?? '').trim();
+  if (!h) return null;
+  if (/^https:\/\//i.test(h)) { try { return /(^|\.)airtable\.com$/i.test(new URL(h).hostname) ? null : h; } catch { return null; } }
+  return h;
+}
 
+export interface FailedRuns { agent: string; fails: { kind: string; at: string; error: string }[] }
+export interface MoneyReport { id: number; title: string; summary: string; created: string }
 export interface NeedSources {
   owner: boolean;
   decisions: DecisionCard[];
@@ -93,81 +128,134 @@ export interface NeedSources {
   asks: Ask[];
   /** Keys answered "Not now" (issue:rec…), still quiet. */
   quiet?: Set<string>;
-  /** Agent tasks waiting on Alex that no Decision covers (owner only). */
+  /** Open agent tasks (the owner: every agent; a member: Echo only). */
   tasks?: AgentTask[];
+  /** Runs that failed in the last 24 h and were not followed by a success, per agent. */
+  failed?: FailedRuns[];
+  /** Ledger's urgent money reports from the last 3 days (owner only). */
+  moneyReports?: MoneyReport[];
   now?: number;
 }
 
-/** Money: the Money pile, Ledger, or an ask flagged money. Client-facing: replies (a prospect waits) and client campaigns. */
-const MONEY_PILES = new Set<Pile>(['Money']);
-const CLIENT_PILES = new Set<Pile>(['Replies', 'Campaigns']);
+/** Client-facing piles: replies (a prospect waits) and client campaigns. */
+const CLIENT_PILES = new Set<string>(['Replies', 'Campaigns']);
+/** Agents a member (Josh) gets check-ins for: the inbox is his job. */
+export const MEMBER_CHECKINS: readonly string[] = ['Echo'];
 
 /**
- * Today's order (cheap rules, no AI call): "Do now" before "When you can"; inside each, money and
- * client-facing first, then the oldest, then the agent's priority.
+ * Ada's order (cheap rules, no AI call): importance (rank) first; then "Do now" before "When you
+ * can"; then money and client-facing; then the oldest.
  */
 export function rankNeeds(items: NeedItem[], now = Date.now()): NeedItem[] {
   const age = (i: NeedItem) => { const t = Date.parse(i.at); return Number.isFinite(t) ? now - t : 0; };
   const tier = (i: NeedItem) => (i.money || i.clientFacing ? 0 : 1);
   return [...items].sort((a, b) =>
-    (a.group === b.group ? 0 : a.group === 'now' ? -1 : 1)
+    a.rank - b.rank
+    || (a.group === b.group ? 0 : a.group === 'now' ? -1 : 1)
     || tier(a) - tier(b)
     || age(b) - age(a)
-    || a.rank - b.rank
     || a.key.localeCompare(b.key));
 }
 
-/** Build the list. Pure: from what was read. */
+const isPlanNext = (t: Pick<AgentTask, 'key'>) => t.key.startsWith('plan-next:');
+
+/** Build today's to-do. Pure: from what was read. */
 export function aggregateNeeds(s: NeedSources): NeedItem[] {
   const now = s.now ?? Date.now();
   const quiet = s.quiet ?? new Set<string>();
+  const today = nyDate(new Date(now));
   const out: NeedItem[] = [];
+  const base = { steps: '', link: null, canDone: false, canSnooze: false, money: false, clientFacing: false };
 
-  // 2. Riley's manual fixes (owner only). Their Decisions are covered by the issue card, not the Fixes pile.
+  // 4. Riley's manual fixes (owner only). Their Decisions are covered by the issue card, not the Decisions line.
   const issueDecisions = new Set<string>();
   if (s.owner) {
     for (const i of s.issues) {
       if (i.decision) issueDecisions.add(i.decision);
       if (quiet.has(`issue:${i.id}`)) continue;
       out.push({
-        key: `issue:${i.id}`, kind: 'issue', group: 'now', agent: 'Riley', title: i.title || 'A fix needs your hands',
-        why: firstSentence(i.why) || 'Riley needs you to do this by hand.', steps: i.fix, action: null,
+        ...base, key: `issue:${i.id}`, kind: 'issue', group: 'now', agent: 'Riley', title: i.title || 'A fix needs your hands',
+        todo: i.decision ? 'Do the steps, then approve its decision so Riley checks it worked.' : 'Do the steps, then tell Riley so it checks it worked.',
+        why: firstSentence(i.why) || 'Riley cannot fix this one without you.', steps: i.fix, action: null,
         link: i.decision ? { label: 'Open the decision', href: 'decisions/Fixes' } : null,
-        canDone: false, canSnooze: true, at: i.seen, rank: 2, money: false, clientFacing: false,
+        canSnooze: true, at: i.seen, rank: RANK.issue,
       });
     }
   }
 
-  // 1. One item per Decisions pile the person can act on.
+  // 1. Decisions only he (or the member) can make: ONE line. Money goes to Ledger's item.
   const piles = groupByPile(s.decisions.filter((d) => !issueDecisions.has(d.id)), s.owner);
-  for (const pile of PILES) {
-    const list = piles[pile];
-    if (!list?.length) continue;
-    const oldest = list.map((d) => d.created).filter(Boolean).sort()[0] ?? '';
-    const age = oldest ? ago(oldest, now) : '';
-    const first = [...list].sort((a, b) => a.created.localeCompare(b.created))[0];
-    const old = oldest && now - Date.parse(oldest) >= 86_400_000;
+  const money = piles.Money ?? [];
+  const others = PILES.filter((p) => p !== 'Money' && (piles[p] ?? []).length);
+  const rest = others.flatMap((p) => piles[p]);
+  if (rest.length) {
+    const oldest = rest.map((d) => d.created).filter(Boolean).sort()[0] ?? '';
+    const replies = (piles.Replies ?? []).length;
+    const counts = others.map((p) => `${p} ${piles[p].length}`).join(' · ');
     out.push({
-      key: `pile:${pile}`, kind: 'decisions', group: pile === 'Replies' || pile === 'Campaigns' || old ? 'now' : 'later',
-      agent: PILE_AGENT[pile], title: pileTitle(pile, list.length),
-      why: pile === 'Replies' ? `Prospects are waiting on an answer${age ? `. Oldest ${age}` : ''}.` : `${age ? `Oldest ${age}: ` : ''}${first.title}`,
-      steps: '', action: { label: `Open ${pile}`, href: `decisions/${pile}` }, link: null,
-      canDone: false, canSnooze: false, count: list.length, at: oldest, rank: pile === 'Replies' ? 0 : 3,
-      money: MONEY_PILES.has(pile), clientFacing: CLIENT_PILES.has(pile),
+      ...base, key: 'decisions', kind: 'decisions', group: 'now', agent: 'Ada', count: rest.length,
+      title: `${plural(rest.length, 'decision', 'decisions')} waiting${oldest ? ` (oldest ${old(oldest, now)})` : ''}`,
+      todo: replies ? 'Open Decisions and clear them, replies first.' : 'Open Decisions and clear them.',
+      why: replies ? `${plural(replies, 'prospect is', 'prospects are')} waiting on an answer, and the agents wait on the rest (${counts}).` : `Only you can decide these, and the agents wait on them (${counts}).`,
+      action: { label: 'Open Decisions', href: replies ? 'decisions/Replies' : 'decisions' },
+      at: oldest, rank: RANK.decisions, clientFacing: rest.some((d) => CLIENT_PILES.has(d.pile)),
     });
   }
 
-  // 3. Sign-ups (owner only).
+  // 2. Campaigns to start (owner only): Atlas's open "Plan next campaign" tasks.
+  if (s.owner) {
+    const next = (s.tasks ?? []).filter((t) => t.status !== 'done' && isPlanNext(t));
+    if (next.length) {
+      const clients = next.map((t) => t.client || t.title.replace(/^Plan next campaign for /, ''));
+      const late = next.some((t) => t.overdue || t.stalled);
+      out.push({
+        ...base, key: 'campaigns', kind: 'campaigns', group: late ? 'now' : 'later', agent: 'Atlas', count: next.length,
+        title: next.length === 1 ? `Check with Atlas: ${clients[0]} has a campaign past 60% and no next campaign` : `Check with Atlas: ${next.length} campaigns past 60% have no next campaign`,
+        todo: `Confirm Atlas has the next campaign for ${listNames(clients)}, or tell it to start.`,
+        why: 'When a campaign runs out with nothing behind it, the client gets no new meetings.',
+        action: { label: 'Ask Atlas', href: chatAsk('Atlas', `Which campaigns past 60% have no next campaign yet (${listNames(clients, 5)})? When will each one start?`) },
+        link: { label: "Atlas's tasks", href: 'agents/Atlas' },
+        at: next.map((t) => t.created).sort()[0] ?? '', rank: RANK.campaigns, clientFacing: true,
+      });
+    }
+  }
+
+  // 3. Money with Ledger (owner only).
+  if (s.owner && money.length) {
+    const oldest = money.map((d) => d.created).filter(Boolean).sort()[0] ?? '';
+    const first = [...money].sort((a, b) => a.created.localeCompare(b.created))[0];
+    out.push({
+      ...base, key: 'money', kind: 'money', group: 'now', agent: 'Ledger', count: money.length,
+      title: `${plural(money.length, 'money decision', 'money decisions')} waiting with Ledger`,
+      todo: 'Go through them with Ledger: yes or no on each.',
+      why: firstSentence(`${oldest ? `Oldest ${old(oldest, now)}: ` : ''}${first.title}`),
+      action: { label: 'Open Money', href: 'decisions/Money' },
+      link: { label: 'Ask Ledger', href: chatAsk('Ledger', 'Which money decisions are waiting on me, and what do you recommend for each?') },
+      at: oldest, rank: RANK.money, money: true,
+    });
+  }
+  if (s.owner) {
+    for (const r of s.moneyReports ?? []) {
+      out.push({
+        ...base, key: `money:report:${r.id}`, kind: 'money', group: 'now', agent: 'Ledger', title: `Ledger flagged: ${firstSentence(r.title, 120)}`,
+        todo: 'Read the report and decide with Ledger what to do.', why: firstSentence(r.summary) || 'Ledger marked this money report urgent.',
+        action: { label: 'Read the report', href: `report/${r.id}` },
+        link: { label: 'Ask Ledger', href: chatAsk('Ledger', `About your report "${firstSentence(r.title, 80)}": what do you need from me?`) },
+        at: r.created, rank: RANK.money, money: true,
+      });
+    }
+  }
+
+  // 8. Sign-ups (owner only).
   if (s.owner && s.signups > 0) {
     out.push({
-      key: 'signups', kind: 'signups', group: 'now', agent: 'HQ', icon: 'userPlus', title: `${plural(s.signups, 'sign-up', 'sign-ups')} waiting`,
-      why: 'Someone asked for an HQ login. Approve or deny it.', steps: '', action: { label: 'Approve', href: 'users' }, link: null,
-      canDone: false, canSnooze: false, count: s.signups, at: '', rank: 1, money: false, clientFacing: false,
+      ...base, key: 'signups', kind: 'signups', group: 'later', agent: 'HQ', icon: 'userPlus', title: `${plural(s.signups, 'sign-up', 'sign-ups')} waiting`,
+      todo: 'Approve or deny it in Users.', why: 'Someone asked for an HQ login.', action: { label: 'Open Users', href: 'users' },
+      count: s.signups, at: '', rank: RANK.signups,
     });
   }
 
-  // 4. Asks. One due on a later day waits for that day ("Tomorrow" shows it the day before).
-  const today = nyDate(new Date(now));
+  // 5. Asks. One due on a later day waits for that day ("Tomorrow" shows it the day before).
   for (const a of s.asks) {
     if (a.done || !askVisible(a, s.owner)) continue;
     if (a.snoozedUntil && Date.parse(a.snoozedUntil) > now) continue;
@@ -175,13 +263,47 @@ export function aggregateNeeds(s: NeedSources): NeedItem[] {
     out.push({ ...askItem(a), group: a.priority === 'high' || (a.due && a.due <= today) ? 'now' : 'later' });
   }
 
-  // 5. Agent tasks waiting on Alex that no Decision covers (a stuck campaign plan, copy notes): owner only.
+  // 6. Agent tasks waiting on Alex that no Decision covers (a stuck campaign plan, copy notes): owner only.
   if (s.owner) {
     for (const t of s.tasks ?? []) {
       if (t.status !== 'waiting_alex' || t.decision || (t.link ?? '').startsWith('decisions/')) continue;
       if (t.due && t.due > today) continue;
       out.push({ ...taskItem(t), group: t.overdue || t.stalled ? 'now' : 'later' });
     }
+  }
+
+  // 7. Check-ins: failed runs, then late or stuck tasks, one line per agent.
+  const canCheck = (agent: string) => (s.owner ? true : MEMBER_CHECKINS.includes(agent) && !OWNER_ONLY.includes(agent));
+  for (const f of s.failed ?? []) {
+    if (!f.fails.length || !canCheck(f.agent)) continue;
+    const latest = [...f.fails].sort((a, b) => b.at.localeCompare(a.at))[0];
+    out.push({
+      ...base, key: `checkin:failed:${f.agent}`, kind: 'checkin', group: 'now', agent: f.agent, count: f.fails.length,
+      title: `Check with ${f.agent}: ${f.fails.length === 1 ? `${latest.kind} failed` : `${f.fails.length} runs failed`} ${ago(latest.at, now)}`,
+      todo: f.agent === 'Riley' ? 'Ask Riley what broke and what the fix needs.' : `Ask ${f.agent} what broke; Riley fixes the system if needed.`,
+      why: firstSentence(latest.error) || 'A failed run means that work did not happen.',
+      action: { label: `Ask ${f.agent}`, href: chatAsk(f.agent, `Your ${listNames(f.fails.map((x) => x.kind))} run failed. What broke, and what is needed to fix it?`) },
+      link: { label: `${f.agent}'s runs`, href: `agents/${f.agent}` },
+      at: latest.at, rank: RANK.failed, money: f.agent === 'Ledger',
+    });
+  }
+  const lateByAgent = new Map<string, AgentTask[]>();
+  for (const t of s.tasks ?? []) {
+    if (t.status === 'done' || t.status === 'waiting_alex' || isPlanNext(t) || !(t.overdue || t.stalled) || !canCheck(t.agent)) continue;
+    lateByAgent.set(t.agent, [...(lateByAgent.get(t.agent) ?? []), t]);
+  }
+  for (const [agent, ts] of lateByAgent) {
+    const late = ts.filter((t) => t.overdue).length, stuck = ts.filter((t) => t.stalled && !t.overdue).length;
+    const worst = [...ts].sort((a, b) => b.daysLate - a.daysLate || b.daysQuiet - a.daysQuiet || a.id - b.id)[0];
+    out.push({
+      ...base, key: `checkin:late:${agent}`, kind: 'checkin', group: late ? 'now' : 'later', agent, count: ts.length,
+      title: `Check with ${agent}: ${[late && `${plural(late, 'task', 'tasks')} late`, stuck && `${plural(stuck, 'task', 'tasks')} stuck`].filter(Boolean).join(', ')}`,
+      todo: 'Ask for an update, or move the due date.',
+      why: firstSentence(`${worst.title} (${staleWhy(worst)}).`),
+      action: { label: 'Ask for an update', href: chatAsk(agent, `Where are your late or stuck tasks (${listNames(ts.map((t) => `"${t.title}"`), 3)})? What's done, what's next, and by when?`) },
+      link: { label: `${agent}'s tasks`, href: `agents/${agent}` },
+      at: worst.updated, rank: RANK.late, money: agent === 'Ledger', clientFacing: ts.some((t) => !!t.client),
+    });
   }
 
   return rankNeeds(out, now);
@@ -191,17 +313,19 @@ function askItem(a: Ask): NeedItem {
   return {
     key: `ask:${a.id}`, kind: 'ask', group: a.priority === 'high' ? 'now' : 'later', agent: a.agent,
     ...(isAgent(a.agent) ? {} : { icon: 'sparkles' }),
-    title: a.title, why: a.why, steps: a.steps,
-    action: a.actionUrl ? { label: a.actionLabel || 'Open', href: a.actionUrl } : null, link: null,
-    canDone: true, canSnooze: true, at: a.created, rank: a.priority === 'high' ? 2 : 3,
+    title: a.title, todo: a.steps ? 'Follow the steps, then press Done.' : a.actionUrl ? `${a.actionLabel || 'Open'}, then press Done.` : 'Do it, then press Done.',
+    why: a.why, steps: a.steps,
+    action: hqHref(a.actionUrl) ? { label: a.actionLabel || 'Open', href: hqHref(a.actionUrl)! } : null, link: null,
+    canDone: true, canSnooze: true, at: a.created, rank: a.priority === 'high' ? RANK.askHigh : RANK.ask,
     money: a.money === true || a.agent === 'Ledger', clientFacing: a.clientFacing === true,
   };
 }
 function taskItem(t: AgentTask): NeedItem {
   return {
-    key: `task:${t.id}`, kind: 'task', group: 'later', agent: t.agent, title: t.title, why: t.note || t.notes, steps: '',
-    action: t.link ? { label: 'Open', href: t.link } : { label: `Open ${t.agent}`, href: `agents/${t.agent}` }, link: null,
-    canDone: false, canSnooze: false, at: t.updated, rank: t.priority === 'high' ? 2 : t.priority === 'low' ? 4 : 3,
+    key: `task:${t.id}`, kind: 'task', group: 'later', agent: t.agent, title: `${t.agent} is waiting on you: ${t.title}`,
+    todo: 'Open it and give the agent what it needs.', why: firstSentence(t.note || t.notes) || `${t.agent} cannot move this task without you.`, steps: '',
+    action: hqHref(t.link) ? { label: 'Open', href: hqHref(t.link)! } : { label: `Open ${t.agent}`, href: `agents/${t.agent}` }, link: null,
+    canDone: false, canSnooze: false, at: t.updated, rank: RANK.task + (t.priority === 'high' ? -1 : t.priority === 'low' ? 1 : 0),
     money: t.agent === 'Ledger', clientFacing: !!t.client,
   };
 }
@@ -244,7 +368,7 @@ export function handledItems(s: DaySources): NeedItem[] {
     const yes = list.filter((d) => d.status === 'Approved').length, no = list.length - yes;
     const last = [...list].sort((a, b) => b.decidedAt.localeCompare(a.decidedAt))[0];
     out.push({
-      ...base, key: `handled:pile:${pile}`, kind: 'handled', agent: PILE_AGENT[pile], count: list.length,
+      ...base, key: `handled:pile:${pile}`, kind: 'handled', agent: pileAgent(pile), count: list.length,
       title: pile === 'Replies' ? `${plural(list.length, 'reply', 'replies')} handled` : `${pileTitle(pile, list.length).replace(/ waiting( for your OK)?$/, '')} decided`,
       why: listTitles(list.map((d) => d.title)),
       outcome: pile === 'Replies' ? `${yes} sent · ${no} skipped` : `${yes} approved · ${no} rejected`,
@@ -296,7 +420,7 @@ export function tomorrowItems(s: DaySources): NeedItem[] {
       if (!q || Date.parse(q) <= now || dayOf(q) !== day) continue;
       out.push({
         key: `issue:${i.id}`, kind: 'issue', group: 'later', agent: 'Riley', title: i.title || 'A fix needs your hands', why: firstSentence(i.why), steps: i.fix, action: null,
-        link: i.decision ? { label: 'Open the decision', href: 'decisions/Fixes' } : null, canDone: false, canSnooze: false, at: i.seen, rank: 2, money: false, clientFacing: false,
+        todo: 'Do the steps when it comes back.', link: i.decision ? { label: 'Open the decision', href: 'decisions/Fixes' } : null, canDone: false, canSnooze: false, at: i.seen, rank: RANK.issue, money: false, clientFacing: false,
         outcome: 'Back tomorrow', when: q,
       });
     }
@@ -328,15 +452,25 @@ export async function loadNeeds(db: Db, at: HqAirtable | undefined, user: HqUser
   const soft = <T>(what: string, p: Promise<T>, fallback: T) => p.catch(() => { errors.push(what); return fallback; });
   const noAt = !at;
   if (noAt) errors.push('Airtable is not connected on this server, so decisions and Riley\'s fixes are not shown');
-  const [decisions, issues, signups, asks, quiet, tasks] = await Promise.all([
+  const [decisions, issues, signups, asks, quiet, tasks, health, moneyReports] = await Promise.all([
     pre.decisions ? Promise.resolve(pre.decisions) : at ? soft('Decisions (Airtable)', pendingDecisions(at), []) : Promise.resolve([]),
     owner && at ? soft("Riley's issues (Airtable)", manualIssues(at), []) : Promise.resolve([]),
     owner ? pendingCount(db) : Promise.resolve(0),
     listAsks(db, { limit: 200 }),
     quietKeys(db),
-    owner ? listAgentTasks(db) : Promise.resolve([]),
+    // A member's to-do reads only Echo's tasks (the inbox is Josh's job); owner-only agents never.
+    owner ? listAgentTasks(db, { limit: 500 }) : listAgentTasks(db, { agent: 'Echo', owner: false, limit: 200 }),
+    soft('Agent runs', jobHealth(db), new Map()),
+    owner ? soft('Ledger reports', urgentMoneyReports(db), []) : Promise.resolve([] as MoneyReport[]),
   ]);
-  return { items: aggregateNeeds({ owner, decisions, issues, signups, asks, quiet, tasks }), errors };
+  const failed: FailedRuns[] = [...health].map(([agent, h]) => ({ agent, fails: h.openFails }));
+  return { items: aggregateNeeds({ owner, decisions, issues, signups, asks, quiet, tasks, failed, moneyReports }), errors };
+}
+
+/** Ledger's urgent reports from the last 3 days (owner only: the caller checks). */
+export async function urgentMoneyReports(db: Db): Promise<MoneyReport[]> {
+  const r = await db.query(`SELECT id, title, summary, created_at FROM hq_reports WHERE agent='Ledger' AND urgent AND created_at > now() - interval '3 days' ORDER BY id DESC LIMIT 3`);
+  return r.rows.map((x) => ({ id: Number(x.id), title: String(x.title ?? ''), summary: String(x.summary ?? ''), created: new Date(x.created_at).toISOString() }));
 }
 
 /** Decisions approved or rejected in the last 3 days (the day is picked in code, New York time). */
