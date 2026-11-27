@@ -369,3 +369,12 @@ test('calendar.book not in LIVE_STAGES: a dry run books nothing and sends nothin
   assert.equal(policy().booking.status, 'pending');
   assert.match(String((await jobs('calendar.book'))[0].result?.message), /Dry run/);
 });
+
+import { prospectPhone } from '../src/agents/booking.js';
+test('prospect phone: Airtable first, else the signature in their own message (not the quoted history); E.164', () => {
+  assert.equal(prospectPhone('(555) 123-4567', ''), '+15551234567');
+  assert.equal(prospectPhone('', 'Wednesday at 5 works.\n\nJane Doe\nCEO, Acme\nm: 555.987.6543'), '+15559876543');
+  assert.equal(prospectPhone('', 'Sounds good\n+44 20 7946 0958'), '+442079460958');
+  assert.equal(prospectPhone('', 'Works for me.\n\nOn Mon, Dec 1 Ryan wrote:\n> call me at 555-111-2222'), '', 'numbers in quoted history are not theirs');
+  assert.equal(prospectPhone('', 'We have 120 locations and 2024 was great'), '');
+});

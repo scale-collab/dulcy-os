@@ -45,7 +45,7 @@ export async function slotIsFree(cfg: CalCfg, wsRec: string, startIso: string, f
   } catch { return null; }
 }
 
-export interface BookRequest { workspace: string; start: string; tz: string; prospect: { name: string; email: string }; title: string; description: string; idempotencyKey: string; durationMinutes?: number }
+export interface BookRequest { workspace: string; start: string; tz: string; prospect: { name: string; email: string; phone?: string }; title: string; description: string; idempotencyKey: string; durationMinutes?: number }
 export interface BookResult {
   booked: boolean; reason?: string; error?: string; message?: string; provider?: string; eventId?: string; htmlLink?: string | null; meetLink?: string | null;
   cancelUrl?: string | null; rescheduleUrl?: string | null; start?: string; end?: string | null; timezone?: string; location?: string | null; idempotent?: boolean;

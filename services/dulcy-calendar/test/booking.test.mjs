@@ -279,3 +279,9 @@ test('Calendly required questions: text answered with the booking context; optio
   assert.deepEqual(_qa({}, req), []);
   assert.throws(() => _qa({custom_questions: [{name: 'Phone', type: 'phone_number', position: 0, enabled: true, required: true}]}, req), /make it optional/);
 });
+
+test('Calendly phone question: filled with the prospect phone when we have it (required or optional)', () => {
+  const qs = {custom_questions: [{name: 'Phone Number', type: 'phone_number', position: 1, enabled: true, required: true}]};
+  assert.deepEqual(_qa(qs, {name: 'Jane', description: '', phone: '+15551234567'}), [{question: 'Phone Number', answer: '+15551234567', position: 1}]);
+  assert.throws(() => _qa(qs, {name: 'Jane', description: ''}), /make it optional/);
+});
