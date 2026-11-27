@@ -244,6 +244,27 @@ export function googleBooked(ev, req) {
 }
 
 /** A Calendly event type location → the POST /invitees location (only kinds that need nothing from the invitee). */
+/**
+ * Answers for the event type's REQUIRED intake questions (Calendly refuses a booking without them).
+ * Text questions get the booking context; a required phone or choice question can't be answered
+ * truthfully, so the booking is refused with a clear reason instead of guessing.
+ */
+export function calendlyAnswers(event, req) {
+  const qs = Array.isArray(event?.custom_questions) ? event.custom_questions : [];
+  const out = [];
+  for (const q of qs) {
+    if (!q || q.enabled === false || !q.required) continue;
+    const type = String(q.type || 'string');
+    if (type === 'string' || type === 'text') {
+      const answer = (req.description || `Meeting booked by email reply with ${req.name}`).slice(0, type === 'string' ? 255 : 10000);
+      out.push({question: String(q.name || ''), answer, position: Number(q.position) || 0});
+    } else {
+      const e = Error(`Calendly event type has a required "${String(q.name || type).slice(0, 80)}" question (${type}) the assistant can't answer: make it optional in Calendly`);
+      e.status = 400; throw e;
+    }
+  }
+  return out;
+}
 export function calendlyLocation(event) {
   const locs = Array.isArray(event?.locations) ? event.locations : [];
   if (locs.length !== 1) return null;
