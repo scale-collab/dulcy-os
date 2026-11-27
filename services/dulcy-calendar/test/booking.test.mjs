@@ -15,7 +15,7 @@ const NOW = Date.parse('2026-11-30T17:00:00Z');
 const WED_3PM = '2026-12-02T20:00:00.000Z';
 const RULES = {timezone: 'America/New_York', days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], start: '09:00', end: '17:00', durationMinutes: 30, bufferMinutes: 15, noticeMinutes: 60};
 
-let store, flow, server, base, calls, busy, events, logs, failNextInsert, calendlyAvailable, calendlyBooked;
+let store, flow, server, base, calls, busy, events, logs, failNextInsert, calendlyAvailable, calendlyBooked, httpLogs;
 
 function google(ws, over = {}) {
   return {workspaceId: ws, provider: 'google', providerUserId: 'sub-' + ws, accountEmail: 'owner@client.com', status: 'Connected', canBook: true,
@@ -62,11 +62,11 @@ async function post(path, token, body) {
 const req = (over = {}) => ({workspace: WS_A, start: WED_3PM, tz: 'America/New_York', prospect: {name: 'Jane Doe', email: 'Jane@Acme.com'}, title: 'Intro call: Acme x Client', description: 'Booked by Dulcy', idempotencyKey: 'echo:recE0000000000001:2026-12-02T20:00', ...over});
 
 beforeEach(async () => {
-  calls = []; busy = []; events = {}; logs = []; failNextInsert = false; calendlyAvailable = []; calendlyBooked = [];
+  calls = []; busy = []; events = {}; logs = []; failNextInsert = false; calendlyAvailable = []; calendlyBooked = []; httpLogs = [];
   store = new CalendarStore(':memory:', Buffer.alloc(32, 7));
   flow = new CalendarFlow({store, apps: {google: {clientId: 'g', clientSecret: 's'}, calendly: {clientId: 'c', clientSecret: 's'}}, origin: 'https://n8n.dulcy.io', fetchJson: fakeFetch, now: () => NOW, log: x => logs.push(x)});
   store.save(google(WS_A));
-  server = http.createServer(calendarHandler({flow, adminToken: T.admin, readerToken: T.reader, inviterToken: T.inviter, bookerToken: T.booker}));
+  server = http.createServer(calendarHandler({flow, adminToken: T.admin, readerToken: T.reader, inviterToken: T.inviter, bookerToken: T.booker, log: x => httpLogs.push(x)}));
   await new Promise(r => server.listen(0, '127.0.0.1', r));
   base = 'http://127.0.0.1:' + server.address().port;
 });
@@ -228,4 +228,43 @@ test('Calendly restart-safe: a lost POST /invitees answer is found with schedule
   await book(T.booker, req({workspace: WS_B, idempotencyKey: 'echo:cal-lost-2'}));
   const r = await book(T.booker, req({workspace: WS_B, idempotencyKey: 'echo:cal-lost-2'}));
   assert.deepEqual([r.body.booked, r.body.reason], [false, 'uncertain']);
+});
+
+test('Calendly connect: the token answer may list scopes space- or comma-separated, or leave them out (then /users/me is the check)', async () => {
+  const pending = {workspace: WS_A, provider: 'calendly', expectedEmail: 'owner@client.com', redirectUri: 'https://n8n.dulcy.io/calendar/callback', verifier: 'v', expiresAt: NOW + 60_000};
+  let meCalls = 0;
+  const fetchJson = (tok, me = {resource: {email: 'Owner@Client.com', uri: 'https://api.calendly.com/users/U1'}}) => async (url) => {
+    if (url.includes('/oauth/token')) return {access_token: 'a', refresh_token: 'r', expires_in: 7200, ...tok};
+    meCalls++; if (me instanceof Error) throw me; return me;
+  };
+  const go = (tok, me) => exchangeConnection({pending, code: 'c', clientId: 'c', clientSecret: 's', fetchJson: fetchJson(tok, me), now: NOW});
+  const all = PROVIDERS.calendly.scopes;
+  let c = await go({});
+  assert.deepEqual([c.canBook, c.scopesListed, c.providerUserId], [true, false, 'https://api.calendly.com/users/U1'], 'no scope field: verified by /users/me, booking allowed');
+  c = await go({scope: 'default'});
+  assert.equal(c.canBook, true, 'legacy "default" scope');
+  c = await go({scope: all.join(',')});
+  assert.deepEqual([c.canBook, c.scopesListed], [true, true], 'comma-separated');
+  c = await go({scope: all.join(' ')});
+  assert.equal(c.canBook, true, 'space-separated');
+  c = await go({scope: 'users:read event_types:read availability:read'});
+  assert.equal(c.canBook, false, 'read-only app: connects, booking not allowed');
+  await assert.rejects(go({}, Object.assign(Error('Calendar provider request failed (403)'), {status: 403})), /403/, 'no scope field and /users/me refused: not connected');
+  await assert.rejects(go({scope: 'users:read'}), /read-only permissions/, 'a listed scope set missing a read scope still fails');
+  assert.ok(meCalls >= 6);
+});
+
+test('a failed connect step logs its route and reason, without the ticket, codes or emails', async () => {
+  const r = await fetch(base + '/calendar/connect?ticket=secret-ticket-value');
+  assert.equal(r.status, 400);
+  assert.match(await r.text(), /Connection needs attention/, 'the client still sees the plain page');
+  assert.equal(httpLogs.length, 1);
+  assert.deepEqual(Object.keys(httpLogs[0]).sort(), ['error', 'level', 'route']);
+  assert.equal(httpLogs[0].route, '/calendar/connect');
+  assert.match(httpLogs[0].error, /Invitation expired or already used/);
+  assert.ok(!JSON.stringify(httpLogs).includes('secret-ticket-value'));
+  // A failed booking is logged the same way.
+  await book(T.booker, req({prospect: {email: 'jane@acme.com'}, start: '2027-06-01T15:00:00.000Z', idempotencyKey: 'echo:log-1'}));
+  assert.equal(httpLogs.at(-1).route, '/calendar/admin/book');
+  assert.match(httpLogs.at(-1).error, /30 days/);
 });

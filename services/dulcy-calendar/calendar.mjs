@@ -76,7 +76,12 @@ export async function exchangeConnection({pending, code, clientId, clientSecret,
     redirect_uri: pending.redirectUri, code_verifier: pending.verifier});
   const token = await fetchJson(spec.token, {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: body.toString()});
   if (!token.access_token || !token.refresh_token || !(Number(token.expires_in) > 0)) throw Error('Provider did not grant renewable access');
-  const granted = new Set(String(token.scope || '').split(' '));
+  // Scopes may come space- or comma-separated. Calendly's token answer may leave "scope" out (or say the
+  // legacy "default"): Calendly shows all of an app's scopes on one consent screen with nothing to untick,
+  // so there the /users/me call below (it needs users:read) is the check instead.
+  const listed = String(token.scope ?? '').split(/[\s,]+/).filter(Boolean);
+  const unlisted = pending.provider === 'calendly' && (!listed.length || listed.every(s => s === 'default'));
+  const granted = new Set(unlisted ? spec.scopes : listed);
   // Google may return the canonical API scope for the requested OIDC email alias.
   if (pending.provider === 'google' && granted.has('https://www.googleapis.com/auth/userinfo.email')) granted.add('email');
   if (spec.readScopes.some(s => !granted.has(s))) throw Error('Required read-only permissions were not granted');
@@ -90,7 +95,7 @@ export async function exchangeConnection({pending, code, clientId, clientSecret,
   const providerUserId = pending.provider === 'calendly' ? identity.uri : identity.sub;
   if (!providerUserId) throw Error('Provider identity missing');
   return {workspaceId: pending.workspace, provider: pending.provider, providerUserId, accountEmail: pending.expectedEmail,
-    status: 'Selection Required', canBook: bookingGranted, scopes: [...granted].sort(), accessToken: token.access_token, refreshToken: token.refresh_token,
+    status: 'Selection Required', canBook: bookingGranted, scopes: [...granted].sort(), scopesListed: !unlisted, accessToken: token.access_token, refreshToken: token.refresh_token,
     expiresAt: now + Number(token.expires_in) * 1000, connectedAt: new Date(now).toISOString()};
 }
 

@@ -18,7 +18,7 @@ export const ROUTES=Object.freeze({
 });
 const ok=t=>typeof t==='string'&&t.length>=32;
 
-export function calendarHandler({flow,adminToken,readerToken,inviterToken,bookerToken}){
+export function calendarHandler({flow,adminToken,readerToken,inviterToken,bookerToken,log=x=>console.error(JSON.stringify({at:new Date().toISOString(),...x}))}){
  if(typeof adminToken!=='string'||adminToken.length<32)throw Error('Private bridge authentication required');
  // Matched in this order: a booker token that equals another token is never treated as the booker.
  const tokens=[['admin',adminToken],['reader',readerToken],['inviter',inviterToken],['booker',bookerToken]].filter(([,t])=>ok(t));
@@ -45,7 +45,7 @@ export function calendarHandler({flow,adminToken,readerToken,inviterToken,booker
     if(u.pathname==='/calendar/admin/book'){
      try{return json(200,await flow.provider.book(b.workspace,b));}
      // Provider trouble (5xx, timeouts) = 502 so the engine retries with the same key; a bad request = 400.
-     catch(e){return json(e.status||/timeout|abort|fetch failed/i.test(String(e.message))?502:400,{booked:false,error:String(e.message||e).slice(0,200)});}
+     catch(e){log({level:'error',route:u.pathname,error:String(e?.message||e).replace(/[^\s@]+@[^\s@]+/g,'[email]').slice(0,200)});return json(e.status||/timeout|abort|fetch failed/i.test(String(e.message))?502:400,{booked:false,error:String(e.message||e).slice(0,200)});}
     }
     if(u.pathname==='/calendar/admin/request-invite')return json(200,flow.requestInvite(b));
     if(u.pathname==='/calendar/admin/invite')return json(200,flow.invite(b));
@@ -83,6 +83,9 @@ export function calendarHandler({flow,adminToken,readerToken,inviterToken,booker
    send(404,page('Page not found','<p>Use the calendar connection link from your Dulcy team.</p>'));
   }catch(e){
    // Never expose provider payloads, credentials, authorization codes, or stack traces.
+   // The reason is logged for the operator: the route only (no query: tickets and codes live there)
+   // and the error text, which never holds tokens, codes or emails.
+   log({level:'error',route:String(req.url||'').split('?')[0].slice(0,80),error:String(e?.message||e).replace(/[^\s@]+@[^\s@]+/g,'[email]').slice(0,200)});
    // Authenticated bridge callers get a short JSON reason instead of the client page.
    if(String(req.url||'').startsWith('/calendar/admin/'))return json(400,{error:String(e?.message||'Request failed').slice(0,200)});
    send(400,page('Connection needs attention','<p>The connection could not be completed. Check that you used the invited account and a current connection link. Ask your Dulcy team for a fresh link if needed.</p>'));
