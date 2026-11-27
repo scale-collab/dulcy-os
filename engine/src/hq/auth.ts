@@ -33,6 +33,19 @@ export function toUser(u: any): HqUser | null {
   return { ...base, role: 'member' };
 }
 
+/**
+ * "View as member" (Alex, 2026-11-27): the owner sees HQ exactly as a member (Josh) does. The page
+ * sends this header on every call; the server then handles that request with role member.
+ * Downgrade only: only an owner can switch, only to member, and a member or client sending it
+ * (any value) changes nothing. The server also refuses every write while viewing (read only).
+ */
+export const VIEW_HEADER = 'x-hq-view';
+export function viewAs(user: HqUser, header: string | string[] | undefined): { user: HqUser; viewing: boolean } {
+  const want = String(Array.isArray(header) ? header[0] : header ?? '').trim().toLowerCase();
+  if (user.role === 'owner' && want === 'member') return { user: { ...user, role: 'member' }, viewing: true };
+  return { user, viewing: false };
+}
+
 export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16);
   const hash = await scrypt(password.normalize('NFKC'), salt, LEN, { N, r: R, p: P, maxmem: 64 * 1024 * 1024 });

@@ -76,15 +76,27 @@ export function jobPatternsFor(agent: AgentName): string[] {
   }
 }
 
-export const PILES = ['Replies', 'Campaigns', 'Fixes', 'Money', 'Other'] as const;
+/**
+ * The Decisions piles (Alex, 2026-11-27: no "Other"). Money (Ledger) and Content (Sienna) are
+ * owner-only: members never get those piles.
+ */
+export const PILES = ['Replies', 'Campaigns', 'Fixes', 'Money', 'Sales', 'Content', 'Orchestrator'] as const;
 export type Pile = (typeof PILES)[number];
+export const OWNER_PILES: readonly Pile[] = ['Money', 'Content'];
+/** The piles this person sees, in order. */
+export const pilesFor = (owner: boolean): Pile[] => PILES.filter((p) => owner || !OWNER_PILES.includes(p));
 
-/** The Daily Run piles: Echo → Replies; Atlas, Scribe, Scout → Campaigns; Riley → Fixes; Ledger → Money; the rest → Other. */
+/**
+ * Echo → Replies; Atlas, Scribe, Scout → Campaigns; Riley → Fixes; Ledger → Money; Cole → Sales;
+ * Sienna → Content; Ada (and a decision with no known agent: Ada routes it) → Orchestrator.
+ */
 export function pileFor(agent: string): Pile {
   const a = String(agent ?? '').trim();
   if (a === 'Echo') return 'Replies';
   if (a === 'Atlas' || a === 'Scribe' || a === 'Scout') return 'Campaigns';
   if (a === 'Riley') return 'Fixes';
   if (a === 'Ledger') return 'Money';
-  return 'Other';
+  if (a === 'Cole') return 'Sales';
+  if (a === 'Sienna') return 'Content';
+  return 'Orchestrator';
 }

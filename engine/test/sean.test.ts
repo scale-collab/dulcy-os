@@ -156,6 +156,19 @@ test('reply with no EmailBison reply ID becomes "need your input" (cannot be sen
   assert.match(String(emails.recA[RA.seanInput]), /No EmailBison reply ID/);
 });
 
+test('a draft with a placeholder is never a plain reply: it becomes "need your input" (Alex 2026-11-27)', { skip }, async () => {
+  emails.recA = thread();
+  claudeAnswers = [{ action: 'reply', intent: 'Interested', reason: 'sent the video', they_said: 's', draft: 'Hi Jane, here it is: [video link for Artisan Luxe Beauty]', question_for_alex: '', confidence: 99 }];
+  await run(cfg());
+  const d = Object.values(decisions)[0];
+  assert.equal(d[DF.action], 'None', 'no Approve Reply card: nothing can be sent from it as is');
+  assert.match(String(d[DF.title]), /Need your input/);
+  assert.match(String(emails.recA[RA.seanInput]), /\[video link for Artisan Luxe Beauty\]/);
+  assert.match(String(emails.recA[RA.seanReason]), /placeholder/);
+  assert.equal(emails.recA[RA.humanAction], 'None', 'never auto-sent');
+  assert.match(claudeCalls[0].body.system[1].text, /Never write a placeholder/);
+});
+
 test('dry run (not in LIVE_STAGES): Claude not called, no decisions', { skip }, async () => {
   emails.recA = thread();
   const j = await run(cfg({ dryRun: true, liveStages: [] }));
