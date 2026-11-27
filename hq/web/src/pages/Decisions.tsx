@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { api, type Decision, type Pile, type User } from '../api';
-import { Avatar, BackLink, Button, Card, clientKey, cx, Empty, ErrorBox, ExtLink, go, Icon, Kbd, Label, PageSkeleton, PageTitle, Pill, Progress, setCount, timeAgo } from '../ui';
+import { api, type Client, type Decision, type Pile, type User } from '../api';
+import { ClientPicker, rememberedClient, type ClientOption } from '../clientPicker';
+import { FixItButton } from '../fixIt';
+import { findPlaceholders } from '../placeholders';
+import { Avatar, BackLink, Button, Card, clientKey, cx, Empty, ErrorBox, ExtLink, go, Icon, Kbd, Label, Marked, PageSkeleton, PageTitle, Pill, Progress, setCount, showToast, timeAgo } from '../ui';
 
+// The piles (Alex, 2026-11-27): no "Other". Money and Content are owner-only (the server leaves them out for members).
 const PILES: { key: Pile; who: string; icon: string }[] = [
   { key: 'Replies', who: 'Echo', icon: 'reply' },
   { key: 'Campaigns', who: 'Atlas · Scribe · Scout', icon: 'megaphone' },
@@ -12,6 +16,12 @@ const PILES: { key: Pile; who: string; icon: string }[] = [
   { key: 'Orchestrator', who: 'Ada', icon: 'sparkles' },
 ];
 type Outcome = 'approved' | 'rejected' | 'skipped';
+type Verdict = 'approve' | 'reject' | 'edited';
+/** How long a Reject waits before it is saved, so Undo is free (nothing is sent by a reject). */
+const UNDO_MS = 6000;
+
+/** HQ is the one tool (RULES 2026-11-27): no Airtable record links on this screen. */
+const noAirtable = (s: string) => s.split('\n').filter((l) => !/airtable\.com\//i.test(l)).join('\n').trim();
 
 export default function Decisions({ user: _user, pile, client }: { user: User; pile?: string; client?: string }) {
   const [data, setData] = useState<{ piles: Record<string, Decision[]>; order: Pile[] } | null>(null);
@@ -19,9 +29,19 @@ export default function Decisions({ user: _user, pile, client }: { user: User; p
   const [handled, setHandled] = useState<string[]>([]);
   const [decided, setDecided] = useState<string[]>([]);
   const [stats, setStats] = useState({ approved: 0, rejected: 0, skipped: 0 });
+  const [clients, setClients] = useState<ClientOption[]>([]);
+  const [pick, setPick] = useState(() => rememberedClient('decisions', client));
   const load = useCallback(() => { setError(''); api<{ piles: Record<string, Decision[]>; order: Pile[] }>('/decisions').then((x) => { setData(x); setDecided([]); }).catch((e) => setError(e.message)); }, []);
   useEffect(load, [load]);
   useEffect(() => { setHandled([]); setStats({ approved: 0, rejected: 0, skipped: 0 }); }, [pile, client]);
+  // The client dropdown: active clients only (the Clients API answers active ones).
+  useEffect(() => { api<{ clients: Client[] }>('/clients').then((r) => setClients(r.clients.filter((c) => c.active).map((c) => ({ key: c.key, name: c.name })))).catch(() => setClients([])); }, []);
+  useEffect(() => { if (pile) setPick(client ?? ''); }, [pile, client]);
+
+  // A Reject waits UNDO_MS before it is saved (Undo in the toast). Leaving the page saves it at once.
+  const pending = useRef<{ id: string; timer: number; save: () => void } | null>(null);
+  const flush = useCallback(() => { const p = pending.current; if (p) { window.clearTimeout(p.timer); pending.current = null; p.save(); } }, []);
+  useEffect(() => { window.addEventListener('pagehide', flush); return () => { window.removeEventListener('pagehide', flush); flush(); }; }, [flush]);
 
   // Cards approved or rejected here leave every pile until the next load.
   const piles = useMemo(() => {
@@ -30,19 +50,25 @@ export default function Decisions({ user: _user, pile, client }: { user: User; p
   }, [data, decided]);
   const all = useMemo(() => (data ? data.order.flatMap((p) => piles[p] ?? []) : []), [data, piles]);
   useEffect(() => { if (data) setCount('decisions', all.length); }, [data, all.length]);
+  const options = useMemo(() => clients.map((c) => ({ ...c, count: all.filter((d) => clientKey(d.client) === c.key).length })), [clients, all]);
+  const mine = (d: Decision, k: string) => !k || clientKey(d.client) === k;
+
+  const picker = (onChange: (k: string) => void, value: string) => clients.length > 0 && <ClientPicker screen="decisions" value={value} options={options} onChange={onChange} />;
 
   if (error && !data) return <><PageTitle title="Decisions" /><ErrorBox error={error} retry={load} /></>;
   if (!data) return <><PageTitle title="Decisions" /><PageSkeleton kind={pile ? 'deck' : 'grid'} /></>;
 
   if (!pile) {
+    const shown = all.filter((d) => mine(d, pick));
     return (
       <div>
-        <PageTitle title="Decisions" kicker={all.length ? `${all.length} waiting on you` : 'Nothing waiting'}
-          right={all.length > 0 && <Button tone="accent" icon="play" onClick={() => go('decisions/all')}>Go through all {all.length}</Button>} />
-        {!all.length && <Card className="mb-6"><Empty icon="check" tone="good" title="All clear" sub="No decisions waiting on you. New cards land here when an agent needs your OK." /></Card>}
+        <PageTitle title="Decisions" kicker={shown.length ? `${shown.length} waiting on you` : 'Nothing waiting'}
+          right={shown.length > 0 && <Button tone="accent" icon="play" onClick={() => go(`decisions/all${pick ? `/${pick}` : ''}`)}>Go through all {shown.length}</Button>} />
+        {clients.length > 0 && <div className="mb-4">{picker(setPick, pick)}</div>}
+        {!shown.length && <Card className="mb-6"><Empty icon="check" tone="good" title="All clear" sub={pick ? 'No decisions waiting for this client.' : 'No decisions waiting on you. New cards land here when an agent needs your OK.'} /></Card>}
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {PILES.filter((p) => data.order.includes(p.key)).map((p) => {
-            const list = piles[p.key] ?? [];
+            const list = (piles[p.key] ?? []).filter((d) => mine(d, pick));
             const n = list.length;
             const body = (
               <>
@@ -58,22 +84,23 @@ export default function Decisions({ user: _user, pile, client }: { user: User; p
                 </div>
               </>
             );
-            return n ? <Card key={p.key} onClick={() => go(`decisions/${p.key}`)} label={`${p.key}: ${n} waiting`}>{body}</Card> : <Card key={p.key} className="opacity-70">{body}</Card>;
+            return n ? <Card key={p.key} onClick={() => go(`decisions/${p.key}${pick ? `/${pick}` : ''}`)} label={`${p.key}: ${n} waiting`}>{body}</Card> : <Card key={p.key} className="opacity-70">{body}</Card>;
           })}
         </div>
       </div>
     );
   }
 
-  // decisions/<pile>/<client key>: only that client's cards (from a client page).
-  const source = (pile === 'all' ? data.order.flatMap((p) => data.piles[p] ?? []) : data.piles[pile] ?? []).filter((d) => !client || clientKey(d.client) === client);
+  // decisions/<pile>/<client key>: only that client's cards.
+  const source = (pile === 'all' ? data.order.flatMap((p) => data.piles[p] ?? []) : data.piles[pile] ?? []).filter((d) => mine(d, client ?? ''));
   const queue = source.filter((d) => !handled.includes(d.id) && !(decided.includes(d.id)));
   const total = source.filter((d) => !decided.includes(d.id) || handled.includes(d.id)).length;
   const done = total - queue.length;
   const current = queue[0];
-  const clientName = client ? source[0]?.client || client : '';
+  const clientName = client ? options.find((o) => o.key === client)?.name || source[0]?.client || client : '';
   const title = `${pile === 'all' ? 'All decisions' : pile}${client ? ` · ${clientName}` : ''}`;
-  const back = client ? <BackLink label="Client" onClick={() => window.history.back()} /> : <BackLink label="Piles" onClick={() => go('decisions')} />;
+  const back = <BackLink label="Piles" onClick={() => go('decisions')} />;
+  const changeClient = (k: string) => go(`decisions/${pile}${k ? `/${k}` : ''}`);
 
   if (!current) {
     const any = stats.approved + stats.rejected + stats.skipped > 0;
@@ -93,44 +120,97 @@ export default function Decisions({ user: _user, pile, client }: { user: User; p
           )}
           <div className="mt-8 grid w-full max-w-sm grid-cols-2 gap-2">
             <Button onClick={() => { go('decisions'); load(); }}>Back to piles</Button>
-            <Button tone="primary" onClick={() => go('tasks')} icon="grid">My to-do</Button>
+            <Button tone="primary" onClick={() => go('needs')} icon="bell">Needs you</Button>
           </div>
         </Card>
       </div>
     );
   }
-  const onDone = (kind: Outcome) => {
-    setHandled((h) => [...h, current.id]);
-    if (kind !== 'skipped') setDecided((x) => [...x, current.id]);
+
+  const leave = (id: string, kind: Outcome) => {
+    setHandled((h) => [...h, id]);
+    if (kind !== 'skipped') setDecided((x) => [...x, id]);
     setStats((s) => ({ ...s, [kind]: s[kind] + 1 }));
   };
+  const comeBack = (id: string, kind: Outcome) => {
+    setHandled((h) => h.filter((x) => x !== id));
+    setDecided((x) => x.filter((y) => y !== id));
+    setStats((s) => ({ ...s, [kind]: Math.max(0, s[kind] - 1) }));
+  };
+  /** Approve / send: saved now, the toast says what happens next. Reject: the card leaves at once and is saved after the Undo window. */
+  const decide = async (d: Decision, verdict: Verdict | 'skip', text?: string): Promise<boolean> => {
+    flush();
+    if (verdict === 'skip') {
+      leave(d.id, 'skipped');
+      showToast({ text: 'Moved to later. It stays in the pile.', undo: () => comeBack(d.id, 'skipped') });
+      return true;
+    }
+    if (verdict === 'reject') {
+      leave(d.id, 'rejected');
+      const save = () => api(`/decisions/${d.id}`, { body: { verdict: 'reject' } }).catch((e) => {
+        comeBack(d.id, 'rejected');
+        showToast({ tone: 'bad', text: `Not rejected: ${(e as Error).message}` });
+      });
+      const timer = window.setTimeout(() => { if (pending.current?.id === d.id) { pending.current = null; void save(); } }, UNDO_MS);
+      pending.current = { id: d.id, timer, save: () => void save() };
+      showToast({
+        text: d.isReply ? `Reply skipped: nothing is sent to ${d.title.replace(/^Reply to /, '')}.` : `Rejected: ${d.title}. Nothing runs.`,
+        undo: () => { if (pending.current?.id === d.id) { window.clearTimeout(pending.current.timer); pending.current = null; } comeBack(d.id, 'rejected'); },
+        ms: UNDO_MS,
+      });
+      return true;
+    }
+    try {
+      await api(`/decisions/${d.id}`, { body: verdict === 'edited' ? { verdict, text } : { verdict } });
+      leave(d.id, 'approved');
+      showToast({ tone: 'good', text: d.isReply ? `${verdict === 'edited' ? 'Edited reply' : 'Reply'} approved: it goes out within a minute.` : `Approved: ${d.title}.${d.action && d.action !== 'None' ? ' The engine runs it now.' : ''}` });
+      return true;
+    } catch (e) {
+      showToast({ tone: 'bad', text: `Not saved: ${(e as Error).message}`, ms: 8000 });
+      return false;
+    }
+  };
+
   return (
     <div className="mx-auto max-w-2xl">
-      <div className="flex items-center justify-between gap-3">{back}<span className="mb-3 text-sm font-semibold text-fg">{title}</span></div>
+      <div className="flex flex-wrap items-center justify-between gap-3">{back}<span className="mb-3 text-sm font-semibold text-fg">{title}</span></div>
+      {clients.length > 0 && <div className="mb-3">{picker(changeClient, client ?? '')}</div>}
       <Progress done={done} total={total} />
-      <DecisionDeckCard key={current.id} d={current} onDone={onDone} position={`${done + 1} of ${total}`} />
+      <DecisionDeckCard key={current.id} d={current} decide={decide} position={`${done + 1} of ${total}`} />
     </div>
   );
 }
 
-function DecisionDeckCard({ d, onDone, position }: { d: Decision; onDone: (k: Outcome) => void; position: string }) {
+function DecisionDeckCard({ d, decide, position }: { d: Decision; decide: (d: Decision, v: Verdict | 'skip', text?: string) => Promise<boolean>; position: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [more, setMore] = useState(false);
   const [draft, setDraft] = useState(d.fix);
   const box = useRef<HTMLTextAreaElement>(null);
   const edited = d.isReply && draft.trim() !== d.fix.trim();
+  // Placeholder guard: what would go out must have no "[link]", "{{first_name}}", "<insert …>".
+  const sends = d.isReply || d.action === 'Send Reply';
+  const holes = useMemo(() => (sends ? findPlaceholders(d.isReply && d.canEdit ? draft : d.fix) : []), [sends, d.isReply, d.canEdit, draft, d.fix]);
+  const blocked = holes.length > 0;
+  const details = noAirtable(d.details);
+  const noAction = !d.isReply && (!d.action || d.action === 'None');
 
-  const send = useCallback(async (verdict: 'approve' | 'reject' | 'edited' | 'skip') => {
+  const send = useCallback(async (verdict: Verdict | 'skip') => {
     if (busy) return;
-    if (verdict === 'skip') { onDone('skipped'); return; }
+    if ((verdict === 'approve' || verdict === 'edited') && blocked) { setError(`Replace ${holes.length === 1 ? 'this' : 'these'} before sending: ${holes.join(', ')}`); return; }
     if (verdict === 'edited' && !draft.trim()) { setError('The reply is empty.'); return; }
     setBusy(true); setError('');
-    try {
-      await api(`/decisions/${d.id}`, { body: verdict === 'edited' ? { verdict, text: draft } : { verdict } });
-      onDone(verdict === 'reject' ? 'rejected' : 'approved');
-    } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
-  }, [busy, d.id, draft, onDone]);
+    const ok = await decide(d, verdict, verdict === 'edited' ? draft : undefined);
+    if (!ok) setBusy(false);
+  }, [busy, blocked, holes, draft, decide, d]);
+
+  const editNow = useCallback((select?: string) => {
+    const t = box.current;
+    if (!t) return;
+    t.focus();
+    const at = select ? t.value.indexOf(select) : -1;
+    if (at >= 0) t.setSelectionRange(at, at + select!.length); else t.setSelectionRange(t.value.length, t.value.length);
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -139,17 +219,14 @@ function DecisionDeckCard({ d, onDone, position }: { d: Decision; onDone: (k: Ou
       if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') { if (e.key === 'Escape') el?.blur(); return; }
       if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
       const k = e.key.toLowerCase();
-      if (k === 'a') void send(edited ? 'edited' : 'approve');
-      else if (k === 'r') void send('reject');
+      if (k === 'r') void send('reject');
       else if (k === 's') void send('skip');
-      else if (k === 'e' && d.isReply && d.canEdit && box.current) {
-        e.preventDefault();
-        const t = box.current; t.focus(); t.setSelectionRange(t.value.length, t.value.length);
-      }
+      else if (k === 'a') void send(edited ? 'edited' : 'approve');
+      else if (k === 'e' && d.isReply && d.canEdit) { e.preventDefault(); editNow(holes[0]); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [send, edited, d.isReply, d.canEdit]);
+  }, [send, edited, d.isReply, d.canEdit, editNow, holes]);
 
   return (
     <>
@@ -184,51 +261,68 @@ function DecisionDeckCard({ d, onDone, position }: { d: Decision; onDone: (k: Ou
               )}
 
               <div className="mt-6">
-                <div className="mb-2 flex min-h-8 items-center justify-between gap-2">
+                <div className="mb-2 flex min-h-9 items-center justify-between gap-2">
                   <div className="flex items-center gap-2"><Label>Your reply</Label>{edited && <Pill tone="accent" icon="pen">edited</Pill>}</div>
-                  {edited && <button onClick={() => setDraft(d.fix)} className="inline-flex min-h-8 items-center gap-1 rounded-lg px-2 text-xs font-medium text-muted hover:bg-hover hover:text-fg"><Icon name="undo" size={13} />Undo edits</button>}
+                  <div className="flex items-center gap-1">
+                    {edited && <button onClick={() => setDraft(d.fix)} className="inline-flex min-h-9 items-center gap-1 rounded-lg px-2 text-xs font-medium text-muted hover:bg-hover hover:text-fg"><Icon name="undo" size={13} />Undo edits</button>}
+                    {d.canEdit && <button onClick={() => editNow(holes[0])} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-3 text-sm font-semibold text-fg hover:bg-hover"><Icon name="pen" size={14} />Edit</button>}
+                  </div>
                 </div>
+                {blocked && <PlaceholderWarning holes={holes} onPick={d.canEdit ? editNow : undefined} canEdit={d.canEdit} />}
                 {d.canEdit ? (
-                  <textarea ref={box} value={draft} onChange={(e) => setDraft(e.target.value)} aria-label="Draft reply" rows={Math.min(14, Math.max(5, draft.split('\n').length + 1))}
-                    className="w-full resize-y rounded-2xl rounded-tr-md border border-accent/40 bg-accent-soft/40 px-4 py-3.5 text-base leading-relaxed text-fg outline-none transition focus:border-accent focus:bg-surface focus:ring-4 focus:ring-accent-soft" />
-                ) : <div className="whitespace-pre-wrap break-words rounded-2xl rounded-tr-md border-l-2 border-accent bg-accent-soft/40 px-4 py-3.5 text-base leading-relaxed text-fg">{d.fix}</div>}
+                  <div className="relative">
+                    <textarea ref={box} value={draft} onChange={(e) => setDraft(e.target.value)} aria-label="Your reply (you can edit it)" aria-invalid={blocked || undefined}
+                      rows={Math.min(14, Math.max(5, draft.split('\n').length + 1))}
+                      className={cx('w-full resize-y rounded-2xl border-2 bg-surface px-4 pb-8 pt-3.5 text-base leading-relaxed text-fg shadow-card outline-none transition focus:ring-4',
+                        blocked ? 'border-warn focus:ring-warn-soft' : 'border-line-strong hover:border-accent/60 focus:border-accent focus:ring-accent-soft')} />
+                    <span aria-hidden="true" className="pointer-events-none absolute bottom-3 right-4 flex items-center gap-1 text-xs text-muted"><Icon name="pen" size={12} />Tap to edit</span>
+                  </div>
+                ) : <div className="whitespace-pre-wrap break-words rounded-2xl rounded-tr-md border-l-2 border-accent bg-accent-soft/40 px-4 py-3.5 text-base leading-relaxed text-fg"><Marked text={d.fix} marks={holes} /></div>}
               </div>
             </>
           ) : (
             <div className="mt-5 space-y-4">
               <Block label="Issue" text={d.issue} />
               <Block label="Checked" text={d.checked} />
-              <Block label="Proposed" text={d.fix} strong />
+              <Block label="Proposed" text={d.fix} strong marks={holes} />
+              {blocked && <PlaceholderWarning holes={holes} canEdit={false} />}
               {d.action && d.action !== 'None' && (
                 <div className="flex gap-2.5 rounded-xl bg-info-soft px-4 py-3 text-sm text-fg-2"><Icon name="play" size={15} className="mt-0.5 text-info" /><div><span className="font-semibold text-info">On approve: </span>{d.action}</div></div>
+              )}
+              {noAction && d.fix && (
+                <div className="rounded-xl border border-line px-4 py-3">
+                  <div className="mb-2 text-sm text-fg-2">Approving only records your OK. To have it done:</div>
+                  <FixItButton agent={d.agent || 'Ada'} title={d.title} detail={[d.issue, d.fix].filter(Boolean).join('\n\n')} client={d.client || undefined} />
+                </div>
               )}
             </div>
           )}
 
-          {d.details && (
+          {details && (
             <button onClick={() => setMore((v) => !v)} aria-expanded={more} className="mt-4 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-accent-ink">
               {more ? 'Hide details' : d.isReply ? 'Campaign and thread details' : 'More details'}<Icon name="chevronDown" size={15} className={cx('transition', more && 'rotate-180')} />
             </button>
           )}
-          {more && <div className="mt-1 whitespace-pre-wrap break-words rounded-xl border border-line bg-sunken px-4 py-3 text-sm leading-relaxed text-fg-2 anim-fade">{d.details}</div>}
-          {error && <div className="mt-4"><ErrorBox error={error} /></div>}
+          {more && <div className="mt-1 whitespace-pre-wrap break-words rounded-xl border border-line bg-sunken px-4 py-3 text-sm leading-relaxed text-fg-2 anim-fade">{details}</div>}
         </div>
       </Card>
 
+      {/* Buttons and keyboard hints in the same order: Reject, Later, Approve. */}
       <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 -mx-4 mt-4 bg-bg/90 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6 md:bottom-0 md:mx-0 md:rounded-2xl md:px-0">
+        {error && <p role="alert" className="mb-2 text-center text-sm font-medium text-bad">{error}</p>}
         <div className="grid grid-cols-[1fr_1fr_1.4fr] gap-2">
           <Button tone="danger" disabled={busy} onClick={() => void send('reject')} icon="x" kbd="R" compact>{d.isReply ? 'Skip reply' : 'Reject'}</Button>
           <Button disabled={busy} onClick={() => void send('skip')} icon="clock" kbd="S" compact>Later</Button>
-          <Button tone="accent" disabled={busy} onClick={() => void send(edited ? 'edited' : 'approve')} icon={d.isReply ? 'send' : 'check'} kbd="A" compact>
-            {busy ? 'Saving…' : d.isReply ? (edited ? 'Send edited' : 'Send') : 'Approve'}
+          <Button tone="accent" disabled={busy || blocked} title={blocked ? 'Replace the placeholder first' : undefined} onClick={() => void send(edited ? 'edited' : 'approve')} icon={d.isReply ? 'send' : 'check'} kbd="A" compact>
+            {busy ? 'Saving…' : blocked ? 'Fill it in first' : d.isReply ? (edited ? 'Send edited' : 'Send') : 'Approve'}
           </Button>
         </div>
       </div>
       <div className="mt-2 hidden items-center justify-center gap-3 text-xs text-muted md:flex">
         <Icon name="keyboard" size={15} />
-        <span className="flex items-center gap-1"><Kbd>A</Kbd> {d.isReply ? 'send' : 'approve'}</span>
         <span className="flex items-center gap-1"><Kbd>R</Kbd> {d.isReply ? 'skip reply' : 'reject'}</span>
         <span className="flex items-center gap-1"><Kbd>S</Kbd> later</span>
+        <span className="flex items-center gap-1"><Kbd>A</Kbd> {d.isReply ? 'send' : 'approve'}</span>
         {d.isReply && d.canEdit && <span className="flex items-center gap-1"><Kbd>E</Kbd> edit</span>}
         {d.isReply && d.canEdit && <span className="flex items-center gap-1"><Kbd>Esc</Kbd> stop editing</span>}
       </div>
@@ -237,12 +331,27 @@ function DecisionDeckCard({ d, onDone, position }: { d: Decision; onDone: (k: Ou
   );
 }
 
-function Block({ label, text, strong }: { label: string; text: string; strong?: boolean }) {
+/** The placeholder guard, as the person sees it: what to replace, one tap to jump to it. */
+function PlaceholderWarning({ holes, onPick, canEdit }: { holes: string[]; onPick?: (h: string) => void; canEdit: boolean }) {
+  return (
+    <div role="alert" className="mb-3 rounded-xl border border-warn/40 bg-warn-soft px-4 py-3 text-sm text-fg">
+      <div className="flex items-center gap-2 font-semibold text-warn"><Icon name="alert" size={16} />Replace this before sending</div>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {holes.map((h) => onPick
+          ? <button key={h} onClick={() => onPick(h)} className="min-h-9 max-w-full truncate rounded-lg border border-warn/40 bg-surface px-2.5 font-mono text-[13px] text-fg hover:border-warn">{h}</button>
+          : <code key={h} className="max-w-full truncate rounded-lg border border-warn/40 bg-surface px-2.5 py-1.5 text-[13px] text-fg">{h}</code>)}
+      </div>
+      <div className="mt-2 text-xs text-fg-2">{canEdit ? 'Tap one to jump to it, type the real text, then Send.' : 'It cannot be sent like this. Reject it, or fix the draft in the Inbox.'}</div>
+    </div>
+  );
+}
+
+function Block({ label, text, strong, marks = [] }: { label: string; text: string; strong?: boolean; marks?: string[] }) {
   if (!text) return null;
   return (
     <div className={cx('rounded-xl px-4 py-3', strong ? 'border border-accent/30 bg-accent-soft/40' : 'border border-line bg-sunken')}>
       <Label>{label}</Label>
-      <div className="mt-1 whitespace-pre-wrap break-words text-[15px] leading-relaxed text-fg">{text}</div>
+      <div className="mt-1 whitespace-pre-wrap break-words text-[15px] leading-relaxed text-fg"><Marked text={text} marks={marks} /></div>
     </div>
   );
 }

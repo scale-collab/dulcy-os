@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { api, type Client, type HqUserRow, type SoftrUser, type User, type UserEvent } from '../api';
+import { api, switchViewAsMember, type Client, type HqUserRow, type SoftrUser, type User, type UserEvent } from '../api';
 import { Button, Card, cx, Empty, ErrorBox, Icon, Label, PageSkeleton, PageTitle, Pill, SectionHeader, setCount, timeAgo } from '../ui';
 
 interface UsersData { users: HqUserRow[]; events: UserEvent[] }
@@ -41,6 +41,15 @@ export default function Users({ user }: { user: User }) {
       {error && <div className="mb-4"><ErrorBox error={error} /></div>}
       {adding === 'user' && <AddUser onDone={() => { setAdding(''); load(); }} />}
       {adding === 'client' && <AddClientLogin onDone={() => { setAdding(''); load(); }} />}
+
+      <Card className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-line bg-sunken text-fg"><Icon name="user" size={19} /></span>
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold text-fg">See what Josh sees</div>
+          <div className="text-sm text-muted">HQ exactly as a member sees it: no money, no content, no Users. Read only until you exit.</div>
+        </div>
+        <Button icon="user" onClick={() => switchViewAsMember(true)} className="w-full sm:w-auto">View as member</Button>
+      </Card>
 
       <section className="mb-6">
         <SectionHeader title={`Client portal requests · ${portalReqs.length}`} icon="briefcase" />

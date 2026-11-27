@@ -5,6 +5,8 @@ export class ApiError extends Error { constructor(public status: number, message
 const VIEW_KEY = 'hq.viewAs';
 export function viewingAsMember(): boolean { try { return sessionStorage.getItem(VIEW_KEY) === 'member'; } catch { return false; } }
 export function setViewAsMember(on: boolean) { try { if (on) sessionStorage.setItem(VIEW_KEY, 'member'); else sessionStorage.removeItem(VIEW_KEY); } catch { /* private window */ } }
+/** Start or stop it, then reload so every screen reads as that role. */
+export function switchViewAsMember(on: boolean) { setViewAsMember(on); window.location.hash = on ? '#/today' : '#/users'; window.location.reload(); }
 
 export async function api<T = any>(path: string, opts: { method?: string; body?: unknown } = {}): Promise<T> {
   const res = await fetch(`/hq/api${path}`, {
