@@ -229,7 +229,7 @@ function CampaignTable({ rows, showClient, live }: { rows: CampaignRowR2[]; show
                 <td className="px-3 py-3"><StatusPill r={r} /></td>
                 <td className="px-3 py-3">{r.group === 'live'
                   ? <><div className="flex items-center gap-2 pt-1"><Bar v={r.progress} /><span className="tabular w-9 shrink-0 text-right text-xs font-semibold text-fg-2">{pct(r.progress)}</span></div>{r.totalLeads > 0 && <div className="mt-1 text-xs text-muted">{num(r.contacted)} of {num(r.totalLeads)} leads</div>}</>
-                  : <><Steps steps={r.steps} small /><div className="mt-1 text-xs text-muted">{r.now ? `${r.now.label}${r.now.note ? `: ${r.now.note}` : ''}` : '–'}</div></>}</td>
+                  : <><Steps steps={r.steps} small bare className="pt-1" /><div className="mt-1.5 text-xs text-muted">{r.now ? `${r.now.label}${r.now.note ? `: ${r.now.note}` : ''}` : '–'}</div></>}</td>
                 <td className="tabular px-3 py-3 text-right text-fg-2">{num(r.sent)}</td>
                 <td className="tabular px-3 py-3 text-right text-fg-2">{num(r.replies)}<div className="text-xs text-muted">{rate(r.replies, r.contacted)}</div></td>
                 <td className="tabular px-3 py-3 text-right text-fg-2">{num(r.interested)}<div className="text-xs text-muted">{r.replies ? rate(r.interested, r.replies) : '–'}</div></td>

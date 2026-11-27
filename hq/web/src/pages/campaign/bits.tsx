@@ -27,14 +27,14 @@ export function Sending({ n, s, compact }: { n: number; s: SendingSummaryB3 | nu
 const SHORT: Record<string, string> = { list: 'List', copy: 'Copy', review: 'Review', launch: 'Launch', live: 'Live', sixty: '60%', next: 'Next' };
 const STATE_WORD: Record<string, string> = { done: 'done', now: 'now', todo: 'not yet', bad: 'failed' };
 /** One row of steps: list → copy → client review → launch → live → 60% → next. */
-export function Steps({ steps, small, className }: { steps: CampaignStep[]; small?: boolean; className?: string }) {
+export function Steps({ steps, small, bare, className }: { steps: CampaignStep[]; small?: boolean; /** No labels under the dots (narrow table cells). */ bare?: boolean; className?: string }) {
   return (
     <ol aria-label="Steps" className={cx('grid grid-cols-7 gap-1', className)}>
       {steps.map((x) => (
         <li key={x.key} title={`${x.label}: ${STATE_WORD[x.state]}${x.note ? ` (${x.note})` : ''}`} className="min-w-0">
           <span className={cx('block rounded-full', small ? 'h-1.5' : 'h-2', x.state === 'done' ? 'bg-accent' : x.state === 'now' ? 'bg-accent/35 ring-1 ring-inset ring-accent' : x.state === 'bad' ? 'bg-bad' : 'bg-line')} />
-          <span className={cx('mt-1 block truncate text-center', small ? 'text-[10px]' : 'text-xs', x.state === 'now' || x.state === 'bad' ? 'font-semibold text-fg' : 'text-muted')}>{SHORT[x.key]}</span>
-          <span className="sr-only">{STATE_WORD[x.state]}</span>
+          {!bare && <span className={cx('mt-1 block truncate text-center', small ? 'text-[10px]' : 'text-xs', x.state === 'now' || x.state === 'bad' ? 'font-semibold text-fg' : 'text-muted')}>{SHORT[x.key]}</span>}
+          <span className="sr-only">{x.label}: {STATE_WORD[x.state]}</span>
         </li>
       ))}
     </ol>

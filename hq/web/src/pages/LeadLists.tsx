@@ -59,11 +59,11 @@ export function LeadLists({ client, refresh }: { client: string; refresh: number
           <ul className="mt-4 space-y-2 md:hidden">{rows.slice(0, limit).map((r) => <li key={r.id}><ListCard r={r} showClient={!client} /></li>)}</ul>
           <Card className="mt-4 hidden overflow-hidden p-0 md:block">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1000px] table-fixed text-left text-sm">
+              <table className="w-full min-w-[1080px] table-fixed text-left text-sm">
                 <thead className="border-b border-line bg-sunken text-xs text-muted"><tr>
-                  <th className="w-[28%] px-5 py-2.5 font-medium">Lead list</th><th className="w-44 px-3 py-2.5 font-medium">Stage</th><th className="w-24 px-3 py-2.5 text-right font-medium">Companies</th>
+                  <th className="px-5 py-2.5 font-medium">Lead list</th><th className="w-44 px-3 py-2.5 font-medium">Stage</th><th className="w-24 px-3 py-2.5 text-right font-medium">Companies</th>
                   <th className="w-20 px-3 py-2.5 text-right font-medium">Direct</th><th className="w-20 px-3 py-2.5 text-right font-medium">Generic</th><th className="w-20 px-3 py-2.5 text-right font-medium">Leads</th>
-                  <th className="w-36 px-3 py-2.5 font-medium">Verified by</th><th className="px-3 py-2.5 font-medium">Campaign</th><th className="w-20 px-5 py-2.5 text-right font-medium">Made</th>
+                  <th className="w-36 px-3 py-2.5 font-medium">Verified by</th><th className="w-48 px-3 py-2.5 font-medium">Campaign</th><th className="w-20 px-5 py-2.5 text-right font-medium">Made</th>
                 </tr></thead>
                 <tbody className="divide-y divide-line">
                   {rows.slice(0, limit).map((r) => (
@@ -79,7 +79,7 @@ export function LeadLists({ client, refresh }: { client: string; refresh: number
                       <td className="tabular px-3 py-3 text-right">{r.generic ? num(r.generic) : '–'}</td>
                       <td className="tabular px-3 py-3 text-right font-semibold text-fg">{r.leads ? num(r.leads) : '–'}</td>
                       <td className="px-3 py-3 text-xs text-fg-2">{r.verifiers || '–'}</td>
-                      <td className="px-3 py-3 text-xs">{r.campaigns.length ? r.campaigns.map((x) => <button key={x.id} onClick={(e) => { e.stopPropagation(); go(`campaigns/${x.id}`); }} className="block min-h-7 truncate text-left font-medium text-accent-ink hover:underline">{x.name || 'Campaign'}</button>) : <span className="text-muted">–</span>}</td>
+                      <td className="px-3 py-3 text-xs">{r.campaigns.length ? r.campaigns.map((x) => <button key={x.id} onClick={(e) => { e.stopPropagation(); go(`campaigns/${x.id}`); }} className="block min-h-7 max-w-full truncate text-left font-medium text-accent-ink hover:underline">{x.name || 'Campaign'}</button>) : <span className="text-muted">–</span>}</td>
                       <td className="tabular px-5 py-3 text-right text-xs text-muted">{slash(r.added)}</td>
                     </tr>
                   ))}

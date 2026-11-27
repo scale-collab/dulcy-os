@@ -35,7 +35,7 @@ export function SendingBox({ client, refresh, onPick }: { client: string; refres
         <button onClick={() => setOpen(open === 'all' ? null : 'all')} className="min-h-9 self-start text-sm font-semibold text-accent-ink hover:underline">{open === 'all' ? 'Hide inboxes' : `Show all ${d.total} inboxes`}</button>
       </div>
       {d.alert && <div role="status" className="mx-4 mt-3 flex items-start gap-2 rounded-xl bg-warn-soft px-3.5 py-2.5 text-sm font-medium text-warn sm:mx-5"><Icon name="alert" size={16} className="mt-0.5 shrink-0" />{d.alert}</div>}
-      <div className="grid grid-cols-3 gap-px border-y border-line bg-line mt-3 sm:grid-cols-4 lg:grid-cols-[repeat(9,minmax(0,1fr))]">
+      <div className="mt-3 grid grid-cols-3 border-y border-line sm:grid-cols-[repeat(auto-fit,minmax(110px,1fr))]">
         <Tile label="Total" n={d.total} active={open === 'all'} onClick={() => setOpen(open === 'all' ? null : 'all')} help="Every inbox of these clients." />
         {shown.map((k) => <Tile key={k} label={label(k)} n={d.counts[k]} tone={TONE[k]} active={open === k} onClick={() => setOpen(open === k ? null : k)} help={help(k)} />)}
       </div>
@@ -81,7 +81,7 @@ export function SendingBox({ client, refresh, onPick }: { client: string; refres
 
 function Tile({ label, n, tone, active, onClick, help }: { label: string; n: number; tone?: string; active: boolean; onClick: () => void; help: string }) {
   return (
-    <button onClick={onClick} title={help} aria-pressed={active} className={cx('min-w-0 bg-surface px-3 py-3 text-left transition hover:bg-hover sm:px-4', active && 'bg-accent-soft')}>
+    <button onClick={onClick} title={help} aria-pressed={active} className={cx('-mb-px -mr-px min-w-0 border-b border-r border-line bg-surface px-3 py-3 text-left transition hover:bg-hover sm:px-4', active && 'bg-accent-soft')}>
       <div className={cx('tabular text-[22px] font-bold leading-none', n ? tone ?? 'text-fg' : 'text-faint')}>{n}</div>
       <div className="mt-1 truncate text-xs font-medium text-muted">{label}</div>
     </button>
