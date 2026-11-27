@@ -19,6 +19,7 @@ import { DECISIONS, DF } from '../decisions/fields.js';
 import { armFields, parsePlan, policyOf, shouldArm } from './followups.js';
 import { loadSettings, inOfficeHours, type ClientSettings } from './settings.js';
 import { bookingOf, needsBooking } from './booking.js';
+import { placeholderProblem } from './placeholders.js';
 
 const STOP = /\b(unsubscribe|remove me|take me off|stop emailing|do not contact)\b/i;
 const DONE_STATES = ['Sent', 'Sending', 'Suppressed', 'Thread Complete'];
@@ -92,7 +93,10 @@ export const replySendStage: Stage = async (ctx) => {
   if (val(f[RA.ownership]) === 'Handoff' || f[EF.clientHandling] === true) throw await fail('the client handles this thread; Dulcy does not send here');
   const body = (action === 'Send Edited Reply' ? val(f[RA.customReply]) : val(f[RA.draft])).trim();
   if (!body) throw await fail(`${action === 'Send Edited Reply' ? 'Custom Reply' : 'the draft'} is empty`);
-  if (/\[GAP|\{\{|\{[^{}]*\|[^{}]*\}/.test(body)) throw await fail('the reply still has a [GAP] marker or a placeholder; edit it first');
+  // Placeholder guard (Alex 2026-11-27): "[video link for …]", "{{first_name}}", "<insert …>" never go out.
+  const unfilled = placeholderProblem(body);
+  if (unfilled) throw await fail(unfilled);
+  if (/\[GAP|\{[^{}]*\|[^{}]*\}/.test(body)) throw await fail('the reply still has a [GAP] marker or spintax; edit it first');
   if (STOP.test(val(f[EF.latestReply]))) throw await fail('the prospect asked to stop; nothing sent');
   if (!isFollowup && val(f[EF.lastSent]) === 'Last Email Sent By Dulcy') throw await fail('someone already answered this thread from our side');
   if (isFollowup && val(f[EF.lastSent]) === 'Last Email Sent By Prospect' && val(policy.followupType) === 'No Response') throw await fail('the prospect answered since; this needs a reply, not a follow-up');

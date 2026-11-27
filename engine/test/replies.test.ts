@@ -232,6 +232,8 @@ test('guards: prospect wrote again, newer thread message, our side already answe
     [{}, /newer messages/, { ...thread(), newer_messages: [{ id: 556 }] }],
     [{ [EF.lastSent]: 'Last Email Sent By Dulcy' }, /already answered/],
     [{ [RA.draft]: 'Hi Jane, [GAP: price]' }, /GAP/],
+    [{ [RA.draft]: 'Hi Jane, here it is: [video link for Artisan Luxe Beauty]' }, /placeholder: "\[video link for Artisan Luxe Beauty\]"\. Replace it before sending/],
+    [{ [RA.humanAction]: 'Send Edited Reply', [RA.customReply]: 'Hi {{first_name}}, Tuesday works.' }, /placeholder: "\{\{first_name\}\}"/],
   ];
   let i = 0;
   for (const [over, why, t] of cases) {
