@@ -357,12 +357,14 @@ export const atlasRampStage: Stage = async (ctx) => {
   for (const k of open) if (!due.has(k)) await trackClose(ctx.db, k, 'No longer due (applied or changed by hand).');
   // Round 3: Atlas's own task for the domains with no real renewal date (closed when none is left).
   const gap = renewalGap(m.domains);
-  if (gap.missing) {
+  // Alex may already have given Atlas this task by hand (round 3): then no second one.
+  const byHand = (await ctx.db.query(`SELECT 1 FROM hq_agent_tasks WHERE agent='Atlas' AND status<>'done' AND source_key IS DISTINCT FROM $1 AND title ILIKE '%renewal date%' LIMIT 1`, [RENEWAL_TASK_KEY])).rows.length > 0;
+  if (gap.missing && !byHand) {
     await trackTask(ctx.db, {
       agent: 'Atlas', key: RENEWAL_TASK_KEY, title: `Fill the renewal date on ${gap.missing} domain${gap.missing === 1 ? '' : 's'}`, client: '', status: 'open', priority: 'normal', due: dueIn(7),
       link: 'deliverability/domains', note: `${gap.missing} of ${gap.total} domains have no real renewal date${m.cheap.connected ? ' (Cheap Inboxes has none for them either)' : ' (Cheap Inboxes is not connected: CHEAPINBOXES_API_KEY)'}. Fill "Renewal Date" on the Domains records from the domain provider.`,
       details: '', job: null,
     });
-  } else await trackClose(ctx.db, RENEWAL_TASK_KEY, 'Every domain has a renewal date.');
+  } else await trackClose(ctx.db, RENEWAL_TASK_KEY, gap.missing ? 'Covered by the renewal-date task Alex gave Atlas.' : 'Every domain has a renewal date.');
   return { message: proposals.length ? `${proposals.length} ramp step${proposals.length === 1 ? '' : 's'} to approve: ${proposals.map((p) => `${p.client} → ${p.to.cold}/${p.to.warmup} (${p.emails.length})`).join('; ')}` : 'No ramp step due.', proposals: proposals.length };
 };

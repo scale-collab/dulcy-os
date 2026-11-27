@@ -74,7 +74,8 @@ const STATUS: Record<Health, { label: string; tone: Tone; pill: 'bad' | 'warn' |
 const LEGACY: Record<string, Health> = { sick: 'spam', watch: 'risk' };
 /** Dates use slashes (Round 2 rule): 11/27. */
 const md = sd;
-const longDate = (d: string) => (d ? new Date(`${d.slice(0, 10)}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
+/** With the year, slashes (Round 2 rule): 3/10/2027. */
+const longDate = (d: string) => (/^\d{4}-\d{2}-\d{2}/.test(d) ? `${sd(d)}/${d.slice(0, 4)}` : '');
 const route = (tab: Tab, client = '', extra = '') => go(`deliverability/${tab}${client || extra ? `/${client || 'all'}` : ''}${extra ? `/${extra}` : ''}`);
 
 /** #/deliverability[/<tab>[/<client key|all>[/<status>]]] */

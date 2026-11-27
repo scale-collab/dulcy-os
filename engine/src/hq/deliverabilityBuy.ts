@@ -18,7 +18,7 @@ import { logActivity } from '../activity.js';
 import { val } from '../agents/emailsFields.js';
 import { clientKey, groupWorkspaces } from './clients.js';
 import { WORKSPACES } from './inbox.js';
-import { DPR, PURCHASES, _resetDelivCache } from './deliverability.js';
+import { DPR, PURCHASES, _resetDelivCache, md, nyDate } from './deliverability.js';
 import { shortClient } from '../agents/ada.js';
 
 export const BUY_PROVIDERS = ['Google', 'Microsoft'] as const;
@@ -80,7 +80,7 @@ export async function buyAction(at: HqAirtable, _db: Db, cfg: Pick<Config, 'airt
     const w = workspaceFor(ws, r.client);
     if (!w) return { status: 404, body: { error: 'no active client with that name' } };
     const inboxes = r.domains * BUY_LIMITS.inboxesPerDomain;
-    const title = `${w.name} - ${r.domains} domain${r.domains === 1 ? '' : 's'}, ${inboxes} inboxes (HQ, ${by}, ${new Date().toISOString().slice(0, 10)})`.slice(0, 200);
+    const title = `${w.name} - ${r.domains} domain${r.domains === 1 ? '' : 's'}, ${inboxes} inboxes (HQ, ${by}, ${md(nyDate(new Date()))})`.slice(0, 200);
     const id = await at.create(PURCHASES, { [DPR.request]: title, [DPR.client]: [w.id], [DPR.count]: r.domains, [DPR.tlds]: r.tlds, [DPR.provider]: r.provider, [DPR.status]: 'Draft' });
     await logActivity(cfg, { event: `Purchase request made in HQ: ${r.domains} domains / ${inboxes} inboxes for ${w.name}`, type: 'Waiting for approval', agent: 'Alex', details: `By ${by}. ${r.provider}, ${r.tlds.join(' ')}. Status Draft: nothing is bought. Next: Get a quote (no charge), then Approve.${r.note ? ` Note: ${r.note}` : ''}`, clientRecordIds: [w.id] }, at);
     _resetDelivCache();
