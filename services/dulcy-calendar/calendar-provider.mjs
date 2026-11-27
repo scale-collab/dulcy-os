@@ -148,8 +148,14 @@ export class CalendarProvider {
         }
         return this.finish(workspace,req,fp,googleBooked(ev,req));
       }
-      // Calendly has no idempotency key on POST /invitees: an attempt whose outcome is unknown is never retried blindly.
-      if(prior?.status==='pending')return {booked:false,reason:'uncertain',message:'An earlier booking attempt for this key has an unknown outcome; check the Calendly calendar before booking again'};
+      // Calendly has no idempotency key on POST /invitees: an attempt whose outcome is unknown is looked up
+      // (scheduled_events:read) and adopted; without that permission it is never retried blindly.
+      const canRead=Array.isArray(c.scopes)&&c.scopes.includes('scheduled_events:read');
+      if(prior?.status==='pending'){
+        if(!canRead)return {booked:false,reason:'uncertain',message:'An earlier booking attempt for this key has an unknown outcome; check the Calendly calendar before booking again'};
+        const found=await this.calendlyEvent(c,req);
+        if(found)return this.finish(workspace,req,fp,found);
+      }
       const check=await this.slotFree(c,workspace,req);
       if(!check.free)return {booked:false,reason:'taken'};
       const location=calendlyLocation(check.event);
@@ -159,10 +165,25 @@ export class CalendarProvider {
       catch(e){if(e.status&&e.status<500)this.store.dropBooking(workspace,req.idempotencyKey);throw e;}
       const inv=r?.resource||{};
       const minutes=Number(check.event?.duration)||0;
-      return this.finish(workspace,req,fp,{booked:true,provider:'calendly',eventId:String(inv.event||inv.uri||''),inviteeUri:inv.uri||null,htmlLink:null,meetLink:null,
+      // The meeting's own join link, when we may read scheduled events (best effort: the booking is already made).
+      let joinUrl=null;
+      if(canRead&&/^https:\/\/api\.calendly\.com\/scheduled_events\/[A-Za-z0-9-]+$/.test(String(inv.event||''))){
+        try{joinUrl=(await this.fetchJson(inv.event,{headers:{Authorization:'Bearer '+c.accessToken}}))?.resource?.location?.join_url||null;}catch{joinUrl=null;}
+      }
+      return this.finish(workspace,req,fp,{booked:true,provider:'calendly',eventId:String(inv.event||inv.uri||''),inviteeUri:inv.uri||null,htmlLink:null,meetLink:joinUrl,
         cancelUrl:inv.cancel_url||null,rescheduleUrl:inv.reschedule_url||null,start:req.start,end:req.end||(minutes?new Date(Date.parse(req.start)+minutes*60000).toISOString():null),
         timezone:req.timezone,location:location?LOCATION_NAMES[location.kind]||null:null});
     });
+  }
+  /** The Calendly meeting this prospect already has at exactly this time (an earlier attempt whose answer was lost). */
+  async calendlyEvent(c,req){
+    const url=new URL('https://api.calendly.com/scheduled_events');
+    url.search=new URLSearchParams({user:c.providerUserId,invitee_email:req.email,min_start_time:req.start,max_start_time:new Date(Date.parse(req.start)+60000).toISOString(),status:'active',count:'10'}).toString();
+    const r=await this.fetchJson(url.href,{headers:{Authorization:'Bearer '+c.accessToken}});
+    const ev=(Array.isArray(r?.collection)?r.collection:[]).find(e=>Date.parse(e?.start_time)===Date.parse(req.start)&&(!c.eventType||e?.event_type===c.eventType));
+    if(!ev)return null;
+    return {booked:true,provider:'calendly',eventId:String(ev.uri||''),inviteeUri:null,htmlLink:null,meetLink:ev.location?.join_url||null,cancelUrl:null,rescheduleUrl:null,
+      start:req.start,end:ev.end_time?new Date(ev.end_time).toISOString():req.end,timezone:req.timezone,location:LOCATION_NAMES[ev.location?.type]||null};
   }
   async googleEvent(c,id,req){
     let ev;

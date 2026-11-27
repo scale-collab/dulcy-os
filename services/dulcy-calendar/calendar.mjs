@@ -28,12 +28,15 @@ export function unseal(value, key, workspace) {
 //  - Google calendar.events.owned: see, create, change and delete events on calendars the user owns
 //    (the narrowest scope that can create an event with attendees and a Meet link on their primary calendar).
 //  - Calendly scheduled_events:write: POST /invitees (Scheduling API "Create Event Invitee").
+//    Also asked (extraScopes, not required): scheduled_events:read (find a booking whose answer was lost,
+//    read the meeting's join link) and locations:read (the event type's meeting location).
 const SPECS = {
   calendly: {
     authorization: 'https://auth.calendly.com/oauth/authorize',
     token: 'https://auth.calendly.com/oauth/token',
     readScopes: ['users:read', 'event_types:read', 'availability:read'],
     bookingScopes: ['scheduled_events:write'],
+    extraScopes: ['scheduled_events:read', 'locations:read'],
   },
   google: {
     authorization: 'https://accounts.google.com/o/oauth2/v2/auth',
@@ -43,7 +46,7 @@ const SPECS = {
   },
 };
 export const PROVIDERS = Object.freeze(Object.fromEntries(Object.entries(SPECS).map(([k, v]) =>
-  [k, Object.freeze({...v, scopes: [...v.readScopes, ...v.bookingScopes]})])));
+  [k, Object.freeze({...v, scopes: [...v.readScopes, ...v.bookingScopes, ...(v.extraScopes || [])]})])));
 
 /** Booking is allowed only on a connection that was granted every booking scope (older connections were not). */
 export const canBook = connection => connection?.status === 'Connected' && connection?.canBook === true;

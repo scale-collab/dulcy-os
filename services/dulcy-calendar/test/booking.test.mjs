@@ -15,7 +15,7 @@ const NOW = Date.parse('2026-11-30T17:00:00Z');
 const WED_3PM = '2026-12-02T20:00:00.000Z';
 const RULES = {timezone: 'America/New_York', days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], start: '09:00', end: '17:00', durationMinutes: 30, bufferMinutes: 15, noticeMinutes: 60};
 
-let store, flow, server, base, calls, busy, events, logs, failNextInsert, calendlyAvailable;
+let store, flow, server, base, calls, busy, events, logs, failNextInsert, calendlyAvailable, calendlyBooked;
 
 function google(ws, over = {}) {
   return {workspaceId: ws, provider: 'google', providerUserId: 'sub-' + ws, accountEmail: 'owner@client.com', status: 'Connected', canBook: true,
@@ -41,7 +41,13 @@ async function fakeFetch(url, options = {}) {
   }
   if (u.href === 'https://api.calendly.com/event_types/ET1') return {resource: {uri: 'https://api.calendly.com/event_types/ET1', active: true, duration: 30, profile: {owner: 'https://api.calendly.com/users/U1'}, locations: [{kind: 'google_conference'}]}};
   if (u.pathname === '/event_type_available_times') return {collection: calendlyAvailable.map(s => ({start_time: s, status: 'available', invitees_remaining: 1}))};
-  if (u.href === 'https://api.calendly.com/invitees') return {resource: {uri: 'https://api.calendly.com/scheduled_events/EV1/invitees/INV1', event: 'https://api.calendly.com/scheduled_events/EV1', cancel_url: 'https://calendly.com/cancellations/INV1', reschedule_url: 'https://calendly.com/reschedulings/INV1'}};
+  if (u.href === 'https://api.calendly.com/invitees') {
+    calendlyBooked.push({uri: 'https://api.calendly.com/scheduled_events/EV1', start_time: body.start_time, event_type: body.event_type, location: {type: 'google_conference', join_url: 'https://meet.google.com/cal-endl-yyy'}});
+    if (failNextInsert) { failNextInsert = false; throw Error('fetch failed'); }
+    return {resource: {uri: 'https://api.calendly.com/scheduled_events/EV1/invitees/INV1', event: 'https://api.calendly.com/scheduled_events/EV1', cancel_url: 'https://calendly.com/cancellations/INV1', reschedule_url: 'https://calendly.com/reschedulings/INV1'}};
+  }
+  if (u.pathname === '/scheduled_events') return {collection: calendlyBooked.filter(e => e.start_time === u.searchParams.get('min_start_time'))};
+  if (u.href === 'https://api.calendly.com/scheduled_events/EV1') return {resource: calendlyBooked[0]};
   throw Error('unexpected provider call ' + u.href);
 }
 
@@ -56,7 +62,7 @@ async function post(path, token, body) {
 const req = (over = {}) => ({workspace: WS_A, start: WED_3PM, tz: 'America/New_York', prospect: {name: 'Jane Doe', email: 'Jane@Acme.com'}, title: 'Intro call: Acme x Client', description: 'Booked by Dulcy', idempotencyKey: 'echo:recE0000000000001:2026-12-02T20:00', ...over});
 
 beforeEach(async () => {
-  calls = []; busy = []; events = {}; logs = []; failNextInsert = false; calendlyAvailable = [];
+  calls = []; busy = []; events = {}; logs = []; failNextInsert = false; calendlyAvailable = []; calendlyBooked = [];
   store = new CalendarStore(':memory:', Buffer.alloc(32, 7));
   flow = new CalendarFlow({store, apps: {google: {clientId: 'g', clientSecret: 's'}, calendly: {clientId: 'c', clientSecret: 's'}}, origin: 'https://n8n.dulcy.io', fetchJson: fakeFetch, now: () => NOW, log: x => logs.push(x)});
   store.save(google(WS_A));
@@ -197,4 +203,29 @@ test('Calendly: re-checks the exact time, then POST /invitees on the connected e
   r = await book(T.booker, req({workspace: WS_B, idempotencyKey: 'echo:cal-2'}));
   assert.equal(r.body.idempotent, true);
   assert.equal(calls.filter(c => c.url === 'https://api.calendly.com/invitees').length, 1);
+});
+
+test('Calendly asks exactly the scopes ticked on the app; booking needs scheduled_events:write', () => {
+  assert.deepEqual([...PROVIDERS.calendly.scopes].sort(), ['availability:read', 'event_types:read', 'locations:read', 'scheduled_events:read', 'scheduled_events:write', 'users:read']);
+  assert.deepEqual(PROVIDERS.calendly.bookingScopes, ['scheduled_events:write']);
+});
+
+test('Calendly restart-safe: a lost POST /invitees answer is found with scheduled_events:read, never booked twice', async () => {
+  const cal = {workspaceId: WS_B, provider: 'calendly', providerUserId: 'https://api.calendly.com/users/U1', accountEmail: 'owner@client.com', status: 'Connected', canBook: true,
+    scopes: PROVIDERS.calendly.scopes, accessToken: 'cal-tok', refreshToken: 'r', expiresAt: NOW + 3600_000, eventType: 'https://api.calendly.com/event_types/ET1'};
+  store.save(cal);
+  calendlyAvailable = [WED_3PM];
+  failNextInsert = true;
+  const first = await book(T.booker, req({workspace: WS_B, idempotencyKey: 'echo:cal-lost-1'}));
+  assert.equal(first.status, 502);
+  const second = await book(T.booker, req({workspace: WS_B, idempotencyKey: 'echo:cal-lost-1'}));
+  assert.equal(second.body.booked, true);
+  assert.equal(second.body.meetLink, 'https://meet.google.com/cal-endl-yyy');
+  assert.equal(calls.filter(c => c.url === 'https://api.calendly.com/invitees').length, 1, 'adopted, not booked again');
+  // Without scheduled_events:read an unclear attempt is never retried blindly.
+  store.save({...cal, scopes: ['scheduled_events:write']}, 1);
+  calendlyBooked = []; failNextInsert = true;
+  await book(T.booker, req({workspace: WS_B, idempotencyKey: 'echo:cal-lost-2'}));
+  const r = await book(T.booker, req({workspace: WS_B, idempotencyKey: 'echo:cal-lost-2'}));
+  assert.deepEqual([r.body.booked, r.body.reason], [false, 'uncertain']);
 });
