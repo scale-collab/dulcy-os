@@ -249,3 +249,40 @@ export interface ContentItemFacts {
 }
 export interface ContentItem extends ContentPipelineRow { cc: ContentCcStage; thisWeek: boolean; awaiting: boolean; done: boolean; facts: ContentItemFacts }
 export type ContentCenterView = Omit<ContentView, 'pipeline'> & { pipeline: { stages: ContentView['pipeline']['stages']; ccStages: ContentCcStage[]; rows: ContentItem[]; leftOut: number } };
+
+/* ---------- Batch 3 (2026-11-27): Campaign Center layout, lead lists, inbox limits, bounces, verification ---------- */
+export interface SendingSummaryB3 { total: number; healthy: number; risk: number; spam: number; resting: number; warmupOff: number; unknown: number }
+export type CampaignRowB3 = CampaignRow & { approach: string; strategy: string; launchDate: string; accounts: number; sending: SendingSummaryB3 | null };
+export interface ChannelB3 { key: 'email' | 'linkedin' | 'caller' | 'mail'; label: string; live: boolean; reason: string }
+export type CampaignListB3 = Omit<CampaignList, 'rows' | 'channels'> & { rows: CampaignRowB3[]; channels: ChannelB3[] };
+export type InboxHealthB3 = 'healthy' | 'risk' | 'spam' | 'resting';
+export interface CampaignAccountB3 { id: string; status: InboxHealthB3 | null; warmupOff: boolean; email: string; dailyLimit: number | null; warmupLimit: number | null; warmup: number | null; score: number | null }
+export type CampaignDetailB3 = Omit<CampaignDetail, 'campaign' | 'lists' | 'links' | 'detail'> & {
+  campaign: CampaignRowB3; lists: Omit<CampaignLeadList, 'airtableUrl'>[]; links: { bison: string }; accounts: CampaignAccountB3[];
+  detail: CampaignDetail['detail'] & { thesis: string; approach: string; launchDate: string };
+};
+export interface LeadListRowB3 {
+  id: string; name: string; client: string; clientKey: string; stage: string; group: 'building' | 'done' | 'failed'; step: number; steps: number; qa: string; processing: string; progress: number | null;
+  companies: number; direct: number; generic: number; leads: number; verifiers: string; source: string; thesis: string;
+  campaigns: { id: string; name: string }[]; listOnly: boolean; added: string; updated: string; message: string; owner: string;
+}
+export interface LeadListsB3 { rows: LeadListRowB3[]; counts: { building: number; done: number; failed: number; listOnly: number }; client: string; clients: { key: string; name: string; count: number }[]; stages: string[]; doneDays: number; readAt: string }
+export interface BarRowB3 { key: string; label: string; n: number; share: number }
+export interface ConclusionB3 { problem: string; decision: string; support: string; text: string; tone: 'bad' | 'warn' | 'good' | 'info' }
+export interface BouncesB3 {
+  total: number; byCode: BarRowB3[]; byType: BarRowB3[]; byKind: BarRowB3[]; byLanding: BarRowB3[]; gateways: BarRowB3[]; byCampaign: BarRowB3[]; byAccount: BarRowB3[];
+  conclusion: ConclusionB3; options: { clients: { key: string; name: string; count: number }[]; campaigns: { key: string; name: string; count: number }[]; accounts: { key: string; name: string; count: number }[] };
+  filter: { client?: string; campaign?: string; account?: string; days: number }; periods: number[]; capped: boolean; maxRows: number; readAt: string;
+}
+export interface CohortB3 { verifier: string; emailType: string; source: string; leads: number | null; contacted: number | null; contactedEstimated: boolean; bounces: number; notFound: number; rate: number | null }
+export interface VerificationB3 {
+  campaigns: { id: string; name: string; client: string; clientKey: string; status: string; contacted: number; bounce: number; bounces: number; notFound: number; cohorts: CohortB3[]; verdict: 'problem' | 'watch' | 'ok' | 'few'; line: string }[];
+  totals: { verifier: string; leads: number; contacted: number; bounces: number; notFound: number; rate: number | null; notFoundShare: number | null }[];
+  conclusion: ConclusionB3; days: number; periods: number[]; oldCohorts: number; readAt: string;
+}
+export interface RampProposalB3 { key: string; clientKey: string; client: string; step: number; from: { cold: number; warmup: number }; to: { cold: number; warmup: number }; accounts: string[]; emails: string[]; sendingSince: string; days: number; why: string }
+export interface LimitsB3 {
+  live: boolean; canEdit: boolean; proposals: RampProposalB3[]; rule: string; bounds: { cold: { min: number; max: number }; warmup: { min: number; max: number } }; rampKnown: boolean; readAt: string;
+  history: { id: number; at: string; status: string; dryRun: boolean; by: string; client: string; clientKey: string; source: string; message: string; changes: { email: string; what: string }[] }[];
+}
+export interface LimitResultB3 { ok: true; jobId: number; dryRun: boolean; duplicate: boolean; summary: string; changes: number; skipped: { email: string; why: string }[] }
