@@ -1,6 +1,9 @@
 // Placeholder guard (Alex, 2026-11-27): a reply with an unfilled placeholder is never sendable.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { findPlaceholders, placeholderProblem } from '../src/agents/placeholders.js';
 
 test('findPlaceholders: catches square-bracket instructions, merge tags, <insert …>, TBD', () => {
@@ -38,4 +41,10 @@ test('placeholderProblem: one clear line, empty when clean', () => {
   assert.equal(placeholderProblem('All good, see you Tuesday.'), '');
   assert.equal(placeholderProblem('Here: [link]'), 'the reply still has a placeholder: "[link]". Replace it before sending');
   assert.match(placeholderProblem('[a link] [b link] [c link] [d link]'), /^the reply still has 4 placeholders: "\[a link\]", "\[b link\]", "\[c link\]" and more\. Replace them before sending$/);
+});
+
+test('the web copy (the Send button) has exactly the same rules as the server guard', () => {
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const code = (f: string) => fs.readFileSync(f, 'utf8').split('\n').filter((l) => !l.startsWith('//')).join('\n');
+  assert.equal(code(path.resolve(here, '../../../hq/web/src/placeholders.ts')), code(path.resolve(here, '../../src/agents/placeholders.ts')));
 });

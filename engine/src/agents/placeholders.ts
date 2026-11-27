@@ -1,7 +1,7 @@
 // Placeholder guard (Alex, 2026-11-27): an Echo draft like "here is the [video link for Artisan Luxe
 // Beauty]" must never go out as is. findPlaceholders() lists every unfilled placeholder in a reply;
 // the reply sender, the Decisions approve flow and Echo's drafter all refuse text that has one.
-// The same rules live in hq/web/src/placeholders.ts (the Send button); keep the two in step.
+// A copy lives in hq/web/src/placeholders.ts (the Send button stays off); keep the two identical.
 
 // Words that make a [bracketed] or <angled> bit an instruction to fill in, not normal text.
 const FILL_WORDS = [

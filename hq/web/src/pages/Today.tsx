@@ -16,7 +16,7 @@ interface TodayData {
   needs: { top: Need[]; counts: NeedCounts; errors: string[] };
   reports: Report[];
 }
-export const PILE_ICON: Record<string, string> = { Replies: 'reply', Campaigns: 'megaphone', Fixes: 'wrench', Money: 'dollar', Other: 'layers' };
+export const PILE_ICON: Record<string, string> = { Replies: 'reply', Campaigns: 'megaphone', Fixes: 'wrench', Money: 'dollar', Sales: 'trendUp', Content: 'film', Orchestrator: 'sparkles' };
 
 export default function Today({ user }: { user: User }) {
   const [d, setD] = useState<TodayData | null>(null);

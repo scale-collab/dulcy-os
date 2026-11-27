@@ -1,11 +1,16 @@
 // Calls to the HQ API (/hq/api, same origin). The session is an httpOnly cookie the page never sees.
 export class ApiError extends Error { constructor(public status: number, message: string) { super(message); } }
 
+/** "View as member" (owner only, per browser tab): every call says so; the server answers as for a member, read only. */
+const VIEW_KEY = 'hq.viewAs';
+export function viewingAsMember(): boolean { try { return sessionStorage.getItem(VIEW_KEY) === 'member'; } catch { return false; } }
+export function setViewAsMember(on: boolean) { try { if (on) sessionStorage.setItem(VIEW_KEY, 'member'); else sessionStorage.removeItem(VIEW_KEY); } catch { /* private window */ } }
+
 export async function api<T = any>(path: string, opts: { method?: string; body?: unknown } = {}): Promise<T> {
   const res = await fetch(`/hq/api${path}`, {
     method: opts.method ?? (opts.body === undefined ? 'GET' : 'POST'),
     credentials: 'same-origin',
-    headers: opts.body === undefined ? {} : { 'content-type': 'application/json' },
+    headers: { ...(opts.body === undefined ? {} : { 'content-type': 'application/json' }), ...(viewingAsMember() ? { 'x-hq-view': 'member' } : {}) },
     body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
   });
   let data: any = null;
@@ -16,10 +21,12 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
 }
 
 export interface User { email: string; name: string; role: 'owner' | 'member' | 'client' }
-export type Pile = 'Replies' | 'Campaigns' | 'Fixes' | 'Money' | 'Other';
+export type Pile = 'Replies' | 'Campaigns' | 'Fixes' | 'Money' | 'Sales' | 'Content' | 'Orchestrator';
 export interface Decision {
   id: string; title: string; agent: string; client: string; pile: Pile; status: string; isReply: boolean; canEdit: boolean;
   issue: string; checked: string; fix: string; details: string; action: string; created: string; threadUrl: string; latestMessage: string;
+  /** Unfilled placeholders in the reply draft (the server refuses to send them). */
+  placeholders?: string[];
 }
 export interface Task { id: string; name: string; client: string; stage: string; due: string; priority: string; status: string; notes: string; clientFacing: boolean; overdue: boolean; box: Box; stale: boolean }
 export type Box = 'doNow' | 'schedule' | 'delegate' | 'later';

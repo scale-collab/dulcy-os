@@ -7,7 +7,9 @@ const PILES: { key: Pile; who: string; icon: string }[] = [
   { key: 'Campaigns', who: 'Atlas · Scribe · Scout', icon: 'megaphone' },
   { key: 'Fixes', who: 'Riley', icon: 'wrench' },
   { key: 'Money', who: 'Ledger', icon: 'dollar' },
-  { key: 'Other', who: 'Ada · Cole · Sienna', icon: 'layers' },
+  { key: 'Sales', who: 'Cole', icon: 'trendUp' },
+  { key: 'Content', who: 'Sienna', icon: 'film' },
+  { key: 'Orchestrator', who: 'Ada', icon: 'sparkles' },
 ];
 type Outcome = 'approved' | 'rejected' | 'skipped';
 
