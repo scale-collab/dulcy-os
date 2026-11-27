@@ -206,6 +206,13 @@ export interface Config {
   slackReportsOn: boolean;
   /** on (default): new Decisions are posted to Slack for ✅/❌. off: they are decided in HQ (or Airtable) only. */
   slackDecisionsOn: boolean;
+  /** HQ phone notifications (Web Push), Alex 2026-11-27. HQ_PUSH=off stops the watch loop (the settings page still works). */
+  hqPushOn: boolean;
+  /** Optional VAPID key pair (base64url). Without it the engine makes one on first start and keeps it in Postgres. */
+  vapidPublicKey?: string;
+  vapidPrivateKey?: string;
+  /** VAPID subject: mailto:<address> or an https:// URL (default: HQ_PUBLIC_URL). No personal address in code. */
+  vapidSubject?: string;
 }
 
 export function loadConfig(env = process.env): Config {
@@ -350,5 +357,9 @@ export function loadConfig(env = process.env): Config {
     hqChatMaxTokens: num('HQ_CHAT_MAX_TOKENS', 4000, env),
     slackReportsOn: (env.SLACK_REPORTS || 'on').toLowerCase() !== 'off',
     slackDecisionsOn: (env.SLACK_DECISIONS || 'on').toLowerCase() !== 'off',
+    hqPushOn: (env.HQ_PUSH || 'on').toLowerCase() !== 'off',
+    vapidPublicKey: (env.VAPID_PUBLIC_KEY ?? '').trim() || undefined,
+    vapidPrivateKey: (env.VAPID_PRIVATE_KEY ?? '').trim() || undefined,
+    vapidSubject: (env.VAPID_SUBJECT ?? '').trim() || undefined,
   };
 }

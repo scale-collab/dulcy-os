@@ -547,3 +547,78 @@ ALTER TABLE hq_chat_threads ADD COLUMN IF NOT EXISTS opened_at TIMESTAMPTZ;
 UPDATE hq_chat_threads SET opened_at = updated_at WHERE opened_at IS NULL;
 ALTER TABLE hq_chat_threads ALTER COLUMN opened_at SET DEFAULT now();
 CREATE INDEX IF NOT EXISTS hq_chat_threads_open ON hq_chat_threads (user_id, agent, opened_at DESC) WHERE archived_at IS NULL;
+
+-- HQ phone notifications (Web Push), Alex 2026-11-27. Additive and idempotent.
+-- The VAPID key pair (made on first start when VAPID_* env is not set). The private key never leaves the server.
+CREATE TABLE IF NOT EXISTS hq_push_keys (
+  id           INT PRIMARY KEY CHECK (id = 1),
+  public_key   TEXT NOT NULL,
+  private_key  TEXT NOT NULL,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- One row per device (browser push subscription) of an HQ login. 404/410 from the push service = removed.
+CREATE TABLE IF NOT EXISTS hq_push_subscriptions (
+  id           BIGSERIAL PRIMARY KEY,
+  user_id      INT NOT NULL REFERENCES hq_users(id) ON DELETE CASCADE,
+  endpoint     TEXT NOT NULL UNIQUE,
+  p256dh       TEXT NOT NULL,
+  auth         TEXT NOT NULL,
+  user_agent   TEXT NOT NULL DEFAULT '',
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_ok_at   TIMESTAMPTZ,
+  failures     INT NOT NULL DEFAULT 0,
+  last_error   TEXT
+);
+CREATE INDEX IF NOT EXISTS hq_push_subscriptions_user ON hq_push_subscriptions (user_id);
+-- Per person: which of the 4 kinds are on (default all), and the send limits' state
+-- (last push, last decision push for grouping, pushes today in New York).
+CREATE TABLE IF NOT EXISTS hq_push_settings (
+  user_id                INT PRIMARY KEY REFERENCES hq_users(id) ON DELETE CASCADE,
+  on_decision            BOOLEAN NOT NULL DEFAULT true,
+  on_agent               BOOLEAN NOT NULL DEFAULT true,
+  on_urgent              BOOLEAN NOT NULL DEFAULT true,
+  on_good                BOOLEAN NOT NULL DEFAULT true,
+  last_push_at           TIMESTAMPTZ,
+  last_decision_push_at  TIMESTAMPTZ,
+  day                    TEXT NOT NULL DEFAULT '',
+  day_count              INT NOT NULL DEFAULT 0,
+  updated_at             TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- Every push per person: one row per (person, dedupe key), so the same event is never pushed twice.
+-- status: pending (waiting for the minute / grouping window) | sent | capped (daily cap) | expired (30 min old).
+CREATE TABLE IF NOT EXISTS hq_push_log (
+  id           BIGSERIAL PRIMARY KEY,
+  user_id      INT NOT NULL REFERENCES hq_users(id) ON DELETE CASCADE,
+  type         TEXT NOT NULL,                 -- decision | agent | urgent | good | test
+  dedupe_key   TEXT NOT NULL,
+  title        TEXT NOT NULL DEFAULT '',
+  body         TEXT NOT NULL DEFAULT '',
+  url          TEXT NOT NULL DEFAULT '',
+  status       TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','sent','capped','expired')),
+  batch        TEXT,                          -- rows sent as one push share a batch
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  sent_at      TIMESTAMPTZ,
+  UNIQUE (user_id, dedupe_key)
+);
+CREATE INDEX IF NOT EXISTS hq_push_log_pending ON hq_push_log (user_id, created_at) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS hq_push_log_at ON hq_push_log (created_at);
+-- The watch loop: when each detector last ran, and baseline_at (its first run only records what is
+-- already there: nothing that existed before is pushed). hq_push_seen: what was seen (new = not seen before).
+CREATE TABLE IF NOT EXISTS hq_push_watch (
+  name         TEXT PRIMARY KEY,
+  baseline_at  TIMESTAMPTZ,
+  last_run_at  TIMESTAMPTZ
+);
+CREATE TABLE IF NOT EXISTS hq_push_seen (
+  key          TEXT PRIMARY KEY,              -- <namespace>:<id>, e.g. decision:rec…
+  seen_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS hq_push_seen_at ON hq_push_seen (seen_at);
+-- Which screen each person has open (so a chat answer they are looking at is not pushed).
+CREATE TABLE IF NOT EXISTS hq_push_presence (
+  user_id      INT PRIMARY KEY REFERENCES hq_users(id) ON DELETE CASCADE,
+  route        TEXT NOT NULL DEFAULT '',
+  visible      BOOLEAN NOT NULL DEFAULT false,
+  seen_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
