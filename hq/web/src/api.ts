@@ -403,6 +403,48 @@ export interface LimitsB3 {
 }
 export interface LimitResultB3 { ok: true; jobId: number; dryRun: boolean; duplicate: boolean; summary: string; changes: number; skipped: { email: string; why: string }[] }
 
+/* ---------- Round 2 campaigns (2026-11-27): Campaign Center + Lead List Center buttons, sending accounts ---------- */
+export type SectionKeyR2 = 'live' | 'launch' | 'build' | 'review' | 'internal' | 'draft' | 'none';
+/** how: Today's group for a live campaign (well / pace / time / look); #/campaigns/live?how= filters to it. */
+export type CampaignRowR2 = CampaignRowB3 & { section: SectionKeyR2; test: boolean; how?: 'well' | 'pace' | 'time' | 'look' | null };
+export type CampaignListR2 = Omit<CampaignListB3, 'rows'> & { rows: CampaignRowR2[]; sections: { key: SectionKeyR2; label: string }[] };
+/** One button: what it does, what it spends, why it is off; comesNext = no engine path yet. */
+export interface ActionR2 { key: string; label: string; section: string; does: string; spends: string; enabled: boolean; why: string; comesNext: boolean; dryRun: boolean; tone: 'primary' | 'quiet' | 'danger'; needsNotes?: boolean }
+export interface PressR2 { ok: true; message: string; dryRun?: boolean; planId?: number }
+export type BucketR2 = 'sending' | 'ready' | 'free' | 'warming' | 'risk' | 'resting' | 'spam' | 'disconnected';
+export interface AccountLineR2 { id: string; email: string; bucket: BucketR2; status: InboxHealthB3; dailyLimit: number | null; warmupLimit: number | null; warmup: number | null; score: number | null; bounce: number | null; contacted: number; warmupOff: boolean; campaigns: string[]; note: string }
+export interface SendingBoxR2 {
+  client: string; clientKey: string; total: number; counts: Record<BucketR2, number>; capacity: { total: number; used: number; free: number; ready: number };
+  alert: string; accounts: AccountLineR2[]; buckets: { key: BucketR2; label: string; help: string }[]; warmMin: number;
+  byClient: { key: string; name: string; total: number; sending: number; free: number; ready: number; warming: number; resting: number; spam: number; capacity: number; used: number }[]; readAt: string;
+}
+export interface PlanR2 {
+  id: number; client: string; clientKey: string; state: string; label: string; campaignName: string; campaignRec: string; leadListRec: string; error: string;
+  copyState: string; copyRound: number; created: string; updated: string; ended: boolean; waiting: '' | 'plan' | 'contacts' | 'copy'; decisionRec: string;
+  move: string; why: string; thesis: string; questions: string[]; actions: ActionR2[];
+}
+export interface PlansR2 { plans: PlanR2[]; atlasOn: boolean; planDryRun: boolean; canAct: boolean; readAt: string }
+export interface AutomationR2 { engineAction: string; engineStatus: string; engineMessage: string; processing: string; locked: boolean; topupStatus?: string; topupMessage?: string; workflowMessage?: string; error?: string }
+export interface CampaignCenterR2 { actions: ActionR2[]; automation: AutomationR2; bison: number[]; inboxes: number; plan: PlanR2 | null; canAct: boolean }
+export interface CopyR2 {
+  id: string; name: string; stage: string; review: { step: number; subject: string; body: string; thread: boolean }[]; sequence: { step: number; variant: number; subject: string; body: string }[];
+  approval: { source: string; exception: boolean; submittedAt: string; autoApproveAt: string; clientFeedback: string; changeArea: string; feedback: string; context: string };
+  scribe: { notes: string; questions: string[]; variables: { name: string; find: string; fallback: string }[]; claims: { claim: string; source: string }[]; flagged: string[] } | null;
+  plan: PlanR2 | null; comesNext: { key: string; label: string; why: string }[]; readAt: string;
+}
+export type LeadListRowR2 = LeadListRowB3 & { test: boolean; old: boolean; engineStatus: string; running: boolean };
+export interface LeadListsR2 { rows: LeadListRowR2[]; counts: { building: number; done: number; failed: number; listOnly: number; running: number; tests: number; old: number }; client: string; clients: { key: string; name: string; count: number }[]; stages: string[]; doneDays: number; readAt: string; tests: boolean; old: boolean }
+export interface LeadListDetailR2 {
+  list: {
+    id: string; name: string; client: string; clientKey: string; stage: string; step: number; steps: number; qa: string; test: boolean; icp: string; thesis: string; persona: string; source: string;
+    filters: string; hasFilters: boolean; sampleSize: number; target: number; sampleApproved: boolean; contactApproved: boolean; includeDirect: boolean; includeGeneric: boolean; useLeadMagic: boolean; useDeepReview: boolean; customVars: string;
+    company: { total: number; good: number; bad: number; rate: number | null; status: string; summary: string }; contact: { good: number; bad: number; rate: number | null; status: string; summary: string };
+    verify: { good: number; risky: number; bad: number }; final: { direct: number; generic: number; leads: number }; verifiers: string;
+    tam: { status: string; count: number | null; message: string; checkedAt: string } | null; sheet: string; campaigns: { id: string; name: string }[]; automation: AutomationR2; added: string;
+  };
+  next: string; actions: ActionR2[]; history: CampaignDetailB3['history']; activity: CampaignDetailB3['activity']; canAct: boolean; readAt: string;
+}
+
 /* ---------- Today, round 2 (2026-11-27): campaigns by how they are doing, the weekly scorecard, agents' 24 h ---------- */
 export type CampaignHow = 'well' | 'pace' | 'time' | 'look';
 export interface TodayCampaign { id: string; name: string; client: string; how: CampaignHow; why: string; signals: string[]; sent: number; interested: number; booked: number; progress: number }
