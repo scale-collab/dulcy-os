@@ -7,7 +7,12 @@ export async function providerJson(url,options={},fetchImpl=fetch) {
   const parsed=new URL(url);
   if(parsed.protocol!=='https:'||!HOSTS.has(parsed.hostname)||parsed.username||parsed.password||parsed.port)throw Error('Unapproved provider endpoint');
   const response=await fetchImpl(url,{...options,redirect:'error',signal:AbortSignal.timeout(15000)});
-  if(!response.ok){const error=Error('Calendar provider request failed ('+response.status+')');error.status=response.status;throw error;}
+  if(!response.ok){
+    // Keep the provider's own reason (e.g. Calendly's {title,message,details}) so a 400 says what was wrong. Emails masked.
+    let why='';try{const t=await response.text();const j=JSON.parse(t);why=[j.title,j.message,j.error_description,j.error?.message,...(Array.isArray(j.details)?j.details.map(d=>[d.parameter,d.message].filter(Boolean).join(': ')):[])].filter(x=>typeof x==='string'&&x).join(' | ');}catch{}
+    why=why.replace(/[^\s@]+@[^\s@]+/g,'[email]').slice(0,300);
+    const error=Error('Calendar provider request failed ('+response.status+')'+(why?': '+why:''));error.status=response.status;throw error;
+  }
   const body=await response.text();if(body.length>2_000_000)throw Error('Calendar provider response too large');
   return JSON.parse(body);
 }

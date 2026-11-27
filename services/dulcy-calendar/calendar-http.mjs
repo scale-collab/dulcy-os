@@ -45,7 +45,7 @@ export function calendarHandler({flow,adminToken,readerToken,inviterToken,booker
     if(u.pathname==='/calendar/admin/book'){
      try{return json(200,await flow.provider.book(b.workspace,b));}
      // Provider trouble (5xx, timeouts) = 502 so the engine retries with the same key; a bad request = 400.
-     catch(e){log({level:'error',route:u.pathname,error:String(e?.message||e).replace(/[^\s@]+@[^\s@]+/g,'[email]').slice(0,200)});return json(e.status||/timeout|abort|fetch failed/i.test(String(e.message))?502:400,{booked:false,error:String(e.message||e).slice(0,200)});}
+     catch(e){log({level:'error',route:u.pathname,error:String(e?.message||e).replace(/[^\s@]+@[^\s@]+/g,'[email]').slice(0,200)});return json((e.status?e.status>=500:/timeout|abort|fetch failed/i.test(String(e.message)))?502:400,{booked:false,error:String(e.message||e).slice(0,200)});}
     }
     if(u.pathname==='/calendar/admin/request-invite')return json(200,flow.requestInvite(b));
     if(u.pathname==='/calendar/admin/invite')return json(200,flow.invite(b));
