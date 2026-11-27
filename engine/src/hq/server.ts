@@ -17,7 +17,12 @@ import { decide, groupByPile, pendingDecisions, type HqAirtable } from './decisi
 import { listTasks, markDone, notYet, quickAdd, validNewTask } from './tasks.js';
 import { agentActivity, agentRuns, agentTasks, finishAgentTask, jobHealth, teamCheck } from './team.js';
 import { canTalkTo, chatTurn, listThreads, readThread, type ChatModel } from './chat.js';
-import { clientDetail, listClients } from './clients.js';
+import { clientDetail, clientFinance, clientNumbers, listClients, parseWindow } from './clients.js';
+// Batch 2: owner money on Clients (Xero via Ledger's client, the P/L sheet via the Google provider).
+import { createSheetsClient, type SheetsClient } from '../providers/google.js';
+import { createXeroClient, type XeroClient } from '../providers/xero.js';
+import { PERIODS, type Period } from './clientDeals.js';
+import type { FinanceDeps } from './finance.js';
 import { PORTAL_SIGNUP_SENT, SIGNUP_SENT, addUser, googleSignUp, listUsers, manageUser, pendingCount, signUp } from './users.js';
 import { portalWrite, recentPortalWrites } from './portalWrites.js';
 import { forgotPassword, inviteSoftrUser, linkPortalUser, listSoftrUsers, makeSetupLink, portalGoogleNewUser, setPasswordWithToken, suggestedClient, updateOwnAccount } from './portalAccounts.js';
@@ -32,7 +37,11 @@ import { portalRoute, resolvePortalClient } from './portal.js';
 import { contentSummary, contentView, decideIdea } from './content.js';
 import { dealDetail, salesView } from './sales.js';
 
-export interface HqDeps { at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string }
+export interface HqDeps {
+  at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string;
+  // Batch 2: read-only money sources for the owner's Clients screen (fakes in tests).
+  sheets?: Pick<SheetsClient, 'tab'>; xero?: Pick<XeroClient, 'get' | 'pages'>;
+}
 
 const SECURITY_HEADERS: Record<string, string> = {
   'x-content-type-options': 'nosniff',
@@ -372,13 +381,27 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       }
 
       // Clients (Step 2): money is cut server-side for members.
+      // Batch 2: ?window=10|30|60|120|all (EmailBison results); owner money from Xero + the P/L sheet.
+      const financeDeps = (): FinanceDeps => ({
+        sheets: deps.sheets ?? createSheetsClient({ keyFile: cfg.googleKeyFile, impersonate: cfg.googleImpersonateUser, scope: cfg.googleScope, sheetsBaseUrl: cfg.googleSheetsBaseUrl, fetchImpl: deps.fetchImpl }),
+        xero: deps.xero ?? (cfg.xeroClientId && cfg.xeroClientSecret ? createXeroClient(db, cfg, deps.fetchImpl) : undefined),
+      });
       if (p === '/hq/api/clients' && req.method === 'GET') {
-        json(res, 200, await listClients(needAt(), db, owner, { all: url.searchParams.get('all') === '1', refresh: url.searchParams.get('refresh') === '1' }));
+        json(res, 200, await listClients(needAt(), db, owner, { all: url.searchParams.get('all') === '1', refresh: url.searchParams.get('refresh') === '1', window: parseWindow(url.searchParams.get('window')), finance: owner ? financeDeps() : undefined }));
+        return true;
+      }
+      // Batch 2: agency numbers and money, owner only (members get 403, nothing else).
+      if ((p === '/hq/api/clients/numbers' || p === '/hq/api/clients/finance') && req.method === 'GET') {
+        if (!owner) { json(res, 403, { error: 'only the owner sees money' }); return true; }
+        if (p.endsWith('/numbers')) {
+          const per = url.searchParams.get('period') ?? 'this-month';
+          json(res, 200, await clientNumbers(needAt(), db, ((PERIODS as readonly string[]).includes(per) ? per : 'this-month') as Period, financeDeps()));
+        } else json(res, 200, await clientFinance(needAt(), db, financeDeps(), url.searchParams.get('refresh') === '1'));
         return true;
       }
       m = p.match(/^\/hq\/api\/clients\/(rec[A-Za-z0-9]{14})$/);
       if (m && req.method === 'GET') {
-        const d = await clientDetail(needAt(), db, m[1], owner);
+        const d = await clientDetail(needAt(), db, m[1], owner, { finance: owner ? financeDeps() : undefined, window: parseWindow(url.searchParams.get('window')) });
         if (!d) json(res, 404, { error: 'no such client' }); else json(res, 200, d);
         return true;
       }

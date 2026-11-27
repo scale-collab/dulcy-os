@@ -585,6 +585,18 @@ function clientTables() {
     recCLFM0000000001: { Name: 'Lead Flo - Events', Client: ['recLFM00000000001'], 'Campaign Status': 'Inactive', 'Bounced %': 9, Progress: 1 },
     recCDUL0000000001: { Name: 'Dulcy - Agencies', Client: ['recDUL00000000001'], 'Campaign Status': 'Active', 'Bounced %': 1, Progress: 0.2, 'Emails Sent': 1000, Interested: 5 },
   };
+  const ov = (id: string, period: string, sent: number, int: number, mtg: number, upd = new Date().toISOString()) => ({ 'Client ID': id, 'Date Period': period, 'Emails Sent': sent, 'Unique Replies': Math.round(sent / 50), Interested: int, 'Meetings Booked': mtg, 'Updated At': upd });
+  tables.tblZkEi6qylqfOj9Z = {
+    recOV000000000001: ov('66', 'Last 30 days', 71893, 277, 11), recOV000000000002: ov('66', 'Last 10 days', 21455, 70, 1), recOV000000000003: ov('66', 'All time', 344601, 1037, 59),
+    recOV000000000004: ov('65', 'Last 30 days', 5000, 9, 3, d(70)), recOV000000000005: ov('65', 'All time', 74044, 108, 13, d(90)),
+  };
+  tables.tbljJ0uWryVMuilXn = {
+    recCF000000000001: { fldXNEJcG9LUnR73H: 'Qualified', fld1KGADNp3pX2mLi: 4, fldiZYJuFW6Sa4wN5: [66], fldKRdKwzeOHvYM7n: d(3) },
+    recCF000000000002: { fldXNEJcG9LUnR73H: 'No Show', fldiZYJuFW6Sa4wN5: [66], fldKRdKwzeOHvYM7n: d(4) },
+    recCF000000000003: { fldXNEJcG9LUnR73H: 'Qualified', fld1KGADNp3pX2mLi: 1, fldiZYJuFW6Sa4wN5: [80], fldKRdKwzeOHvYM7n: d(4) },
+  };
+  tables.tbljhM1JmUwr99tu4 = { recONB0000000001: { fld1AjmO7gSRAZTnw: 'Digital Growth Engine', fldKCtXxGgpSdXb2D: '$50k', fld30MCMI88q4c3VE: 'hunter2', fldRvFwsA7NtTwG1e: 'JBSWY3DP' } };
+  Object.assign(tables[WS_T].recTWMINT00000001, { 'Calls Booked KPI (from Onboarding)': ['15'], Onboarding: ['recONB0000000001'] });
   tables[DECISIONS] = { recSEANTWM0000001: decision({ [DF.client]: 'Client: Twenty West Media (Internal)' }) };
   tables[ACTIVITY] = {
     recACT00000000001: { [AF.event]: 'Atlas saw bounce 4.6%', [AF.when]: d(1), [AF.agent]: 'Atlas', [AF.type]: 'Detected', [AF.client]: ['recTWMINT00000001'] },
@@ -592,7 +604,7 @@ function clientTables() {
   };
 }
 
-test('clients API: active by default, the Twenty West pair counted once, numbers, notes, flags, cache', { skip }, async () => {
+test('clients API: active by default, the Twenty West pair counted once, health on the KPI, results, cache', { skip }, async () => {
   clientTables();
   assert.equal((await call('GET', '/hq/api/clients')).status, 401, 'needs a session');
   assert.equal((await call('GET', '/hq/api/clients/recTWMINT00000001')).status, 401, 'needs a session');
@@ -602,60 +614,74 @@ test('clients API: active by default, the Twenty West pair counted once, numbers
   const names = r.body.clients.map((c: any) => c.name);
   assert.deepEqual([...names].sort(), ['Brilliant Jewelers / MJJ Inc. (MJJ Brilliant)', 'Dulcy', 'Twenty West Media']);
   assert.deepEqual({ active: r.body.summary.active, internal: r.body.summary.internal, inactive: r.body.summary.inactive }, { active: 2, internal: 1, inactive: 1 });
-  assert.equal(r.body.clients[0].name, 'Twenty West Media', 'worst health first');
-  const twm = r.body.clients[0];
+  const twm = r.body.clients.find((c: any) => c.name === 'Twenty West Media');
   assert.equal(twm.id, 'recTWMINT00000001', 'the active record leads');
   assert.equal(twm.workspaces.length, 2);
-  assert.equal(twm.light, 'red');
   assert.deepEqual([twm.interested30, twm.booked30, twm.waitingApproval, twm.seanWaiting], [22, 1, 3, 1], 'both workspaces add up; only Needs Approval counts');
-  assert.deepEqual({ ...twm.money, feeNote: '' }, { fee: 2500, feeNote: '', ltv: 8985, ltvSource: 'actual', receivables: 4995, months: null });
-  assert.match(twm.money.feeNote, /\$2,500 is on the inactive record "Twenty West Media"/);
-  assert.equal(r.body.summary.mrr, 2500);
-  assert.match(twm.note[0], /^Bounce 4\.6% on TWM - Contractors/);
-  assert.match(twm.note[1], /^3 replies waiting for approval/);
-  const camp = twm.campaigns[0];
-  assert.deepEqual([camp.flag, camp.next, camp.planExists, camp.perThousand], ['pause', true, false, 5]);
+  assert.deepEqual([twm.kpi, twm.kpiSource], [15, 'onboarding form'], 'KPI from the onboarding answer');
+  assert.equal(twm.meetings30, 11, 'EmailBison (Email Analytics Overview) beats the Emails table: 11, not 1');
+  assert.deepEqual([twm.health, twm.healthLabel], ['at_risk', 'At risk'], '11 of 15 = 73% of pace');
+  assert.match(twm.insight.problem, /^Under KPI: 11 of 15 meetings/);
+  assert.equal(twm.results.emailsPerMeeting, Math.round(71893 / 11), 'emails per meeting');
+  assert.equal(twm.results.emailsPerPositive, Math.round(71893 / 277));
+  assert.equal(twm.results.sent, 71893, 'the stale old workspace row (stopped syncing) counts as nothing sent');
+  assert.deepEqual([twm.dealType, twm.type], ['retainer', 'Paying Client']);
+  assert.equal(twm.money.fee, 2995, 'Twenty West: $1,500 + $1,495 assets (contract on file), not $2,500 from the inactive record');
+  assert.equal(twm.money.invoicesSource, 'Airtable (Xero sync): open invoices, coming up', 'not "owes"');
+  assert.match(twm.money.feeNote, /Airtable Monthly Fee says \$2,500; the deal is \$2,995\/mo/);
+  assert.equal(r.body.summary.mrr, 2995 + 2000, 'MRR = Twenty West + MJJ (from the signed agreement)');
   const mjj = r.body.clients.find((c: any) => /MJJ/.test(c.name));
-  assert.equal(mjj.campaigns[0].flag, 'watch');
   assert.equal(mjj.waitingApproval, 1, 'matched by Bison workspace id');
-  assert.ok(mjj.dataIssues.some((x: string) => /Client Type is empty/.test(x)));
+  assert.deepEqual([mjj.type, mjj.typeSource], ['Paying Client', 'filled from the signed agreement 2026-10-06 (clients/mjj-brilliant.md)'], 'Atlas fills the client type from the contract');
+  assert.equal(mjj.health, 'unknown', 'no KPI on record = UNKNOWN');
   const dulcy = r.body.clients.find((c: any) => c.name === 'Dulcy');
   assert.equal(dulcy.internal, true);
   assert.equal(dulcy.workspaces.length, 2, 'Dulcy Free Campaigns folds into Dulcy');
   assert.equal(dulcy.booked30, 1);
-  assert.ok(!dulcy.reasons.some((x: string) => /fee/.test(x)), 'no fee nag for Dulcy itself');
+  assert.equal(dulcy.money, undefined, 'no money block for Dulcy itself');
+
+  const w10 = await call('GET', '/hq/api/clients?window=10', { cookie });
+  assert.equal(w10.body.clients.find((c: any) => c.name === 'Twenty West Media').results.meetings, 1, 'window filter');
 
   const all = await call('GET', '/hq/api/clients?all=1', { cookie });
   const lfm = all.body.clients.find((c: any) => c.name === 'Lead Flo Marketing');
-  assert.deepEqual([lfm.active, lfm.light, lfm.inactiveReason, lfm.campaigns.length, lfm.note.length], [false, 'inactive', 'Churned', 0, 0]);
+  assert.deepEqual([lfm.active, lfm.health, lfm.inactiveReason, lfm.campaigns.length, lfm.endDate], [false, 'inactive', 'Churned', 0, '2026-11-25']);
   assert.equal(all.body.clients.at(-1).name, 'Lead Flo Marketing', 'inactive last');
 
   // Cached for 5 minutes: a change shows only after the cache is cleared.
   await db.query(`INSERT INTO campaign_plans (trigger_key, ws_rec, client, state) VALUES ('next:recCTWM0000000001','recTWMINT00000001','Twenty West Media','planning')`);
-  assert.equal((await call('GET', '/hq/api/clients', { cookie })).body.clients[0].campaigns[0].planExists, false, 'cached');
+  const tw = async () => (await call('GET', '/hq/api/clients', { cookie })).body.clients.find((c: any) => c.name === 'Twenty West Media');
+  assert.equal((await tw()).campaigns[0].planExists, false, 'cached');
   _resetClientsCache();
-  assert.equal((await call('GET', '/hq/api/clients', { cookie })).body.clients[0].campaigns[0].planExists, true, 'plan found after the cache');
+  assert.equal((await tw()).campaigns[0].planExists, true, 'plan found after the cache');
 
   const d = await call('GET', '/hq/api/clients/recTWMOLD00000001', { cookie });
   assert.equal(d.status, 200);
   assert.equal(d.body.client.id, 'recTWMINT00000001', 'any workspace id of the client opens it');
   assert.deepEqual(d.body.activity.map((x: any) => x.event), ['Atlas saw bounce 4.6%']);
   assert.equal(d.body.decisions.length, 1);
+  assert.deepEqual(d.body.results.windows.map((x: any) => [x.window, x.meetings]), [['10', 1], ['30', 11], ['all', 72]], 'results over time');
+  assert.deepEqual([d.body.results.feedback.calls, d.body.results.feedback.qualified, d.body.results.feedback.avgStars], [2, 1, 4]);
+  assert.deepEqual(d.body.results.onboarding.answers.map((x: any) => x.label), ['What they sell', 'Their monthly revenue now'], 'whitelisted answers only');
+  assert.ok(!/hunter2|JBSWY3DP/.test(d.text), 'no onboarding logins, passwords or 2FA secrets ever');
+  assert.equal(d.body.client.money.ltvSource, 'deal');
   assert.equal((await call('GET', '/hq/api/clients/recNOPE0000000001', { cookie })).status, 404);
 });
 
-test('clients API: members get no money (fee, LTV, receivables, money reasons)', { skip }, async () => {
+test('clients API: members get no money (fee, LTV, invoices, deal values, onboarding money answers) and 403 on numbers/finance', { skip }, async () => {
   clientTables();
   await upsertUser(db, 'josh@dulcy.io', 'member', 'josh long password 1', 'Josh');
   const { cookie } = await login('josh@dulcy.io', 'josh long password 1');
   for (const p of ['/hq/api/clients?all=1', '/hq/api/clients/recTWMINT00000001']) {
     const r = await call('GET', p, { cookie });
     assert.equal(r.status, 200);
-    assert.ok(!/"money"|"mrr"|4995|4,995|8985|8,985|2500|2,500|\$/.test(r.text), `no money in ${p}: ${r.text.slice(0, 300)}`);
+    const hit = /"money"|"mrr"|"total"|"roi"|"value"|4995|4,995|8985|8,985|2500|2,500|2995|2,995|\$|monthly revenue/i.exec(r.text);
+    assert.equal(hit, null, `no money in ${p}: ${hit ? r.text.slice(Math.max(0, hit.index - 150), hit.index + 50) : ''}`);
   }
-  const twm = (await call('GET', '/hq/api/clients', { cookie })).body.clients[0];
-  assert.equal(twm.airtableReasons, 'Bounce high');
+  for (const p of ['/hq/api/clients/numbers?period=3m', '/hq/api/clients/finance']) assert.equal((await call('GET', p, { cookie })).status, 403, p);
+  const twm = (await call('GET', '/hq/api/clients', { cookie })).body.clients.find((c: any) => c.name === 'Twenty West Media');
   assert.equal(twm.interested30, 22, 'results are still there');
+  assert.equal(twm.dealType, 'retainer', 'the deal type (no amounts) is fine for members');
 });
 
 // ---------- Sign-up and users ----------
