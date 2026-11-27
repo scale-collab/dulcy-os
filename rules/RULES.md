@@ -262,6 +262,9 @@ Format: `- [date] rule. (why / source)`
 - **Warm-up must never be off** on any account. Off = red flag, shown first.
 - **Decision piles:** Replies, Campaigns, Fixes, Money, Sales (Cole), Content (Sienna), Orchestrator (Ada). No "Other".
 - **Campaigns screen** follows the Airtable Campaign Center layout (name, strategy draft, status, sending accounts, stats), cleaner.
+- **Money is owner-only everywhere** (fees, LTV, revenue, P&L): members like Josh never see it, on any screen.
+- **Insights are short:** Problem → Decision → what supports it. No big blocks of information.
+- **Needs you** is today's to-do list for Alex (what he must do), not a copy of Decisions.
 - **Why:** Alex: "we're combining every single tool into one… I want everything to be here, for me and my team. It really just depends on your role, on what you're able to see." Full walkthrough list: `hq/feedback-2026-11-27.md`.
 
 ## New client inbox ramp (Alex, 2026-11-27)
