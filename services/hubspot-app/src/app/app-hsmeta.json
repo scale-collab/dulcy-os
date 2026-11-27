@@ -1,0 +1,23 @@
+{
+  "uid": "dulcy_calendar_app",
+  "type": "app",
+  "config": {
+    "name": "Dulcy Calendar",
+    "description": "Lets Dulcy's reply assistant see a client's HubSpot meeting-link availability and book the meetings their prospects agree to.",
+    "distribution": "marketplace",
+    "auth": {
+      "type": "oauth",
+      "redirectUrls": ["https://n8n.dulcy.io/calendar/callback"],
+      "requiredScopes": ["oauth", "scheduler.meetings.meeting-link.read", "crm.objects.contacts.write"],
+      "optionalScopes": [],
+      "conditionallyRequiredScopes": []
+    },
+    "permittedUrls": { "fetch": [], "iframe": [], "img": [] },
+    "support": {
+      "supportEmail": "info@dulcymedia.com",
+      "documentationUrl": "https://dulcy.io/privacy-policy",
+      "supportUrl": "https://dulcy.io",
+      "supportPhone": ""
+    }
+  }
+}
