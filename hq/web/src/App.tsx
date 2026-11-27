@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, ApiError, type PortalMe, type User } from './api';
-import { cx, go, Icon, IconButton, Loading, Logo, setCount, useCounts, useRoute, useTheme, type ThemeMode } from './ui';
+import { api, ApiError, setViewAsMember, switchViewAsMember, viewingAsMember, type PortalMe, type User } from './api';
+import { cx, go, Icon, IconButton, Loading, Logo, setCount, Toaster, useCounts, useRoute, useTheme, type ThemeMode } from './ui';
 import Login from './pages/Login';
 import Today from './pages/Today';
 import Decisions from './pages/Decisions';
@@ -19,20 +19,21 @@ import Deliverability from './pages/Deliverability';
 import Content from './pages/Content';
 import Sales from './pages/Sales';
 
+// Menu order (Alex, 2026-11-27): agency first, Content at the bottom, then Users (owner).
 const TABS: { key: string; label: string; icon: string; count: string; ownerOnly?: boolean }[] = [
   { key: 'today', label: 'Today', icon: 'sun', count: '' },
   { key: 'decisions', label: 'Decisions', icon: 'inbox', count: 'decisions' },
   { key: 'inbox', label: 'Inbox', icon: 'reply', count: 'inbox' },
-  { key: 'campaigns', label: 'Campaigns', icon: 'megaphone', count: 'campaigns' },
-  { key: 'deliverability', label: 'Deliverability', icon: 'mail', count: 'deliverability' },
-  // Content is Alex-only (members get 403). On the phone it is a card on Today, not a 7th header icon.
-  { key: 'content', label: 'Content', icon: 'film', count: 'content', ownerOnly: true },
+  { key: 'needs', label: 'Needs you', icon: 'bell', count: 'needs' },
+  { key: 'clients', label: 'Clients', icon: 'briefcase', count: '' },
   // Sales: owner only (money). Phone: reached from the Clients page (the header is full at 390 px).
   { key: 'sales', label: 'Sales', icon: 'dollar', count: 'sales', ownerOnly: true },
-  { key: 'clients', label: 'Clients', icon: 'briefcase', count: '' },
-  { key: 'needs', label: 'Needs you', icon: 'bell', count: 'needs' },
+  { key: 'campaigns', label: 'Campaigns', icon: 'megaphone', count: 'campaigns' },
+  { key: 'deliverability', label: 'Deliverability', icon: 'mail', count: 'deliverability' },
   { key: 'agents', label: 'Team', icon: 'users', count: '' },
   { key: 'chat', label: 'Chat', icon: 'message', count: '' },
+  // Content is Alex-only (members get 403). On the phone it is a card on Today, not a 7th header icon.
+  { key: 'content', label: 'Content', icon: 'film', count: 'content', ownerOnly: true },
 ];
 const THEMES: { mode: ThemeMode; icon: string; label: string }[] = [
   { mode: 'system', icon: 'monitor', label: 'System' },
@@ -42,9 +43,16 @@ const THEMES: { mode: ThemeMode; icon: string; label: string }[] = [
 
 export default function App() {
   const [user, setUser] = useState<User | null | undefined>(undefined);
+  // "View as member": the owner sees what a member (Josh) sees, read only. The server decides (X-HQ-View).
+  const [viewing, setViewing] = useState(false);
   const route = useRoute();
   const load = useCallback(() => {
-    api<{ user: User; signups?: number }>('/me').then((r) => { setUser(r.user); setCount('signups', r.signups ?? 0); })
+    api<{ user: User; signups?: number; viewing?: string }>('/me').then((r) => {
+      setUser(r.user); setCount('signups', r.signups ?? 0);
+      const on = r.viewing === 'member';
+      if (!on && viewingAsMember()) setViewAsMember(false); // not an owner (or the server said no): forget it
+      setViewing(on);
+    })
       // A client login gets 403 on every HQ route: it has the portal instead (/portal/me).
       .catch((e) => (e instanceof ApiError && e.status === 403 ? api<PortalMe>('/portal/me').then((r) => setUser(r.user)) : Promise.reject(e)))
       .catch(() => setUser(null));
@@ -82,19 +90,33 @@ export default function App() {
   return (
     <div className="min-h-dvh">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2 focus:shadow-pop">Skip to content</a>
-      <Sidebar active={active} user={user} onSignOut={signOut} />
+      <Sidebar active={active} user={user} onSignOut={signOut} viewing={viewing} />
       <MobileHeader onSignOut={signOut} owner={user.role === 'owner'} active={active} />
       <div className="md:pl-64">
+        {viewing && <ViewingBanner />}
         <main id="main" className="mx-auto w-full max-w-6xl px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 md:pb-14 md:pt-10 lg:px-10">
           <div key={viewKey} className="anim-in">{body}</div>
         </main>
       </div>
       <TabBar active={active === 'sales' ? 'clients' : active} />
+      <Toaster />
     </div>
   );
 }
 
-function Sidebar({ active, user, onSignOut }: { active: string; user: User; onSignOut: () => void }) {
+function ViewingBanner() {
+  return (
+    <div role="status" className="sticky top-14 z-20 border-b border-warn/40 bg-warn-soft md:top-0">
+      <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 py-2 sm:px-6 lg:px-10">
+        <Icon name="user" size={17} className="shrink-0 text-warn" />
+        <span className="min-w-0 flex-1 text-sm font-medium text-fg">Viewing as a member (what Josh sees). Read only.</span>
+        <button onClick={() => switchViewAsMember(false)} className="min-h-10 shrink-0 rounded-xl bg-ink px-4 text-sm font-semibold text-ink-fg hover:bg-ink-hover">Exit</button>
+      </div>
+    </div>
+  );
+}
+
+function Sidebar({ active, user, onSignOut, viewing }: { active: string; user: User; onSignOut: () => void; viewing: boolean }) {
   const c = useCounts();
   const [mode, setMode] = useTheme();
   return (
@@ -126,6 +148,12 @@ function Sidebar({ active, user, onSignOut }: { active: string; user: User; onSi
         )}
       </nav>
       <div className="mt-auto space-y-3 p-3">
+        {(user.role === 'owner' || viewing) && (
+          <button onClick={() => switchViewAsMember(!viewing)} aria-pressed={viewing}
+            className={cx('flex min-h-10 w-full items-center gap-2.5 rounded-xl border px-3 text-sm font-medium transition', viewing ? 'border-warn/40 bg-warn-soft text-fg' : 'border-line text-muted hover:bg-hover hover:text-fg')}>
+            <Icon name="user" size={16} /><span className="flex-1 text-left">{viewing ? 'Exit member view' : 'View as member'}</span>
+          </button>
+        )}
         <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-1 rounded-xl border border-line bg-sunken p-1">
           {THEMES.map((t) => (
             <button key={t.mode} role="radio" aria-checked={mode === t.mode} onClick={() => setMode(t.mode)} title={t.label}
@@ -136,7 +164,7 @@ function Sidebar({ active, user, onSignOut }: { active: string; user: User; onSi
         </div>
         <div className="flex items-center gap-3 rounded-xl px-2 py-1.5">
           <span aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-sunken text-sm font-semibold text-fg-2 border border-line">{(user.name || user.email).slice(0, 1).toUpperCase()}</span>
-          <div className="min-w-0 flex-1"><div className="truncate text-sm font-medium">{user.name}</div><div className="truncate text-xs text-muted">{user.role === 'owner' ? 'Owner' : 'Member'}</div></div>
+          <div className="min-w-0 flex-1"><div className="truncate text-sm font-medium">{user.name}</div><div className="truncate text-xs text-muted">{viewing ? 'Owner, viewing as member' : user.role === 'owner' ? 'Owner' : 'Member'}</div></div>
           <IconButton icon="logout" label="Sign out" onClick={onSignOut} />
         </div>
       </div>

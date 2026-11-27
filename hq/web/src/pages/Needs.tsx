@@ -6,6 +6,7 @@
 // from "Not now" + due tomorrow. Phone: one column, the action full width at the bottom of each card.
 import { useCallback, useEffect, useState } from 'react';
 import { api, type Need, type NeedCounts, type NeedDay, type NeedLink, type TodoItem, type User } from '../api';
+import { FixItButton } from '../fixIt';
 import { Avatar, Button, cx, Empty, ErrorBox, go, Icon, IconButton, Label, Markdown, PageSkeleton, PageTitle, Pill, setCount, timeAgo, useRoute } from '../ui';
 
 interface NeedsData { day?: NeedDay; date?: string; items: TodoItem[]; counts: NeedCounts; errors: string[] }
@@ -145,7 +146,7 @@ export default function Needs({ user }: { user: User }) {
         </div>
       ) : (
         <ol aria-label="Your to-do, most important first" className="mx-auto max-w-3xl space-y-3">
-          {items.map((n, i) => <li key={n.key}><TodoCard n={n} pos={i + 1} onAct={act} /></li>)}
+          {items.map((n, i) => <li key={n.key}><TodoCard n={n} pos={i + 1} onAct={act} owner={user.role === 'owner'} /></li>)}
         </ol>
       )}
     </div>
@@ -168,7 +169,9 @@ function Line({ label, text, strong }: { label: string; text?: string; strong?: 
 }
 
 /** One to-do: Problem (the title) → Do → Why, one primary action, and Not now / Done where they apply. */
-function TodoCard({ n, pos, onAct }: { n: TodoItem; pos: number; onAct: (n: TodoItem, what: 'done' | 'tomorrow' | 'monday') => void }) {
+function TodoCard({ n, pos, onAct, owner }: { n: TodoItem; pos: number; onAct: (n: TodoItem, what: 'done' | 'tomorrow' | 'monday') => void; owner?: boolean }) {
+  // A failed run is a system problem: Riley can take it on his own list (owner only).
+  const fixIt = owner && n.kind === 'checkin' && n.key.startsWith('checkin:failed:');
   const [open, setOpen] = useState(false);
   const [snoozing, setSnoozing] = useState(false);
   const hasSteps = !!n.steps.trim();
@@ -208,6 +211,8 @@ function TodoCard({ n, pos, onAct }: { n: TodoItem; pos: number; onAct: (n: Todo
           <span className="tabular shrink-0 rounded-full bg-sunken px-2.5 py-0.5 text-sm font-bold text-fg" aria-hidden="true">{n.count}</span>
         )}
       </div>
+
+      {fixIt && <FixItButton agent="Riley" title={`Fix the failed run: ${n.title.replace(/^Check with [A-Za-z]+: /, '')}`} detail={n.why} className="mt-3 sm:justify-end" />}
 
       {open && hasSteps && (
         <div className="mt-4 rounded-xl border border-line bg-sunken px-4 py-3.5 anim-fade">

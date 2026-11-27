@@ -9,10 +9,11 @@ import path from 'node:path';
 import type { Db } from '../db/pool.js';
 import type { Config } from '../config.js';
 import { createAirtableClient } from '../providers/airtable.js';
-import { AGENTS, AGENT_NAMES, OWNER_ONLY, PILES, agentByName, type AgentName } from './agents.js';
+import { AGENTS, AGENT_NAMES, OWNER_ONLY, agentByName, pilesFor, type AgentName } from './agents.js';
 import {
-  OAUTH_COOKIE, SESSION_COOKIE, cookie, createSession, endSession, googleFinish, googleOn, googleRedirectUri, googleStart, passwordLogin, sessionUser, userByEmail, type HqUser,
+  OAUTH_COOKIE, SESSION_COOKIE, VIEW_HEADER, cookie, createSession, endSession, googleFinish, googleOn, googleRedirectUri, googleStart, passwordLogin, sessionUser, userByEmail, viewAs, type HqUser,
 } from './auth.js';
+import { fixIt } from './fixIt.js';
 import { decide, groupByPile, pendingDecisions, type HqAirtable } from './decisions.js';
 import { listTasks, markDone, notYet, quickAdd, validNewTask } from './tasks.js';
 import { agentActivity, agentRuns, agentTasks, finishAgentTask, jobHealth, teamCheck, isBoardDue, isBoardStatus, loadTeamBoard } from './team.js';
@@ -256,8 +257,12 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       }
 
       // ---- Everything else needs a session ----
-      const user = await sessionUser(db, cfg, req.headers.cookie);
-      if (!user) { json(res, 401, { error: 'sign in first' }); return true; }
+      const signedIn = await sessionUser(db, cfg, req.headers.cookie);
+      if (!signedIn) { json(res, 401, { error: 'sign in first' }); return true; }
+      // "View as member" (Batch 1, 2026-11-27): the owner's request handled as a member's. Downgrade
+      // only (auth.ts viewAs) and read only: every write is refused while viewing.
+      const { user, viewing } = viewAs(signedIn, req.headers[VIEW_HEADER]);
+      if (viewing && write) { json(res, 403, { error: 'Viewing as a member is read only. Exit "View as member" to make changes.', viewing: true }); return true; }
       if (!clientMayCall(user, p)) { json(res, 403, { error: CLIENT_REFUSED, portal: true }); return true; }
       if (onPortalHost && user.role !== 'client') { json(res, 403, { error: 'Dulcy team logins sign in at HQ.', redirect: `${cfg.hqPublicUrl}/` }); return true; }
       if (PUBLIC.has(p)) { json(res, 405, { error: 'method not allowed' }); return true; }
@@ -280,7 +285,14 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         return true;
       }
 
-      if (p === '/hq/api/me' && req.method === 'GET') { json(res, 200, { user: publicUser(user), google: googleOn(cfg), ...(owner ? { signups: await pendingCount(db) } : {}) }); return true; }
+      if (p === '/hq/api/me' && req.method === 'GET') { json(res, 200, { user: publicUser(user), google: googleOn(cfg), ...(owner ? { signups: await pendingCount(db) } : {}), ...(viewing ? { viewing: 'member' } : {}) }); return true; }
+
+      // ---- Batch 1 (2026-11-27): Fix it = put an agent's suggestion on that agent's own task list ----
+      if (p === '/hq/api/fix-it' && req.method === 'POST') {
+        const r = await fixIt(db, user, await readJson(req, 10_000));
+        json(res, r.status, r.error ? { error: r.error } : { ok: true, task: r.task });
+        return true;
+      }
 
       // ---- Users (owner only, checked here: members get 403) ----
       if (p === '/hq/api/users' || p.startsWith('/hq/api/users/')) {
@@ -311,7 +323,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
 
       if (p === '/hq/api/decisions' && req.method === 'GET') {
         const piles = groupByPile(await pendingDecisions(needAt()), owner);
-        json(res, 200, { piles, order: PILES.filter((x) => owner || x !== 'Money') });
+        json(res, 200, { piles, order: pilesFor(owner) });
         return true;
       }
       let m = p.match(/^\/hq\/api\/decisions\/(rec[A-Za-z0-9]{14})$/);
@@ -319,7 +331,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         const b = await readJson(req);
         if (!['approve', 'reject', 'edited'].includes(b.verdict)) { json(res, 400, { error: 'verdict must be approve, edited or reject' }); return true; }
         const r = await decide(needAt(), m[1], b.verdict, user.name, { canSeeMoney: owner, editedText: typeof b.text === 'string' ? b.text : undefined });
-        json(res, r.status, r.error ? { error: r.error } : { ok: true, status: r.result });
+        json(res, r.status, r.error ? { error: r.error, ...(r.placeholders ? { placeholders: r.placeholders } : {}) } : { ok: true, status: r.result });
         return true;
       }
 
@@ -607,7 +619,7 @@ async function today(db: Db, at: HqAirtable, user: HqUser) {
     ...(owner ? { signups: await pendingCount(db) } : {}),
     brief: briefOut,
     team: teamCheck(health, owner ? decisions : decisions.filter((x) => !OWNER_ONLY.includes(x.agent)), Date.now(), visible),
-    decisions: Object.fromEntries(Object.entries(piles).filter(([k]) => owner || k !== 'Money').map(([k, v]) => [k, v.length])),
+    decisions: Object.fromEntries(pilesFor(owner).map((k) => [k, piles[k]?.length ?? 0])),
     needs: { top: needs.items.slice(0, 3), counts: needCounts(needs.items), errors: needs.errors },
     reports: recent,
   };

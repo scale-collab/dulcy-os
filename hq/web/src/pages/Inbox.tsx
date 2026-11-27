@@ -2,6 +2,7 @@
 // the same buttons as the Decisions reply card. Everything is rendered as escaped text.
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api, type InboxList, type InboxMsg, type InboxRow, type InboxTab, type InboxThread, type Note } from '../api';
+import { findPlaceholders } from '../placeholders';
 import { Avatar, BackLink, Button, Card, cx, Empty, ErrorBox, ExtLink, go, Icon, IconButton, Kbd, Label, PageSkeleton, PageTitle, Pill, setCount, timeAgo } from '../ui';
 
 /** The inbox agent's face (renamed Echo by Alex; the face file is still the old name until the rename lands). */
@@ -187,7 +188,7 @@ function ThreadBody({ t, reload }: { t: InboxThread; reload: () => void }) {
   const [done, setDone] = useState<Done>('');
   const box = useRef<HTMLTextAreaElement>(null);
   const edited = draft.trim() !== t.draft.trim();
-  const live = useMemo(() => ({ link: BOOKING.test(draft), gap: /\[GAP|\{\{/.test(draft) }), [draft]);
+  const live = useMemo(() => { const holes = findPlaceholders(draft); return { link: BOOKING.test(draft), gap: holes.length > 0, holes }; }, [draft]);
   const act = t.canAct && !done;
   // The reply box grows with the text (no inner scroll on a phone).
   useEffect(() => { const b = box.current; if (b) { b.style.height = 'auto'; b.style.height = `${Math.min(b.scrollHeight + 2, 900)}px`; } }, [draft, act]);
@@ -276,7 +277,7 @@ function ThreadBody({ t, reload }: { t: InboxThread; reload: () => void }) {
                   className="w-full resize-y rounded-2xl rounded-tr-md border border-accent/40 bg-accent-soft/40 px-4 py-3.5 text-base leading-relaxed text-fg outline-none transition focus:border-accent focus:bg-surface focus:ring-4 focus:ring-accent-soft" />
               ) : <div className="whitespace-pre-wrap break-words rounded-2xl rounded-tr-md border-l-2 border-accent bg-accent-soft/40 px-4 py-3.5 text-base leading-relaxed text-fg">{done === 'edited' ? draft : t.draft || '(no draft)'}</div>}
               {act && edited && live.link && <p className="mt-2 flex items-center gap-1.5 text-sm text-warn"><Icon name="link" size={14} />Still a booking link: two specific times book far more calls.</p>}
-              {act && live.gap && <p className="mt-2 flex items-center gap-1.5 text-sm text-warn"><Icon name="alert" size={14} />Fill in the [GAP] first; the sender refuses it.</p>}
+              {act && live.gap && <p className="mt-2 flex items-center gap-1.5 text-sm text-warn"><Icon name="alert" size={14} />Replace this before sending: {live.holes.slice(0, 3).join(', ')}</p>}
             </div>
           )}
           {error && <div className="mt-4"><ErrorBox error={error} /></div>}

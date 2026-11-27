@@ -11,8 +11,8 @@ import type { AddressInfo } from 'node:net';
 import { createPool, migrate, type Db } from '../src/db/pool.js';
 import { loadConfig, type Config } from '../src/config.js';
 import { createServer } from '../src/http.js';
-import { upsertUser, hashPassword, verifyPassword, signValue, unsignValue } from '../src/hq/auth.js';
-import { agentForJob, pileFor, jobPatternsFor, AGENT_NAMES } from '../src/hq/agents.js';
+import { upsertUser, hashPassword, verifyPassword, signValue, unsignValue, viewAs } from '../src/hq/auth.js';
+import { agentForJob, pileFor, pilesFor, jobPatternsFor, AGENT_NAMES } from '../src/hq/agents.js';
 import { classify, sortTasks, TASKS, TF, _resetClientCache, type Task } from '../src/hq/tasks.js';
 import { teamCheck } from '../src/hq/team.js';
 import { saveReport, slackReports, slackToMarkdown, summarize } from '../src/hq/reports.js';
@@ -64,11 +64,11 @@ function cfg(over: Partial<Config> = {}): Config {
 }
 
 interface Res { status: number; headers: http.IncomingHttpHeaders; body: any; text: string }
-function call(method: string, p: string, opts: { body?: unknown; cookie?: string; origin?: string | null; host?: string; contentType?: string } = {}): Promise<Res> {
+function call(method: string, p: string, opts: { body?: unknown; cookie?: string; origin?: string | null; host?: string; contentType?: string; headers?: Record<string, string> } = {}): Promise<Res> {
   return new Promise((resolve, reject) => {
     const host = opts.host ?? `127.0.0.1:${port}`;
     const data = opts.body === undefined ? undefined : JSON.stringify(opts.body);
-    const headers: Record<string, string> = { host };
+    const headers: Record<string, string> = { host, ...(opts.headers ?? {}) };
     if (data !== undefined) headers['content-type'] = opts.contentType ?? 'application/json';
     if (opts.cookie) headers.cookie = opts.cookie;
     const origin = opts.origin === undefined ? (method === 'GET' ? null : `https://${host}`) : opts.origin;
@@ -246,8 +246,9 @@ test('decisions: piles, approve a reply (Emails first, then the decision), rejec
   const list = await call('GET', '/hq/api/decisions', { cookie });
   assert.equal(list.status, 200);
   assert.deepEqual(Object.fromEntries(Object.entries(list.body.piles).map(([k, v]) => [k, (v as any[]).map((x) => x.id)])), {
-    Replies: ['recREPLY000000001'], Campaigns: ['recBOUNCE00000001'], Fixes: ['recFIX00000000001'], Money: ['recMONEY000000001'], Other: ['recCOLE0000000001'],
+    Replies: ['recREPLY000000001'], Campaigns: ['recBOUNCE00000001'], Fixes: ['recFIX00000000001'], Money: ['recMONEY000000001'], Sales: ['recCOLE0000000001'], Content: [], Orchestrator: [],
   });
+  assert.deepEqual(list.body.order, ['Replies', 'Campaigns', 'Fixes', 'Money', 'Sales', 'Content', 'Orchestrator'], 'no "Other" pile');
   assert.equal(list.body.piles.Replies[0].isReply, true);
 
   const ok = await call('POST', '/hq/api/decisions/recREPLY000000001', { body: { verdict: 'approve' }, cookie });
@@ -325,6 +326,102 @@ test('members never see or decide money or content', { skip }, async () => {
   assert.equal((await call('POST', '/hq/api/chat', { body: { agent: 'Sienna', message: 'hi' }, cookie })).status, 403);
 });
 
+// ---------- Batch 1 (2026-11-27): placeholder guard, view as member, Fix it ----------
+test('placeholder guard: a reply with "[link]" or "{{first_name}}" cannot be approved or sent edited; the card lists them', { skip }, async () => {
+  tables[DECISIONS] = {
+    recREPLY000000001: decision({ [DF.fix]: 'Hi Jane, here it is: [video link for Artisan Luxe Beauty]' }),
+    recREPLY000000002: decision({ [DF.emailsRecord]: 'recEMAIL000000002' }),
+    recSEND0000000001: decision({ [DF.agent]: 'Atlas', [DF.action]: 'Send Reply', [DF.emailsRecord]: '', [DF.actionInput]: '{"workspaceId":1,"replyId":2,"message":"Hi {{first_name}}"}' }),
+  };
+  tables[EMAILS] = { recEMAIL000000001: { [RA.draft]: 'Hi Jane, here it is: [video link for Artisan Luxe Beauty]' }, recEMAIL000000002: { [RA.draft]: 'Hi Jane,\n\nTue 2pm?' } };
+  const { cookie } = await login();
+  const cards = (await call('GET', '/hq/api/decisions', { cookie })).body.piles;
+  assert.deepEqual(cards.Replies.find((c: any) => c.id === 'recREPLY000000001').placeholders, ['[video link for Artisan Luxe Beauty]']);
+  assert.deepEqual(cards.Replies.find((c: any) => c.id === 'recREPLY000000002').placeholders, []);
+
+  const no = await call('POST', '/hq/api/decisions/recREPLY000000001', { body: { verdict: 'approve' }, cookie });
+  assert.equal(no.status, 422);
+  assert.match(no.body.error, /^The reply still has a placeholder: "\[video link for Artisan Luxe Beauty\]"\. Replace it before sending\.$/);
+  assert.deepEqual(no.body.placeholders, ['[video link for Artisan Luxe Beauty]']);
+  assert.equal(writes.length, 0, 'nothing pressed, nothing decided');
+  const stillBad = await call('POST', '/hq/api/decisions/recREPLY000000001', { body: { verdict: 'edited', text: 'Hi Jane, the video: <insert link>' }, cookie });
+  assert.equal(stillBad.status, 422);
+  assert.equal(writes.length, 0);
+  // The Emails row's draft is what goes out: a placeholder added there is caught even if the card text is clean.
+  tables[EMAILS].recEMAIL000000002[RA.draft] = 'Hi {{first_name}}, Tue 2pm?';
+  assert.equal((await call('POST', '/hq/api/decisions/recREPLY000000002', { body: { verdict: 'approve' }, cookie })).status, 422);
+  assert.equal((await call('POST', '/hq/api/decisions/recSEND0000000001', { body: { verdict: 'approve' }, cookie })).status, 422, 'a Send Reply action message is checked too');
+  // Rejecting is always allowed; a filled-in edit goes through.
+  assert.equal((await call('POST', '/hq/api/decisions/recSEND0000000001', { body: { verdict: 'reject' }, cookie })).status, 200);
+  const ok = await call('POST', '/hq/api/decisions/recREPLY000000001', { body: { verdict: 'edited', text: 'Hi Jane, here it is: https://dulcy.io/v/artisan' }, cookie });
+  assert.equal(ok.status, 200);
+  assert.equal(tables[EMAILS].recEMAIL000000001[RA.humanAction], 'Send Edited Reply');
+});
+
+test('view as member: owner only, downgrade only, read only; money and owner screens hidden', { skip }, async () => {
+  const owner = { id: 1, email: 'a@x.io', name: 'Alex', role: 'owner' as const };
+  const member = { id: 2, email: 'j@x.io', name: 'Josh', role: 'member' as const };
+  const client = { id: 3, email: 'c@x.io', name: 'C', role: 'client' as const, clientRec: 'recCLIENT00000001' };
+  assert.deepEqual(viewAs(owner, 'member'), { user: { ...owner, role: 'member' }, viewing: true });
+  assert.deepEqual(viewAs(owner, undefined), { user: owner, viewing: false });
+  assert.deepEqual(viewAs(owner, 'owner'), { user: owner, viewing: false });
+  for (const v of ['owner', 'member', 'admin', 'OWNER']) {
+    assert.deepEqual(viewAs(member, v), { user: member, viewing: false }, `a member sending ${v} changes nothing`);
+    assert.deepEqual(viewAs(client, v), { user: client, viewing: false }, `a client sending ${v} changes nothing`);
+  }
+
+  await upsertUser(db, 'josh@dulcy.io', 'member', 'josh long password 1', 'Josh');
+  tables[DECISIONS] = { recMONEY000000001: decision({ [DF.agent]: 'Ledger', [DF.action]: 'Approve Purchase', [DF.emailsRecord]: '' }), recREPLY000000001: decision() };
+  tables[EMAILS] = { recEMAIL000000001: {} };
+  const { cookie } = await login();
+  const view = { 'x-hq-view': 'member' };
+  const me = await call('GET', '/hq/api/me', { cookie, headers: view });
+  assert.equal(me.body.user.role, 'member');
+  assert.equal(me.body.viewing, 'member');
+  assert.equal(me.body.signups, undefined);
+  assert.equal((await call('GET', '/hq/api/me', { cookie })).body.user.role, 'owner', 'without the header: the owner');
+  const list = await call('GET', '/hq/api/decisions', { cookie, headers: view });
+  assert.equal(list.body.piles.Money, undefined);
+  assert.ok(!list.body.order.includes('Money') && !list.body.order.includes('Content'));
+  for (const p of ['/hq/api/users', '/hq/api/sales', '/hq/api/content']) assert.equal((await call('GET', p, { cookie, headers: view })).status, 403, p);
+  assert.equal((await call('GET', '/hq/api/agents/Ledger', { cookie, headers: view })).status, 404);
+  // Read only: every write is refused, nothing written.
+  const w = await call('POST', '/hq/api/decisions/recREPLY000000001', { body: { verdict: 'approve' }, cookie, headers: view });
+  assert.equal(w.status, 403);
+  assert.match(w.body.error, /read only/);
+  assert.equal((await call('POST', '/hq/api/fix-it', { body: { agent: 'Riley', title: 'x' }, cookie, headers: view })).status, 403);
+  assert.equal(writes.length, 0);
+  // A member sending "owner" (or anything) is still a member.
+  const josh = (await login('josh@dulcy.io', 'josh long password 1')).cookie;
+  for (const v of ['owner', 'member']) {
+    assert.equal((await call('GET', '/hq/api/me', { cookie: josh, headers: { 'x-hq-view': v } })).body.user.role, 'member');
+    assert.equal((await call('GET', '/hq/api/users', { cookie: josh, headers: { 'x-hq-view': v } })).status, 403);
+  }
+  assert.equal((await call('POST', '/hq/api/decisions/recMONEY000000001', { body: { verdict: 'approve' }, cookie: josh, headers: { 'x-hq-view': 'owner' } })).status, 403);
+});
+
+test('Fix it: an agent suggestion becomes one task on that agent\'s list; twice = one task; owner-only agents refused for members', { skip }, async () => {
+  const { cookie } = await login();
+  const body = { agent: 'riley', title: "Friday's placement scores may not arrive", detail: 'The placement test webhook failed twice this week.', client: 'Twenty West', link: '#/deliverability' };
+  const r = await call('POST', '/hq/api/fix-it', { body, cookie });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.task.agent, 'Riley');
+  assert.equal(r.body.task.created, true);
+  const row = (await db.query(`SELECT agent, title, notes, client, status, priority, link, progress_note FROM hq_agent_tasks`)).rows;
+  assert.equal(row.length, 1);
+  assert.deepEqual(row[0], { agent: 'Riley', title: "Friday's placement scores may not arrive", notes: 'The placement test webhook failed twice this week.', client: 'Twenty West', status: 'open', priority: 'high', link: 'deliverability', progress_note: 'Asked in HQ by Alex: fix it' });
+  await db.query(`UPDATE hq_agent_tasks SET status='in_progress', progress_note='Reading the webhook log'`);
+  const again = await call('POST', '/hq/api/fix-it', { body, cookie });
+  assert.equal(again.body.task.created, false);
+  assert.deepEqual((await db.query(`SELECT status, progress_note FROM hq_agent_tasks`)).rows, [{ status: 'in_progress', progress_note: 'Reading the webhook log' }], 'one task; work in progress is kept');
+  assert.equal((await call('POST', '/hq/api/fix-it', { body: { agent: 'Nobody', title: 'x' }, cookie })).status, 400);
+  assert.equal((await call('POST', '/hq/api/fix-it', { body: { agent: 'Riley', title: '  ' }, cookie })).status, 400);
+  await upsertUser(db, 'josh@dulcy.io', 'member', 'josh long password 1', 'Josh');
+  const josh = (await login('josh@dulcy.io', 'josh long password 1')).cookie;
+  assert.equal((await call('POST', '/hq/api/fix-it', { body: { agent: 'Ledger', title: 'Check the invoice' }, cookie: josh })).status, 400, 'Ledger is owner-only');
+  assert.equal((await call('POST', '/hq/api/fix-it', { body: { agent: 'Atlas', title: 'Top up the list' }, cookie: josh })).status, 200);
+});
+
 // ---------- Eisenhower ----------
 const task = (over: Partial<Task> = {}): Task => ({ id: 'recT', name: 'T', client: '', stage: 'Execution', due: '', priority: 'Medium', status: 'Not Started', notes: '', clientFacing: false, lastUpdated: '2026-11-24T12:00:00.000Z', ...over });
 const NOW = new Date('2026-11-25T15:00:00.000Z'); // Wed Nov 25, 10:00 New York
@@ -392,7 +489,11 @@ test('agent mapping: job kinds → agents, agents → piles', () => {
   for (const a of ['Atlas', 'Scribe', 'Scout']) assert.equal(pileFor(a), 'Campaigns');
   assert.equal(pileFor('Riley'), 'Fixes');
   assert.equal(pileFor('Ledger'), 'Money');
-  for (const a of ['Ada', 'Cole', 'Sienna', '', 'Someone']) assert.equal(pileFor(a), 'Other');
+  assert.equal(pileFor('Cole'), 'Sales');
+  assert.equal(pileFor('Sienna'), 'Content');
+  for (const a of ['Ada', '', 'Someone']) assert.equal(pileFor(a), 'Orchestrator', 'no "Other" pile: Ada routes the rest');
+  assert.deepEqual(pilesFor(true), ['Replies', 'Campaigns', 'Fixes', 'Money', 'Sales', 'Content', 'Orchestrator']);
+  assert.deepEqual(pilesFor(false), ['Replies', 'Campaigns', 'Fixes', 'Sales', 'Orchestrator'], 'money and content are owner-only');
 });
 
 test('team check: failed > waiting > ran fine > no runs', () => {
@@ -810,7 +911,7 @@ test('Google sign-up: a pending request, never a session; Google login refuses i
 });
 
 // ---------- Needs you ----------
-const card = (over: Partial<DecisionCard> = {}): DecisionCard => ({ id: 'recD', title: 'Reply to Jane', agent: 'Echo', client: '', pile: 'Replies', status: 'New', isReply: true, issue: '', checked: '', fix: '', details: '', action: 'Approve Reply', created: '2026-11-25T05:00:00.000Z', threadUrl: '', latestMessage: '', canEdit: true, ...over });
+const card = (over: Partial<DecisionCard> = {}): DecisionCard => ({ id: 'recD', title: 'Reply to Jane', agent: 'Echo', client: '', pile: 'Replies', status: 'New', isReply: true, issue: '', checked: '', fix: '', details: '', action: 'Approve Reply', created: '2026-11-25T05:00:00.000Z', threadUrl: '', latestMessage: '', canEdit: true, placeholders: [], ...over });
 const askRow = (over: Partial<Ask> = {}): Ask => ({ id: 1, agent: 'Atlas', title: 'Reply to Pete about Twenty West', why: 'He asked for the October numbers.', steps: '', actionLabel: '', actionUrl: '', priority: 'normal', audience: 'owner', dedupeKey: 'k', created: '2026-11-25T12:00:00.000Z', done: null, doneBy: null, snoozedUntil: null, ...over });
 
 const atask = (over: Partial<AgentTask> = {}): AgentTask => ({
@@ -826,7 +927,7 @@ test("needs = today's to-do (Batch 4b): ONE decisions line, campaigns to start, 
     card({ id: 'recFIX00000000001', agent: 'Riley', pile: 'Fixes', title: 'Apply the n8n fix', isReply: false }),
     card({ id: 'recFIXMANUAL00001', agent: 'Riley', pile: 'Fixes', title: 'Riley: renew the key', isReply: false }),
     card({ id: 'recMONEY000000001', agent: 'Ledger', pile: 'Money', title: 'Buy 2 inboxes', isReply: false }),
-    card({ id: 'recSIENNA00000001', agent: 'Sienna', pile: 'Other', title: 'Script ready', isReply: false }),
+    card({ id: 'recSIENNA00000001', agent: 'Sienna', pile: 'Content', title: 'Script ready', isReply: false }),
   ];
   const issues = [{ id: 'recISSUE000000001', title: 'EmailBison key expired', why: 'The API key was rotated on Nov 24. Every sync since fails with 401.', fix: '1. Open EmailBison settings\n2. Copy the new key', decision: 'recFIXMANUAL00001', seen: '2026-11-25T09:00:00.000Z' }];
   const asks = [
@@ -886,7 +987,7 @@ test("needs = today's to-do (Batch 4b): ONE decisions line, campaigns to start, 
 });
 
 test("needs: a member (Josh) gets their own to-do: their decisions, their asks, Echo's check-ins; never money or owner-only agents", () => {
-  const decisions = [card(), card({ id: 'recMONEY000000001', agent: 'Ledger', pile: 'Money' }), card({ id: 'recSIENNA00000001', agent: 'Sienna', pile: 'Other' })];
+  const decisions = [card(), card({ id: 'recMONEY000000001', agent: 'Ledger', pile: 'Money' }), card({ id: 'recSIENNA00000001', agent: 'Sienna', pile: 'Content' })];
   const issues = [{ id: 'recISSUE000000001', title: 'Key expired', why: '', fix: '', decision: '', seen: '' }];
   const asks = [askRow({ id: 1 }), askRow({ id: 2, audience: 'everyone', title: 'For Josh' }), askRow({ id: 3, agent: 'Ledger', audience: 'everyone', title: 'Money ask' })];
   const tasks = [

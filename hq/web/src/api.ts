@@ -1,11 +1,18 @@
 // Calls to the HQ API (/hq/api, same origin). The session is an httpOnly cookie the page never sees.
 export class ApiError extends Error { constructor(public status: number, message: string) { super(message); } }
 
+/** "View as member" (owner only, per browser tab): every call says so; the server answers as for a member, read only. */
+const VIEW_KEY = 'hq.viewAs';
+export function viewingAsMember(): boolean { try { return sessionStorage.getItem(VIEW_KEY) === 'member'; } catch { return false; } }
+export function setViewAsMember(on: boolean) { try { if (on) sessionStorage.setItem(VIEW_KEY, 'member'); else sessionStorage.removeItem(VIEW_KEY); } catch { /* private window */ } }
+/** Start or stop it, then reload so every screen reads as that role. */
+export function switchViewAsMember(on: boolean) { setViewAsMember(on); window.location.hash = on ? '#/today' : '#/users'; window.location.reload(); }
+
 export async function api<T = any>(path: string, opts: { method?: string; body?: unknown } = {}): Promise<T> {
   const res = await fetch(`/hq/api${path}`, {
     method: opts.method ?? (opts.body === undefined ? 'GET' : 'POST'),
     credentials: 'same-origin',
-    headers: opts.body === undefined ? {} : { 'content-type': 'application/json' },
+    headers: { ...(opts.body === undefined ? {} : { 'content-type': 'application/json' }), ...(viewingAsMember() ? { 'x-hq-view': 'member' } : {}) },
     body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
   });
   let data: any = null;
@@ -16,10 +23,12 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
 }
 
 export interface User { email: string; name: string; role: 'owner' | 'member' | 'client' }
-export type Pile = 'Replies' | 'Campaigns' | 'Fixes' | 'Money' | 'Other';
+export type Pile = 'Replies' | 'Campaigns' | 'Fixes' | 'Money' | 'Sales' | 'Content' | 'Orchestrator';
 export interface Decision {
   id: string; title: string; agent: string; client: string; pile: Pile; status: string; isReply: boolean; canEdit: boolean;
   issue: string; checked: string; fix: string; details: string; action: string; created: string; threadUrl: string; latestMessage: string;
+  /** Unfilled placeholders in the reply draft (the server refuses to send them). */
+  placeholders?: string[];
 }
 export interface Task { id: string; name: string; client: string; stage: string; due: string; priority: string; status: string; notes: string; clientFacing: boolean; overdue: boolean; box: Box; stale: boolean }
 export type Box = 'doNow' | 'schedule' | 'delegate' | 'later';
@@ -253,3 +262,15 @@ export interface TeamBoard {
   filters: { agent: string | null; client: string; status: BoardStatus; due: BoardDue };
   agents: BoardAgent[]; tasks: AgentTask[]; deadlines: AgentTask[]; activity: BoardEvent[]; clients: string[];
 }
+/* ---------- Content, Batch 5 (2026-11-27): laid out like the Airtable Content Center ----------
+ * The server no longer sends the per-record `airtable` links listed in the Step 3 Content types above. */
+export type ContentCcStage = 'Idea' | 'Script' | 'Record' | 'Edit' | 'Finalize' | 'Thumbnail' | 'Upload' | 'Clips' | 'Distribute' | 'Published';
+export interface ContentItemFacts {
+  decision: string; score: number | null; source: string; sourceUrl: string; script: boolean;
+  video: { folder: boolean; finished: boolean; youtube: boolean; youtubeUrl: string };
+  repurposing: { shortProject: boolean; clips: number; drafts: boolean };
+  update: string; error: string;
+  details: { productionStage: string; status: string; editingRoute: string; opusStatus: string; shortJobState: string; thumbnailStatus: string; publishingStatus: string };
+}
+export interface ContentItem extends ContentPipelineRow { cc: ContentCcStage; thisWeek: boolean; awaiting: boolean; done: boolean; facts: ContentItemFacts }
+export type ContentCenterView = Omit<ContentView, 'pipeline'> & { pipeline: { stages: ContentView['pipeline']['stages']; ccStages: ContentCcStage[]; rows: ContentItem[]; leftOut: number } };
