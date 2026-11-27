@@ -1,76 +1,86 @@
-// Deliverability: inboxes and domains in one place (replaces the Airtable Spam Center, Email
-// Account Center, Domain & Inbox Inventory, Email Accounts / Warm Up, Inbox Placement Tests and Buy
-// Domains & Inboxes screens). Only what's sick by default; everything else is one tap deeper.
-// Read only: the buttons open the Decisions pile or the Airtable record. Text is rendered escaped.
+// Deliverability: inboxes and domains in one place (replaces the Airtable Spam Center, Email Account
+// Center, Domain & Inbox Inventory, Email Accounts / Warm Up, Inbox Placement Tests and Buy Domains &
+// Inboxes screens). Batch 3 (Alex, 2026-11-27): statuses Healthy / At risk / Spam / Resting; warm-up
+// OFF first in red; the shared active-client dropdown; dropdown filters; inbox limits editable from
+// HQ (owner); the new-client ramp; Fix it on agent notes; email bounce analytics and verification
+// performance; no Airtable links. Text is rendered escaped.
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { api } from '../api';
-import { Avatar, Card, cx, Empty, ErrorBox, ExtLink, go, Icon, IconButton, PageSkeleton, PageTitle, Pill, setCount, StatusDot, timeAgo, type Tone } from '../ui';
+import { Avatar, Button, Card, cx, Empty, ErrorBox, go, Icon, IconButton, PageSkeleton, PageTitle, Pill, setCount, StatusDot, timeAgo, type Tone } from '../ui';
+import { ClientPicker, rememberedClient } from '../clientPicker';
+import { FixItButton } from '../fixIt';
+import { Select } from '../charts';
+import { BouncesTab, LimitEditor, LimitHistory, RampCard, useLimits, VerificationTab } from './DeliverabilityMore';
 
 /* ---------- API shapes (engine/src/hq/deliverability.ts) ---------- */
-type Health = 'healthy' | 'watch' | 'sick' | 'resting';
-interface Reason { code: string; level: 'sick' | 'watch'; text: string; owner: string; fromDomain?: boolean }
+type Health = 'healthy' | 'risk' | 'spam' | 'resting';
+interface Reason { code: string; level: 'spam' | 'risk'; text: string; owner: string; fromDomain?: boolean }
 interface DLink { label: string; href: string }
 interface DNote { level: 'bad' | 'warn' | 'info'; problem: string; data: string; fix: string; why: string; owner: string }
-interface Tiles { healthy: number; watch: number; sick: number; resting: number; total: number }
+interface Tiles { healthy: number; risk: number; spam: number; resting: number; total: number }
 interface ClientTiles { key: string; name: string; tiles: Tiles; domains: number }
-interface Item { key: string; kind: 'inbox' | 'domain'; status: Health; title: string; client: string; clientKey: string; reason: string; owner: string; doing: string; links: DLink[]; inboxes?: number }
+interface Item { key: string; kind: 'inbox' | 'domain'; status: Health; title: string; client: string; clientKey: string; reason: string; owner: string; doing: string; links: DLink[]; inboxes?: number; redFlag: boolean }
 interface Freshness { newest: string; ageDays: number | null; stale: boolean; expectedFriday: string; fridayMissing: boolean; nextFriday: string; tests: number }
 interface EngineRun { kind: string; status: string; at: string; message: string; dryRun: boolean }
 interface Attention {
-  tiles: Tiles; clients: ClientTiles[]; client: string; items: Item[]; counts: { sick: number; resting: number; watch: number }; notes: DNote[]; freshness: Freshness;
-  engine: { healthLoop: { everyMin: number; live: boolean; from: string }; runs: EngineRun[] }; replacementsWaiting: number; hidden: { inactiveInboxes: number; noClientInboxes: number }; readAt: string;
+  tiles: Tiles; clients: ClientTiles[]; client: string; items: Item[]; counts: { spam: number; resting: number; risk: number; warmupOff: number }; notes: DNote[]; freshness: Freshness;
+  engine: { healthLoop: { everyMin: number; live: boolean; from: string }; runs: EngineRun[] }; replacementsWaiting: number; hidden: { inactiveInboxes: number; noClientInboxes: number; emptyDomains: number }; readAt: string;
 }
 interface InboxRow {
   id: string; email: string; domain: string; client: string; clientKey: string; status: Health; reasons: Reason[]; doing: string; score: number | null; scoreAt: string;
-  warmup: number | null; warmupOn: boolean | null; connection: string; bounce: number | null; contacted: number; dailyLimit: number | null; previousLimit: number | null; stage: string; retestFriday: string; links: DLink[];
+  warmup: number | null; warmupOn: boolean | null; warmupOff: boolean; warmupLimit: number | null; connection: string; bounce: number | null; contacted: number; dailyLimit: number | null; previousLimit: number | null; stage: string; retestFriday: string; links: DLink[];
 }
 interface InboxGroup { domain: string; domainId: string; client: string; clientKey: string; status: Health; blacklist: string; renewal: string; inboxes: InboxRow[] }
 interface InboxesView { groups: InboxGroup[]; totalGroups: number; total: number; clients: { key: string; name: string; count: number }[]; noClient: number; readAt: string }
 interface PlacementDomain { domain: string; date: string; score: number | null; status: Health; inboxes: { email: string; score: number | null; google: number | null; outlook: number | null; at: string }[] }
 interface PlacementView {
-  freshness: Freshness; notes: DNote[]; clients: { key: string; name: string; newest: string; ageDays: number | null; stale: boolean; sick: number; domains: PlacementDomain[] }[];
+  freshness: Freshness; notes: DNote[]; clients: { key: string; name: string; newest: string; ageDays: number | null; stale: boolean; spam: number; domains: PlacementDomain[] }[];
   untested: { key: string; name: string; inboxes: number }[]; windowDays: number; limits: { rest: number; watch: number }; readAt: string;
 }
-interface DomainRow { id: string; name: string; status: Health; reasons: Reason[]; doing: string; inboxes: number; renewal: string; daysToRenewal: number | null; blacklist: string; blacklistCount: number; lastBlacklistCheck: string; provider: string; replacement: { status: string } | null; links: DLink[] }
+interface DomainRow { id: string; name: string; status: Health; reasons: Reason[]; doing: string; inboxes: number; renewal: string; renewalEstimated: boolean; daysToRenewal: number | null; blacklist: string; blacklistText: string; blacklistWhy: string; provider: string; replacement: { status: string } | null; links: DLink[] }
 interface DomainsView {
   clients: { key: string; name: string; domains: DomainRow[]; inboxes: number; notTwo: number }[];
-  replacements: { id: string; title: string; client: string; status: string; action: string; reason: string; score: number | null; created: string; error: string; link: DLink }[];
-  purchases: { id: string; request: string; status: string; domains: number | null; mailboxes: number | null; provider: string; approved: boolean; error: string; created: string; link: DLink }[];
+  replacements: { id: string; title: string; client: string; status: string; action: string; reason: string; score: number | null; created: string; error: string; link: DLink | null }[];
+  purchases: { id: string; request: string; status: string; domains: number | null; mailboxes: number | null; provider: string; approved: boolean; error: string; created: string; link: DLink | null }[];
   notes: DNote[]; rule: string; readAt: string;
 }
 
-type Tab = 'attention' | 'inboxes' | 'placement' | 'domains';
+type Tab = 'attention' | 'inboxes' | 'placement' | 'domains' | 'bounces' | 'verification';
 const TABS: { key: Tab; label: string; short: string }[] = [
   { key: 'attention', label: 'Needs attention', short: 'Attention' },
   { key: 'inboxes', label: 'All inboxes', short: 'Inboxes' },
+  { key: 'bounces', label: 'Bounces', short: 'Bounces' },
+  { key: 'verification', label: 'Verification', short: 'Verify' },
   { key: 'placement', label: 'Placement tests', short: 'Placement' },
   { key: 'domains', label: 'Domains', short: 'Domains' },
 ];
 const isTab = (t?: string): t is Tab => TABS.some((x) => x.key === t);
 const STATUS: Record<Health, { label: string; tone: Tone; pill: 'bad' | 'warn' | 'info' | 'good' }> = {
-  sick: { label: 'Sick', tone: 'bad', pill: 'bad' },
+  spam: { label: 'Spam', tone: 'bad', pill: 'bad' },
   resting: { label: 'Resting', tone: 'idle', pill: 'info' },
-  watch: { label: 'Watch', tone: 'warn', pill: 'warn' },
+  risk: { label: 'At risk', tone: 'warn', pill: 'warn' },
   healthy: { label: 'Healthy', tone: 'good', pill: 'good' },
 };
+const LEGACY: Record<string, Health> = { sick: 'spam', watch: 'risk' };
 const md = (d: string) => (d ? d.slice(5, 10) : '');
+const longDate = (d: string) => (d ? new Date(`${d.slice(0, 10)}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
 const route = (tab: Tab, client = '', extra = '') => go(`deliverability/${tab}${client || extra ? `/${client || 'all'}` : ''}${extra ? `/${extra}` : ''}`);
 
 /** #/deliverability[/<tab>[/<client key|all>[/<status>]]] */
 export default function Deliverability({ tab, client, status }: { tab?: string; client?: string; status?: string }) {
   const t: Tab = isTab(tab) ? tab : 'attention';
-  const c = client && client !== 'all' ? client : '';
+  const c = rememberedClient('deliverability', client && client !== 'all' ? client : undefined);
   const [refresh, setRefresh] = useState(0);
   const [busy, setBusy] = useState(false);
   const quiet = useCallback(() => undefined, []);
-  // The overall summary (cached on the server): client chips, the title line and the menu badge.
+  // The overall summary (cached on the server): the client dropdown, the title line and the menu badge.
   const { d: all } = useView<Attention>('/deliverability', refresh, quiet);
-  useEffect(() => { if (all) setCount('deliverability', all.tiles.sick); }, [all]);
-  const clients = (all?.clients ?? []).map((x) => ({ key: x.key, name: x.name, n: x.tiles.sick }));
-  const kicker = all ? `${all.tiles.sick} sick · ${all.tiles.resting} resting · ${all.tiles.total.toLocaleString('en-US')} inboxes` : 'Inboxes and domains';
+  useEffect(() => { if (all) setCount('deliverability', all.tiles.spam + all.counts.warmupOff); }, [all]);
+  const options = (all?.clients ?? []).map((x) => ({ key: x.key, name: x.name, count: x.tiles.total }));
+  const kicker = all ? `${all.counts.warmupOff ? `${all.counts.warmupOff} warm-up off · ` : ''}${all.tiles.spam} spam · ${all.tiles.resting} resting · ${all.tiles.risk} at risk · ${all.tiles.total.toLocaleString('en-US')} inboxes` : 'Inboxes and domains';
   return (
     <div>
-      <PageTitle title="Deliverability" kicker={kicker} sub="Only what's sick. Everything else is one tap deeper."
+      <PageTitle title="Deliverability" kicker={kicker} sub="What needs attention first. Everything else is one tap deeper."
         right={<IconButton icon="refresh" label="Refresh" onClick={() => setRefresh((x) => x + 1)} className={cx('border border-line bg-surface', busy && '[&_svg]:animate-spin')} />} />
       <div role="tablist" aria-label="Deliverability tabs" className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 [scrollbar-width:none]">
         {TABS.map((x) => {
@@ -83,15 +93,12 @@ export default function Deliverability({ tab, client, status }: { tab?: string; 
           );
         })}
       </div>
-      {clients.length > 1 && (
-        <div aria-label="Filter by client" className="-mx-4 mt-3 flex gap-1.5 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0 [scrollbar-width:none]">
-          <Chip on={!c} onClick={() => route(t, '', t === 'inboxes' ? status ?? '' : '')}>All clients</Chip>
-          {clients.map((x) => <Chip key={x.key} on={c === x.key} onClick={() => route(t, c === x.key ? '' : x.key, t === 'inboxes' ? status ?? '' : '')}>{x.name}{x.n > 0 && <span className="tabular rounded-full bg-bad-soft px-1.5 text-xs text-bad">{x.n}</span>}</Chip>)}
-        </div>
-      )}
+      <div className="mt-3"><ClientPicker screen="deliverability" value={c} options={options} onChange={(k) => route(t, k, t === 'inboxes' ? status ?? '' : '')} /></div>
       <div className="mt-4">
         {t === 'attention' && <AttentionTab client={c} refresh={refresh} setBusy={setBusy} />}
         {t === 'inboxes' && <InboxesTab client={c} status={status} refresh={refresh} setBusy={setBusy} />}
+        {t === 'bounces' && <BouncesTab client={c} refresh={refresh} />}
+        {t === 'verification' && <VerificationTab client={c} refresh={refresh} />}
         {t === 'placement' && <PlacementTab client={c} refresh={refresh} setBusy={setBusy} />}
         {t === 'domains' && <DomainsTab client={c} refresh={refresh} setBusy={setBusy} />}
       </div>
@@ -117,43 +124,53 @@ function useView<T>(path: string, refresh: number, setBusy: (b: boolean) => void
 /* ---------- Needs attention ---------- */
 function AttentionTab({ client, refresh, setBusy }: { client: string; refresh: number; setBusy: (b: boolean) => void }) {
   const { d, error, load } = useView<Attention>(`/deliverability${client ? `?client=${encodeURIComponent(client)}` : ''}`, refresh, setBusy);
-  const [showWatch, setShowWatch] = useState(false);
+  const { limits, reload } = useLimits(client, refresh);
+  const [showRisk, setShowRisk] = useState(false);
   if (error && !d) return <ErrorBox error={error} retry={load} />;
   if (!d) return <PageSkeleton kind="list" />;
-  const main = d.items.filter((i) => i.status !== 'watch');
-  const watch = d.items.filter((i) => i.status === 'watch');
+  const off = d.items.filter((i) => i.redFlag);
+  const main = d.items.filter((i) => !i.redFlag && i.status !== 'risk');
+  const risk = d.items.filter((i) => !i.redFlag && i.status === 'risk');
   return (
     <div className="space-y-4">
       {error && <ErrorBox error={error} retry={load} />}
       <TileRow tiles={d.tiles} client={client} />
-      {!client && d.clients.length > 1 && <ClientCounts clients={d.clients} />}
-      <NoteList notes={d.notes} />
+      {off.length > 0 && (
+        <Card className="overflow-hidden border-bad-line p-0">
+          <div className="flex items-center gap-2 border-b border-bad-line bg-bad-soft px-4 py-2.5 sm:px-5"><Icon name="alert" size={16} className="text-bad" /><h2 className="font-semibold text-bad">Warm-up OFF on {off.length} inbox{off.length === 1 ? '' : 'es'}</h2></div>
+          <p className="px-4 pt-2 text-sm text-fg-2 sm:px-5">Warm-up must never be off. Turn it back on in EmailBison.</p>
+          <ul className="divide-y divide-line">{off.map((i) => <ItemRow key={i.key} i={i} showClient={!client} />)}</ul>
+        </Card>
+      )}
+      <AgentNotes notes={d.notes} />
+      {limits && <RampCard limits={limits} onApplied={reload} />}
       <Card className="overflow-hidden p-0">
         {main.length ? <ul className="divide-y divide-line">{main.map((i) => <ItemRow key={i.key} i={i} showClient={!client} />)}</ul>
-          : <Empty icon="check" tone="good" title="Nothing sick" sub={watch.length ? `${watch.length} to watch below.` : 'Every inbox and domain looks fine.'} />}
+          : <Empty icon="check" tone="good" title="No spam or resting inbox" sub={risk.length ? `${risk.length} at risk below.` : 'Every inbox and domain looks fine.'} />}
       </Card>
-      {watch.length > 0 && (
+      {risk.length > 0 && (
         <div>
-          <button onClick={() => setShowWatch((x) => !x)} aria-expanded={showWatch} className="flex min-h-11 w-full items-center gap-2 rounded-xl px-1 text-sm font-semibold text-fg-2 hover:text-fg">
-            <Icon name={showWatch ? 'chevronDown' : 'chevronRight'} size={16} />Watch <span className="tabular rounded-full bg-warn-soft px-2 text-xs text-warn">{watch.length}</span>
+          <button onClick={() => setShowRisk((x) => !x)} aria-expanded={showRisk} className="flex min-h-11 w-full items-center gap-2 rounded-xl px-1 text-sm font-semibold text-fg-2 hover:text-fg">
+            <Icon name={showRisk ? 'chevronDown' : 'chevronRight'} size={16} />At risk <span className="tabular rounded-full bg-warn-soft px-2 text-xs text-warn">{risk.length}</span>
           </button>
-          {showWatch && <Card className="mt-2 overflow-hidden p-0"><ul className="divide-y divide-line">{watch.map((i) => <ItemRow key={i.key} i={i} showClient={!client} />)}</ul></Card>}
+          {showRisk && <Card className="mt-2 overflow-hidden p-0"><ul className="divide-y divide-line">{risk.map((i) => <ItemRow key={i.key} i={i} showClient={!client} />)}</ul></Card>}
         </div>
       )}
+      {!client && d.clients.length > 1 && <ClientCounts clients={d.clients} />}
       <EngineLine d={d} />
     </div>
   );
 }
 
 function TileRow({ tiles, client }: { tiles: Tiles; client: string }) {
-  const t: { k: Health; n: number }[] = [{ k: 'healthy', n: tiles.healthy }, { k: 'watch', n: tiles.watch }, { k: 'sick', n: tiles.sick }, { k: 'resting', n: tiles.resting }];
+  const t: { k: Health; n: number }[] = [{ k: 'healthy', n: tiles.healthy }, { k: 'risk', n: tiles.risk }, { k: 'spam', n: tiles.spam }, { k: 'resting', n: tiles.resting }];
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
       {t.map(({ k, n }) => (
         <button key={k} onClick={() => route('inboxes', client, k)} aria-label={`${n} ${STATUS[k].label.toLowerCase()} inboxes: show them`}
-          className={cx('min-w-0 rounded-2xl border bg-surface p-4 text-left shadow-card transition hover:border-line-strong hover:shadow-pop', k === 'sick' && n ? 'border-bad-line' : 'border-line')}>
+          className={cx('min-w-0 rounded-2xl border bg-surface p-4 text-left shadow-card transition hover:border-line-strong hover:shadow-pop', k === 'spam' && n ? 'border-bad-line' : 'border-line')}>
           <div className="flex items-center gap-2 text-sm font-medium text-fg-2"><StatusDot tone={STATUS[k].tone} />{STATUS[k].label}</div>
-          <div className={cx('tabular mt-1 text-3xl font-bold leading-none tracking-tight', k === 'sick' && n ? 'text-bad' : k === 'watch' && n ? 'text-warn' : 'text-fg')}>{n.toLocaleString('en-US')}</div>
+          <div className={cx('tabular mt-1 text-3xl font-bold leading-none tracking-tight', k === 'spam' && n ? 'text-bad' : k === 'risk' && n ? 'text-warn' : 'text-fg')}>{n.toLocaleString('en-US')}</div>
           <div className="mt-1.5 text-xs text-muted">of {tiles.total.toLocaleString('en-US')} inboxes</div>
         </button>
       ))}
@@ -161,23 +178,26 @@ function TileRow({ tiles, client }: { tiles: Tiles; client: string }) {
   );
 }
 
+/** Inboxes per client by status (was an unexplained list under the attention block). */
 function ClientCounts({ clients }: { clients: ClientTiles[] }) {
   return (
     <Card className="p-0">
-      <div className="flex items-center justify-between border-b border-line px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.08em] text-muted sm:px-5">
-        <span>Per client</span><span className="flex gap-1 sm:gap-4" aria-hidden="true"><span className="w-11 text-right sm:w-12">Sick</span><span className="w-11 text-right sm:w-12">Rest</span><span className="w-11 text-right sm:w-12">Watch</span><span className="w-11 text-right sm:w-12">OK</span></span>
+      <div className="border-b border-line px-4 py-2.5 sm:px-5">
+        <h2 className="text-sm font-semibold text-fg">Inboxes per client</h2>
+        <p className="text-xs text-muted">How many of each client's inboxes are in each status. Tap a client to see only theirs.</p>
       </div>
+      <div className="flex items-center justify-end gap-1 border-b border-line px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted sm:gap-4 sm:px-5" aria-hidden="true"><span className="w-12 text-right">Spam</span><span className="w-12 text-right">Rest</span><span className="w-12 text-right">At risk</span><span className="w-12 text-right">OK</span></div>
       <ul className="divide-y divide-line">
         {clients.map((c) => (
           <li key={c.key}>
             <button onClick={() => route('attention', c.key)} className="flex min-h-11 w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm hover:bg-hover sm:px-5"
-              aria-label={`${c.name}: ${c.tiles.sick} sick, ${c.tiles.resting} resting, ${c.tiles.watch} watch, ${c.tiles.healthy} healthy`}>
+              aria-label={`${c.name}: ${c.tiles.spam} spam, ${c.tiles.resting} resting, ${c.tiles.risk} at risk, ${c.tiles.healthy} healthy`}>
               <span className="min-w-0 truncate font-medium text-fg">{c.name}</span>
               <span className="tabular flex shrink-0 gap-1 sm:gap-4">
-                <span className={cx('w-11 text-right font-semibold sm:w-12', c.tiles.sick ? 'text-bad' : 'text-faint')}>{c.tiles.sick}</span>
-                <span className={cx('w-11 text-right sm:w-12', c.tiles.resting ? 'text-info' : 'text-faint')}>{c.tiles.resting}</span>
-                <span className={cx('w-11 text-right sm:w-12', c.tiles.watch ? 'text-warn' : 'text-faint')}>{c.tiles.watch}</span>
-                <span className="w-11 text-right text-fg-2 sm:w-12">{c.tiles.healthy}</span>
+                <span className={cx('w-12 text-right font-semibold', c.tiles.spam ? 'text-bad' : 'text-faint')}>{c.tiles.spam}</span>
+                <span className={cx('w-12 text-right', c.tiles.resting ? 'text-info' : 'text-faint')}>{c.tiles.resting}</span>
+                <span className={cx('w-12 text-right', c.tiles.risk ? 'text-warn' : 'text-faint')}>{c.tiles.risk}</span>
+                <span className="w-12 text-right text-fg-2">{c.tiles.healthy}</span>
               </span>
             </button>
           </li>
@@ -192,18 +212,19 @@ function ItemRow({ i, showClient }: { i: Item; showClient: boolean }) {
   return (
     <li className="px-4 py-3.5 sm:px-5">
       <div className="flex items-start gap-3">
-        <StatusDot tone={st.tone} className="mt-2" label={st.label} />
+        <StatusDot tone={i.redFlag ? 'bad' : st.tone} className="mt-2" label={i.redFlag ? 'Warm-up off' : st.label} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="min-w-0 break-all text-[15px] font-semibold text-fg">{i.title}</span>
+            <Pill tone={st.pill}>{st.label}</Pill>
             {i.kind === 'domain' && <Pill>domain · {i.inboxes ?? 0} inbox{i.inboxes === 1 ? '' : 'es'}</Pill>}
             {showClient && <Pill>{i.client}</Pill>}
           </div>
-          <div className="mt-1 text-sm font-medium leading-snug text-fg-2">{i.reason}</div>
+          <div className={cx('mt-1 text-sm font-medium leading-snug', i.redFlag ? 'text-bad' : 'text-fg-2')}>{i.reason}</div>
           {i.doing && <div className="mt-1 flex gap-1.5 text-sm leading-snug text-muted"><Icon name="activity" size={14} className="mt-0.5" /><span><span className="sr-only">Engine: </span>{i.doing}</span></div>}
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
             <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-2"><Avatar name={i.owner} size="xs" />{i.owner}</span>
-            {i.links.map((l) => <LinkButton key={l.href} l={l} />)}
+            {i.links.filter((l) => !/^https?:/i.test(l.href)).map((l) => <button key={l.href} onClick={() => go(l.href)} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-sm font-semibold text-accent-fg hover:bg-accent-hover">{l.label}<Icon name="arrowRight" size={14} /></button>)}
           </div>
         </div>
       </div>
@@ -211,14 +232,8 @@ function ItemRow({ i, showClient }: { i: Item; showClient: boolean }) {
   );
 }
 
-function LinkButton({ l }: { l: DLink }) {
-  const cls = 'inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold transition';
-  if (/^https:\/\//.test(l.href)) return <a href={l.href} target="_blank" rel="noopener noreferrer" className={cx(cls, 'border border-line-strong bg-surface text-fg hover:bg-hover')}>{l.label}<Icon name="external" size={14} /></a>;
-  return <button onClick={() => go(l.href)} className={cx(cls, 'bg-accent text-accent-fg hover:bg-accent-hover')}>{l.label}<Icon name="arrowRight" size={14} /></button>;
-}
-
-/** Problem → Data → Fix → Why, with who owns it. */
-function NoteList({ notes }: { notes: DNote[] }) {
+/** Agent notes at the top (Problem → Data → Fix → Why) with "Have <agent> fix it" / "I'll look". */
+function AgentNotes({ notes }: { notes: DNote[] }) {
   if (!notes.length) return null;
   return (
     <ul className="space-y-2">
@@ -231,6 +246,7 @@ function NoteList({ notes }: { notes: DNote[] }) {
             <NoteLine k="Fix" v={n.fix} />
             <NoteLine k="Why" v={n.why} />
             <div className="flex items-center gap-1.5 pt-0.5 text-xs font-medium text-fg-2"><Avatar name={n.owner} size="xs" />{n.owner}</div>
+            <FixItButton agent={n.owner} title={n.problem} detail={[`Data: ${n.data}`, `Fix: ${n.fix}`, `Why: ${n.why}`].join('\n')} className="pt-1" />
           </div>
         </li>
       ))}
@@ -256,44 +272,54 @@ function EngineLine({ d }: { d: Attention }) {
 }
 
 /* ---------- All inboxes ---------- */
-const FILTERS: (Health | '')[] = ['', 'sick', 'resting', 'watch', 'healthy'];
+const FILTERS: (Health | '')[] = ['', 'spam', 'resting', 'risk', 'healthy'];
 function InboxesTab({ client, status, refresh, setBusy }: { client: string; status?: string; refresh: number; setBusy: (b: boolean) => void }) {
-  const st = FILTERS.includes(status as Health) ? (status as Health | '') : '';
+  const asked = LEGACY[status ?? ''] ?? status;
+  const st = FILTERS.includes(asked as Health) ? (asked as Health | '') : '';
   const [q, setQ] = useState('');
   const [search, setSearch] = useState('');
+  const [again, setAgain] = useState(0);
+  const [editAll, setEditAll] = useState(false);
   useEffect(() => { const h = setTimeout(() => setSearch(q.trim()), 300); return () => clearTimeout(h); }, [q]);
   const qs = new URLSearchParams({ ...(client ? { client } : {}), ...(st ? { status: st } : {}), ...(search ? { q: search } : {}) }).toString();
-  const { d, error, load } = useView<InboxesView>(`/deliverability/inboxes${qs ? `?${qs}` : ''}`, refresh, setBusy);
+  const { d, error, load } = useView<InboxesView>(`/deliverability/inboxes${qs ? `?${qs}` : ''}`, refresh + again, setBusy);
+  const { limits, reload } = useLimits(client, refresh);
+  const done = () => { setEditAll(false); reload(); setAgain((x) => x + 1); };
+  const clientName = d?.clients.find((c) => c.key === client)?.name ?? '';
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <label className="relative min-w-0 flex-1 sm:max-w-sm">
           <span className="sr-only">Search inboxes</span>
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search inbox, domain or client" maxLength={100}
             className="min-h-11 w-full rounded-xl border border-line bg-surface px-3.5 text-[15px] text-fg outline-none placeholder:text-faint focus:border-accent focus:ring-4 focus:ring-accent-soft" />
         </label>
-        <div aria-label="Filter by status" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 sm:mx-0 sm:px-0 [scrollbar-width:none]">
-          {FILTERS.map((f) => <Chip key={f || 'all'} on={st === f} onClick={() => route('inboxes', client, f)}>{f ? STATUS[f].label : 'All'}</Chip>)}
-        </div>
+        <Select label="Status" value={st} onChange={(v) => route('inboxes', client, v)} options={FILTERS.map((f) => ({ value: f, label: f ? STATUS[f].label : 'All statuses' }))} />
+        {limits?.canEdit && client && !editAll && <Button tone="quiet" icon="pen" onClick={() => setEditAll(true)} className="min-h-10 px-3 text-sm">Edit all {clientName || 'client'} inboxes</Button>}
       </div>
+      {editAll && limits && <LimitEditor label={`All ${clientName || 'client'} inboxes`} client={client} cold={null} warmup={null} live={limits.live} onDone={done} onCancel={() => setEditAll(false)} />}
+      {limits && <RampCard limits={limits} onApplied={done} />}
       {error && <ErrorBox error={error} retry={load} />}
       {!d && !error && <PageSkeleton kind="list" />}
       {d && (
         <>
           <div className="text-sm text-muted"><span className="tabular font-semibold text-fg-2">{d.total.toLocaleString('en-US')}</span> inbox{d.total === 1 ? '' : 'es'} on <span className="tabular font-semibold text-fg-2">{d.totalGroups.toLocaleString('en-US')}</span> domain{d.totalGroups === 1 ? '' : 's'}{d.totalGroups > d.groups.length ? ` (first ${d.groups.length} shown: search to narrow)` : ''}</div>
           {!d.groups.length && <Card><Empty icon="inbox" title="No inboxes" sub={search ? `Nothing matches "${search}".` : 'No inboxes with this filter.'} /></Card>}
-          <div className="grid gap-3 lg:grid-cols-2">
-            {d.groups.map((g) => <DomainGroup key={`${g.clientKey}:${g.domain}`} g={g} showClient={!client} />)}
+          <div className="space-y-3">
+            {d.groups.map((g) => <DomainGroup key={`${g.clientKey}:${g.domain}`} g={g} showClient={!client} canEdit={!!limits?.canEdit} live={!!limits?.live} onSaved={done} />)}
           </div>
           {d.noClient > 0 && !client && <p className="text-xs text-muted">{d.noClient} inbox{d.noClient === 1 ? ' has' : 'es have'} no client in Airtable: <button className="font-semibold underline underline-offset-2" onClick={() => route('inboxes', 'none')}>show them</button>.</p>}
-          <p className="text-xs text-muted">From Airtable, read {timeAgo(d.readAt) || 'just now'}; kept 1 minute.</p>
+          {limits && <LimitHistory limits={limits} />}
+          <p className="text-xs text-muted">Cold = cold emails per day; warm-up = warm-up emails per day; warm-up placement = EmailBison's warm-up score (share landing in the inbox); test = the newest inbox placement test. From Airtable, read {timeAgo(d.readAt) || 'just now'}; kept 1 minute.</p>
         </>
       )}
     </div>
   );
 }
 
-function DomainGroup({ g, showClient }: { g: InboxGroup; showClient: boolean }) {
+const tone = (x: number | null, bad: number, warn: number): 'bad' | 'warn' | undefined => (x === null ? undefined : x < bad ? 'bad' : x < warn ? 'warn' : undefined);
+function DomainGroup({ g, showClient, canEdit, live, onSaved }: { g: InboxGroup; showClient: boolean; canEdit: boolean; live: boolean; onSaved: () => void }) {
+  const [edit, setEdit] = useState<string | null>(null);
   return (
     <Card className="min-w-0 overflow-hidden p-0">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-line bg-sunken/60 px-4 py-2.5 sm:px-5">
@@ -303,25 +329,37 @@ function DomainGroup({ g, showClient }: { g: InboxGroup; showClient: boolean }) 
         {g.blacklist === 'Listed' && <Pill tone="bad">Blacklisted</Pill>}
         {g.renewal && <span className="ml-auto text-xs text-muted">renews {md(g.renewal)}</span>}
       </div>
-      <ul className="divide-y divide-line">
+      <div className="hidden md:block">
+        <table className="w-full text-left text-sm">
+          <thead className="text-xs text-muted"><tr className="border-b border-line">
+            <th className="px-5 py-2 font-medium">Inbox</th><th className="w-24 px-2 py-2 text-right font-medium">Cold/day</th><th className="w-24 px-2 py-2 text-right font-medium">Warm-up/day</th>
+            <th className="w-28 px-2 py-2 text-right font-medium">Warm-up placement</th><th className="w-20 px-2 py-2 text-right font-medium">Warm-up</th><th className="w-16 px-2 py-2 text-right font-medium">Test</th><th className="w-16 px-2 py-2 text-right font-medium">Bounce</th>{canEdit && <th className="w-16 px-4 py-2"><span className="sr-only">Edit</span></th>}
+          </tr></thead>
+          <tbody className="divide-y divide-line">
+            {g.inboxes.map((i) => (
+              <InboxTableRow key={i.id} i={i} canEdit={canEdit} editing={edit === i.id} onEdit={() => setEdit(edit === i.id ? null : i.id)} live={live} onSaved={() => { setEdit(null); onSaved(); }} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <ul className="divide-y divide-line md:hidden">
         {g.inboxes.map((i) => (
-          <li key={i.id} className="px-4 py-3 sm:px-5">
+          <li key={i.id} className="px-4 py-3">
             <div className="flex items-start gap-2.5">
-              <StatusDot tone={STATUS[i.status].tone} className="mt-1.5" label={STATUS[i.status].label} />
+              <StatusDot tone={i.warmupOff ? 'bad' : STATUS[i.status].tone} className="mt-1.5" label={STATUS[i.status].label} />
               <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-2">
-                  <span className="min-w-0 break-all text-sm font-semibold text-fg">{i.email}</span>
-                  {i.links.filter((l) => /^https:/.test(l.href)).map((l) => <a key={l.href} href={l.href} target="_blank" rel="noopener noreferrer" aria-label={`${i.email} in Airtable`} title="Open in Airtable" className="-my-1 inline-grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted hover:bg-hover hover:text-fg"><Icon name="external" size={15} /></a>)}
-                </div>
+                <div className="flex items-start justify-between gap-2"><span className="min-w-0 break-all text-sm font-semibold text-fg">{i.email}</span><Pill tone={STATUS[i.status].pill}>{STATUS[i.status].label}</Pill></div>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  <Metric label="Placement" v={i.score === null ? '—' : `${i.score}%`} tone={i.score === null ? undefined : i.score < 60 ? 'bad' : i.score < 75 ? 'warn' : undefined} />
-                  <Metric label="Warm-up" v={i.warmupOn === false ? 'off' : i.warmup === null ? '—' : String(i.warmup)} tone={i.warmupOn === false ? 'warn' : i.warmup === null ? undefined : i.warmup < 50 ? 'bad' : i.warmup < 70 ? 'warn' : undefined} />
-                  <Metric label="Bounce" v={i.bounce === null ? '—' : `${i.bounce}%`} tone={i.bounce === null ? undefined : i.bounce > 4 ? 'bad' : i.bounce > 2.5 ? 'warn' : undefined} />
-                  <Metric label="Limit" v={i.dailyLimit === null ? '—' : `${i.dailyLimit}/day`} />
-                  {i.connection && i.connection.toLowerCase() !== 'connected' && <Pill tone="bad">{i.connection}</Pill>}
+                  <Metric label="Cold" v={i.dailyLimit === null ? '–' : `${i.dailyLimit}/day`} />
+                  <Metric label="Warm-up" v={i.warmupLimit === null ? '–' : `${i.warmupLimit}/day`} />
+                  <Metric label="Placement" v={i.warmup === null ? '–' : `${i.warmup}%`} tone={tone(i.warmup, 50, 70)} />
+                  <Metric label="Warm-up" v={i.warmupOff ? 'OFF' : i.warmupOn ? 'on' : '–'} tone={i.warmupOff ? 'bad' : undefined} />
+                  <Metric label="Test" v={i.score === null ? '–' : `${i.score}%`} tone={tone(i.score, 60, 75)} />
+                  <Metric label="Bounce" v={i.bounce === null ? '–' : `${i.bounce}%`} tone={i.bounce === null ? undefined : i.bounce > 4 ? 'bad' : i.bounce > 2.5 ? 'warn' : undefined} />
                 </div>
                 {i.reasons.length > 0 && <div className="mt-1.5 text-sm leading-snug text-fg-2">{i.reasons.map((r) => r.text).join(' · ')}</div>}
-                {i.doing && i.status !== 'healthy' && <div className="mt-1 text-xs leading-snug text-muted">{i.doing}</div>}
+                {canEdit && edit !== i.id && <button onClick={() => setEdit(i.id)} className="mt-1.5 min-h-9 text-sm font-semibold text-accent-ink hover:underline">Edit limits</button>}
+                {edit === i.id && <div className="mt-2"><LimitEditor label={i.email} accounts={[i.id]} cold={i.dailyLimit} warmup={i.warmupLimit} live={live} onDone={() => { setEdit(null); onSaved(); }} onCancel={() => setEdit(null)} /></div>}
               </div>
             </div>
           </li>
@@ -331,8 +369,31 @@ function DomainGroup({ g, showClient }: { g: InboxGroup; showClient: boolean }) 
   );
 }
 
-function Metric({ label, v, tone }: { label: string; v: string; tone?: 'bad' | 'warn' }) {
-  return <span className={cx('inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs', tone === 'bad' ? 'bg-bad-soft text-bad' : tone === 'warn' ? 'bg-warn-soft text-warn' : 'bg-sunken text-fg-2')}><span className="text-muted">{label}</span><span className="tabular font-semibold">{v}</span></span>;
+function InboxTableRow({ i, canEdit, editing, onEdit, live, onSaved }: { i: InboxRow; canEdit: boolean; editing: boolean; onEdit: () => void; live: boolean; onSaved: () => void }) {
+  const num = (x: number | null, t?: 'bad' | 'warn', suffix = '') => <span className={cx('tabular', t === 'bad' ? 'font-semibold text-bad' : t === 'warn' ? 'font-semibold text-warn' : 'text-fg-2')}>{x === null ? '–' : `${x}${suffix}`}</span>;
+  return (
+    <>
+      <tr className="align-top">
+        <td className="px-5 py-2.5">
+          <div className="flex items-center gap-2"><StatusDot tone={i.warmupOff ? 'bad' : STATUS[i.status].tone} label={STATUS[i.status].label} /><span className="min-w-0 break-all font-medium text-fg">{i.email}</span><Pill tone={STATUS[i.status].pill}>{STATUS[i.status].label}</Pill></div>
+          {i.reasons.length > 0 && <div className="mt-0.5 pl-4 text-xs leading-snug text-fg-2">{i.reasons.map((r) => r.text).join(' · ')}</div>}
+          {i.doing && i.status !== 'healthy' && <div className="mt-0.5 pl-4 text-xs text-muted">{i.doing}</div>}
+        </td>
+        <td className="px-2 py-2.5 text-right">{num(i.dailyLimit)}</td>
+        <td className="px-2 py-2.5 text-right">{num(i.warmupLimit)}</td>
+        <td className="px-2 py-2.5 text-right">{num(i.warmup, tone(i.warmup, 50, 70), '%')}</td>
+        <td className={cx('px-2 py-2.5 text-right text-xs font-semibold', i.warmupOff ? 'text-bad' : 'text-fg-2')}>{i.warmupOff ? 'OFF' : i.warmupOn ? 'on' : '–'}</td>
+        <td className="px-2 py-2.5 text-right">{num(i.score, tone(i.score, 60, 75), '%')}</td>
+        <td className="px-2 py-2.5 text-right">{num(i.bounce, i.bounce === null ? undefined : i.bounce > 4 ? 'bad' : i.bounce > 2.5 ? 'warn' : undefined, '%')}</td>
+        {canEdit && <td className="px-4 py-2 text-right"><button onClick={onEdit} aria-expanded={editing} className="min-h-9 text-sm font-semibold text-accent-ink hover:underline">{editing ? 'Close' : 'Edit'}</button></td>}
+      </tr>
+      {editing && <tr><td colSpan={canEdit ? 8 : 7} className="px-5 pb-3"><LimitEditor label={i.email} accounts={[i.id]} cold={i.dailyLimit} warmup={i.warmupLimit} live={live} onDone={onSaved} onCancel={onEdit} /></td></tr>}
+    </>
+  );
+}
+
+function Metric({ label, v, tone: t }: { label: string; v: string; tone?: 'bad' | 'warn' }) {
+  return <span className={cx('inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs', t === 'bad' ? 'bg-bad-soft text-bad' : t === 'warn' ? 'bg-warn-soft text-warn' : 'bg-sunken text-fg-2')}><span className="text-muted">{label}</span><span className="tabular font-semibold">{v}</span></span>;
 }
 
 /* ---------- Placement tests ---------- */
@@ -348,9 +409,9 @@ function PlacementTab({ client, refresh, setBusy }: { client: string; refresh: n
         <Fact label="Newest scores" v={f.newest ? md(f.newest) : 'none'} sub={f.ageDays === null ? 'no tests found' : `${f.ageDays} day${f.ageDays === 1 ? '' : 's'} ago`} bad={f.stale} />
         <Fact label="Next Friday test" v={md(f.nextFriday)} sub={f.fridayMissing ? `Fri ${md(f.expectedFriday)} scores missing` : `Fri ${md(f.expectedFriday)} scores are in`} bad={f.fridayMissing} />
         <Fact label="Tests read" v={f.tests.toLocaleString('en-US')} sub={`last ${d.windowDays} days`} />
-        <div className="text-xs text-muted sm:ml-auto">Under {d.limits.rest}% = rested 7 days · under {d.limits.watch}% = watch</div>
+        <div className="text-xs text-muted sm:ml-auto">Under {d.limits.rest}% = rested 7 days · under {d.limits.watch}% = at risk</div>
       </Card>
-      <NoteList notes={d.notes} />
+      <AgentNotes notes={d.notes} />
       {!d.clients.length && <Card><Empty icon="activity" title="No placement tests" sub={`None in the last ${d.windowDays} days for ${client ? 'this client' : 'active clients'}.`} /></Card>}
       <div className="grid gap-3 lg:grid-cols-2">
         {d.clients.map((c) => (
@@ -359,11 +420,9 @@ function PlacementTab({ client, refresh, setBusy }: { client: string; refresh: n
               <span className="font-semibold text-fg">{c.name}</span>
               <span className="text-sm text-muted">newest {md(c.newest)}</span>
               {c.stale && <Pill tone="bad">over 7 days old</Pill>}
-              {c.sick > 0 && <Pill tone="bad" className="ml-auto">{c.sick} under {d.limits.rest}%</Pill>}
+              {c.spam > 0 && <Pill tone="bad" className="ml-auto">{c.spam} under {d.limits.rest}%</Pill>}
             </div>
-            <ul className="divide-y divide-line">
-              {c.domains.map((x) => <PlacementRow key={x.domain} x={x} />)}
-            </ul>
+            <ul className="divide-y divide-line">{c.domains.map((x) => <PlacementRow key={x.domain} x={x} />)}</ul>
           </Card>
         ))}
       </div>
@@ -380,7 +439,7 @@ function PlacementRow({ x }: { x: PlacementDomain }) {
       <button onClick={() => setOpen((o) => !o)} aria-expanded={open} className="flex min-h-12 w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-hover sm:px-5">
         <StatusDot tone={STATUS[x.status].tone} label={STATUS[x.status].label} />
         <span className="min-w-0 flex-1 break-all text-sm font-medium text-fg">{x.domain}</span>
-        <span className={cx('tabular w-12 shrink-0 text-right text-sm font-bold', x.status === 'sick' ? 'text-bad' : x.status === 'watch' ? 'text-warn' : 'text-fg')}>{x.score === null ? '—' : `${x.score}%`}</span>
+        <span className={cx('tabular w-12 shrink-0 text-right text-sm font-bold', x.status === 'spam' ? 'text-bad' : x.status === 'risk' ? 'text-warn' : 'text-fg')}>{x.score === null ? '—' : `${x.score}%`}</span>
         <span className="tabular w-11 shrink-0 text-right text-xs text-muted">{md(x.date)}</span>
         <Icon name={open ? 'chevronDown' : 'chevronRight'} size={16} className="text-faint" />
       </button>
@@ -416,7 +475,7 @@ function DomainsTab({ client, refresh, setBusy }: { client: string; refresh: num
   const waiting = d.replacements.filter((r) => r.status === 'Pending Review');
   return (
     <div className="space-y-4">
-      <NoteList notes={d.notes} />
+      <AgentNotes notes={d.notes} />
       {d.replacements.length > 0 && (
         <Card className={cx('p-0', waiting.length > 0 && 'border-warn/40')}>
           <SubHead icon="layers" title="Replacements" right={waiting.length ? <Pill tone="warn">{waiting.length} waiting for you</Pill> : undefined} />
@@ -428,7 +487,7 @@ function DomainsTab({ client, refresh, setBusy }: { client: string; refresh: num
                   <div className="mt-1 text-sm leading-snug text-fg-2">{r.action}{r.score !== null ? ` · retest ${r.score}%` : ''}{r.created ? ` · ${md(r.created.slice(0, 10))}` : ''}</div>
                   {r.error && <div className="mt-1 text-xs text-bad">{r.error}</div>}
                 </div>
-                <LinkButton l={r.link} />
+                {r.link && <button onClick={() => go(r.link!.href)} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-sm font-semibold text-accent-fg hover:bg-accent-hover">{r.link.label}<Icon name="arrowRight" size={14} /></button>}
               </li>
             ))}
           </ul>
@@ -439,19 +498,16 @@ function DomainsTab({ client, refresh, setBusy }: { client: string; refresh: num
           <SubHead icon="briefcase" title="Buying" right={<span className="text-xs text-muted">open requests</span>} />
           <ul className="divide-y divide-line">
             {d.purchases.map((p) => (
-              <li key={p.id} className="flex flex-wrap items-start gap-x-3 gap-y-2 px-4 py-3 sm:px-5">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2"><span className="text-sm font-semibold text-fg">{p.request}</span><Pill tone={/approval/i.test(p.status) ? 'warn' : 'plain'}>{p.status}</Pill></div>
-                  <div className="mt-1 text-sm text-fg-2">{[p.domains !== null ? `${p.domains} domain${p.domains === 1 ? '' : 's'}` : '', p.mailboxes !== null ? `${p.mailboxes} inboxes` : '', p.provider].filter(Boolean).join(' · ') || 'No details yet'}</div>
-                  {p.error && <div className="mt-1 text-xs text-bad">{p.error}</div>}
-                </div>
-                <LinkButton l={p.link} />
+              <li key={p.id} className="px-4 py-3 sm:px-5">
+                <div className="flex flex-wrap items-center gap-2"><span className="text-sm font-semibold text-fg">{p.request}</span><Pill tone={/approval/i.test(p.status) ? 'warn' : 'plain'}>{p.status}</Pill></div>
+                <div className="mt-1 text-sm text-fg-2">{[p.domains !== null ? `${p.domains} domain${p.domains === 1 ? '' : 's'}` : '', p.mailboxes !== null ? `${p.mailboxes} inboxes` : '', p.provider].filter(Boolean).join(' · ') || 'No details yet'}</div>
+                {p.error && <div className="mt-1 text-xs text-bad">{p.error}</div>}
               </li>
             ))}
           </ul>
         </Card>
       )}
-      {!d.clients.length && <Card><Empty icon="layers" title="No domains" sub="No domains for active clients in Airtable." /></Card>}
+      {!d.clients.length && <Card><Empty icon="layers" title="No domains" sub="No domains with inboxes for active clients in Airtable." /></Card>}
       {d.clients.map((c) => (
         <Card key={c.key} className="min-w-0 overflow-hidden p-0">
           <SubHead title={c.name} right={<span className="text-xs text-muted"><span className="tabular font-semibold text-fg-2">{c.domains.length}</span> domains · <span className="tabular font-semibold text-fg-2">{c.inboxes}</span> inboxes{c.notTwo ? <span className="text-warn"> · {c.notTwo} not 2</span> : ''}</span>} />
@@ -461,17 +517,15 @@ function DomainsTab({ client, refresh, setBusy }: { client: string; refresh: num
                 <div className="flex items-start gap-2.5">
                   <StatusDot tone={STATUS[x.status].tone} className="mt-1.5" label={STATUS[x.status].label} />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="min-w-0 break-all text-sm font-semibold text-fg">{x.name}</span>
-                      {x.links.filter((l) => /^https:/.test(l.href)).map((l) => <ExtLink key={l.href} href={l.href} className="shrink-0 text-xs">Airtable</ExtLink>)}
-                    </div>
+                    <span className="min-w-0 break-all text-sm font-semibold text-fg">{x.name}</span>
                     <div className="mt-1.5 flex flex-wrap gap-1.5">
                       <Metric label="Inboxes" v={String(x.inboxes)} tone={x.id && x.inboxes !== 2 ? 'warn' : undefined} />
-                      <Metric label="Expires" v={x.renewal ? (x.daysToRenewal !== null && x.daysToRenewal <= 60 ? `${md(x.renewal)} (${x.daysToRenewal} d)` : x.renewal) : 'UNKNOWN'} tone={x.daysToRenewal !== null && x.daysToRenewal < 0 ? 'bad' : x.daysToRenewal !== null && x.daysToRenewal <= 30 ? 'warn' : undefined} />
-                      <Metric label="Blacklist" v={x.blacklist === 'Listed' ? `listed${x.blacklistCount ? ` (${x.blacklistCount})` : ''}` : x.blacklist ? x.blacklist.toLowerCase() : '—'} tone={x.blacklist === 'Listed' ? 'bad' : x.blacklist === 'Check Failed' ? 'warn' : undefined} />
+                      <Metric label={x.renewalEstimated ? 'Renews (estimated)' : 'Renews'} v={x.renewal ? `${longDate(x.renewal)}${x.daysToRenewal !== null && x.daysToRenewal <= 60 && !x.renewalEstimated ? ` (${x.daysToRenewal} d)` : ''}` : 'UNKNOWN'} tone={!x.renewalEstimated && x.daysToRenewal !== null && x.daysToRenewal < 0 ? 'bad' : !x.renewalEstimated && x.daysToRenewal !== null && x.daysToRenewal <= 30 ? 'warn' : undefined} />
+                      <span title={x.blacklistWhy}><Metric label="Blacklist" v={x.blacklistText} tone={x.blacklist === 'Listed' ? 'bad' : x.blacklist === 'Check Failed' ? 'warn' : undefined} /></span>
                       {x.replacement && <Pill tone="warn">Replacement {x.replacement.status === 'Pending Review' ? 'waiting' : x.replacement.status.toLowerCase()}</Pill>}
                     </div>
                     {x.reasons.length > 0 && <div className="mt-1.5 text-sm leading-snug text-fg-2">{x.reasons.map((r) => r.text).join(' · ')}</div>}
+                    {x.blacklistText === 'Not checked' && <div className="mt-1 text-xs text-muted">{x.blacklistWhy}</div>}
                   </div>
                 </div>
               </li>
@@ -479,7 +533,7 @@ function DomainsTab({ client, refresh, setBusy }: { client: string; refresh: num
           </ul>
         </Card>
       ))}
-      <p className="text-xs text-muted">{d.rule} From Airtable (Domains, Spam Remediation Queue, Domain Purchase Requests), read {timeAgo(d.readAt) || 'just now'}; kept 1 minute. HQ buys nothing: buying stays a ✅ in Decisions.</p>
+      <p className="text-xs text-muted">{d.rule} Renews (estimated) = no Renewal Date in Airtable, so 1 year from the date the domain was added. Domains with no inbox are hidden. From Airtable (Domains, Spam Remediation Queue, Domain Purchase Requests), read {timeAgo(d.readAt) || 'just now'}; kept 1 minute. HQ buys nothing: buying stays a ✅ in Decisions.</p>
     </div>
   );
 }
@@ -491,8 +545,4 @@ function SubHead({ title, icon, right }: { title: string; icon?: string; right?:
       {right}
     </div>
   );
-}
-
-function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: ReactNode }) {
-  return <button onClick={onClick} aria-pressed={on} className={cx('inline-flex min-h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-sm font-medium transition', on ? 'border-accent bg-accent-soft text-accent-ink' : 'border-line bg-surface text-fg-2 hover:bg-hover')}>{children}</button>;
 }
