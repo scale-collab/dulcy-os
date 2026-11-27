@@ -105,7 +105,7 @@ test('ramp: a client\'s first send = its first live launch, else when a sending 
 });
 
 /* ---------- bounces (pure) ---------- */
-const b = (o: Partial<BounceRow> = {}): BounceRow => ({ id: 'r', lead: 'x@acme.com', domain: 'acme.com', inbox: 'a@x-mail.com', campaign: 'TWM - Roofers', campaignRec: 'recCAMP000000001A', clientKey: 'twentywestmedia', client: 'Twenty West', at: ago(1), code: '5.1.1', hard: true, kind: 'not_found', landing: 'custom', gateway: '', verifier: '', emailType: 'Direct', ...o });
+const b = (o: Partial<BounceRow> = {}): BounceRow => ({ id: 'r', lead: 'x@acme.com', domain: 'acme.com', inbox: 'a@x-mail.com', campaign: 'TWM - Roofers', campaignRec: 'recCAMP000000001A', clientKey: 'twentywestmedia', client: 'Twenty West', at: ago(1), code: '550', enhanced: '5.1.1', meaning: 'Address does not exist', hard: true, kind: 'not_found', landing: 'custom', gateway: '', verifier: '', emailType: 'Direct', ...o });
 const many = (n: number, o: Partial<BounceRow> = {}) => Array.from({ length: n }, (_, i) => b({ id: `r${i}`, ...o }));
 
 test('bounces: landing, kind and hard/soft from the Emails fields and the notice', () => {
@@ -117,28 +117,30 @@ test('bounces: landing, kind and hard/soft from the Emails fields and the notice
   assert.equal(kindOf('', '550'), 'not_found', 'a bare 550 is read as "address not found" (approximate)');
   assert.equal(kindOf('', '554'), 'blocked');
   assert.equal(kindOf('', '451'), 'other');
-  assert.deepEqual([hardOf('Hard Bounce', '451'), hardOf('Soft Bounce', '550'), hardOf('', '550'), hardOf('', '421'), hardOf('', 'Unknown')], [true, false, true, false, null]);
+  assert.deepEqual([hardOf('Hard Bounce', '451'), hardOf('Soft Bounce', '550'), hardOf('', '550'), hardOf('', '421'), hardOf('', 'Unknown'), hardOf('Soft Bounce', 'Unknown')], [false, true, true, false, null, false], 'round 2: soft = any 4xx, hard = 5xx (the code wins over the Bounce Type)');
 });
 
 test('bounces: each view ends in one conclusion (gateway, custom servers, verification, one inbox, Microsoft, mixed, too few)', () => {
   assert.match(concludeBounces(many(3)).text, /^Only 3 bounces here → too few to judge/);
-  assert.equal(concludeBounces(many(20)).text, 'Most bounces are 5.1.1 "address not found" on custom mail servers → stop sending to custom mail servers and re-verify the list');
-  assert.equal(concludeBounces(many(20, { landing: 'google' })).text, 'Most bounces are 5.1.1 "address not found" → a verification problem: check the verifier on this list (Verification tab)');
-  assert.equal(concludeBounces([...many(12, { landing: 'gateway', gateway: 'Mimecast', kind: 'blocked', code: '5.7.1' }), ...many(8, { landing: 'google' })]).text, '60% of bounces land on Mimecast → stop sending to Mimecast');
-  assert.equal(concludeBounces(many(20, { kind: 'blocked', code: '5.7.1', landing: 'google', inbox: 'bad@x-mail.com' })).text, 'Most bounces are blocks from one inbox (bad@x-mail.com) → rest that inbox');
-  const ms = Array.from({ length: 20 }, (_, i) => b({ id: `m${i}`, kind: 'blocked', code: '5.7.606', landing: 'microsoft', inbox: `s${i}@x-mail.com` }));
+  assert.equal(concludeBounces(many(20)).text, 'Most bounces are 550 "address not found" on custom mail servers → stop sending to custom mail servers and re-verify the list');
+  assert.equal(concludeBounces(many(20, { landing: 'google' })).text, 'Most bounces are 550 "address not found" → a verification problem: check the verifier on this list (Verification tab)');
+  assert.equal(concludeBounces([...many(12, { landing: 'gateway', gateway: 'Mimecast', kind: 'blocked', code: '550', enhanced: '5.7.1' }), ...many(8, { landing: 'google' })]).text, '60% of bounces land on Mimecast → stop sending to Mimecast');
+  assert.equal(concludeBounces(many(20, { kind: 'blocked', code: '550', enhanced: '5.7.1', landing: 'google', inbox: 'bad@x-mail.com' })).text, 'Most bounces are blocks from one inbox (bad@x-mail.com) → rest that inbox');
+  const ms = Array.from({ length: 20 }, (_, i) => b({ id: `m${i}`, kind: 'blocked', code: '550', enhanced: '5.7.606', landing: 'microsoft', inbox: `s${i}@x-mail.com` }));
   assert.equal(concludeBounces(ms).text, 'Most bounces are Microsoft blocking us → pause sending to Outlook / Microsoft on this campaign');
-  const mixed = [...many(5, { kind: 'blocked', code: '5.7.1', landing: 'google', inbox: 'p@x.com' }), ...many(5, { landing: 'google', inbox: 'q@x.com' }), ...many(5, { kind: 'other', code: '451', landing: 'microsoft', inbox: 'r@x.com' })];
+  const mixed = [...many(5, { kind: 'blocked', code: '550', enhanced: '5.7.1', landing: 'google', inbox: 'p@x.com' }), ...many(5, { landing: 'google', inbox: 'q@x.com' }), ...many(5, { kind: 'other', code: '451', enhanced: '', landing: 'microsoft', inbox: 'r@x.com' })];
   const c = concludeBounces(mixed);
   assert.equal(c.text, 'Bounces are mixed → nothing to stop yet; keep watching');
   assert.ok(c.support.includes('15 bounces'));
 });
 
 test('bounces: grouping by code, hard vs soft, kind and landing; filters per client, campaign and inbox', () => {
-  const rows = [...many(6), ...many(3, { code: '4.2.2', hard: false, kind: 'full', landing: 'google', inbox: 'z@x-mail.com' }), ...many(2, { clientKey: 'dulcy', client: 'Dulcy', campaign: 'Dulcy - Agencies', code: '5.7.1', kind: 'blocked', landing: 'gateway', gateway: 'Proofpoint' })];
+  const rows = [...many(6), ...many(3, { code: '452', enhanced: '4.2.2', hard: false, kind: 'full', landing: 'google', inbox: 'z@x-mail.com' }), ...many(2, { clientKey: 'dulcy', client: 'Dulcy', campaign: 'Dulcy - Agencies', code: '550', enhanced: '5.7.1', kind: 'blocked', landing: 'gateway', gateway: 'Proofpoint' })];
   const s = bounceSummary(rows, {});
   assert.equal(s.total, 11);
-  assert.deepEqual(s.byCode.map((x) => [x.key, x.n]), [['5.1.1', 6], ['4.2.2', 3], ['5.7.1', 2]]);
+  assert.deepEqual(s.byCode.map((x) => [x.key, x.n]), [['550', 8], ['452', 3]], 'grouped by the 3-digit SMTP code');
+  assert.deepEqual(s.codes.map((x) => [x.code, x.soft, x.enhanced.map((e) => `${e.code}:${e.n}`).join(',')]), [['550', false, '5.1.1:6,5.7.1:2'], ['452', true, '4.2.2:3']], 'the enhanced codes are the detail');
+  assert.equal(s.byCode[0].label, '550 · Mailbox unavailable (does not exist, or rejected)');
   assert.deepEqual(s.byType.map((x) => [x.key, x.n]), [['hard', 8], ['soft', 3]]);
   assert.deepEqual(s.byLanding.map((x) => [x.label, x.n]), [['Custom mail server', 6], ['Google', 3], ['Security gateway', 2]]);
   assert.deepEqual(s.gateways.map((x) => x.key), ['Proofpoint']);
@@ -152,7 +154,7 @@ test('bounces: grouping by code, hard vs soft, kind and landing; filters per cli
 test('verification: per campaign and verifier; many "address not found" = a verification problem', () => {
   const lists = new Map([['recLIST000000001A', { id: 'recLIST000000001A', name: 'Roofers', direct: 'LeadMagic', generic: 'MillionVerifier', directCount: 600, genericCount: 400, source: 'DiscoLike' }]]);
   const camps = [{ id: 'recCAMP000000001A', name: 'TWM - Roofers', clientKey: 'twentywestmedia', client: 'Twenty West', contacted: 1000, bounce: 4.2, status: 'Active', lists: ['recLIST000000001A'] }];
-  const bounces = [...many(30, { verifier: '', emailType: 'Direct' }), ...many(4, { emailType: 'Generic', kind: 'blocked', code: '5.7.1' })];
+  const bounces = [...many(30, { verifier: '', emailType: 'Direct' }), ...many(4, { emailType: 'Generic', kind: 'blocked', code: '550', enhanced: '5.7.1' })];
   const [r] = verificationRows(camps, lists, bounces, []);
   assert.equal(r.verdict, 'problem');
   assert.deepEqual(r.cohorts.map((c) => [c.verifier, c.emailType, c.leads, c.contacted, c.contactedEstimated, c.bounces, c.notFound, c.rate]), [
@@ -166,7 +168,7 @@ test('verification: per campaign and verifier; many "address not found" = a veri
   assert.deepEqual(t.map((x) => [x.verifier, x.bounces, x.notFound]), [['LeadMagic', 30, 30], ['MillionVerifier', 4, 0]]);
   const [few] = verificationRows(camps, lists, many(3), []);
   assert.equal(few.verdict, 'few');
-  const [ok] = verificationRows(camps, lists, many(20, { kind: 'blocked', code: '5.7.1' }), []);
+  const [ok] = verificationRows(camps, lists, many(20, { kind: 'blocked', code: '550', enhanced: '5.7.1' }), []);
   assert.equal(ok.verdict, 'ok');
 });
 
@@ -376,8 +378,8 @@ test('bounces + verification API: grouping, one conclusion, filters; read only',
   const r = await call('GET', '/hq/api/deliverability/bounces?days=30', cookie);
   assert.equal(r.status, 200, r.text);
   assert.equal(r.body.total, 12);
-  assert.deepEqual(r.body.byCode.map((x: any) => [x.key, x.n]), [['5.1.1', 12]]);
-  assert.equal(r.body.conclusion.text, 'Most bounces are 5.1.1 "address not found" on custom mail servers → stop sending to custom mail servers and re-verify the list');
+  assert.deepEqual(r.body.byCode.map((x: any) => [x.key, x.n]), [['550', 12]]);
+  assert.equal(r.body.conclusion.text, 'Most bounces are 550 "address not found" on custom mail servers → stop sending to custom mail servers and re-verify the list');
   assert.deepEqual(r.body.options.accounts.map((a: any) => a.key), ['a@twm-mail.com']);
   const none = await call('GET', '/hq/api/deliverability/bounces?account=nobody@x.com', cookie);
   assert.equal(none.body.total, 0);
