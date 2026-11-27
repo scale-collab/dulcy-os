@@ -98,7 +98,8 @@ export async function restAccount(ctx: JobContext, at: Pick<AirtableClient, 'upd
     [EA.stage]: 'Resting 7 Days', [EA.status]: 'Resting', [EA.healthReason]: reasons, [EA.dailyLimit]: limit, [EA.previousLimit]: previous,
     // Retest = the first weekly test 6.5+ days after the rest started (so next Friday's test counts).
     [EA.restStarted]: start, [EA.retestDue]: new Date(Date.parse(start) + 6.5 * DAY).toISOString(),
-    [EA.failedTests]: n(f[EA.failedTests]) + 1, [EA.lastAction]: `Rested (limit ${limit}) at ${new Date().toISOString()}: ${i.reason}`.slice(0, 250), [EA.error]: '',
+    // Last Spam Protocol Action is a dateTime field: the time only (the what is in the activity log).
+    [EA.failedTests]: n(f[EA.failedTests]) + 1, [EA.lastAction]: new Date().toISOString(), [EA.error]: '',
     ...(i.score !== undefined ? { [EA.lastScore]: i.score } : {}), ...(i.testId ? { [EA.lastTestId]: i.testId } : {}),
   });
   await logActivity(ctx.cfg, { event: `Account rested 7 days: ${i.email}`, type: 'Fixed', agent: 'Atlas', details: `${i.reason}\nDaily limit ${previous} → ${limit} until the next weekly placement test.`, emailAccountRecordIds: [i.accountRecordId], clientRecordIds: i.clientIds ?? links(f[EA.client]), campaignRecordIds: i.campaignIds ?? links(f[EA.campaigns]), jobId: ctx.job.id });
@@ -110,6 +111,34 @@ export async function restAccount(ctx: JobContext, at: Pick<AirtableClient, 'upd
     job: { kind: 'account.health', recordId: 'account-health', input: {} },
   });
   return { limit, previous };
+}
+
+/** Why a placement test could not be processed, in plain words, and who fixes it. Pure. */
+export function failureReason(msg: string): { key: string; text: string } {
+  const m = String(msg ?? '');
+  if (/no Email Accounts record/i.test(m)) return { key: 'no-account', text: 'No Email Accounts row in Airtable for this inbox (the Email Accounts sync has not added it, or the test has no Email ID)' };
+  if (/INVALID_VALUE_FOR_COLUMN|INVALID_MULTIPLE_CHOICE|cannot (parse|accept)|422/i.test(m)) return { key: 'airtable-refused', text: 'Airtable refused the update (a field got the wrong kind of value: a code bug)' };
+  if (/EMAILBISON_KEY|BOUNCE_CHECK_KEY|emailbison|sender|daily.?limit|\b40[134]\b|\b429\b|\b5\d\d\b/i.test(m)) return { key: 'emailbison', text: 'EmailBison refused the daily-limit change (key, workspace or rate limit)' };
+  return { key: 'other', text: 'Another error' };
+}
+/** The "could not process" part of the report, grouped by reason, with who fixes it. Pure. */
+export function failureLines(failed: string[]): string[] {
+  if (!failed.length) return [];
+  const groups = new Map<string, { text: string; items: string[]; sample: string }>();
+  for (const f of failed) {
+    const i = f.indexOf(': ');
+    const email = i > 0 ? f.slice(0, i) : f, msg = i > 0 ? f.slice(i + 2) : '';
+    const r = failureReason(msg);
+    const g = groups.get(r.key) ?? { text: r.text, items: [], sample: msg };
+    g.items.push(email); groups.set(r.key, g);
+  }
+  const out = [`:grey_question: Could not process ${failed.length} test${failed.length === 1 ? '' : 's'}. Riley fixes this; these inboxes were not moved on in the spam protocol.`];
+  for (const g of groups.values()) {
+    const note = g.text.startsWith('Airtable refused') ? '. The daily limit may already be 0 in EmailBison for these: Riley checks them' : '';
+    out.push(`• ${g.text}: ${g.items.length} (${g.items.slice(0, 5).join(', ')}${g.items.length > 5 ? `, +${g.items.length - 5} more` : ''})${note}${g.sample ? `. Error: ${g.sample.slice(0, 160)}` : ''}`);
+  }
+  out.push('The tests are marked Failed in Inbox Placement Testing; the next weekly test is read again.');
+  return out;
 }
 
 export const accountHealthStage: Stage = async (ctx) => {
@@ -127,7 +156,7 @@ export const accountHealthStage: Stage = async (ctx) => {
     const mark = (outcome: string, error = '') => ctx.dryRun ? Promise.resolve() : at.update(PLACEMENT, t.id, { [PT.processed]: true, [PT.outcome]: outcome, [PT.error]: error, [PT.processedAt]: new Date().toISOString() });
     try {
       const acct = (await at.list(ACCOUNTS, `{Email ID}=${emailId}`, Object.values(EA), 3)).find((a) => !ws || n(a.fields[EA.workspaceId]) === ws) ?? null;
-      if (!acct) { await mark('Failed', `no Email Accounts record with Email ID ${emailId}`); out.failed.push(email); continue; }
+      if (!acct) { const why = `no Email Accounts record with Email ID ${emailId}`; await mark('Failed', why); out.failed.push(`${email}: ${why}`); continue; }
       const af = acct.fields;
       const action = decide({ stage: v(af[EA.stage]), retestDue: v(af[EA.retestDue]) }, { score, at: testAt });
       const clients = links(af[EA.client]), camps = links(af[EA.campaigns]);
@@ -140,7 +169,7 @@ export const accountHealthStage: Stage = async (ctx) => {
         const back = n(af[EA.previousLimit], 15) || 15;
         await ctx.paid({ callKey: `recover:${emailId}:${t.id}`, provider: 'emailbison', units: 0, scope: 'record', run: async () => { await bisonFor(ctx, ws).setDailyLimit([emailId], back); return back; }, dryRunResult: () => 0 });
         await at.update(ACCOUNTS, acct.id, { [EA.stage]: 'Recovered', [EA.status]: 'Healthy', [EA.dailyLimit]: back, [EA.lastScore]: score, [EA.lastTestId]: v(tf[PT.testId]),
-          [EA.healthReason]: (Array.isArray(af[EA.healthReason]) ? (af[EA.healthReason] as any[]).map(v) : []).filter((r) => r !== 'Poor Inbox Placement' && r !== 'High Bounce Rate'), [EA.lastAction]: `Recovered at ${new Date().toISOString()}: retest ${score}%` });
+          [EA.healthReason]: (Array.isArray(af[EA.healthReason]) ? (af[EA.healthReason] as any[]).map(v) : []).filter((r) => r !== 'Poor Inbox Placement' && r !== 'High Bounce Rate'), [EA.lastAction]: new Date().toISOString() });
         await logActivity(cfg, { event: `Account recovered: ${email}`, type: 'Fixed', agent: 'Atlas', details: `Retest ${score}% (${PASS_SCORE}%+). Daily limit back to ${back}.`, emailAccountRecordIds: [acct.id], clientRecordIds: clients, campaignRecordIds: camps, jobId: ctx.job.id });
         await trackClose(ctx.db, restTaskKey(acct.id), `Recovered: retest ${score}%, daily limit back to ${back}`);
         await mark('Recovered'); out.recovered.push(`${email} (${score}%)`);
@@ -169,7 +198,7 @@ export const accountHealthStage: Stage = async (ctx) => {
             [DF.action]: 'Approve Purchase', [DF.actionInput]: JSON.stringify({ queueRecordId: qId }),
           });
         }
-        await at.update(ACCOUNTS, acct.id, { [EA.stage]: 'Replace Domain', [EA.status]: 'Spam', [EA.lastScore]: score, [EA.failedTests]: n(af[EA.failedTests]) + 1, [EA.lastAction]: `Replacement queued at ${new Date().toISOString()}` });
+        await at.update(ACCOUNTS, acct.id, { [EA.stage]: 'Replace Domain', [EA.status]: 'Spam', [EA.lastScore]: score, [EA.failedTests]: n(af[EA.failedTests]) + 1, [EA.lastAction]: new Date().toISOString() });
         await logActivity(cfg, { event: `Replacement waiting for approval: ${dom}`, type: 'Waiting for approval', agent: 'Atlas', details: `${reason}\n${spec}`, emailAccountRecordIds: [acct.id], clientRecordIds: clients, campaignRecordIds: camps, jobId: ctx.job.id });
         await trackTask(ctx.db, {
           agent: 'Atlas', key: restTaskKey(acct.id), title: `Rest ${email} until its retest`, status: 'waiting_alex',
@@ -195,9 +224,14 @@ export const accountHealthStage: Stage = async (ctx) => {
       out.rested.length ? `:zzz: Rested 7 days (under ${PASS_SCORE}%), daily limit 0:\n${list(out.rested)}` : '',
       out.recovered.length ? `:white_check_mark: Recovered, limit restored:\n${list(out.recovered)}` : '',
       out.replace.length ? `:shopping_trolley: Failed the retest, replacement waiting for your ✅ (Decisions):\n${list(out.replace)}` : '',
-      out.failed.length ? `:grey_question: Could not process:\n${list(out.failed)}` : '',
+      ...failureLines(out.failed),
     ].filter(Boolean);
-    await saveReport(ctx.db, { agent: 'Atlas', kind: 'account_health', title: `Account health: ${out.rested.length} rested, ${out.recovered.length} recovered, ${out.replace.length} to replace`, body: lines.slice(1).join('\n'), jobId: ctx.job.id, dedupeKey: `account-health:${ctx.job.id}` });
+    const nFailed = out.failed.length;
+    await saveReport(ctx.db, {
+      agent: 'Atlas', kind: 'account_health',
+      title: `Account health: ${out.rested.length} rested, ${out.recovered.length} recovered, ${out.replace.length} to replace${nFailed ? `, ${nFailed} could not be processed (Riley)` : ''}`,
+      body: lines.slice(1).join('\n'), urgent: nFailed > 0, jobId: ctx.job.id, dedupeKey: `account-health:${ctx.job.id}`,
+    });
     if (slackReports(cfg)) await alert(cfg.slackWebhookUrl, lines.join('\n'));
   }
   return {

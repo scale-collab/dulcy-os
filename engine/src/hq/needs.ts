@@ -13,6 +13,9 @@
 //   7. Check-ins with an agent: runs that failed in the last 24 h, and late or stuck tasks (one line
 //      per agent). Members (Josh) get only Echo's (the inbox is his job).
 //   8. Sign-ups waiting (owner only) → Users.
+//   9. Round 2 (Alex 2026-11-27: "what must I do today as founder"): sales calls today (Sales Data,
+//      owner only) and clients at risk / needing a lot of attention (Clients health, owner only).
+//      Read through `extras` (the server passes the readers; both are cached), one line each.
 // Members never get money, Ledger, Sienna, Riley's manual fixes or sign-ups (built server-side).
 // Order (Ada's rules, rankNeeds): importance (rank) first, then "Do now" before "When you can", then
 // money and client-facing, then the oldest. Items disappear when resolved; "Not now" hides an ask or
@@ -38,7 +41,7 @@ export type NeedGroup = 'now' | 'later';
  * checkin = talk to an agent (failed runs, late or stuck tasks); task = an agent's task waiting on
  * Alex with no Decision behind it; handled = done or decided (Yesterday).
  */
-export type NeedKind = 'decisions' | 'campaigns' | 'money' | 'checkin' | 'issue' | 'signups' | 'ask' | 'task' | 'handled';
+export type NeedKind = 'decisions' | 'campaigns' | 'money' | 'checkin' | 'issue' | 'signups' | 'ask' | 'task' | 'handled' | 'calls' | 'clients';
 export type NeedDay = 'yesterday' | 'today' | 'tomorrow';
 export const isNeedDay = (x: unknown): x is NeedDay => x === 'yesterday' || x === 'today' || x === 'tomorrow';
 export interface NeedLink { label: string; href: string }
@@ -74,7 +77,7 @@ export interface NeedItem {
 export interface RileyIssue { id: string; title: string; why: string; fix: string; decision: string; seen: string }
 
 /** Importance per kind (Ada's order, lower first). */
-export const RANK = { decisions: 1, askHigh: 2, campaigns: 2, money: 3, issue: 4, task: 4, failed: 5, late: 6, ask: 6, signups: 7 } as const;
+export const RANK = { decisions: 1, calls: 2, askHigh: 2, campaigns: 2, clients: 3, money: 3, issue: 4, task: 4, failed: 5, late: 6, ask: 6, signups: 7 } as const;
 
 /** The face for a pile (Yesterday's items). Unknown piles (renamed later) → Ada. */
 const PILE_FACE: Record<string, string> = { Replies: 'Echo', Campaigns: 'Atlas', Fixes: 'Riley', Money: 'Ledger', Sales: 'Cole', Content: 'Sienna' };
@@ -120,8 +123,16 @@ export function hqHref(href: string | null | undefined): string | null {
 
 export interface FailedRuns { agent: string; fails: { kind: string; at: string; error: string }[] }
 export interface MoneyReport { id: number; title: string; summary: string; created: string }
+/** A sales call on today's calendar (Sales Data), for the founder's to-do. */
+export interface CallToday { dealId: string; name: string; company: string; prep: boolean }
+/** An active paying client whose health is "Needs attention" or "At risk" (Clients). */
+export interface ClientRisk { id: string; name: string; health: 'attention' | 'at_risk'; problem: string }
 export interface NeedSources {
   owner: boolean;
+  /** Owner only: sales calls today. */
+  calls?: CallToday[];
+  /** Owner only: clients needing attention or at risk. */
+  clients?: ClientRisk[];
   decisions: DecisionCard[];
   issues: RileyIssue[];
   signups: number;
@@ -244,6 +255,37 @@ export function aggregateNeeds(s: NeedSources): NeedItem[] {
         at: r.created, rank: RANK.money, money: true,
       });
     }
+  }
+
+  // 9. Sales calls today and clients at risk (owner only): one line each.
+  if (s.owner && (s.calls ?? []).length) {
+    const calls = s.calls!;
+    const prepped = calls.filter((c) => c.prep).length;
+    const who = calls.map((c) => c.name || c.company);
+    out.push({
+      ...base, key: 'calls', kind: 'calls', group: 'now', agent: 'Cole', count: calls.length,
+      title: calls.length === 1 ? `Sales call today: ${who[0]}` : `${calls.length} sales calls today: ${listNames(who)}`,
+      todo: prepped === calls.length ? "Read Cole's prep, then take the call." : "Ask Cole for a prep, then take the call.",
+      why: `Cole's prep is ready for ${prepped} of ${calls.length}.`,
+      action: { label: 'Open Sales', href: 'sales' },
+      link: prepped < calls.length ? { label: 'Ask Cole', href: chatAsk('Cole', `Prep me for today's call${calls.length === 1 ? '' : 's'} (${listNames(who, 5)}).`) } : null,
+      at: '', rank: RANK.calls, money: true, clientFacing: true,
+    });
+  }
+  if (s.owner && (s.clients ?? []).length) {
+    const bad = s.clients!.filter((c) => c.health === 'attention'), risk = s.clients!.filter((c) => c.health === 'at_risk');
+    const lead = bad[0] ?? risk[0];
+    const names = [...bad, ...risk].map((c) => c.name);
+    const parts = [bad.length && `${plural(bad.length, 'client needs', 'clients need')} a lot of attention`, risk.length && `${plural(risk.length, 'client is', 'clients are')} at risk`].filter(Boolean).join(', ');
+    out.push({
+      ...base, key: 'clients', kind: 'clients', group: bad.length ? 'now' : 'later', agent: 'Atlas', count: names.length,
+      title: `${parts}: ${listNames(names)}`,
+      todo: 'Check with Atlas what is being done for each, and when results come back.',
+      why: firstSentence(`${lead.name}: ${lead.problem || 'behind on the promised results.'}`),
+      action: { label: 'Open Clients', href: 'clients' },
+      link: { label: 'Ask Atlas', href: chatAsk('Atlas', `What is the plan for ${listNames(names, 5)}? When will each be back on track?`) },
+      at: '', rank: RANK.clients, clientFacing: true,
+    });
   }
 
   // 8. Sign-ups (owner only).
@@ -446,7 +488,9 @@ export async function manualIssues(at: Pick<HqAirtable, 'list'>): Promise<RileyI
 }
 
 /** Read every source and build the list. A source that fails is named in `errors`; the rest still shows. */
-export async function loadNeeds(db: Db, at: HqAirtable | undefined, user: HqUser, pre: { decisions?: DecisionCard[] } = {}): Promise<{ items: NeedItem[]; errors: string[] }> {
+/** Optional readers for the founder items (the server passes them; tests leave them out). */
+export interface NeedExtras { calls?: () => Promise<CallToday[]>; clients?: () => Promise<ClientRisk[]> }
+export async function loadNeeds(db: Db, at: HqAirtable | undefined, user: HqUser, pre: { decisions?: DecisionCard[]; extras?: NeedExtras } = {}): Promise<{ items: NeedItem[]; errors: string[] }> {
   const owner = user.role === 'owner';
   const errors: string[] = [];
   const soft = <T>(what: string, p: Promise<T>, fallback: T) => p.catch(() => { errors.push(what); return fallback; });
@@ -463,8 +507,12 @@ export async function loadNeeds(db: Db, at: HqAirtable | undefined, user: HqUser
     soft('Agent runs', jobHealth(db), new Map()),
     owner ? soft('Ledger reports', urgentMoneyReports(db), []) : Promise.resolve([] as MoneyReport[]),
   ]);
+  const [calls, clients] = await Promise.all([
+    owner && pre.extras?.calls ? soft('Sales calls (Airtable)', pre.extras.calls(), [] as CallToday[]) : Promise.resolve([] as CallToday[]),
+    owner && pre.extras?.clients ? soft('Client health (Airtable)', pre.extras.clients(), [] as ClientRisk[]) : Promise.resolve([] as ClientRisk[]),
+  ]);
   const failed: FailedRuns[] = [...health].map(([agent, h]) => ({ agent, fails: h.openFails }));
-  return { items: aggregateNeeds({ owner, decisions, issues, signups, asks, quiet, tasks, failed, moneyReports }), errors };
+  return { items: aggregateNeeds({ owner, decisions, issues, signups, asks, quiet, tasks, failed, moneyReports, calls, clients }), errors };
 }
 
 /** Ledger's urgent reports from the last 3 days (owner only: the caller checks). */
@@ -495,9 +543,9 @@ export interface NeedsDay { day: NeedDay; date: string; items: NeedItem[]; count
  * Needs you for one day. Today = what is due now (loadNeeds). Yesterday = what got handled.
  * Tomorrow = back from "Not now" + due tomorrow. Reads only; never writes Airtable.
  */
-export async function loadNeedsDay(db: Db, at: HqAirtable | undefined, user: HqUser, day: NeedDay, now = new Date()): Promise<NeedsDay> {
+export async function loadNeedsDay(db: Db, at: HqAirtable | undefined, user: HqUser, day: NeedDay, now = new Date(), extras?: NeedExtras): Promise<NeedsDay> {
   const date = addDays(nyDate(now), day === 'yesterday' ? -1 : day === 'tomorrow' ? 1 : 0);
-  if (day === 'today') { const n = await loadNeeds(db, at, user); return { day, date, items: n.items, counts: needCounts(n.items), errors: n.errors }; }
+  if (day === 'today') { const n = await loadNeeds(db, at, user, { extras }); return { day, date, items: n.items, counts: needCounts(n.items), errors: n.errors }; }
   const owner = user.role === 'owner';
   const errors: string[] = [];
   const soft = <T>(what: string, p: Promise<T>, fallback: T) => p.catch(() => { errors.push(what); return fallback; });

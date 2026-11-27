@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { api, switchViewAsMember, type Client, type HqUserRow, type SoftrUser, type User, type UserEvent } from '../api';
+import { slashDate } from '../dates';
 import { Button, Card, cx, Empty, ErrorBox, go, Icon, Label, PageSkeleton, PageTitle, Pill, SectionHeader, setCount, timeAgo } from '../ui';
 
 interface UsersData { users: HqUserRow[]; events: UserEvent[] }
@@ -43,14 +44,6 @@ export default function Users({ user }: { user: User }) {
       {adding === 'user' && <AddUser onDone={() => { setAdding(''); load(); }} />}
       {adding === 'client' && <AddClientLogin onDone={() => { setAdding(''); load(); }} />}
 
-      <Card className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-line bg-sunken text-fg"><Icon name="user" size={19} /></span>
-        <div className="min-w-0 flex-1">
-          <div className="font-semibold text-fg">See what Josh sees</div>
-          <div className="text-sm text-muted">HQ exactly as a member sees it: no money, no content, no Users. Read only until you exit.</div>
-        </div>
-        <Button icon="user" onClick={() => switchViewAsMember(true)} className="w-full sm:w-auto">View as member</Button>
-      </Card>
 
       <section className="mb-6">
         <SectionHeader title={`Client portal requests · ${portalReqs.length}`} icon="briefcase" />
@@ -71,6 +64,7 @@ export default function Users({ user }: { user: User }) {
         <Card className="divide-y divide-line p-0">
           {others.map((u) => <UserLine key={u.id} u={u} self={u.email === user.email} lastOwner={u.role === 'owner' && u.status === 'active' && owners <= 1} act={act} />)}
         </Card>
+        <p className="mt-2 text-xs text-muted">"View as member" opens HQ the way that person sees it, read only. Exit from the bar at the top.</p>
       </section>
 
       <section className="mb-6">
@@ -180,7 +174,7 @@ function LinkBox({ url, expires }: { url: string; expires: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="space-y-2 rounded-xl border border-accent/40 bg-accent-soft p-3">
-      <div className="text-xs font-medium text-fg-2">One-time link, valid until {new Date(expires).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}. Copy it and send it to them yourself.</div>
+      <div className="text-xs font-medium text-fg-2">One-time link, valid until {slashDate(expires)}. Copy it and send it to them yourself.</div>
       <div className="flex gap-2">
         <input readOnly className={cx(field, 'min-w-0 flex-1 font-mono text-xs')} value={url} onFocus={(e) => e.currentTarget.select()} aria-label="Setup link" />
         <Button icon={copied ? 'check' : 'link'} onClick={() => { void navigator.clipboard?.writeText(url).then(() => setCopied(true)).catch(() => undefined); }}>{copied ? 'Copied' : 'Copy'}</Button>
@@ -250,6 +244,9 @@ function UserLine({ u, self, lastOwner, act }: { u: HqUserRow; self: boolean; la
   const [pw, setPw] = useState('');
   const [busy, setBusy] = useState(false);
   const locked = self || lastOwner;
+  // "View as <role>" (Alex, 2026-11-27): on the person's row, members only (an owner already sees everything).
+  const canView = !self && u.role === 'member' && u.status === 'active';
+  const viewAs = () => switchViewAsMember(true, { name: u.name || u.email, role: u.role });
   const run = async (a: string, b?: Record<string, unknown>) => { setBusy(true); const ok = await act(u, a, b); setBusy(false); return ok; };
   const reset = async (e: FormEvent) => { e.preventDefault(); if (await run('password', { password: pw })) { setPw(''); setOpen(false); } };
   return (
@@ -266,8 +263,9 @@ function UserLine({ u, self, lastOwner, act }: { u: HqUserRow; self: boolean; la
             {u.resetAsked && <Pill tone="warn">asked for a new password</Pill>}
           </div>
           <div className="truncate text-sm text-muted">{u.email}</div>
-          <div className="text-xs text-muted">{u.lastSeen ? `seen ${timeAgo(u.lastSeen)}` : 'never signed in'} · added {new Date(u.created).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}{u.hasPassword ? '' : ' · Google only'}</div>
+          <div className="text-xs text-muted">{u.lastSeen ? `seen ${timeAgo(u.lastSeen)}` : 'never signed in'} · added {slashDate(u.created, { year: true })}{u.hasPassword ? '' : ' · Google only'}</div>
         </div>
+        {canView && <span className="hidden sm:block"><Button icon="user" onClick={viewAs} title={`HQ the way ${u.name} sees it, read only`}>View as {u.role}</Button></span>}
         {u.resetAsked && !open && <Button tone="accent" icon="link" onClick={() => { setOpen(true); void makeLink(); }}>Send link</Button>}
         <button onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-label={`Manage ${u.name}`} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-muted hover:bg-hover hover:text-fg">
           <Icon name="chevronDown" size={18} className={cx('transition', open && 'rotate-180')} />
@@ -275,6 +273,7 @@ function UserLine({ u, self, lastOwner, act }: { u: HqUserRow; self: boolean; la
       </div>
       {open && (
         <div className="mt-3 space-y-3 rounded-xl border border-line bg-sunken p-3 anim-fade">
+          {canView && <Button icon="user" onClick={viewAs} className="w-full sm:hidden">View as {u.role}</Button>}
           {locked && <p className="text-xs text-muted">{self ? 'You cannot disable or demote yourself.' : 'The last owner cannot be disabled or demoted.'}</p>}
           <div className="grid grid-cols-2 gap-2">
             {u.role === 'client'

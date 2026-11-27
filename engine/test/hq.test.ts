@@ -388,7 +388,7 @@ test('view as member: owner only, downgrade only, read only; money and owner scr
   // Read only: every write is refused, nothing written.
   const w = await call('POST', '/hq/api/decisions/recREPLY000000001', { body: { verdict: 'approve' }, cookie, headers: view });
   assert.equal(w.status, 403);
-  assert.match(w.body.error, /read only/);
+  assert.match(w.body.error, /read only/i);
   assert.equal((await call('POST', '/hq/api/fix-it', { body: { agent: 'Riley', title: 'x' }, cookie, headers: view })).status, 403);
   assert.equal(writes.length, 0);
   // A member sending "owner" (or anything) is still a member.
@@ -1029,7 +1029,7 @@ test("needs: a member (Josh) gets their own to-do: their decisions, their asks, 
   assert.ok(!JSON.stringify(items).match(/Ledger|Sienna|Money|money decision|Key expired|sign-up/), 'nothing owner-only in a member to-do');
 });
 
-test('needs API: owner and member views, Riley issues from System Issues, Today shows the top 3', { skip }, async () => {
+test('needs API: owner and member views, Riley issues from System Issues, Today shows the top 5 (the same ranked list)', { skip }, async () => {
   tables[DECISIONS] = {
     recREPLY000000001: decision(), recREPLY000000002: decision({ [DF.title]: 'Reply to Bo' }),
     recMONEY000000001: decision({ [DF.agent]: 'Ledger', [DF.action]: 'Approve Purchase', [DF.emailsRecord]: '', _created: new Date().toISOString() }),
@@ -1056,7 +1056,11 @@ test('needs API: owner and member views, Riley issues from System Issues, Today 
   assert.deepEqual(r.body.counts, { total: 6, now: 4, later: 2 });
   assert.deepEqual(r.body.errors, []);
   const t = await call('GET', '/hq/api/today', { cookie });
-  assert.equal(t.body.needs.top.length, 3);
+  assert.equal(t.body.needs.top.length, 5);
+  assert.deepEqual(t.body.needs.top.map((i: any) => i.key), keys.slice(0, 5), 'Do now = the top of Needs you, same order');
+  assert.ok(t.body.week && t.body.week.thisWeek && t.body.week.lastWeek, 'the weekly scorecard');
+  assert.equal(t.body.campaigns.groups.length, 4, 'campaigns grouped by how they are doing');
+  assert.ok(t.body.team.every((x: any) => !/waiting on you/.test(x.line)), 'no decisions count in the team check');
   assert.equal(t.body.needs.top[0].key, 'decisions');
   assert.equal(t.body.needs.counts.total, 6);
   assert.equal(t.body.tasks, undefined, 'Today no longer reads the Airtable to-do');
