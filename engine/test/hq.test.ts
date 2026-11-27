@@ -26,6 +26,7 @@ import { clientKey, groupWorkspaces, noteFor, _resetClientsCache } from '../src/
 import { ACTIVITY, AF } from '../src/activity.js';
 import { addAsk, cleanActionUrl, type Ask } from '../src/hq/asks.js';
 import { aggregateNeeds } from '../src/hq/needs.js';
+import type { AgentTask } from '../src/hq/agentTasks.js';
 import type { DecisionCard } from '../src/hq/decisions.js';
 import { ISSUES, IF } from '../src/agents/riley.js';
 import { EF, SETTINGS } from '../src/agents/emailsFields.js';
@@ -582,7 +583,7 @@ test('chat: read-only tool, sources saved, history per agent', { skip }, async (
   await call('POST', '/hq/api/chat', { body: { message: 'Only one?', threadId: r.body.threadId }, cookie });
   assert.equal(modelCalls.at(-1)!.messages.length, 3);
   // A thread belongs to its agent.
-  assert.equal((await call('POST', '/hq/api/chat', { body: { agent: 'Atlas', message: 'hi', threadId: r.body.threadId }, cookie })).status, 404);
+  assert.equal((await call('POST', '/hq/api/chat', { body: { agent: 'Atlas', message: 'hi', threadId: r.body.threadId }, cookie })).status, 409, 'a chat belongs to its agent: never answered by another');
 });
 
 test('chat: Ada asks Atlas (saved as its own thread); cost guard stops the tool loop', { skip }, async () => {
@@ -939,7 +940,13 @@ test('Google sign-up: a pending request, never a session; Google login refuses i
 const card = (over: Partial<DecisionCard> = {}): DecisionCard => ({ id: 'recD', title: 'Reply to Jane', agent: 'Echo', client: '', pile: 'Replies', status: 'New', isReply: true, issue: '', checked: '', fix: '', details: '', action: 'Approve Reply', created: '2026-11-25T05:00:00.000Z', threadUrl: '', latestMessage: '', canEdit: true, placeholders: [], ...over });
 const askRow = (over: Partial<Ask> = {}): Ask => ({ id: 1, agent: 'Atlas', title: 'Reply to Pete about Twenty West', why: 'He asked for the October numbers.', steps: '', actionLabel: '', actionUrl: '', priority: 'normal', audience: 'owner', dedupeKey: 'k', created: '2026-11-25T12:00:00.000Z', done: null, doneBy: null, snoozedUntil: null, ...over });
 
-test('needs: one item per pile (never per decision), Riley manual fixes, sign-ups, asks; Do now first', () => {
+const atask = (over: Partial<AgentTask> = {}): AgentTask => ({
+  id: 1, key: 'k', agent: 'Atlas', title: 'A task', due: null, status: 'in_progress', client: '', note: '', notes: '', link: null, priority: 'normal',
+  created: '2026-11-21T10:00:00.000Z', updated: '2026-11-25T10:00:00.000Z', done: null, jobKind: null, waitingUntil: null, decision: null, requeues: 0,
+  overdue: false, stalled: false, daysLate: 0, daysQuiet: 0, ...over,
+});
+
+test("needs = today's to-do (Batch 4b): ONE decisions line, campaigns to start, money with Ledger, check-ins, fixes, asks; Ada's order", () => {
   const decisions = [
     ...Array.from({ length: 105 }, (_, i) => card({ id: `recR${String(i).padStart(13, '0')}`, created: new Date(Date.parse('2026-11-25T06:00:00.000Z') + i * 60_000).toISOString() })),
     card({ id: 'recCAMP0000000001', agent: 'Atlas', pile: 'Campaigns', title: 'Bounce 4.6% on Fleet Ops', isReply: false }),
@@ -955,41 +962,71 @@ test('needs: one item per pile (never per decision), Riley manual fixes, sign-up
     askRow({ id: 3, title: 'Done one', done: '2026-11-25T10:00:00.000Z' }),
     askRow({ id: 4, title: 'Snoozed one', snoozedUntil: '2026-11-26T15:00:00.000Z' }),
     askRow({ id: 5, title: 'Snooze ended', snoozedUntil: '2026-11-25T14:00:00.000Z' }),
+    askRow({ id: 6, title: 'Airtable link', actionUrl: 'https://airtable.com/appX/tblY/recZ', actionLabel: 'Open in Airtable' }),
+  ];
+  const tasks = [
+    atask({ id: 1, key: 'plan-next:recC1', title: 'Plan next campaign for GMG', client: 'GMG', status: 'open', overdue: true, daysLate: 1 }),
+    atask({ id: 2, key: 'plan-next:recC2', title: 'Plan next campaign for Twenty West', client: 'Twenty West', status: 'open' }),
+    atask({ id: 3, agent: 'Riley', key: 'bounce:x', title: 'Bounce check: TW', stalled: true, daysQuiet: 3, updated: '2026-11-22T10:00:00.000Z' }),
+    atask({ id: 4, agent: 'Echo', key: 'e', title: 'Tidy the reply rules', overdue: true, daysLate: 2, due: '2026-11-23' }),
+    atask({ id: 5, agent: 'Ledger', key: 'l', title: 'Reconcile November', overdue: true, daysLate: 1 }),
+    atask({ id: 6, agent: 'Atlas', key: 'w', title: 'New campaign for MJJ', status: 'waiting_alex', link: 'decisions/Campaigns', overdue: true }),
+  ];
+  const failed = [
+    { agent: 'Riley', fails: [{ kind: 'riley.watch', at: '2026-11-25T12:00:00.000Z', error: 'n8n said 500. Retry later.' }] },
+    { agent: 'Ledger', fails: [{ kind: 'ledger.check', at: '2026-11-25T11:00:00.000Z', error: 'Xero token expired.' }] },
   ];
   const now = Date.parse('2026-11-25T15:00:00.000Z');
-  const items = aggregateNeeds({ owner: true, decisions, issues, signups: 1, asks, now });
-  const keys = items.map((i) => i.key);
-  assert.deepEqual(keys.filter((k) => k.startsWith('pile:')).sort(), ['pile:Campaigns', 'pile:Content', 'pile:Fixes', 'pile:Money', 'pile:Replies']);
-  const replies = items.find((i) => i.key === 'pile:Replies')!;
-  assert.deepEqual([replies.agent, replies.title, replies.count, replies.group, replies.action], ['Echo', '105 replies waiting for your OK', 105, 'now', { label: 'Open Replies', href: 'decisions/Replies' }]);
-  assert.match(replies.why, /Oldest 9 h ago/);
-  assert.equal(items.find((i) => i.key === 'pile:Fixes')!.count, 1, "the manual fix's decision is covered by the issue card");
+  const items = aggregateNeeds({ owner: true, decisions, issues, signups: 1, asks, tasks, failed, now });
+  assert.deepEqual(items.map((i) => i.key), [
+    'decisions', 'campaigns', 'ask:2', 'money', 'issue:recISSUE000000001', 'checkin:failed:Ledger', 'checkin:failed:Riley',
+    'checkin:late:Ledger', 'checkin:late:Echo', 'checkin:late:Riley', 'ask:1', 'ask:5', 'ask:6', 'signups',
+  ], "Ada's order: importance, then Do now, then money / client-facing, then the oldest");
+  const d = items[0];
+  assert.deepEqual([d.agent, d.title, d.count, d.group, d.action], ['Ada', '108 decisions waiting (oldest 10 h old)', 108, 'now', { label: 'Open Decisions', href: 'decisions/Replies' }],
+    'ONE line for every pile (never per decision or pile); the manual fix is on its issue card; money is on the Ledger item');
+  assert.equal(d.todo, 'Open Decisions and clear them, replies first.');
+  assert.match(d.why, /^105 prospects are waiting on an answer/);
+  const c = items.find((i) => i.key === 'campaigns')!;
+  assert.deepEqual([c.agent, c.title, c.count, c.group, c.clientFacing], ['Atlas', 'Check with Atlas: 2 campaigns past 60% have no next campaign', 2, 'now', true]);
+  assert.match(c.todo!, /GMG and Twenty West/);
+  assert.match(c.action!.href, /^chat\/Atlas\?ask=/);
+  assert.match(decodeURIComponent(c.action!.href.split('ask=')[1]), /GMG and Twenty West/);
+  const m = items.find((i) => i.key === 'money')!;
+  assert.deepEqual([m.agent, m.title, m.money, m.action?.href], ['Ledger', '1 money decision waiting with Ledger', true, 'decisions/Money']);
+  const late = items.find((i) => i.key === 'checkin:late:Echo')!;
+  assert.deepEqual([late.title, late.why, late.action?.label, late.link?.href], ['Check with Echo: 1 task late', 'Tidy the reply rules (2 d overdue).', 'Ask for an update', 'agents/Echo']);
+  assert.match(items.find((i) => i.key === 'checkin:late:Riley')!.title, /1 task stuck/);
+  assert.equal(items.find((i) => i.key === 'checkin:failed:Riley')!.why, 'n8n said 500.');
+  assert.ok(!items.some((i) => i.key === 'task:6'), 'a task behind a Decision is in the decisions line, not twice');
+  assert.equal(items.find((i) => i.key === 'ask:6')!.action, null, 'no Open in Airtable links');
   const issue = items.find((i) => i.key === 'issue:recISSUE000000001')!;
   assert.deepEqual([issue.agent, issue.title, issue.why, issue.action, issue.link?.href, issue.canDone, issue.canSnooze], ['Riley', 'EmailBison key expired', 'The API key was rotated on Nov 24.', null, 'decisions/Fixes', false, true]);
   assert.match(issue.steps, /Copy the new key/);
+  assert.ok(items.every((i) => i.title && (i.why || i.kind === 'ask') && (i.action || i.steps || i.canDone)), 'every item: problem, why, one action (a link, its steps, or Done)');
+  assert.ok(items.every((i) => i.todo), 'every item says what to do');
   assert.equal(items.find((i) => i.key === 'signups')!.action?.href, 'users');
-  assert.deepEqual(keys.filter((k) => k.startsWith('ask:')).sort(), ['ask:1', 'ask:2', 'ask:5'], 'done and snoozed asks are gone; an ended snooze is back');
   assert.equal(items.find((i) => i.key === 'ask:2')!.icon, 'sparkles', 'a label, not an agent, gets an icon');
-  // Order: every "now" before every "later"; inside, client-facing first, then the oldest (Alex 2026-11-25):
-  // the Campaigns pile (oldest 05:00) before Replies (oldest 06:00), both before Riley's issue.
-  assert.deepEqual(keys.slice(0, 2), ['pile:Campaigns', 'pile:Replies']);
-  assert.ok(keys.indexOf('issue:recISSUE000000001') > keys.indexOf('pile:Replies'));
-  const groups = items.map((i) => i.group);
-  assert.deepEqual(groups, [...groups].sort((a, b) => (a === b ? 0 : a === 'now' ? -1 : 1)));
-  assert.equal(items.find((i) => i.key === 'ask:1')!.group, 'later');
-  assert.equal(items.find((i) => i.key === 'ask:2')!.group, 'now');
-  // Resolved = gone: no decisions, no issues, no asks.
+  // Resolved = gone.
   assert.deepEqual(aggregateNeeds({ owner: true, decisions: [], issues: [], signups: 0, asks: [], now }), []);
-  // "Not now" on the issue.
   assert.ok(!aggregateNeeds({ owner: true, decisions, issues, signups: 0, asks: [], now, quiet: new Set(['issue:recISSUE000000001']) }).some((i) => i.kind === 'issue'));
 });
 
-test('needs: a member gets only the piles they can act on; no money, content, Riley manual fixes or sign-ups', () => {
+test("needs: a member (Josh) gets their own to-do: their decisions, their asks, Echo's check-ins; never money or owner-only agents", () => {
   const decisions = [card(), card({ id: 'recMONEY000000001', agent: 'Ledger', pile: 'Money' }), card({ id: 'recSIENNA00000001', agent: 'Sienna', pile: 'Content' })];
   const issues = [{ id: 'recISSUE000000001', title: 'Key expired', why: '', fix: '', decision: '', seen: '' }];
   const asks = [askRow({ id: 1 }), askRow({ id: 2, audience: 'everyone', title: 'For Josh' }), askRow({ id: 3, agent: 'Ledger', audience: 'everyone', title: 'Money ask' })];
-  const items = aggregateNeeds({ owner: false, decisions, issues, signups: 3, asks });
-  assert.deepEqual(items.map((i) => i.key), ['pile:Replies', 'ask:2']);
+  const tasks = [
+    atask({ id: 1, key: 'plan-next:recC1', title: 'Plan next campaign for GMG', client: 'GMG', status: 'open' }),
+    atask({ id: 2, agent: 'Echo', key: 'e', title: 'Tidy the reply rules', overdue: true, daysLate: 2 }),
+    atask({ id: 3, agent: 'Riley', key: 'r', title: 'Bounce check', overdue: true, daysLate: 2 }),
+    atask({ id: 4, agent: 'Ledger', key: 'l', title: 'Reconcile', overdue: true, daysLate: 2 }),
+  ];
+  const failed = [{ agent: 'Echo', fails: [{ kind: 'sean.reply', at: '2026-11-25T12:00:00.000Z', error: 'Model timed out.' }] }, { agent: 'Ledger', fails: [{ kind: 'ledger.check', at: '2026-11-25T12:00:00.000Z', error: 'x' }] }];
+  const items = aggregateNeeds({ owner: false, decisions, issues, signups: 3, asks, tasks, failed, now: Date.parse('2026-11-25T15:00:00.000Z') });
+  assert.deepEqual(items.map((i) => i.key), ['decisions', 'checkin:failed:Echo', 'checkin:late:Echo', 'ask:2']);
+  assert.equal(items[0].count, 1, 'only the pile Josh can act on');
+  assert.ok(!JSON.stringify(items).match(/Ledger|Sienna|Money|money decision|Key expired|sign-up/), 'nothing owner-only in a member to-do');
 });
 
 test('needs API: owner and member views, Riley issues from System Issues, Today shows the top 3', { skip }, async () => {
@@ -1011,23 +1048,25 @@ test('needs API: owner and member views, Riley issues from System Issues, Today 
   const r = await call('GET', '/hq/api/needs', { cookie });
   assert.equal(r.status, 200);
   const keys = r.body.items.map((i: any) => i.key);
-  assert.deepEqual([...keys].sort(), ['ask:1', 'ask:2', 'issue:recISSUE000000001', 'pile:Money', 'pile:Replies', 'signups']);
-  assert.equal(r.body.items.find((i: any) => i.key === 'pile:Replies').title, '2 replies waiting for your OK');
+  assert.deepEqual(keys, ['decisions', 'ask:2', 'money', 'issue:recISSUE000000001', 'ask:1', 'signups']);
+  assert.match(r.body.items[0].title, /^2 decisions waiting/);
+  assert.equal(r.body.items[0].todo, 'Open Decisions and clear them, replies first.');
   assert.equal(r.body.items.find((i: any) => i.key === 'ask:1').action.href, 'clients', 'stored as a relative HQ route');
   assert.equal(r.body.items.find((i: any) => i.key === 'ask:1').agent, 'Atlas');
   assert.deepEqual(r.body.counts, { total: 6, now: 4, later: 2 });
   assert.deepEqual(r.body.errors, []);
   const t = await call('GET', '/hq/api/today', { cookie });
   assert.equal(t.body.needs.top.length, 3);
-  assert.equal(t.body.needs.top[0].key, 'pile:Replies');
+  assert.equal(t.body.needs.top[0].key, 'decisions');
   assert.equal(t.body.needs.counts.total, 6);
   assert.equal(t.body.tasks, undefined, 'Today no longer reads the Airtable to-do');
 
   await upsertUser(db, 'josh@dulcy.io', 'member', 'josh long password 1', 'Josh');
   const j = await login('josh@dulcy.io', 'josh long password 1');
   const mr = await call('GET', '/hq/api/needs', { cookie: j.cookie });
-  assert.deepEqual(mr.body.items.map((i: any) => i.key).sort(), ['ask:2', 'pile:Replies']);
+  assert.deepEqual(mr.body.items.map((i: any) => i.key), ['decisions', 'ask:2']);
   assert.ok(!JSON.stringify(mr.body).includes('Xero'), 'nothing of the owner-only items in the answer');
+  assert.ok(!JSON.stringify(mr.body).includes('Ledger'), 'no Ledger in a member answer');
   assert.equal((await call('POST', '/hq/api/asks/1/done', { body: {}, cookie: j.cookie })).status, 404, "a member cannot touch the owner's ask");
   assert.equal((await call('POST', '/hq/api/needs/issue/recISSUE000000001/snooze', { body: { until: 'tomorrow' }, cookie: j.cookie })).status, 404);
   assert.equal((await call('GET', '/hq/api/asks', { cookie: j.cookie })).body.asks.length, 1);

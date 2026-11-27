@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { api, type AgentCard, type AgentWork } from '../api';
 import { Avatar, Card, cleanLine, cx, ErrorBox, go, Icon, PageSkeleton, PageTitle, StatusDot, teamTone, toneLabel } from '../ui';
-import { WorkChips, WorkSummary } from './AgentWork';
+import { TeamTabs, WorkChips, WorkSummary } from './AgentWork';
 
 export default function Agents() {
   const [agents, setAgents] = useState<AgentCard[] | null>(null);
   const [work, setWork] = useState<({ agent: string } & AgentWork)[]>([]);
   const [error, setError] = useState('');
   useEffect(() => { api<{ agents: AgentCard[]; work?: ({ agent: string } & AgentWork)[] }>('/agents').then((r) => { setAgents(r.agents); setWork(r.work ?? []); }).catch((e) => setError(e.message)); }, []);
-  const title = <PageTitle title="Team" kicker={agents ? `${agents.length} agents` : 'Agents'} sub="Everyone reports to Ada. Atlas runs Scribe and Scout." />;
+  const title = <><PageTitle title="Team" kicker={agents ? `${agents.length} agents` : 'Agents'} sub="Everyone reports to Ada. Atlas runs Scribe and Scout." /><TeamTabs on="team" /></>;
   if (error) return <>{title}<ErrorBox error={error} /></>;
   if (!agents) return <>{title}<PageSkeleton kind="grid" /></>;
   return (
