@@ -1,6 +1,13 @@
 # Where we are (update this at the end of every session)
 
-Last updated: 2026-11-26
+Last updated: 2026-11-27
+
+## Done 2026-11-27 (live)
+- **Echo books meetings itself:** prospect picks a time → live re-check → booked on the client's calendar (Google event + Meet + invite, or Calendly booking) → confirmation reply; follows each client's approval mode (all are approval now: one card books + sends). Airtable marks WON / Booked Meeting. Phone from Airtable or signature fills Calendly's phone question.
+- **Calendars:** Google app published (calendar.events.owned added, sensitive → video + verification still to submit); Calendly OAuth app live. Dulcy's Calendly connected; test booking succeeded (Tue Dec 1 11 AM ET, cancel it).
+- **Privacy policy** on dulcy.io: section 9 "Calendar Data" (Google + Calendly, Limited Use).
+- **Client portal v3** (3 tabs) on hq.dulcy.io/portal; switch portal.dulcy.io from Softr when tested.
+- **Twenty West:** EmailBison check of 40 threads matched Airtable (no missed follow-ups); waiting for Pete's meeting + Bea's log.
 
 ## Done 2026-11-26 (merged; live after Alex deploys)
 - **HQ:** Inbox (5 tabs, thread edit/send/skip) + per-client AI replier settings; Campaigns (needs action first, pipeline, campaign page + Activity log); Deliverability (sick first, inboxes, placement freshness, domains); Team agent task lists + Ada's daily stale-task check; Needs you yesterday/today/tomorrow. All read-only except the existing reply buttons and owner-only replier settings.
@@ -18,7 +25,7 @@ Last updated: 2026-11-26
 1. Watch the first live campaign plans (GMG, Twenty West) through approvals; part 3 (spintax → inboxes → build → launch) has never run live.
 2. Check Sienna's first editor runs (first 2026-11-25 4:39 PM ET) and tune the rules from what Alex approves/rejects.
 3. Content steps left: repurposing pack in Alex's voice (X, LinkedIn, Reddit, blog/newsletter); proof of posting (Published/Failed + URL; 17 old "Scheduled" items unconfirmed); real thumbnails + Gamma docs on approval; folder → Frame.io auto upload.
-4. HQ left: Sales and Content screens, client portal; HQ-safe campaign buttons; then switch Slack reports/decisions off. Calendar: Alex publishes the Google app + creates a Calendly app (at home), then CALENDAR_ADMIN_TOKEN and connect clients.
+4. HQ left: Sales and Content screens, client portal; HQ-safe campaign buttons; then switch Slack reports/decisions off. Calendar: record the Google video (connect Google + test booking) and submit verification; send each client its calendar link from HQ (Twenty West after Pete's meeting).
 4b. Automation clean-up: batch 1 (60% task maker, LinkedIn, unused Make, stubs) on Alex's yes; batch 2 (old lead-list/campaign n8n pipeline) once HQ Campaigns is in daily use.
 5. Riley known issues: content webhooks without auth, duplicate teleprompter workflow, ~100 n8n webhooks without auth, keys in n8n/Airtable scripts.
 6. Friday 2026-11-27: compare the GPT vs Claude creator watch, then switch the GPT task off. Saturday: first account-health check.
