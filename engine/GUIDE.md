@@ -987,6 +987,13 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
 - Every change needs a request from the HQ page itself (cross-site requests are refused). No key ever goes to the browser.
 - The engine's signed job API is not reachable on hq.dulcy.io.
 
+### HQ Needs you, Team and Chat (Batch 4b, 2026-11-27)
+- **Needs you = your to-do for today**, most important first (Ada's order). Each card: the problem, **Do** (what to do), **Why**, one button. What lands there: all decisions as ONE line ("10 decisions waiting → Open Decisions"), campaigns past 60% with no next campaign ("Check with Atlas"), money decisions and urgent money reports with Ledger, Riley's hands-on fixes, asks, agents with failed runs (with "Have Riley fix it") or late / stuck tasks ("Ask for an update"), sign-ups. Josh sees only his own: his decisions, his asks, Echo's check-ins. Never money, Ledger or Sienna.
+- **Team → What everyone is working on**: each agent's current task, next deadline and last run; the tasks by status (In progress, Waiting on you, Not started, Done 7 days); upcoming deadlines (2 weeks); the last 3 days of activity. Filters: agent, client, status (late, stuck…), due. Link: `#/agents/work?agent=Atlas&status=late`.
+- **Chat works like Slack**: each agent has several chats. Chat opens the one you had open last; keep typing in it. "New chat" starts fresh; Archive hides a chat (Archived → Restore brings it back; asking in it brings it back too). Chats from before this change are all still there. "Ideas for today" = suggested questions that change every day (some from live data, e.g. the client with the most replies waiting).
+- **Open a chat with a question typed in** (other screens use this): `#/chat/Atlas?ask=How%20is%20GMG's%20health%3F` opens a new chat with Atlas and the question ready to send.
+- Fixed: the "… is looking it up" line showed the agent on screen (Riley) instead of the one asked (Ada). It now shows only in the chat the question was asked in, with that agent's name; a chat can never be answered by another agent.
+
 ### Switch HQ on (Alex, once)
 1. **DNS:** where dulcy.io's DNS is managed, add an **A record**: name `hq`, value = the server's IP (the same IP as the `engine` record), proxy off / DNS only.
 2. **Settings:** in `engine/deploy/.env` on the server, add:
