@@ -28,7 +28,7 @@ export function calendarHandler({flow,adminToken,readerToken,inviterToken,booker
   const json=(status,value)=>send(status,JSON.stringify(value),'application/json');
   // Keep same-origin form Origin available; never include ticket paths in Referer.
   res.setHeader('Cache-Control','no-store');res.setHeader('Referrer-Policy','strict-origin');res.setHeader('X-Content-Type-Options','nosniff');
-  res.setHeader('Content-Security-Policy',"default-src 'none'; style-src 'unsafe-inline'; form-action 'self' https://accounts.google.com https://auth.calendly.com; frame-ancestors 'none'; base-uri 'none'");
+  res.setHeader('Content-Security-Policy',"default-src 'none'; style-src 'unsafe-inline'; form-action 'self' https:; frame-ancestors 'none'; base-uri 'none'");
   try{
    const u=new URL(req.url,flow.origin);
    if(u.pathname==='/calendar/health'&&req.method==='GET')return json(200,{ok:true});
