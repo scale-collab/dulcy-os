@@ -139,14 +139,14 @@ export function TaskList({ tasks, agent, onDone }: { tasks: AgentTask[]; agent: 
 // filters (agent, client, status, due) kept in the link (#/agents/work?agent=Atlas&status=late).
 
 /** Team | What everyone is working on: the two views of the Team screen. */
-export function TeamTabs({ on }: { on: 'team' | 'work' }) {
-  const tab = (key: 'team' | 'work', label: string, path: string) => (
+export function TeamTabs({ on }: { on: 'team' | 'work' | 'talk' }) {
+  const tab = (key: 'team' | 'work' | 'talk', label: string, path: string) => (
     <button role="tab" aria-selected={on === key} onClick={() => go(path)}
       className={cx('min-h-11 flex-1 rounded-xl px-3 text-sm font-semibold transition sm:flex-none sm:px-4', on === key ? 'bg-surface text-fg shadow-card' : 'text-muted hover:text-fg')}>{label}</button>
   );
   return (
     <div role="tablist" aria-label="Team views" className="mb-5 flex gap-1 rounded-2xl border border-line bg-sunken p-1 sm:inline-flex">
-      {tab('team', 'Team', 'agents')}{tab('work', 'What everyone is working on', 'agents/work')}
+      {tab('team', 'Team', 'agents')}{tab('work', 'What everyone is working on', 'agents/work')}{tab('talk', 'Agent conversations', 'agents/talk')}
     </div>
   );
 }

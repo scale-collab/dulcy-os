@@ -46,7 +46,12 @@ import { portalRoute, resolvePortalClient } from './portal.js';
 import { contentSummary, contentView, decideIdea } from './content.js';
 import { allDeals, dealDetail, nyDay, salesView } from './sales.js';
 // Batch 4a: Sales insights (periods, capacity, Close hottest deals) and the contract draft.
-import { insightsView, saveCapacitySettings, salesDeps, type SalesDeps } from './salesInsights.js';
+import { DULCY_WS, insightsView, saveCapacitySettings, salesDeps, type SalesDeps } from './salesInsights.js';
+// Round 3: period picker numbers, Close pipeline + funnel, pricing calculator, agent conversations.
+import { numbersView, resolvePeriod } from './salesPeriods.js';
+import { closeFunnel, closePipeline, readCloseRange } from './salesClose.js';
+import { pricingView } from './pricing.js';
+import { agentConversation, agentConversations } from './agentTalk.js';
 import { createInDulcySign, draftForm, saveDraft } from './contracts.js';
 // Phone notifications (Web Push), Alex 2026-11-27.
 import { kickFlush, notifyChatReply, pushRoute, webPushSender, type PushSender } from './push.js';
@@ -561,6 +566,57 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         }
         json(res, 404, { error: 'not found' }); return true;
       }
+
+      // Round 3 sales + agent conversations
+      if (['/hq/api/sales/numbers', '/hq/api/sales/close', '/hq/api/sales/pricing', '/hq/api/sales/calendar-invite'].includes(p)) {
+        if (!owner) { json(res, 403, { error: 'only the owner sees sales (money)' }); return true; }
+        const now = Date.now(); const today = nyDay(now);
+        const q = (k: string) => url.searchParams.get(k) ?? '';
+        if ((p === '/hq/api/sales/numbers' || p === '/hq/api/sales/close') && req.method === 'GET') {
+          const pick = resolvePeriod(q('period') || (p === '/hq/api/sales/close' ? 'last30' : 'month'), today, q('from'), q('to'));
+          if ('error' in pick) { json(res, 400, { error: pick.error }); return true; }
+          if (p === '/hq/api/sales/numbers') {
+            const { deals } = await allDeals(needAt(), db, q('refresh') === '1', now, { xero: sales.xero });
+            json(res, 200, numbersView(deals, pick, owner, today));
+            return true;
+          }
+          if (!sales.close) { json(res, 200, { period: pick, connected: false, ok: false, error: '', readAt: '', truncated: false, pipeline: null, funnel: null }); return true; }
+          try {
+            const data = await readCloseRange(sales.close, pick, q('refresh') === '1', now);
+            json(res, 200, { period: pick, connected: true, ok: true, error: '', readAt: data.readAt, truncated: data.truncated, pipeline: closePipeline(data, pick), funnel: closeFunnel(data, pick) });
+          } catch (e) {
+            json(res, 200, { period: pick, connected: true, ok: false, error: String((e as Error).message ?? e).slice(0, 200), readAt: '', truncated: false, pipeline: null, funnel: null });
+          }
+          return true;
+        }
+        if (p === '/hq/api/sales/pricing' && (req.method === 'GET' || req.method === 'POST')) {
+          const b = req.method === 'POST' ? await readJson(req, 20_000) : {};
+          json(res, 200, await pricingView(sales.pricingSheet, b.inputs ?? {}));
+          return true;
+        }
+        if (p === '/hq/api/sales/calendar-invite' && req.method === 'POST') {
+          // Dulcy's own calendar: the same one-time connect link as client → AI replier → "Get calendar link" (never emails anyone).
+          const b = await readJson(req, 2_000);
+          const r = await calendarInvite({ db, cfg, at: needAt(), fetchImpl: deps.fetchImpl }, DULCY_WS, user.name, { provider: String(b.provider ?? 'calendly'), email: b.email });
+          const { status, error, ...rest } = r;
+          json(res, status, error ? { error } : { ok: true, ...rest });
+          return true;
+        }
+        json(res, 405, { error: 'method not allowed' }); return true;
+      }
+      if (p === '/hq/api/team/conversations' && req.method === 'GET') {
+        const a = url.searchParams.get('agent') ? agentByName(url.searchParams.get('agent')!) : null;
+        if (url.searchParams.get('agent') && (!a || !canTalkTo(user, a))) { json(res, 404, { error: 'no such agent' }); return true; }
+        json(res, 200, { conversations: await agentConversations(db, user, { agent: a, limit: Number(url.searchParams.get('limit')) || 80 }) });
+        return true;
+      }
+      m = p.match(/^\/hq\/api\/team\/conversations\/(ask|handoff)-(\d{1,12})$/);
+      if (m && req.method === 'GET') {
+        const x = await agentConversation(db, user, `${m[1]}-${m[2]}`);
+        if (!x) json(res, 404, { error: 'not found' }); else json(res, 200, x);
+        return true;
+      }
+      // ---- end Round 3 ----
 
       // Sales (Dulcy's own deals): owner only (money), checked here so members get 403.
       if (p === '/hq/api/sales' || p.startsWith('/hq/api/sales/')) {

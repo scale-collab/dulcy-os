@@ -14,6 +14,9 @@ import type { Db } from '../db/pool.js';
 import type { Config } from '../config.js';
 import { createXeroClient } from '../providers/xero.js';
 import { createCloseClient, type CloseActivity, type CloseClient, type CloseOpportunity } from '../providers/close.js';
+import { calendarStatus, type CalendarState } from '../agents/calendar.js';
+import { createSheetsClient } from '../providers/google.js';
+import { pricingSheetReader } from './pricing.js';
 import { coleNext, companyKey, latestReview, nyDay, pipelineOf, shortDay, type Deal, type Rate, type XeroPayment } from './sales.js';
 
 const DAY = 86_400_000;
@@ -255,7 +258,7 @@ const touchesBefore = (acts: CloseActivity[], wonAt: string) => acts.filter((a) 
 const CLOSE_CACHE_MS = 5 * 60_000;
 let closeCache: { at: number; data: Promise<CloseSnapshot> } | null = null;
 let xeroCache: { at: number; data: Promise<XeroPayment[] | null> } | null = null;
-let slotCache: { at: number; data: Promise<{ starts: string[]; timezone: string } | null> } | null = null;
+let slotCache: { at: number; data: Promise<DulcySlots | null> } | null = null;
 let tables: Promise<void> | null = null;
 export function _resetInsightCaches() { closeCache = null; xeroCache = null; slotCache = null; tables = null; }
 
@@ -313,25 +316,50 @@ export function xeroPaymentsReader(db: Db, cfg: Config, f: typeof fetch = fetch)
     return data;
   };
 }
-/** Dulcy's free start times for the next 30 days (calendar service, read-only token). null = not readable. */
-export function dulcySlotsReader(cfg: Pick<Config, 'calendarUrl' | 'calendarReaderToken'>, f: typeof fetch = fetch): (() => Promise<{ starts: string[]; timezone: string } | null>) | undefined {
+/**
+ * Round 3 capacity fix (Alex 2026-11-27: "Dulcy's calendar cannot be read" while Calendly IS connected).
+ * Cause: the calendar service refuses any availability window over 7 days ("Invalid availability
+ * window", services/dulcy-calendar calendar.mjs; Calendly's own available-times API has the same
+ * 7-day limit), and capacity asked for 30 days in one call, so every read failed. The engine's normal
+ * read (Echo's two times) asks for 6 days. Now the 30 days are read as 6-day windows, one after the other.
+ */
+export const AVAILABILITY_WINDOW_DAYS = 6;
+/** The windows for the next `days` days: the first starts 2 hours from now, each at most 6 days. Pure. */
+export function availabilityWindows(now: number, days = 30, step = AVAILABILITY_WINDOW_DAYS): { start: string; end: string }[] {
+  const out: { start: string; end: string }[] = [];
+  const end = now + days * DAY;
+  for (let t = now + 2 * 3_600_000; t < end; t += step * DAY) out.push({ start: new Date(t).toISOString(), end: new Date(Math.min(end, t + step * DAY)).toISOString() });
+  return out;
+}
+export interface DulcySlots { starts: string[]; timezone: string; days?: number; error?: string }
+/** Dulcy's free start times for the next 30 days (calendar service, read-only token, 6-day windows). null = not readable. */
+export function dulcySlotsReader(cfg: Pick<Config, 'calendarUrl' | 'calendarReaderToken'>, f: typeof fetch = fetch): (() => Promise<DulcySlots | null>) | undefined {
   if (!cfg.calendarReaderToken || !cfg.calendarUrl) return undefined;
   return () => {
     const now = Date.now();
     if (slotCache && now - slotCache.at < 10 * 60_000) return slotCache.data;
-    const data = (async () => {
-      try {
-        const r = await f(`${cfg.calendarUrl.replace(/\/+$/, '')}/calendar/admin/availability`, {
-          method: 'POST', headers: { authorization: `Bearer ${cfg.calendarReaderToken}`, 'content-type': 'application/json' },
-          body: JSON.stringify({ workspace: DULCY_WS, start: new Date(now + 2 * 3_600_000).toISOString(), end: new Date(now + 30 * DAY).toISOString() }), signal: AbortSignal.timeout(20_000),
-        });
-        if (!r.ok) return null;
-        const b: any = await r.json();
-        if (!Array.isArray(b?.collection)) return null;
-        return { starts: b.collection.filter((s: any) => s?.status === 'available').map((s: any) => String(s.start_time)), timezone: String(b.connection?.timezone ?? 'America/New_York') };
-      } catch { return null; }
+    const data = (async (): Promise<DulcySlots | null> => {
+      const starts: string[] = []; let timezone = 'America/New_York'; let days = 0; let error = '';
+      for (const w of availabilityWindows(now)) {
+        try {
+          const r = await f(`${cfg.calendarUrl.replace(/\/+$/, '')}/calendar/admin/availability`, {
+            method: 'POST', headers: { authorization: `Bearer ${cfg.calendarReaderToken}`, 'content-type': 'application/json' },
+            body: JSON.stringify({ workspace: DULCY_WS, start: w.start, end: w.end }), signal: AbortSignal.timeout(20_000),
+          });
+          const b: any = await r.json().catch(() => null);
+          if (!r.ok || !Array.isArray(b?.collection)) { error = String(b?.error ?? `calendar service ${r.status}`).slice(0, 200); break; }
+          starts.push(...b.collection.filter((s: any) => s?.status === 'available').map((s: any) => String(s.start_time)));
+          timezone = String(b.connection?.timezone ?? timezone);
+          days += (Date.parse(w.end) - Date.parse(w.start)) / DAY;
+        } catch { error = 'the calendar service did not answer'; break; }
+      }
+      // The first window failing = not readable; a later one = what was read, and how many days.
+      if (!days) return null;
+      return { starts, timezone, days: Math.min(30, Math.round(days)), ...(error ? { error } : {}) };
     })();
     slotCache = { at: now, data };
+    // A failed read is retried after 1 minute, not 10.
+    data.then((x) => { if (!x && slotCache?.data === data) slotCache = { at: now - 9 * 60_000, data }; }).catch(() => undefined);
     return data;
   };
 }
@@ -366,11 +394,30 @@ export async function saveCapacitySettings(db: Db, body: any, by: string): Promi
 export interface SalesDeps {
   close?: CloseClient | null;
   xero?: () => Promise<XeroPayment[] | null>;
-  calendar?: () => Promise<{ starts: string[]; timezone: string } | null>;
+  calendar?: () => Promise<DulcySlots | null>;
+  /** Dulcy's calendar connection (Round 3): when it cannot be read, is it connected at all? */
+  calendarStatus?: () => Promise<CalendarState | null>;
+  /** The server can ask the calendar service for a connect link (CALENDAR_ADMIN_TOKEN). */
+  canInvite?: boolean;
+  /** The P/L sheet's pricing calculator tab (Round 3; pricing.ts). */
+  pricingSheet?: () => Promise<import('./pricing.js').SheetGrid | null>;
 }
 /** The live readers from the server config (each one optional; nothing is called here). */
 export function salesDeps(db: Db, cfg: Config, f: typeof fetch = fetch): SalesDeps {
-  return { close: createCloseClient(cfg.closeApiKey, f), xero: xeroPaymentsReader(db, cfg, f), calendar: dulcySlotsReader(cfg, f) };
+  return {
+    close: createCloseClient(cfg.closeApiKey, f), xero: xeroPaymentsReader(db, cfg, f), calendar: dulcySlotsReader(cfg, f),
+    calendarStatus: cfg.calendarReaderToken ? () => calendarStatus(cfg, DULCY_WS, f) : undefined, canInvite: !!cfg.calendarAdminToken,
+    pricingSheet: pricingSheetReader(() => (cfg.googleKeyFile ? createSheetsClient({ keyFile: cfg.googleKeyFile, impersonate: cfg.googleImpersonateUser, scope: cfg.googleScope, sheetsBaseUrl: cfg.googleSheetsBaseUrl, fetchImpl: f }) : null)),
+  };
+}
+export interface CalendarLink { readable: boolean; connected: boolean | null; status: string; canInvite: boolean; text: string }
+/** What the capacity block says about Dulcy's calendar, and whether to show "Connect calendar". Pure. */
+export function calendarLinkState(cal: DulcySlots | null, st: CalendarState | null, hasReader: boolean, canInvite: boolean): CalendarLink {
+  if (cal) return { readable: true, connected: true, status: 'Connected', canInvite, text: cal.error ? `Read ${cal.days ?? 0} of 30 days (${cal.error})` : '' };
+  if (!hasReader) return { readable: false, connected: null, status: 'UNKNOWN', canInvite, text: 'The engine has no calendar reader token (CALENDAR_READER_TOKEN), so Dulcy\'s calendar is not read.' };
+  if (!st) return { readable: false, connected: null, status: 'UNKNOWN', canInvite, text: 'The calendar service did not answer.' };
+  const connected = /^connected/i.test(st.status);
+  return { readable: false, connected, status: st.status, canInvite, text: connected ? `Connected (${st.provider ?? 'calendar'}), but its open times could not be read.` : `Dulcy's calendar is not connected (${st.status}).` };
 }
 
 /** GET /sales/insights: periods, capacity and the hottest deals. */
@@ -383,11 +430,14 @@ export async function insightsView(deals: Deal[], db: Db, deps: SalesDeps, canSe
     deps.close ? cachedClose(deps.close, opts.refresh === true, now).catch((e) => { closeErr = String((e as Error).message ?? e).slice(0, 200); return null; }) : Promise.resolve(null),
     deps.calendar ? deps.calendar().catch(() => null) : Promise.resolve(null),
   ]);
+  const st = !cal && deps.calendarStatus ? await deps.calendarStatus().catch(() => null) : null;
+  const link = calendarLinkState(cal, st, !!deps.calendar, deps.canInvite === true);
+  const days = cal?.days ?? 30;
   const open: OpenSlots = cal
-    ? { n: countSlots(cal.starts, settings.slotMinutes), source: 'calendar', note: `From Alex's calendar (Dulcy): ${countSlots(cal.starts, settings.slotMinutes)} free ${settings.slotMinutes}-minute slots in the next 30 days` }
-    : settings.slotsPerMonth !== null ? { n: settings.slotsPerMonth, source: 'setting', note: `Setting: ${settings.slotsPerMonth} slots a month (the calendar could not be read)` }
-    : { n: null, source: 'none', note: 'UNKNOWN: Dulcy\'s calendar could not be read and no setting is saved.' };
-  const capacity = capacityMath(deals, today, open, settings, touchesPerClose(snap));
+    ? { n: countSlots(cal.starts, settings.slotMinutes), source: 'calendar', note: `From Alex's calendar (Dulcy): ${countSlots(cal.starts, settings.slotMinutes)} free ${settings.slotMinutes}-minute slots in the next ${days} days${cal.error ? ` (${cal.error})` : ''}` }
+    : settings.slotsPerMonth !== null ? { n: settings.slotsPerMonth, source: 'setting', note: `Setting: ${settings.slotsPerMonth} slots a month (${link.text || 'the calendar could not be read'})` }
+    : { n: null, source: 'none', note: `UNKNOWN: ${link.text || 'Dulcy\'s calendar could not be read.'} No setting is saved.` };
+  const capacity = { ...capacityMath(deals, today, open, settings, touchesPerClose(snap)), calendar: link };
   const hottest = rankHottest(deals, snap, today);
   const out = {
     today, ...comparePeriods(deals, today, canSeeMoney), capacity, settings, hottest,

@@ -1,7 +1,10 @@
-// Close CRM, read only, for HQ Sales (Batch 4a, Alex 2026-11-27). API https://api.close.com/api/v1/,
+// Close CRM for HQ Sales (Batch 4a, Alex 2026-11-27). API https://api.close.com/api/v1/,
 // HTTP Basic with the API key as the username and an empty password (CLOSE_API_KEY, server .env only;
-// the key never goes to the browser). Only GET exists here: HQ never changes anything in Close.
-// Every list is bounded (pages and limits), so a slow or big account never runs away.
+// the key never goes to the browser). Reads are GETs. Every list is bounded (pages and limits), so a
+// slow or big account never runs away.
+// Round 3 (Alex 2026-11-27, "Cole keeps Close current"): ONE write exists, updateOpportunity: an
+// opportunity's confidence (%), value and value period, on Dulcy's own Close. Nothing else is ever
+// written (no lead, contact, email, SMS, task or status change); the caller gates it (cole.close_update).
 import { PermanentError, RetryableError } from '../errors.js';
 
 export const CLOSE_API = 'https://api.close.com/api/v1';
@@ -9,15 +12,33 @@ export const CLOSE_API = 'https://api.close.com/api/v1';
 export interface CloseOpportunity {
   id: string; leadId: string; leadName: string; status: string; statusType: 'active' | 'won' | 'lost' | string;
   value: number | null; valuePeriod: string; confidence: number | null; created: string; updated: string; won: string;
-  note: string; contactName: string; userName: string;
+  note: string; contactName: string; userName: string; statusId: string; pipelineId: string;
 }
 export interface CloseActivity {
   id: string; type: string; at: string; direction: 'incoming' | 'outgoing' | ''; subject: string; text: string;
   status: string; disposition: string; durationSec: number | null; userName: string;
 }
+export interface ClosePipeline { id: string; name: string; statuses: { id: string; label: string; type: string }[] }
+export interface CloseStatusChange { id: string; oppId: string; leadId: string; at: string; oldStatus: string; newStatus: string; oldType: string; newType: string; oldStatusId: string; newStatusId: string }
+export interface CloseLeadLite { id: string; name: string; emails: string[] }
+export type ValuePeriod = 'one_time' | 'monthly' | 'annual';
+/** The only fields HQ may change in Close. value is in dollars (sent as cents). */
+export interface OpportunityPatch { confidence?: number; value?: number; valuePeriod?: ValuePeriod }
 export interface CloseClient {
   opportunities(opts?: { maxPages?: number }): Promise<CloseOpportunity[]>;
   activities(leadId: string, limit?: number): Promise<CloseActivity[]>;
+  /** Opportunities created between two ISO times (bounded: maxPages x 100). truncated = more exist. */
+  opportunitiesCreated(fromIso: string, toIso: string, maxPages?: number): Promise<{ opps: CloseOpportunity[]; truncated: boolean }>;
+  /** Pipelines with their statuses in Close's own order. */
+  pipelines(): Promise<ClosePipeline[]>;
+  /** Opportunity status changes since an ISO time (bounded). */
+  statusChanges(sinceIso: string, maxPages?: number): Promise<{ changes: CloseStatusChange[]; truncated: boolean }>;
+  /** Leads whose contacts have exactly this email (search, then checked). */
+  leadsByEmail(email: string): Promise<CloseLeadLite[]>;
+  /** One lead's opportunities. */
+  leadOpportunities(leadId: string): Promise<CloseOpportunity[]>;
+  /** WRITE (the only one): confidence / value / value period of one opportunity. Returns the opportunity after the change. */
+  updateOpportunity(oppId: string, patch: OpportunityPatch): Promise<CloseOpportunity>;
 }
 
 const str = (v: unknown) => (v === undefined || v === null ? '' : String(v)).trim();
@@ -30,8 +51,36 @@ export function toOpportunity(o: any): CloseOpportunity {
     // Close keeps opportunity values in cents.
     value: num(o?.value) === null ? null : (num(o?.value) as number) / 100, valuePeriod: str(o?.value_period), confidence: num(o?.confidence),
     created: str(o?.date_created), updated: str(o?.date_updated), won: str(o?.date_won), note: str(o?.note).slice(0, 500),
-    contactName: str(o?.contact_name), userName: str(o?.user_name),
+    contactName: str(o?.contact_name), userName: str(o?.user_name), statusId: str(o?.status_id), pipelineId: str(o?.pipeline_id),
   };
+}
+export function toStatusChange(a: any): CloseStatusChange {
+  return {
+    id: str(a?.id), oppId: str(a?.opportunity_id), leadId: str(a?.lead_id), at: str(a?.date_created || a?.activity_at),
+    oldStatus: str(a?.old_status_label), newStatus: str(a?.new_status_label), oldType: str(a?.old_status_type), newType: str(a?.new_status_type),
+    oldStatusId: str(a?.old_status_id), newStatusId: str(a?.new_status_id),
+  };
+}
+const oppOk = (id: string) => /^oppo_[A-Za-z0-9]+$/.test(id);
+const PERIODS: ValuePeriod[] = ['one_time', 'monthly', 'annual'];
+/** The Close body for a patch: only confidence (0-100 integer), value (cents) and value_period. Pure; throws on anything else. */
+export function opportunityBody(patch: OpportunityPatch): Record<string, number | string> {
+  const out: Record<string, number | string> = {};
+  for (const k of Object.keys(patch)) if (!['confidence', 'value', 'valuePeriod'].includes(k)) throw new PermanentError(`Close: HQ may not change ${k}`);
+  if (patch.confidence !== undefined) {
+    if (!Number.isInteger(patch.confidence) || patch.confidence < 0 || patch.confidence > 100) throw new PermanentError('Close: confidence must be 0-100');
+    out.confidence = patch.confidence;
+  }
+  if (patch.value !== undefined) {
+    if (!Number.isFinite(patch.value) || patch.value < 0 || patch.value > 1_000_000) throw new PermanentError('Close: value out of range');
+    out.value = Math.round(patch.value * 100);
+  }
+  if (patch.valuePeriod !== undefined) {
+    if (!PERIODS.includes(patch.valuePeriod)) throw new PermanentError('Close: value period must be one_time, monthly or annual');
+    out.value_period = patch.valuePeriod;
+  }
+  if (!Object.keys(out).length) throw new PermanentError('Close: nothing to change');
+  return out;
 }
 export function toActivity(a: any): CloseActivity {
   const type = str(a?._type);
@@ -47,10 +96,11 @@ export function toActivity(a: any): CloseActivity {
 export function createCloseClient(apiKey: string | undefined, f: typeof fetch = fetch, base = CLOSE_API): CloseClient | null {
   if (!apiKey) return null;
   const auth = `Basic ${Buffer.from(`${apiKey}:`).toString('base64')}`;
-  async function get(path: string, params: Record<string, string | number>): Promise<any> {
+  async function get(path: string, params: Record<string, string | number>, method: 'GET' | 'PUT' = 'GET', body?: unknown): Promise<any> {
     const q = new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)]));
     let res: Response;
-    try { res = await f(`${base.replace(/\/+$/, '')}/${path}?${q}`, { method: 'GET', headers: { authorization: auth, accept: 'application/json' }, signal: AbortSignal.timeout(20_000) }); }
+    const headers: Record<string, string> = { authorization: auth, accept: 'application/json', ...(body !== undefined ? { 'content-type': 'application/json' } : {}) };
+    try { res = await f(`${base.replace(/\/+$/, '')}/${path}${q.size ? `?${q}` : ''}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(20_000) }); }
     catch { throw new RetryableError(`Close ${path}: network error or timeout`); }
     if (res.status === 429 || res.status >= 500) throw new RetryableError(`Close ${path}: HTTP ${res.status}`);
     if (res.status === 401 || res.status === 403) throw new PermanentError(`Close refused the API key (HTTP ${res.status})`);
@@ -73,6 +123,61 @@ export function createCloseClient(apiKey: string | undefined, f: typeof fetch = 
       if (!leadOk(leadId)) return [];
       const j = await get('activity/', { lead_id: leadId, _limit: Math.min(100, Math.max(1, limit)) });
       return (Array.isArray(j?.data) ? j.data : []).map(toActivity).filter((a: CloseActivity) => a.type && a.at);
+    },
+    async opportunitiesCreated(fromIso, toIso, maxPages = 10) {
+      const out: CloseOpportunity[] = [];
+      const pages = Math.min(10, Math.max(1, maxPages));
+      let truncated = false;
+      for (let page = 0; page < pages; page++) {
+        const j = await get('opportunity/', { date_created__gte: fromIso, date_created__lte: toIso, _limit: 100, _skip: page * 100, _order_by: 'date_created' });
+        const rows: any[] = Array.isArray(j?.data) ? j.data : [];
+        out.push(...rows.map(toOpportunity));
+        if (!j?.has_more || rows.length < 100) break;
+        if (page === pages - 1) truncated = true;
+      }
+      // The window is checked here too (a server that ignores the filter never widens the answer).
+      const lo = Date.parse(fromIso), hi = Date.parse(toIso);
+      return { opps: out.filter((o) => o.id && leadOk(o.leadId) && Date.parse(o.created) >= lo && Date.parse(o.created) <= hi), truncated };
+    },
+    async pipelines() {
+      const j = await get('pipeline/', {});
+      return (Array.isArray(j?.data) ? j.data : []).map((p: any): ClosePipeline => ({
+        id: str(p?.id), name: str(p?.name),
+        statuses: (Array.isArray(p?.statuses) ? p.statuses : []).map((x: any) => ({ id: str(x?.id), label: str(x?.label), type: str(x?.type) })).filter((x: { label: string }) => x.label),
+      })).filter((p: ClosePipeline) => p.id && p.statuses.length);
+    },
+    async statusChanges(sinceIso, maxPages = 10) {
+      const out: CloseStatusChange[] = [];
+      const pages = Math.min(10, Math.max(1, maxPages));
+      let truncated = false;
+      for (let page = 0; page < pages; page++) {
+        const j = await get('activity/status_change/opportunity/', { date_created__gte: sinceIso, _limit: 100, _skip: page * 100 });
+        const rows: any[] = Array.isArray(j?.data) ? j.data : [];
+        out.push(...rows.map(toStatusChange));
+        if (!j?.has_more || rows.length < 100) break;
+        if (page === pages - 1) truncated = true;
+      }
+      return { changes: out.filter((c) => c.oppId && c.at && Date.parse(c.at) >= Date.parse(sinceIso)), truncated };
+    },
+    async leadsByEmail(email) {
+      const e = String(email ?? '').trim().toLowerCase();
+      if (!/^[^\s@"]+@[^\s@"]+\.[^\s@"]+$/.test(e) || e.length > 200) return [];
+      // Close's lead search finds the email in its contacts; each answer is checked below (exact match only).
+      const j = await get('lead/', { query: `"${e}"`, _limit: 5, _fields: 'id,display_name,contacts' });
+      return (Array.isArray(j?.data) ? j.data : []).map((l: any): CloseLeadLite => ({
+        id: str(l?.id), name: str(l?.display_name),
+        emails: (Array.isArray(l?.contacts) ? l.contacts : []).flatMap((c: any) => (Array.isArray(c?.emails) ? c.emails : []).map((x: any) => str(x?.email).toLowerCase())).filter(Boolean),
+      })).filter((l: CloseLeadLite) => leadOk(l.id) && l.emails.includes(e));
+    },
+    async leadOpportunities(leadId) {
+      if (!leadOk(leadId)) return [];
+      const j = await get('opportunity/', { lead_id: leadId, _limit: 25 });
+      return (Array.isArray(j?.data) ? j.data : []).map(toOpportunity).filter((o: CloseOpportunity) => o.id && o.leadId === leadId);
+    },
+    async updateOpportunity(oppId, patch) {
+      if (!oppOk(oppId)) throw new PermanentError('Close: not an opportunity id');
+      const j = await get(`opportunity/${oppId}/`, {}, 'PUT', opportunityBody(patch));
+      return toOpportunity(j);
     },
   };
 }

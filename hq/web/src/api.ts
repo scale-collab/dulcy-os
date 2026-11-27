@@ -466,3 +466,26 @@ export interface PurchaseR2 {
 }
 export interface LimitPreviewR2 { ok: true; live: boolean; changes: number; summary: string; clients: string[]; skipped: number; skippedWhy: { why: string; n: number }[]; sample: { email: string; what: string }[]; max: number }
 export interface BuyResultR2 { ok: true; id: string; status: string; summary: string }
+// ---------- Round 3 (Alex 2026-11-27): Sales period picker, Close pipeline + funnel, pricing, Cole's Close updates; Team agent conversations ----------
+export type SalesPeriodKey = 'last30' | 'month' | 'quarter' | 'year' | 'custom';
+export interface SalesWindow { from: string; to: string; label: string }
+export interface SalesPeriodPick { key: SalesPeriodKey; title: string; now: SalesWindow; prev: SalesWindow }
+export interface SalesNumbersMetric { key: SalesMetricKey | 'money'; label: string; now: number; prev: number; diff: number; dir: 'up' | 'down' | 'same'; pct: number | null; series: { now: number[]; prev: number[] }; unknownNow?: number; unknownPrev?: number }
+export interface SalesNumbers { period: SalesPeriodPick; unit: 'day' | 'week' | 'month'; labels: { now: string[]; prev: string[] }; metrics: SalesNumbersMetric[]; conclusion: string; today: string }
+export interface SalesCalendarLink { readable: boolean; connected: boolean | null; status: string; canInvite: boolean; text: string }
+export type SalesCapacityR3 = SalesCapacity & { calendar?: SalesCalendarLink };
+export interface SalesCloseStage { label: string; type: string; count: number; pct: number | null; prev: number; prevPct: number | null }
+export interface SalesFunnelStep { key: string; label: string; stages: string[]; reached: number; pctOfTotal: number | null; pctOfPrev: number | null; daysFromPrev: number | null; daysN: number }
+export interface SalesFunnelSide { total: number; won: number; lost: number; closeRate: number | null; decidedRate: number | null; avgDaysToClose: number | null; avgWinValue: number | null; valuePeriod: string; steps: SalesFunnelStep[] }
+export interface SalesCloseView {
+  period: SalesPeriodPick; connected: boolean; ok: boolean; error: string; readAt: string; truncated: boolean;
+  pipeline: { pipeline: string; total: number; prevTotal: number; stages: SalesCloseStage[]; open: number; won: number; lost: number } | null;
+  funnel: (SalesFunnelSide & { prev: SalesFunnelSide; order: 'close' | 'alex'; missing: string[] }) | null;
+}
+export interface PriceInput { ref: string; label: string; value: number; kind: 'money' | 'pct' | 'number' }
+export interface PriceOutput { ref: string; label: string; value: number | string | null; kind: 'money' | 'pct' | 'number'; formula: string; fromSheet: boolean; error?: string }
+export interface PricingModel { source: 'sheet' | 'builtin'; tab: string; readAt: string; inputs: PriceInput[]; outputs: PriceOutput[]; assumptions: string[]; error?: string }
+export interface CloseFieldChange { field: 'confidence' | 'value' | 'value_period'; from: string; to: string }
+export interface CloseUpdateRow { id: number; recordingId: string; leadId: string; oppId: string; prospect: string; status: 'updated' | 'planned' | 'unchanged' | 'no_lead' | 'no_opportunity' | 'failed'; changes: CloseFieldChange[]; note: string; applied: boolean; created: string; closeUrl: string }
+export interface AgentExchange { id: string; kind: 'ask' | 'handoff'; from: string; to: string; title: string; preview: string; at: string; messages: number; threadId?: number; parentId?: number | null; taskId?: number; status?: string }
+export interface AgentExchangeDetail { exchange: AgentExchange; messages: { author: string; role: 'question' | 'answer' | 'note'; text: string; at: string }[]; parent: { id: number; agent: string; title: string } | null }
