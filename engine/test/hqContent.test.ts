@@ -15,7 +15,7 @@ import { createServer } from '../src/http.js';
 import { upsertUser } from '../src/hq/auth.js';
 import { CF, CONTENT, SETTINGS } from '../src/agents/sienna.js';
 import {
-  CLIPS, KL, SF, XF, _resetContentCache, buildContent, contentFriday, contentNotes, ideaNeedsApproval, nextIdeaDates, nextStep, parsePrep, settingsOf,
+  CLIPS, KL, SF, XF, _resetContentCache, buildContent, ccStageOf, contentFriday, normalizedStage, contentNotes, ideaNeedsApproval, nextIdeaDates, nextStep, parsePrep, settingsOf,
   stageOf, targetsOf, videoOf, clipOf, weekOf, type ContentSource,
 } from '../src/hq/content.js';
 
@@ -137,7 +137,7 @@ test('content: Friday view = approved ideas for this Friday per channel, in reco
   assert.equal(m1.script, 'full script');
   assert.deepEqual(m1.hooks.length, 2);
   assert.equal(m1.gamma, '1. The problem\n2. The 3 fixes');
-  assert.equal(m1.airtable, `https://airtable.com/appTEST/${CONTENT}/${rec(6)}`);
+  assert.equal(JSON.stringify(out).includes('airtable.com/appTEST/tbl'), false, 'no Airtable record links anywhere (Batch 5)');
 });
 
 test('content: Needs you groups ideas by channel and shows only clips Sienna passed; notes for real data problems', () => {
@@ -163,7 +163,8 @@ test('content: Needs you groups ideas by channel and shows only clips Sienna pas
   assert.deepEqual([out.needs.ideas[0].items[0].by, out.needs.ideas[1].items[0].by], ['Sienna', 'Reddit intake (n8n)']);
   assert.deepEqual([out.needs.ideas[0].items[0].angle, out.needs.ideas[0].items[0].hook, out.needs.ideas[0].items[0].why], ['Plain', 'First line', 'People ask.']);
   assert.deepEqual(out.needs.finals.map((f) => [f.title, f.clips.map((c) => c.name)]), [['Video with clips', ['Good clip']]], 'only clips Sienna passed');
-  assert.equal(out.needs.finals[0].clips[0].airtable, `https://airtable.com/appTEST/${CLIPS}/${clipRec(1)}`);
+  assert.equal(JSON.stringify(out.needs).includes('airtable.com'), false, 'no Airtable links in Needs you (Batch 5)');
+  assert.equal(out.links.contentCenter, 'https://airtable.com/appTEST/pagacLOPVCIQb1RQt', 'only the Content Center page, for the clip approval HQ cannot do');
   assert.equal(out.needs.waitingForSienna, 1);
   assert.deepEqual(out.counts, { ideas: 3, finals: 1, steps: out.needs.alexSteps.length, total: 4 + out.needs.alexSteps.length });
   const problems = out.notes.map((n) => n.problem);
@@ -175,6 +176,34 @@ test('content: Needs you groups ideas by channel and shows only clips Sienna pas
   // 17 scheduled without proof → one note with the count.
   const many = Array.from({ length: 17 }, (_, i) => v(100 + i, { [CF.title]: `S${i}`, [CF.channel]: MAIN, [CF.status]: 'Scheduled' }));
   assert.match(contentNotes(source(many), { fri: '2026-11-27', fweek: weekOf('2026-11-27'), today: '2026-11-26', pipeline: [] })[0].data, /^17 rows have Status Scheduled/);
+});
+
+test('content (Batch 5): the Content Center\'s 10 stages, its item order and the blocks each item shows', () => {
+  const cc = (f: Record<string, unknown>, clipIds: string[] = []) => ccStageOf(videoOf(v(1, { [CF.channel]: MAIN, ...f, ...(clipIds.length ? { [XF.clips]: clipIds } : {}) }), new Set()));
+  assert.deepEqual(['', 'Idea Approved', 'Script', 'Scheduled to Record', 'Recorded', 'Editing', 'Ready for Thumbnail', 'Ready for Clips', 'Ready to Publish', 'Final Review'].map((x) => normalizedStage(x)),
+    ['Idea', 'Idea', 'Script', 'Record', 'Edit', 'Edit', 'Thumbnail', 'Clips', 'Upload', 'Finalize']);
+  assert.equal(cc({ [CF.stage]: 'Editing', [XF.thumbnailStatus]: 'Approved' }), 'Upload', 'an approved thumbnail = Upload');
+  assert.equal(cc({ [CF.stage]: 'Ready to Publish', [XF.youtubeUrl]: 'https://youtu.be/x' }), 'Clips', 'on YouTube, no clips yet');
+  assert.equal(cc({ [XF.youtubeUrl]: 'https://youtu.be/x' }, [clipRec(1)]), 'Distribute');
+  assert.equal(cc({ [CF.stage]: 'Published' }), 'Distribute', 'Published without proof + distribution = Distribute, like the Content Center');
+  assert.equal(cc({ [XF.youtubeUrl]: 'https://youtu.be/x', [XF.publishingStatus]: 'Published', [XF.distributionStatus]: 'Published' }), 'Published');
+  const now = at12('2026-11-26').getTime();
+  const rows = [
+    v(1, { [CF.title]: 'B late', [CF.channel]: RAW, [CF.ideaDecision]: 'Approved', [CF.stage]: 'Editing', [CF.recordingDate]: '2026-11-27', [XF.rawFolderUrl]: 'https://f.io/r', [XF.finalAssetUrl]: 'https://f.io/f', [XF.message]: 'Long-form edit submitted', [XF.shortProjectId]: 'P1' }),
+    v(2, { [CF.title]: 'A early', [CF.channel]: MAIN, [CF.ideaDecision]: 'Approved', [CF.stage]: 'Script', [CF.script]: 'x', [XF.publishDate]: '2026-11-25', [CF.recordingDate]: '2026-12-05' }),
+    v(3, { [CF.title]: 'C undated', [CF.channel]: RAW, [CF.ideaDecision]: 'Needs Review', [CF.ideaScore]: 77, [CF.ideaCommunity]: 'r/coldemail', [CF.ideaUrl]: 'https://reddit.com/r/x' }),
+  ];
+  const out = buildContent(source(rows, [{ id: clipRec(1), fields: { [KL.parent]: [rec(1)], [KL.status]: 'Proposed' } }]), 'appTEST', now);
+  assert.deepEqual(out.pipeline.ccStages, ['Idea', 'Script', 'Record', 'Edit', 'Finalize', 'Thumbnail', 'Upload', 'Clips', 'Distribute', 'Published']);
+  assert.deepEqual(out.pipeline.rows.map((r) => [r.title, r.cc]), [['A early', 'Script'], ['B late', 'Edit'], ['C undated', 'Idea']], 'earliest date first, undated last');
+  const b = out.pipeline.rows[1];
+  assert.deepEqual([b.thisWeek, b.awaiting, b.done], [true, false, false]);
+  assert.deepEqual(b.facts.video, { folder: true, finished: true, youtube: false, youtubeUrl: '' });
+  assert.deepEqual(b.facts.repurposing, { shortProject: true, clips: 1, drafts: false });
+  assert.equal(b.facts.update, 'Long-form edit submitted');
+  assert.equal(b.facts.details.productionStage, 'Editing');
+  const c = out.pipeline.rows[2];
+  assert.deepEqual([c.awaiting, c.facts.score, c.facts.source, c.facts.sourceUrl, c.next!.how], [true, 77, 'r/coldemail', 'https://reddit.com/r/x', 'hq']);
 });
 
 // ---------- the API ----------
