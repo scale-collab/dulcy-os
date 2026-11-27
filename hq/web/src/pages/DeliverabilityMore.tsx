@@ -2,7 +2,8 @@
 // the inbox limit editor and the new-client ramp card. The limit editor is the one write: owner only
 // (the server checks), an explicit "I confirm" tick, and a dry run until inbox.limits is switched live.
 import { useCallback, useEffect, useState } from 'react';
-import { api, type BouncesB3, type LimitResultB3, type LimitsB3, type RampProposalB3, type VerificationB3 } from '../api';
+import { api, type BouncesB3, type CodeRowR2, type LimitResultB3, type LimitsB3, type RampProposalB3, type StatsRowR2, type VerificationB3 } from '../api';
+import { CodeList, StatsStrip } from './DeliverabilityR2';
 import { Button, Card, cx, Empty, ErrorBox, PageSkeleton, Pill, showToast, timeAgo } from '../ui';
 import { BarList, Conclusion, Select } from '../charts';
 
@@ -111,7 +112,8 @@ export function BouncesTab({ client, refresh }: { client: string; refresh: numbe
   const [days, setDays] = useState(30);
   const [campaign, setCampaign] = useState('');
   const [account, setAccount] = useState('');
-  const [d, setD] = useState<BouncesB3 | null>(null);
+  // Round 2: SMTP codes (codes) and the light stats row (stats) ride along.
+  const [d, setD] = useState<(BouncesB3 & { codes?: CodeRowR2[]; stats?: StatsRowR2 }) | null>(null);
   const [error, setError] = useState('');
   useEffect(() => { setCampaign(''); setAccount(''); }, [client]);
   useEffect(() => {
@@ -129,10 +131,11 @@ export function BouncesTab({ client, refresh }: { client: string; refresh: numbe
         <Select label="Sending inbox" value={account} onChange={setAccount} options={[{ value: '', label: 'All sending inboxes' }, ...d.options.accounts.map((a) => ({ value: a.key, label: `${a.name} (${a.count})` }))]} />
       </div>
       <Conclusion c={d.conclusion} />
+      {d.stats && <StatsStrip s={d.stats} days={days} />}
       <div className="text-sm text-muted"><span className="tabular font-semibold text-fg-2">{d.total.toLocaleString('en-US')}</span> bounces{d.capped ? ` (first ${d.maxRows.toLocaleString('en-US')} read)` : ''}</div>
       {!d.total ? <Card><Empty icon="check" tone="good" title="No bounces" sub="Nothing bounced in this view." /></Card> : (
         <div className="grid gap-3 lg:grid-cols-2">
-          <BarList title="Bounce codes" rows={d.byCode} />
+          {d.codes ? <CodeList rows={d.codes} /> : <BarList title="Bounce codes" rows={d.byCode} />}
           <BarList title="Where bounces land" rows={d.byLanding} />
           <BarList title="What kind" rows={d.byKind} />
           <BarList title="Hard vs soft" rows={d.byType} />
@@ -141,7 +144,7 @@ export function BouncesTab({ client, refresh }: { client: string; refresh: numbe
           {!account && <BarList title="By sending inbox (tap to filter)" rows={d.byAccount} onPick={(k) => setAccount(k)} />}
         </div>
       )}
-      <p className="text-xs text-muted">From Airtable (Emails with Lead Status Bounced: the rows the Spam Center charts read), read {timeAgo(d.readAt) || 'just now'}; kept 10 minutes. Where it lands: the row's mail provider, or an MX lookup when that is empty. A bare 550 counts as "address not found" (approximate).</p>
+      <p className="text-xs text-muted">From Airtable (Emails with Lead Status Bounced: the rows the Spam Center charts read), read {timeAgo(d.readAt) || 'just now'}; kept 10 minutes. Where it lands: the row's mail provider, or an MX lookup when that is empty. Codes are the SMTP reply codes (550, 452…); the 5.x.x / 4.x.x code under each is the detail. Soft = any 4xx. A bare 550 counts as "address not found" (approximate).</p>
     </div>
   );
 }
@@ -199,7 +202,7 @@ export function VerificationTab({ client, refresh }: { client: string; refresh: 
           ))}
         </ul>
       )}
-      <p className="text-xs text-muted">The verifier comes from each lead list (Direct / Generic verifier) or the bounced row's own tag. Rates use contacted from the old n8n cohorts when there ({d.oldCohorts} rows), else an estimate from the list mix ("est."). Computed when you open it; kept 10 minutes. Read {timeAgo(d.readAt) || 'just now'}.</p>
+      <p className="text-xs text-muted">Verifiers in use: MillionVerifier and LeadMagic; Other = any other verifier or none recorded. The verifier comes from each lead list (Direct / Generic verifier) or the bounced row's own tag. Rates use contacted from the old n8n cohorts when there ({d.oldCohorts} rows), else an estimate from the list mix ("est."). Computed when you open it; kept 10 minutes. Read {timeAgo(d.readAt) || 'just now'}.</p>
     </div>
   );
 }

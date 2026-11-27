@@ -4,13 +4,19 @@
 // OFF first in red; the shared active-client dropdown; dropdown filters; inbox limits editable from
 // HQ (owner); the new-client ramp; Fix it on agent notes; email bounce analytics and verification
 // performance; no Airtable links. Text is rendered escaped.
+// Round 2/3 (Alex, 2026-11-27): warm-up off by reason (resting = expected; only unexpected is red),
+// bulk limit edits (tick inboxes / all shown → preview → one job), SMTP codes, placement bands per
+// test date ("Last test 11/27 · Next test Fri 12/4"), slash dates, renewal gap (Atlas task), monthly
+// inbox cost (owner) and Buy (Draft → quote → your OK).
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { api } from '../api';
+import { api, type ClientCostR2, type PurchaseR2, type RenewalGapR2, type TestRunR2, type WarmupSummaryR2, type WarmupWhyR2 } from '../api';
 import { Avatar, Button, Card, cx, Empty, ErrorBox, go, Icon, IconButton, PageSkeleton, PageTitle, Pill, setCount, StatusDot, timeAgo, type Tone } from '../ui';
 import { ClientPicker, rememberedClient } from '../clientPicker';
 import { FixItButton } from '../fixIt';
 import { Select } from '../charts';
 import { BouncesTab, LimitEditor, LimitHistory, RampCard, useLimits, VerificationTab } from './DeliverabilityMore';
+import { BuyPanel, CostLine, CostTotal, PlacementRuns, RenewalCard, sd, WarmupLine } from './DeliverabilityR2';
+import { BulkLimits, type BulkScope } from './DeliverabilityBulk';
 
 /* ---------- API shapes (engine/src/hq/deliverability.ts) ---------- */
 type Health = 'healthy' | 'risk' | 'spam' | 'resting';
@@ -20,15 +26,16 @@ interface DNote { level: 'bad' | 'warn' | 'info'; problem: string; data: string;
 interface Tiles { healthy: number; risk: number; spam: number; resting: number; total: number }
 interface ClientTiles { key: string; name: string; tiles: Tiles; domains: number }
 interface Item { key: string; kind: 'inbox' | 'domain'; status: Health; title: string; client: string; clientKey: string; reason: string; owner: string; doing: string; links: DLink[]; inboxes?: number; redFlag: boolean }
-interface Freshness { newest: string; ageDays: number | null; stale: boolean; expectedFriday: string; fridayMissing: boolean; nextFriday: string; tests: number }
+interface Freshness { newest: string; ageDays: number | null; stale: boolean; expectedFriday: string; fridayMissing: boolean; nextFriday: string; tests: number; lastTest: string; nextTest: string }
 interface EngineRun { kind: string; status: string; at: string; message: string; dryRun: boolean }
 interface Attention {
   tiles: Tiles; clients: ClientTiles[]; client: string; items: Item[]; counts: { spam: number; resting: number; risk: number; warmupOff: number }; notes: DNote[]; freshness: Freshness;
   engine: { healthLoop: { everyMin: number; live: boolean; from: string }; runs: EngineRun[] }; replacementsWaiting: number; hidden: { inactiveInboxes: number; noClientInboxes: number; emptyDomains: number }; readAt: string;
+  warmup: WarmupSummaryR2; renewalGap: RenewalGapR2;
 }
 interface InboxRow {
   id: string; email: string; domain: string; client: string; clientKey: string; status: Health; reasons: Reason[]; doing: string; score: number | null; scoreAt: string;
-  warmup: number | null; warmupOn: boolean | null; warmupOff: boolean; warmupLimit: number | null; connection: string; bounce: number | null; contacted: number; dailyLimit: number | null; previousLimit: number | null; stage: string; retestFriday: string; links: DLink[];
+  warmup: number | null; warmupOn: boolean | null; warmupOff: boolean; warmupWhy: WarmupWhyR2 | null; warmupLimit: number | null; connection: string; bounce: number | null; contacted: number; dailyLimit: number | null; previousLimit: number | null; stage: string; retestFriday: string; links: DLink[];
 }
 interface InboxGroup { domain: string; domainId: string; client: string; clientKey: string; status: Health; blacklist: string; renewal: string; inboxes: InboxRow[] }
 interface InboxesView { groups: InboxGroup[]; totalGroups: number; total: number; clients: { key: string; name: string; count: number }[]; noClient: number; readAt: string }
@@ -36,13 +43,16 @@ interface PlacementDomain { domain: string; date: string; score: number | null; 
 interface PlacementView {
   freshness: Freshness; notes: DNote[]; clients: { key: string; name: string; newest: string; ageDays: number | null; stale: boolean; spam: number; domains: PlacementDomain[] }[];
   untested: { key: string; name: string; inboxes: number }[]; windowDays: number; limits: { rest: number; watch: number }; readAt: string;
+  runs: TestRunR2[]; bands: string[];
 }
-interface DomainRow { id: string; name: string; status: Health; reasons: Reason[]; doing: string; inboxes: number; renewal: string; renewalEstimated: boolean; daysToRenewal: number | null; blacklist: string; blacklistText: string; blacklistWhy: string; provider: string; replacement: { status: string } | null; links: DLink[] }
+interface DomainRow { renewalSource?: string; id: string; name: string; status: Health; reasons: Reason[]; doing: string; inboxes: number; renewal: string; renewalEstimated: boolean; daysToRenewal: number | null; blacklist: string; blacklistText: string; blacklistWhy: string; provider: string; replacement: { status: string } | null; links: DLink[] }
 interface DomainsView {
   clients: { key: string; name: string; domains: DomainRow[]; inboxes: number; notTwo: number }[];
   replacements: { id: string; title: string; client: string; status: string; action: string; reason: string; score: number | null; created: string; error: string; link: DLink | null }[];
-  purchases: { id: string; request: string; status: string; domains: number | null; mailboxes: number | null; provider: string; approved: boolean; error: string; created: string; link: DLink | null }[];
+  purchases: PurchaseR2[];
   notes: DNote[]; rule: string; readAt: string;
+  costs: ClientCostR2[] | null; costRule: string; renewalGap: RenewalGapR2; cheap: { connected: boolean; error: string; readAt: string };
+  renewalTask: { status: string; title: string; updated: string; note: string } | null;
 }
 
 type Tab = 'attention' | 'inboxes' | 'placement' | 'domains' | 'bounces' | 'verification';
@@ -62,8 +72,10 @@ const STATUS: Record<Health, { label: string; tone: Tone; pill: 'bad' | 'warn' |
   healthy: { label: 'Healthy', tone: 'good', pill: 'good' },
 };
 const LEGACY: Record<string, Health> = { sick: 'spam', watch: 'risk' };
-const md = (d: string) => (d ? d.slice(5, 10) : '');
-const longDate = (d: string) => (d ? new Date(`${d.slice(0, 10)}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
+/** Dates use slashes (Round 2 rule): 11/27. */
+const md = sd;
+/** With the year, slashes (Round 2 rule): 3/10/2027. */
+const longDate = (d: string) => (/^\d{4}-\d{2}-\d{2}/.test(d) ? `${sd(d)}/${d.slice(0, 4)}` : '');
 const route = (tab: Tab, client = '', extra = '') => go(`deliverability/${tab}${client || extra ? `/${client || 'all'}` : ''}${extra ? `/${extra}` : ''}`);
 
 /** #/deliverability[/<tab>[/<client key|all>[/<status>]]] */
@@ -135,14 +147,19 @@ function AttentionTab({ client, refresh, setBusy }: { client: string; refresh: n
     <div className="space-y-4">
       {error && <ErrorBox error={error} retry={load} />}
       <TileRow tiles={d.tiles} client={client} />
-      {off.length > 0 && (
+      {off.length > 0 ? (
         <Card className="overflow-hidden border-bad-line p-0">
-          <div className="flex items-center gap-2 border-b border-bad-line bg-bad-soft px-4 py-2.5 sm:px-5"><Icon name="alert" size={16} className="text-bad" /><h2 className="font-semibold text-bad">Warm-up OFF on {off.length} inbox{off.length === 1 ? '' : 'es'}</h2></div>
-          <p className="px-4 pt-2 text-sm text-fg-2 sm:px-5">Warm-up must never be off. Turn it back on in EmailBison.</p>
+          <div className="flex items-center gap-2 border-b border-bad-line bg-bad-soft px-4 py-2.5 sm:px-5"><Icon name="alert" size={16} className="text-bad" /><h2 className="font-semibold text-bad">Warm-up OFF for no known reason on {off.length} inbox{off.length === 1 ? '' : 'es'}</h2></div>
+          <div className="px-4 pt-3 sm:px-5"><WarmupLine w={d.warmup} client={client} /></div>
           <ul className="divide-y divide-line">{off.map((i) => <ItemRow key={i.key} i={i} showClient={!client} />)}</ul>
         </Card>
-      )}
+      ) : <WarmupLine w={d.warmup} client={client} />}
       <AgentNotes notes={d.notes} />
+      {d.renewalGap.missing > 0 && (
+        <button onClick={() => route('domains', client)} className="flex min-h-11 w-full items-center gap-2 rounded-xl border border-line bg-surface px-4 text-left text-sm hover:bg-hover">
+          <Icon name="calendar" size={15} className="text-warn" /><span className="min-w-0 flex-1"><span className="font-semibold text-fg">{d.renewalGap.missing.toLocaleString('en-US')} domains</span> <span className="text-fg-2">have no real renewal date: Atlas fills them.</span></span><Icon name="chevronRight" size={16} className="text-faint" />
+        </button>
+      )}
       {limits && <RampCard limits={limits} onApplied={reload} />}
       <Card className="overflow-hidden p-0">
         {main.length ? <ul className="divide-y divide-line">{main.map((i) => <ItemRow key={i.key} i={i} showClient={!client} />)}</ul>
@@ -280,12 +297,20 @@ function InboxesTab({ client, status, refresh, setBusy }: { client: string; stat
   const [search, setSearch] = useState('');
   const [again, setAgain] = useState(0);
   const [editAll, setEditAll] = useState(false);
+  // Round 2: bulk edit. picked = ticked inboxes; all = every inbox the filter shows (resolved on the server).
+  const [bulk, setBulk] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [all, setAll] = useState(false);
+  useEffect(() => { setPicked(new Set()); setAll(false); }, [client, st, search]);
+  const toggle = (ids: string[], on: boolean) => { setAll(false); setPicked((p) => { const n = new Set(p); ids.forEach((id) => (on ? n.add(id) : n.delete(id))); return n; }); };
   useEffect(() => { const h = setTimeout(() => setSearch(q.trim()), 300); return () => clearTimeout(h); }, [q]);
   const qs = new URLSearchParams({ ...(client ? { client } : {}), ...(st ? { status: st } : {}), ...(search ? { q: search } : {}) }).toString();
   const { d, error, load } = useView<InboxesView>(`/deliverability/inboxes${qs ? `?${qs}` : ''}`, refresh + again, setBusy);
   const { limits, reload } = useLimits(client, refresh);
-  const done = () => { setEditAll(false); reload(); setAgain((x) => x + 1); };
+  const done = () => { setEditAll(false); setBulk(false); setPicked(new Set()); setAll(false); reload(); setAgain((x) => x + 1); };
   const clientName = d?.clients.find((c) => c.key === client)?.name ?? '';
+  const scope: BulkScope = all ? { filter: { client, status: st, q: search.toLowerCase() } } : { accounts: [...picked] };
+  const scopeLabel = all ? `all ${d?.total.toLocaleString('en-US') ?? ''} shown${clientName ? ` (${clientName}${st ? `, ${STATUS[st].label.toLowerCase()}` : ''})` : st ? ` (${STATUS[st].label.toLowerCase()})` : ' (every client)'}${search ? `, matching "${search}"` : ''}` : `${picked.size} ticked inbox${picked.size === 1 ? '' : 'es'}`;
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -295,8 +320,18 @@ function InboxesTab({ client, status, refresh, setBusy }: { client: string; stat
             className="min-h-11 w-full rounded-xl border border-line bg-surface px-3.5 text-[15px] text-fg outline-none placeholder:text-faint focus:border-accent focus:ring-4 focus:ring-accent-soft" />
         </label>
         <Select label="Status" value={st} onChange={(v) => route('inboxes', client, v)} options={FILTERS.map((f) => ({ value: f, label: f ? STATUS[f].label : 'All statuses' }))} />
-        {limits?.canEdit && client && !editAll && <Button tone="quiet" icon="pen" onClick={() => setEditAll(true)} className="min-h-10 px-3 text-sm">Edit all {clientName || 'client'} inboxes</Button>}
+        {limits?.canEdit && !bulk && <Button tone="accent" icon="pen" onClick={() => { setBulk(true); setEditAll(false); }} className="min-h-10 px-3 text-sm">Bulk edit limits</Button>}
+        {limits?.canEdit && client && !editAll && !bulk && <Button tone="ghost" onClick={() => setEditAll(true)} className="min-h-10 px-3 text-sm">Edit all {clientName || 'client'} inboxes</Button>}
       </div>
+      {bulk && d && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-sunken px-3.5 py-2 text-sm">
+          <span className="font-semibold text-fg">Pick inboxes:</span>
+          <span className="text-fg-2">tick them below (or a whole domain), or</span>
+          <Button tone={all ? 'accent' : 'quiet'} onClick={() => { setAll(true); setPicked(new Set()); }} className="min-h-9 px-3 text-sm">All {d.total.toLocaleString('en-US')} shown</Button>
+          <span className="text-xs text-muted">Use the client and status dropdowns to pick per client or by status.</span>
+          {(picked.size > 0 || all) && <button onClick={() => { setPicked(new Set()); setAll(false); }} className="min-h-9 text-sm font-semibold text-accent-ink hover:underline">Clear</button>}
+        </div>
+      )}
       {editAll && limits && <LimitEditor label={`All ${clientName || 'client'} inboxes`} client={client} cold={null} warmup={null} live={limits.live} onDone={done} onCancel={() => setEditAll(false)} />}
       {limits && <RampCard limits={limits} onApplied={done} />}
       {error && <ErrorBox error={error} retry={load} />}
@@ -306,8 +341,9 @@ function InboxesTab({ client, status, refresh, setBusy }: { client: string; stat
           <div className="text-sm text-muted"><span className="tabular font-semibold text-fg-2">{d.total.toLocaleString('en-US')}</span> inbox{d.total === 1 ? '' : 'es'} on <span className="tabular font-semibold text-fg-2">{d.totalGroups.toLocaleString('en-US')}</span> domain{d.totalGroups === 1 ? '' : 's'}{d.totalGroups > d.groups.length ? ` (first ${d.groups.length} shown: search to narrow)` : ''}</div>
           {!d.groups.length && <Card><Empty icon="inbox" title="No inboxes" sub={search ? `Nothing matches "${search}".` : 'No inboxes with this filter.'} /></Card>}
           <div className="space-y-3">
-            {d.groups.map((g) => <DomainGroup key={`${g.clientKey}:${g.domain}`} g={g} showClient={!client} canEdit={!!limits?.canEdit} live={!!limits?.live} onSaved={done} />)}
+            {d.groups.map((g) => <DomainGroup key={`${g.clientKey}:${g.domain}`} g={g} showClient={!client} canEdit={!!limits?.canEdit} live={!!limits?.live} onSaved={done} pick={bulk ? { picked, all, toggle } : null} />)}
           </div>
+          {bulk && limits && (picked.size > 0 || all) && <BulkLimits scope={scope} label={scopeLabel} live={limits.live} onDone={done} onClear={() => { setBulk(false); setPicked(new Set()); setAll(false); }} />}
           {d.noClient > 0 && !client && <p className="text-xs text-muted">{d.noClient} inbox{d.noClient === 1 ? ' has' : 'es have'} no client in Airtable: <button className="font-semibold underline underline-offset-2" onClick={() => route('inboxes', 'none')}>show them</button>.</p>}
           {limits && <LimitHistory limits={limits} />}
           <p className="text-xs text-muted">Cold = cold emails per day; warm-up = warm-up emails per day; warm-up placement = EmailBison's warm-up score (share landing in the inbox); test = the newest inbox placement test. From Airtable, read {timeAgo(d.readAt) || 'just now'}; kept 1 minute.</p>
@@ -318,11 +354,18 @@ function InboxesTab({ client, status, refresh, setBusy }: { client: string; stat
 }
 
 const tone = (x: number | null, bad: number, warn: number): 'bad' | 'warn' | undefined => (x === null ? undefined : x < bad ? 'bad' : x < warn ? 'warn' : undefined);
-function DomainGroup({ g, showClient, canEdit, live, onSaved }: { g: InboxGroup; showClient: boolean; canEdit: boolean; live: boolean; onSaved: () => void }) {
+type BulkPick = { picked: Set<string>; all: boolean; toggle: (ids: string[], on: boolean) => void } | null;
+function PickBox({ pick, ids, label }: { pick: BulkPick; ids: string[]; label: string }) {
+  if (!pick) return null;
+  const on = pick.all || ids.every((id) => pick.picked.has(id));
+  return <input type="checkbox" checked={on} disabled={pick.all} onChange={(e) => pick.toggle(ids, e.target.checked)} aria-label={label} className="h-4 w-4 shrink-0 accent-[var(--accent)]" />;
+}
+function DomainGroup({ g, showClient, canEdit, live, onSaved, pick }: { g: InboxGroup; showClient: boolean; canEdit: boolean; live: boolean; onSaved: () => void; pick: BulkPick }) {
   const [edit, setEdit] = useState<string | null>(null);
   return (
     <Card className="min-w-0 overflow-hidden p-0">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-line bg-sunken/60 px-4 py-2.5 sm:px-5">
+        <PickBox pick={pick} ids={g.inboxes.map((i) => i.id)} label={`All inboxes on ${g.domain}`} />
         <StatusDot tone={STATUS[g.status].tone} label={STATUS[g.status].label} />
         <span className="min-w-0 break-all font-semibold text-fg">{g.domain}</span>
         {showClient && <Pill>{g.client}</Pill>}
@@ -333,11 +376,11 @@ function DomainGroup({ g, showClient, canEdit, live, onSaved }: { g: InboxGroup;
         <table className="w-full text-left text-sm">
           <thead className="text-xs text-muted"><tr className="border-b border-line">
             <th className="px-5 py-2 font-medium">Inbox</th><th className="w-24 px-2 py-2 text-right font-medium">Cold/day</th><th className="w-24 px-2 py-2 text-right font-medium">Warm-up/day</th>
-            <th className="w-28 px-2 py-2 text-right font-medium">Warm-up placement</th><th className="w-20 px-2 py-2 text-right font-medium">Warm-up</th><th className="w-16 px-2 py-2 text-right font-medium">Test</th><th className="w-16 px-2 py-2 text-right font-medium">Bounce</th>{canEdit && <th className="w-16 px-4 py-2"><span className="sr-only">Edit</span></th>}
+            <th className="w-28 px-2 py-2 text-right font-medium">Warm-up placement</th><th className="w-28 px-2 py-2 text-right font-medium">Warm-up</th><th className="w-16 px-2 py-2 text-right font-medium">Test</th><th className="w-16 px-2 py-2 text-right font-medium">Bounce</th>{canEdit && <th className="w-16 px-4 py-2"><span className="sr-only">Edit</span></th>}
           </tr></thead>
           <tbody className="divide-y divide-line">
             {g.inboxes.map((i) => (
-              <InboxTableRow key={i.id} i={i} canEdit={canEdit} editing={edit === i.id} onEdit={() => setEdit(edit === i.id ? null : i.id)} live={live} onSaved={() => { setEdit(null); onSaved(); }} />
+              <InboxTableRow key={i.id} i={i} canEdit={canEdit && !pick} editing={edit === i.id} onEdit={() => setEdit(edit === i.id ? null : i.id)} live={live} onSaved={() => { setEdit(null); onSaved(); }} pick={pick} />
             ))}
           </tbody>
         </table>
@@ -346,6 +389,7 @@ function DomainGroup({ g, showClient, canEdit, live, onSaved }: { g: InboxGroup;
         {g.inboxes.map((i) => (
           <li key={i.id} className="px-4 py-3">
             <div className="flex items-start gap-2.5">
+              {pick && <span className="mt-1"><PickBox pick={pick} ids={[i.id]} label={`Pick ${i.email}`} /></span>}
               <StatusDot tone={i.warmupOff ? 'bad' : STATUS[i.status].tone} className="mt-1.5" label={STATUS[i.status].label} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2"><span className="min-w-0 break-all text-sm font-semibold text-fg">{i.email}</span><Pill tone={STATUS[i.status].pill}>{STATUS[i.status].label}</Pill></div>
@@ -353,12 +397,12 @@ function DomainGroup({ g, showClient, canEdit, live, onSaved }: { g: InboxGroup;
                   <Metric label="Cold" v={i.dailyLimit === null ? '–' : `${i.dailyLimit}/day`} />
                   <Metric label="Warm-up" v={i.warmupLimit === null ? '–' : `${i.warmupLimit}/day`} />
                   <Metric label="Placement" v={i.warmup === null ? '–' : `${i.warmup}%`} tone={tone(i.warmup, 50, 70)} />
-                  <Metric label="Warm-up" v={i.warmupOff ? 'OFF' : i.warmupOn ? 'on' : '–'} tone={i.warmupOff ? 'bad' : undefined} />
+                  <Metric label="Warm-up" v={warmupCell(i)} tone={i.warmupOff ? 'bad' : undefined} />
                   <Metric label="Test" v={i.score === null ? '–' : `${i.score}%`} tone={tone(i.score, 60, 75)} />
                   <Metric label="Bounce" v={i.bounce === null ? '–' : `${i.bounce}%`} tone={i.bounce === null ? undefined : i.bounce > 4 ? 'bad' : i.bounce > 2.5 ? 'warn' : undefined} />
                 </div>
                 {i.reasons.length > 0 && <div className="mt-1.5 text-sm leading-snug text-fg-2">{i.reasons.map((r) => r.text).join(' · ')}</div>}
-                {canEdit && edit !== i.id && <button onClick={() => setEdit(i.id)} className="mt-1.5 min-h-9 text-sm font-semibold text-accent-ink hover:underline">Edit limits</button>}
+                {canEdit && !pick && edit !== i.id && <button onClick={() => setEdit(i.id)} className="mt-1.5 min-h-9 text-sm font-semibold text-accent-ink hover:underline">Edit limits</button>}
                 {edit === i.id && <div className="mt-2"><LimitEditor label={i.email} accounts={[i.id]} cold={i.dailyLimit} warmup={i.warmupLimit} live={live} onDone={() => { setEdit(null); onSaved(); }} onCancel={() => setEdit(null)} /></div>}
               </div>
             </div>
@@ -369,20 +413,23 @@ function DomainGroup({ g, showClient, canEdit, live, onSaved }: { g: InboxGroup;
   );
 }
 
-function InboxTableRow({ i, canEdit, editing, onEdit, live, onSaved }: { i: InboxRow; canEdit: boolean; editing: boolean; onEdit: () => void; live: boolean; onSaved: () => void }) {
+const WHY_CELL: Record<string, string> = { resting: 'off (resting)', replacing: 'off (replacing)', spam: 'off (spam review)', bounces: 'off (EmailBison)' };
+/** Round 2: expected warm-up off reads "off (resting)"; only an unexpected off is a red "OFF". */
+const warmupCell = (i: Pick<InboxRow, 'warmupOff' | 'warmupWhy' | 'warmupOn'>) => (i.warmupOff ? 'OFF' : i.warmupWhy ? WHY_CELL[i.warmupWhy] ?? 'off' : i.warmupOn ? 'on' : '–');
+function InboxTableRow({ i, canEdit, editing, onEdit, live, onSaved, pick }: { i: InboxRow; canEdit: boolean; editing: boolean; onEdit: () => void; live: boolean; onSaved: () => void; pick: BulkPick }) {
   const num = (x: number | null, t?: 'bad' | 'warn', suffix = '') => <span className={cx('tabular', t === 'bad' ? 'font-semibold text-bad' : t === 'warn' ? 'font-semibold text-warn' : 'text-fg-2')}>{x === null ? '–' : `${x}${suffix}`}</span>;
   return (
     <>
       <tr className="align-top">
         <td className="px-5 py-2.5">
-          <div className="flex items-center gap-2"><StatusDot tone={i.warmupOff ? 'bad' : STATUS[i.status].tone} label={STATUS[i.status].label} /><span className="min-w-0 break-all font-medium text-fg">{i.email}</span><Pill tone={STATUS[i.status].pill}>{STATUS[i.status].label}</Pill></div>
+          <div className="flex items-center gap-2"><PickBox pick={pick} ids={[i.id]} label={`Pick ${i.email}`} /><StatusDot tone={i.warmupOff ? 'bad' : STATUS[i.status].tone} label={STATUS[i.status].label} /><span className="min-w-0 break-all font-medium text-fg">{i.email}</span><Pill tone={STATUS[i.status].pill}>{STATUS[i.status].label}</Pill></div>
           {i.reasons.length > 0 && <div className="mt-0.5 pl-4 text-xs leading-snug text-fg-2">{i.reasons.map((r) => r.text).join(' · ')}</div>}
           {i.doing && i.status !== 'healthy' && <div className="mt-0.5 pl-4 text-xs text-muted">{i.doing}</div>}
         </td>
         <td className="px-2 py-2.5 text-right">{num(i.dailyLimit)}</td>
         <td className="px-2 py-2.5 text-right">{num(i.warmupLimit)}</td>
         <td className="px-2 py-2.5 text-right">{num(i.warmup, tone(i.warmup, 50, 70), '%')}</td>
-        <td className={cx('px-2 py-2.5 text-right text-xs font-semibold', i.warmupOff ? 'text-bad' : 'text-fg-2')}>{i.warmupOff ? 'OFF' : i.warmupOn ? 'on' : '–'}</td>
+        <td className={cx('px-2 py-2.5 text-right text-xs', i.warmupOff ? 'font-semibold text-bad' : i.warmupWhy ? 'text-muted' : 'font-semibold text-fg-2')}>{warmupCell(i)}</td>
         <td className="px-2 py-2.5 text-right">{num(i.score, tone(i.score, 60, 75), '%')}</td>
         <td className="px-2 py-2.5 text-right">{num(i.bounce, i.bounce === null ? undefined : i.bounce > 4 ? 'bad' : i.bounce > 2.5 ? 'warn' : undefined, '%')}</td>
         {canEdit && <td className="px-4 py-2 text-right"><button onClick={onEdit} aria-expanded={editing} className="min-h-9 text-sm font-semibold text-accent-ink hover:underline">{editing ? 'Close' : 'Edit'}</button></td>}
@@ -406,12 +453,13 @@ function PlacementTab({ client, refresh, setBusy }: { client: string; refresh: n
   return (
     <div className="space-y-4">
       <Card className={cx('flex flex-wrap items-center gap-x-6 gap-y-3', bad && 'border-bad-line')}>
-        <Fact label="Newest scores" v={f.newest ? md(f.newest) : 'none'} sub={f.ageDays === null ? 'no tests found' : `${f.ageDays} day${f.ageDays === 1 ? '' : 's'} ago`} bad={f.stale} />
-        <Fact label="Next Friday test" v={md(f.nextFriday)} sub={f.fridayMissing ? `Fri ${md(f.expectedFriday)} scores missing` : `Fri ${md(f.expectedFriday)} scores are in`} bad={f.fridayMissing} />
+        <Fact label="Last test" v={f.lastTest ? md(f.lastTest) : 'none'} sub={f.ageDays === null ? 'no tests found' : `${f.ageDays === 0 ? 'today' : `${f.ageDays} day${f.ageDays === 1 ? '' : 's'} ago`}${f.fridayMissing ? ` · Fri ${md(f.expectedFriday)} scores missing` : ''}`} bad={f.stale || f.fridayMissing} />
+        <Fact label="Next test" v={`Fri ${md(f.nextTest)}`} sub="every Friday" />
         <Fact label="Tests read" v={f.tests.toLocaleString('en-US')} sub={`last ${d.windowDays} days`} />
         <div className="text-xs text-muted sm:ml-auto">Under {d.limits.rest}% = rested 7 days · under {d.limits.watch}% = at risk</div>
       </Card>
       <AgentNotes notes={d.notes} />
+      <PlacementRuns runs={d.runs} bands={d.bands} />
       {!d.clients.length && <Card><Empty icon="activity" title="No placement tests" sub={`None in the last ${d.windowDays} days for ${client ? 'this client' : 'active clients'}.`} /></Card>}
       <div className="grid gap-3 lg:grid-cols-2">
         {d.clients.map((c) => (
@@ -473,9 +521,15 @@ function DomainsTab({ client, refresh, setBusy }: { client: string; refresh: num
   if (error && !d) return <ErrorBox error={error} retry={load} />;
   if (!d) return <PageSkeleton kind="list" />;
   const waiting = d.replacements.filter((r) => r.status === 'Pending Review');
+  const owner = d.costs !== null;
+  const cost = new Map((d.costs ?? []).map((c) => [c.key, c]));
+  // The renewal gap has its own card (with Atlas's task), so its note is not repeated.
+  const notes = d.notes.filter((n) => !/renewal date/i.test(n.problem));
   return (
     <div className="space-y-4">
-      <AgentNotes notes={d.notes} />
+      {owner && <CostTotal costs={d.costs!} rule={d.costRule} />}
+      <RenewalCard gap={d.renewalGap} task={d.renewalTask} cheap={d.cheap} />
+      <AgentNotes notes={notes} />
       {d.replacements.length > 0 && (
         <Card className={cx('p-0', waiting.length > 0 && 'border-warn/40')}>
           <SubHead icon="layers" title="Replacements" right={waiting.length ? <Pill tone="warn">{waiting.length} waiting for you</Pill> : undefined} />
@@ -493,24 +547,11 @@ function DomainsTab({ client, refresh, setBusy }: { client: string; refresh: num
           </ul>
         </Card>
       )}
-      {d.purchases.length > 0 && (
-        <Card className="p-0">
-          <SubHead icon="briefcase" title="Buying" right={<span className="text-xs text-muted">open requests</span>} />
-          <ul className="divide-y divide-line">
-            {d.purchases.map((p) => (
-              <li key={p.id} className="px-4 py-3 sm:px-5">
-                <div className="flex flex-wrap items-center gap-2"><span className="text-sm font-semibold text-fg">{p.request}</span><Pill tone={/approval/i.test(p.status) ? 'warn' : 'plain'}>{p.status}</Pill></div>
-                <div className="mt-1 text-sm text-fg-2">{[p.domains !== null ? `${p.domains} domain${p.domains === 1 ? '' : 's'}` : '', p.mailboxes !== null ? `${p.mailboxes} inboxes` : '', p.provider].filter(Boolean).join(' · ') || 'No details yet'}</div>
-                {p.error && <div className="mt-1 text-xs text-bad">{p.error}</div>}
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
+      <BuyPanel purchases={d.purchases} clients={d.clients.map((c) => ({ key: c.key, name: c.name }))} canBuy={owner} client={client} onDone={load} />
       {!d.clients.length && <Card><Empty icon="layers" title="No domains" sub="No domains with inboxes for active clients in Airtable." /></Card>}
       {d.clients.map((c) => (
         <Card key={c.key} className="min-w-0 overflow-hidden p-0">
-          <SubHead title={c.name} right={<span className="text-xs text-muted"><span className="tabular font-semibold text-fg-2">{c.domains.length}</span> domains · <span className="tabular font-semibold text-fg-2">{c.inboxes}</span> inboxes{c.notTwo ? <span className="text-warn"> · {c.notTwo} not 2</span> : ''}</span>} />
+          <SubHead title={c.name} right={<span className="text-xs text-muted"><span className="tabular font-semibold text-fg-2">{c.domains.length}</span> domains · <span className="tabular font-semibold text-fg-2">{c.inboxes}</span> inboxes{c.notTwo ? <span className="text-warn"> · {c.notTwo} not 2</span> : ''}{owner && <CostLine c={cost.get(c.key)} rule={d.costRule} />}</span>} />
           <ul className="divide-y divide-line">
             {c.domains.map((x) => (
               <li key={x.id || x.name} className="px-4 py-3 sm:px-5">
@@ -520,7 +561,7 @@ function DomainsTab({ client, refresh, setBusy }: { client: string; refresh: num
                     <span className="min-w-0 break-all text-sm font-semibold text-fg">{x.name}</span>
                     <div className="mt-1.5 flex flex-wrap gap-1.5">
                       <Metric label="Inboxes" v={String(x.inboxes)} tone={x.id && x.inboxes !== 2 ? 'warn' : undefined} />
-                      <Metric label={x.renewalEstimated ? 'Renews (estimated)' : 'Renews'} v={x.renewal ? `${longDate(x.renewal)}${x.daysToRenewal !== null && x.daysToRenewal <= 60 && !x.renewalEstimated ? ` (${x.daysToRenewal} d)` : ''}` : 'UNKNOWN'} tone={!x.renewalEstimated && x.daysToRenewal !== null && x.daysToRenewal < 0 ? 'bad' : !x.renewalEstimated && x.daysToRenewal !== null && x.daysToRenewal <= 30 ? 'warn' : undefined} />
+                      <Metric label={x.renewalEstimated ? 'Renews (estimated)' : x.renewalSource === 'cheapinboxes' ? 'Renews (Cheap Inboxes)' : 'Renews'} v={x.renewal ? `${longDate(x.renewal)}${x.daysToRenewal !== null && x.daysToRenewal <= 60 && !x.renewalEstimated ? ` (${x.daysToRenewal} d)` : ''}` : 'UNKNOWN'} tone={!x.renewalEstimated && x.daysToRenewal !== null && x.daysToRenewal < 0 ? 'bad' : !x.renewalEstimated && x.daysToRenewal !== null && x.daysToRenewal <= 30 ? 'warn' : undefined} />
                       <span title={x.blacklistWhy}><Metric label="Blacklist" v={x.blacklistText} tone={x.blacklist === 'Listed' ? 'bad' : x.blacklist === 'Check Failed' ? 'warn' : undefined} /></span>
                       {x.replacement && <Pill tone="warn">Replacement {x.replacement.status === 'Pending Review' ? 'waiting' : x.replacement.status.toLowerCase()}</Pill>}
                     </div>

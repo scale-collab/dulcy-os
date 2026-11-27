@@ -264,7 +264,7 @@ Format: `- [date] rule. (why / source)`
 - **Rule:** HQ (hq.dulcy.io) replaces Airtable screens, Close, SignWell and the other tools for Alex and the team. What you see depends on your role. The client portal stays separate (portal.dulcy.io).
 - **Screens:** no "Open in Airtable" links (Alex never reads the records). Client filters are a **dropdown**, remembered, **active clients only**. Filters are dropdowns, not rows of buttons.
 - **Inbox (email account) status names:** **Healthy, At risk, Spam, Resting**. Never "Watch" or "Sick".
-- **Warm-up must never be off** on any account. Off = red flag, shown first.
+- **Warm-up must never be off** on any account. Off = red flag, shown first. **Except (Alex, round 2, 2026-11-27):** an inbox the spam protocol rested or is replacing (Resting 7 Days / Replace / spam review) or that EmailBison paused for bounces has warm-up off on purpose: shown as "warm-up off (resting)", not flagged. Atlas says why in one line (counts by reason).
 - **Decision piles:** Replies, Campaigns, Fixes, Money, Sales (Cole), Content (Sienna), Orchestrator (Ada). No "Other".
 - **Campaigns screen** follows the Airtable Campaign Center layout (name, strategy draft, status, sending accounts, stats), cleaner.
 - **Money is owner-only everywhere** (fees, LTV, revenue, P&L): members like Josh never see it, on any screen.

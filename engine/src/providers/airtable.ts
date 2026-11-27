@@ -64,6 +64,11 @@ export function createAirtableClient(o: AirtableOptions) {
     async update(tableId: string, recordId: string, fields: Record<string, unknown>): Promise<void> {
       await call('PATCH', `/${tableId}`, { records: [{ id: recordId, fields }], typecast: true });
     },
+    /** Update up to 10 records in one call (Airtable's limit). HQ round 2: bulk inbox limits mirror. */
+    async updateMany(tableId: string, records: { id: string; fields: Record<string, unknown> }[]): Promise<void> {
+      if (records.length > 10) throw new PermanentError('Airtable: at most 10 records per update');
+      if (records.length) await call('PATCH', `/${tableId}`, { records, typecast: true });
+    },
   };
 }
 
