@@ -20,7 +20,7 @@ import { hasPlan, type PlanRef } from './generators.js';
 import { pendingDecisions, type DecisionCard, type HqAirtable } from './decisions.js';
 import { agentTasks } from './team.js';
 import {
-  DEAL_LABEL, HEALTH_LABEL, SHEET_ALIASES, WINDOWS, agencyNumbers, dealFor, healthOf, kpiNumber, ltvOf, monthsBetween, resultsFor,
+  DEAL_LABEL, HEALTH_LABEL, NO_FIXED_KPI, SHEET_ALIASES, WINDOWS, agencyNumbers, dealFor, healthOf, kpiNumber, ltvOf, monthsBetween, resultsFor,
   type BookClient, type Deal, type DealLine, type DealType, type Health, type Insight, type OverviewRow, type Period, type Results, type Window,
 } from './clientDeals.js';
 import { billingByClient, readFinance, type Finance, type FinanceDeps } from './finance.js';
@@ -224,7 +224,12 @@ export function buildAll(src: ClientsSource, canSeeMoney: boolean, now = new Dat
     const results = resultsFor(src.overview, bisons, w, now);
     const r30 = w === '30' ? results : resultsFor(src.overview, bisons, '30', now);
     const meetings30 = r30 ? Math.max(r30.meetings, c.booked30) : c.booked30;
-    const { kpi, source: kpiSource } = kpiOf(group);
+    const maxMode = !!NO_FIXED_KPI[key];
+    const kpiFound = kpiOf(group);
+    const kpi = maxMode ? null : kpiFound.kpi;
+    const kpiSource = maxMode ? NO_FIXED_KPI[key] : kpiFound.source;
+    const r60 = resultsFor(src.overview, bisons, '60', now);
+    const prevMeetings30 = r60 && r30 ? Math.max(0, r60.meetings - r30.meetings) : null;
     const startDate = group.map((x) => s(x.fields['Client Start Date'])).filter(Boolean).sort()[0] ?? '';
 
     // Deal: P/L sheet > contracts on file > Airtable.
@@ -237,7 +242,7 @@ export function buildAll(src: ClientsSource, canSeeMoney: boolean, now = new Dat
     const type = airtableType || (paying ? 'Paying Client' : '');
     const typeSource = airtableType ? 'Airtable' : type ? `filled from the ${deal.source}` : 'UNKNOWN';
     const start = deal.startDate || startDate;
-    const hl = healthOf({ active, kpi, meetings30, interested30: r30?.interested ?? c.interested30, sent30: r30 ? r30.sent : null, activeCampaigns: campaigns.length, startDate: start }, now);
+    const hl = healthOf({ active, kpi, meetings30, interested30: r30?.interested ?? c.interested30, sent30: r30 ? r30.sent : null, activeCampaigns: campaigns.length, startDate: start, maxMode, prevMeetings30 }, now);
 
     const row: ClientRow = {
       id: main.id, key, name, workspaces: group.map((x) => ({ id: x.id, name: s(x.fields.Name), status: s(x.fields.Status), bisonId: s(x.fields.ID) })),

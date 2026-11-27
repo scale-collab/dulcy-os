@@ -294,3 +294,15 @@ for (const who of ['member', 'owner viewing as member'] as const) test(`${who}: 
     assert.ok(!/Card|7100|1500/.test(r.text));
   }
 });
+
+test('a client with no fixed KPI (pay per call, as many as possible) is judged against its previous 30 days', async () => {
+  const { healthOf, NO_FIXED_KPI } = await import('../src/hq/clientDeals.js');
+  assert.ok(NO_FIXED_KPI.globalmediagroupltd);
+  const now = new Date('2026-11-27T12:00:00Z');
+  const base = { active: true, kpi: null, interested30: 10, sent30: 8000, activeCampaigns: 2, startDate: '2026-03-01', maxMode: true };
+  assert.equal(healthOf({ ...base, meetings30: 6, prevMeetings30: 5 }, now).health, 'safe');
+  assert.equal(healthOf({ ...base, meetings30: 3, prevMeetings30: 5 }, now).health, 'at_risk');
+  assert.equal(healthOf({ ...base, meetings30: 1, prevMeetings30: 5 }, now).health, 'attention');
+  assert.equal(healthOf({ ...base, meetings30: 0, prevMeetings30: 0 }, now).health, 'attention');
+  assert.match(healthOf({ ...base, meetings30: 6, prevMeetings30: 5 }, now).insight!.problem, /no fixed KPI/);
+});

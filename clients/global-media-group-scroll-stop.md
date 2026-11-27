@@ -37,7 +37,7 @@ Separate entity warning: "Collabor" / "Collaba" (COLLABOR TECHNOLOGIES LTD) is a
 
 ## 3. Goals
 - **Their business goals (historical, from onboarding 2025-07-30):** current revenue £90,000, desired £500,000 (period not stated). [OB; PG] Treat as historical, not current.
-- **Meetings per month:** onboarding wanted 40, then booking 7. [OB] On 2026-03-11 the reset set 10 meetings/month, scaling to 20+. [CM] Airtable now shows: client KPI 40, internal KPI 8, health-check goal 20. [WS] Which number is the live target: `UNKNOWN` (ask Alex).
+- **Meetings per month:** onboarding wanted 40, then booking 7. [OB] On 2026-03-11 the reset set 10 meetings/month, scaling to 20+. [CM] Airtable now shows: client KPI 40, internal KPI 8, health-check goal 20. [WS] **Live target (Alex, 2026-11-27): no fixed number. They moved from retainer to pay per qualified call after results were not consistent, so the goal is as many qualified meetings as possible.** HQ judges them against their own previous 30 days.
 - **What success means to them:** their client outcome is YoY growth (e.g. a client reporting 350% YoY growth). [OB] For Dulcy: qualified meetings with $10M+ brands that show up. [CM 2026-10-22]
 - **Timeline:** `UNKNOWN`.
 
@@ -136,7 +136,7 @@ Numbers from Airtable Campaigns (77 linked records), read 2026-11-17. Sent = ema
 - Data-vendor error behind the ICP-mismatch meeting: investigation status `UNKNOWN`. [CM 2026-10-22]
 - Appointment audit CSV requested 2026-10-14/15: delivered? `UNKNOWN`. [Slack]
 - Contract: no signed current agreement on file; $2,900 Monthly Fee field and $680 intake record conflict with the PPC-only terms. Ask Alex once and log. [WS; New Client Intake; PG]
-- Meeting target: 40 vs 20 vs 10 vs 8 across sources. Ask Alex. [OB; CM 2026-03-11; WS]
+- Meeting target: answered by Alex 2026-11-27: no fixed number (pay per call, as many as possible).
 - Bounce: Sports Generic Emails is Active at 6.67% (1 bounce of 15 contacted; tiny sample) and should be checked under the over-4% rule; two direct campaigns are on watch (2.98%, 2.54%). [CMP]
 - Deliverability: 1 of 100 accounts has poor inbox placement and low warmup. [WS]
 - Billing Ready is false pending the monthly cutoff, frozen-manifest review and one verified delivery receipt; one reviewed unbilled call is schedule-gated. [WS Billing Hold Reason / Billing Terms Source]
