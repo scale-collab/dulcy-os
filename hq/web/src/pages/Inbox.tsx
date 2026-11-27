@@ -134,6 +134,8 @@ function RowPills({ r }: { r: InboxRow }) {
       {r.pressed && <Pill tone="good" icon={r.pressed === 'Skip' ? 'x' : 'send'}>{r.pressed === 'Skip' ? 'Skipping…' : 'Sending…'}</Pill>}
       {!r.pressed && r.error && <Pill tone="bad" icon="alert">Not sent</Pill>}
       {r.bookingLink && !r.pressed && <Pill tone="warn" icon="link">Link, not times</Pill>}
+      {r.booksAt && <Pill tone="accent" icon="calendar">Books {r.booksAt}</Pill>}
+      {r.bookedLine && <Pill tone="good" icon="calendar">{r.bookedLine}</Pill>}
       {r.gap && !r.pressed && <Pill tone="warn">Needs a fact</Pill>}
     </>
   );
@@ -236,6 +238,12 @@ function ThreadBody({ t, reload }: { t: InboxThread; reload: () => void }) {
         </div>
 
         <div className="px-5 pb-6 pt-5 sm:px-6">
+          {r.bookedLine && (
+            <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-good-soft px-4 py-3 text-sm font-medium text-good">
+              <Icon name="calendar" size={15} />{r.bookedLine}
+              {r.bookedUrl && <a href={r.bookedUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-8 items-center underline underline-offset-2">Open</a>}
+            </div>
+          )}
           {status && <div className="mb-4 rounded-xl bg-sunken px-4 py-3 text-sm text-fg-2">{status}</div>}
           <NoteList notes={done ? [] : t.notes} className="mb-4" />
 
