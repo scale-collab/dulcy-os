@@ -471,15 +471,16 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
           json(res, 200, { settings: await saveCapacitySettings(db, await readJson(req, 2_000), user.name) });
           return true;
         }
-        m = p.match(/^\/hq\/api\/sales\/(rec[A-Za-z0-9]{14})\/contract(\/create)?$/);
+        m = p.match(/^\/hq\/api\/sales\/(rec[A-Za-z0-9]{14})\/contract$/) ?? p.match(/^\/hq\/api\/sales\/(rec[A-Za-z0-9]{14})\/contract\/create$/);
         if (m) {
+          const create = p.endsWith('/create');
           const now = Date.now();
           const { deals } = await allDeals(needAt(), db, false, now, extras);
           const deal = deals.find((d) => d.id === m![1] || d.salesRec === m![1] || d.agreements.some((a) => a.id === m![1]));
           if (!deal) { json(res, 404, { error: 'no such deal' }); return true; }
-          if (!m[2] && req.method === 'GET') { json(res, 200, await draftForm(db, deal, nyDay(now))); return true; }
-          if (!m[2] && req.method === 'POST') { const r = await saveDraft(db, deal, await readJson(req, 20_000), user.name, nyDay(now)); json(res, r.status, r.body); return true; }
-          if (m[2] && req.method === 'POST') { const b = await readJson(req, 2_000); const r = await createInDulcySign(needAt(), db, deal, Number(b.draftId), user.name, nyDay(now)); json(res, r.status, r.body); return true; }
+          if (!create && req.method === 'GET') { json(res, 200, await draftForm(db, deal, nyDay(now))); return true; }
+          if (!create && req.method === 'POST') { const r = await saveDraft(db, deal, await readJson(req, 20_000), user.name, nyDay(now)); json(res, r.status, r.body); return true; }
+          if (create && req.method === 'POST') { const b = await readJson(req, 2_000); const r = await createInDulcySign(needAt(), db, deal, Number(b.draftId), user.name, nyDay(now)); json(res, r.status, r.body); return true; }
           json(res, 405, { error: 'method not allowed' }); return true;
         }
         // ---- end Batch 4a ----

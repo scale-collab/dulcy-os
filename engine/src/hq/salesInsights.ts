@@ -256,7 +256,8 @@ const CLOSE_CACHE_MS = 5 * 60_000;
 let closeCache: { at: number; data: Promise<CloseSnapshot> } | null = null;
 let xeroCache: { at: number; data: Promise<XeroPayment[] | null> } | null = null;
 let slotCache: { at: number; data: Promise<{ starts: string[]; timezone: string } | null> } | null = null;
-export function _resetInsightCaches() { closeCache = null; xeroCache = null; slotCache = null; }
+let tables: Promise<void> | null = null;
+export function _resetInsightCaches() { closeCache = null; xeroCache = null; slotCache = null; tables = null; }
 
 /** Close: the open opportunities (3 pages), the last 30 activities of the 15 most recently updated, and touches on the last 10 wins. */
 export async function readClose(close: CloseClient, now = Date.now()): Promise<CloseSnapshot> {
@@ -336,7 +337,6 @@ export function dulcySlotsReader(cfg: Pick<Config, 'calendarUrl' | 'calendarRead
 }
 
 // ---------- settings (owner; one row) ----------
-let tables: Promise<void> | null = null;
 /** HQ Sales' own tables, created on first use (Batch 4a keeps to its own files; idempotent). */
 export function ensureSalesTables(db: Db): Promise<void> {
   tables ??= db.query(`
