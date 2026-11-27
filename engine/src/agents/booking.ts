@@ -141,11 +141,14 @@ export async function planBooking(cfg: Pick<Config, 'calendarUrl' | 'calendarRea
   if (!st || st.status !== 'Connected') return { kind: 'manual', start: pick.start, tz, label, long, why: 'this client has no connected calendar', reconnect: true };
   const free = await slotIsFree(cfg, wsRec, pick.start, fetchImpl);
   if (free === false) return { kind: 'retime', why: 'it is already taken on the client\'s calendar (checked live)', label };
-  if (!st.canBook) return { kind: 'manual', start: pick.start, tz, label, long, why: 'the client\'s calendar was connected before booking existed (Connected – reconnect to allow booking)', reconnect: true };
+  if (!st.canBook) return { kind: 'manual', start: pick.start, tz, label, long, why: 'the client\'s calendar can\'t book yet: it was connected before booking existed, or without the booking permission (Connected – reconnect to allow booking)', reconnect: true };
   if (!cfg.calendarBookerToken) return { kind: 'manual', start: pick.start, tz, label, long, why: 'booking is not switched on on the engine (CALENDAR_BOOKER_TOKEN)', reconnect: false };
   if (free === null) return { kind: 'manual', start: pick.start, tz, label, long, why: 'the client\'s calendar could not be checked just now', reconnect: false };
   return { kind: 'book', start: pick.start, tz, label, long, provider: st.provider ?? '', offered: pick.offered };
 }
+
+/** The calendar service's provider keys → the names people see (Activity Log). */
+export const CALENDAR_NAMES: Record<string, string> = { google: 'Google', microsoft: 'Outlook', calendly: 'Calendly', calcom: 'Cal.com', ghl: 'GoHighLevel', hubspot: 'HubSpot' };
 
 // ---------- Texts (Alex's style: short) ----------
 const firstName = (name: string) => String(name ?? '').trim().split(/\s+/)[0]?.replace(/[^\p{L}'-]/gu, '') ?? '';
@@ -314,7 +317,7 @@ export const calendarBookStage: Stage = async (ctx) => {
     });
     await logActivity(cfg, {
       event: `Meeting booked: ${who}${val(f[EF.company]) ? ` at ${val(f[EF.company])}` : ''}, ${b.label}`, type: 'Step done', agent: 'Echo', jobId: ctx.job.id,
-      details: `On the client's own ${res.provider === 'calendly' ? 'Calendly' : 'Google'} calendar${res.location ? ` (${res.location})` : ''}. Event ${res.eventId}${res.htmlLink ? `\n${res.htmlLink}` : ''}${res.idempotent ? '\n(already booked earlier with the same key; not booked twice)' : ''}\nFollow-ups closed. Confirmation reply queued.`,
+      details: `On the client's own ${CALENDAR_NAMES[res.provider ?? ''] ?? 'Google'} calendar${res.location ? ` (${res.location})` : ''}. Event ${res.eventId}${res.htmlLink ? `\n${res.htmlLink}` : ''}${res.idempotent ? '\n(already booked earlier with the same key; not booked twice)' : ''}\nFollow-ups closed. Confirmation reply queued.`,
     });
     return { eventId: res.eventId };
   });

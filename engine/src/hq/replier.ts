@@ -204,14 +204,15 @@ export async function replierDetail(c: ReplierCtx, id: string, owner: boolean) {
   const wsRec = f ? val(f[SF.wsRec]) : l.group[0].id;
   const history = (await c.db.query(`SELECT actor, action, changes, created_at FROM hq_settings_log WHERE ws_rec = ANY($1) ORDER BY id DESC LIMIT 15`, [l.group.map((w) => w.id)])).rows
     .map((r) => ({ by: r.actor, action: r.action, at: new Date(r.created_at).toISOString(), changes: Array.isArray(r.changes) ? r.changes.map((x: Change) => ({ ...x, from: cut(x.from), to: cut(x.to) })) : r.changes }));
-  const providerKey = sum?.calendar.provider === 'Calendly' ? 'calendly' : 'google';
+  const providerKey = providerKeyOf(sum?.calendar.provider ?? '') || 'google';
+  const lastProvider = sum?.calendar.lastRequest?.provider;
   return {
     client: { id: l.group[0].id, name: l.name }, found: !!f, rowId: l.row?.id ?? '', workspaceRecordId: wsRec, workspaceName: f ? val(f[SF.wsName]) : '',
     lastUpdated: f ? val(f[SF.lastUpdated]) : '', values, summaries: sum, options: OPTIONS, canEdit: owner && !!f,
     notes: replierNotes(!!f, l.sameWs, values, sum), history,
     invite: {
       ready: owner && !!c.cfg.calendarAdminToken && !!f, why: !c.cfg.calendarAdminToken ? 'Needs CALENDAR_ADMIN_TOKEN on the server' : !owner ? 'Only the owner can ask for a calendar link' : !f ? 'No settings row for this client' : '',
-      provider: sum?.calendar.lastRequest?.provider === 'calendly' ? 'calendly' : providerKey, email: sum?.calendar.lastRequest?.email ?? '',
+      provider: isProvider(lastProvider) ? lastProvider : providerKey, email: sum?.calendar.lastRequest?.email ?? '',
     },
   };
 }
@@ -232,12 +233,29 @@ export async function saveReplier(c: ReplierCtx, id: string, by: string, input: 
   return { status: 200, changes: r.changes };
 }
 
+/** Calendars a client can connect (the calendar service, services/dulcy-calendar). Order = the HQ dropdown. */
+export const CALENDAR_PROVIDERS = ['google', 'microsoft', 'calendly', 'calcom', 'ghl', 'hubspot'] as const;
+export type CalendarProviderKey = typeof CALENDAR_PROVIDERS[number];
+const isProvider = (x: unknown): x is CalendarProviderKey => (CALENDAR_PROVIDERS as readonly string[]).includes(String(x));
+/** The Airtable "Calendar Provider" text → the service's provider key ('' = not set or unknown). Pure. */
+export function providerKeyOf(label: string): CalendarProviderKey | '' {
+  const t = String(label ?? '').trim().toLowerCase();
+  if (isProvider(t)) return t;
+  if (/calendly/.test(t)) return 'calendly';
+  if (/cal\.com|calcom/.test(t)) return 'calcom';
+  if (/outlook|microsoft|office ?365|m365/.test(t)) return 'microsoft';
+  if (/gohighlevel|highlevel|\bghl\b|leadconnector/.test(t)) return 'ghl';
+  if (/hubspot/.test(t)) return 'hubspot';
+  if (/google/.test(t)) return 'google';
+  return '';
+}
+
 /** POST /clients/:id/calendar-invite: a one-time "connect your calendar" link from the calendar service. Never emails anyone. */
 export async function calendarInvite(c: ReplierCtx, id: string, by: string, input: any): Promise<{ status: number; error?: string; url?: string; expiresAt?: string; email?: string }> {
   if (!c.cfg.calendarAdminToken) return { status: 503, error: 'Needs CALENDAR_ADMIN_TOKEN on the server' };
   const provider = String(input?.provider ?? '');
   const email = String(input?.email ?? '').trim().toLowerCase();
-  if (!['google', 'calendly'].includes(provider)) return { status: 400, error: 'provider must be google or calendly' };
+  if (!isProvider(provider)) return { status: 400, error: `provider must be one of ${CALENDAR_PROVIDERS.join(', ')}` };
   if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email) || email.length > 200) return { status: 400, error: 'the client\'s calendar email, please' };
   const l = await load(c.at, id);
   if (!l) return { status: 404, error: 'no such client' };

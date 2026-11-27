@@ -1,7 +1,7 @@
 // Client hub → AI replier: the client's Reply Agent settings (what Echo follows), in plain words.
 // The owner edits; members read. Save sends only what changed; the server checks and logs it.
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { api, type ReplierChange, type ReplierDetail, type ReplierValues } from '../api';
+import { api, CALENDAR_PROVIDERS, type CalendarProvider, type ReplierChange, type ReplierDetail, type ReplierValues } from '../api';
 import { Button, Card, cx, ErrorBox, Icon, Label, PageSkeleton, Pill, SectionHeader, timeAgo } from '../ui';
 import { NoteList } from './Inbox';
 
@@ -162,7 +162,7 @@ function CalendarGroup({ d, v, set, ro }: { d: ReplierDetail; v: ReplierValues; 
     try { setLink(await api<{ url: string; expiresAt: string; email: string }>(`/clients/${encodeURIComponent(d.client.id)}/calendar-invite`, { body: { provider, email } })); }
     catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   };
-  const mail = link ? `mailto:${encodeURIComponent(link.email)}?subject=${encodeURIComponent('Connect your calendar')}&body=${encodeURIComponent(`Hi,\n\nConnect your calendar so we can offer your prospects two real times: ${link.url}\n\nIt only reads your free times; it never books or changes anything. The link works once and expires ${new Date(link.expiresAt).toLocaleDateString()}.\n\nAlex`)}` : '';
+  const mail = link ? `mailto:${encodeURIComponent(link.email)}?subject=${encodeURIComponent('Connect your calendar')}&body=${encodeURIComponent(`Hi,\n\nConnect your calendar so we can offer your prospects two real times: ${link.url}\n\nIt reads your free times and books only the meetings your prospects agree to; it never changes other events. The link works once and expires ${new Date(link.expiresAt).toLocaleDateString()}.\n\nAlex`)}` : '';
   return (
     <Group title="Calendar" icon="clock">
       {c && (
@@ -177,16 +177,16 @@ function CalendarGroup({ d, v, set, ro }: { d: ReplierDetail; v: ReplierValues; 
       <div className="rounded-xl border border-line bg-sunken p-3.5">
         <Label>Connect the client's calendar</Label>
         <div className="mt-2 grid gap-2 sm:grid-cols-[auto_1fr]">
-          <select aria-label="Calendar provider" value={provider} onChange={(e) => setProvider(e.target.value as 'google' | 'calendly')} disabled={!d.invite.ready}
+          <select aria-label="Calendar provider" value={provider} onChange={(e) => setProvider(e.target.value as CalendarProvider)} disabled={!d.invite.ready}
             className="min-h-11 rounded-xl border border-line bg-surface px-3 text-[15px] text-fg disabled:opacity-60">
-            <option value="google">Google Calendar</option><option value="calendly">Calendly</option>
+            {CALENDAR_PROVIDERS.map(([key, name]) => <option key={key} value={key}>{name}</option>)}
           </select>
           <input aria-label="Client's calendar email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="client@company.com" disabled={!d.invite.ready} maxLength={200}
             className="min-h-11 min-w-0 rounded-xl border border-line bg-surface px-3 text-[15px] text-fg outline-none placeholder:text-faint focus:border-accent disabled:opacity-60" />
         </div>
         <Button tone="primary" className="mt-2 w-full sm:w-auto" icon="link" disabled={!d.invite.ready || busy || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)} onClick={() => void ask()}>{busy ? 'Asking…' : 'Get calendar link'}</Button>
         {!d.invite.ready && <p className="mt-2 text-xs text-muted">{d.invite.why}</p>}
-        {c?.lastRequest && !link && <p className="mt-2 text-xs text-muted">Last asked for {c.lastRequest.email} ({c.lastRequest.provider}){c.lastRequest.at ? ` ${timeAgo(c.lastRequest.at)}` : ''}{c.lastResult?.expiresAt ? `; link ${Date.parse(c.lastResult.expiresAt) < Date.now() ? 'expired' : 'valid until'} ${new Date(c.lastResult.expiresAt).toLocaleDateString()}` : ''}.</p>}
+        {c?.lastRequest && !link && <p className="mt-2 text-xs text-muted">Last asked for {c.lastRequest.email} ({CALENDAR_PROVIDERS.find(([k]) => k === c.lastRequest?.provider)?.[1] ?? c.lastRequest.provider}){c.lastRequest.at ? ` ${timeAgo(c.lastRequest.at)}` : ''}{c.lastResult?.expiresAt ? `; link ${Date.parse(c.lastResult.expiresAt) < Date.now() ? 'expired' : 'valid until'} ${new Date(c.lastResult.expiresAt).toLocaleDateString()}` : ''}.</p>}
         {error && <div className="mt-2"><ErrorBox error={error} /></div>}
         {link && (
           <div className="mt-3 space-y-2">

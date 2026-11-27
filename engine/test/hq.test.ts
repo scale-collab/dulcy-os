@@ -30,7 +30,7 @@ import type { DecisionCard } from '../src/hq/decisions.js';
 import { ISSUES, IF } from '../src/agents/riley.js';
 import { EF, SETTINGS } from '../src/agents/emailsFields.js';
 import { WORKSPACES, XF, _resetInboxCache, bookingLinks, oneLine, parseHistory, tabOf } from '../src/hq/inbox.js';
-import { SF, calendarInvite, isTimezone, validateSave, valuesOf } from '../src/hq/replier.js';
+import { SF, CALENDAR_PROVIDERS, calendarInvite, isTimezone, providerKeyOf, validateSave, valuesOf } from '../src/hq/replier.js';
 
 const url = process.env.TEST_DATABASE_URL;
 const skip = !url ? 'TEST_DATABASE_URL not set' : false;
@@ -1188,4 +1188,17 @@ test('calendar link: with a token, asks the calendar service for a one-time link
   const bad = (async () => new Response(JSON.stringify({ error: 'Provider application registration is required' }), { status: 500 })) as unknown as typeof fetch;
   const no = await calendarInvite({ ...ctx, fetchImpl: bad }, 'recWSTWMINT000001', 'Alex', { provider: 'calendly', email: 'a@b.co' });
   assert.deepEqual([no.status, no.error], [502, 'The calendar service said no: Provider application registration is required']);
+  // The four newer calendars go to the service as their keys.
+  for (const p of ['microsoft', 'calcom', 'ghl', 'hubspot']) {
+    const ok = await calendarInvite(ctx, 'recWSTWMINT000001', 'Alex', { provider: p, email: 'ryan@twm.com' });
+    assert.equal(ok.status, 200, p);
+    assert.equal(sent.at(-1)!.body.provider, p);
+  }
+});
+
+test('calendar provider list: six providers, and the Airtable provider text maps to the service key', () => {
+  assert.deepEqual([...CALENDAR_PROVIDERS], ['google', 'microsoft', 'calendly', 'calcom', 'ghl', 'hubspot']);
+  const cases: [string, string][] = [['Google Calendar', 'google'], ['Calendly', 'calendly'], ['Outlook', 'microsoft'], ['Microsoft 365', 'microsoft'], ['Cal.com', 'calcom'],
+    ['GoHighLevel', 'ghl'], ['GHL', 'ghl'], ['HubSpot Meetings', 'hubspot'], ['hubspot', 'hubspot'], ['Not Connected', ''], ['', '']];
+  for (const [label, key] of cases) assert.equal(providerKeyOf(label), key, label);
 });

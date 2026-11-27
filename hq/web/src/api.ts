@@ -111,8 +111,14 @@ export interface ReplierDetail {
   values: ReplierValues | null; summaries: ReplierSummaries | null; canEdit: boolean; notes: Note[];
   options: { handoff: string[]; defaultMode: string[]; oooMode: string[]; tone: string[]; length: string[]; replyTypes: string[] };
   history: { by: string; action: string; at: string; changes: ReplierChange[] | { provider: string; email: string; expiresAt: string } }[];
-  invite: { ready: boolean; why: string; provider: 'google' | 'calendly'; email: string };
+  invite: { ready: boolean; why: string; provider: CalendarProvider; email: string };
 }
+/** Calendars a client can connect (engine/src/hq/replier.ts CALENDAR_PROVIDERS), in dropdown order. */
+export const CALENDAR_PROVIDERS = [
+  ['google', 'Google Calendar'], ['microsoft', 'Outlook / Microsoft 365'], ['calendly', 'Calendly'],
+  ['calcom', 'Cal.com'], ['ghl', 'GoHighLevel'], ['hubspot', 'HubSpot Meetings'],
+] as const;
+export type CalendarProvider = typeof CALENDAR_PROVIDERS[number][0];
 
 /* ---------- Campaigns (Step 3) ---------- */
 export type CampaignGroup = 'live' | 'building' | 'done';
