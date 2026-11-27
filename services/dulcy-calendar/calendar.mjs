@@ -169,8 +169,12 @@ export async function keyConnection({workspace, provider, expectedEmail, fields,
   const base = {workspaceId: workspace, provider, accountEmail: email, status: 'Selection Required', canBook: true, credential: 'key',
     refreshToken: null, expiresAt: KEY_EXPIRES, connectedAt: new Date(now).toISOString(), scopes: [], scopesListed: false};
   const refused = (e, who, hint) => {
-    if (e?.status === 401) return publicError(`${who} did not accept this key. Copy the whole key and try again.`);
-    if (e?.status === 403) return publicError(`This key is missing a permission: ${hint}`);
+    // The provider's own reason (already masked by providerJson), e.g. GoHighLevel "The token is not authorized for this scope."
+    const why = String(e?.message || '').split('): ').slice(1).join('): ').trim().slice(0, 200);
+    const says = why ? ` ${who} says: "${why}".` : '';
+    if (e?.status === 401 && /scope|not authori[sz]ed|location|access/i.test(why)) return publicError(`${who} accepted the key but refused access.${says} Check: ${hint}`);
+    if (e?.status === 401) return publicError(`${who} did not accept this key.${says} Copy the whole key and try again.`);
+    if (e?.status === 403) return publicError(`This key is missing a permission.${says} ${hint}`);
     if (e?.status && e.status < 500) return publicError(`${who} refused the key (${e.status}). Check it and try again.`);
     return publicError(`${who} could not be reached just now. Try again in a minute.`, 502);
   };
@@ -195,7 +199,7 @@ export async function keyConnection({workspace, provider, expectedEmail, fields,
     const headers = {Authorization: 'Bearer ' + key, Version: GHL_CALENDARS_VERSION, Accept: 'application/json'};
     let list;
     try { list = await fetchJson('https://services.leadconnectorhq.com/calendars/?locationId=' + encodeURIComponent(locationId), {headers}); }
-    catch (e) { throw refused(e, 'GoHighLevel', 'tick "View Calendars" (calendars.readonly) on the Private Integration, and check the Location ID.'); }
+    catch (e) { throw refused(e, 'GoHighLevel', 'the Private Integration must be made inside this sub-account (sub-account Settings → Private Integrations, not the agency settings), have "View Calendars" (calendars.readonly) ticked, and the Location ID must be this same sub-account\'s.'); }
     if (!Array.isArray(list?.calendars)) throw publicError('GoHighLevel did not list this sub-account\'s calendars. Check the Location ID.');
     if (!list.calendars.length) throw publicError('This sub-account has no calendars yet. Create the booking calendar in GoHighLevel first.');
     // Optional: calendars/events.readonly lets a booking whose answer was lost be found instead of left unclear.
