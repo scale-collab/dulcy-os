@@ -35,7 +35,10 @@ import { calendarInvite, replierDetail, saveReplier } from './replier.js';
 import { campaignDetail, listCampaigns, listLeadLists } from './campaigns.js';
 import { deliverabilityView, inboxIndex } from './deliverability.js';
 // Batch 3: inbox limits + ramp, bounce analytics, verification (Fix it is Batch 1's fixIt.ts).
-import { limitsView, requestLimitChange } from './inboxLimits.js';
+import { limitsView, previewLimitChange, requestLimitChange } from './inboxLimits.js';
+// Round 2/3 deliverability: bulk limit preview, the Buy flow, the monthly inbox cost (owner only).
+import { buyAction } from './deliverabilityBuy.js';
+import { buildDeliverability, cachedDeliv, inboxCosts } from './deliverability.js';
 import { bouncesView, verificationView } from './bounceStats.js';
 import { portalRoute, resolvePortalClient } from './portal.js';
 import { contentSummary, contentView, decideIdea } from './content.js';
@@ -466,6 +469,21 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         json(res, r.status, r.error ? { error: r.error } : { ok: true, status: r.result });
         return true;
       }
+      // Round 2 deliverability (Alex 2026-11-27): bulk limits preview; round 3: Buy (purchase request) and inbox cost. Owner only.
+      if (p === '/hq/api/deliverability/limits/preview' || p === '/hq/api/deliverability/buy' || p === '/hq/api/deliverability/costs') {
+        if (!owner) { json(res, 403, { error: 'only the owner can do this' }); return true; }
+        if (p === '/hq/api/deliverability/costs') {
+          if (req.method !== 'GET') { json(res, 405, { error: 'method not allowed' }); return true; }
+          const dm = buildDeliverability(await cachedDeliv(needAt(), db, url.searchParams.get('refresh') === '1'), cfg);
+          json(res, 200, { costs: inboxCosts(dm, (url.searchParams.get('client') ?? '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 80) || undefined), cheap: dm.cheap, readAt: dm.readAt });
+          return true;
+        }
+        if (req.method !== 'POST') { json(res, 405, { error: 'method not allowed' }); return true; }
+        const b = await readJson(req, 60_000);
+        const r = p.endsWith('/preview') ? await previewLimitChange(needAt(), db, cfg, b) : await buyAction(needAt(), db, cfg, b, user.name);
+        json(res, r.status, r.body);
+        return true;
+      }
       // ---- Batch 3: Campaigns + Deliverability (lead lists, limits, ramp, bounces, verification) ----
       if (p === '/hq/api/campaigns/lists' && req.method === 'GET') {
         json(res, 200, await listLeadLists(needAt(), db, { client: url.searchParams.get('client') ?? undefined, refresh: url.searchParams.get('refresh') === '1' }));
@@ -517,7 +535,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
 
       // Deliverability: inboxes and domains, read only (sick first; tabs: inboxes, placement, domains).
       m = p.match(/^\/hq\/api\/deliverability(?:\/(inboxes|placement|domains))?$/);
-      if (m && req.method === 'GET') { json(res, 200, await deliverabilityView(needAt(), db, cfg, m[1] ?? 'attention', url.searchParams)); return true; }
+      if (m && req.method === 'GET') { json(res, 200, await deliverabilityView(needAt(), db, cfg, m[1] ?? 'attention', url.searchParams, owner)); return true; }
 
       // Content (Step 3, 2026-11-26): owner only (content is Alex-only; members get 403). One write: the idea decision.
       if (p === '/hq/api/content' || p.startsWith('/hq/api/content/')) {

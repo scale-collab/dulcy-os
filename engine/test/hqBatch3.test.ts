@@ -43,7 +43,7 @@ test('limit edit: confirm: true is required; numbers are checked; inboxes or a c
   assert.match((parseLimitRequest({ cold: 10, confirm: true }) as any).error, /pick the inboxes/);
   assert.match((parseLimitRequest({ accounts: ['nope'], cold: 10, confirm: true }) as any).error, /record ids/);
   const ok = parseLimitRequest({ client: 'Twenty West!', cold: 10, warmup: '20', confirm: true });
-  assert.deepEqual(ok, { ok: true, req: { accounts: [], client: 'twentywest', cold: 10, warmup: 20, reason: '' } });
+  assert.deepEqual(ok, { ok: true, req: { accounts: [], client: 'twentywest', cold: 10, warmup: 20, reason: '', filter: null } });
 });
 
 test('limit edit: the plan skips resting, replaced, unknown and unchanged inboxes and says why', () => {
@@ -77,7 +77,7 @@ test('ramp: 5/10 → 10/20 after a week of sending → 15/30 after another week 
   const p = rampProposals(rows, first, new Map(), NOW);
   assert.equal(p.length, 1);
   assert.deepEqual([p[0].key, p[0].from, p[0].to, p[0].emails], ['ramp:twentywestmedia:10', { cold: 5, warmup: 10 }, { cold: 10, warmup: 20 }, ['a@x-mail.com', 'b@x-mail.com']], 'resting inboxes wait');
-  assert.match(p[0].why, /^Sending since 11-19 \(8 days\)\. Ramp: week 2 = 10 cold \/ 20 warm-up\.$/);
+  assert.match(p[0].why, /^Sending since 11\/19 \(8 days\)\. Ramp: week 2 = 10 cold \/ 20 warm-up\.$/);
   assert.deepEqual(rampProposals(rows, new Map([['twentywestmedia', ago(6, NOW)]]), new Map(), NOW), [], 'under a week: stay at 5/10');
   // Day 15 and still at 5/10: one step (10/20), not a jump to 15/30.
   assert.deepEqual(rampProposals([inbox()], new Map([['twentywestmedia', ago(15, NOW)]]), new Map(), NOW).map((x) => x.to.cold), [10]);
@@ -188,10 +188,11 @@ test('lead lists: in progress, done (60 days), failed; a list bought without a c
 });
 
 test('domains: renewal 1 year from the date added when unknown (estimated); the blacklist cell in words', () => {
-  assert.deepEqual(renewalOf('2027-03-01', '2026-01-01'), { date: '2027-03-01', estimated: false });
-  assert.deepEqual(renewalOf('', '2026-02-10'), { date: '2027-02-10', estimated: true });
-  assert.deepEqual(renewalOf('', '2028-02-29'), { date: '2029-02-28', estimated: true });
-  assert.deepEqual(renewalOf('', ''), { date: '', estimated: false });
+  assert.deepEqual(renewalOf('2027-03-01', '2026-01-01'), { date: '2027-03-01', estimated: false, source: 'airtable' });
+  assert.deepEqual(renewalOf('', '2026-02-10'), { date: '2027-02-10', estimated: true, source: 'estimated' });
+  assert.deepEqual(renewalOf('', '2028-02-29'), { date: '2029-02-28', estimated: true, source: 'estimated' });
+  assert.deepEqual(renewalOf('', ''), { date: '', estimated: false, source: '' });
+  assert.deepEqual(renewalOf('', '2026-02-10', '2027-01-15'), { date: '2027-01-15', estimated: false, source: 'cheapinboxes' }, 'round 3: the real Cheap Inboxes date beats the estimate');
   const t = (blacklist: string, count = 0, monitoring = 'Active') => blacklistText({ blacklist, count, monitoring, lastCheck: '' }).text;
   assert.deepEqual([t('Clean'), t('Listed', 2), t('Check Failed'), t('Pending'), t('', 0, 'Not Added'), t('Unknown')], ['Clean', 'Listed (2)', 'Check failed', 'Checking', 'Not checked', 'Not checked']);
   assert.match(blacklistText({ blacklist: '', count: 0, monitoring: 'Not Added', lastCheck: '' }).why, /Not added to EmailGuard/);

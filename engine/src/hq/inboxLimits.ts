@@ -26,7 +26,7 @@ import { enqueue } from '../queue.js';
 import { STAGES } from '../stages/index.js';
 import { logActivity } from '../activity.js';
 import { ACCOUNTS, EA } from '../stages/accountHealth.js';
-import { EX, buildDeliverability, cachedDeliv, readDelivSource, type DelivModel, type InboxRow } from './deliverability.js';
+import { EX, RENEWAL_TASK_KEY, buildDeliverability, cachedDeliv, readDelivSource, renewalGap, type DelivModel, type InboxRow } from './deliverability.js';
 import { CAMPAIGNS_T, KF, WORKSPACES_T, clientIndex } from './campaigns.js';
 import { dueIn, trackClose, trackTask } from './agentTasks.js';
 import type { HqAirtable } from './decisions.js';
@@ -39,15 +39,19 @@ export const RAMP = [{ cold: 5, warmup: 10 }, { cold: 10, warmup: 20 }, { cold: 
 export const RAMP_WINDOW_DAYS = 42;
 /** Allowed values in the edit (a typo guard, not a rule): 0 rests an inbox. */
 export const LIMIT_BOUNDS = { cold: { min: 0, max: 50 }, warmup: { min: 0, max: 50 } } as const;
-export const MAX_INBOXES_PER_EDIT = 500;
+/** Round 2 (bulk edits): one job can change many inboxes; EmailBison gets at most BULK_CHUNK ids per call. */
+export const MAX_INBOXES_PER_EDIT = 3000;
+export const BULK_CHUNK = 100;
 const DAY = 86_400_000;
 const REC = /^rec[A-Za-z0-9]{14}$/;
 
-export interface LimitRequest { accounts: string[]; client: string; cold: number | null; warmup: number | null; reason: string }
-/** Read and check the request body. Pure. confirm must be exactly true. */
-export function parseLimitRequest(b: any): { ok: true; req: LimitRequest } | { ok: false; error: string } {
+/** Round 2: "all shown" = the same filter as All inboxes (client, status, search), resolved on the server. */
+export interface LimitFilter { client: string; status: string; q: string }
+export interface LimitRequest { accounts: string[]; client: string; cold: number | null; warmup: number | null; reason: string; filter?: LimitFilter | null }
+/** Read and check the request body. Pure. confirm must be exactly true (a preview needs none: it changes nothing). */
+export function parseLimitRequest(b: any, preview = false): { ok: true; req: LimitRequest } | { ok: false; error: string } {
   if (!b || typeof b !== 'object') return { ok: false, error: 'a JSON body, please' };
-  if (b.confirm !== true) return { ok: false, error: 'confirm: true is required: this changes the inboxes in EmailBison' };
+  if (!preview && b.confirm !== true) return { ok: false, error: 'confirm: true is required: this changes the inboxes in EmailBison' };
   const num = (v: unknown, k: 'cold' | 'warmup'): number | null | string => {
     if (v === undefined || v === null || v === '') return null;
     const x = Number(v);
@@ -63,8 +67,14 @@ export function parseLimitRequest(b: any): { ok: true; req: LimitRequest } | { o
   if (accounts.some((a) => !REC.test(a))) return { ok: false, error: 'accounts must be Email Accounts record ids' };
   if (accounts.length > MAX_INBOXES_PER_EDIT) return { ok: false, error: `at most ${MAX_INBOXES_PER_EDIT} inboxes at once` };
   const client = String(b.client ?? '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 80);
-  if (!accounts.length && !client) return { ok: false, error: 'pick the inboxes (accounts) or a client (all its inboxes)' };
-  return { ok: true, req: { accounts, client, cold, warmup, reason: String(b.reason ?? '').replace(/\s+/g, ' ').trim().slice(0, 200) } };
+  const fb = b.filter && typeof b.filter === 'object' && !accounts.length ? b.filter : null;
+  const filter: LimitFilter | null = fb ? {
+    client: String(fb.client ?? '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 80),
+    status: ['healthy', 'risk', 'spam', 'resting'].includes(String(fb.status)) ? String(fb.status) : '',
+    q: String(fb.q ?? '').trim().toLowerCase().slice(0, 100),
+  } : null;
+  if (!accounts.length && !client && !filter) return { ok: false, error: 'pick the inboxes (accounts), a client (all its inboxes) or the inboxes shown (filter)' };
+  return { ok: true, req: { accounts, client, cold, warmup, reason: String(b.reason ?? '').replace(/\s+/g, ' ').trim().slice(0, 200), filter } };
 }
 
 export interface LimitChange {
@@ -74,9 +84,14 @@ export interface LimitChange {
 export interface LimitPlan { changes: LimitChange[]; skipped: { email: string; why: string }[]; clientKey: string; client: string }
 
 /** Which inboxes change, from what to what, and which are left alone (and why). Pure. */
-export function planLimitChange(inboxes: Pick<InboxRow, 'id' | 'email' | 'clientKey' | 'client' | 'emailId' | 'teamId' | 'dailyLimit' | 'warmupLimit' | 'stage'>[], req: LimitRequest): LimitPlan {
+export function planLimitChange(inboxes: (Pick<InboxRow, 'id' | 'email' | 'clientKey' | 'client' | 'emailId' | 'teamId' | 'dailyLimit' | 'warmupLimit' | 'stage'> & Partial<Pick<InboxRow, 'status' | 'domain'>>)[], req: LimitRequest): LimitPlan {
   const pool = inboxes.filter((i) => i.clientKey && i.clientKey !== 'none');
-  const picked = req.accounts.length ? req.accounts.map((id) => pool.find((i) => i.id === id)).filter((i): i is (typeof pool)[number] => !!i) : pool.filter((i) => i.clientKey === req.client);
+  const byId = new Map(pool.map((i) => [i.id, i]));
+  const f = req.filter;
+  const matches = (i: (typeof pool)[number]) => !!f && (!f.client || i.clientKey === f.client) && (!f.status || i.status === f.status)
+    && (!f.q || i.email.includes(f.q) || String(i.domain ?? '').includes(f.q) || i.client.toLowerCase().includes(f.q));
+  const picked = req.accounts.length ? req.accounts.map((id) => byId.get(id)).filter((i): i is (typeof pool)[number] => !!i)
+    : f ? pool.filter(matches) : pool.filter((i) => i.clientKey === req.client);
   const missing = req.accounts.length - (req.accounts.length ? picked.length : 0);
   const skipped: LimitPlan['skipped'] = missing > 0 ? [{ email: `${missing} inbox${missing === 1 ? '' : 'es'}`, why: 'not an active client\'s inbox in Airtable' }] : [];
   const changes: LimitChange[] = [];
@@ -138,22 +153,26 @@ export const inboxLimitsStage: Stage = async (ctx) => {
   }
   const calls: string[] = [];
   for (const g of groups.values()) {
-    const ids = [...new Set(g.ids)].sort((a, b) => a - b);
+    const all = [...new Set(g.ids)].sort((a, b) => a - b);
     const b = createBisonClient({ apiKey, baseUrl: ctx.cfg.emailBisonBaseUrl, teamId: g.team });
-    await ctx.paid({
-      callKey: `${g.kind}:${g.team}:${g.to}:${createHash('sha256').update(ids.join(',')).digest('hex').slice(0, 12)}`, provider: 'emailbison', units: 0,
-      run: async () => { await (g.kind === 'cold' ? b.setDailyLimit(ids, g.to) : b.setWarmupLimit(ids, g.to)); return { ok: true, n: ids.length }; },
-      dryRunResult: () => ({ ok: true, n: ids.length, dryRun: true }),
-    });
-    calls.push(`${g.kind === 'cold' ? 'cold' : 'warm-up'} ${g.to}/day on ${ids.length} inbox${ids.length === 1 ? '' : 'es'} (workspace ${g.team})`);
+    // Round 2: the same bulk call n8n Bulk Controls makes, at most BULK_CHUNK ids each; a receipt per call (never twice).
+    for (let i = 0; i < all.length; i += BULK_CHUNK) {
+      const ids = all.slice(i, i + BULK_CHUNK);
+      await ctx.paid({
+        callKey: `${g.kind}:${g.team}:${g.to}:${createHash('sha256').update(ids.join(',')).digest('hex').slice(0, 12)}`, provider: 'emailbison', units: 0,
+        run: async () => { await (g.kind === 'cold' ? b.setDailyLimit(ids, g.to) : b.setWarmupLimit(ids, g.to)); return { ok: true, n: ids.length }; },
+        dryRunResult: () => ({ ok: true, n: ids.length, dryRun: true }),
+      });
+    }
+    calls.push(`${g.kind === 'cold' ? 'cold' : 'warm-up'} ${g.to}/day on ${all.length} inbox${all.length === 1 ? '' : 'es'} (workspace ${g.team})`);
   }
   const line = describePlan({ changes, client: String(i.client ?? '') });
   if (!ctx.dryRun && ctx.cfg.airtableApiKey) {
     const at = createAirtableClient({ apiKey: ctx.cfg.airtableApiKey, baseId: ctx.cfg.airtableBaseId, baseUrl: ctx.cfg.airtableBaseUrl });
     await ctx.step('airtable-mirror', async () => {
-      for (const c of changes) {
-        await at.update(ACCOUNTS, c.rec, { ...(c.cold ? { [EA.dailyLimit]: c.cold.to } : {}), ...(c.warmup ? { [EX.warmupLimit]: c.warmup.to } : {}) }).catch(() => undefined);
-      }
+      // 10 records per Airtable call (its limit), so a bulk edit of hundreds of inboxes stays well inside the deadline.
+      const rows = changes.map((c) => ({ id: c.rec, fields: { ...(c.cold ? { [EA.dailyLimit]: c.cold.to } : {}), ...(c.warmup ? { [EX.warmupLimit]: c.warmup.to } : {}) } }));
+      for (let k = 0; k < rows.length; k += 10) await at.updateMany(ACCOUNTS, rows.slice(k, k + 10)).catch(() => undefined);
       return { n: changes.length };
     });
     await logActivity(ctx.cfg, {
@@ -163,7 +182,11 @@ export const inboxLimitsStage: Stage = async (ctx) => {
     }, at);
   }
   if (i.rampKey && !ctx.dryRun) await trackClose(ctx.db, i.rampKey, `Done: ${line}`);
-  return { message: `${ctx.dryRun ? 'Dry run (nothing changed in EmailBison): ' : ''}${line}. ${calls.join('; ')}.`, changed: changes.length, dryRun: ctx.dryRun, calls };
+  return {
+    message: `${ctx.dryRun ? 'Dry run (nothing changed in EmailBison): ' : ''}${line}. ${calls.join('; ')}.`, changed: changes.length, dryRun: ctx.dryRun, calls,
+    // Round 2: per inbox, what was set (the receipts are per EmailBison call).
+    inboxes: changes.slice(0, 500).map((c) => ({ email: c.email, what: pair(c) })),
+  };
 };
 
 /* ---------- History (the jobs table is the log) ---------- */
@@ -194,7 +217,8 @@ export interface RampProposal {
   key: string; clientKey: string; client: string; step: number; from: { cold: number; warmup: number }; to: { cold: number; warmup: number };
   accounts: string[]; emails: string[]; sendingSince: string; days: number; why: string;
 }
-const md = (iso: string) => iso.slice(5, 10);
+/** "11/24" (dates in HQ use slashes, Round 2). */
+const md = (iso: string) => `${Number(iso.slice(5, 7))}/${Number(iso.slice(8, 10))}`;
 /**
  * The next ramp step per client and step (one step at a time, never past the cap). An inbox moves
  * when its client has sent for 7 days per step, its own limits were not changed in the last 7 days,
@@ -281,12 +305,31 @@ export async function limitsView(at: HqAirtable, db: Db, cfg: Parameters<typeof 
   };
 }
 
+/** Round 2: POST /deliverability/limits/preview: what a bulk edit would change, and what it leaves alone. Changes nothing. */
+export async function previewLimitChange(at: HqAirtable, db: Db, cfg: Parameters<typeof buildDeliverability>[1] & Pick<Config, 'dryRun' | 'liveStages'>, body: any) {
+  const p = parseLimitRequest(body, true);
+  if (!p.ok) return { status: 400, body: { error: p.error } };
+  const m: DelivModel = buildDeliverability(await cachedDeliv(at, db), cfg);
+  const plan = planLimitChange(m.inboxes, p.req);
+  const clients = [...new Set(plan.changes.map((c) => c.client))];
+  const why = new Map<string, number>();
+  for (const s of plan.skipped) why.set(s.why, (why.get(s.why) ?? 0) + 1);
+  return {
+    status: 200, body: {
+      ok: true, live: limitsLive(cfg), changes: plan.changes.length, summary: plan.changes.length ? describePlan(plan) : 'Nothing would change.', clients,
+      skipped: plan.skipped.length, skippedWhy: [...why.entries()].map(([w, n]) => ({ why: w, n })).sort((a, b) => b.n - a.n),
+      sample: plan.changes.slice(0, 8).map((c) => ({ email: c.email, what: pair(c) })), max: MAX_INBOXES_PER_EDIT,
+    },
+  };
+}
+
 /** POST /deliverability/limits: check, plan and queue (owner only, checked by the route). */
 export async function requestLimitChange(at: HqAirtable, db: Db, cfg: Parameters<typeof buildDeliverability>[1] & Pick<Config, 'dryRun' | 'liveStages'>, body: any, by: string) {
   const p = parseLimitRequest(body);
   if (!p.ok) return { status: 400, body: { error: p.error } };
   const m: DelivModel = buildDeliverability(await cachedDeliv(at, db), cfg);
   const plan = planLimitChange(m.inboxes, p.req);
+  if (plan.changes.length > MAX_INBOXES_PER_EDIT) return { status: 400, body: { error: `at most ${MAX_INBOXES_PER_EDIT} inboxes at once (this is ${plan.changes.length}): narrow the filter` } };
   if (!plan.changes.length) return { status: 409, body: { error: plan.skipped.length ? `Nothing to change: ${plan.skipped.slice(0, 3).map((s) => `${s.email} (${s.why})`).join('; ')}` : 'No inboxes found for that choice.', skipped: plan.skipped } };
   const rampKey = typeof body.rampKey === 'string' && /^ramp:[a-z0-9]+:\d+$/.test(body.rampKey) ? body.rampKey : '';
   const r = await queueLimitChange(db, cfg, plan, by, { reason: p.req.reason, source: rampKey ? 'ramp' : 'hq', rampKey });
@@ -312,5 +355,14 @@ export const atlasRampStage: Stage = async (ctx) => {
   const open = (await ctx.db.query(`SELECT source_key FROM hq_agent_tasks WHERE status<>'done' AND source_key LIKE 'ramp:%'`)).rows.map((x) => String(x.source_key));
   const due = new Set(proposals.map((p) => p.key));
   for (const k of open) if (!due.has(k)) await trackClose(ctx.db, k, 'No longer due (applied or changed by hand).');
+  // Round 3: Atlas's own task for the domains with no real renewal date (closed when none is left).
+  const gap = renewalGap(m.domains);
+  if (gap.missing) {
+    await trackTask(ctx.db, {
+      agent: 'Atlas', key: RENEWAL_TASK_KEY, title: `Fill the renewal date on ${gap.missing} domain${gap.missing === 1 ? '' : 's'}`, client: '', status: 'open', priority: 'normal', due: dueIn(7),
+      link: 'deliverability/domains', note: `${gap.missing} of ${gap.total} domains have no real renewal date${m.cheap.connected ? ' (Cheap Inboxes has none for them either)' : ' (Cheap Inboxes is not connected: CHEAPINBOXES_API_KEY)'}. Fill "Renewal Date" on the Domains records from the domain provider.`,
+      details: '', job: null,
+    });
+  } else await trackClose(ctx.db, RENEWAL_TASK_KEY, 'Every domain has a renewal date.');
   return { message: proposals.length ? `${proposals.length} ramp step${proposals.length === 1 ? '' : 's'} to approve: ${proposals.map((p) => `${p.client} → ${p.to.cold}/${p.to.warmup} (${p.emails.length})`).join('; ')}` : 'No ramp step due.', proposals: proposals.length };
 };
