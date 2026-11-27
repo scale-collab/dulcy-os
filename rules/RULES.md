@@ -283,3 +283,10 @@ Format: `- [date] rule. (why / source)`
 - **Slack pings stay.** Notifications are added next to Slack; nothing posted to Slack was removed.
 - **Bounded:** at most 1 ping a minute per person (the rest grouped into one), at most 60 a day, never the same thing twice, and nothing that existed before notifications were turned on.
 - **Why:** Alex wants HQ on his phone to tell him when something needs him or went well, without opening it to check. How to turn it on: `engine/GUIDE.md` → HQ → "Phone notifications".
+
+## HQ round 2 rules (Alex, 2026-11-27 evening)
+- **Bounce is one signal, not the headline.** Don't make HQ or the agents bounce-centric; group campaigns by how they're doing (performing well, on pace, needs more time, needs a look).
+- **Soft bounce = any 4xx code.** Show bounce codes as SMTP codes (550, 551, 552…), with the 5.x.x enhanced code only as detail.
+- **Dates in HQ use slashes** (11/27).
+- **Campaigns and Lead lists in HQ follow the Airtable Campaign Center and Lead List Center** (same sections and actions), cleaner; Alex must always see which accounts are sending and how many are free.
+- **Bulk edits, not one by one** (inbox limits per client / selection / all).
