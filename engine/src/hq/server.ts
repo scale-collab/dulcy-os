@@ -30,9 +30,12 @@ import { campaignDetail, listCampaigns } from './campaigns.js';
 import { deliverabilityView } from './deliverability.js';
 import { portalRoute, resolvePortalClient } from './portal.js';
 import { contentSummary, contentView, decideIdea } from './content.js';
-import { dealDetail, salesView } from './sales.js';
+import { allDeals, dealDetail, nyDay, salesView } from './sales.js';
+// Batch 4a: Sales insights (periods, capacity, Close hottest deals) and the contract draft.
+import { insightsView, saveCapacitySettings, salesDeps, type SalesDeps } from './salesInsights.js';
+import { createInDulcySign, draftForm, saveDraft } from './contracts.js';
 
-export interface HqDeps { at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string }
+export interface HqDeps { at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string; sales?: SalesDeps }
 
 const SECURITY_HEADERS: Record<string, string> = {
   'x-content-type-options': 'nosniff',
@@ -146,6 +149,8 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
   const webDir = deps.webDir ?? cfg.hqWebDir;
   const needAt = () => { if (!at) throw Object.assign(new Error('Airtable is not connected on this server (AIRTABLE_API_KEY)'), { status: 503 }); return at; };
   const home = (req: http.IncomingMessage) => (hostOf(req) === cfg.hqHost ? '/' : '/hq/');
+  // Batch 4a: read-only Close / Xero / calendar readers for Sales (tests pass fakes).
+  const sales: SalesDeps = deps.sales ?? salesDeps(db, cfg, deps.fetchImpl);
 
   return async function handle(req: http.IncomingMessage, res: http.ServerResponse, url: URL): Promise<boolean> {
     const host = hostOf(req);
@@ -451,17 +456,41 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         json(res, 404, { error: 'not found' }); return true;
       }
 
-      // Sales (Dulcy's own deals): owner only (money), checked here so members get 403. Read only.
+      // Sales (Dulcy's own deals): owner only (money), checked here so members get 403.
       if (p === '/hq/api/sales' || p.startsWith('/hq/api/sales/')) {
         if (!owner) { json(res, 403, { error: 'only the owner sees sales (money)' }); return true; }
+        const extras = { xero: sales.xero };
+        // ---- Batch 4a: insights, capacity setting, contract draft (the only writes: Postgres, and one Contracts row on "Create") ----
+        if (p === '/hq/api/sales/insights' && req.method === 'GET') {
+          const now = Date.now();
+          const { deals } = await allDeals(needAt(), db, url.searchParams.get('refresh') === '1', now, extras);
+          json(res, 200, await insightsView(deals, db, sales, owner, { now, refresh: url.searchParams.get('refresh') === '1' }));
+          return true;
+        }
+        if (p === '/hq/api/sales/settings' && req.method === 'POST') {
+          json(res, 200, { settings: await saveCapacitySettings(db, await readJson(req, 2_000), user.name) });
+          return true;
+        }
+        m = p.match(/^\/hq\/api\/sales\/(rec[A-Za-z0-9]{14})\/contract(\/create)?$/);
+        if (m) {
+          const now = Date.now();
+          const { deals } = await allDeals(needAt(), db, false, now, extras);
+          const deal = deals.find((d) => d.id === m![1] || d.salesRec === m![1] || d.agreements.some((a) => a.id === m![1]));
+          if (!deal) { json(res, 404, { error: 'no such deal' }); return true; }
+          if (!m[2] && req.method === 'GET') { json(res, 200, await draftForm(db, deal, nyDay(now))); return true; }
+          if (!m[2] && req.method === 'POST') { const r = await saveDraft(db, deal, await readJson(req, 20_000), user.name, nyDay(now)); json(res, r.status, r.body); return true; }
+          if (m[2] && req.method === 'POST') { const b = await readJson(req, 2_000); const r = await createInDulcySign(needAt(), db, deal, Number(b.draftId), user.name, nyDay(now)); json(res, r.status, r.body); return true; }
+          json(res, 405, { error: 'method not allowed' }); return true;
+        }
+        // ---- end Batch 4a ----
         if (req.method !== 'GET') { json(res, 405, { error: 'method not allowed' }); return true; }
         if (p === '/hq/api/sales') {
-          json(res, 200, await salesView(needAt(), db, owner, { days: Number(url.searchParams.get('days')) === 90 ? 90 : 30, refresh: url.searchParams.get('refresh') === '1' }));
+          json(res, 200, await salesView(needAt(), db, owner, { days: Number(url.searchParams.get('days')) === 90 ? 90 : 30, refresh: url.searchParams.get('refresh') === '1', extras }));
           return true;
         }
         m = p.match(/^\/hq\/api\/sales\/(rec[A-Za-z0-9]{14})$/);
         if (m) {
-          const d = await dealDetail(needAt(), db, m[1], owner, cfg.airtableBaseId);
+          const d = await dealDetail(needAt(), db, m[1], owner, { extras });
           if (!d) json(res, 404, { error: 'no such deal' }); else json(res, 200, d);
           return true;
         }

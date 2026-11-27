@@ -45,7 +45,8 @@ test('sales: stage mapping booked → showed → qualified → contract sent →
   assert.equal(reached({ agreement: agr('signed') }), 'booked showed qualified sent signed');
   assert.equal(reached({ agreement: agr('signed'), clientPaid: true }), 'booked showed qualified sent signed paid');
   assert.equal(reached({ agreement: agr('signed'), clientPaid: true, onboarded: true }), 'booked showed qualified sent signed paid onboarded');
-  assert.equal(reached({ agreement: agr('signed'), onboarded: true }), 'booked showed qualified sent signed', 'onboarded needs paid first');
+  assert.equal(reached({ agreement: agr('signed'), onboarded: true }), 'booked showed qualified sent signed onboarded', 'the onboarding form is its own fact: a missing payment does not hide it (MJJ, 2026-11-27)');
+  assert.equal(reached({ agreement: agr('sent'), onboarded: true }), 'booked showed qualified sent', 'onboarded needs a signed deal');
   assert.equal(reached({ agreement: agr('draft') }), 'booked', 'a draft is not sent');
   assert.equal(reached({ airtableStage: 'No Show', heldFlag: true }), 'booked', 'No Show wins over a stray Call Held? tick');
   assert.equal(reached({ airtableStage: 'Call Done', heldFlag: true, feedbackStatus: 'No Show' }), 'booked showed', 'feedback No Show vs a held call: the call counts (a data note flags it)');
@@ -57,7 +58,7 @@ const base = (o: Partial<Deal> = {}): Deal => ({
   id: 'recS0000000000001', salesRec: 'recS0000000000001', name: 'Ann Lee', company: 'acme.com', email: 'a@acme.com', source: 'Cold Email', rep: 'Alexander Woung', campaign: '',
   airtableStage: 'Audit Call Scheduled', lossReason: '', notes: '', callDate: day(3), heldDate: '', bookedAt: iso(-3), startDay: day(3),
   stages: stagesOf(facts()), stage: 'booked', lost: false, inactiveClient: false, agreements: [], agreement: null, signedDay: '',
-  client: null, clientMatch: null, paidKnown: false, paidVia: '', onboardingStarted: false, feedback: [], reviews: [], prep: null, emailRecs: [], needs: [], closeUrl: '', ...o,
+  client: null, clientMatch: null, paidKnown: false, paidVia: '', onboardingStarted: false, feedback: [], reviews: [], prep: null, emailRecs: [], needs: [], closeUrl: '', paidDay: '', closeLead: '', agreementRoles: [], ...o,
 });
 const kinds = (o: Partial<Deal>) => needsFor(base(o), TODAY).map((x) => `${x.kind}:${x.owner}`);
 const textOf = (o: Partial<Deal>) => needsFor(base(o), TODAY).map((x) => x.text);
@@ -326,11 +327,12 @@ test('sales API: the deal page (contact, calls, Cole review, feedback, contract 
   assert.deepEqual([d.name, d.email, d.stage, d.client.name, d.money.monthly], ['Ann Lee', 'ann@acme.com', 'paid', 'Acme', 2000]);
   assert.deepEqual(d.reviews.map((x: any) => [x.score, x.link]), [[7, 'https://fathom.video/calls/1']]);
   assert.ok(r.body.calls.some((c: any) => c.link === 'https://fathom.video/calls/1'), 'the recorded call links to Fathom (as stored)');
-  assert.deepEqual(r.body.onboarding.map((x: any) => [x.step, x.done]), [['Agreement signed', true], ['Payment received', true], ['Onboarding started', false], ['Onboarding form', false], ['Client tasks', false]]);
-  assert.match(r.body.onboarding[4].note, /^1 of 2 done$/, 'only this client\'s tasks');
-  assert.equal(r.body.links.airtable, 'https://airtable.com/appxqINt5XKw7a76A/tblmEyHVAXDRwPxN9/recSANN0000000001');
-  assert.deepEqual(r.body.links.agreements.map((a: any) => [a.tool, a.url]), [['SignWell', 'https://www.signwell.com/app/documents/1']]);
-  assert.equal(r.body.links.client, 'https://airtable.com/appxqINt5XKw7a76A/tblcjRBGJEWh5KgOt/recWACME000000001');
+  assert.deepEqual(r.body.onboarding.map((x: any) => [x.step, x.done]), [['Agreement signed', true], ['Payment received', true], ['Onboarding started', false], ['Onboarding form', false]], 'no client tasks on the sales view');
+  assert.ok(!/airtable\.com/.test(r.text), 'no Airtable links anywhere (Alex 2026-11-27)');
+  assert.ok(!('tasks' in r.body), 'client tasks are not part of sales');
+  assert.deepEqual(r.body.links.agreements, [], 'SignWell is retired: no SignWell link');
+  assert.equal(d.review.score, 7, 'the latest call review is on the deal');
+  assert.match(d.coleNext, /onboarding/i, 'Cole\'s next step for a paid deal: onboarding');
   // An agreement-only deal opens by the agreement's record id, with the Close and Dulcy Sign links.
   const g = await call('/hq/api/sales/recCGALE000000001', cookie);
   assert.equal(g.status, 200);
