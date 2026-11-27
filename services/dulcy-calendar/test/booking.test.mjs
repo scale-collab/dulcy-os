@@ -268,3 +268,14 @@ test('a failed connect step logs its route and reason, without the ticket, codes
   assert.equal(httpLogs.at(-1).route, '/calendar/admin/book');
   assert.match(httpLogs.at(-1).error, /30 days/);
 });
+
+import {calendlyAnswers as _qa} from '../calendar.mjs';
+test('Calendly required questions: text answered with the booking context; optional skipped; required phone refused', () => {
+  const req = {name: 'Jane', description: 'Re: intro call'};
+  assert.deepEqual(_qa({custom_questions: [
+    {name: 'What do you want to cover?', type: 'text', position: 0, enabled: true, required: true},
+    {name: 'Anything else?', type: 'string', position: 1, enabled: true, required: false},
+  ]}, req), [{question: 'What do you want to cover?', answer: 'Re: intro call', position: 0}]);
+  assert.deepEqual(_qa({}, req), []);
+  assert.throws(() => _qa({custom_questions: [{name: 'Phone', type: 'phone_number', position: 0, enabled: true, required: true}]}, req), /make it optional/);
+});

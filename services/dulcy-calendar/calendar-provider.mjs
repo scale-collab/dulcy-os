@@ -1,4 +1,4 @@
-import {PROVIDERS,normalizeCalendly,googleSlots,canBook,bookingRequest,bookingFingerprint,googleEventId,googleSlotFree,googleEventBody,googleBooked,calendlyLocation,LOCATION_NAMES} from './calendar.mjs';
+import {PROVIDERS,normalizeCalendly,googleSlots,canBook,bookingRequest,bookingFingerprint,googleEventId,googleSlotFree,googleEventBody,googleBooked,calendlyLocation,calendlyAnswers,LOCATION_NAMES} from './calendar.mjs';
 import {createHash} from 'node:crypto';
 
 // Only provider APIs may receive tokens. Redirects are rejected, not followed.
@@ -164,9 +164,10 @@ export class CalendarProvider {
       const check=await this.slotFree(c,workspace,req);
       if(!check.free)return {booked:false,reason:'taken'};
       const location=calendlyLocation(check.event);
+      const answers=calendlyAnswers(check.event,req);
       this.store.putBooking(workspace,req.idempotencyKey,'pending',{fingerprint:fp,start:req.start},this.now());
       let r;
-      try{r=await this.fetchJson('https://api.calendly.com/invitees',{method:'POST',headers:{Authorization:'Bearer '+c.accessToken,'Content-Type':'application/json'},body:JSON.stringify({event_type:c.eventType,start_time:req.start,invitee:{name:req.name,email:req.email,timezone:req.timezone},...(location?{location}:{})})});}
+      try{r=await this.fetchJson('https://api.calendly.com/invitees',{method:'POST',headers:{Authorization:'Bearer '+c.accessToken,'Content-Type':'application/json'},body:JSON.stringify({event_type:c.eventType,start_time:req.start,invitee:{name:req.name,email:req.email,timezone:req.timezone},...(location?{location}:{}),...(answers.length?{questions_and_answers:answers}:{})})});}
       catch(e){if(e.status&&e.status<500)this.store.dropBooking(workspace,req.idempotencyKey);throw e;}
       const inv=r?.resource||{};
       const minutes=Number(check.event?.duration)||0;
