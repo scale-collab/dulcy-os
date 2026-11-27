@@ -112,8 +112,7 @@ function Sidebar({ active, user, onSignOut }: { active: string; user: User; onSi
               className={cx('group flex min-h-11 items-center gap-3 rounded-xl px-3 text-[15px] font-medium transition', on ? 'bg-hover text-fg' : 'text-muted hover:bg-hover hover:text-fg')}>
               <Icon name={t.icon} size={18} className={on ? 'text-fg' : 'text-muted group-hover:text-fg'} />
               <span className="flex-1 text-left">{t.label}</span>
-              {!!n && <span className={cx('tabular rounded-full px-2 py-0.5 text-xs font-semibold', t.key === 'decisions' ? 'bg-ink text-ink-fg' : t.key === 'deliverability' ? 'bg-bad-soft text-bad' : t.key === 'needs' || t.key === 'inbox' || t.key === 'campaigns' || t.key === 'content' ? 'bg-accent text-accent-fg' : 'bg-sunken text-fg-2 border border-line')}>{n}</span>}
-              {!!n && <span className={cx('tabular rounded-full px-2 py-0.5 text-xs font-semibold', t.key === 'decisions' ? 'bg-ink text-ink-fg' : t.key === 'deliverability' ? 'bg-bad-soft text-bad' : t.key === 'needs' || t.key === 'inbox' || t.key === 'campaigns' || t.key === 'sales' ? 'bg-accent text-accent-fg' : 'bg-sunken text-fg-2 border border-line')}>{n}</span>}
+              {!!n && <span className={cx('tabular rounded-full px-2 py-0.5 text-xs font-semibold', t.key === 'decisions' ? 'bg-ink text-ink-fg' : t.key === 'deliverability' ? 'bg-bad-soft text-bad' : t.key === 'needs' || t.key === 'inbox' || t.key === 'campaigns' || t.key === 'content' || t.key === 'sales' ? 'bg-accent text-accent-fg' : 'bg-sunken text-fg-2 border border-line')}>{n}</span>}
             </button>
           );
         })}
