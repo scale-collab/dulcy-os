@@ -749,14 +749,15 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
    - Ada's brief: the two key lines first ("Waiting on you" and "Top 3"); tap for the rest.
    - Team check: one line per agent: ✓ ran fine, ⚠️ failed (which job and why), or ⚠️ decisions waiting on you.
    - Reports: every agent report as a short card. Tap one for the full text. A Cole call review opens on the score and the 3 fixes (what you said → what to say instead); the full review and the follow-up draft are one more tap away.
-2. **Decisions:** the same piles as the Daily Run (Replies = Echo; Campaigns = Atlas, Scribe, Scout; Fixes = Riley; Money = Ledger; Other). One card at a time, with a progress bar.
+2. **Decisions:** one pile per owner (Alex, 2026-11-27): Replies = Echo; Campaigns = Atlas, Scribe, Scout; Fixes = Riley; Money = Ledger; Sales = Cole; Content = Sienna; Orchestrator = Ada. There is no "Other" pile any more. Money and Content are yours only. A client dropdown (active clients only, remembered) narrows the piles to one client. One card at a time, with a progress bar.
    - **Replies:** what they wrote, a link to the thread, and the draft in a box you can edit.
      - **Send:** sends the draft as it is (the same as ✅ in Slack).
      - **Send edited:** sends your edited text.
      - **Skip reply:** nothing is sent.
      - The engine's reply sender sends it from the right inbox and closes the card. HQ only presses the buttons on the Emails row (Human Action, and Custom Reply for an edit).
    - **Others:** Issue / Checked / Proposed / On approve, then Approve or Reject. The engine then runs the action, exactly as for a ✅ in Slack.
-   - **Later** keeps a card for another time. Keys on a computer: A approve (or send), R reject (or skip reply), S later, E edit the reply (Esc to stop editing). The keys are shown under the buttons.
+   - **Later** keeps a card for another time. Keys on a computer, in the same order as the buttons: R reject (or skip reply), S later, A approve (or send), E edit the reply (Esc to stop editing).
+   - Every press shows a short result at the top (phone) or bottom (computer). **Reject / Skip reply** has **Undo** for 6 seconds: nothing is saved until then, and nothing is ever sent by a reject.
 3. **Needs you** (was "To-do", Alex 2026-11-25: "this is what you need me to do", not another project manager). A short list of only what the agents need from you. Each card: the agent's face, one line, why, and **one** button. "Do now" and "When you can" (two columns on the computer, one list on the phone). The number on the tab counts items, not decisions.
    - **Decisions:** one card per pile, never one per decision ("Echo: 105 replies waiting for your OK", with the oldest age). The button opens that pile. Replies and Campaigns are "Do now", and so is any pile whose oldest card is a day old.
    - **Riley's manual fixes:** System Issues in "Waiting for Alex" with Fix Type "Manual (Alex)". The card shows the Why; **See steps** opens the Fix. When you've done it, **Open the decision** and approve it in Fixes so Riley checks it worked (HQ writes nothing to Airtable here). Its decision is not counted again in the Fixes card.
@@ -961,6 +962,14 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
   - Credentials are read only when the client opens Access & logins, for that client only, never cached and never logged. **Note: the logins themselves live in Airtable (Workspace IDs → Logins), as in Softr.** Anyone with Airtable access can read them there.
   - The Airtable Portal Users table has a plain-text **Password** column from Softr. HQ never reads it. Consider clearing it after the switch.
 - **Not the same as send.dulcy.io:** that is EmailBison's white-label inbox, with its own login. The portal links to it.
+
+**Batch 1 (2026-11-27): safety and the shell**
+- **Placeholder guard.** A reply that still has a fill-in bit, like "[video link for Artisan Luxe Beauty]", "[link]", "[Your name]", "{{first_name}}" or "<insert …>", can never be sent as it is. On the Decisions card (and the Inbox) the Send button stays off, the bit is marked, and a yellow box says **Replace this before sending** (tap the bit to jump to it in the text). The server refuses it too, and so does the engine's reply sender, so nothing slips through from Slack or Airtable either. Echo is told never to write one: when a link or fact is missing it asks you the question instead ("Need your input").
+- **Editing a reply.** The draft on a reply card is a normal text box with an **Edit** button. Change it, then **Send edited**.
+- **Fix it.** Where an agent suggests something (Today → Agent suggestions, a decision whose approval does nothing by itself), two buttons: **Have <Agent> fix it** puts it on that agent's own task list (Team), and the agent picks it up; **I'll look** hides the buttons on this device (Undo brings them back). Pressing it sends or changes nothing by itself. Other screens get the same buttons as they are rebuilt.
+- **View as member.** Users → **View as member** (or the switch at the bottom of the sidebar) shows HQ exactly as Josh sees it: no money, no Content, no Sales, no Users. A yellow bar says "Viewing as a member (what Josh sees)" with **Exit**. It is read only: any change is refused while you view. Only your login can do this; it can never give anyone more than they have.
+- **Menu order:** Today, Decisions, Inbox, Needs you, Clients, Sales, Campaigns, Deliverability, Team, Chat, Content, then Users.
+- **Today** is now in clear blocks, each with its own heading and icon: Decisions, Ada's morning brief (Top 3 and Overnight first, then "Read the whole brief"), Agent suggestions, Reports, Do now, Team check.
 
 **Who can see what:**
 - `owner` (you) sees everything.
