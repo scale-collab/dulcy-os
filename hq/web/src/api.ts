@@ -227,3 +227,16 @@ export interface SalesDetail {
   links: { airtable: string; close: string; client: string; feedback: string[]; agreements: { id: string; tool: string; title: string; state: AgreementState; url: string; reviewDoc: string; airtable: string }[] };
   notes: SalesNote[]; readAt: string;
 }
+
+/* ---------- Content, Batch 5 (2026-11-27): laid out like the Airtable Content Center ----------
+ * The server no longer sends the per-record `airtable` links listed in the Step 3 Content types above. */
+export type ContentCcStage = 'Idea' | 'Script' | 'Record' | 'Edit' | 'Finalize' | 'Thumbnail' | 'Upload' | 'Clips' | 'Distribute' | 'Published';
+export interface ContentItemFacts {
+  decision: string; score: number | null; source: string; sourceUrl: string; script: boolean;
+  video: { folder: boolean; finished: boolean; youtube: boolean; youtubeUrl: string };
+  repurposing: { shortProject: boolean; clips: number; drafts: boolean };
+  update: string; error: string;
+  details: { productionStage: string; status: string; editingRoute: string; opusStatus: string; shortJobState: string; thumbnailStatus: string; publishingStatus: string };
+}
+export interface ContentItem extends ContentPipelineRow { cc: ContentCcStage; thisWeek: boolean; awaiting: boolean; done: boolean; facts: ContentItemFacts }
+export type ContentCenterView = Omit<ContentView, 'pipeline'> & { pipeline: { stages: ContentView['pipeline']['stages']; ccStages: ContentCcStage[]; rows: ContentItem[]; leftOut: number } };
