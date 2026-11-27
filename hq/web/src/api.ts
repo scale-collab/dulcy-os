@@ -227,3 +227,29 @@ export interface SalesDetail {
   links: { airtable: string; close: string; client: string; feedback: string[]; agreements: { id: string; tool: string; title: string; state: AgreementState; url: string; reviewDoc: string; airtable: string }[] };
   notes: SalesNote[]; readAt: string;
 }
+
+// ---------- Batch 4b: Needs you (to-do), Team board, Chat threads and suggestions ----------
+/** One to-do on "Needs you": the problem (title), what to do (todo), why (why), one action. */
+export interface TodoItem extends Omit<Need, 'kind'> {
+  kind: 'decisions' | 'campaigns' | 'money' | 'checkin' | 'issue' | 'signups' | 'ask' | 'task' | 'handled';
+  todo?: string; rank?: number;
+}
+/** A chat in the list (GET /chat/threads): `mine` = your own; archived chats only with ?archived=1. */
+export interface ChatThread extends Thread { opened?: string | null; archived?: boolean; mine?: boolean }
+export interface ChatThreadFull {
+  id: number; agent: string; askedBy: string; parentId: number | null; title: string; archived?: boolean; mine?: boolean;
+  messages: ChatMessage[]; children: { id: number; agent: string; title: string }[];
+}
+export interface ChatSuggestions { agent: string; date: string; questions: string[] }
+export type BoardStatus = 'all' | 'open' | 'in_progress' | 'waiting_alex' | 'done' | 'late' | 'stuck';
+export type BoardDue = 'any' | 'overdue' | 'today' | 'week' | 'none';
+export interface BoardAgent {
+  agent: string; role: string; current: AgentTask | null; next: AgentTask | null;
+  open: number; late: number; stuck: number; waitingAlex: number; lastRun: { at: string; ok: boolean; kind: string } | null;
+}
+export interface BoardEvent { at: string; agent: string; kind: 'task_done' | 'task_moved' | 'task_new' | 'run_failed' | 'runs_ok'; text: string; taskId?: number }
+/** GET /team/work: what everyone is working on (filters: agent, client, status, due). */
+export interface TeamBoard {
+  filters: { agent: string | null; client: string; status: BoardStatus; due: BoardDue };
+  agents: BoardAgent[]; tasks: AgentTask[]; deadlines: AgentTask[]; activity: BoardEvent[]; clients: string[];
+}

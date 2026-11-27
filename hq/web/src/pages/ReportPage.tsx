@@ -20,7 +20,7 @@ export default function ReportPage({ id }: { id: number }) {
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted"><span className="font-medium text-fg-2">{r.agent}</span><span aria-hidden="true">·</span><span>{timeAgo(r.created)}</span>{r.urgent && <Pill tone="bad">urgent</Pill>}{r.dryRun && <Pill>dry run</Pill>}</div>
       </div>
       <h1 className="mt-3 text-[26px] font-bold leading-tight tracking-tight sm:text-[28px]">{r.title}</h1>
-      {r.link && <div className="mt-3"><ExtLink href={r.link} className="inline-flex min-h-11 items-center gap-1.5"><Icon name="external" size={15} />Open the recording / source</ExtLink></div>}
+      {r.link && !/^https:\/\/([a-z0-9-]+\.)*airtable\.com(\/|$)/i.test(r.link) && <div className="mt-3"><ExtLink href={r.link} className="inline-flex min-h-11 items-center gap-1.5"><Icon name="external" size={15} />Open the recording / source</ExtLink></div>}
 
       {review ? (
         <>

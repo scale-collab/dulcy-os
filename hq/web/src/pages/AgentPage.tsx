@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, type AgentTask, type AgentWork, type Decision, type Report, type TeamLine } from '../api';
 import { Avatar, BackLink, Button, Card, cleanLine, cx, ErrorBox, go, Icon, PageSkeleton, Pill, SectionHeader, StatusDot, teamTone, timeAgo } from '../ui';
 import { ReportList } from './Reports';
-import { askForProgress, TaskList } from './AgentWork';
+import { askForProgress, TaskList, TeamBoardView } from './AgentWork';
 
 interface Run { id: number; kind: string; status: string; at: string; message: string; dryRun: boolean }
 interface Activity { id: string; event: string; when: string; type: string; details: string }
@@ -13,7 +13,13 @@ interface Detail {
 }
 const runTone = (s: string) => (s === 'succeeded' ? 'good' : s === 'failed' || s === 'needs_review' ? 'bad' : 'plain') as 'good' | 'bad' | 'plain';
 
+/** #/agents/<name>; #/agents/work is the Team board ("What everyone is working on"). */
 export default function AgentPage({ name }: { name: string }) {
+  if (name.toLowerCase() === 'work') return <TeamBoardView />;
+  return <AgentDetail name={name} />;
+}
+
+function AgentDetail({ name }: { name: string }) {
   const [d, setD] = useState<Detail | null>(null);
   const [error, setError] = useState('');
   const [showRuns, setShowRuns] = useState(false);
@@ -39,7 +45,10 @@ export default function AgentPage({ name }: { name: string }) {
               <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-fg-2">{a.does}</p>
             </div>
           </div>
-          <Button tone="primary" icon="message" onClick={() => go(`chat/${a.name}`)} className="w-full sm:w-auto">Talk to {a.name}</Button>
+          <div className="flex flex-col gap-2 sm:items-end">
+            <Button tone="primary" icon="message" onClick={() => go(`chat/${a.name}`)} className="w-full sm:w-auto">Talk to {a.name}</Button>
+            <Button tone="ghost" icon="grid" onClick={() => go(`agents/work?agent=${a.name}`)} className="w-full sm:w-auto">{a.name}'s work on the board</Button>
+          </div>
         </div>
         <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-4 text-sm">
           <span className={cx('inline-flex items-center gap-2 font-medium', tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn' : 'text-fg-2')}><StatusDot tone={tone} />{cleanLine(d.status.line)}</span>
