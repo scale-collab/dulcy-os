@@ -12,8 +12,21 @@ export class CalendarStore {
     this.db.exec(`PRAGMA busy_timeout=5000;
       CREATE TABLE IF NOT EXISTS states (hash TEXT PRIMARY KEY,workspace TEXT NOT NULL,payload TEXT NOT NULL,expires INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS connections (workspace TEXT PRIMARY KEY,payload TEXT NOT NULL,revision INTEGER NOT NULL DEFAULT 1);
+      CREATE TABLE IF NOT EXISTS bookings (hash TEXT PRIMARY KEY,workspace TEXT NOT NULL,status TEXT NOT NULL,payload TEXT NOT NULL,updated INTEGER NOT NULL);
     `);
   }
+  // One row per (workspace, idempotency key): pending while the provider call runs, then booked.
+  // The key is stored hashed; the payload (start, provider ids, links) is sealed to the workspace.
+  bookingKey(workspace,key){workspaceId(workspace);return createHash('sha256').update(workspace+':'+key).digest('hex');}
+  booking(workspace,key){
+    const row=this.db.prepare('SELECT * FROM bookings WHERE hash=? AND workspace=?').get(this.bookingKey(workspace,key),workspace);
+    return row?{status:row.status,updated:row.updated,...unseal(row.payload,this.key,workspace)}:null;
+  }
+  putBooking(workspace,key,status,record,now=Date.now()){
+    this.db.prepare('INSERT INTO bookings(hash,workspace,status,payload,updated) VALUES(?,?,?,?,?) ON CONFLICT(hash) DO UPDATE SET status=excluded.status,payload=excluded.payload,updated=excluded.updated')
+      .run(this.bookingKey(workspace,key),workspace,status,seal(record,this.key,workspace),now);
+  }
+  dropBooking(workspace,key){this.db.prepare('DELETE FROM bookings WHERE hash=? AND workspace=?').run(this.bookingKey(workspace,key),workspace);}
   putState(state,pending) {
     workspaceId(pending.workspace);
     if(!/^[A-Za-z0-9_-]{40,}$/.test(state)||!Number.isFinite(pending.expiresAt))throw Error('Invalid authorization state');

@@ -1,4 +1,4 @@
-import {PROVIDERS,normalizeCalendly,googleSlots} from './calendar.mjs';
+import {PROVIDERS,normalizeCalendly,googleSlots,canBook,bookingRequest,bookingFingerprint,googleEventId,googleSlotFree,googleEventBody,googleBooked,calendlyLocation,LOCATION_NAMES} from './calendar.mjs';
 import {createHash} from 'node:crypto';
 
 // Only provider APIs may receive tokens. Redirects are rejected, not followed.
@@ -13,7 +13,7 @@ export async function providerJson(url,options={},fetchImpl=fetch) {
 }
 
 export class CalendarProvider {
-  constructor({store,apps,fetchJson=providerJson,now=()=>Date.now()}){this.store=store;this.apps=apps;this.fetchJson=fetchJson;this.now=now;this.locks=new Map();}
+  constructor({store,apps,fetchJson=providerJson,now=()=>Date.now(),log=x=>process.stdout.write(JSON.stringify({at:new Date().toISOString(),...x})+'\n')}){this.store=store;this.apps=apps;this.fetchJson=fetchJson;this.now=now;this.log=log;this.locks=new Map();}
   async locked(workspace,fn){
     const previous=this.locks.get(workspace)||Promise.resolve();let unlock;
     const next=new Promise(r=>unlock=r);this.locks.set(workspace,next);
@@ -73,7 +73,11 @@ export class CalendarProvider {
   }
   status(workspace){
     const s=this.store.get(workspace),c=s?.connection;
-    return {workspaceId:workspace,status:c?.status||'Not Connected',provider:c?.provider||null,accountEmail:c?.accountEmail||null,eventName:c?.eventName||null,revision:s?.revision||0};
+    // A connection made before booking existed (read scopes only) says so, never fails silently.
+    const booking=!c||c.status!=='Connected'?'not_connected':canBook(c)?'ready':'reconnect';
+    const label=booking==='ready'?'Connected – booking allowed':booking==='reconnect'?'Connected – reconnect to allow booking':(c?.status||'Not Connected');
+    return {workspaceId:workspace,status:c?.status||'Not Connected',provider:c?.provider||null,accountEmail:c?.accountEmail||null,eventName:c?.eventName||null,revision:s?.revision||0,
+      canBook:booking==='ready',booking,label,timezone:c?.rules?.timezone||null};
   }
   async availability(workspace,{start,end}){
     const c=await this.token(workspace);if(c.status!=='Connected')throw Error('Select a calendar first');
@@ -91,6 +95,87 @@ export class CalendarProvider {
     const latest=this.store.get(workspace)?.connection;
     if(!latest||latest.status!=='Connected'||latest.providerUserId!==c.providerUserId||JSON.stringify(latest.calendarIds)!==JSON.stringify(c.calendarIds)||latest.eventType!==c.eventType||JSON.stringify(latest.rules)!==JSON.stringify(c.rules))throw Error('Calendar changed during availability check');
     const eventType=c.provider==='calendly'?c.eventType:'google:'+workspace+':'+createHash('sha256').update(JSON.stringify([c.providerUserId,c.calendarIds,c.rules])).digest('hex').slice(0,16);
-    return {...result,eventType,connection:{workspaceId:workspace,eventType,timezone:c.rules?.timezone||'America/New_York',provider:c.provider,status:'Connected'}};
+    return {...result,eventType,connection:{workspaceId:workspace,eventType,timezone:c.rules?.timezone||'America/New_York',provider:c.provider,status:'Connected',canBook:canBook(c)}};
+  }
+
+  /** Is this exact slot free right now (live provider read)? {free, reason: '' | taken | outside_hours | notice}. */
+  async slotFree(c,workspace,req){
+    const headers={Authorization:'Bearer '+c.accessToken};
+    if(c.provider==='google'){
+      const buffer=c.rules.bufferMinutes*60000;
+      const timeMin=new Date(Date.parse(req.start)-buffer).toISOString(),timeMax=new Date(Date.parse(req.end)+buffer).toISOString();
+      const response=await this.fetchJson('https://www.googleapis.com/calendar/v3/freeBusy',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({timeMin,timeMax,timeZone:c.rules.timezone,items:c.calendarIds.map(id=>({id}))})});
+      return googleSlotFree({connection:c,workspace,response,start:req.start,end:req.end,rules:c.rules,now:this.now()});
+    }
+    const event=(await this.fetchJson(c.eventType,{headers})).resource;
+    const until=new Date(Date.parse(req.start)+60000).toISOString();
+    const url=new URL('https://api.calendly.com/event_type_available_times');url.search=new URLSearchParams({event_type:c.eventType,start_time:req.start,end_time:until}).toString();
+    const r=normalizeCalendly({connection:c,workspace,event,response:await this.fetchJson(url.href,{headers}),start:req.start,end:until,now:this.now()});
+    return r.collection.some(x=>x.start_time===req.start)?{free:true,reason:'',event}:{free:false,reason:'taken',event};
+  }
+
+  /**
+   * Book one agreed time on this workspace's own calendar (Alex 2026-11-27). Steps, in order:
+   * 1. the same idempotency key never books twice (it returns the first booking);
+   * 2. live free/busy re-check of that exact slot: not free → {booked:false, reason:'taken'};
+   * 3. Google: event with the prospect as attendee + Meet link, sendUpdates=all (Google sends the invite);
+   *    Calendly: POST /invitees on the connected event type.
+   */
+  async book(workspace,input){
+    const req=bookingRequest({...input,workspace},this.now()),fp=bookingFingerprint(req);
+    const c=await this.token(workspace);
+    if(c.status!=='Connected')return {booked:false,reason:'not_connected',message:'Calendar is not connected'};
+    if(!canBook(c))return {booked:false,reason:'reconnect',message:'Connected – reconnect to allow booking'};
+    return this.locked('book:'+workspace,async()=>{
+      const prior=this.store.booking(workspace,req.idempotencyKey);
+      if(prior&&prior.fingerprint!==fp)throw Error('This idempotency key was used for another booking');
+      if(prior?.status==='booked')return {...prior.result,idempotent:true};
+      if(c.provider==='google'){
+        if(!Array.isArray(c.calendarIds)||!c.calendarIds.length)throw Error('Choose calendars before booking');
+        if(!req.end)req.end=new Date(Date.parse(req.start)+c.rules.durationMinutes*60000).toISOString();
+        const id=googleEventId(workspace,req.idempotencyKey);
+        // An earlier attempt may have created the event before it could record it: adopt it.
+        if(prior?.status==='pending'){const found=await this.googleEvent(c,id,req);if(found)return this.finish(workspace,req,fp,found);}
+        const check=await this.slotFree(c,workspace,req);
+        if(!check.free)return {booked:false,reason:check.reason||'taken'};
+        this.store.putBooking(workspace,req.idempotencyKey,'pending',{fingerprint:fp,start:req.start},this.now());
+        let ev;
+        try{ev=await this.fetchJson('https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1&sendUpdates=all',{method:'POST',headers:{Authorization:'Bearer '+c.accessToken,'Content-Type':'application/json'},body:JSON.stringify(googleEventBody(req,id))});}
+        catch(e){
+          if(e.status===409){const found=await this.googleEvent(c,id,req);if(found)return this.finish(workspace,req,fp,found);}
+          if(e.status&&e.status<500&&e.status!==409)this.store.dropBooking(workspace,req.idempotencyKey);
+          throw e;
+        }
+        return this.finish(workspace,req,fp,googleBooked(ev,req));
+      }
+      // Calendly has no idempotency key on POST /invitees: an attempt whose outcome is unknown is never retried blindly.
+      if(prior?.status==='pending')return {booked:false,reason:'uncertain',message:'An earlier booking attempt for this key has an unknown outcome; check the Calendly calendar before booking again'};
+      const check=await this.slotFree(c,workspace,req);
+      if(!check.free)return {booked:false,reason:'taken'};
+      const location=calendlyLocation(check.event);
+      this.store.putBooking(workspace,req.idempotencyKey,'pending',{fingerprint:fp,start:req.start},this.now());
+      let r;
+      try{r=await this.fetchJson('https://api.calendly.com/invitees',{method:'POST',headers:{Authorization:'Bearer '+c.accessToken,'Content-Type':'application/json'},body:JSON.stringify({event_type:c.eventType,start_time:req.start,invitee:{name:req.name,email:req.email,timezone:req.timezone},...(location?{location}:{})})});}
+      catch(e){if(e.status&&e.status<500)this.store.dropBooking(workspace,req.idempotencyKey);throw e;}
+      const inv=r?.resource||{};
+      const minutes=Number(check.event?.duration)||0;
+      return this.finish(workspace,req,fp,{booked:true,provider:'calendly',eventId:String(inv.event||inv.uri||''),inviteeUri:inv.uri||null,htmlLink:null,meetLink:null,
+        cancelUrl:inv.cancel_url||null,rescheduleUrl:inv.reschedule_url||null,start:req.start,end:req.end||(minutes?new Date(Date.parse(req.start)+minutes*60000).toISOString():null),
+        timezone:req.timezone,location:location?LOCATION_NAMES[location.kind]||null:null});
+    });
+  }
+  async googleEvent(c,id,req){
+    let ev;
+    try{ev=await this.fetchJson('https://www.googleapis.com/calendar/v3/calendars/primary/events/'+id,{headers:{Authorization:'Bearer '+c.accessToken}});}
+    catch(e){if(e.status===404||e.status===410)return null;throw e;}
+    if(ev?.status==='cancelled')throw Error('The event for this booking key was cancelled; book with a new key');
+    if(Date.parse(ev?.start?.dateTime)!==Date.parse(req.start)||!(ev?.attendees||[]).some(a=>String(a.email).toLowerCase()===req.email))throw Error('An event with this booking id exists for another time or attendee');
+    return googleBooked(ev,req);
+  }
+  finish(workspace,req,fp,result){
+    this.store.putBooking(workspace,req.idempotencyKey,'booked',{fingerprint:fp,start:req.start,result},this.now());
+    // Every booking is logged (no prospect email in the log).
+    this.log({event:'booking',workspace,provider:result.provider,eventId:result.eventId,start:result.start});
+    return {...result,idempotent:false};
   }
 }

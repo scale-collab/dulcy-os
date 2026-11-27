@@ -9,10 +9,10 @@ const equal=(a,b)=>typeof a==='string'&&typeof b==='string'&&a.length===b.length
 // Admin calls must come from the authenticated n8n bridge. Client tickets can only
 // configure the single workspace and account email that an operator invited.
 export class CalendarFlow {
- constructor({store,apps,origin,fetchJson=providerJson,now=()=>Date.now()}){
+ constructor({store,apps,origin,fetchJson=providerJson,now=()=>Date.now(),log}){
   const u=new URL(origin);if(u.protocol!=='https:'||u.pathname!=='/'||u.search||u.hash||u.username||u.password)throw Error('Fixed HTTPS origin required');
   this.store=store;this.apps=apps;this.origin=u.origin;this.now=now;this.fetchJson=fetchJson;
-  this.provider=new CalendarProvider({store,apps,fetchJson,now});
+  this.provider=new CalendarProvider({store,apps,fetchJson,now,...(log?{log}:{})});
   store.db.exec(`CREATE TABLE IF NOT EXISTS calendar_invites(hash TEXT PRIMARY KEY,workspace TEXT NOT NULL,payload TEXT NOT NULL,expires INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS calendar_sessions(hash TEXT PRIMARY KEY,workspace TEXT NOT NULL,payload TEXT NOT NULL,expires INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS calendar_invite_requests(hash TEXT PRIMARY KEY,workspace TEXT NOT NULL,payload TEXT NOT NULL,expires INTEGER NOT NULL);`);
