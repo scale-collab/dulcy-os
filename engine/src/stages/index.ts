@@ -60,6 +60,9 @@ const selfTest: Stage = async (ctx) => {
 };
 
 export const STAGES: Record<string, StageDef> = {
+  // Batch 3 (HQ inbox limits + the new-client ramp). Loaded on use: the module reads STAGES itself.
+  'inbox.limits': { run: async (ctx) => (await import('../hq/inboxLimits.js')).inboxLimitsStage(ctx), deadlineMs: 5 * 60_000, maxAttempts: 3, description: 'HQ: set the cold daily limit and/or warm-up limit of the chosen inboxes in EmailBison (owner-approved in HQ; receipts first, never twice), mirror them on Email Accounts, log it.' },
+  'atlas.ramp': { run: async (ctx) => (await import('../hq/inboxLimits.js')).atlasRampStage(ctx), deadlineMs: 5 * 60_000, maxAttempts: 1, description: 'Atlas: daily new-client inbox ramp check (5/10 → 10/20 → 15/30 by weeks of sending). Proposes each step as a task waiting for Alex; never applies.' },
   'calendar.book': { run: async (ctx) => (await import('../agents/booking.js')).calendarBookStage(ctx), deadlineMs: 10 * 60_000, maxAttempts: 3, description: 'Echo: book the time the prospect agreed on the thread\'s own client calendar (live free/busy re-check, never twice), record it like any booked meeting, close the follow-ups, then queue the confirmation reply. Taken or failed = nothing sent.' },
   'reply.send': { run: replySendStage, deadlineMs: 10 * 60_000, maxAttempts: 3, description: 'Send one approved reply from its Airtable row (every workspace, client CC/BCC), then update the row, Reply Learning and Slack. Never sends twice.' },
   'ada.brief': { run: adaBriefStage, deadlineMs: 10 * 60_000, maxAttempts: 2, description: 'Ada: weekday morning brief in Slack (waiting on Alex, overnight replies and meetings, campaign and account health, agent activity, top 3). Fridays add the weekly scorecard. Read only.' },

@@ -74,6 +74,12 @@ export async function startFakeBison(): Promise<FakeBison> {
       for (const id of bd.sender_email_ids ?? []) ((s as any).dailyLimits ??= {})[String(id)] = Number(bd.daily_limit);
       return json(res, 200, { data: { success: true } });
     }
+    if (u.pathname === '/api/warmup/sender-emails/update-daily-warmup-limits' && req.method === 'PATCH') {
+      const bd = body(); if ((s as any).rejectWarmup) return json(res, 422, { message: 'The daily limit field is invalid.' });
+      for (const id of bd.sender_email_ids ?? []) ((s as any).warmupLimits ??= {})[String(id)] = Number(bd.daily_limit);
+      ((s as any).limitTeams ??= []).push(team);
+      return json(res, 200, { data: { success: true } });
+    }
     if ((x = m(/^\/api\/sender-emails\/(\d+)$/)) && req.method === 'GET') return json(res, 200, { data: { id: Number(x[1]), email: `inbox${x[1]}@dulcy-mail.com` } });
     if ((x = m(/^\/api\/replies\/(\d+)\/reply$/)) && req.method === 'POST') { ((s as any).repliesSent ??= []).push({ replyId: Number(x[1]), team, ...body() }); return json(res, 200, { data: { success: true, reply: { id: 9000 + ((s as any).repliesSent.length) } } }); }
     if (req.method === 'GET' && u.pathname === '/api/workspaces') return json(res, 200, { data: (s as any).workspaces ?? [{ id: 2, name: 'Dulcy' }] });

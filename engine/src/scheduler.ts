@@ -151,6 +151,8 @@ export async function agentsTick(db: Db, cfg: Config, now = new Date()): Promise
   }
   // HQ: Atlas's own to-do list (campaigns past 60%), every 30 minutes while HQ is on.
   if (cfg.hqSessionSecret && cfg.airtableApiKey) n += await q('atlas.tasks', `atlas-tasks:${Math.floor(now.getTime() / (30 * 60_000))}`);
+  // Batch 3: the new-client inbox ramp check, once a day (it only proposes; Alex applies in HQ).
+  if (cfg.hqSessionSecret && cfg.airtableApiKey) n += await q('atlas.ramp', `atlas-ramp:${date}`);
   if (cfg.rileyOn && cfg.rileyEveryMin > 0) n += await q('riley.collect', `riley:${Math.floor(now.getTime() / (cfg.rileyEveryMin * 60_000))}`);
   if (cfg.coleOn && cfg.fathomApiKey && cfg.coleEveryMin > 0) n += await q('cole.review', `cole:${Math.floor(now.getTime() / (cfg.coleEveryMin * 60_000))}`);
   // Alex 2026-11-25: ideas land Friday morning (for the next Friday's recording); scripts Thursday.

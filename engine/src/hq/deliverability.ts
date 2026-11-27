@@ -645,3 +645,11 @@ export async function deliverabilityView(at: HqAirtable, db: Db, cfg: Cfg, view:
   if (view === 'domains') return domainsView(m, src, client);
   return attentionView(m, client);
 }
+
+/** Batch 3: each inbox's status by its Email Accounts record (for Campaigns' "sending accounts"). Never throws: null when Deliverability cannot be read. */
+export async function inboxIndex(at: HqAirtable, db: Db, cfg: Cfg): Promise<Map<string, { status: Health; warmupOff: boolean; email: string; dailyLimit: number | null; warmupLimit: number | null; warmup: number | null; score: number | null }> | undefined> {
+  try {
+    const m = buildDeliverability(await cachedDeliv(at, db), cfg);
+    return new Map(m.inboxes.map((i) => [i.id, { status: i.status, warmupOff: i.warmupOff, email: i.email, dailyLimit: i.dailyLimit, warmupLimit: i.warmupLimit, warmup: i.warmup, score: i.score }]));
+  } catch { return undefined; }
+}
