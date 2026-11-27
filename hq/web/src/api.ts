@@ -299,6 +299,48 @@ export interface TeamBoard {
   filters: { agent: string | null; client: string; status: BoardStatus; due: BoardDue };
   agents: BoardAgent[]; tasks: AgentTask[]; deadlines: AgentTask[]; activity: BoardEvent[]; clients: string[];
 }
+// ---------- Sales, Batch 4a (owner only): periods, capacity, hottest deals, call review, contract draft ----------
+export interface SalesReviewLite { id: number; score: number | null; temperature: string; verdict: string; nextStep: string; created: string; link: string }
+/** /sales rows (and pipeline rows) now carry the latest call review and Cole's next step. */
+export type SalesDealLite4a = SalesDealLite & { review: SalesReviewLite | null; coleNext: string };
+export type SalesView4a = Omit<SalesView, 'action' | 'pipeline'> & {
+  action: SalesDealLite4a[]; pipeline: Omit<SalesView['pipeline'], 'stages'> & { stages: { key: SalesStage; label: string; count: number; deals: SalesDealLite4a[] }[] }; xeroConnected: boolean;
+};
+export type SalesMetricKey = 'booked' | 'showed' | 'qualified' | 'sent' | 'signed' | 'paid';
+export interface SalesDelta { now: number; prev: number; diff: number; dir: 'up' | 'down' | 'same' }
+export interface SalesPeriod { key: 'month' | 'half' | 'year'; title: string; nowLabel: string; prevLabel: string; rows: (SalesDelta & { key: SalesMetricKey; label: string })[]; money?: SalesDelta & { unknownNow: number; unknownPrev: number } }
+export interface SalesCapacitySettings { calendars: number; slotMinutes: number; slotsPerMonth: number | null }
+export interface SalesCapacity {
+  calendars: number; slotMinutes: number; open: { n: number | null; source: 'calendar' | 'setting' | 'none'; note: string }; bookedNext30: number; availability: number | null;
+  booked: SalesRate | null; bookedPct: number | null; showRate: SalesRate; qualifiedRate: SalesRate; closeRate: SalesRate;
+  daysToClose: { median: number | null; n: number; text: string }; touchesPerClose: { avg: number | null; n: number; source: 'close' | 'none'; note: string };
+  atCapacity: { calls: number; shows: number; closes: number; text: string } | null; limit: { key: 'calendar' | 'show' | 'close' | 'volume' | 'unknown'; text: string };
+}
+export interface SalesHotDeal {
+  key: string; name: string; company: string; score: number; reasons: string[]; next: string; status: string; source: 'close' | 'hq' | 'both';
+  lastTouch: { day: string; what: string; snippet: string } | null; dealId: string; closeUrl: string; value?: number | null; valuePeriod?: string;
+}
+export interface SalesInsights {
+  today: string; periods: SalesPeriod[]; conclusion: string; capacity: SalesCapacity; settings: SalesCapacitySettings; hottest: SalesHotDeal[];
+  close: { connected: boolean; ok: boolean; error: string; readAt: string; open: number | null };
+}
+export type SalesAgreement4a = SalesAgreement & { primary: boolean; why: string };
+export type SalesDetail4a = Omit<SalesDetail, 'deal' | 'links' | 'tasks'> & {
+  deal: Omit<SalesDeal, 'agreements'> & { agreements: SalesAgreement4a[]; review: SalesReviewLite | null; coleNext: string; closeLead: string; paidDay: string; stages: Record<SalesStage, boolean> };
+  links: { close: string; agreements: { id: string; tool: string; title: string; state: AgreementState; url: string; reviewDoc: string }[] };
+};
+export type SalesDealType = 'retainer' | 'per_call' | 'both';
+export interface SalesContractDraft {
+  dealType: SalesDealType; monthly: number | null; perCall: number | null; initialFee: number | null; startDate: string;
+  signerName: string; signerEmail: string; legalName: string; company: string; address: string; service: string; scope: string; term: string; specialTerms: string;
+  channels: { linkedin: boolean; aiCaller: boolean; directMail: boolean };
+}
+export interface SalesSavedDraft { id: number; dealId: string; status: 'saved' | 'creating' | 'created' | 'failed'; input: SalesContractDraft; contractsRec: string; error: string; by: string; created: string; updated: string }
+export interface SalesContractForm {
+  deal: { id: string; name: string; company: string; email: string; closeLead: string; client: { id: string; name: string; status: string } | null; agreement: { state: AgreementState; tool: string; title: string } | null };
+  draft: SalesContractDraft; saved: SalesSavedDraft | null; missing: string[]; types: { key: SalesDealType; label: string }[];
+}
+
 /* ---------- Content, Batch 5 (2026-11-27): laid out like the Airtable Content Center ----------
  * The server no longer sends the per-record `airtable` links listed in the Step 3 Content types above. */
 export type ContentCcStage = 'Idea' | 'Script' | 'Record' | 'Edit' | 'Finalize' | 'Thumbnail' | 'Upload' | 'Clips' | 'Distribute' | 'Published';

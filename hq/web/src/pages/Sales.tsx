@@ -1,9 +1,15 @@
-// Sales (owner only): Dulcy's own deals from booked call to signed and paid. What needs action
-// first; the pipeline and each deal one tap deeper. Read only: the buttons only open Close, the
-// Airtable record or the signing tool. Money comes from the server for the owner only.
+// Sales (owner only): Dulcy's own deals from booked call to signed and paid. What needs action first;
+// the hottest deals, the numbers (periods and capacity), the pipeline and each deal one tap deeper.
+// Batch 4a (Alex 2026-11-27): no Airtable links, no SignWell, no client tasks. The one write here is
+// "Draft contract" (its own page): a DRAFT in Dulcy Sign, never sent. Money comes from the server for
+// the owner only.
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { api, ApiError, type SalesAction, type SalesActionKind, type SalesDealLite, type SalesDetail, type SalesMonth, type SalesNote, type SalesStage, type SalesView, type User } from '../api';
-import { Avatar, BackLink, Card, cx, Empty, ErrorBox, ExtLink, go, Icon, IconButton, Label, PageSkeleton, PageTitle, Pill, SectionHeader, setCount, timeAgo, usd } from '../ui';
+import {
+  api, ApiError, type SalesAction, type SalesActionKind, type SalesCapacity, type SalesCapacitySettings, type SalesDealLite4a, type SalesDetail4a, type SalesHotDeal, type SalesInsights,
+  type SalesMonth, type SalesNote, type SalesPeriod, type SalesRate, type SalesReviewLite, type SalesStage, type SalesView4a, type User,
+} from '../api';
+import { Avatar, BackLink, Button, Card, cx, Empty, ErrorBox, ExtLink, go, Icon, IconButton, Label, PageSkeleton, PageTitle, Pill, SectionHeader, setCount, timeAgo, usd } from '../ui';
+import SalesContract from './SalesContract';
 
 const ACTION: Record<SalesActionKind, { label: string; tone: 'bad' | 'warn' | 'info' | 'accent' | 'good' }> = {
   call_today: { label: 'Call today', tone: 'accent' }, call_tomorrow: { label: 'Tomorrow', tone: 'info' }, no_outcome: { label: 'No outcome', tone: 'warn' },
@@ -14,24 +20,33 @@ const STATE_LABEL: Record<string, string> = { draft: 'Draft', sent: 'Sent', view
 const STATE_TONE: Record<string, 'good' | 'warn' | 'bad' | 'info' | 'plain'> = { signed: 'good', viewed: 'info', sent: 'info', draft: 'plain', declined: 'bad', expired: 'bad', error: 'bad', none: 'plain' };
 const day = (d: string) => (d ? new Date(`${d.slice(0, 10)}T12:00:00Z`).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric' }) : '');
 const when = (iso: string) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '');
-const VIEWS = [{ key: 'action', label: 'Needs action' }, { key: 'pipeline', label: 'Pipeline' }] as const;
+type View = 'action' | 'hot' | 'numbers' | 'pipeline';
+const VIEWS: { key: View; label: string }[] = [{ key: 'action', label: 'Needs action' }, { key: 'hot', label: 'Hottest' }, { key: 'numbers', label: 'Numbers' }, { key: 'pipeline', label: 'Pipeline' }];
+const viewPath = (v: View, days: number) => (v === 'action' ? 'sales' : v === 'pipeline' ? `sales/pipeline${days === 90 ? '/90' : ''}` : `sales/${v}`);
+/** Old SignWell / PandaDoc agreements still count; the tool name is history, not a link. */
+const toolLabel = (tool: string) => (tool === 'Dulcy Sign' ? 'Dulcy Sign' : 'Old agreement');
 
-/** #/sales[/pipeline[/90]] or #/sales/<record id>. */
+/** #/sales[/hot|/numbers|/pipeline[/90]] · #/sales/<record id> · #/sales/<record id>/contract */
 export default function Sales({ user, a, b }: { user: User; a?: string; b?: string }) {
   if (user.role !== 'owner') return <><PageTitle title="Sales" /><Card><Empty icon="lock" title="Owner only" sub="Sales has money in it, so only the owner sees it." /></Card></>;
-  if (a && /^rec[A-Za-z0-9]{14}$/.test(a)) return <DealPage id={a} />;
-  return <SalesHome view={a === 'pipeline' ? 'pipeline' : 'action'} days={b === '90' ? 90 : 30} />;
+  if (a && /^rec[A-Za-z0-9]{14}$/.test(a)) return b === 'contract' ? <SalesContract id={a} /> : <DealPage id={a} />;
+  const view: View = a === 'pipeline' || a === 'hot' || a === 'numbers' ? a : 'action';
+  return <SalesHome view={view} days={b === '90' ? 90 : 30} />;
 }
 
-function SalesHome({ view, days }: { view: 'action' | 'pipeline'; days: 30 | 90 }) {
-  const [d, setD] = useState<SalesView | null>(null);
+function SalesHome({ view, days }: { view: View; days: 30 | 90 }) {
+  const [d, setD] = useState<SalesView4a | null>(null);
+  const [ins, setIns] = useState<SalesInsights | null>(null);
   const [error, setError] = useState('');
+  const [insError, setInsError] = useState('');
   const [busy, setBusy] = useState(false);
+  const wantInsights = view === 'hot' || view === 'numbers';
   const load = useCallback((refresh = false) => {
     setBusy(true); setError('');
-    api<SalesView>(`/sales?days=${days}${refresh ? '&refresh=1' : ''}`).then((x) => { setD(x); setCount('sales', x.counts.action); })
+    api<SalesView4a>(`/sales?days=${days}${refresh ? '&refresh=1' : ''}`).then((x) => { setD(x); setCount('sales', x.counts.action); })
       .catch((e) => setError(e instanceof ApiError && e.status === 403 ? 'Only the owner sees Sales.' : e.message)).finally(() => setBusy(false));
-  }, [days]);
+    if (refresh || wantInsights) { setInsError(''); api<SalesInsights>(`/sales/insights${refresh ? '?refresh=1' : ''}`).then(setIns).catch((e) => setInsError(e.message)); }
+  }, [days, wantInsights]);
   useEffect(() => load(), [load]);
   const title = (
     <PageTitle title="Sales" kicker={d ? `Dulcy's own deals · ${d.counts.action} need action` : "Dulcy's own deals"} sub="Booked call to signed and paid. What needs action first."
@@ -47,7 +62,7 @@ function SalesHome({ view, days }: { view: 'action' | 'pipeline'; days: 30 | 90 
         {VIEWS.map((x) => {
           const on = x.key === view;
           return (
-            <button key={x.key} role="tab" aria-selected={on} onClick={() => go(x.key === 'action' ? 'sales' : `sales/pipeline${days === 90 ? '/90' : ''}`)}
+            <button key={x.key} role="tab" aria-selected={on} onClick={() => go(viewPath(x.key, days))}
               className={cx('flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-xl px-3.5 text-sm font-semibold transition', on ? 'bg-ink text-ink-fg shadow-card' : 'text-muted hover:bg-hover hover:text-fg')}>
               {x.label}
               {x.key === 'action' && <span className={cx('tabular rounded-full px-1.5 text-xs', on ? 'bg-ink-fg/15' : d.counts.action ? 'bg-accent text-accent-fg' : 'border border-line bg-sunken text-fg-2')}>{d.counts.action}</span>}
@@ -56,12 +71,20 @@ function SalesHome({ view, days }: { view: 'action' | 'pipeline'; days: 30 | 90 
         })}
       </div>
       <div className="mt-4">
-        {view === 'action' ? <ActionList rows={d.action} /> : <Pipeline p={d.pipeline} days={days} />}
+        {view === 'action' && <ActionList rows={d.action} />}
+        {view === 'pipeline' && <Pipeline p={d.pipeline} days={days} />}
+        {wantInsights && (insError && !ins ? <ErrorBox error={insError} retry={() => load()} /> : !ins ? <PageSkeleton kind="list" /> : view === 'hot' ? <Hottest ins={ins} /> : <Numbers ins={ins} onSaved={() => load(true)} />)}
       </div>
-      {d.notes.length > 0 && <div className="mt-6"><SectionHeader title="Data notes" icon="alert" right={<span className="text-xs text-muted">read only</span>} /><Notes notes={d.notes} fold={2} /></div>}
+      {d.notes.length > 0 && view !== 'hot' && view !== 'numbers' && (
+        <div className="mt-6">
+          <SectionHeader title="Data to fix" icon="alert" right={<span className="text-xs text-muted">{d.notes.length}</span>} />
+          <p className="-mt-1 mb-2 text-xs text-muted">Records in Airtable or Close that disagree. Fixing them at the source makes these numbers right; each says who fixes it.</p>
+          <Notes notes={d.notes} fold={2} />
+        </div>
+      )}
       <p className="mt-5 text-xs text-muted">
-        From Airtable (Sales Data, New Client Intake, Contracts, Call Feedback, Workspace IDs, Client Invoices) and Cole's reports, read {timeAgo(d.readAt) || 'just now'}; kept for 1 minute.
-        Not signed = sent {d.limits.unsignedDays}+ days ago. Calls and no-shows: the last {d.limits.callDays} days. HQ changes nothing here.
+        From Airtable (Sales Data, New Client Intake, Contracts, Call Feedback, Workspace IDs, Client Invoices){d.xeroConnected ? ', Xero payments' : ''} and Cole's call reviews, read {timeAgo(d.readAt) || 'just now'}; kept for 1 minute.
+        Not signed = sent {d.limits.unsignedDays}+ days ago. Calls and no-shows: the last {d.limits.callDays} days.
       </p>
     </div>
   );
@@ -98,14 +121,19 @@ function TopNumbers({ now, last }: { now: SalesMonth; last: SalesMonth }) {
 
 function ActionPill({ kind }: { kind: SalesActionKind }) { return <Pill tone={ACTION[kind].tone}>{ACTION[kind].label}</Pill>; }
 const flat = (x: string) => x.toLowerCase().replace(/^https?:\/\/(www\.)?/, '').replace(/\.[a-z]+\/?.*$/, '').replace(/[^a-z0-9]/g, '');
-const who = (d: SalesDealLite) => {
+const who = (d: { company: string; client: string }) => {
   const company = d.company.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/.*$/, '');
   const fc = flat(company), fl = flat(d.client);
   const client = d.client && (!fc || (!fl.includes(fc) && !fc.includes(fl))) ? d.client : '';
   return [company, client].filter(Boolean).join(' · ');
 };
+const TEMP_TONE: Record<string, 'bad' | 'warn' | 'info' | 'good' | 'plain'> = { hot: 'bad', warm: 'warn', cold: 'info', closed: 'good', lost: 'plain' };
+function ReviewPill({ r }: { r: SalesReviewLite | null }) {
+  if (!r) return null;
+  return <Pill tone={TEMP_TONE[r.temperature] ?? 'plain'} icon="sparkles">{`Call ${r.score ?? '?'}/10${r.temperature ? ` · ${r.temperature}` : ''}`}</Pill>;
+}
 
-function ActionList({ rows }: { rows: SalesDealLite[] }) {
+function ActionList({ rows }: { rows: SalesDealLite4a[] }) {
   if (!rows.length) return <Card><Empty icon="check" tone="good" title="Nothing needs action" sub="No call today, nothing unsigned, unpaid or waiting to onboard." /></Card>;
   return (
     <Card className="overflow-hidden p-0">
@@ -122,10 +150,12 @@ function ActionList({ rows }: { rows: SalesDealLite[] }) {
                     <span className="shrink-0"><ActionPill kind={top.kind} /></span>
                   </div>
                   <div className="mt-0.5 text-sm leading-snug text-fg-2">{top.text}</div>
+                  {r.coleNext && <div className="mt-1 text-sm leading-snug text-fg-2"><span className="font-semibold text-fg">Cole:</span> {r.coleNext}</div>}
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-muted">
                     <span className="font-medium text-fg-2">{top.owner}</span>
                     <span>· {r.stageLabel}</span>
                     {r.monthly ? <span className="tabular">· {usd(r.monthly)}/mo</span> : null}
+                    <ReviewPill r={r.review} />
                     {r.needs.slice(1).map((x) => <ActionPill key={x.kind} kind={x.kind} />)}
                   </div>
                 </div>
@@ -139,7 +169,165 @@ function ActionList({ rows }: { rows: SalesDealLite[] }) {
   );
 }
 
-function Pipeline({ p, days }: { p: SalesView['pipeline']; days: 30 | 90 }) {
+// ---------- Hottest deals ----------
+function Hottest({ ins }: { ins: SalesInsights }) {
+  const c = ins.close;
+  return (
+    <div className="space-y-3">
+      {!c.connected ? (
+        <Card className="border-warn/30 bg-warn-soft">
+          <div className="flex items-start gap-3">
+            <Icon name="link" size={18} className="mt-0.5 shrink-0 text-warn" />
+            <div className="min-w-0 text-sm leading-snug">
+              <div className="font-semibold text-fg">Connect Close</div>
+              <div className="text-fg-2">Close is not connected on the server, so emails, calls and notes from Close are not in this list. Add CLOSE_API_KEY to the server settings (Close → Settings → API Keys) and restart. Until then: contracts and Cole's call reviews only.</div>
+            </div>
+          </div>
+        </Card>
+      ) : c.error ? <Card className="border-bad-line bg-bad-soft"><div className="text-sm text-bad">Close did not answer: {c.error}. Showing contracts and Cole's call reviews only.</div></Card> : null}
+      {!ins.hottest.length ? <Card><Empty icon="flag" title="No hot deal right now" sub="Nobody said yes, opened a contract or had a hot call recently." /></Card> : (
+        <Card className="overflow-hidden p-0">
+          <ol className="divide-y divide-line">
+            {ins.hottest.map((h, i) => <HotRow key={h.key} h={h} rank={i + 1} />)}
+          </ol>
+        </Card>
+      )}
+      <p className="text-xs text-muted">
+        Ranked by: said yes (+40), opened or got the contract (+30 / +25), Cole's hot call (+25), waiting on us (+20), Close stage and likelihood, and how recent the last touch is.
+        {c.connected && c.ok ? ` ${c.open ?? 0} open opportunities in Close, read ${timeAgo(c.readAt) || 'just now'} (kept 5 minutes).` : ''}
+      </p>
+    </div>
+  );
+}
+function HotRow({ h, rank }: { h: SalesHotDeal; rank: number }) {
+  return (
+    <li className="px-4 py-3.5 sm:px-5">
+      <div className="flex items-start gap-3">
+        <span className="tabular grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-accent-soft text-sm font-bold text-accent-ink">{rank}</span>
+        <div className="min-w-0 flex-1">
+          <div className="break-words text-[15px] font-semibold leading-snug text-fg">{h.name || h.company}{h.name && h.company && <span className="font-normal text-muted"> · {h.company}</span>}</div>
+          <div className="mt-1 flex flex-wrap gap-1.5">{h.reasons.map((r) => <Pill key={r} tone={/^Said yes/.test(r) ? 'good' : /^Waiting/.test(r) ? 'warn' : /^No touch/.test(r) ? 'plain' : 'info'}>{r}</Pill>)}</div>
+          {h.lastTouch && (
+            <div className="mt-1.5 break-words text-sm leading-snug text-fg-2">
+              <span className="text-muted">{h.lastTouch.what} {day(h.lastTouch.day)}{h.lastTouch.snippet ? ': ' : ''}</span>{h.lastTouch.snippet && <span>“{h.lastTouch.snippet}”</span>}
+            </div>
+          )}
+          <div className="mt-1.5 text-sm leading-snug text-fg"><span className="font-semibold">Next:</span> {h.next}</div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {h.dealId && <Button onClick={() => go(`sales/${h.dealId}`)} icon="chevronRight">Open deal</Button>}
+            {h.dealId && <Button tone="accent" onClick={() => go(`sales/${h.dealId}/contract`)} icon="file">Draft contract</Button>}
+            {/^https:\/\//.test(h.closeUrl) && <ExtLink href={h.closeUrl} className="text-sm">Open in Close</ExtLink>}
+            {h.value ? <span className="tabular text-xs text-muted">{usd(h.value)}{h.valuePeriod === 'monthly' ? '/mo' : ''}</span> : null}
+          </div>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+// ---------- Numbers: periods and capacity ----------
+function Numbers({ ins, onSaved }: { ins: SalesInsights; onSaved: () => void }) {
+  const [k, setK] = useState<SalesPeriod['key']>('month');
+  const p = ins.periods.find((x) => x.key === k) ?? ins.periods[0];
+  return (
+    <div className="space-y-6">
+      <section>
+        <SectionHeader title="Compare periods" icon="activity" />
+        <Card className="mb-3 py-3.5"><div className="text-[15px] font-semibold leading-snug text-fg">{ins.conclusion}</div></Card>
+        <div role="radiogroup" aria-label="Period" className="grid grid-cols-3 gap-1 rounded-xl border border-line bg-sunken p-1">
+          {ins.periods.map((x) => (
+            <button key={x.key} role="radio" aria-checked={k === x.key} onClick={() => setK(x.key)}
+              className={cx('min-h-10 rounded-lg px-2 text-sm font-semibold transition', k === x.key ? 'bg-surface text-fg shadow-card' : 'text-muted hover:text-fg')}>{x.key === 'month' ? 'Month' : x.key === 'half' ? 'Half-year' : 'Year'}</button>
+          ))}
+        </div>
+        <Card className="mt-3 overflow-hidden p-0">
+          <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 border-b border-line px-4 py-2.5 text-xs font-medium text-muted sm:px-5">
+            <span>{p.title}</span><span className="w-16 text-right">{p.nowLabel.replace(' so far', '')}</span><span className="w-16 text-right">{p.prevLabel}</span><span className="w-14 text-right">Change</span>
+          </div>
+          <ul className="divide-y divide-line">
+            {p.rows.map((r) => <PeriodLine key={r.key} label={r.label} now={String(r.now)} prev={String(r.prev)} diff={r.diff} dir={r.dir} />)}
+            {p.money && <PeriodLine label="New monthly money" now={usd(p.money.now)} prev={usd(p.money.prev)} diff={p.money.diff} dir={p.money.dir} money note={p.money.unknownNow || p.money.unknownPrev ? `${p.money.unknownNow + p.money.unknownPrev} signed with no amount` : ''} />}
+          </ul>
+        </Card>
+        <p className="mt-2 text-xs text-muted">{p.nowLabel} vs {p.prevLabel}. Calls by call date, signed by signing date, paid by the first payment. Money = the monthly fee of deals signed in the period.</p>
+      </section>
+      <CapacityBlock c={ins.capacity} settings={ins.settings} onSaved={onSaved} />
+    </div>
+  );
+}
+function PeriodLine({ label, now, prev, diff, dir, money, note }: { label: string; now: string; prev: string; diff: number; dir: 'up' | 'down' | 'same'; money?: boolean; note?: string }) {
+  return (
+    <li className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 px-4 py-2.5 sm:px-5">
+      <span className="min-w-0"><span className="block truncate text-[15px] text-fg">{label}</span>{note && <span className="block truncate text-xs text-muted">{note}</span>}</span>
+      <span className="tabular w-16 text-right text-[15px] font-bold text-fg">{now}</span>
+      <span className="tabular w-16 text-right text-sm text-muted">{prev}</span>
+      <span className={cx('tabular inline-flex w-14 items-center justify-end gap-0.5 text-sm font-semibold', dir === 'up' ? 'text-good' : dir === 'down' ? 'text-bad' : 'text-muted')}>
+        {dir !== 'same' && <Icon name={dir === 'up' ? 'trendUp' : 'trendDown'} size={13} />}{dir === 'same' ? '=' : `${diff > 0 ? '+' : '−'}${money ? usd(Math.abs(diff)) : Math.abs(diff)}`}
+      </span>
+    </li>
+  );
+}
+function CapacityBlock({ c, settings, onSaved }: { c: SalesCapacity; settings: SalesCapacitySettings; onSaved: () => void }) {
+  const r = (x: SalesRate) => (x.of ? `${Math.round((x.n / x.of) * 100)}%` : '–');
+  const tiles: { label: string; v: string; sub: string }[] = [
+    { label: 'Calendars', v: String(c.calendars), sub: c.calendars === 1 ? "Alex's" : 'closers' },
+    { label: 'Open slots, 30 days', v: c.open.n === null ? '?' : String(c.open.n), sub: c.open.source === 'calendar' ? `free ${c.slotMinutes}-min slots` : c.open.source === 'setting' ? 'from the setting' : 'UNKNOWN' },
+    { label: 'Booked', v: c.bookedPct === null ? '–' : `${c.bookedPct}%`, sub: c.booked?.text ?? `${c.bookedNext30} calls booked` },
+    { label: 'Show rate', v: r(c.showRate), sub: c.showRate.text },
+    { label: 'Qualified', v: r(c.qualifiedRate), sub: c.qualifiedRate.text },
+    { label: 'Close rate', v: r(c.closeRate), sub: `${c.closeRate.text} (of shows)` },
+    { label: 'Days to close', v: c.daysToClose.median === null ? '?' : String(c.daysToClose.median), sub: c.daysToClose.median === null ? 'no signed deal yet' : `middle of ${c.daysToClose.n}` },
+    { label: 'Touches per close', v: c.touchesPerClose.avg === null ? '?' : String(c.touchesPerClose.avg), sub: c.touchesPerClose.source === 'close' ? `last ${c.touchesPerClose.n} won (Close)` : 'Connect Close' },
+  ];
+  const tone = c.limit.key === 'volume' ? 'info' : c.limit.key === 'unknown' ? 'plain' : 'warn';
+  return (
+    <section>
+      <SectionHeader title="Capacity" icon="calendar" right={<span className="text-xs text-muted">Closers.io math</span>} />
+      <Card className={cx('mb-3 py-3.5', tone === 'warn' ? 'border-warn/30 bg-warn-soft' : tone === 'info' ? 'border-info/25 bg-info-soft' : '')}>
+        <div className="text-[15px] font-semibold leading-snug text-fg">{c.limit.text}</div>
+        {c.atCapacity && <div className="mt-1 text-sm text-fg-2">A full calendar at today's rates: {c.atCapacity.text}.</div>}
+      </Card>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {tiles.map((t) => (
+          <div key={t.label} className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-card">
+            <div className="truncate text-xs font-medium text-muted">{t.label}</div>
+            <div className="tabular mt-1 text-[24px] font-bold leading-none tracking-tight text-fg">{t.v}</div>
+            <div className="mt-1.5 truncate text-xs text-muted" title={t.sub}>{t.sub}</div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-xs text-muted">{c.open.note}. Booked = calls in the next 30 days of all slots (booked + open). Rates: the last 90 days. {c.touchesPerClose.note}</p>
+      <CapacitySettingsForm s={settings} onSaved={onSaved} />
+    </section>
+  );
+}
+function CapacitySettingsForm({ s, onSaved }: { s: SalesCapacitySettings; onSaved: () => void }) {
+  const [v, setV] = useState({ calendars: String(s.calendars), slotMinutes: String(s.slotMinutes), slotsPerMonth: s.slotsPerMonth === null ? '' : String(s.slotsPerMonth) });
+  const [msg, setMsg] = useState('');
+  const save = () => {
+    setMsg('');
+    api('/sales/settings', { body: { calendars: Number(v.calendars), slotMinutes: Number(v.slotMinutes), slotsPerMonth: v.slotsPerMonth === '' ? null : Number(v.slotsPerMonth) } })
+      .then(() => { setMsg('Saved.'); onSaved(); }).catch((e) => setMsg(e.message));
+  };
+  const field = (k: keyof typeof v, label: string, help: string) => (
+    <label className="min-w-0 text-sm"><span className="block font-semibold text-fg">{label}</span><span className="block text-xs text-muted">{help}</span>
+      <input type="number" inputMode="numeric" value={v[k]} onChange={(e) => setV({ ...v, [k]: e.target.value })} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-surface px-3 text-[15px] text-fg outline-none focus:border-accent focus:ring-4 focus:ring-accent-soft" /></label>
+  );
+  return (
+    <details className="mt-3 rounded-2xl border border-line bg-surface">
+      <summary className="flex min-h-11 cursor-pointer items-center px-4 text-sm font-semibold text-fg-2 hover:bg-hover sm:px-5">Capacity settings</summary>
+      <div className="grid gap-3 px-4 pb-4 sm:grid-cols-3 sm:px-5">
+        {field('calendars', 'Calendars', 'People taking sales calls')}
+        {field('slotMinutes', 'Call length (minutes)', 'One slot = one call')}
+        {field('slotsPerMonth', 'Slots a month', 'Only used when the calendar cannot be read')}
+        <div className="flex items-center gap-3 sm:col-span-3"><Button tone="primary" onClick={save}>Save</Button>{msg && <span className="text-sm text-muted">{msg}</span>}</div>
+      </div>
+    </details>
+  );
+}
+
+// ---------- Pipeline ----------
+function Pipeline({ p, days }: { p: SalesView4a['pipeline']; days: 30 | 90 }) {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const max = Math.max(1, p.stages[0]?.count ?? 1);
   return (
@@ -166,10 +354,10 @@ function Pipeline({ p, days }: { p: SalesView['pipeline']; days: 30 | 90 }) {
               <li key={s.key}>
                 <button onClick={() => setOpen({ ...open, [s.key]: !isOpen })} aria-expanded={isOpen} disabled={!s.deals.length}
                   className="flex w-full items-center gap-3 px-4 py-3 text-left transition enabled:hover:bg-hover sm:px-5">
-                  <span className="w-28 shrink-0 text-sm font-semibold text-fg sm:w-32">{s.label}</span>
+                  <span className="w-24 shrink-0 text-sm font-semibold text-fg sm:w-32">{SHORT[s.key]}</span>
                   <span className="relative h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-line" aria-hidden="true"><span className="absolute inset-y-0 left-0 rounded-full bg-accent" style={{ width: `${Math.round((s.count / max) * 100)}%` }} /></span>
                   <span className="tabular w-8 shrink-0 text-right text-[15px] font-bold text-fg">{s.count}</span>
-                  <span className="w-20 shrink-0 text-right text-xs text-muted">{s.deals.length ? `${s.deals.length} here` : ''}</span>
+                  <span className="w-16 shrink-0 text-right text-xs text-muted sm:w-20">{s.deals.length ? `${s.deals.length} here` : ''}</span>
                   <Icon name="chevronDown" size={16} className={cx('shrink-0 text-faint transition', !s.deals.length && 'invisible', isOpen && 'rotate-180')} />
                 </button>
                 {isOpen && s.deals.length > 0 && (
@@ -180,6 +368,7 @@ function Pipeline({ p, days }: { p: SalesView['pipeline']; days: 30 | 90 }) {
                           <div className="min-w-0 flex-1">
                             <div className="truncate text-sm font-medium text-fg">{d.name}{who(d) && <span className="font-normal text-muted"> · {who(d)}</span>}</div>
                             <div className="truncate text-xs text-muted">{[d.callDate ? `call ${day(d.callDate)}` : 'no call in Sales Data', d.airtableStage, d.lost ? 'lost' : ''].filter(Boolean).join(' · ')}</div>
+                            {d.coleNext && <div className="truncate text-xs text-fg-2">Cole: {d.coleNext}</div>}
                           </div>
                           {d.needs[0] && <ActionPill kind={d.needs[0].kind} />}
                           <Icon name="chevronRight" size={16} className="shrink-0 text-faint" />
@@ -219,7 +408,7 @@ function Notes({ notes, fold }: { notes: SalesNote[]; fold?: number }) {
             <div className="flex items-start gap-2.5">
               <Icon name="alert" size={16} className="mt-0.5 shrink-0 text-warn" />
               <div className="min-w-0 flex-1 space-y-1">
-                <div className="font-semibold text-fg">{n.problem}</div>
+                <div className="font-semibold text-fg">{n.problem} <span className="font-normal text-muted">· {n.owner}</span></div>
                 <div className="break-words text-fg-2"><span className="text-muted">Data: </span>{n.data}</div>
                 <div className="break-words text-fg-2"><span className="text-muted">Fix: </span>{n.fix}</div>
                 <div className="break-words text-muted">Why: {n.why}</div>
@@ -228,16 +417,17 @@ function Notes({ notes, fold }: { notes: SalesNote[]; fold?: number }) {
           </li>
         ))}
       </ul>
-      {fold !== undefined && notes.length > fold && <button onClick={() => setAll(!all)} className="mt-1.5 min-h-9 text-sm font-semibold text-accent-ink hover:underline">{all ? 'Show fewer notes' : `Show ${notes.length - fold} more data note${notes.length - fold === 1 ? '' : 's'}`}</button>}
+      {fold !== undefined && notes.length > fold && <button onClick={() => setAll(!all)} className="mt-1.5 min-h-9 text-sm font-semibold text-accent-ink hover:underline">{all ? 'Show fewer' : `Show ${notes.length - fold} more`}</button>}
     </>
   );
 }
 
 // ---------- One deal ----------
 function DealPage({ id }: { id: string }) {
-  const [d, setD] = useState<SalesDetail | null>(null);
+  const [d, setD] = useState<SalesDetail4a | null>(null);
   const [error, setError] = useState('');
-  const load = useCallback(() => { setError(''); api<SalesDetail>(`/sales/${encodeURIComponent(id)}`).then(setD).catch((e) => setError(e.message)); }, [id]);
+  const [others, setOthers] = useState(false);
+  const load = useCallback(() => { setError(''); api<SalesDetail4a>(`/sales/${encodeURIComponent(id)}`).then(setD).catch((e) => setError(e.message)); }, [id]);
   useEffect(load, [load]);
   const back = <BackLink label="Sales" onClick={() => (window.history.length > 1 ? window.history.back() : go('sales'))} />;
   if (error) return <>{back}<ErrorBox error={error} retry={load} /></>;
@@ -245,6 +435,9 @@ function DealPage({ id }: { id: string }) {
   const x = d.deal;
   const company = x.company.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, '');
   const sign = d.links.agreements.find((a) => a.url);
+  const current = x.agreements.filter((g) => g.primary);
+  const rest = x.agreements.filter((g) => !g.primary);
+  const r = x.review;
   return (
     <div>
       {back}
@@ -262,13 +455,18 @@ function DealPage({ id }: { id: string }) {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0 sm:flex-wrap">
+            {!x.stages.signed && !x.lost && <Button tone="accent" icon="file" onClick={() => go(`sales/${x.id}/contract`)}>Draft contract</Button>}
             <LinkButton href={d.links.close} icon="external">Close</LinkButton>
-            <LinkButton href={d.links.airtable || d.links.agreements[0]?.airtable || ''} icon="database">Airtable</LinkButton>
-            {sign && <LinkButton href={sign.url} icon="pen">{sign.tool}</LinkButton>}
-            <LinkButton href={d.links.client} icon="briefcase">Client record</LinkButton>
+            {sign && <LinkButton href={sign.url} icon="pen">Dulcy Sign</LinkButton>}
           </div>
         </div>
-        {x.needs.length > 0 && <ul className="mt-5 space-y-2">{x.needs.map((n) => <NeedLine key={n.kind} n={n} />)}</ul>}
+        {x.coleNext && (
+          <div className="mt-5 flex items-start gap-3 rounded-xl bg-accent-soft px-3.5 py-3 text-sm leading-snug">
+            <Avatar name="Cole" size="sm" />
+            <div className="min-w-0 flex-1"><div className="font-semibold text-fg">Cole's next step</div><div className="text-fg-2">{x.coleNext}</div></div>
+          </div>
+        )}
+        {x.needs.length > 0 && <ul className="mt-3 space-y-2">{x.needs.map((n) => <NeedLine key={n.kind} n={n} />)}</ul>}
         <div className="mt-6">
           <Label className="mb-2">Stages</Label>
           <ol aria-label="Stages" className="grid grid-cols-7 gap-1">
@@ -284,6 +482,23 @@ function DealPage({ id }: { id: string }) {
       </Card>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <Section title="Latest call review" icon="sparkles">
+          {r ? (
+            <button onClick={() => go(`report/${r.id}`)} className="flex w-full items-start gap-3 px-5 py-4 text-left transition hover:bg-hover">
+              <span className="tabular grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent-soft text-base font-bold text-accent-ink">{r.score ?? '?'}</span>
+              <span className="min-w-0 flex-1 space-y-1">
+                <span className="flex flex-wrap items-center gap-1.5"><span className="text-xs text-muted">{when(r.created)}</span>{r.temperature && <Pill tone={TEMP_TONE[r.temperature] ?? 'plain'}>{r.temperature}</Pill>}</span>
+                <span className="block text-[15px] text-fg">{r.verdict}</span>
+                {r.nextStep && !/^none$/i.test(r.nextStep) && <span className="block text-sm text-fg-2"><span className="text-muted">Agreed on the call: </span>{r.nextStep}</span>}
+                <span className="block text-xs text-muted">Tap for the 3 fixes and the follow-up draft</span>
+              </span>
+              <Icon name="chevronRight" size={16} className="mt-1 text-faint" />
+            </button>
+          ) : <Quiet>No call review from Cole for this deal yet{x.prep ? '' : ' (and no prep)'}. Cole reviews each recorded sales call from Fathom.</Quiet>}
+          {x.reviews.length > 1 && <div className="border-t border-line px-5 py-2.5 text-xs text-muted">{x.reviews.length - 1} older review{x.reviews.length === 2 ? '' : 's'}: {x.reviews.slice(1).map((y) => `${when(y.created)} ${y.score ?? '?'}/10`).join(' · ')}</div>}
+          {x.prep && <button onClick={() => go(`report/${x.prep!.id}`)} className="flex min-h-11 w-full items-center gap-2 border-t border-line px-5 text-sm font-semibold text-accent-ink hover:bg-hover">Cole's prep for the call<Icon name="chevronRight" size={15} /></button>}
+        </Section>
+
         <Section title="Calls" icon="clock">
           {d.calls.length ? (
             <ul className="divide-y divide-line">
@@ -299,43 +514,20 @@ function DealPage({ id }: { id: string }) {
           <div className="border-t border-line px-5 py-3 text-xs text-muted">{[x.source && `Source: ${x.source}`, x.rep && `Rep: ${x.rep}`, x.campaign && `Campaign: ${x.campaign}`, x.bookedAt && `booked ${when(x.bookedAt)}`].filter(Boolean).join(' · ') || 'No booking details stored.'}</div>
         </Section>
 
-        <Section title="Cole's review" icon="sparkles">
-          {x.reviews.length ? (
-            <ul className="divide-y divide-line">
-              {x.reviews.map((r) => (
-                <li key={r.id}>
-                  <button onClick={() => go(`report/${r.id}`)} className="flex w-full items-start gap-3 px-5 py-3 text-left transition hover:bg-hover">
-                    <span className="tabular grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-[15px] font-bold text-accent-ink">{r.score ?? '?'}</span>
-                    <span className="min-w-0 flex-1"><span className="block truncate text-[15px] font-medium text-fg">{r.title}</span><span className="block text-sm text-fg-2">{r.summary}</span><span className="text-xs text-muted">{when(r.created)} · score and 3 fixes</span></span>
-                    <Icon name="chevronRight" size={16} className="mt-1 text-faint" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : <Quiet>No call review from Cole for this deal yet{x.prep ? '' : ' (and no prep)'}.</Quiet>}
-          {x.prep && <button onClick={() => go(`report/${x.prep!.id}`)} className="flex min-h-11 w-full items-center gap-2 border-t border-line px-5 text-sm font-semibold text-accent-ink hover:bg-hover">Cole's prep for the call<Icon name="chevronRight" size={15} /></button>}
-        </Section>
-
         <Section title="Contract" icon="file">
           {x.agreements.length ? (
-            <ul className="divide-y divide-line">
-              {x.agreements.map((g) => {
-                const link = d.links.agreements.find((l) => l.id === g.id);
-                return (
-                  <li key={g.id} className="px-5 py-3">
-                    <div className="flex flex-wrap items-center gap-1.5"><span className="min-w-0 break-words text-[15px] font-medium text-fg">{g.title}</span><Pill tone={STATE_TONE[g.state]}>{STATE_LABEL[g.state]}</Pill><Pill>{g.tool}</Pill></div>
-                    <div className="mt-1 text-xs text-muted">{[g.signer, g.review, g.sentAt && `sent ${when(g.sentAt)}`, g.viewedAt && `viewed ${when(g.viewedAt)}`, g.clientSignedAt && `client signed ${when(g.clientSignedAt)}`, g.signedAt && `signed ${when(g.signedAt)}`, g.monthly ? `${usd(g.monthly)}/mo` : ''].filter(Boolean).join(' · ')}</div>
-                    {g.error && <div className="mt-1 break-words text-xs text-bad">{g.error}</div>}
-                    <div className="mt-1.5 flex flex-wrap gap-3 text-sm">
-                      {link?.url && <ExtLink href={link.url}>Open in {g.tool}</ExtLink>}
-                      {link?.reviewDoc && <ExtLink href={link.reviewDoc}>Review document</ExtLink>}
-                      {link?.airtable && <ExtLink href={link.airtable}>Airtable</ExtLink>}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : <Quiet>No agreement yet (New Client Intake or Dulcy Sign).</Quiet>}
+            <>
+              <ul className="divide-y divide-line">{current.map((g) => <AgreementLine key={g.id} g={g} links={d.links.agreements} />)}</ul>
+              {rest.length > 0 && (
+                <div className="border-t border-line">
+                  <button onClick={() => setOthers(!others)} aria-expanded={others} className="flex min-h-11 w-full items-center gap-2 px-5 text-left text-sm font-semibold text-fg-2 hover:bg-hover">
+                    {rest.length} other record{rest.length === 1 ? '' : 's'} for this deal (why)<Icon name="chevronDown" size={15} className={cx('transition', others && 'rotate-180')} />
+                  </button>
+                  {others && <ul className="divide-y divide-line border-t border-line bg-sunken">{rest.map((g) => <AgreementLine key={g.id} g={g} links={d.links.agreements} folded />)}</ul>}
+                </div>
+              )}
+            </>
+          ) : <Quiet>No agreement yet. Use "Draft contract" to make one in Dulcy Sign (it is not sent).</Quiet>}
         </Section>
 
         <Section title="Payment and onboarding" icon="check">
@@ -347,36 +539,48 @@ function DealPage({ id }: { id: string }) {
               </li>
             ))}
           </ol>
-          {x.money?.paidTotal ? <div className="border-t border-line px-5 py-3 text-xs text-muted">Paid invoices since signing: <span className="tabular font-semibold text-fg-2">{usd(x.money.paidTotal)}</span></div> : null}
-          {d.tasks.length > 0 && (
-            <details className="border-t border-line">
-              <summary className="flex min-h-11 cursor-pointer items-center px-5 text-sm font-semibold text-fg-2 hover:bg-hover">Client tasks ({d.tasks.length})</summary>
-              <ul className="space-y-1 px-5 pb-3">{d.tasks.map((t) => <li key={t.id} className="flex items-center justify-between gap-2 text-sm"><span className="min-w-0 truncate text-fg-2">{t.task}</span><Pill tone={t.stage === 'Done' ? 'good' : t.stage === 'Blocked' ? 'bad' : 'plain'}>{t.stage}</Pill></li>)}</ul>
-            </details>
-          )}
+          {x.money?.paidTotal ? <div className="border-t border-line px-5 py-3 text-xs text-muted">Paid since signing: <span className="tabular font-semibold text-fg-2">{usd(x.money.paidTotal)}</span></div> : null}
         </Section>
       </div>
 
-      <section className="mt-6">
-        <SectionHeader title="Call feedback" icon="message" />
-        <Card className="p-0">
-          {x.feedback.length ? (
+      {x.feedback.length > 0 && (
+        <section className="mt-6">
+          <SectionHeader title="Call feedback" icon="message" />
+          <Card className="p-0">
             <ul className="divide-y divide-line">
-              {x.feedback.map((f, i) => (
+              {x.feedback.map((f) => (
                 <li key={f.id} className="px-5 py-3">
-                  <div className="flex flex-wrap items-center gap-1.5 text-sm"><span className="tabular text-xs text-muted">{day(f.created)}</span>{f.status ? <Pill tone={/^qualified/i.test(f.status) ? 'good' : /no show|unqualified/i.test(f.status) ? 'warn' : 'plain'}>{f.status}</Pill> : <Pill tone="bad">No status</Pill>}{f.rating !== null && <span className="text-xs text-muted">rated {f.rating}/5</span>}{f.newDate && <span className="text-xs text-muted">new date {day(f.newDate)}</span>}<ExtLink href={d.links.feedback[i] ?? ''} className="ml-auto text-xs">Airtable</ExtLink></div>
+                  <div className="flex flex-wrap items-center gap-1.5 text-sm"><span className="tabular text-xs text-muted">{day(f.created)}</span>{f.status ? <Pill tone={/^qualified/i.test(f.status) ? 'good' : /no show|unqualified/i.test(f.status) ? 'warn' : 'plain'}>{f.status}</Pill> : <Pill tone="bad">No status</Pill>}{f.rating !== null && <span className="text-xs text-muted">rated {f.rating}/5</span>}{f.newDate && <span className="text-xs text-muted">new date {day(f.newDate)}</span>}</div>
                   {f.notes && <div className="mt-1 whitespace-pre-wrap break-words text-sm text-fg-2">{f.notes}</div>}
                 </li>
               ))}
             </ul>
-          ) : <Quiet>No Call Feedback row for this deal.</Quiet>}
-        </Card>
-      </section>
+          </Card>
+        </section>
+      )}
 
       {x.notes && <section className="mt-6"><SectionHeader title="Notes (Sales Data)" icon="pen" /><Card><div className="whitespace-pre-wrap break-words text-sm text-fg-2">{x.notes}</div></Card></section>}
-      {d.notes.length > 0 && <section className="mt-6"><SectionHeader title="Data notes" icon="alert" /><Notes notes={d.notes} /></section>}
-      <p className="mt-6 text-xs text-muted">Read {timeAgo(d.readAt) || 'just now'} from Airtable and Cole's reports; kept for 1 minute. Links only: send, sign and charge stay in Close, the signing tool and Fanbasis.</p>
+      {d.notes.length > 0 && <section className="mt-6"><SectionHeader title="Data to fix" icon="alert" /><p className="-mt-1 mb-2 text-xs text-muted">Records that disagree for this deal; each says who fixes it at the source.</p><Notes notes={d.notes} /></section>}
+      <p className="mt-6 text-xs text-muted">Read {timeAgo(d.readAt) || 'just now'} from Airtable, Xero (when connected) and Cole's reviews; kept for 1 minute. Sending, signing and charging stay in Dulcy Sign, Close and Commas.</p>
     </div>
+  );
+}
+
+function AgreementLine({ g, links, folded }: { g: SalesDetail4a['deal']['agreements'][number]; links: SalesDetail4a['links']['agreements']; folded?: boolean }) {
+  const link = links.find((l) => l.id === g.id);
+  return (
+    <li className="px-5 py-3">
+      <div className="flex flex-wrap items-center gap-1.5"><span className="min-w-0 break-words text-[15px] font-medium text-fg">{g.title}</span><Pill tone={STATE_TONE[g.state]}>{STATE_LABEL[g.state]}</Pill><Pill>{toolLabel(g.tool)}</Pill></div>
+      {folded && <div className="mt-1 text-sm text-fg-2">{g.why}</div>}
+      <div className="mt-1 text-xs text-muted">{[g.signer, g.review, g.sentAt && `sent ${when(g.sentAt)}`, g.viewedAt && `viewed ${when(g.viewedAt)}`, g.clientSignedAt && `client signed ${when(g.clientSignedAt)}`, g.signedAt && `signed ${when(g.signedAt)}`, g.monthly ? `${usd(g.monthly)}/mo` : ''].filter(Boolean).join(' · ')}</div>
+      {g.error && <div className="mt-1 break-words text-xs text-bad">{g.error}</div>}
+      {(link?.url || link?.reviewDoc) && (
+        <div className="mt-1.5 flex flex-wrap gap-3 text-sm">
+          {link?.url && <ExtLink href={link.url}>Open in Dulcy Sign</ExtLink>}
+          {link?.reviewDoc && <ExtLink href={link.reviewDoc}>Review document</ExtLink>}
+        </div>
+      )}
+    </li>
   );
 }
 
