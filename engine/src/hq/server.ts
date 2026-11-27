@@ -33,6 +33,7 @@ import { workSummary } from './agentTasks.js';
 import { actOnThread, listInbox, threadDetail } from './inbox.js';
 import { calendarInvite, replierDetail, saveReplier } from './replier.js';
 import { campaignDetail, listCampaigns, listLeadLists } from './campaigns.js';
+import { round2Campaigns } from './campaignRoutes.js';
 import { deliverabilityView, inboxIndex } from './deliverability.js';
 // Batch 3: inbox limits + ramp, bounce analytics, verification (Fix it is Batch 1's fixIt.ts).
 import { limitsView, requestLimitChange } from './inboxLimits.js';
@@ -468,8 +469,15 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       }
       // ---- Batch 3: Campaigns + Deliverability (lead lists, limits, ramp, bounces, verification) ----
       if (p === '/hq/api/campaigns/lists' && req.method === 'GET') {
-        json(res, 200, await listLeadLists(needAt(), db, { client: url.searchParams.get('client') ?? undefined, refresh: url.searchParams.get('refresh') === '1' }));
+        json(res, 200, await listLeadLists(needAt(), db, { client: url.searchParams.get('client') ?? undefined, refresh: url.searchParams.get('refresh') === '1', tests: url.searchParams.get('tests') === '1', old: url.searchParams.get('old') === '1' }));
         return true;
+      }
+      // Round 2 campaigns (2026-11-27): the Campaign Center + Lead List Center buttons, the sending
+      // accounts box, new campaigns (plans) and the copy. Reads for everyone; every press is owner only,
+      // needs confirm: true, and writes only what the Airtable button writes (centerActions.ts).
+      if (p.startsWith('/hq/api/campaigns/')) {
+        const r2 = await round2Campaigns(p, req, url, needAt, db, cfg, user, owner);
+        if (r2) { json(res, r2.status, r2.body); return true; }
       }
       m = p.match(/^\/hq\/api\/deliverability\/(bounces|verification|limits)$/);
       if (m && req.method === 'GET') {

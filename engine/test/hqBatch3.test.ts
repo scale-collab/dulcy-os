@@ -179,7 +179,9 @@ test('lead lists: in progress, done (60 days), failed; a list bought without a c
   assert.deepEqual([a.group, a.listOnly, a.client, a.step, a.progress, a.owner], ['building', true, 'MJJ Brilliant', 7, 0.4, 'Scout']);
   const d = leadListRow(rec('recLIST000000002A', { [LF.name]: 'Done', [LF.stage]: 'Ready', [LF.qa]: 'Passed', [LF.finalDirect]: 900, [LF.finalGeneric]: 300, [LLF.campaigns]: ['recCAMP000000001A'], [LLF.directVerifier]: 'LeadMagic', [LLF.genericVerifier]: 'MillionVerifier', [LLF.client]: ['recWS00000000001A'] }), clients, names)!;
   assert.deepEqual([d.group, d.leads, d.verifiers, d.campaigns, d.listOnly], ['done', 1200, 'LeadMagic + MillionVerifier', [{ id: 'recCAMP000000001A', name: 'MJJ - Jewelers' }], false]);
-  assert.equal(leadListRow(rec('recLIST000000003A', { [LF.stage]: 'Ready' }, ago(90)), clients, names), null, 'done long ago: left out');
+  const old = leadListRow(rec('recLIST000000003A', { [LF.stage]: 'Ready' }, ago(90)), clients, names)!;
+  assert.deepEqual([old.group, old.old, old.test], ['done', true, false], 'done long ago: kept but flagged (Round 2: the screen hides it unless asked)');
+  assert.equal(leadListRow(rec('recLIST000000007A', { [LF.name]: 'NJ Real Estate Test', [LF.stage]: 'Draft' }), clients, names)!.test, true, 'a test list by its name');
   assert.equal(leadListRow(rec('recLIST000000004A', { [LF.stage]: 'Archived' }), clients, names), null);
   assert.equal(leadListRow(rec('recLIST000000005A', { [LF.stage]: 'QA', [LLF.hide]: true }), clients, names), null);
   assert.deepEqual([leadListRow(rec('recLIST000000006A', { [LF.stage]: 'Failed', [LF.lastError]: 'DiscoLike 500' }), clients, names)!.group, leadListRow(rec('recLIST000000006A', { [LF.stage]: 'Failed' }), clients, names)!.owner], ['failed', 'Riley']);
@@ -284,7 +286,7 @@ function fixture() {
   };
   tables[CAMPAIGNS_T] = { recCAMPTWM000010A: { [KF.name]: 'TWM - Roofers', [KF.status]: 'Active', [KF.client]: ['recWSTWM00000010A'], [KF.sent]: 400, [KF.contacted]: 400, [KF.statusModified]: ago(9), [KF.emailAccounts]: ['recACCA000000001A', 'recACCD000000001A'], [KF.thesis]: '<p>Roofers who **lost** storm jobs</p>', [KF.approach]: 'Case Study', [KF.lists]: ['recLISTTWM000100A'] } };
   tables[LEAD_LISTS_T] = {
-    recLISTTWM000100A: { [LF.name]: 'Roofers', [LF.stage]: 'Uploaded', [LF.finalDirect]: 300, [LF.finalGeneric]: 100, [LLF.client]: ['recWSTWM00000010A'], [LLF.campaigns]: ['recCAMPTWM000010A'], [VL.directVerifier]: 'LeadMagic', [VL.genericVerifier]: 'MillionVerifier', [LF.completedAt]: ago(10) },
+    recLISTTWM000100A: { _created: ago(20), [LF.name]: 'Roofers', [LF.stage]: 'Uploaded', [LF.finalDirect]: 300, [LF.finalGeneric]: 100, [LLF.client]: ['recWSTWM00000010A'], [LLF.campaigns]: ['recCAMPTWM000010A'], [VL.directVerifier]: 'LeadMagic', [VL.genericVerifier]: 'MillionVerifier', [LF.completedAt]: ago(10) },
     recLISTONLY00010A: { [LF.name]: 'Just a list', [LF.stage]: 'Enrichment', [LLF.client]: ['recWSTWM00000010A'] },
     recLISTLFM000010A: { [LF.name]: 'Old client list', [LF.stage]: 'QA', [LLF.client]: ['recWSLFM00000010A'] },
   };

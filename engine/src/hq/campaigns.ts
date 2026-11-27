@@ -219,7 +219,24 @@ export interface CampaignRow {
   lastChange: string | null; needs: NeedLine[]; owner: AgentName | null; listIds: string[];
   /** Campaign Center columns: the strategy line and the sending accounts. */
   approach: string; strategy: string; launchDate: string; accounts: number; sending: SendingSummary | null;
+  /** Round 2: the Campaign Center stage section (Workflow Stage, live first); a test campaign by its name. */
+  section: SectionKey; test: boolean;
 }
+/** Round 2 (Alex 2026-11-27): campaigns by stage, as in the Airtable Campaign Center (Workflow Stage), live first. */
+export const SECTIONS = [
+  { key: 'live', label: 'Live', stages: [] as string[] },
+  { key: 'launch', label: 'Launch ready', stages: ['Launch Ready', 'Live'] },
+  { key: 'build', label: 'Approved: spintax and build', stages: ['Approved', 'Spintax in Progress', 'Build Ready'] },
+  { key: 'review', label: 'Client review', stages: ['Client Review', 'Changes Requested'] },
+  { key: 'internal', label: 'Internal review', stages: ['Internal Review'] },
+  { key: 'draft', label: 'Strategy draft', stages: ['Strategy Draft'] },
+  { key: 'none', label: 'No stage set', stages: [] as string[] },
+] as const;
+export type SectionKey = (typeof SECTIONS)[number]['key'];
+/** Which section a campaign sits in. Pure. */
+export const sectionOf = (group: Group, stage: string): SectionKey => (group === 'live' ? 'live' : SECTIONS.find((x) => (x.stages as readonly string[]).includes(stage))?.key ?? 'none');
+/** A test by its name ("NJ Real Estate Test", "ENGINE TEST - bridge check"). Pure. */
+export const isTest = (name: string) => /\b(test|testing|tests)\b|engine test|bridge check|\bdemo\b|\bsandbox\b/i.test(name);
 /** The campaign's sending inboxes by status (from Deliverability), when that read is there. */
 export interface SendingSummary { total: number; healthy: number; risk: number; spam: number; resting: number; warmupOff: number; unknown: number }
 export interface InboxLite { status: 'healthy' | 'risk' | 'spam' | 'resting'; warmupOff: boolean; email: string; dailyLimit: number | null; warmupLimit: number | null; warmup: number | null; score: number | null }
@@ -277,6 +294,7 @@ export function buildRows(src: CampaignsSource, now = Date.now(), inboxes?: Map<
       planned: !!next && !PLAN_ENDED.has(next.state), steps, now: cur ? { key: cur.key, label: cur.label, note: cur.note, state: cur.state } : null,
       lastChange, needs, owner: needs[0]?.agent ?? null, listIds: c.listIds,
       approach: c.approach, strategy: c.thesis.slice(0, 220), launchDate: c.launchDate, accounts: c.accountIds.length, sending: sendingOf(c.accountIds, inboxes),
+      section: sectionOf(group, c.stage), test: isTest(c.name),
     };
   });
 }
@@ -396,6 +414,7 @@ export async function listCampaigns(at: Pick<HqAirtable, 'list'>, db: Db, opts: 
     client, clients: [...byKey.values()].sort((a, b) => b.action - a.action || a.name.localeCompare(b.name)),
     notes: campaignNotes(client ? all.filter((r) => r.clientKey === client) : all),
     channels: CHANNELS, limits: CAMPAIGN_LIMITS, agencyPerThousand: agencyRate ? Math.round(agencyRate * 10_000) / 10 : null, readAt: src.readAt,
+    sections: SECTIONS.map((x) => ({ key: x.key, label: x.label })),
   };
 }
 
@@ -419,13 +438,14 @@ export async function campaignActivity(at: Pick<HqAirtable, 'list'>, c: { id: st
   const [recent, own] = await Promise.all([
     cachedList('recent', () => at.list(ACTIVITY, 'TRUE()', ACT_FIELDS, 500, { sortField: AF.when, sortDesc: true })).catch(() => [] as AirtableRecord[]),
     // The Activity Log's link field is named "Campaign" (UNKNOWN until checked live); a wrong name only drops this second read.
-    cachedList(`c:${c.id}`, () => at.list(ACTIVITY, `FIND('${q(c.name)}',ARRAYJOIN({Campaign}))`, ACT_FIELDS, 200, { sortField: AF.when, sortDesc: true })).catch(() => [] as AirtableRecord[]),
+    // A lead list on its own (no campaign id) reads only the shared newest rows.
+    c.id ? cachedList(`c:${c.id}`, () => at.list(ACTIVITY, `FIND('${q(c.name)}',ARRAYJOIN({Campaign}))`, ACT_FIELDS, 200, { sortField: AF.when, sortDesc: true })).catch(() => [] as AirtableRecord[]) : Promise.resolve([] as AirtableRecord[]),
   ]);
   const seen = new Set<string>();
   const out: ActivityOut[] = [];
   for (const r of [...recent, ...own]) {
     if (seen.has(r.id)) continue;
-    const onCampaign = ids(r.fields[AF.campaign]).includes(c.id);
+    const onCampaign = !!c.id && ids(r.fields[AF.campaign]).includes(c.id);
     const onList = ids(r.fields[AF.leadList]).some((id) => c.listIds.includes(id));
     if (!onCampaign && !onList) continue;
     const agent = canonAgent(s(r.fields[AF.agent])) || 'Engine';
@@ -504,8 +524,10 @@ export interface LeadListRow {
   id: string; name: string; client: string; clientKey: string; stage: string; group: ListGroup; step: number; steps: number; qa: string; processing: string; progress: number | null;
   companies: number; direct: number; generic: number; leads: number; verifiers: string; source: string; thesis: string;
   campaigns: { id: string; name: string }[]; listOnly: boolean; added: string; updated: string; message: string; owner: AgentName;
+  /** Round 2: a test list by its name (hidden unless "Show tests"); finished more than 60 days ago; the engine's state. */
+  test: boolean; old: boolean; engineStatus: string; running: boolean;
 }
-/** One Lead Lists record → one row (null = left out: hidden, archived, or done long ago). Pure. */
+/** One Lead Lists record → one row (null = left out: hidden or archived). Pure. */
 export function leadListRow(r: AirtableRecord, clients: Map<string, ClientRef>, campaignName: Map<string, string>, now = Date.now()): LeadListRow | null {
   const f = r.fields;
   if (f[LLF.hide] === true) return null;
@@ -513,9 +535,10 @@ export function leadListRow(r: AirtableRecord, clients: Map<string, ClientRef>, 
   if (stage === 'Archived') return null;
   const ref = clients.get(ids(f[LLF.client])[0] ?? '');
   const processing = s(f[LLF.processing]);
-  const group: ListGroup = stage === 'Failed' || /fail/i.test(processing) || /fail/i.test(s(f[LF.engineStatus])) ? 'failed' : LIST_DONE.has(stage) ? 'done' : 'building';
+  const engineStatus = s(f[LF.engineStatus]);
+  const group: ListGroup = stage === 'Failed' || /fail/i.test(processing) || /fail/i.test(engineStatus) ? 'failed' : LIST_DONE.has(stage) ? 'done' : 'building';
   const updated = latest([s(f[LF.completedAt]), s(f[LF.startedAt]), s(f[LLF.added]), r.createdTime]) ?? '';
-  if (group === 'done' && updated && now - Date.parse(updated) > LIST_DONE_DAYS * DAY) return null;
+  const old = group === 'done' && !!updated && now - Date.parse(updated) > LIST_DONE_DAYS * DAY;
   const camps = ids(f[LLF.campaigns]);
   const direct = n(f[LF.finalDirect]), generic = n(f[LF.finalGeneric]);
   const verifiers = [...new Set([direct || n(f[LLF.verifiedDirect]) ? s(f[LLF.directVerifier]) : '', generic || n(f[LLF.verifiedGeneric]) ? s(f[LLF.genericVerifier]) : ''].filter((x) => x && x !== 'None'))].join(' + ');
@@ -527,13 +550,17 @@ export function leadListRow(r: AirtableRecord, clients: Map<string, ClientRef>, 
     companies: n(f[LLF.companies]), direct, generic, leads: direct + generic, verifiers, source: s(f[LLF.contactSource]), thesis: plain(s(f[LLF.thesis])).slice(0, 240),
     campaigns: camps.map((id) => ({ id, name: campaignName.get(id) ?? '' })), listOnly: camps.length === 0, added: s(f[LLF.added]) || r.createdTime || '', updated,
     message: (s(f[LF.lastError]) || s(f[LF.engineMessage])).replace(/\s+/g, ' ').slice(0, 240), owner: group === 'failed' ? 'Riley' : 'Scout',
+    test: isTest(s(f[LF.name]) || s(f[LF.fileName])), old, engineStatus, running: ['Queued', 'Running', 'Waiting'].includes(engineStatus) || /^(running|queued|waiting)$/i.test(processing),
   };
 }
+const ms = (iso: string) => Date.parse(iso) || 0;
+/** Newest first, as the Airtable Lead List Center ("Newest first"): by the date the list was made. Pure. */
+export const newestFirst = (a: Pick<LeadListRow, 'added' | 'updated'>, b: Pick<LeadListRow, 'added' | 'updated'>) => ms(b.added) - ms(a.added) || ms(b.updated) - ms(a.updated);
 const LL_READ = [...new Set(Object.values(LLF))];
 let listsCache: { at: number; data: Promise<{ lists: AirtableRecord[]; ws: AirtableRecord[]; names: Map<string, string>; readAt: string }> } | null = null;
 export function _resetListsCache() { listsCache = null; }
 /** Lists in progress and done (last 60 days) per client, including a client who buys only a list (no campaign linked). */
-export async function listLeadLists(at: Pick<HqAirtable, 'list'>, db: Db, opts: { client?: string; refresh?: boolean } = {}) {
+export async function listLeadLists(at: Pick<HqAirtable, 'list'>, db: Db, opts: { client?: string; refresh?: boolean; tests?: boolean; old?: boolean } = {}) {
   if (!listsCache || Date.now() - listsCache.at >= (opts.refresh ? 10_000 : CAMPAIGNS_CACHE_MS)) {
     const data = (async () => {
       const [lists, src] = await Promise.all([
@@ -551,11 +578,14 @@ export async function listLeadLists(at: Pick<HqAirtable, 'list'>, db: Db, opts: 
   const rows = d.lists.map((r) => leadListRow(r, clients, d.names)).filter((x): x is LeadListRow => !!x && (!x.clientKey || activeKeys.has(x.clientKey)));
   const active = [...new Map([...clients.values()].filter((c) => c.active).map((c) => [c.key, c])).values()];
   const client = opts.client && activeKeys.has(opts.client) ? opts.client : '';
-  const G = ['failed', 'building', 'done'];
-  const mine = (client ? rows.filter((r) => r.clientKey === client) : rows).sort((a, b) => G.indexOf(a.group) - G.indexOf(b.group) || b.step - a.step || (Date.parse(b.updated) || 0) - (Date.parse(a.updated) || 0));
+  // Round 2 (Alex 2026-11-27): newest first, like the Airtable Lead List Center; tests and lists finished
+  // 60+ days ago are in the answer but flagged, and the screen hides them unless asked ("Show tests").
+  const all = (client ? rows.filter((r) => r.clientKey === client) : rows).sort(newestFirst);
+  const mine = all.filter((r) => (opts.tests || !r.test) && (opts.old || !r.old));
+  const real = all.filter((r) => !r.test && !r.old);
   return {
-    rows: mine, counts: { building: mine.filter((r) => r.group === 'building').length, done: mine.filter((r) => r.group === 'done').length, failed: mine.filter((r) => r.group === 'failed').length, listOnly: mine.filter((r) => r.listOnly).length },
-    client, clients: active.map((c) => ({ key: c.key, name: c.name, count: rows.filter((r) => r.clientKey === c.key).length })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
-    stages: LIST_ORDER, doneDays: LIST_DONE_DAYS, readAt: d.readAt,
+    rows: mine, counts: { building: real.filter((r) => r.group === 'building').length, done: real.filter((r) => r.group === 'done').length, failed: real.filter((r) => r.group === 'failed').length, listOnly: real.filter((r) => r.listOnly).length, running: real.filter((r) => r.running).length, tests: all.filter((r) => r.test).length, old: all.filter((r) => r.old && !r.test).length },
+    client, clients: active.map((c) => ({ key: c.key, name: c.name, count: rows.filter((r) => r.clientKey === c.key && !r.test && !r.old).length })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+    stages: LIST_ORDER, doneDays: LIST_DONE_DAYS, readAt: d.readAt, tests: !!opts.tests, old: !!opts.old,
   };
 }
