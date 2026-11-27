@@ -62,7 +62,7 @@ export interface NeedItem {
 export interface RileyIssue { id: string; title: string; why: string; fix: string; decision: string; seen: string }
 
 /** The face and the one-line title for a pile. */
-export const PILE_AGENT: Record<Pile, string> = { Replies: 'Echo', Campaigns: 'Atlas', Fixes: 'Riley', Money: 'Ledger', Other: 'Ada' };
+export const PILE_AGENT: Record<Pile, string> = { Replies: 'Echo', Campaigns: 'Atlas', Fixes: 'Riley', Money: 'Ledger', Sales: 'Cole', Content: 'Sienna', Orchestrator: 'Ada' };
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 export function pileTitle(pile: Pile, n: number): string {
   switch (pile) {
