@@ -25,3 +25,12 @@ test('rejecting it, or approving a card with its own action, makes no task', asy
   const b = fakeAt({ ...base, [DF.action]: 'Apply Riley Fix' });
   assert.equal((await decide(b.at, 'recAAAAAAAAAAAAAA', 'approve', 'Alex', { canSeeMoney: true })).todo, undefined);
 });
+
+test('Riley sees what came into a failed n8n run: ids kept, emails masked, secrets dropped', async () => {
+  const { executionInput } = await import('../src/agents/riley.js');
+  const x = { data: { resultData: { runData: { Webhook: [{ data: { main: [[{ json: { body: { data: { lead: { id: 4821, email: 'jane.doe@acme.com' }, reply: { from_email_address: 'bob@acme.com' } }, api_key: 'sk-secret' }, headers: { authorization: 'Bearer x' } } }]] } }] } } } };
+  const lines = executionInput(x);
+  assert.ok(lines.includes('body.data.lead.id: 4821'));
+  assert.ok(lines.some((l) => l.startsWith('body.data.reply.from_email_address: ') && !l.includes('bob@acme.com')));
+  assert.ok(!lines.some((l) => /sk-secret|Bearer/.test(l)));
+});
