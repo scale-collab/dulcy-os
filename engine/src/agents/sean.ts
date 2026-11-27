@@ -16,6 +16,7 @@ import { pickSlot, planBooking, confirmationText, manualText, fallbackText, book
 import { DECISIONS, DF } from '../decisions/fields.js';
 import { loadSettings, parseSettings, settingsBlock, blockedBy, typeAllowed, autoSendDecision, extraTypeOn, type ClientSettings } from './settings.js';
 import { logActivity } from '../activity.js';
+import { findPlaceholders } from './placeholders.js';
 
 export const DraftSchema = z.object({
   action: z.enum(['reply', 'skip', 'ask_alex']),
@@ -39,7 +40,7 @@ Decide one action:
 - "reply": the thread needs an answer from us now. Write the full email body in "draft".
 - "skip": no answer is needed (auto-reply, bounce, unsubscribe or stop, already booked, wrong person with no referral, or the latest message is from our side; out of office and "not interested" too, unless this client's settings below turn on a reply for that type). Leave "draft" empty.
 - Out of office, when this client answers those: one or two short lines, no pitch (e.g. no rush, we'll pick this up when you're back). Put their return date in "follow_up_on" (YYYY-MM-DD) when the message gives one.
-- "ask_alex": an answer is needed but you are missing a fact you must not invent (a price that is not in the client file, a guarantee, a custom term, something only the client can confirm). Write your best draft anyway with a clear [GAP: what is missing] marker, and put the exact question in "question_for_alex".
+- "ask_alex": an answer is needed but you are missing a fact, link or file you must not invent (a price that is not in the client file, a guarantee, a custom term, a video or case-study link you were not given, something only the client can confirm). Put the exact question in "question_for_alex" and write your best draft without that fact (a person adds it before sending).
 Also classify the latest prospect message as one "intent".
 
 How Alex writes (follow it exactly):
@@ -48,6 +49,7 @@ How Alex writes (follow it exactly):
 - The next step is a call. Offer two specific dated times when times are given below; otherwise use the client's booking link when one is given below; if neither, ask what their week looks like. Never invent times or links.
 - Objections are handled, never accepted at face value: "I need to think about it" gets a genuine "what's the part you're weighing?"-style question, never "sure, take your time". Price questions: answer only with prices the client file approves; otherwise ask_alex. Never promise results, guarantees, case studies or numbers that are not in the client file. Never reuse one client's facts for another.
 - Greet by first name when you know it. No signature block or sign-off name (the inbox adds it). Plain text, no markdown, no links unless it is the approved booking link.
+- Never write a placeholder of any kind: no [link], [video link for …], [Your name], [GAP: …], {{first_name}}, {FIRST_NAME} or <insert …>. Every draft must be ready to send exactly as written. If something you need is missing, use "ask_alex" and ask for it in "question_for_alex" instead.
 - If the prospect asked to stop or unsubscribe anywhere in the latest message, the action is "skip".
 - Real examples follow: this client's threads that reached a booked meeting, and replies Alex approved. Copy how they move to a call, not their facts.
 
@@ -197,6 +199,15 @@ export const seanDraftStage: Stage = async (ctx) => {
       dryRunResult: () => ({ action: 'skip', intent: 'Other', reason: 'dry run (sean.draft not in LIVE_STAGES): Claude not called', they_said: '', draft: '', question_for_alex: '', confidence: 0, follow_up_on: '', time_choice: 'none', chosen_time: '' }),
     });
 
+    // Placeholder guard (Alex 2026-11-27): a draft with "[link]" / "{{first_name}}" is never a plain
+    // reply (so never auto-sent): it becomes "Need your input" with the question to fill it.
+    const unfilled = d.action === 'skip' ? [] : findPlaceholders(d.draft);
+    if (unfilled.length) {
+      d.action = 'ask_alex';
+      d.question_for_alex = d.question_for_alex || `What should replace ${unfilled.slice(0, 3).join(', ')} in Echo's draft?`;
+      d.reason = `The draft has a placeholder (${unfilled[0]}): replace it before sending. ${d.reason}`;
+    }
+
     // The prospect picked one specific time: check it and the client's calendar live (Alex 2026-11-27).
     let plan: Plan = { kind: 'none' };
     if (!ctx.dryRun && d.action === 'reply' && (d.time_choice === 'accepts_offered' || d.time_choice === 'proposes_time')) {
@@ -253,7 +264,7 @@ export const seanDraftStage: Stage = async (ctx) => {
               : action === 'reply' ? `Reply to ${who}` : `Need your input: reply to ${who}`,
             [DF.agent]: 'Echo', [DF.status]: 'New', [DF.client]: client.name, [DF.emailsRecord]: r.id,
             [DF.issue]: d.they_said,
-            [DF.checked]: action === 'ask_alex' ? `${question} (answer it in Airtable: edit the draft, then Send Edited)`
+            [DF.checked]: action === 'ask_alex' ? `${question} (answer it in HQ: edit the draft, then Send edited)`
               : bookingPolicy ? `${d.reason} If the time is gone when you approve, nothing is booked or sent and a draft with two other times comes back.`
                 : live.kind === 'manual' ? `${d.reason} After approving, send the calendar invite for ${live.long} yourself.` : d.reason,
             [DF.fix]: draftText,
