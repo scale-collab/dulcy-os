@@ -270,3 +270,11 @@ Format: `- [date] rule. (why / source)`
 ## New client inbox ramp (Alex, 2026-11-27)
 - **Rule:** a new client's inboxes start at **5 cold emails / 10 warm-up per day**. After one week of sending: **10 / 20**. After another week: **15 / 30**, and that is the cap.
 - **Why:** Alex's standard ramp for every new client ("when I start a new client, it's always 5 cold emails, 10 warm up…").
+
+## HQ phone notifications (Alex, 2026-11-27)
+- **Rule:** HQ pings phones (iPhone from the Home Screen app, and computers) by Web Push for four kinds: **(1) new decisions** (each new Decisions card; several within ~3 minutes = one grouped ping "4 new decisions"), **(2) agent messages to you** (a chat answer when you are not on that chat; asks and tasks waiting on you), **(3) urgent problems** (campaign over 4% bounce or paused, inbox in spam, warm-up off, a fix or engine run that failed and needs Alex), **(4) good news** (meeting booked, client signed or paid). Tapping a ping opens that exact item in HQ.
+- **Always on:** no quiet hours. Each person can switch any of the 4 kinds off on HQ → Notifications (all on by default).
+- **Members (Josh)** get pushes for their own items only (what they can act on in HQ: reply decisions, asks for the team, their own chats, meetings booked). Never money, Ledger, Sienna or owner-only content. Decided server-side, the same role filtering HQ already uses.
+- **Slack pings stay.** Notifications are added next to Slack; nothing posted to Slack was removed.
+- **Bounded:** at most 1 ping a minute per person (the rest grouped into one), at most 60 a day, never the same thing twice, and nothing that existed before notifications were turned on.
+- **Why:** Alex wants HQ on his phone to tell him when something needs him or went well, without opening it to check. How to turn it on: `engine/GUIDE.md` → HQ → "Phone notifications".
