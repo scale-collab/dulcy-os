@@ -25,6 +25,7 @@ import type { AirtableRecord } from '../providers/airtable.js';
 import type { HqAirtable } from './decisions.js';
 import { clientKey } from './clients.js';
 import { WORKSPACES_T } from './campaigns.js';
+import { closeUpdatesFor } from './closeUpdates.js';
 
 // ---------- tables and fields (airtable/SCHEMA.md; field IDs, so a rename never breaks HQ) ----------
 export const SALES_T = 'tblmEyHVAXDRwPxN9'; // Sales Data: one row per opportunity (Make 1.0 Booked Meeting; stage from Close)
@@ -657,6 +658,8 @@ export async function dealDetail(at: Pick<HqAirtable, 'list'>, db: Db, id: strin
     },
     notes: salesNotes([deal], src, today),
     readAt: src.readAt,
+    // Round 3: what Cole changed (or would change) in Close after each call review, old → new.
+    closeUpdates: await closeUpdatesFor(db, deal).catch(() => []),
   };
   return canSeeMoney ? out : cutMoney(out);
 }
