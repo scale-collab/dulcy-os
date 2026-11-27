@@ -1,6 +1,19 @@
 # Where we are (update this at the end of every session)
 
-Last updated: 2026-11-27
+Last updated: 2026-11-27 (evening)
+
+## Pick up here (end of 2026-11-27)
+- **HQ walkthrough done; all 6 build batches merged and deployed** (PRs #202-206; 499 tests). Feedback list: `hq/feedback-2026-11-27.md`. Xero connected (Dulcy Media). Close key on server.
+- **Next session: the Inbox** (Alex's last and biggest HQ item): thread readability (spacing, email 1/2/3), AI replier settings in Inbox (route `#/clients/<id>/replier`), Echo watched live (left on).
+- **Waiting on Alex:**
+  - Check HQ after deploy: Clients MRR ≈ $7,745, Twenty West ≈ 11 meetings, Sales Hottest from Close, View as member hides money.
+  - Riley's 2 MJJ cards (payment name matching, onboarding checkbox) in Decisions → Fixes; approve or reject.
+  - 18 real decisions: 9 campaigns over 4% bounce, 2 campaign plans, 6 Riley, 1 Sienna.
+  - Scheduled tasks can't push to the repo (creator watch lost its first run; learnings recovered by hand): add scale-collab/dulcy-os to the creator watch, Riley and Sienna scheduled tasks. vidIQ out of credits (transcripts): top up needs Alex's ✅.
+  - Proposal: A/B owner vs generic email (500+ each side) on one list.
+  - Which menu items to drop (only reordered so far). Inbox limit edits are dry run until `inbox.limits` is in LIVE_STAGES.
+  - Optional Airtable fixes: Monthly Fee (GMG, MJJ, Cartel, Twenty West), Client Type (MJJ, Cartel), Client End Dates.
+- **Echo reply cards:** 118 stale ones cleared 2026-11-27 (Josh handles replies by hand meanwhile).
 
 ## Done 2026-11-27 (live)
 - **Echo books meetings itself:** prospect picks a time → live re-check → booked on the client's calendar (Google event + Meet + invite, or Calendly booking) → confirmation reply; follows each client's approval mode (all are approval now: one card books + sends). Airtable marks WON / Booked Meeting. Phone from Airtable or signature fills Calendly's phone question.
