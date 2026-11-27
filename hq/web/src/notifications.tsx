@@ -76,6 +76,7 @@ export function usePush(route: string | null) {
     if (!on || !('serviceWorker' in navigator)) return;
     const onMsg = (e: MessageEvent) => { const d = e.data; if (d && d.type === 'hq:open' && typeof d.url === 'string' && ROUTE.test(d.url)) window.location.hash = d.url; };
     navigator.serviceWorker.addEventListener('message', onMsg);
+    navigator.serviceWorker.startMessages?.();
     return () => navigator.serviceWorker.removeEventListener('message', onMsg);
   }, [on]);
   // Which screen is open (a chat answer you are looking at is not pushed).

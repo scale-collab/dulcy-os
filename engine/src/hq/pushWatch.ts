@@ -141,21 +141,21 @@ const reportsWatch: Detector = async (db, now) => {
   return n;
 };
 
-/** Engine runs that failed or need review (last 2 h): one push per kind per day. Owner only. */
+/** Engine runs that failed or need review (last 2 h): one push per kind per day (the day of the latest failure). Owner only. */
 const jobsWatch: Detector = async (db, now) => {
   const rows = (await db.query(
-    `SELECT kind, count(*)::int AS n, (array_agg(left(COALESCE(error, ''), 300) ORDER BY id DESC))[1] AS error, bool_or(status='needs_review') AS review
-     FROM jobs WHERE status IN ('failed','needs_review') AND updated_at > $1 GROUP BY kind ORDER BY kind LIMIT 50`, [new Date(now.getTime() - 2 * 3_600_000)])).rows;
-  const day = nyDate(now);
-  const fresh = new Set(await firstSeen(db, 'jobs', 'job', rows.map((r) => `${r.kind}:${day}`), now));
+    `SELECT kind, count(*)::int AS n, max(updated_at) AS at, (array_agg(left(COALESCE(error, ''), 300) ORDER BY id DESC))[1] AS error, bool_or(status='needs_review') AS review
+     FROM jobs WHERE status IN ('failed','needs_review') AND updated_at > $1 GROUP BY kind ORDER BY kind LIMIT 50`, [new Date(now.getTime() - 2 * 3_600_000)])).rows
+    .map((r) => ({ ...r, key: `${r.kind}:${nyDate(new Date(r.at))}` }));
+  const fresh = new Set(await firstSeen(db, 'jobs', 'job', rows.map((r) => r.key), now));
   let n = 0;
   for (const r of rows) {
-    if (!fresh.has(`${r.kind}:${day}`)) continue;
+    if (!fresh.has(r.key)) continue;
     const agent = agentForJob(r.kind) ?? 'Riley';
     n += await notifySafe(db, {
       type: 'urgent', audience: 'owner', agent, money: agent === 'Ledger',
       title: `${agent}: ${r.kind} ${r.review ? 'needs review' : 'failed'}${r.n > 1 ? ` (${r.n} runs)` : ''}`, body: firstSentence(r.error, 200) || 'A run did not finish.',
-      url: `agents/${agent}`, dedupeKey: `job:${r.kind}:${day}`,
+      url: `agents/${agent}`, dedupeKey: `job:${r.key}`,
     }, now);
   }
   return n;
