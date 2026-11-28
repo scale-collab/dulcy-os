@@ -652,3 +652,23 @@ CREATE TABLE IF NOT EXISTS hq_plaid_items (
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- HQ Content round 5 (Alex 2026-11-28): "complete distribution stats" inside HQ. Per video and per
+-- platform slot (a Content Distribution record id, or 'TikTok', which has no draft row in the
+-- Content OS): where and when it was posted, and its views, likes and comments, typed in by Alex.
+-- Airtable has no stats fields; the post URL also goes to the draft's Published URL (as the Content
+-- Center's "mark as published" writes it). Nothing here posts or schedules.
+CREATE TABLE IF NOT EXISTS hq_content_posts (
+  id          BIGSERIAL PRIMARY KEY,
+  content_id  TEXT NOT NULL,                  -- Content Channels record id
+  slot        TEXT NOT NULL,                  -- Content Distribution record id, or 'TikTok'
+  platform    TEXT NOT NULL,
+  post_url    TEXT NOT NULL DEFAULT '',
+  posted_on   DATE,
+  views       INT,
+  likes       INT,
+  comments    INT,
+  updated_by  TEXT NOT NULL DEFAULT '',
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (content_id, slot)
+);

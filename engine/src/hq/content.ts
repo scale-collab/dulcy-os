@@ -26,13 +26,16 @@
 // Airtable reads: batched (6 list calls, no per-row calls), one cache for everyone, 60 seconds.
 //   - Round 4 (2026-11-28): the "This week" tab is gone (data problems are one line on Needs you), channel
 //     names are the real ones, and every item carries its real workflow (videoSteps): the one Next step
-//     with its button, and each step with where it happens (HQ, Sienna, a Content Center button, by hand,
-//     or "not automated yet").
+//     with its button, and each step with where it happens (HQ, Sienna, by hand, or "not automated yet").
+//   - Round 5 (2026-11-28): every Content Center button is an HQ button (contentActions.ts does each one
+//     the Content Center's way), and Distribution (per platform: review, approve, record where / when /
+//     stats) lives on the video's page. Only the final-clip approval still opens the Content Center.
 import type { Db } from '../db/pool.js';
 import type { AirtableRecord } from '../providers/airtable.js';
 import type { HqAirtable } from './decisions.js';
 import { CF, CONTENT, SETTINGS, ideaQuota, prepFormula } from '../agents/sienna.js';
 import type { AgentName } from './agents.js';
+import type { RunKey } from './contentActions.js';
 
 export const CLIPS = 'tblg1Tj9atyxN0piT';
 export const CONTENT_CENTER_PAGE = 'pagacLOPVCIQb1RQt';
@@ -281,8 +284,9 @@ export function stageOf(v: Video, clips: Clip[]): StageKey | null {
 // ---------- the Content Center's "next step", and which automation runs it ----------
 export type How = 'hq' | 'engine' | 'field' | 'button' | 'manual';
 export interface NextStep { title: string; who: AgentName | 'Alex'; how: How; automation: string; detail: string }
-const FIELD = (action: string, wf: string) => ({ how: 'field' as How, automation: `Content Automation Action "${action}" → Airtable automation "Content OS Action Script" → n8n [Content OS] ${wf}` });
-const BUTTON = (button: string, wf: string) => ({ how: 'button' as How, automation: `Content Center button "${button}" → n8n [Content OS] ${wf}` });
+// Round 5: these are HQ buttons now (contentActions.ts), done the Content Center's way.
+const FIELD = (action: string, wf: string) => ({ how: 'field' as How, automation: `HQ button → Content Automation Action "${action}" → Airtable automation "Content OS Action Script" → n8n [Content OS] ${wf}` });
+const BUTTON = (button: string, wf: string) => ({ how: 'button' as How, automation: `HQ button "${button}" → n8n [Content OS] ${wf} (the Content Center's webhook)` });
 /**
  * The Content Center's nextStep (source.tsx), the same order, with who does it and how it runs. The
  * script step is the engine's sienna.prep (the n8n "Generate Teleprompter Script" button is the
@@ -294,9 +298,9 @@ export function nextStep(v: Video, clips: Clip[]): NextStep | null {
   if (needsApproval(v)) return { title: 'Review this idea', who: 'Alex', how: 'hq', automation: 'HQ Approve / Reject (writes Idea Decision); after Approve the engine\'s sienna.prep writes the script within 30 minutes', detail: '' };
   // HQ's two additions to the Content Center order: a row marked Scheduled needs its proof of posting
   // first, and a video already recorded never goes back to "write the script" (old rows have none).
-  if (v.status === 'Scheduled' && !postedWithProof(v)) return { title: 'Add proof of posting', who: 'Sienna', how: 'manual', automation: 'Content Center: save the YouTube URL (or set the real status); Status "Scheduled" alone is not proof', detail: '' };
+  if (v.status === 'Scheduled' && !postedWithProof(v)) return { title: 'Add proof of posting', who: 'Sienna', how: 'manual', automation: 'HQ: save the YouTube link on the video\'s page; Status "Scheduled" alone is not proof', detail: '' };
   const pastRecording = RECORDED_ON.has(v.stage) || !!v.finalAssetUrl || !!v.youtubeUrl;
-  if (!v.hasScript && !pastRecording) return { title: 'Write the recording script', who: 'Sienna', how: 'engine', automation: 'Engine sienna.prep (every 30 min; the Content Center\'s "Generate script" button runs n8n [Content OS] Generate Teleprompter Script, the same job)', detail: '' };
+  if (!v.hasScript && !pastRecording) return { title: 'Write the recording script', who: 'Sienna', how: 'engine', automation: 'Engine sienna.prep (every 30 min; HQ\'s "Generate script" runs n8n [Content OS] Generate Teleprompter Script, the same job)', detail: '' };
   const frameMessage = v.message;
   const recordingSynced = /recorded footage found|recording found|raw video found/i.test(frameMessage);
   const longFormSubmitted = /long-form edit project (?:created|submitted)|long-form edit (?:submitted|processing)/i.test(frameMessage);
@@ -307,24 +311,24 @@ export function nextStep(v: Video, clips: Clip[]): NextStep | null {
   const clipCount = clips.filter((c) => c.parentId === v.id).length || v.clipIds.length;
   const distribution = v.distributionStatus.toLowerCase();
   if (!v.rawFolderUrl) return { title: 'Create the recording folder', who: 'Sienna', ...FIELD('Sync Frame.io', 'Frame.io Sync'), detail: 'Sets up the Frame.io folders for this video.' };
-  if (!v.finalAssetUrl && !v.editingRoute) return { title: 'Choose how it is edited', who: 'Alex', how: 'manual', automation: 'Content Center: Editing Route (OpusClip or DaVinci Resolve)', detail: '' };
+  if (!v.finalAssetUrl && !v.editingRoute) return { title: 'Choose how it is edited', who: 'Alex', how: 'manual', automation: 'HQ: Use OpusClip / Use DaVinci Resolve (Editing Route)', detail: '' };
   if (!v.finalAssetUrl && /manual editor|davinci resolve/i.test(v.editingRoute)) return { title: 'Edit in DaVinci Resolve', who: 'Alex', how: 'manual', automation: 'By hand: upload the finished video to the Final folder', detail: '' };
   if (!v.finalAssetUrl && v.editingRoute === 'OpusClip' && !recordingSynced) return { title: 'Sync the uploaded recording', who: 'Sienna', ...FIELD('Sync Frame.io', 'Frame.io Sync'), detail: 'Finds the uploaded recording in Frame.io.' };
   if (!v.finalAssetUrl && v.editingRoute === 'OpusClip' && !longFormSubmitted) return { title: 'Start the full-video edit', who: 'Sienna', ...FIELD('Submit to OpusClip', 'OpusClip Submit and Refresh'), detail: '' };
   if (!v.finalAssetUrl && v.editingRoute === 'OpusClip') return { title: 'Finish the full-video edit', who: 'Sienna', how: 'manual', automation: 'Sienna\'s editor (scheduled task, agents/sienna-editor.md): edit in OpusClip, export, upload to the Final folder, then Sync Frame.io', detail: '' };
   if (!v.thumbnailUrl) return { title: 'Make the thumbnail', who: 'Sienna', ...BUTTON('Generate thumbnail', 'Generate Thumbnail'), detail: '' };
-  if (!thumbnailApproved) return { title: 'Approve the thumbnail', who: 'Alex', how: 'manual', automation: 'Content Center: Approve thumbnail (Thumbnail Status → Approved), or Revise → n8n [Content OS] Revise Thumbnail', detail: '' };
+  if (!thumbnailApproved) return { title: 'Approve the thumbnail', who: 'Alex', how: 'manual', automation: 'HQ: Approve thumbnail (Thumbnail Status → Approved), or Request changes → n8n [Content OS] Revise Thumbnail', detail: '' };
   if (!v.youtubeTitle || !v.hasYoutubeDescription) return { title: 'Prepare the YouTube title and description', who: 'Sienna', ...BUTTON('Prepare YouTube details', 'Prepare YouTube Details'), detail: '' };
-  if (!v.youtubeUrl) return { title: 'Upload the video to YouTube', who: 'Alex', how: 'manual', automation: 'By hand in YouTube Studio, then save the YouTube URL in the Content Center (Sienna never posts)', detail: '' };
+  if (!v.youtubeUrl) return { title: 'Upload the video to YouTube', who: 'Alex', how: 'manual', automation: 'By hand in YouTube Studio, then save the YouTube link in HQ (Sienna never posts)', detail: '' };
   if (!v.finalAssetId) return { title: 'Sync the final video', who: 'Sienna', ...FIELD('Sync Frame.io', 'Frame.io Sync'), detail: '' };
   if (shortBlocked) return { title: 'Check the short-clips job', who: 'Riley', how: 'manual', automation: 'The short-clips job needs a check or belongs to another final video; do not submit another', detail: v.shortJobState };
   if (!shortSubmitted) return { title: 'Make the short clips', who: 'Sienna', ...FIELD('Submit to OpusClip', 'OpusClip Submit and Refresh'), detail: '' };
   if (clipCount === 0) return { title: 'Clips are being made', who: 'Sienna', ...FIELD('Refresh Opus Clips', 'OpusClip Submit and Refresh'), detail: '' };
   if (clipCount > 0 && !['drafts ready', 'scheduled', 'published'].includes(distribution) && !distribution.includes('complete') && v.distributionCount === 0) {
-    if (v.distributionChannels === 0) return { title: 'Choose where the clips go', who: 'Alex', how: 'manual', automation: 'Content Center: clips wanted + distribution channels', detail: '' };
+    if (v.distributionChannels === 0) return { title: 'Choose where the clips go', who: 'Alex', how: 'manual', automation: 'HQ: Choose where the posts go (clips wanted + distribution channels)', detail: '' };
     return { title: 'Make the posts', who: 'Sienna', ...FIELD('Generate Distribution Pack', 'Generate Distribution Pack'), detail: '' };
   }
-  return { title: 'Review the posts', who: 'Alex', how: 'manual', automation: 'Content Center → Posts (approval and scheduling stay there; HQ never runs [Content OS] Schedule Approved Social Posts)', detail: '' };
+  return { title: 'Review the posts', who: 'Alex', how: 'manual', automation: 'HQ → Distribution: approve per platform, then post by hand or schedule (Instagram / YouTube Shorts, only when you press Schedule: [Content OS] Schedule Approved Social Posts); record where it went and its stats', detail: '' };
 }
 
 // ---------- Sienna's prep notes (sienna.prep writes them into Notes) ----------
@@ -434,9 +438,10 @@ export const slash = (ymd: string) => (/^\d{4}-\d{2}-\d{2}/.test(ymd) ? `${Numbe
 // does, or says "Not automated yet" with what to do by hand. HQ itself only writes the idea decision;
 // "Ask Sienna now" puts a task on Sienna's list (POST /fix-it) and writes nothing to Airtable.
 export type StepState = 'done' | 'now' | 'later';
-/** hq = a button in HQ · sienna = Sienna does it automatically · contentCenter = a Content Center button (n8n) · byHand · notAutomated. */
-export type StepWhere = 'hq' | 'sienna' | 'contentCenter' | 'byHand' | 'notAutomated';
-export interface StepButton { kind: 'decide' | 'askSienna' | 'openScript' | 'copyGamma' | 'link' | 'contentCenter'; label: string; url?: string; task?: string }
+/** hq = a button in HQ (round 5: also the ones that run an n8n flow) · sienna = Sienna does it automatically · byHand · notAutomated. */
+export type StepWhere = 'hq' | 'sienna' | 'byHand' | 'notAutomated';
+/** run = an HQ button that does what the Content Center's button does (contentActions.ts); input = what it asks for first. */
+export interface StepButton { kind: 'decide' | 'askSienna' | 'openScript' | 'copyGamma' | 'link' | 'run' | 'distribution'; label: string; url?: string; task?: string; run?: RunKey; input?: 'url' | 'changes' | 'brief' }
 export interface VideoStep { key: string; title: string; state: StepState; where: StepWhere; text: string; optional?: boolean; buttons: StepButton[] }
 export interface StepContext { gamma: string; gammaUrl: string; hasPrep: boolean; stuck: boolean; now: number; posted: string }
 /** The next sienna.prep run: the scheduler queues it every half hour, on the hour and at :30. Pure. */
@@ -449,7 +454,6 @@ export function videoSteps(v: Video, clips: Clip[], x: StepContext): VideoStep[]
   const steps: VideoStep[] = [];
   const add = (key: string, title: string, done: boolean, where: StepWhere, text: string, buttons: StepButton[] = [], doneText = '', doneButtons: StepButton[] = [], optional = false) =>
     steps.push({ key, title, state: done ? 'done' : 'later', where, text: done ? doneText : text, buttons: done ? doneButtons : buttons, ...(optional ? { optional } : {}) });
-  const cc = (label: string): StepButton => ({ kind: 'contentCenter', label });
   const main = v.channel === 'Alex Woung';
   const approved = !needsApproval(v);
   const recordingSynced = /recorded footage found|recording found|raw video found/i.test(v.message);
@@ -474,11 +478,12 @@ export function videoSteps(v: Video, clips: Clip[], x: StepContext): VideoStep[]
 
   // 2. The script (Sienna, automatic: sienna.prep; the Content Center's "Generate script" runs the same job in n8n).
   const pastWindow = !!v.recordingDate && v.recordingDate < addDays(today, -2);
-  const scriptText = x.stuck ? 'Approved over a day ago and still no script: Sienna\'s automatic run did not write it. Ask her now (or press "Generate script" in the Content Center).'
-    : pastWindow ? `Sienna's automatic run skips it: the recording date (${slash(v.recordingDate)}) has passed. Ask her now, or press "Generate script" in the Content Center.`
+  const scriptText = x.stuck ? 'Approved over a day ago and still no script: Sienna\'s automatic run did not write it. Press "Generate script" (the Content OS script flow) or ask her now.'
+    : pastWindow ? `Sienna's automatic run skips it: the recording date (${slash(v.recordingDate)}) has passed. Press "Generate script", or ask her now.`
       : `Sienna writes it automatically by about ${etTime(nextPrepAt(x.now))} ET (she checks every 30 minutes for approved ideas with no script), with hooks, title options, a thumbnail idea${main ? ' and the Gamma outline' : ''}.`;
   add('script', 'Script', v.hasScript || recorded, 'sienna', scriptText,
-    [{ kind: 'askSienna', label: 'Ask Sienna now', task: `Write the recording script for "${title}"` }],
+    x.stuck || pastWindow ? [{ kind: 'run', run: 'script', label: 'Generate script' }, { kind: 'askSienna', label: 'Ask Sienna now', task: `Write the recording script for "${title}"` }]
+      : [{ kind: 'askSienna', label: 'Ask Sienna now', task: `Write the recording script for "${title}"` }, { kind: 'run', run: 'script', label: 'Generate script now' }],
     v.hasScript ? (x.hasPrep ? 'Script ready.' : 'Script written (in the Content Center).') : 'Recorded without a script.', v.hasScript && x.hasPrep ? [{ kind: 'openScript', label: 'Open script' }] : []);
 
   // 3. Gamma (Alex Woung only: the slides on screen). The outline is automatic; the Gamma doc is not.
@@ -494,56 +499,82 @@ export function videoSteps(v: Video, clips: Clip[], x: StepContext): VideoStep[]
       gammaUrl ? 'Gamma doc linked.' : 'Recorded (no Gamma link saved).', gammaUrl ? [{ kind: 'link', label: 'Open Gamma', url: gammaUrl }] : [], true);
   }
 
-  // 4. The Frame.io folders (Content Center "Set up Frame.io" → n8n Frame.io Sync).
-  add('folder', 'Recording folder (Frame.io)', !!v.rawFolderUrl || recorded, 'contentCenter',
-    'Press "Set up Frame.io" on this video in the Content Center: it makes the Raw and Final folders in Frame.io. HQ can\'t press it yet.', [cc('Open the Content Center')], 'Folders ready.');
+  // 4–12 (round 5, 2026-11-28): every Content Center button is an HQ button (contentActions.ts runs it the
+  // Content Center's way: the same Content Automation Action value, n8n webhook body or field write).
+  const run = (k: RunKey, label: string, input?: StepButton['input']): StepButton => ({ kind: 'run', run: k, label, ...(input ? { input } : {}) });
+  const busy = v.action ? ` "${v.action}" is running now; the buttons work again when it finishes.` : '';
 
-  // 5. Record, upload, mark recorded (by hand + Content Center "Sync Frame.io", which sets Production Stage "Recorded").
+  // 4. The Frame.io folders ("Set up Frame.io" → Content Automation Action "Sync Frame.io" → n8n Frame.io Sync).
+  add('folder', 'Recording folder (Frame.io)', !!v.rawFolderUrl || recorded, 'hq',
+    `Press "Set up Frame.io": it makes the Raw and Final folders in Frame.io for this video.${busy}`, [run('setupFrame', 'Set up Frame.io')], 'Folders ready.');
+
+  // 5. Record, upload, mark recorded (by hand + "Sync Frame.io", which sets Production Stage "Recorded").
   add('record', 'Record, upload, mark recorded', recorded, 'byHand',
-    `Record it${v.recordingDate ? ` (recording date ${slash(v.recordingDate)})` : ''}. Upload the file to this video's Raw folder in Frame.io, then press "Sync Frame.io" in the Content Center: it finds the file and marks the video Recorded (there is no separate "mark recorded" button).${v.editingRoute ? '' : ' Also choose how it is edited ("Use OpusClip" or "Use DaVinci Resolve") on this video in the Content Center.'}`,
-    [...(raw ? [{ kind: 'link' as const, label: 'Upload to the Raw folder', url: raw }] : []), cc('Sync Frame.io in the Content Center')], 'Recording found.');
+    `Record it${v.recordingDate ? ` (recording date ${slash(v.recordingDate)})` : ''}. Upload the file to this video's Raw folder in Frame.io, then press "Sync Frame.io": it finds the file and marks the video Recorded (there is no separate "mark recorded" button).${v.editingRoute ? '' : ' Also choose how it is edited: OpusClip or DaVinci Resolve.'}${busy}`,
+    [...(raw ? [{ kind: 'link' as const, label: 'Upload to the Raw folder', url: raw }] : []), run('syncFrame', 'Sync Frame.io'),
+      ...(v.editingRoute ? [] : [run('routeOpus', 'Use OpusClip'), run('routeDavinci', 'Use DaVinci Resolve')])], 'Recording found.');
 
-  // 6. Edit (OpusClip or DaVinci Resolve).
+  // 6. Edit (OpusClip "Edit full video" → Content Automation Action "Submit to OpusClip"; or DaVinci Resolve by hand).
   const davinci = /manual editor|davinci resolve/i.test(v.editingRoute);
   const inOpus = v.editingRoute === 'OpusClip' && recordingSynced && longFormSubmitted;
-  const editText = !v.editingRoute ? 'Choose how it is edited: "Use OpusClip" or "Use DaVinci Resolve" on this video in the Content Center.'
-    : davinci ? 'Edit it in DaVinci Resolve (by hand), upload the finished video to the Final folder in Frame.io, then press "Sync Frame.io" in the Content Center.'
-      : !recordingSynced ? 'Press "Sync Frame.io" in the Content Center so OpusClip can find the recording.'
-        : !longFormSubmitted ? 'Press "Edit full video" in the Content Center: it sends the recording to OpusClip (uses OpusClip credits).'
-          : 'In OpusClip now. Sienna\'s editor finishes the edit, exports it and uploads it to the Final folder; then "Sync Frame.io" in the Content Center picks it up.';
-  add('edit', 'Edit the video', finished, davinci ? 'byHand' : inOpus ? 'sienna' : 'contentCenter', editText,
-    [...(final && (davinci || longFormSubmitted) ? [{ kind: 'link' as const, label: 'Open the Final folder', url: final }] : []), cc('Open the Content Center')], 'Finished video in Frame.io.');
+  const finalLink = final && (davinci || longFormSubmitted) ? [{ kind: 'link' as const, label: 'Open the Final folder', url: final }] : [];
+  const editText = !v.editingRoute ? 'Choose how it is edited: OpusClip (automatic path) or DaVinci Resolve (you edit the full video yourself).'
+    : davinci ? 'Edit it in DaVinci Resolve (by hand), upload the finished video to the Final folder in Frame.io, then press "Sync Frame.io".'
+      : !recordingSynced ? 'Press "Sync Frame.io" so OpusClip can find the recording.'
+        : !longFormSubmitted ? 'Press "Edit full video": it sends the recording to OpusClip for the full edit, no shorts yet (uses OpusClip credits).'
+          : 'In OpusClip now. Sienna\'s editor finishes the edit, exports it and uploads it to the Final folder; then "Sync Frame.io" picks it up.';
+  const editButtons: StepButton[] = !v.editingRoute ? [run('routeOpus', 'Use OpusClip'), run('routeDavinci', 'Use DaVinci Resolve')]
+    : davinci ? [...finalLink, run('syncFrame', 'Sync Frame.io'), run('routeOpus', 'Switch to OpusClip')]
+      : !recordingSynced ? [run('syncFrame', 'Sync Frame.io'), run('routeDavinci', 'Switch to DaVinci Resolve')]
+        : !longFormSubmitted ? [run('editFull', 'Edit full video'), run('routeDavinci', 'Switch to DaVinci Resolve')]
+          : [...finalLink, run('syncFrame', 'Sync Frame.io')];
+  add('edit', 'Edit the video', finished, davinci ? 'byHand' : inOpus ? 'sienna' : 'hq', editText + busy, editButtons, 'Finished video in Frame.io.');
 
-  // 7. Thumbnail (Content Center "Generate thumbnail" → n8n; approved in the Content Center).
-  add('thumbnail', 'Thumbnail', thumbnailApproved || onYoutube, 'contentCenter',
-    !v.thumbnailUrl ? 'Press "Generate thumbnail" in the Content Center (it makes one from the title and your Frame.io portraits; uses image credits).'
-      : 'Look at it, then press "Approve thumbnail" (or "Request thumbnail changes") in the Content Center.',
-    [...(thumb ? [{ kind: 'link' as const, label: 'Open the thumbnail', url: thumb }] : []), cc('Open the Content Center')], 'Thumbnail approved.');
+  // 7. Thumbnail (n8n Generate Thumbnail / Revise Thumbnail webhooks; approve = Thumbnail Status "Approved").
+  const generating = /generating/i.test(v.thumbnailStatus);
+  add('thumbnail', 'Thumbnail', thumbnailApproved || onYoutube, 'hq',
+    generating ? 'The thumbnail is being made. Refresh in a minute.'
+      : !v.thumbnailUrl ? `Press "Generate thumbnail": it makes a 16:9 thumbnail from the title and your Frame.io portraits (uses image credits).${busy}`
+        : 'Look at it, then approve it, or say what to change and a new one is made.',
+    generating ? [] : !v.thumbnailUrl ? [run('thumbnail', 'Generate thumbnail')]
+      : [...(thumb ? [{ kind: 'link' as const, label: 'Open the thumbnail', url: thumb }] : []), run('thumbnailApprove', 'Approve thumbnail'), run('thumbnailRevise', 'Request changes', 'changes')],
+    'Thumbnail approved.');
 
-  // 8. YouTube title and description (Content Center "Prepare YouTube details" → n8n).
-  add('details', 'YouTube title and description', (!!v.youtubeTitle && v.hasYoutubeDescription) || onYoutube, 'contentCenter',
-    'Press "Prepare YouTube details" in the Content Center: it writes the title and description for you to copy.', [cc('Open the Content Center')], 'Ready.');
+  // 8. YouTube title and description (n8n Prepare YouTube Details webhook).
+  add('details', 'YouTube title and description', (!!v.youtubeTitle && v.hasYoutubeDescription) || onYoutube, 'hq',
+    `Press "Prepare YouTube details": it writes the title and description for you to copy into YouTube Studio.${busy}`, [run('youtubeDetails', 'Prepare YouTube details')], 'Ready to copy.');
 
-  // 9. Post on YouTube (by hand: HQ and Sienna never post).
+  // 9. Post on YouTube (by hand: HQ and Sienna never post), then save the link here (the Content Center's YouTube URL field).
   add('youtube', 'Post on YouTube', onYoutube, 'byHand',
-    `${v.status === 'Scheduled' ? 'Marked "Scheduled" but no YouTube link is saved. ' : ''}Upload the finished video and thumbnail in YouTube Studio yourself (HQ and Sienna never post), then save the YouTube link on this video in the Content Center.`,
-    [{ kind: 'link', label: 'Open YouTube Studio', url: 'https://studio.youtube.com/' }, cc('Save the link in the Content Center')],
+    `${v.status === 'Scheduled' ? 'Marked "Scheduled" but no YouTube link is saved. ' : ''}Upload the finished video and thumbnail in YouTube Studio yourself (HQ and Sienna never post), then paste the YouTube link here.`,
+    [{ kind: 'link', label: 'Open YouTube Studio', url: 'https://studio.youtube.com/' }, run('youtubeUrl', 'Save the YouTube link', 'url')],
     x.posted ? `Posted ${slash(x.posted)}.` : 'Posted (no date saved).', yt ? [{ kind: 'link', label: 'Watch on YouTube', url: yt }] : []);
 
-  // 10. Short clips (Content Center "Create short clips" → n8n OpusClip Submit and Refresh).
-  add('clips', 'Short clips', clipCount > 0, 'contentCenter',
+  // 10. Short clips ("Create short clips" / "Check clip status" → Content Automation Action "Submit to OpusClip" / "Refresh Opus Clips").
+  add('clips', 'Short clips', clipCount > 0, 'hq',
     shortBlocked ? 'The short-clips job needs a check (it may belong to another final video). Don\'t submit another; Riley checks it.'
-      : !v.finalAssetId ? 'Press "Sync Frame.io" in the Content Center so it registers the finished video, then "Create short clips".'
-        : !shortSubmitted ? 'Press "Create short clips" in the Content Center (OpusClip; uses credits). Sienna checks each clip before it comes to you.'
-          : 'OpusClip is making them. "Check clip status" in the Content Center brings them in.',
-    [cc('Open the Content Center')], `${clipCount} clip${clipCount === 1 ? '' : 's'}.`);
+      : !v.finalAssetId ? 'Press "Sync Frame.io" so it registers the finished video, then "Create short clips".'
+        : !shortSubmitted ? `Press "Create short clips" (OpusClip; uses credits). Sienna checks each clip before it comes to you.${busy}`
+          : `OpusClip is making them. "Check clip status" brings them in.${busy}`,
+    shortBlocked ? [] : !v.finalAssetId ? [run('syncFrame', 'Sync Frame.io')] : !shortSubmitted ? [run('shortClips', 'Create short clips')] : [run('refreshClips', 'Check clip status')],
+    `${clipCount} clip${clipCount === 1 ? '' : 's'}.`);
 
-  // 11. Posts (Content Center: choose outputs, "Generate posts"; approval and scheduling stay there).
-  add('posts', 'Posts from this video', drafts, 'contentCenter',
-    v.distributionChannels === 0 ? 'Choose the clips wanted and where the posts go on this video in the Content Center, then press "Generate posts".' : 'Press "Generate posts" in the Content Center (posts, captions, Reddit drafts, newsletter).',
-    [cc('Open the Content Center')], 'Drafts made.');
-  add('approve', 'Approve and schedule the posts', contentComplete(v), 'contentCenter',
-    'Review and approve the drafts in the Content Center (Posts). Scheduling stays there: HQ never schedules or posts.', [cc('Open the Content Center')], 'Done.');
+  // 11. Posts (the repurposing brief, then "Generate posts" → Content Automation Action "Generate Distribution Pack").
+  const postsRunning = v.action === 'Generate Distribution Pack';
+  add('posts', 'Posts from this video', drafts, 'hq',
+    v.distributionChannels === 0 ? 'Choose where the posts go (Instagram, YouTube Shorts, Reddit, X, LinkedIn, blog, newsletter) and how many clips to use.'
+      : clipCount === 0 ? 'The posts are made from the clips: make the short clips first.'
+        : postsRunning ? 'The posts are being made. If nothing comes back, retry (once).'
+          : `Press "Generate posts": captions, Reddit drafts and the newsletter, for your review (nothing is posted).${busy}`,
+    v.distributionChannels === 0 ? [run('postsBrief', 'Choose where the posts go', 'brief')]
+      : clipCount === 0 ? [run('postsBrief', 'Change where the posts go', 'brief')]
+        : postsRunning ? [run('postsRetry', 'Retry the posts')] : [run('posts', 'Generate posts'), run('postsBrief', 'Change where the posts go', 'brief')],
+    'Drafts made.');
+
+  // 12. Distribution: approve each platform's post, post it, record where / when / views, likes, comments (HQ).
+  add('approve', 'Approve, post and record the stats', contentComplete(v), 'hq',
+    'Open Distribution below: approve each platform\'s post, post it (Instagram and YouTube Shorts can be scheduled through OpusClip once you approve; Reddit, X, LinkedIn and TikTok by hand), then record where it went and its views, likes and comments.',
+    [{ kind: 'distribution', label: 'Open Distribution' }], 'Done.');
 
   // The first required step not done is "now"; an optional one before it (Gamma) is "now" too; the rest wait.
   const first = steps.findIndex((s) => s.state !== 'done' && !s.optional);
@@ -687,6 +718,8 @@ export function buildContent(src: ContentSource, baseId: string, now = Date.now(
     /** Round 4: when it was posted ('' = not posted, or posted with no date known) and where that date came from. */
     posted: boolean; postedDate: string; postedFrom: PostedFrom;
     status: string; productionStage: string; next: NextStep | null; flags: string[]; facts: ItemFacts;
+    /** Round 5: the Content Automation Action now in the field ('' = nothing running). */
+    running: string;
     /** Round 4: the real workflow, and Sienna's prep (script, hooks, Gamma outline) when HQ read it. */
     steps: VideoStep[]; prep: (Prep & { script: string }) | null;
   }[] = [];
@@ -705,7 +738,7 @@ export function buildContent(src: ContentSource, baseId: string, now = Date.now(
       id: v.id, title: v.title, channel: v.channel, key: CHANNEL_KEY[v.channel as Channel], stage: st, cc: ccStageOf(v), thisWeek: inRange(v.recordingDate, week.start, week.end),
       awaiting: needsApproval(v), done: contentComplete(v), recordingDate: v.recordingDate, publishDate: v.publishDate,
       posted: postedWithProof(v), postedDate: posted.date, postedFrom: posted.from,
-      status: v.status, productionStage: v.stage, next: st === 'posted' ? null : nextStep(v, src.clips), flags, facts: itemFacts(v, src.clips),
+      status: v.status, productionStage: v.stage, next: st === 'posted' ? null : nextStep(v, src.clips), flags, facts: itemFacts(v, src.clips), running: v.action,
       steps: videoSteps(v, src.clips, { gamma: prep?.gamma ?? '', gammaUrl: prep?.gammaUrl ?? '', hasPrep: !!prep?.script, stuck: stuckIds.has(v.id), now, posted: posted.date }),
       prep: prep && prep.script ? prep : null,
     });

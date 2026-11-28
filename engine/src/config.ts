@@ -98,6 +98,14 @@ export interface Config {
   /** n8n public API (Settings → n8n API) for Riley's error sweep; optional. */
   n8nApiKey: string;
   n8nBaseUrl: string;
+  /**
+   * HQ Content (round 5): the n8n webhooks the Content Center's buttons call. Each is a full URL from
+   * CONTENT_HOOK_<NAME> (SCRIPT, THUMBNAIL, THUMBNAIL_REVISE, YOUTUBE, DISTRIBUTION, SCHEDULE,
+   * NEWSLETTER, FRAMER). The paths are secret (the webhooks have no auth), so they are never in the repo.
+   * A missing one is read once from n8n (N8N_API_KEY) and joined to CONTENT_WEBHOOK_BASE.
+   */
+  contentHooks: Record<string, string>;
+  contentWebhookBase: string;
   siennaIdeasHour: number;
   siennaPrepHour: number;
   siennaChannel: string;
@@ -291,6 +299,9 @@ export function loadConfig(env = process.env): Config {
     rileyEveryMin: num('RILEY_EVERY_MIN', 15, env),
     n8nApiKey: env.N8N_API_KEY || '',
     n8nBaseUrl: env.N8N_BASE_URL || 'http://localhost:5678',
+    contentHooks: Object.fromEntries(['SCRIPT', 'THUMBNAIL', 'THUMBNAIL_REVISE', 'YOUTUBE', 'DISTRIBUTION', 'SCHEDULE', 'NEWSLETTER', 'FRAMER']
+      .map((k) => [k, (env[`CONTENT_HOOK_${k}`] || '').trim()]).filter(([, v]) => /^https:\/\/[^\s]+$/.test(v))),
+    contentWebhookBase: (env.CONTENT_WEBHOOK_BASE || 'https://n8n.dulcy.io').trim().replace(/\/+$/, ''),
     siennaIdeasHour: num('SIENNA_IDEAS_HOUR', 7, env),
     siennaPrepHour: num('SIENNA_PREP_HOUR', 10, env),
     discordBotToken: env.DISCORD_BOT_TOKEN || undefined,

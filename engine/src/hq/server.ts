@@ -47,6 +47,7 @@ import { buildDeliverability, cachedDeliv, inboxCosts } from './deliverability.j
 import { bouncesView, verificationView } from './bounceStats.js';
 import { portalRoute, resolvePortalClient } from './portal.js';
 import { contentSummary, contentView, decideIdea } from './content.js';
+import { contentItemDetail, decideDraft, isRunKey, recordPost, runContentAction, scheduleDraft } from './contentActions.js';
 import { allDeals, dealDetail, nyDay, salesView } from './sales.js';
 // Batch 4a: Sales insights (periods, capacity, Close hottest deals) and the contract draft.
 import { DULCY_WS, insightsView, saveCapacitySettings, salesDeps, type SalesDeps } from './salesInsights.js';
@@ -582,7 +583,9 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       m = p.match(/^\/hq\/api\/deliverability(?:\/(inboxes|placement|domains))?$/);
       if (m && req.method === 'GET') { json(res, 200, await deliverabilityView(needAt(), db, cfg, m[1] ?? 'attention', url.searchParams, owner)); return true; }
 
-      // Content (Step 3, 2026-11-26): owner only (content is Alex-only; members get 403). One write: the idea decision.
+      // Content (Step 3, 2026-11-26): owner only (content is Alex-only; members get 403). Round 5 (2026-11-28): every
+      // Content Center button (run), Distribution (draft approve / schedule) and the posted stats. Writes need the
+      // same-origin check above; nothing posts.
       if (p === '/hq/api/content' || p.startsWith('/hq/api/content/')) {
         if (!owner) { json(res, 403, { error: 'only the owner sees content' }); return true; }
         if (p === '/hq/api/content' && req.method === 'GET') { json(res, 200, await contentView(needAt(), db, cfg.airtableBaseId, { refresh: url.searchParams.get('refresh') === '1' })); return true; }
@@ -593,6 +596,29 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
           if (!['approve', 'reject'].includes(b.verdict)) { json(res, 400, { error: 'verdict must be approve or reject' }); return true; }
           const r = await decideIdea(needAt(), db, cm[1], b.verdict, user.name);
           json(res, r.status, r.error ? { error: r.error } : { ok: true, ...r.result });
+          return true;
+        }
+        const runDeps = () => ({ at: needAt(), db, cfg, fetchImpl: deps.fetchImpl, by: user.name });
+        const im = p.match(/^\/hq\/api\/content\/items\/(rec[A-Za-z0-9]{14})(?:\/(run|posted))?$/);
+        if (im && !im[2] && req.method === 'GET') { const r = await contentItemDetail(needAt(), db, im[1]); json(res, r.status, r.error ? { error: r.error } : r.item); return true; }
+        if (im && im[2] === 'run' && req.method === 'POST') {
+          const b = await readJson(req, 5_000);
+          if (!isRunKey(b.action)) { json(res, 400, { error: 'unknown action' }); return true; }
+          const r = await runContentAction(runDeps(), im[1], b.action, b);
+          json(res, r.status, r.error ? { error: r.error } : { ok: true, message: r.message });
+          return true;
+        }
+        if (im && im[2] === 'posted' && req.method === 'POST') {
+          const r = await recordPost(runDeps(), im[1], await readJson(req, 5_000));
+          json(res, r.status, r.error ? { error: r.error } : { ok: true, message: r.message });
+          return true;
+        }
+        const dm = p.match(/^\/hq\/api\/content\/drafts\/(rec[A-Za-z0-9]{14})(?:\/(schedule))?$/);
+        if (dm && req.method === 'POST') {
+          const b = await readJson(req, 2_000);
+          if (!dm[2] && !['approve', 'changes'].includes(b.verdict)) { json(res, 400, { error: 'verdict must be approve or changes' }); return true; }
+          const r = dm[2] ? await scheduleDraft(runDeps(), dm[1], String(b.at ?? '')) : await decideDraft(runDeps(), dm[1], b.verdict);
+          json(res, r.status, r.error ? { error: r.error } : { ok: true, message: r.message });
           return true;
         }
         json(res, 404, { error: 'not found' }); return true;
