@@ -140,7 +140,8 @@ export function readFinance(deps: FinanceDeps, now = new Date(), refresh = false
  * The sheet does not say which card is business or personal, so only these names go to Personal;
  * every other card stays under Company until Alex says otherwise.
  */
-export const PERSONAL_CARD = /robinhood|discover/i;
+export const PERSONAL_CARD_NAMES = ['robinhood', 'discover'] as const;
+export const PERSONAL_CARD = new RegExp(PERSONAL_CARD_NAMES.join('|'), 'i');
 export interface CardSplit { company: CardDebt[]; personal: CardDebt[]; companyTotals: PnlSheet['cardTotals']; personalTotals: PnlSheet['cardTotals'] }
 const totals = (cards: CardDebt[]): PnlSheet['cardTotals'] => {
   const sum = (k: 'statement' | 'balance' | 'minimum') => Math.round(cards.reduce((a, c) => a + c[k], 0) * 100) / 100;

@@ -307,6 +307,20 @@ export interface FinancesData {
   personal: { cards: FinanceCard[] | null; cardTotals: { statement: number; balance: number; minimum: number } | null };
   sources: { income: string; cards: string; personalRule: string }; errors: string[]; readAt: string;
 }
+/** Finances → Personal through Plaid (GET /finances/personal). Read only; no token ever reaches the page. */
+export interface PersonalAccount {
+  name: string; mask: string; type: string; subtype: string; currency: string;
+  current: number | null; available: number | null; limit: number | null;
+  statement: number | null; minimum: number | null; due: string; overdue: boolean | null; statementDate: string; lastPayment: number | null; lastPaymentDate: string;
+}
+export interface PersonalConnection { id: number; institution: string; linkedAt: string; accounts: PersonalAccount[]; error: string | null }
+export interface PersonalData {
+  configured: boolean; message: string | null; env: 'sandbox' | 'production';
+  connections: PersonalConnection[];
+  totals: { cards: number; cardBalance: number; statement: number; minimum: number; cash: number } | null;
+  /** Sheet card names (robinhood, discover) a linked account now replaces. */
+  replaces: string[]; readAt: string;
+}
 // ---------- Batch 4b: Needs you (to-do), Team board, Chat threads and suggestions ----------
 /** One to-do on "Needs you": the problem (title), what to do (todo), why (why), one action. */
 export interface TodoItem extends Omit<Need, 'kind'> {
