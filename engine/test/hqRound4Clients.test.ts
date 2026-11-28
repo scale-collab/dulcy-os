@@ -20,10 +20,11 @@ const NOW = new Date('2026-11-27T15:00:00.000Z');
 // ---------- custom range ----------
 test('custom range: both days included, the range before has the same days; bad ranges refused', () => {
   assert.deepEqual(customRanges('2026-11-01', '2026-11-30'), {
-    cur: { from: '2026-11-01', to: '2026-12-01', label: '11/1/2026 to 11/30/2026' },
+    cur: { from: '2026-11-01', to: '2026-12-01', label: '11/1 to 11/30' },
     prev: { from: '2026-10-02', to: '2026-11-01', label: 'The 30 days before' },
   });
   assert.equal(customRanges('2026-11-05', '2026-11-05')!.cur.to, '2026-11-06', 'one day');
+  assert.equal(customRanges('2025-12-15', '2026-01-10')!.cur.label, '12/15/2025 to 1/10/2026', 'the year only across years');
   assert.equal(customRanges('2026-11-30', '2026-11-01'), null, 'to before from');
   assert.equal(customRanges('11/1/2026', '2026-11-30'), null, 'not a day');
   assert.equal(customRanges('2020-01-01', '2026-11-30'), null, 'longer than 3 years');

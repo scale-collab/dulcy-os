@@ -133,7 +133,8 @@ export function rangeNumbers(book: BookClient[], r: Range): RangeNumbers {
 /** Round 4 (Alex 2026-11-28): every period picker gets a Custom range. Longest custom range, in days. */
 export const CUSTOM_MAX_DAYS = 3 * 366;
 const isDay = (x: unknown): x is string => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x) && Number.isFinite(day(x));
-const slashDay = (d: string) => `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}/${d.slice(0, 4)}`;
+/** Dates use slashes (11/27); the year only when the range crosses a year. */
+const slashDay = (d: string, year: boolean) => `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}${year ? `/${d.slice(0, 4)}` : ''}`;
 /**
  * A custom range: from and to are both included ("12/1 to 12/31"), so [from, to + 1 day). The
  * range before it has the same number of days. null when a date is bad, to is before from or the
@@ -144,7 +145,7 @@ export function customRanges(from: unknown, to: unknown): { cur: Range; prev: Ra
   const days = Math.round((day(to) - day(from)) / DAY) + 1;
   if (days > CUSTOM_MAX_DAYS) return null;
   const end = ymd(day(to) + DAY); const prevFrom = ymd(day(from) - days * DAY);
-  return { cur: { from, to: end, label: `${slashDay(from)} to ${slashDay(to)}` }, prev: { from: prevFrom, to: from, label: `The ${days} days before` } };
+  return { cur: { from, to: end, label: `${slashDay(from, from.slice(0, 4) !== to.slice(0, 4))} to ${slashDay(to, from.slice(0, 4) !== to.slice(0, 4))}` }, prev: { from: prevFrom, to: from, label: `The ${days} days before` } };
 }
 /** The Clients screen's agency numbers. LTV and retention cover every paying client ever. Pure. */
 export function agencyNumbers(book: BookClient[], period: Period | 'custom', now: Date, ranges?: { cur: Range; prev: Range }): AgencyNumbers {
