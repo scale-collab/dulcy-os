@@ -13,12 +13,16 @@ import { api, type AtlasTakeR5, type CampaignAccountB3, type CampaignCenterR2, t
 import { Avatar, BackLink, Card, cx, ErrorBox, go, Icon, PageSkeleton, Pill, StatusDot, timeAgo } from '../../ui';
 import { Bar, NEED, Steps } from './bits';
 import { PlanCard } from './Plans';
+import { CampaignCenterSection } from './CenterParity';
 import { CompactActions, num, rate, slash, slashTime, Tabs } from './shared';
 import type { AutomationR2 } from '../../api';
 
-type Tab = 'overview' | 'copy' | 'list' | 'senders' | 'plan' | 'history';
+type Tab = 'overview' | 'copy' | 'sequence' | 'settings' | 'list' | 'senders' | 'variants' | 'plan' | 'history' | 'more';
+// Center parity (2026-11-28): Sequence, Settings, Variants and More are the Airtable Campaign Center's
+// remaining tabs; Copy, Senders and Plan get the screen's edits and buttons below what they showed.
 const TABS: { key: Tab; label: string }[] = [
-  { key: 'overview', label: 'Overview' }, { key: 'copy', label: 'Copy' }, { key: 'list', label: 'Lead list' }, { key: 'senders', label: 'Senders' }, { key: 'plan', label: 'Plan' }, { key: 'history', label: 'History' },
+  { key: 'overview', label: 'Overview' }, { key: 'copy', label: 'Copy' }, { key: 'sequence', label: 'Sequence' }, { key: 'settings', label: 'Settings' }, { key: 'list', label: 'Lead list' },
+  { key: 'senders', label: 'Senders' }, { key: 'variants', label: 'Variants' }, { key: 'plan', label: 'Plan' }, { key: 'history', label: 'History' }, { key: 'more', label: 'More' },
 ];
 /** Old links (#/campaigns/<id>/strategy) open the Plan tab, where the strategy now lives. */
 const tabOf = (t?: string): Tab => (t === 'strategy' ? 'plan' : TABS.some((x) => x.key === t) ? (t as Tab) : 'overview');
@@ -108,7 +112,7 @@ export function CampaignPage({ id, tab }: { id: string; tab?: string }) {
 
       {t === 'list' && (
         <div className="mt-3 space-y-2">
-          {!d.lists.length && <Card className="p-4"><div className="text-sm text-muted">No lead list linked to this campaign yet. Atlas links one when he plans a campaign; for a hand-made campaign link it in Campaign Center (comes next in HQ).</div></Card>}
+          {!d.lists.length && <Card className="p-4"><div className="text-sm text-muted">No lead list linked to this campaign yet. Atlas links one when he plans a campaign; for a hand-made campaign link it on the Plan tab (Lead list).</div></Card>}
           {d.lists.map((l) => (
             <Card key={l.id} className="p-4">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -141,6 +145,10 @@ export function CampaignPage({ id, tab }: { id: string; tab?: string }) {
       )}
 
       {t === 'history' && <History d={d} />}
+      {t === 'copy' && <CampaignCenterSection id={id} section="copy" onDone={load} />}
+      {t === 'senders' && <CampaignCenterSection id={id} section="senders" onDone={load} />}
+      {t === 'plan' && <CampaignCenterSection id={id} section="strategy" onDone={load} />}
+      {(t === 'sequence' || t === 'settings' || t === 'variants' || t === 'more') && <CampaignCenterSection id={id} section={t} onDone={load} />}
       <p className="mt-4 text-xs text-muted">Read {timeAgo(d.readAt) || 'just now'} from Airtable and the engine; kept 1 minute. Buttons press the same engine steps as the Airtable Campaign Center.</p>
     </div>
   );
@@ -244,7 +252,7 @@ function Senders({ accounts, clientKey }: { accounts: CampaignAccountB3[]; clien
         <button onClick={() => go(`deliverability/inboxes/${clientKey || 'all'}`)} className="min-h-8 text-sm font-semibold text-accent-ink hover:underline">Deliverability</button>
       </div>
       <Card className="p-0">
-        {!accounts.length ? <div className="px-4 py-3 text-sm text-muted">No sending inboxes on this campaign. The client's available inboxes are in the Sender accounts box on the Campaign Center; picking them comes next in HQ.</div> : (
+        {!accounts.length ? <div className="px-4 py-3 text-sm text-muted">No sending inboxes on this campaign. Pick them below (Pick sending inboxes).</div> : (
           <>
             <ul className="divide-y divide-line md:hidden">
               {accounts.map((a) => {

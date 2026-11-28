@@ -219,12 +219,11 @@ export const CAMPAIGN_BUTTONS: CampaignDef[] = [
     does: 'Adds the Top-up Lead List (Ready, QA Passed) to the running campaign, only when the top-up rule passes (interested 15%+ of replies). Never uploads the same list twice.', spends: 'Adds leads in EmailBison',
     ready: (c) => (!c.bison.length ? 'Build the campaign first.' : c.status !== 'Active' ? 'Top up a live campaign.' : !c.topupList ? 'Pick the Top-up Lead List in Campaign Center first.' : null) },
 ];
-const COMES_NEXT: { key: string; label: string; does: string }[] = [
-  { key: 'pick-inboxes', label: 'Pick sending inboxes', does: 'Picking the campaign\'s inboxes is a Campaign Center field today; HQ shows which are free (Sending accounts) but cannot pick them yet.' },
-  { key: 'clone', label: 'Clone', does: 'Clone runs an Airtable script, not the engine.' },
-  { key: 'sync', label: 'Sync with EmailBison', does: 'The full sync runs in n8n, not the engine.' },
-  { key: 'delete', label: 'Delete', does: 'Delete stays in n8n (Alex 2026-11-23).' },
-];
+// Center parity (2026-11-28): picking inboxes (Senders tab), Clone and Delete (More tab) and Sync with
+// EmailBison (Campaigns) are built (centerParity.ts), so nothing "comes next" on the campaign row any more.
+const COMES_NEXT: { key: string; label: string; does: string }[] = [];
+/** Where the old "comes next" buttons live now (a press on the engine route points there). */
+const MOVED: Record<string, string> = { 'pick-inboxes': 'Pick inboxes on the campaign\'s Senders tab.', clone: 'Clone is on the campaign\'s More tab.', delete: 'Delete is on the campaign\'s More tab.', sync: 'Sync with EmailBison is at the top of Campaigns.' };
 /** The Campaign Center buttons for one campaign. Pure. */
 export function campaignActions(c: CampaignState, canAct: boolean, cfg: Pick<Config, 'dryRun' | 'liveStages'>): ActionView[] {
   const locked = campaignLocked(c);
@@ -278,7 +277,7 @@ export async function pressListAction(at: HqAirtable, db: Db, cfg: Config, id: s
 /** Press a Campaign Center button (Build / Launch / Pause / Update Senders / Top Up). */
 export async function pressCampaignAction(at: HqAirtable, db: Db, cfg: Config, id: string, body: any, actor: string): Promise<PressResult> {
   const def = CAMPAIGN_BUTTONS.find((d) => d.key === body?.action);
-  if (!def) return refuse(400, COMES_NEXT.some((x) => x.key === body?.action) ? 'That button comes next in HQ.' : 'unknown action');
+  if (!def) return refuse(400, MOVED[String(body?.action)] ?? 'unknown action');
   if (body?.confirm !== true) return refuse(400, 'confirm: true is required', { does: def.does });
   const rec = await at.get(CAMPAIGNS_T, id, CAMPAIGN_READ);
   if (!rec) return refuse(404, 'no such campaign');
@@ -492,11 +491,9 @@ export async function campaignCopy(at: HqAirtable, db: Db, cfg: Config, id: stri
       flagged: Array.isArray(copyRow?.copy_issues?.left) ? copyRow.copy_issues.left.map(String) : [],
     } : null,
     plan,
-    // A hand-made campaign (no plan): writing and approving its copy runs in Campaign Center for now.
-    comesNext: plan ? [] : [
-      { key: 'write', label: 'Write copy with Scribe', why: 'Scribe writes copy for campaigns Atlas plans. For a hand-made campaign: comes next in HQ (use New campaign, or the Campaign Center).' },
-      { key: 'send-review', label: 'Send for client review', why: 'Moves the copy to Client Review: a Campaign Center screen write today; comes next in HQ.' },
-    ],
+    // Center parity (2026-11-28): a hand-made campaign's copy is written, sent for approval and approved
+    // on this tab (centerParity.ts), as in the Campaign Center; nothing comes next here.
+    comesNext: [] as { key: string; label: string; why: string }[],
     readAt: new Date().toISOString(),
   };
 }
