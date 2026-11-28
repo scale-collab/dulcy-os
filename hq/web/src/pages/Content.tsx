@@ -18,6 +18,7 @@ import ContentItems from './content/ContentItems';
 import ContentCalendar from './content/ContentCalendar';
 import { DecideButtons, GammaBlock, Head, Notes, dateOnly, day, shortLabel } from './content/shared';
 import { RunButton } from './content/ContentActions';
+import { AddIdea, ChannelPicker, ContentSettings } from './content/ContentCenterParts';
 
 const VIEWS = [
   { key: 'needs', label: 'Needs you', short: 'Needs' },
@@ -28,16 +29,20 @@ const VIEWS = [
 type View = (typeof VIEWS)[number]['key'];
 const isView = (x?: string): x is View => VIEWS.some((v) => v.key === x);
 
-/** #/content[/needs | items[/<rec>] | calendar | friday[/main|raw[/<n>]]]; the old #/content/pipeline opens Content, #/content/week opens Needs you. */
+/** #/content[/needs | items[/<rec>] | calendar | friday[/main|raw[/<n>]] | settings]; the old #/content/pipeline opens Content, #/content/week opens Needs you. */
 export default function Content({ a, b, c }: { a?: string; b?: string; c?: string }) {
-  const view: View = a === 'pipeline' ? 'items' : isView(a) ? a : 'needs';
+  const settings = a === 'settings';
+  const view: View = a === 'pipeline' ? 'items' : isView(a) ? a : settings ? 'items' : 'needs';
   const [d, setD] = useState<ContentCenterView | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  // Parity: the Content Center's "Hide older and completed history" (unticked = history=1: rejected and older items too).
+  const [history, setHistory] = useState(false);
   const load = useCallback((refresh = false) => {
     setBusy(true); setError('');
-    api<ContentCenterView>(`/content${refresh ? '?refresh=1' : ''}`).then((x) => { setD(x); setCount('content', x.counts.total); }).catch((e) => setError(e.message)).finally(() => setBusy(false));
-  }, []);
+    const q = [refresh ? 'refresh=1' : '', history ? 'history=1' : ''].filter(Boolean).join('&');
+    api<ContentCenterView>(`/content${q ? `?${q}` : ''}`).then((x) => { setD(x); setCount('content', x.counts.total); }).catch((e) => setError(e.message)).finally(() => setBusy(false));
+  }, [history]);
   useEffect(() => load(), [load]);
 
   const fri = d?.friday;
@@ -45,10 +50,13 @@ export default function Content({ a, b, c }: { a?: string; b?: string; c?: strin
   return (
     <div>
       <PageTitle title="Content" kicker={kicker} sub="Ideas, recording, editing, publishing and clips in one place."
-        right={<IconButton icon="refresh" label="Refresh" onClick={() => load(true)} className={cx('border border-line bg-surface', busy && '[&_svg]:animate-spin')} />} />
+        right={<div className="flex gap-2">
+          <IconButton icon="wrench" label="Content settings" active={settings} onClick={() => go(settings ? 'content/items' : 'content/settings')} className="border border-line bg-surface" />
+          <IconButton icon="refresh" label="Refresh" onClick={() => load(true)} className={cx('border border-line bg-surface', busy && '[&_svg]:animate-spin')} />
+        </div>} />
       <div role="tablist" aria-label="Content views" className="grid grid-cols-4 gap-1 rounded-2xl border border-line bg-sunken p-1 sm:inline-flex">
         {VIEWS.map((x) => {
-          const on = x.key === view;
+          const on = x.key === view && !settings;
           const n = x.key === 'needs' ? d?.counts.total ?? 0 : 0;
           return (
             <button key={x.key} role="tab" aria-selected={on} onClick={() => go(`content/${x.key}`)} aria-label={n ? `${x.label}, ${n}` : undefined}
@@ -62,10 +70,11 @@ export default function Content({ a, b, c }: { a?: string; b?: string; c?: strin
       </div>
       {error && <div className="mt-4"><ErrorBox error={error} retry={() => load()} /></div>}
       {!d && !error && <div className="mt-4"><PageSkeleton kind="list" /></div>}
-      {d && (
+      {settings && <div className="mt-5"><ContentSettings /></div>}
+      {d && !settings && (
         <div className="mt-5">
-          {view === 'needs' && <NeedsView d={d} />}
-          {view === 'items' && <ContentItems d={d} id={b} onChanged={() => load(true)} />}
+          {view === 'needs' && <NeedsView d={d} onChanged={() => load(true)} />}
+          {view === 'items' && <ContentItems d={d} id={b} onChanged={() => load(true)} history={history} onHistory={setHistory} />}
           {view === 'calendar' && <ContentCalendar d={d} />}
           {view === 'friday' && <FridayView d={d} channel={b} index={Number(c) || 1} />}
           <p className="mt-8 text-xs text-muted">From the Content OS tables, read {timeAgo(d.readAt) || 'just now'}; kept for 1 minute. HQ never posts or deletes; it schedules a post only when you press Schedule.</p>
@@ -76,8 +85,9 @@ export default function Content({ a, b, c }: { a?: string; b?: string; c?: strin
 }
 
 /* ---------- Needs you: Alex's to-do for content, most important first ---------- */
-function NeedsView({ d }: { d: ContentCenterView }) {
+function NeedsView({ d, onChanged }: { d: ContentCenterView; onChanged: () => void }) {
   const [gone, setGone] = useState<Record<string, string>>({});
+  const [adding, setAdding] = useState(false);
   const nIdeas = d.needs.ideas.reduce((a, g) => a + g.items.filter((i) => !gone[i.id]).length, 0);
   const nothing = !nIdeas && !d.needs.finals.length && !d.needs.alexSteps.length;
   return (
@@ -97,6 +107,7 @@ function NeedsView({ d }: { d: ContentCenterView }) {
         </details>
       )}
       {nothing && <Card><Empty icon="check" tone="good" title="Nothing needs you" sub="No ideas to decide and no final videos to check. Sienna adds ideas Friday at 7 AM." /></Card>}
+      {adding ? <AddIdea onClose={() => setAdding(false)} onAdded={() => { setAdding(false); onChanged(); }} /> : <Button icon="plus" onClick={() => setAdding(true)}>Add content idea</Button>}
 
       {/* Ideas per channel: one dropdown each, closed (Alex, round 4: "one big list is elongated to read"). */}
       {d.needs.ideas.some((g) => g.items.length) && (
@@ -113,7 +124,7 @@ function NeedsView({ d }: { d: ContentCenterView }) {
                     <Icon name="chevronDown" size={18} className="shrink-0 text-muted transition group-open:rotate-180" />
                   </summary>
                   <div className="space-y-3 border-t border-line p-3 sm:p-4">
-                    {g.items.map((i) => <IdeaCard key={i.id} idea={i} done={gone[i.id]} onDone={(msg) => setGone((x) => ({ ...x, [i.id]: msg }))} />)}
+                    {g.items.map((i) => <IdeaCard key={i.id} idea={i} noChannel={g.key === 'none'} onChanged={onChanged} done={gone[i.id]} onDone={(msg) => setGone((x) => ({ ...x, [i.id]: msg }))} />)}
                   </div>
                 </details>
               );
@@ -177,7 +188,7 @@ function NeedsView({ d }: { d: ContentCenterView }) {
           <ul className="mt-2 divide-y divide-line">
             {d.log.map((l, n) => (
               <li key={n} className="py-2">
-                <div className="text-fg-2"><span className="font-medium text-fg">{l.by}</span> {l.action === 'idea_approve' ? 'approved' : 'rejected'} "{l.title}" · <span className="text-muted">{timeAgo(l.at)}</span></div>
+                <div className="text-fg-2"><span className="font-medium text-fg">{l.by}</span> {logVerb(l.action)} "{l.title}" · <span className="text-muted">{timeAgo(l.at)}</span></div>
                 <div className="break-words text-xs text-muted">{l.changes.map((c) => `${c.field}: ${String(c.from || 'empty')} → ${String(c.to ?? 'empty')}`).join(' · ')}</div>
               </li>
             ))}
@@ -188,7 +199,15 @@ function NeedsView({ d }: { d: ContentCenterView }) {
   );
 }
 
-function IdeaCard({ idea, done, onDone }: { idea: ContentIdea; done?: string; onDone: (msg: string) => void }) {
+/** What a Changes-from-HQ line did (hq_content_log action). */
+const LOG_VERB: Record<string, string> = {
+  idea_approve: 'approved', idea_reject: 'rejected', idea_add: 'added the idea', set_channel: 'set the channel of', set_recording_date: 'changed the recording date of',
+  set_publish_date: 'changed the publish date of', youtube_save: 'saved the YouTube details of', delete: 'deleted', settings_save: 'saved', draft_approve: 'approved the post',
+  draft_changes: 'asked for changes to', draft_schedule: 'scheduled', draft_published: 'recorded the post', post_stats: 'recorded the stats of',
+};
+const logVerb = (a: string) => LOG_VERB[a] ?? (a.startsWith('run_') ? `pressed ${a.slice(4)} on` : a.startsWith('draft_') ? 'updated the post' : 'changed');
+
+function IdeaCard({ idea, done, onDone, noChannel, onChanged }: { idea: ContentIdea; done?: string; onDone: (msg: string) => void; noChannel?: boolean; onChanged?: () => void }) {
   if (done) return <Card className="flex items-start gap-3 py-4"><Icon name="check" size={18} className="mt-0.5 text-good" /><div className="min-w-0"><div className="break-words font-semibold text-fg">{idea.title}</div><div className="text-sm text-fg-2">{done}</div></div></Card>;
   return (
     <Card className="p-4 sm:p-5">
@@ -209,6 +228,7 @@ function IdeaCard({ idea, done, onDone }: { idea: ContentIdea; done?: string; on
           {idea.why && <div><dt className="inline font-medium text-fg">Why now: </dt><dd className="inline text-fg-2">{idea.why}</dd></div>}
         </dl>
       )}
+      {noChannel && <div className="mt-4"><ChannelPicker id={idea.id} channel="" onDone={() => onChanged?.()} /></div>}
       <DecideButtons id={idea.id} onDone={onDone} className="mt-4" />
     </Card>
   );

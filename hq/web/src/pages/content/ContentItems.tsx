@@ -18,6 +18,7 @@ import type { ReactNode } from 'react';
 import { BackLink, Button, Card, cx, Empty, ErrorBox, ExtLink, go, Icon, Pill } from '../../ui';
 import { CHANNEL_OPTIONS, DecideButtons, GammaBlock, Head, Select, StatusLine, WHERE, copyText, dateOnly, day, readChannel, saveChannel, shortLabel, type ChannelKey } from './shared';
 import { Distribution, RunButton, YouTubeCopy } from './ContentActions';
+import { AddIdea, ChannelPicker, ClipsShortlist, DatesEdit, DeleteItem, YouTubeEdit } from './ContentCenterParts';
 
 const stageTone = (s: ContentCcStage) => (s === 'Published' ? 'good' : s === 'Idea' ? 'accent' : 'plain') as 'good' | 'accent' | 'plain';
 /** "Record 11/27 · Publish 12/1", or "Posted 11/27" once it is on YouTube. */
@@ -25,8 +26,9 @@ const dates = (r: ContentItem) => (r.posted
   ? (r.postedDate ? `Posted ${dateOnly(r.postedDate)}` : 'Posted (no date saved)')
   : [r.recordingDate ? `Record ${dateOnly(r.recordingDate)}` : '', r.publishDate ? `Publish ${dateOnly(r.publishDate)}` : ''].filter(Boolean).join(' · '));
 
-export default function ContentItems({ d, id, onChanged }: { d: ContentCenterView; id?: string; onChanged: () => void }) {
+export default function ContentItems({ d, id, onChanged, history, onHistory }: { d: ContentCenterView; id?: string; onChanged: () => void; history: boolean; onHistory: (on: boolean) => void }) {
   const [q, setQ] = useState('');
+  const [adding, setAdding] = useState(false);
   const [channel, setChannel] = useState<ChannelKey>(readChannel);
   const [stage, setStage] = useState<ContentCcStage | ''>('');
   const [finished, setFinished] = useState(false);
@@ -50,6 +52,8 @@ export default function ContentItems({ d, id, onChanged }: { d: ContentCenterVie
 
   const list = (
     <div className="min-w-0">
+      {adding ? <div className="mb-3"><AddIdea onClose={() => setAdding(false)} onAdded={() => { setAdding(false); onChanged(); }} /></div>
+        : <div className="mb-2"><Button icon="plus" className="w-full" onClick={() => setAdding(true)}>Add content idea</Button></div>}
       <div className="grid grid-cols-2 gap-2">
         <label className="relative col-span-2 flex min-h-11 items-center">
           <span className="sr-only">Search content</span>
@@ -62,6 +66,10 @@ export default function ContentItems({ d, id, onChanged }: { d: ContentCenterVie
         <label className="col-span-2 flex min-h-10 cursor-pointer items-center gap-2.5 rounded-xl bg-sunken px-3 text-sm font-medium text-fg-2">
           <input type="checkbox" checked={finished} onChange={(e) => setFinished(e.target.checked)} className="h-5 w-5 accent-[var(--accent)]" />
           Show finished videos
+        </label>
+        <label className="col-span-2 flex min-h-10 cursor-pointer items-center gap-2.5 rounded-xl bg-sunken px-3 text-sm font-medium text-fg-2">
+          <input type="checkbox" checked={history} onChange={(e) => onHistory(e.target.checked)} className="h-5 w-5 accent-[var(--accent)]" />
+          Show older and rejected items
         </label>
       </div>
       <div className="mt-3 text-xs text-muted">{visible.length} item{visible.length === 1 ? '' : 's'} · earliest date first</div>
@@ -78,6 +86,7 @@ export default function ContentItems({ d, id, onChanged }: { d: ContentCenterVie
                   <span className="flex shrink-0 items-center gap-1">
                     {(r.facts.error || r.flags.length > 0) && <Icon name="alert" size={16} className="text-warn" />}
                     {r.thisWeek && <Pill tone="good">This week</Pill>}
+                    {r.archived && <Pill>{r.facts.decision || 'Rejected'}</Pill>}
                   </span>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs">
@@ -91,7 +100,7 @@ export default function ContentItems({ d, id, onChanged }: { d: ContentCenterVie
         })}
       </ul>
       {!visible.length && <Card className="mt-2"><Empty icon="film" title="No content here" sub="Change the filters, or approve ideas in Needs you." /></Card>}
-      {d.pipeline.leftOut > 0 && <p className="mt-3 text-xs text-muted">{d.pipeline.leftOut} older items (no date in the last 60 days) are not shown.</p>}
+      {d.pipeline.leftOut > 0 && <p className="mt-3 text-xs text-muted">{d.pipeline.leftOut} older items (no date in the last 60 days) are not shown: tick "Show older and rejected items".</p>}
     </div>
   );
 
@@ -172,6 +181,9 @@ function Item({ r, d, onChanged }: { r: ContentItem; d: ContentCenterView; onCha
   const distRef = useRef<HTMLDivElement>(null);
   const openDistribution = () => distRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   const finished = (msg: string) => { setDone(msg); loadDetail(); };
+  // Parity: "Content for", the dates and the YouTube boxes save in place, then the list re-reads.
+  const [saved, setSaved] = useState('');
+  const savedInPlace = (msg: string) => { setSaved(msg); loadDetail(); onChanged(); };
   const showDistribution = !!detail && (f.video.youtube || f.repurposing.drafts || detail.distribution.platforms.some((p) => p.drafts.length || p.manual));
   const act = (b: ContentStepButton, i: number, primary: boolean) => <StepAction key={`${b.kind}-${b.run ?? ''}-${i}`} b={b} r={r} primary={primary} onScript={openScript} onDone={finished} detail={detail} onDistribution={openDistribution} />;
   return (
@@ -227,6 +239,7 @@ function Item({ r, d, onChanged }: { r: ContentItem; d: ContentCenterView; onCha
         {(r.prep || fri) && (
           <div className="mt-4 flex flex-wrap gap-2 border-t border-accent/20 pt-3">
             {r.prep && <Button icon="file" onClick={openScript}>Open script</Button>}
+            {r.prep && !r.awaiting && <RunButton id={r.id} b={{ kind: 'run', run: 'script', label: 'Regenerate script' }} onDone={finished} />}
             {fri && <Button icon="film" onClick={() => go(`content/friday/${fri.c.key}/${fri.n + 1}`)}>Open on Friday (teleprompter)</Button>}
           </div>
         )}
@@ -254,7 +267,7 @@ function Item({ r, d, onChanged }: { r: ContentItem; d: ContentCenterView; onCha
       )}
 
       {/* 3b. Round 5: the YouTube title and description to copy (after "Prepare YouTube details") */}
-      {detail && !f.video.youtube && <YouTubeCopy d={detail} />}
+      {detail && !f.video.youtube && (f.video.finished || detail.youtube.title || detail.youtube.description ? <YouTubeEdit id={r.id} d={detail} onDone={savedInPlace} /> : <YouTubeCopy d={detail} />)}
 
       {/* 4. Every step of this video, in order, each with its HQ button */}
       <section>
@@ -265,6 +278,9 @@ function Item({ r, d, onChanged }: { r: ContentItem; d: ContentCenterView; onCha
           </ol>
         </Card>
       </section>
+
+      {/* 4a. Parity: the clips shortlist (the Content Center's review panel, Clips tab) */}
+      {detail && <ClipsShortlist d={detail} approveUrl={d.links.contentCenter} />}
 
       {/* 4b. Round 5: Distribution — each platform's post, approve, post, record where / when / stats */}
       <div ref={distRef} className="scroll-mt-4">
@@ -277,10 +293,15 @@ function Item({ r, d, onChanged }: { r: ContentItem; d: ContentCenterView; onCha
         <Head title="Schedule" icon="calendar" sub={r.key === 'raw' ? 'Alex Woung Raw: recorded in a batch on Friday.' : 'Alex Woung: two videos a week, published Tuesday and Thursday.'} />
         <Card className="p-4 sm:p-5">
           <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-            <div className="col-span-2"><dt className="text-xs text-muted">Idea review</dt><dd className="font-medium text-fg">{r.awaiting ? 'Waiting for your decision' : /^Rejected$/i.test(f.decision) ? 'Rejected' : 'Approved for production'}{f.score !== null ? <span className="font-normal text-muted"> · score {f.score}/100 (a suggestion)</span> : null}</dd></div>
-            <div><dt className="text-xs text-muted">Recording date</dt><dd className="font-medium text-fg">{r.recordingDate ? day(r.recordingDate) : 'Not set'}</dd></div>
-            <div><dt className="text-xs text-muted">{r.posted ? 'Posted' : 'Publish date'}</dt><dd className="font-medium text-fg">{r.posted ? (r.postedDate ? day(r.postedDate) : 'No date saved') : r.publishDate ? day(r.publishDate) : 'Not set'}</dd></div>
+            <div className="col-span-2"><dt className="text-xs text-muted">Idea review</dt><dd className="font-medium text-fg">{r.awaiting ? 'Waiting for your decision' : /^(Rejected|Duplicate|Archived)$/i.test(f.decision) ? f.decision : 'Approved for production'}{f.score !== null ? <span className="font-normal text-muted"> · score {f.score}/100 (a suggestion)</span> : null}</dd>
+              {f.reason && <dd className="mt-1 whitespace-pre-wrap break-words text-xs text-fg-2">{f.reason}</dd>}</div>
+            {r.posted && <div className="col-span-2"><dt className="text-xs text-muted">Posted</dt><dd className="font-medium text-fg">{r.postedDate ? day(r.postedDate) : 'No date saved'}</dd></div>}
           </dl>
+          <div className="mt-4 space-y-4 border-t border-line pt-4">
+            <ChannelPicker id={r.id} channel={r.channel} onDone={savedInPlace} />
+            <DatesEdit id={r.id} recording={r.recordingDate} publish={r.publishDate} locked={r.awaiting} onDone={savedInPlace} />
+            {saved && <p role="status" className="text-sm text-good">{saved}</p>}
+          </div>
         </Card>
       </section>
 
@@ -313,6 +334,8 @@ function Item({ r, d, onChanged }: { r: ContentItem; d: ContentCenterView; onCha
           ] as const).map(([k, v]) => <div key={k} className="min-w-0"><dt className="text-xs text-muted">{k}</dt><dd className="break-words text-fg">{v}</dd></div>)}
         </dl>
         {f.sourceUrl && <p className="mt-3"><ExtLink href={f.sourceUrl}>Original post</ExtLink></p>}
+        {f.reason && <div className="mt-3"><div className="text-xs text-muted">Why this idea qualified</div><p className="whitespace-pre-wrap break-words text-fg">{f.reason}</p></div>}
+        <div className="mt-4 border-t border-line pt-3"><DeleteItem id={r.id} title={r.title} /></div>
       </details>
     </div>
   );

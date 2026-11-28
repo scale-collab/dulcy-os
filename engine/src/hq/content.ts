@@ -887,7 +887,7 @@ export async function decideIdea(at: Pick<HqAirtable, 'list' | 'get' | 'update'>
   let dates = { recording: '', publish: '' };
   if (verdict === 'approve') {
     const channel = s(f[CF.channel]);
-    if (!isChannel(channel)) return { status: 400, error: 'Choose a content channel in Airtable before approving.' };
+    if (!isChannel(channel)) return { status: 400, error: 'Pick the channel first (Content for: Alex Woung or Alex Woung Raw).' };
     const [rows, scriptRows, settingsRows] = await Promise.all([
       at.list(CONTENT, `{Content Channel}='${q(channel)}'`, [CF.channel, CF.ideaDecision, CF.stage, XF.youtubeUrl, CF.recordingDate, XF.publishDate], 5000),
       at.list(CONTENT, `AND({Content Channel}='${q(channel)}',{Script}!='')`, [CF.channel], 5000),

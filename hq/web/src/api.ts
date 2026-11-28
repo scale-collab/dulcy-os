@@ -429,6 +429,8 @@ export interface ContentItemFacts {
   video: { folder: boolean; finished: boolean; youtube: boolean; youtubeUrl: string };
   repurposing: { shortProject: boolean; clips: number; drafts: boolean };
   update: string; error: string;
+  /** Parity 2026-11-28: the Content Center's "Why this idea qualified" (when HQ read it). */
+  reason?: string;
   details: { productionStage: string; status: string; editingRoute: string; opusStatus: string; shortJobState: string; thumbnailStatus: string; publishingStatus: string };
 }
 /** Round 4 (2026-11-28): each video's real workflow (engine/src/hq/content.ts videoSteps). */
@@ -444,22 +446,33 @@ export interface ContentItem extends ContentPipelineRow {
   posted: boolean; postedDate: string; postedFrom: string; steps: ContentStep[]; prep: ContentPrep | null;
   /** Round 5: the Content Automation Action in the field now ('' = nothing running). */
   running: string;
+  /** Parity 2026-11-28: rejected / duplicate / archived, or older than 60 days (both only in the history list). */
+  archived: boolean; old: boolean;
 }
 /** Round 5: GET /content/items/<rec> — YouTube copy, the posts brief and Distribution (fresh reads). */
 export interface ContentPostStats { slot: string; platform: string; url: string; postedOn: string; views: number | null; likes: number | null; comments: number | null; by: string; at: string }
 export interface ContentDraft {
   id: string; platform: string; outputType: string; title: string; body: string; media: string; approval: string; publishing: string;
   scheduledAt: string; postUrl: string; lastError: string; hasClip: boolean; canSchedule: boolean; stats: ContentPostStats | null;
+  /** Parity 2026-11-28: the Reddit community (r/…), where to post it by hand, and a newsletter's branded HTML. */
+  community?: string; composeUrl?: string; html?: string;
 }
+/** Parity 2026-11-28: one clip of the video's shortlist (the Content Center's review panel, Clips tab). */
+export interface ContentShortClip { id: string; name: string; score: number | null; status: string; review: string; verifiedClipId: string; version: number | null; preview: string; opusId: string; notes: string; transcript: string }
+export interface ContentChannelSettings { channel: string; found: boolean; fixed: boolean; videosPerWeek: number; clipsPerWeek: number; autoScheduleThreshold: number; reviewThreshold: number; minimumSpacingDays: number; minimumClipScore: number }
+export interface ContentSettingsView { channels: ContentChannelSettings[] }
 export interface ContentPlatform { platform: string; drafts: ContentDraft[]; manual: ContentPostStats | null; chosen: boolean }
 export interface ContentItemDetail {
   id: string; title: string; running: string;
   youtube: { title: string; description: string; chapters: string; url: string };
-  thumbnail: { url: string; status: string };
+  thumbnail: { url: string; status: string; previousUrl?: string };
   brief: { channels: string[]; count: number; minScore: number; options: string[]; clips: number };
+  /** Parity 2026-11-28 (contentCenter.ts contentItemFull). */
+  channel?: string; recordingDate?: string; publishDate?: string; settings?: { clipsPerWeek: number; minimumClipScore: number };
+  clips?: ContentShortClip[]; opusUrl?: string;
   distribution: { status: string; platforms: ContentPlatform[]; posted: number; totals: { posts: number; views: number; likes: number; comments: number } };
 }
-export type ContentCenterView = Omit<ContentView, 'pipeline'> & { pipeline: { stages: ContentView['pipeline']['stages']; ccStages: ContentCcStage[]; rows: ContentItem[]; leftOut: number } };
+export type ContentCenterView = Omit<ContentView, 'pipeline'> & { pipeline: { stages: ContentView['pipeline']['stages']; ccStages: ContentCcStage[]; rows: ContentItem[]; leftOut: number; history?: boolean } };
 
 /* ---------- Batch 3 (2026-11-27): Campaign Center layout, lead lists, inbox limits, bounces, verification ---------- */
 export interface SendingSummaryB3 { total: number; healthy: number; risk: number; spam: number; resting: number; warmupOff: number; unknown: number }
