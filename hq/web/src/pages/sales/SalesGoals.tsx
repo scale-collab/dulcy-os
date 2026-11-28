@@ -5,8 +5,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api';
 import { Avatar, Button, Card, cx, go, Icon, Pill, usd } from '../../ui';
 import { chatHref } from '../chatState';
-import { slashDate } from '../../dates';
-import type { GoalLine, SalesGoals } from './types';
+import { slashDate, slashDateTime } from '../../dates';
+import { FixItButton } from '../../fixIt';
+import type { GoalLine, SalesGoals, WonSync } from './types';
 
 /** GET /sales/goals once per screen (Cole's words are cached for the day on the server). */
 export function useSalesGoals(refreshKey: number) {
@@ -37,7 +38,40 @@ export function ColeTake({ g, error }: { g: SalesGoals | null; error: string }) 
   );
 }
 
-const TONE: Record<GoalLine['status'], 'good' | 'info' | 'warn' | 'plain'> = { hit: 'good', on_pace: 'info', behind: 'warn', no_goal: 'plain' };
+/**
+ * Close → Airtable Won sync (Alex 2026-11-28: won in Close feeds back to Airtable, so the Sales Goals
+ * rollups count closed deals). One line with the count; each won deal it could not match gets Cole's Fix it.
+ */
+function WonSyncRow({ w }: { w: WonSync }) {
+  const [open, setOpen] = useState(false);
+  const shown = open ? w.skipped : w.skipped.slice(0, 2);
+  return (
+    <div className="border-t border-line px-4 py-2.5 text-sm sm:px-5">
+      <div className="flex items-start gap-2">
+        <Icon name={w.live ? 'check' : 'clock'} size={15} className={cx('mt-0.5 shrink-0', w.live ? 'text-good' : 'text-muted')} />
+        <div className="min-w-0 flex-1">
+          <span className="font-medium text-fg">{w.text}</span>
+          {w.lastRun && <span className="text-xs text-muted"> · checked {slashDateTime(w.lastRun)}</span>}
+        </div>
+      </div>
+      {shown.length > 0 && (
+        <ul className="mt-2 space-y-2">
+          {shown.map((x) => (
+            <li key={x.oppId} className="rounded-xl border border-warn/25 bg-warn-soft px-3 py-2.5">
+              <div className="font-semibold text-fg">{x.leadName}<span className="font-normal text-muted"> · won in Close{x.wonDate ? ` ${slashDate(x.wonDate)}` : ''}, not marked Won in Sales Data</span></div>
+              <div className="mt-0.5 break-words text-fg-2">{x.note}</div>
+              {x.closeUrl && <a href={x.closeUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex min-h-9 items-center text-sm font-medium text-accent-ink underline-offset-2 hover:underline">Open in Close</a>}
+              <FixItButton agent={x.fix.agent} title={x.fix.title} detail={x.fix.detail} className="pt-1.5" />
+            </li>
+          ))}
+        </ul>
+      )}
+      {w.skipped.length > 2 && <button onClick={() => setOpen(!open)} className="mt-1.5 min-h-9 text-sm font-semibold text-accent-ink hover:underline">{open ? 'Show fewer' : `Show ${w.skipped.length - 2} more`}</button>}
+    </div>
+  );
+}
+
+const TONE: Record<GoalLine['status'], 'good' | 'info' | 'warn' | 'plain'> ={ hit: 'good', on_pace: 'info', behind: 'warn', no_goal: 'plain' };
 const WORD: Record<GoalLine['status'], string> = { hit: 'Goal hit', on_pace: 'On pace', behind: 'Behind', no_goal: 'No goal' };
 const fmt = (l: GoalLine, x: number | null) => (x === null ? '–' : l.money ? usd(x) : String(Math.round(x * 10) / 10));
 
@@ -71,6 +105,7 @@ export function GoalsCard({ g }: { g: SalesGoals }) {
             })}
           </ul>
         )}
+        {g.wonSync && <WonSyncRow w={g.wonSync} />}
         <div className="border-t border-line px-4 py-2.5 sm:px-5">
           <button onClick={() => setHow(!how)} aria-expanded={how} className="flex min-h-9 w-full items-center gap-1.5 text-left text-xs font-semibold text-fg-2 hover:text-fg">
             How the goals were set<Icon name="chevronDown" size={14} className={cx('transition', how && 'rotate-180')} />
