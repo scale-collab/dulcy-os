@@ -292,3 +292,5 @@ Format: `- [date] rule. (why / source)`
 - **Bulk edits, not one by one** (inbox limits per client / selection / all).
 - **Cole keeps Close current (Alex, 2026-11-27):** after each call review, Cole updates that opportunity's close likelihood and value in Close (Alex no longer does it by hand). Reads/writes only Dulcy's own sales records; never sends anything to a prospect.
 - **Inbox cost:** Dulcy's inboxes cost about $2.50/month each (Cheap Inboxes); real renewal dates come from Cheap Inboxes.
+
+- **Launch / Pause in HQ (Alex, 2026-11-27):** Pause acts at once (no "are you sure"). Launch asks one last time before it goes live. Alex approves the direction (plan, copy) and the agents work toward getting it done.
