@@ -85,9 +85,9 @@ function NeedsView({ d }: { d: ContentCenterView }) {
       {/* The data problems (they were the "This week" tab): one line; open it for the list and one Fix it button. */}
       {d.notes.length > 0 && (
         <details className="group rounded-xl border border-warn/25 bg-warn-soft text-sm">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 font-medium text-fg [&::-webkit-details-marker]:hidden">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 py-2 font-medium text-fg sm:py-0 [&::-webkit-details-marker]:hidden">
             <Icon name="alert" size={16} className="shrink-0 text-warn" />
-            <span className="min-w-0 flex-1 truncate">{d.notes.length} data problem{d.notes.length === 1 ? '' : 's'} · {d.notes[0].problem}</span>
+            <span className="min-w-0 flex-1 sm:truncate">{d.notes.length} data problem{d.notes.length === 1 ? '' : 's'} · {d.notes[0].problem}</span>
             <Icon name="chevronDown" size={16} className="shrink-0 text-muted transition group-open:rotate-180" />
           </summary>
           <div className="space-y-3 border-t border-warn/20 px-3 pb-3 pt-3">
@@ -307,7 +307,7 @@ function FridayCard({ it, n, of, raw, onNextIdea }: { it: FridayIdea; n: number;
             <button onClick={() => setStep(k)} aria-current={k === step ? 'step' : undefined}
               className={cx('flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg px-1 text-[13px] font-semibold transition sm:text-sm', k === step ? 'bg-surface text-fg shadow-card' : k < step ? 'text-good' : 'text-muted hover:text-fg')}>
               <span className={cx('tabular hidden h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] sm:grid', k === step ? 'bg-accent text-accent-fg' : k < step ? 'bg-good-soft text-good' : 'border border-line-strong')}>{k < step ? <Icon name="check" size={11} strokeWidth={2.8} /> : k + 1}</span>
-              <span className="truncate sm:hidden">{k + 1} {label === 'Teleprompter' ? 'Prompter' : label}</span><span className="hidden truncate sm:inline">{label}</span>
+              <span className="truncate sm:hidden">{label === 'Teleprompter' ? 'Prompter' : label}</span><span className="hidden truncate sm:inline">{label}</span>
             </button>
           </li>
         ))}

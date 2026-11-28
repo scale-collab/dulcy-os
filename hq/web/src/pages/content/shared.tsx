@@ -82,7 +82,7 @@ export function Notes({ notes }: { notes: ContentNote[] }) {
               <div className="font-semibold text-fg">{n.problem}</div>
               <div className="mt-1 text-fg-2"><span className="font-medium text-fg">Decision · {n.owner}:</span> {n.fix}</div>
               <div className="mt-1 text-xs text-muted">{n.data}</div>
-              {n.why && <details className="mt-1 text-xs text-muted"><summary className="cursor-pointer select-none">Why it matters</summary><p className="mt-1">{n.why}</p></details>}
+              {n.why && <details className="mt-1 text-xs text-muted"><summary className="min-h-10 cursor-pointer select-none content-center sm:min-h-0">Why it matters</summary><p className="mt-1">{n.why}</p></details>}
             </div>
           </div>
         </li>

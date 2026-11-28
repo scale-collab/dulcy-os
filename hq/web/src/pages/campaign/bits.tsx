@@ -33,7 +33,7 @@ export function Steps({ steps, small, bare, className }: { steps: CampaignStep[]
       {steps.map((x) => (
         <li key={x.key} title={`${x.label}: ${STATE_WORD[x.state]}${x.note ? ` (${x.note})` : ''}`} className="min-w-0">
           <span className={cx('block rounded-full', small ? 'h-1.5' : 'h-2', x.state === 'done' ? 'bg-accent' : x.state === 'now' ? 'bg-accent/35 ring-1 ring-inset ring-accent' : x.state === 'bad' ? 'bg-bad' : 'bg-line')} />
-          {!bare && <span className={cx('mt-1 block truncate text-center', small ? 'text-[10px]' : 'text-xs', x.state === 'now' || x.state === 'bad' ? 'font-semibold text-fg' : 'text-muted')}>{SHORT[x.key]}</span>}
+          {!bare && <span className={cx('mt-1 block truncate text-center', small ? 'text-[11px] sm:text-[10px]' : 'text-xs', x.state === 'now' || x.state === 'bad' ? 'font-semibold text-fg' : 'text-muted')}>{SHORT[x.key]}</span>}
           <span className="sr-only">{x.label}: {STATE_WORD[x.state]}</span>
         </li>
       ))}

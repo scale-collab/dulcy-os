@@ -133,7 +133,7 @@ function DoNow({ items, counts, piles, errors }: { items: Need[]; counts: NeedCo
               <span className="tabular mt-1 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-ink text-xs font-bold text-ink-fg">{i + 1}</span>
               <NeedFace n={n} size="sm" />
               <div className="min-w-0 flex-1">
-                <button onClick={() => open(n)} className="block text-left text-[15px] font-semibold leading-snug text-fg hover:underline">{n.title}</button>
+                <button onClick={() => open(n)} className="-my-2.5 block py-2.5 text-left text-[15px] font-semibold leading-snug text-fg hover:underline sm:my-0 sm:py-0">{n.title}</button>
                 {(n as Need & { todo?: string }).todo && <div className="mt-0.5 text-sm leading-snug text-fg-2">{(n as Need & { todo?: string }).todo}</div>}
                 <div className="mt-0.5 text-xs text-muted">{whoLabel(n)}{n.why ? ` · ${n.why}` : ''}</div>
                 {n.kind === 'decisions' && pileChips.length > 0 && (
@@ -188,7 +188,7 @@ function CampaignsBlock({ c }: { c: TodayCampaigns | null }) {
               className={cx('min-w-0 rounded-2xl border border-line bg-surface p-4 text-left shadow-card transition', HOW_TONE[k].ring, k === 'look' && g.count > 0 && 'border-bad-line/60')}>
               <div className="flex items-center gap-1.5 text-xs font-medium text-muted"><StatusDot tone={g.count ? HOW_TONE[k].dot : 'idle'} />{g.label}</div>
               <div className="tabular mt-1.5 text-[28px] font-bold leading-none tracking-tight text-fg">{g.count}</div>
-              <div className="mt-1.5 line-clamp-2 text-xs leading-snug text-muted">{g.sub}</div>
+              <div className="mt-1.5 text-xs leading-snug text-muted sm:line-clamp-2">{g.sub}</div>
             </button>
           );
         })}
@@ -201,11 +201,15 @@ function CampaignsBlock({ c }: { c: TodayCampaigns | null }) {
                 <button onClick={() => go(`campaigns/${x.id}`)} className="flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-hover sm:px-5">
                   <Icon name={HOW_TONE[x.how].icon} size={16} className={cx('mt-0.5 shrink-0', x.how === 'look' ? 'text-bad' : 'text-good')} />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[15px] font-semibold text-fg">{x.name}<span className="font-normal text-muted"> · {x.client || 'no client'}</span></span>
+                    <span className="block break-words text-[15px] font-semibold text-fg sm:truncate">{x.name}<span className="font-normal text-muted"> · {x.client || 'no client'}</span></span>
                     <span className="block text-sm leading-snug text-fg-2">{x.why}</span>
-                    {x.signals.length > 0 && <span className="mt-1 flex flex-wrap gap-1.5">{x.signals.map((s) => <Pill key={s} tone="warn">{s}</Pill>)}</span>}
+                    {/* Phone: the group pill sits with the signals, so the name and the signals get the full width. */}
+                    <span className={cx('mt-1 flex flex-wrap gap-1.5', !x.signals.length && 'sm:hidden')}>
+                      <span className="sm:hidden"><Pill tone={x.how === 'look' ? 'bad' : 'good'}>{x.how === 'look' ? 'Needs a look' : 'Performing well'}</Pill></span>
+                      {x.signals.map((s) => <Pill key={s} tone="warn">{s}</Pill>)}
+                    </span>
                   </span>
-                  <Pill tone={x.how === 'look' ? 'bad' : 'good'} className="shrink-0">{x.how === 'look' ? 'Needs a look' : 'Performing well'}</Pill>
+                  <span className="hidden shrink-0 sm:block"><Pill tone={x.how === 'look' ? 'bad' : 'good'}>{x.how === 'look' ? 'Needs a look' : 'Performing well'}</Pill></span>
                 </button>
               </li>
             ))}
@@ -233,11 +237,11 @@ function WeekBlock({ w }: { w: TodayWeek | null }) {
           const up = t.now !== null && t.last !== null && t.now > t.last, down = t.now !== null && t.last !== null && t.now < t.last;
           return (
             <div key={t.label} className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-card">
-              <div className="truncate text-xs font-medium text-muted">{t.label}</div>
+              <div className="text-xs font-medium leading-snug text-muted sm:truncate">{t.label}</div>
               <div className="tabular mt-1 text-[26px] font-bold leading-none tracking-tight text-fg">{n(t.now)}</div>
-              <div className="mt-1.5 flex items-center gap-1 truncate text-xs text-muted">
-                {(up || down) && <Icon name={up ? 'trendUp' : 'trendDown'} size={13} className={up ? 'text-good' : 'text-bad'} />}
-                <span className="truncate">Last week: {n(t.last)}</span>
+              <div className="mt-1.5 flex items-start gap-1 text-xs leading-snug text-muted sm:items-center sm:truncate">
+                {(up || down) && <Icon name={up ? 'trendUp' : 'trendDown'} size={13} className={cx('mt-0.5 sm:mt-0', up ? 'text-good' : 'text-bad')} />}
+                <span className="min-w-0 sm:truncate">Last week: {n(t.last)}</span>
               </div>
             </div>
           );

@@ -80,7 +80,7 @@ function AgentDetail({ name }: { name: string }) {
                 {d.decisions.slice(0, 5).map((x) => (
                   <li key={x.id}>
                     <button onClick={() => go(`decisions/${x.pile}`)} className="group flex min-h-12 w-full items-center gap-3 px-5 py-3 text-left transition hover:bg-hover">
-                      <div className="min-w-0 flex-1"><div className="truncate text-[15px] font-medium text-fg">{x.title}</div><div className="text-xs text-muted">{[x.client, timeAgo(x.created)].filter(Boolean).join(' · ')}</div></div>
+                      <div className="min-w-0 flex-1"><div className="break-words text-[15px] font-medium text-fg sm:truncate">{x.title}</div><div className="text-xs text-muted">{[x.client, timeAgo(x.created)].filter(Boolean).join(' · ')}</div></div>
                       <Icon name="chevronRight" size={18} className="text-faint group-hover:text-muted" />
                     </button>
                   </li>

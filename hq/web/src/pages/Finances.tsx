@@ -120,9 +120,10 @@ function Company({ d }: { d: FinancesData }) {
             <ul className="divide-y divide-line">
               {c.invoices.map((i, k) => (
                 <li key={i.id || k}>
-                  <button onClick={() => setInvoice(i)} disabled={!i.id} className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm transition hover:bg-hover disabled:cursor-default disabled:hover:bg-transparent sm:px-5">
-                    <span className="min-w-0"><span className="block truncate font-medium text-fg">{i.contact}</span>{i.number && <span className="block text-xs text-muted">{i.number}</span>}</span>
-                    <span className={cx('tabular flex shrink-0 items-center gap-2', i.late ? 'font-semibold text-bad' : 'text-fg-2')}>{usd(i.amount)} · {i.late ? `late since ${slashDate(i.due)}` : `due ${slashDate(i.due)}`}{i.id && <Icon name="chevronRight" size={15} className="text-muted" />}</span>
+                  <button onClick={() => setInvoice(i)} disabled={!i.id} className="flex min-h-12 w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5 text-left text-sm transition hover:bg-hover disabled:cursor-default disabled:hover:bg-transparent sm:flex-nowrap sm:px-5">
+                    <span className="min-w-0"><span className="block break-words font-medium text-fg sm:truncate">{i.contact}</span>{i.number && <span className="block text-xs text-muted">{i.number}</span>}</span>
+                    {/* Phone: the amount and due date get their own line (the client name is no longer cut). */}
+                    <span className={cx('tabular flex w-full shrink-0 items-center justify-between gap-2 sm:w-auto sm:justify-start', i.late ? 'font-semibold text-bad' : 'text-fg-2')}>{usd(i.amount)} · {i.late ? `late since ${slashDate(i.due)}` : `due ${slashDate(i.due)}`}{i.id && <Icon name="chevronRight" size={15} className="text-muted" />}</span>
                   </button>
                 </li>
               ))}
@@ -326,7 +327,7 @@ function Cards({ cards, totals, empty }: { cards: FinanceCard[] | null; totals: 
   if (!cards.length) return <Card className="text-sm text-muted">{empty}</Card>;
   return (
     <Card className="overflow-x-auto p-0">
-      <table className="w-full min-w-[520px] text-left text-sm">
+      <table className="sticky-first w-full min-w-[520px] text-left text-sm">
         <thead className="border-b border-line bg-sunken text-xs text-muted"><tr><th className="px-5 py-2.5 font-medium">Card</th><th className="px-3 py-2.5 font-medium">Due</th><th className="px-3 py-2.5 text-right font-medium">Statement</th><th className="px-3 py-2.5 text-right font-medium">Balance</th><th className="px-5 py-2.5 text-right font-medium">Minimum</th></tr></thead>
         <tbody className="divide-y divide-line">
           {cards.map((c) => <tr key={c.card}><td className="px-5 py-2.5 font-medium text-fg">{c.card}</td><td className="px-3 py-2.5 text-fg-2">{dueOf(c.dueDate)}</td><td className="tabular px-3 py-2.5 text-right text-fg-2">{usd(c.statement)}</td><td className="tabular px-3 py-2.5 text-right font-semibold text-fg">{usd(c.balance)}</td><td className="tabular px-5 py-2.5 text-right text-fg-2">{usd(c.minimum)}</td></tr>)}
@@ -343,9 +344,9 @@ const rangeOf = (m: FinanceMonth) => `${slashDate(m.from)} to ${slashDate(m.to)}
 function Tile({ label, v, sub, bad, onClick }: { label: string; v: string; sub?: string; bad?: boolean; onClick?: () => void }) {
   const inner = (
     <>
-      <div className="flex items-center justify-between gap-2"><span className="truncate text-xs font-medium text-muted">{label}</span>{onClick && <Icon name="chevronRight" size={14} className="shrink-0 text-muted" />}</div>
+      <div className="flex items-center justify-between gap-2"><span className="min-w-0 text-xs font-medium leading-snug text-muted sm:truncate">{label}</span>{onClick && <Icon name="chevronRight" size={14} className="shrink-0 text-muted" />}</div>
       <div className={cx('tabular mt-1 text-[24px] font-bold leading-none tracking-tight', bad ? 'text-bad' : 'text-fg')}>{v}</div>
-      {sub && <div className="mt-1.5 truncate text-xs text-muted">{sub}</div>}
+      {sub && <div className="mt-1.5 text-xs leading-snug text-muted sm:truncate">{sub}</div>}
     </>
   );
   const cls = 'min-w-0 rounded-2xl border border-line bg-surface p-4 text-left shadow-card';

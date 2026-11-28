@@ -38,7 +38,7 @@ const STATE_TONE: Record<string, 'good' | 'warn' | 'bad' | 'info' | 'plain'> = {
 const day = (d: string) => (d ? slashDate(d.slice(0, 10)) : '');
 const when = (iso: string) => (iso ? slashDate(iso) : '');
 type View = 'action' | 'hot' | 'numbers' | 'pipeline' | 'funnel' | 'pricing';
-const VIEWS: { key: View; label: string }[] = [{ key: 'action', label: 'Needs action' }, { key: 'hot', label: 'Hottest' }, { key: 'numbers', label: 'Numbers' }, { key: 'pipeline', label: 'Pipeline' }, { key: 'funnel', label: 'Funnel' }, { key: 'pricing', label: 'Pricing' }];
+const VIEWS: { key: View; label: string; short?: string }[] = [{ key: 'action', label: 'Needs action', short: 'Action' }, { key: 'hot', label: 'Hottest' }, { key: 'numbers', label: 'Numbers' }, { key: 'pipeline', label: 'Pipeline' }, { key: 'funnel', label: 'Funnel' }, { key: 'pricing', label: 'Pricing' }];
 const viewPath = (v: View, days: number) => (v === 'action' ? 'sales' : v === 'pipeline' || v === 'funnel' ? `sales/${v}${days === 90 ? '/90' : ''}` : `sales/${v}`);
 const pctText = (r: SalesRate) => (r.pct == null ? '–' : `${r.pct}%`);
 /** Old SignWell / PandaDoc agreements still count; the tool name is history, not a link. */
@@ -87,7 +87,7 @@ function SalesHome({ view, days }: { view: View; days: 30 | 90 }) {
           return (
             <button key={x.key} role="tab" aria-selected={on} onClick={() => go(viewPath(x.key, days))}
               className={cx('flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-xl px-3.5 text-sm font-semibold transition', on ? 'bg-ink text-ink-fg shadow-card' : 'text-muted hover:bg-hover hover:text-fg')}>
-              {x.label}
+              {x.short ? <><span className="sm:hidden">{x.short}</span><span className="hidden sm:inline">{x.label}</span></> : x.label}
               {x.key === 'action' && <span className={cx('tabular rounded-full px-1.5 text-xs', on ? 'bg-ink-fg/15' : d.counts.action ? 'bg-accent text-accent-fg' : 'border border-line bg-sunken text-fg-2')}>{d.counts.action}</span>}
             </button>
           );
@@ -137,7 +137,7 @@ function KeyNumbers({ now, last }: { now: SalesMonth; last: SalesMonth }) {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {tiles.map((t) => (
           <div key={t.label} className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-card">
-            <div className="truncate text-xs font-medium text-muted">{t.label}</div>
+            <div className="text-xs font-medium leading-snug text-muted sm:truncate">{t.label}</div>
             <div className="tabular mt-1 flex items-center gap-1.5 text-[22px] sm:text-[26px] font-bold leading-none tracking-tight text-fg">
               <span className="truncate">{t.v}{t.unit && <span className="text-sm font-semibold text-muted">{t.unit}</span>}</span>
               {t.up !== null && t.up !== 0 && <Icon name={t.up > 0 ? 'trendUp' : 'trendDown'} size={16} className={cx('shrink-0', t.up > 0 ? 'text-good' : 'text-bad')} />}
@@ -196,11 +196,13 @@ function ActionList({ rows }: { rows: SalesDealLite4a[] }) {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 break-words text-[15px] font-semibold leading-snug text-fg">{r.name}{who(r) && <span className="font-normal text-muted"> · {who(r)}</span>}</div>
-                    <span className="shrink-0"><ActionPill kind={top.kind} /></span>
+                    <span className="hidden shrink-0 sm:inline"><ActionPill kind={top.kind} /></span>
                   </div>
                   <div className="mt-0.5 text-sm leading-snug text-fg-2">{top.text}</div>
                   {r.coleNext && <div className="mt-1 text-sm leading-snug text-fg-2"><span className="font-semibold text-fg">Cole:</span> {r.coleNext}</div>}
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-muted">
+                    {/* Phone: the action pill sits here, so the name and company get the full width. */}
+                    <span className="sm:hidden"><ActionPill kind={top.kind} /></span>
                     <span className="font-medium text-fg-2">{top.owner}</span>
                     <span>· {r.stageLabel}</span>
                     {r.monthly ? <span className="tabular">· {usd(r.monthly)}/mo</span> : null}
@@ -267,7 +269,7 @@ function HotRow({ h, rank }: { h: SalesHotDeal; rank: number }) {
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {h.dealId && <Button onClick={() => go(`sales/${h.dealId}`)} icon="chevronRight">Open deal</Button>}
             {h.dealId && <Button tone="accent" onClick={() => go(`sales/${h.dealId}/contract`)} icon="file">Draft contract</Button>}
-            {/^https:\/\//.test(h.closeUrl) && <ExtLink href={h.closeUrl} className="text-sm">Open in Close</ExtLink>}
+            {/^https:\/\//.test(h.closeUrl) && <ExtLink href={h.closeUrl} className="inline-flex min-h-10 items-center text-sm sm:min-h-0">Open in Close</ExtLink>}
             {h.value ? <span className="tabular text-xs text-muted">{usd(h.value)}{h.valuePeriod === 'monthly' ? '/mo' : ''}</span> : null}
           </div>
         </div>
@@ -419,11 +421,11 @@ function DealPage({ id }: { id: string }) {
         {x.needs.length > 0 && <ul className="mt-3 space-y-2">{x.needs.map((n) => <NeedLine key={n.kind} n={n} />)}</ul>}
         <div className="mt-6">
           <Label className="mb-2">Stages</Label>
-          <ol aria-label="Stages" className="grid grid-cols-7 gap-1">
+          <ol aria-label="Stages" className="grid grid-cols-4 gap-x-1 gap-y-2.5 sm:grid-cols-7 sm:gap-y-1">
             {x.stageList.map((s) => (
               <li key={s.key} className="min-w-0" title={`${s.label}: ${s.done ? 'done' : 'not yet'}`}>
                 <span className={cx('block h-2 rounded-full', s.done ? 'bg-accent' : s.key === nextStage(x.stageList) ? 'bg-accent/35 ring-1 ring-inset ring-accent' : 'bg-line')} />
-                <span className={cx('mt-1 block truncate text-center text-[10px] sm:text-xs', s.done ? 'text-fg-2' : 'text-muted')}>{SHORT[s.key]}</span>
+                <span className={cx('mt-1 block truncate text-center text-xs', s.done ? 'text-fg-2' : 'text-muted')}>{SHORT[s.key]}</span>
                 <span className="sr-only">{s.done ? 'done' : 'not yet'}</span>
               </li>
             ))}
@@ -517,8 +519,8 @@ function AgreementLine({ g, links, folded }: { g: SalesDetail4a['deal']['agreeme
       {g.error && <div className="mt-1 break-words text-xs text-bad">{g.error}</div>}
       {(link?.url || link?.reviewDoc) && (
         <div className="mt-1.5 flex flex-wrap gap-3 text-sm">
-          {link?.url && <ExtLink href={link.url}>Open in Dulcy Sign</ExtLink>}
-          {link?.reviewDoc && <ExtLink href={link.reviewDoc}>Review document</ExtLink>}
+          {link?.url && <ExtLink href={link.url} className="inline-flex min-h-10 items-center sm:min-h-0">Open in Dulcy Sign</ExtLink>}
+          {link?.reviewDoc && <ExtLink href={link.reviewDoc} className="inline-flex min-h-10 items-center sm:min-h-0">Review document</ExtLink>}
         </div>
       )}
     </li>

@@ -102,7 +102,7 @@ function StageCell({ r }: { r: LeadListRowR2 }) {
       <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-line" role="progressbar" aria-label="Lead list stage" aria-valuemin={0} aria-valuemax={r.steps} aria-valuenow={r.step}>
         <div className={cx('h-full rounded-full', r.group === 'failed' ? 'bg-bad' : 'bg-accent')} style={{ width: `${Math.round((r.step / r.steps) * 100)}%` }} />
       </div>
-      <div className="mt-0.5 text-[11px] text-muted">step {r.step} of {r.steps}{r.progress !== null ? ` · ${Math.round(r.progress * 100)}% of this step` : ''}</div>
+      <div className="mt-0.5 text-xs text-muted sm:text-[11px]">step {r.step} of {r.steps}{r.progress !== null ? ` · ${Math.round(r.progress * 100)}% of this step` : ''}</div>
     </div>
   );
 }

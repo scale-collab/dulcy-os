@@ -59,7 +59,7 @@ export function SendingBox({ client, refresh, onPick }: { client: string; refres
       {!d.clientKey && d.byClient.length > 0 && open === null && (
         <div className="border-t border-line">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-sm">
+            <table className="sticky-first w-full min-w-[760px] text-left text-sm">
               <thead className="bg-sunken text-xs text-muted"><tr>
                 <th className="px-5 py-2 font-medium">Client</th>
                 {ORDER.map((k) => <th key={k} className="px-3 py-2 text-right font-medium">{label(k)}</th>)}

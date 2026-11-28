@@ -82,7 +82,7 @@ export function ClosePipeline({ fallback }: { fallback: ReactNode }) {
                 {p.stages.map((s) => (
                   <li key={s.label} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 px-4 py-2.5 sm:px-5" title={`${s.label}: ${s.count} of ${p.total} now, ${s.prev} of ${p.prevTotal} before`}>
                     <span className="min-w-0">
-                      <span className="flex items-baseline justify-between gap-2"><span className={cx('truncate text-[15px]', s.type === 'won' ? 'font-semibold text-good' : s.type === 'lost' ? 'text-muted' : 'text-fg')}>{s.label}</span><span className="tabular shrink-0 text-xs text-muted">{s.count}</span></span>
+                      <span className="flex items-baseline justify-between gap-2"><span className={cx('min-w-0 break-words text-[15px] sm:truncate', s.type === 'won' ? 'font-semibold text-good' : s.type === 'lost' ? 'text-muted' : 'text-fg')}>{s.label}</span><span className="tabular shrink-0 text-xs text-muted">{s.count}</span></span>
                       <span className="mt-1 block h-2 rounded-full bg-sunken" aria-hidden="true"><span className="block h-2 rounded-full bg-accent" style={{ width: `${Math.max(s.count ? 2 : 0, Math.round(((s.pct ?? 0) / max) * 100))}%` }} /></span>
                     </span>
                     <span className="tabular w-14 text-right text-[15px] font-bold text-fg">{pct(s.pct)}</span>
@@ -136,7 +136,7 @@ function FunnelRow({ s, i, total, prev }: { s: SalesFunnelSide['steps'][number];
   return (
     <li className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-x-3 px-4 py-2.5 sm:px-5" title={`${s.label} (Close: ${s.stages.join(', ') || 'won'}): ${s.reached} of ${total}`}>
       <span className="min-w-0">
-        <span className="flex items-center gap-1.5"><span className="truncate text-[15px] font-medium text-fg">{s.label}</span>{i > 0 && <Icon name="chevronRight" size={13} className="hidden text-faint sm:block" />}<span className="hidden truncate text-xs text-muted sm:inline">{s.stages.join(', ')}</span></span>
+        <span className="flex items-center gap-1.5"><span className="min-w-0 break-words text-[15px] font-medium text-fg sm:truncate">{s.label}</span>{i > 0 && <Icon name="chevronRight" size={13} className="hidden text-faint sm:block" />}<span className="hidden truncate text-xs text-muted sm:inline">{s.stages.join(', ')}</span></span>
         <span className="mt-1 block h-2 rounded-full bg-sunken" aria-hidden="true"><span className="block h-2 rounded-full bg-accent" style={{ width: `${Math.max(s.reached ? 2 : 0, s.pctOfTotal ?? 0)}%` }} /></span>
       </span>
       <span className="w-20 text-right"><span className="tabular block text-[15px] font-bold text-fg">{pct(s.pctOfTotal)}</span><span className="tabular block text-[11px] text-muted">{s.reached} · was {p ? pct(p.pctOfTotal) : '–'}</span></span>
@@ -148,9 +148,9 @@ function FunnelRow({ s, i, total, prev }: { s: SalesFunnelSide['steps'][number];
 function Tile({ label, v, sub }: { label: string; v: string; sub: string }) {
   return (
     <div className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-card">
-      <div className="truncate text-xs font-medium text-muted">{label}</div>
+      <div className="text-xs font-medium leading-snug text-muted sm:truncate">{label}</div>
       <div className="tabular mt-1 text-[24px] font-bold leading-none tracking-tight text-fg">{v}</div>
-      <div className="mt-1.5 truncate text-xs text-muted" title={sub}>{sub}</div>
+      <div className="mt-1.5 text-xs leading-snug text-muted sm:truncate" title={sub}>{sub}</div>
     </div>
   );
 }

@@ -68,7 +68,7 @@ export default function SalesPricing() {
                   <ul className="divide-y divide-line">
                     {xs.map((i) => (
                       <li key={i.key} className="flex items-center gap-3 px-4 py-2.5 sm:px-5">
-                        <label htmlFor={`in-${i.key}`} className="min-w-0 flex-1"><span className="block text-[15px] text-fg">{i.label}</span>{i.note && <span className="block text-[11px] leading-snug text-muted">{i.note}</span>}</label>
+                        <label htmlFor={`in-${i.key}`} className="min-w-0 flex-1"><span className="block text-[15px] text-fg">{i.label}</span>{i.note && <span className="block text-xs leading-snug text-muted sm:text-[11px]">{i.note}</span>}</label>
                         <span className="relative shrink-0">
                           {i.kind === 'money' && <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted">$</span>}
                           <input id={`in-${i.key}`} inputMode="decimal" value={fields[i.key] ?? ''} onChange={(e) => recalc({ ...fields, [i.key]: e.target.value })}
@@ -87,7 +87,7 @@ export default function SalesPricing() {
           <div className="mb-3 grid grid-cols-2 gap-3">
             {head.map((o) => (
               <div key={o.key} className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-card">
-                <div className="truncate text-xs font-medium text-muted">{o.label}</div>
+                <div className="text-xs font-medium leading-snug text-muted sm:truncate">{o.label}</div>
                 <div className={cx('tabular mt-1 text-[26px] font-bold leading-none tracking-tight', (o.value ?? 0) < 0 ? 'text-bad' : 'text-fg')}>{show(o)}</div>
               </div>
             ))}
@@ -96,7 +96,7 @@ export default function SalesPricing() {
             <ul className="divide-y divide-line">
               {m.outputs.filter((o) => !head.includes(o)).map((o) => (
                 <li key={o.key} className="flex items-center gap-3 px-4 py-2.5 sm:px-5">
-                  <span className="min-w-0 flex-1"><span className="block text-[15px] text-fg">{o.label}</span>{o.note && <span className="block text-[11px] text-muted">{o.note}</span>}</span>
+                  <span className="min-w-0 flex-1"><span className="block text-[15px] text-fg">{o.label}</span>{o.note && <span className="block text-xs text-muted sm:text-[11px]">{o.note}</span>}</span>
                   <span className={cx('tabular shrink-0 text-[17px] font-bold', (o.value ?? 0) < 0 ? 'text-bad' : 'text-fg')}>{show(o)}</span>
                 </li>
               ))}

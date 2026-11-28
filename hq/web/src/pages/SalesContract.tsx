@@ -184,7 +184,8 @@ export default function SalesContract({ id }: { id: string }) {
         </div>
       )}
       {msg && <div className={cx('mt-4 rounded-xl px-4 py-3 text-sm', msg.tone === 'good' ? 'bg-good-soft text-good' : 'bg-bad-soft text-bad')} role="status">{msg.text}</div>}
-      <div className="sticky bottom-0 mt-6 grid grid-cols-1 gap-2 border-t border-line bg-bg/95 py-3 backdrop-blur sm:flex sm:justify-end">
+      {/* Phone: the bar sits above the bottom tab bar (it was hidden behind it); computer: at the bottom. */}
+      <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 -mx-4 mt-6 grid grid-cols-1 gap-2 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:flex sm:justify-end sm:px-6 md:bottom-0 md:mx-0 md:px-0">
         {created ? <Button onClick={toDeal} icon="chevronRight">Back to the deal</Button> : (
           <>
             <Button onClick={save} disabled={busy || !unsaved} icon="check">{unsaved ? 'Save draft' : 'Saved'}</Button>

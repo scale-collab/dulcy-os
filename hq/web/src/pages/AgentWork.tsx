@@ -140,13 +140,14 @@ export function TaskList({ tasks, agent, onDone }: { tasks: AgentTask[]; agent: 
 
 /** Team | What everyone is working on: the two views of the Team screen. */
 export function TeamTabs({ on }: { on: 'team' | 'work' | 'talk' }) {
-  const tab = (key: 'team' | 'work' | 'talk', label: string, path: string) => (
-    <button role="tab" aria-selected={on === key} onClick={() => go(path)}
-      className={cx('min-h-11 flex-1 rounded-xl px-3 text-sm font-semibold transition sm:flex-none sm:px-4', on === key ? 'bg-surface text-fg shadow-card' : 'text-muted hover:text-fg')}>{label}</button>
+  // Phone: short labels, one line each (the long ones wrapped to three lines).
+  const tab = (key: 'team' | 'work' | 'talk', label: string, path: string, short: string) => (
+    <button role="tab" aria-selected={on === key} onClick={() => go(path)} aria-label={label}
+      className={cx('min-h-11 flex-1 rounded-xl px-2 text-sm font-semibold transition sm:flex-none sm:px-4', on === key ? 'bg-surface text-fg shadow-card' : 'text-muted hover:text-fg')}><span className="sm:hidden">{short}</span><span className="hidden sm:inline">{label}</span></button>
   );
   return (
     <div role="tablist" aria-label="Team views" className="mb-5 flex gap-1 rounded-2xl border border-line bg-sunken p-1 sm:inline-flex">
-      {tab('team', 'Team', 'agents')}{tab('work', 'What everyone is working on', 'agents/work')}{tab('talk', 'Agent conversations', 'agents/talk')}
+      {tab('team', 'Team', 'agents', 'Team')}{tab('work', 'What everyone is working on', 'agents/work', 'Working on')}{tab('talk', 'Agent conversations', 'agents/talk', 'Conversations')}
     </div>
   );
 }
@@ -232,9 +233,9 @@ export function TeamBoardView() {
                   <div className="flex h-full min-w-0 flex-col rounded-2xl border border-line bg-surface p-4 shadow-card">
                     <div className="flex items-center gap-3">
                       <Avatar name={a.agent} size="sm" />
-                      <button onClick={() => set({ agent: f.agent === a.agent ? '' : a.agent })} className="min-w-0 flex-1 text-left" aria-label={`Show only ${a.agent}`}>
+                      <button onClick={() => set({ agent: f.agent === a.agent ? '' : a.agent })} className="min-h-10 min-w-0 flex-1 text-left" aria-label={`Show only ${a.agent}`}>
                         <span className="block text-[15px] font-semibold text-fg">{a.agent}</span>
-                        <span className="block truncate text-xs text-muted">{a.role}</span>
+                        <span className="block text-xs text-muted sm:truncate">{a.role}</span>
                       </button>
                       <WorkChips w={{ open: a.open, inProgress: 0, waitingAlex: a.waitingAlex, overdue: a.late, stalled: a.stuck }} />
                     </div>

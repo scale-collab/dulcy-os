@@ -120,7 +120,7 @@ export default function ClientPage({ id, user, tab, sub }: { id: string; user: U
                   <li key={x.id}>
                     <button onClick={() => go(`decisions/${x.pile}/${encodeURIComponent(c.key)}`)} className="group flex min-h-12 w-full items-center gap-3 px-5 py-3 text-left transition hover:bg-hover">
                       <Avatar name={x.agent} size="sm" />
-                      <div className="min-w-0 flex-1"><div className="truncate text-[15px] font-medium text-fg">{x.title}</div><div className="text-xs text-muted">{[x.agent, x.pile, timeAgo(x.created)].filter(Boolean).join(' · ')}</div></div>
+                      <div className="min-w-0 flex-1"><div className="break-words text-[15px] font-medium text-fg sm:truncate">{x.title}</div><div className="text-xs text-muted">{[x.agent, x.pile, timeAgo(x.created)].filter(Boolean).join(' · ')}</div></div>
                       <Icon name="chevronRight" size={18} className="text-faint group-hover:text-muted" />
                     </button>
                   </li>
@@ -182,7 +182,7 @@ function ResultsOverTime({ d }: { d: Detail }) {
   ];
   return (
     <Card className="overflow-x-auto p-0">
-      <table className="w-full min-w-[560px] text-left text-sm">
+      <table className="sticky-first w-full min-w-[560px] text-left text-sm">
         <thead className="border-b border-line bg-sunken text-xs text-muted"><tr><th className="px-5 py-2.5 font-medium"><span className="sr-only">Number</span></th>{ws.map((r) => <th key={r.window} className="px-3 py-2.5 text-right font-medium">{WINDOW_LABEL[r.window]}{r.stale ? ' (stale)' : ''}</th>)}</tr></thead>
         <tbody className="divide-y divide-line">
           {rows.map(([label, f]) => <tr key={label}><td className="px-5 py-2.5 font-medium text-fg">{label}</td>{ws.map((r) => <td key={r.window} className="tabular px-3 py-2.5 text-right text-fg-2">{f(r)}</td>)}</tr>)}

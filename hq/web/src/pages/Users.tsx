@@ -111,7 +111,7 @@ function Request({ u, act }: { u: HqUserRow; act: (u: HqUserRow, a: string, b?: 
         <Initial u={u} />
         <div className="min-w-0 flex-1">
           <div className="truncate font-semibold text-fg">{u.name}</div>
-          <div className="truncate text-sm text-muted">{u.email}</div>
+          <div className="break-all text-sm text-muted sm:truncate">{u.email}</div>
           <div className="mt-1 text-xs text-muted">asked {timeAgo(u.requested ?? u.created)} · {u.hasPassword ? 'password' : 'Google'}</div>
         </div>
         <Pill tone="warn">pending</Pill>
@@ -146,7 +146,7 @@ function PortalRequest({ u, act }: { u: HqUserRow; act: (u: HqUserRow, a: string
         <Initial u={u} />
         <div className="min-w-0 flex-1">
           <div className="truncate font-semibold text-fg">{u.name}</div>
-          <div className="truncate text-sm text-muted">{u.email}</div>
+          <div className="break-all text-sm text-muted sm:truncate">{u.email}</div>
           <div className="mt-1 text-xs text-muted">asked {timeAgo(u.requested ?? u.created)} · {u.hasPassword ? 'password' : 'Google'}</div>
         </div>
         <Pill tone="info">client portal</Pill>
@@ -262,15 +262,17 @@ function UserLine({ u, self, lastOwner, act }: { u: HqUserRow; self: boolean; la
             {u.status === 'disabled' && <Pill tone="bad">disabled</Pill>}
             {u.resetAsked && <Pill tone="warn">asked for a new password</Pill>}
           </div>
-          <div className="truncate text-sm text-muted">{u.email}</div>
+          <div className="break-all text-sm text-muted sm:truncate">{u.email}</div>
           <div className="text-xs text-muted">{u.lastSeen ? `seen ${timeAgo(u.lastSeen)}` : 'never signed in'} · added {slashDate(u.created, { year: true })}{u.hasPassword ? '' : ' · Google only'}</div>
         </div>
         {canView && <span className="hidden sm:block"><Button icon="user" onClick={viewAs} title={`HQ the way ${u.name} sees it, read only`}>View as {u.role}</Button></span>}
-        {u.resetAsked && !open && <Button tone="accent" icon="link" onClick={() => { setOpen(true); void makeLink(); }}>Send link</Button>}
+        {u.resetAsked && !open && <span className="hidden sm:block"><Button tone="accent" icon="link" onClick={() => { setOpen(true); void makeLink(); }}>Send link</Button></span>}
         <button onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-label={`Manage ${u.name}`} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-muted hover:bg-hover hover:text-fg">
           <Icon name="chevronDown" size={18} className={cx('transition', open && 'rotate-180')} />
         </button>
       </div>
+      {/* Phone: Send link under the person (beside the name it squeezed the name, pills and email). */}
+      {u.resetAsked && !open && <Button tone="accent" icon="link" onClick={() => { setOpen(true); void makeLink(); }} className="mt-3 w-full sm:hidden">Send link</Button>}
       {open && (
         <div className="mt-3 space-y-3 rounded-xl border border-line bg-sunken p-3 anim-fade">
           {canView && <Button icon="user" onClick={viewAs} className="w-full sm:hidden">View as {u.role}</Button>}

@@ -109,7 +109,7 @@ function OwnerLinks() {
   const link = (to: string, icon: 'dollar' | 'layers', name: string, sub: string, badge?: number) => (
     <Card onClick={() => go(to)} label={`Open ${name}`} className="flex items-center gap-3 px-4 py-3">
       <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent-ink"><Icon name={icon} size={18} /></span>
-      <span className="min-w-0 flex-1"><span className="block text-[15px] font-semibold text-fg">{name}</span><span className="block truncate text-sm text-muted">{sub}</span></span>
+      <span className="min-w-0 flex-1"><span className="block text-[15px] font-semibold text-fg">{name}</span><span className="block text-sm text-muted sm:truncate">{sub}</span></span>
       {!!badge && <span className="tabular rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-accent-fg" aria-label={`${badge} need action`}>{badge}</span>}
       <Icon name="chevronRight" size={18} className="text-faint" />
     </Card>
@@ -201,8 +201,8 @@ function Num({ label, sub, v, tone }: { label: string; sub: string; v: string; t
   return (
     <div className="min-w-0 rounded-xl bg-sunken px-1 py-2">
       <div className={cx('tabular text-xl font-bold leading-tight', tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn' : 'text-fg')}>{v}</div>
-      <div className="truncate text-[11px] font-medium text-fg-2">{label}</div>
-      <div className="truncate text-[10px] text-muted">{sub}</div>
+      <div className="text-xs font-medium leading-tight text-fg-2 sm:truncate sm:text-[11px]">{label}</div>
+      <div className="mt-0.5 text-[11px] leading-tight text-muted sm:mt-0 sm:truncate sm:text-[10px]">{sub}</div>
     </div>
   );
 }
@@ -212,7 +212,7 @@ function ResultsTable({ clients, notes }: { clients: Client[]; notes?: Map<strin
   const th = 'px-3 py-2.5 text-right font-medium';
   return (
     <Card className="overflow-x-auto p-0">
-      <table className="w-full min-w-[720px] text-left text-sm">
+      <table className="sticky-first w-full min-w-[720px] text-left text-sm">
         <thead className="border-b border-line bg-sunken text-xs text-muted">
           <tr><th className="px-5 py-2.5 font-medium">Client</th><th className={th}>Sent</th><th className={th}>People contacted</th><th className={th}>Interested</th><th className={th}>Meetings</th><th className={th}>Emails / meeting</th><th className={th}>Emails / positive reply</th><th className={th}>Interested → booked</th></tr>
         </thead>
@@ -283,9 +283,9 @@ function AgencyBlock() {
 function Tile({ label, v, sub, tone, title }: { label: string; v: string; sub?: string; tone?: 'bad'; title?: string }) {
   return (
     <div title={title || undefined} className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-card">
-      <div className="truncate text-xs font-medium text-muted">{label}</div>
+      <div className="text-xs font-medium leading-snug text-muted sm:truncate">{label}</div>
       <div className={cx('tabular mt-1 text-[24px] font-bold leading-none tracking-tight', tone === 'bad' ? 'text-bad' : 'text-fg')}>{v}</div>
-      {sub && <div className="mt-1.5 truncate text-xs text-muted">{sub}</div>}
+      {sub && <div className="mt-1.5 text-xs leading-snug text-muted sm:truncate">{sub}</div>}
     </div>
   );
 }
@@ -314,7 +314,7 @@ function ProfitBlock() {
         <div className="space-y-2">
           {!p.clients.length ? <Card className="text-sm text-muted">No active paying clients.</Card> : (
             <Card className="overflow-x-auto p-0">
-              <table className="w-full min-w-[720px] text-left text-sm">
+              <table className="sticky-first w-full min-w-[720px] text-left text-sm">
                 <thead className="border-b border-line bg-sunken text-xs text-muted">
                   <tr><th className="px-5 py-2.5 font-medium">Client</th><th className={th}>Revenue</th><th className={th}>Inboxes</th><th className={th}>Domains</th><th className={th}>Leads + verification</th><th className={cx(th, 'pr-5')}>Profit</th></tr>
                 </thead>
