@@ -106,6 +106,13 @@ export interface Config {
    */
   contentHooks: Record<string, string>;
   contentWebhookBase: string;
+  /**
+   * HQ center parity (2026-11-28): the two webhooks the Campaign Center keeps outside the engine.
+   * Sync with Bison = the full campaign sync relay (BISON_SYNC_WEBHOOK_URL, default the relay the screen
+   * calls); Sync Bison Senders = n8n (BISON_SENDER_SYNC_WEBHOOK_URL: its path is secret, never in the repo).
+   */
+  bisonSyncWebhookUrl: string;
+  bisonSenderSyncWebhookUrl: string;
   siennaIdeasHour: number;
   siennaPrepHour: number;
   siennaChannel: string;
@@ -302,6 +309,8 @@ export function loadConfig(env = process.env): Config {
     contentHooks: Object.fromEntries(['SCRIPT', 'THUMBNAIL', 'THUMBNAIL_REVISE', 'YOUTUBE', 'DISTRIBUTION', 'SCHEDULE', 'NEWSLETTER', 'FRAMER']
       .map((k) => [k, (env[`CONTENT_HOOK_${k}`] || '').trim()]).filter(([, v]) => /^https:\/\/[^\s]+$/.test(v))),
     contentWebhookBase: (env.CONTENT_WEBHOOK_BASE || 'https://n8n.dulcy.io').trim().replace(/\/+$/, ''),
+    bisonSyncWebhookUrl: (env.BISON_SYNC_WEBHOOK_URL ?? 'https://bison-sync-relay.scale-f9d.workers.dev/sync').trim(),
+    bisonSenderSyncWebhookUrl: (env.BISON_SENDER_SYNC_WEBHOOK_URL || '').trim(),
     siennaIdeasHour: num('SIENNA_IDEAS_HOUR', 7, env),
     siennaPrepHour: num('SIENNA_PREP_HOUR', 10, env),
     discordBotToken: env.DISCORD_BOT_TOKEN || undefined,

@@ -36,7 +36,7 @@ import { workSummary } from './agentTasks.js';
 import { actOnThread, listInbox, threadDetail } from './inbox.js';
 import { calendarInvite, replierDetail, saveReplier } from './replier.js';
 import { campaignDetail, listCampaigns, listLeadLists } from './campaigns.js';
-import { howOfRows, round2Campaigns } from './campaignRoutes.js';
+import { howOfRows, parityRoutes, round2Campaigns } from './campaignRoutes.js';
 import { senderIndex } from './sendingAccounts.js';
 import { deliverabilityView, inboxIndex } from './deliverability.js';
 // Batch 3: inbox limits + ramp, bounce analytics, verification (Fix it is Batch 1's fixIt.ts).
@@ -548,6 +548,9 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       // accounts box, new campaigns (plans) and the copy. Reads for everyone; every press is owner only,
       // needs confirm: true, and writes only what the Airtable button writes (centerActions.ts).
       if (p.startsWith('/hq/api/campaigns/')) {
+        // Center parity (2026-11-28): the rest of the two Airtable screens (centerParity.ts).
+        const rp = await parityRoutes(p, req, needAt, db, cfg, user, owner, deps.fetchImpl);
+        if (rp) { json(res, rp.status, rp.body); return true; }
         const r2 = await round2Campaigns(p, req, url, needAt, db, cfg, user, owner);
         if (r2) { json(res, r2.status, r2.body); return true; }
       }
