@@ -299,13 +299,31 @@ export interface ClientProfitView {
   period: ClientPeriod | 'custom'; range: { from: string; to: string; label: string }; clients: ClientProfit[];
   totals: { revenue: number; knownCosts: number; profit: number; clientsWithRevenue: number }; rules: string[]; errors: string[]; readAt: string;
 }
-export interface FinanceCard { card: string; dueDate: string; statement: number; balance: number; minimum: number; available: number | null; apr: string }
-export interface FinanceMonth { from: string; to: string; income: number; costs: number; net: number; label: string; lines?: { section: string; name: string; amount: number }[] }
+/** key: which personal card it is (Round 5: cash preferred, amex gold, chase personal, robinhood, discover). */
+export interface FinanceCard { card: string; dueDate: string; statement: number; balance: number; minimum: number; available: number | null; apr: string; key?: string }
+export interface FinanceCostLine { section: string; name: string; amount: number }
+/** lines: the 10 biggest; allLines: every cost line of the month (Round 5 drill-down). */
+export interface FinanceMonth { from: string; to: string; income: number; costs: number; net: number; label: string; lines?: FinanceCostLine[]; allLines?: FinanceCostLine[] }
+export interface FinanceInvoice { id: string; number: string; contact: string; amount: number; due: string; late: boolean }
+/** One open client invoice in detail (GET /finances/invoices/<id>; Xero, read only). */
+export interface FinanceInvoiceDetail {
+  id: string; number: string; reference: string; contact: string; status: string; currency: string;
+  date: string; due: string; daysOverdue: number; total: number | null; paid: number | null; amountDue: number | null;
+  lines: { description: string; quantity: number | null; unitAmount: number | null; amount: number | null }[];
+  xeroUrl: string;
+}
+export interface PersonalExpenses {
+  lines: { name: string; amount: number | null; note: string; aside: number | null }[];
+  total: number; totalFrom: 'sheet' | 'sum'; asideTotal: number; paidWith: { name: string; amount: number }[];
+}
+/** Both (Round 5): left = company income − company costs − personal expenses; null = UNKNOWN (see unknown). */
+export interface FinanceLeftover { label: string; from: string; to: string; left: number | null; parts: { label: string; amount: number | null; source: string }[]; unknown: string[] }
 /** Owner only (members get 403). */
 export interface FinancesData {
-  company: { xero: FinanceMonth[] | null; invoices: { contact: string; amount: number; due: string; late: boolean }[]; mrr: number; cards: FinanceCard[] | null; cardTotals: { statement: number; balance: number; minimum: number } | null };
-  personal: { cards: FinanceCard[] | null; cardTotals: { statement: number; balance: number; minimum: number } | null };
-  sources: { income: string; cards: string; personalRule: string }; errors: string[]; readAt: string;
+  company: { xero: FinanceMonth[] | null; invoices: FinanceInvoice[]; mrr: number; cards: FinanceCard[] | null; cardTotals: { statement: number; balance: number; minimum: number } | null };
+  personal: { cards: FinanceCard[] | null; cardTotals: { statement: number; balance: number; minimum: number } | null; expenses: PersonalExpenses | null };
+  both: { months: FinanceLeftover[]; notCounted: string[] };
+  sources: { income: string; cards: string; personalRule: string; expenses: string }; errors: string[]; readAt: string;
 }
 /** Finances → Personal through Plaid (GET /finances/personal). Read only; no token ever reaches the page. */
 export interface PersonalAccount {
@@ -318,7 +336,7 @@ export interface PersonalData {
   configured: boolean; message: string | null; env: 'sandbox' | 'production';
   connections: PersonalConnection[];
   totals: { cards: number; cardBalance: number; statement: number; minimum: number; cash: number } | null;
-  /** Sheet card names (robinhood, discover) a linked account now replaces. */
+  /** Sheet personal cards (their keys: robinhood, discover, amex gold…) a linked account now replaces. */
   replaces: string[]; readAt: string;
 }
 // ---------- Batch 4b: Needs you (to-do), Team board, Chat threads and suggestions ----------

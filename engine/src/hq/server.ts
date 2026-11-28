@@ -25,7 +25,7 @@ import { bisonStatsFrom, customResults, profitView, type BisonStatsFn } from './
 import { createSheetsClient, type SheetsClient } from '../providers/google.js';
 import { createXeroClient, type XeroClient } from '../providers/xero.js';
 import { PERIODS, type Period } from './clientDeals.js';
-import type { FinanceDeps } from './finance.js';
+import { readInvoice, XERO_ID, type FinanceDeps } from './finance.js';
 import { PORTAL_SIGNUP_SENT, SIGNUP_SENT, addUser, googleSignUp, listUsers, manageUser, pendingCount, signUp } from './users.js';
 import { portalWrite, recentPortalWrites } from './portalWrites.js';
 import { forgotPassword, inviteSoftrUser, linkPortalUser, listSoftrUsers, makeSetupLink, portalGoogleNewUser, setPasswordWithToken, suggestedClient, updateOwnAccount } from './portalAccounts.js';
@@ -471,6 +471,17 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         if (!owner) { json(res, 403, { error: 'only the owner sees money' }); return true; }
         const r = await personalRoute(db, cfg, plaidFor(cfg, deps.fetchImpl), user, req.method ?? 'GET', p.slice('/hq/api/finances/personal'.length), write ? await readJson(req, 5_000) : {}, url.searchParams.get('refresh') === '1');
         json(res, r.status, r.body);
+        return true;
+      }
+      // Round 5: one open client invoice in detail (Xero, read only: one GET). Owner only.
+      if (p.startsWith('/hq/api/finances/invoices/') && req.method === 'GET') {
+        if (!owner) { json(res, 403, { error: 'only the owner sees money' }); return true; }
+        const invoiceId = p.slice('/hq/api/finances/invoices/'.length);
+        if (!XERO_ID.test(invoiceId)) { json(res, 400, { error: 'not a Xero invoice id' }); return true; }
+        const x = financeDeps().xero;
+        if (!x) { json(res, 503, { error: 'Xero is not connected on the server' }); return true; }
+        const inv = await readInvoice(x, invoiceId);
+        if (!inv) json(res, 404, { error: 'no such client invoice in Xero' }); else json(res, 200, inv);
         return true;
       }
       // Batch 2: agency numbers and money, owner only (members get 403, nothing else).
