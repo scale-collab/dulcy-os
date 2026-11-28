@@ -8,7 +8,9 @@
 //     Disconnected, Warming, total senders; capacity vs used);
 //   - new campaigns being made (Atlas plans, with their approvals);
 //   - campaigns by stage (Live, Launch ready, Approved, Client review, Internal review, Strategy
-//     draft), each row with progress, sent, replies, interested, meetings, bounce and its inboxes.
+//     draft), each row with progress, sent, replies, interested, meetings, bounce and its inboxes;
+//   - Past (round 5, Alex 2026-11-28: "an option to see past campaigns (inactive) for past data"):
+//     finished campaigns (Completed / Inactive) with their final numbers, newest ended first. Read only.
 // Tap a campaign for its page (buttons, copy, lead list, senders, history); tap a lead list for the
 // Lead List Center panel. Every button is on those pages and presses the engine path the Airtable
 // button presses. Everything is rendered as escaped text.
@@ -23,11 +25,11 @@ import { SendingBox } from './campaign/SendingBox';
 import { NewCampaignSheet, PlansSection } from './campaign/Plans';
 import { CampaignPage } from './campaign/CampaignPage';
 import { LeadListPage } from './campaign/LeadListPage';
-import { num, rate } from './campaign/shared';
+import { num, rate, slash } from './campaign/shared';
 import { Bar, NEED, Sending, StatusPill, Steps } from './campaign/bits';
 
 const VIEWS = [
-  { key: 'all', label: 'All (live + building)' }, { key: 'action', label: 'Needs action' }, { key: 'live', label: 'Live' }, { key: 'building', label: 'Building' },
+  { key: 'all', label: 'All (live + building)' }, { key: 'action', label: 'Needs action' }, { key: 'live', label: 'Live' }, { key: 'building', label: 'Building' }, { key: 'past', label: 'Past (finished)' },
 ] as const;
 type View = (typeof VIEWS)[number]['key'];
 const isView = (v?: string): v is View => VIEWS.some((x) => x.key === v);
@@ -132,7 +134,12 @@ function CampaignList({ d, view, client }: { d: CampaignListR2; view: View; clie
     return term ? base.filter((r) => `${r.name} ${r.client} ${r.stage} ${r.approach}`.toLowerCase().includes(term)) : base;
   }, [d, view, q, tests, how]);
   const testCount = d.rows.filter((r) => r.test).length;
-  const count = (k: View) => (k === 'action' ? d.counts.action : k === 'live' ? d.counts.live : k === 'building' ? d.counts.building : d.counts.live + d.counts.building);
+  const count = (k: View) => (k === 'action' ? d.counts.action : k === 'live' ? d.counts.live : k === 'building' ? d.counts.building : k === 'past' ? d.counts.past ?? d.past?.length ?? 0 : d.counts.live + d.counts.building);
+  const past = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    const base = (d.past ?? []).filter((r) => tests || !r.test);
+    return term ? base.filter((r) => `${r.name} ${r.client} ${r.status}`.toLowerCase().includes(term)) : base;
+  }, [d, q, tests]);
   const notes = allNotes ? d.notes : d.notes.slice(0, 2);
   const sections = (d.sections ?? []).map((s) => ({ ...s, rows: rows.filter((r) => r.section === s.key) })).filter((s) => s.rows.length);
   return (
@@ -153,7 +160,7 @@ function CampaignList({ d, view, client }: { d: CampaignListR2; view: View; clie
           {d.notes.length > 2 && <button onClick={() => setAllNotes(!allNotes)} className="mt-1.5 min-h-9 text-sm font-semibold text-accent-ink hover:underline">{allNotes ? 'Show fewer notes' : `Show ${d.notes.length - 2} more data note${d.notes.length - 2 === 1 ? '' : 's'}`}</button>}
         </div>
       )}
-      {!sections.length ? (
+      {view === 'past' ? <PastList rows={past} showClient={!client} q={q} /> : !sections.length ? (
         <Card className="mt-4"><Empty icon={view === 'action' ? 'check' : 'megaphone'} tone={view === 'action' ? 'good' : 'plain'} title={q ? 'No match' : view === 'action' ? 'Nothing needs action' : 'No campaigns here'} sub={q ? `Nothing matches "${q}".` : 'Pick another view or client, or start a New campaign.'} /></Card>
       ) : sections.map((s) => (
         <section key={s.key} className="mt-6">
@@ -167,6 +174,73 @@ function CampaignList({ d, view, client }: { d: CampaignListR2; view: View; clie
         agency average {d.agencyPerThousand ?? 'UNKNOWN'} interested per 1,000 sent.
       </p>
     </>
+  );
+}
+
+/** Past campaigns: final numbers, read only (no buttons). Phone: cards; computer: one table. */
+function PastList({ rows, showClient, q }: { rows: CampaignRowR2[]; showClient: boolean; q: string }) {
+  if (!rows.length) return <Card className="mt-4"><Empty icon="history" title={q ? 'No match' : 'No past campaigns'} sub={q ? `Nothing matches "${q}".` : 'Finished campaigns (Completed or Inactive) that sent emails show here with their final numbers.'} /></Card>;
+  const perK = (r: CampaignRowR2) => (r.perThousand !== null ? String(r.perThousand) : '–');
+  return (
+    <section className="mt-6">
+      <h2 className="mb-1 flex items-baseline gap-2 text-[15px] font-semibold text-fg">Past campaigns<span className="tabular text-sm font-normal text-muted">{rows.length}</span></h2>
+      <p className="mb-2 text-sm text-muted">Finished (Completed or Inactive), newest ended first. Final numbers, read only.</p>
+      <ul className="space-y-2 md:hidden">
+        {rows.map((r) => (
+          <li key={r.id}>
+            <Card onClick={() => go(`campaigns/${r.id}`)} className="p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="break-words text-[15px] font-semibold leading-snug text-fg">{r.name}</div>
+                  <div className="mt-0.5 flex flex-wrap gap-x-1.5 text-xs text-muted">{showClient && r.client && <span>{r.client}</span>}{r.ended && <span>· ended {slash(r.ended)}</span>}{r.test && <span>· test</span>}</div>
+                </div>
+                <StatusPill r={r} />
+              </div>
+              <div className="mt-2.5 grid grid-cols-5 gap-1 text-xs text-muted">
+                <span><span className="tabular block font-semibold text-fg-2">{num(r.sent)}</span>sent</span>
+                <span><span className="tabular block font-semibold text-fg-2">{num(r.replies)}</span>replies</span>
+                <span><span className="tabular block font-semibold text-fg-2">{num(r.interested)}</span>interested</span>
+                <span><span className="tabular block font-semibold text-fg-2">{num(r.booked)}</span>meetings</span>
+                <span><span className="tabular block font-semibold text-fg-2">{r.bounce}%</span>bounce</span>
+              </div>
+            </Card>
+          </li>
+        ))}
+      </ul>
+      <Card className="hidden overflow-hidden p-0 md:block">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1000px] table-fixed text-left text-sm">
+            <thead className="border-b border-line bg-sunken text-xs text-muted">
+              <tr>
+                <th className="w-[30%] px-5 py-2.5 font-medium">Campaign</th><th className="w-24 px-3 py-2.5 font-medium">Status</th><th className="w-20 px-3 py-2.5 font-medium">Ended</th>
+                <th className="w-24 px-3 py-2.5 text-right font-medium">Sent</th><th className="w-24 px-3 py-2.5 text-right font-medium">Leads</th><th className="w-24 px-3 py-2.5 text-right font-medium">Replies</th>
+                <th className="w-24 px-3 py-2.5 text-right font-medium">Interested</th><th className="w-20 px-3 py-2.5 text-right font-medium">Meetings</th><th className="w-20 px-3 py-2.5 text-right font-medium">Bounce</th>
+                <th className="w-28 px-5 py-2.5 text-right font-medium">Interested / 1,000</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {rows.map((r) => (
+                <tr key={r.id} onClick={() => go(`campaigns/${r.id}`)} className="cursor-pointer align-top transition hover:bg-hover">
+                  <td className="px-5 py-3">
+                    <a href={`#/campaigns/${r.id}`} className="block break-words font-semibold text-fg">{r.name}</a>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted">{showClient && r.client && <span>{r.client}</span>}{r.test && <Pill>test</Pill>}</div>
+                  </td>
+                  <td className="px-3 py-3"><StatusPill r={r} /></td>
+                  <td className="tabular px-3 py-3 text-fg-2">{r.ended ? slash(r.ended) : '–'}</td>
+                  <td className="tabular px-3 py-3 text-right text-fg-2">{num(r.sent)}</td>
+                  <td className="tabular px-3 py-3 text-right text-fg-2">{num(r.contacted)}{r.totalLeads > 0 && <div className="text-xs text-muted">of {num(r.totalLeads)}</div>}</td>
+                  <td className="tabular px-3 py-3 text-right text-fg-2">{num(r.replies)}<div className="text-xs text-muted">{rate(r.replies, r.contacted)}</div></td>
+                  <td className="tabular px-3 py-3 text-right text-fg-2">{num(r.interested)}<div className="text-xs text-muted">{r.replies ? rate(r.interested, r.replies) : '–'}</div></td>
+                  <td className="tabular px-3 py-3 text-right text-fg-2">{num(r.booked)}</td>
+                  <td className={cx('tabular px-3 py-3 text-right', r.bounce > 4 ? 'text-bad' : r.bounce > 2.5 ? 'text-warn' : 'text-fg-2')}>{r.bounce}%</td>
+                  <td className="tabular px-5 py-3 text-right text-fg-2">{perK(r)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </section>
   );
 }
 
