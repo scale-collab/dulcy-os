@@ -70,7 +70,7 @@ test('what each agent did in 24 h, in plain words; engine steps count for Atlas'
   assert.deepEqual(d.map((x) => [x.agent, x.count, x.failed, x.line]), [
     ['Atlas', 4, 1, '2× Account rested 7 days · Build campaign: failed · Launch: done'],
     ['Echo', 1, 0, 'Reply sent'],
-    ['Riley', 0, 0, 'Nothing logged in the last 24 h'],
+    ['Riley', 0, 0, 'Nothing done in the last 24 hours'],
   ]);
 });
 

@@ -90,7 +90,7 @@ export default function Today({ user }: { user: User }) {
           {!!d.blockErrors?.length && <p className="text-xs text-muted">Could not read: {d.blockErrors.join(', ')}. The rest is up to date.</p>}
         </div>
         <div className="min-w-0 space-y-8">
-          <Block icon="users" tone="good" title="Team check" sub="What each agent did in the last 24 h">
+          <Block icon="users" tone="good" title="Team check" sub="What each agent did in the last 24 hours">
             <TeamCheck team={d.team} activity={d.activity ?? null} />
           </Block>
           {user.role === 'owner' && <ContentCard />}
@@ -395,7 +395,7 @@ function TeamCheck({ team, activity }: { team: TeamLine[]; activity: TodayAgentD
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline justify-between gap-2">
                     <span className="text-sm font-semibold text-fg">{t.agent}</span>
-                    {a && a.count > 0 && <span className="tabular shrink-0 text-xs text-muted">{a.count} logged</span>}
+                    {a && a.count > 0 && <span className="tabular shrink-0 text-xs text-muted">{a.count} {a.count === 1 ? "action" : "actions"}</span>}
                   </span>
                   <span className={cx('block text-[13px] leading-snug', tone === 'bad' ? 'text-bad' : 'text-fg-2')}>{line}</span>
                 </span>
