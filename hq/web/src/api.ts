@@ -376,16 +376,29 @@ export type SalesDetail4a = Omit<SalesDetail, 'deal' | 'links' | 'tasks'> & {
   deal: Omit<SalesDeal, 'agreements'> & { agreements: SalesAgreement4a[]; review: SalesReviewLite | null; coleNext: string; closeLead: string; paidDay: string; stages: Record<SalesStage, boolean> };
   links: { close: string; agreements: { id: string; tool: string; title: string; state: AgreementState; url: string; reviewDoc: string }[] };
 };
-export type SalesDealType = 'retainer' | 'per_call' | 'both';
+// Round 5 (Alex 2026-11-28): two deal types only (pay per call carries the monthly tech fee); choices, not typing.
+export type SalesDealType = 'retainer' | 'per_call';
 export interface SalesContractDraft {
   dealType: SalesDealType; monthly: number | null; perCall: number | null; initialFee: number | null; startDate: string;
-  signerName: string; signerEmail: string; legalName: string; company: string; address: string; service: string; scope: string; term: string; specialTerms: string;
+  signerName: string; signerEmail: string; signerPhone: string; legalName: string; company: string; address: string;
+  serviceKey: string; termKey: string; scopeKeys: string[]; clientRespondsToLeads: boolean;
+  service: string; scope: string; term: string; specialTerms: string;
   channels: { linkedin: boolean; aiCaller: boolean; directMail: boolean };
 }
 export interface SalesSavedDraft { id: number; dealId: string; status: 'saved' | 'creating' | 'created' | 'failed'; input: SalesContractDraft; contractsRec: string; error: string; by: string; created: string; updated: string }
+export interface SalesContractOptions {
+  services: { key: string; label: string }[]; terms: { key: string; label: string; type: SalesDealType; text: string }[];
+  scope: { key: string; label: string; type: SalesDealType }[]; clientRespondsClause: string;
+}
 export interface SalesContractForm {
   deal: { id: string; name: string; company: string; email: string; closeLead: string; client: { id: string; name: string; status: string } | null; agreement: { state: AgreementState; tool: string; title: string } | null };
-  draft: SalesContractDraft; saved: SalesSavedDraft | null; missing: string[]; types: { key: SalesDealType; label: string }[];
+  draft: SalesContractDraft; saved: SalesSavedDraft | null; missing: string[]; types: { key: SalesDealType; label: string; sub: string }[];
+  options: SalesContractOptions; closeConnected: boolean;
+}
+/** GET /sales/<id>/contract/close: what Close has for the contract (read only). */
+export interface SalesClosePull {
+  connected: boolean; found?: boolean; error?: string; lead?: { id: string; name: string; url: string };
+  patch?: Partial<SalesContractDraft>; filled?: { label: string; value: string }[]; missing?: string[]; notes?: string[];
 }
 
 /* ---------- Content, Batch 5 (2026-11-27): laid out like the Airtable Content Center ----------

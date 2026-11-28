@@ -12,6 +12,7 @@ import {
 } from '../api';
 import { Avatar, BackLink, Button, Card, cx, Empty, ErrorBox, ExtLink, go, Icon, IconButton, Label, PageSkeleton, PageTitle, Pill, SectionHeader, setCount, timeAgo, usd } from '../ui';
 import SalesContract from './SalesContract';
+import { goUp } from './sales/nav';
 import { slashDate } from '../dates';
 // Round 3 (Alex 2026-11-27): Numbers with a period picker and charts, Pipeline + Funnel from Close, Pricing, Cole's Close updates.
 import SalesNumbers from './sales/SalesNumbers';
@@ -364,7 +365,8 @@ function DealPage({ id }: { id: string }) {
   const [others, setOthers] = useState(false);
   const load = useCallback(() => { setError(''); api<SalesDetail4a>(`/sales/${encodeURIComponent(id)}`).then(setD).catch((e) => setError(e.message)); }, [id]);
   useEffect(load, [load]);
-  const back = <BackLink label="Sales" onClick={() => (window.history.length > 1 ? window.history.back() : go('sales'))} />;
+  // Round 5 loop fix: "Sales" goes UP to the Sales list, never history.back() (that returned to the contract page). See sales/nav.ts.
+  const back = <BackLink label="Sales" onClick={() => goUp(`sales/${id}`)} />;
   if (error) return <>{back}<ErrorBox error={error} retry={load} /></>;
   if (!d) return <>{back}<PageSkeleton kind="list" /></>;
   const x = d.deal;

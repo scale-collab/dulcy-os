@@ -21,6 +21,15 @@ export interface CloseActivity {
 export interface ClosePipeline { id: string; name: string; statuses: { id: string; label: string; type: string }[] }
 export interface CloseStatusChange { id: string; oppId: string; leadId: string; at: string; oldStatus: string; newStatus: string; oldType: string; newType: string; oldStatusId: string; newStatusId: string }
 export interface CloseLeadLite { id: string; name: string; emails: string[] }
+/** One lead with what a contract needs (Round 5, "Pull from Close"): company, contacts, addresses, opportunities. Read only. */
+export interface CloseLeadDetail {
+  id: string; name: string; url: string;
+  contacts: { name: string; title: string; emails: string[]; phones: string[] }[];
+  addresses: { address1: string; address2: string; city: string; state: string; zip: string; country: string }[];
+  /** Lead custom fields by their Close name (text values only). */
+  custom: Record<string, string>;
+  opportunities: CloseOpportunity[];
+}
 export type ValuePeriod = 'one_time' | 'monthly' | 'annual';
 /** The only fields HQ may change in Close. value is in dollars (sent as cents). */
 export interface OpportunityPatch { confidence?: number; value?: number; valuePeriod?: ValuePeriod }
@@ -37,6 +46,8 @@ export interface CloseClient {
   leadsByEmail(email: string): Promise<CloseLeadLite[]>;
   /** One lead's opportunities. */
   leadOpportunities(leadId: string): Promise<CloseOpportunity[]>;
+  /** One lead with its contacts, addresses, custom fields and opportunities (read only; null when not found). */
+  leadDetail(leadId: string): Promise<CloseLeadDetail | null>;
   /** WRITE (the only one): confidence / value / value period of one opportunity. Returns the opportunity after the change. */
   updateOpportunity(oppId: string, patch: OpportunityPatch): Promise<CloseOpportunity>;
 }
@@ -81,6 +92,25 @@ export function opportunityBody(patch: OpportunityPatch): Record<string, number 
   }
   if (!Object.keys(out).length) throw new PermanentError('Close: nothing to change');
   return out;
+}
+/** A Close lead (GET lead/<id>/) to the fields a contract draft can use. Pure. */
+export function toLeadDetail(l: any): CloseLeadDetail {
+  const arr = (v: unknown): any[] => (Array.isArray(v) ? v : []);
+  const custom: Record<string, string> = {};
+  if (l?.custom && typeof l.custom === 'object' && !Array.isArray(l.custom)) {
+    for (const [k, v] of Object.entries(l.custom)) if (typeof v === 'string' || typeof v === 'number') custom[str(k).slice(0, 80)] = str(v).slice(0, 300);
+  }
+  const id = str(l?.id);
+  return {
+    id, name: str(l?.display_name || l?.name).slice(0, 200), url: leadOk(id) ? `https://app.close.com/lead/${id}/` : '',
+    contacts: arr(l?.contacts).slice(0, 20).map((c) => ({
+      name: str(c?.name || c?.display_name).slice(0, 120), title: str(c?.title).slice(0, 120),
+      emails: arr(c?.emails).map((e) => str(e?.email).toLowerCase()).filter(Boolean).slice(0, 10),
+      phones: arr(c?.phones).map((p) => str(p?.phone_formatted || p?.phone)).filter(Boolean).slice(0, 10),
+    })),
+    addresses: arr(l?.addresses).slice(0, 5).map((a) => ({ address1: str(a?.address_1), address2: str(a?.address_2), city: str(a?.city), state: str(a?.state), zip: str(a?.zipcode), country: str(a?.country) })),
+    custom, opportunities: arr(l?.opportunities).map(toOpportunity).filter((o) => o.id && (!o.leadId || o.leadId === id)),
+  };
 }
 export function toActivity(a: any): CloseActivity {
   const type = str(a?._type);
@@ -173,6 +203,14 @@ export function createCloseClient(apiKey: string | undefined, f: typeof fetch = 
       if (!leadOk(leadId)) return [];
       const j = await get('opportunity/', { lead_id: leadId, _limit: 25 });
       return (Array.isArray(j?.data) ? j.data : []).map(toOpportunity).filter((o: CloseOpportunity) => o.id && o.leadId === leadId);
+    },
+    async leadDetail(leadId) {
+      if (!leadOk(leadId)) return null;
+      let j: any;
+      try { j = await get(`lead/${leadId}/`, {}); }
+      catch (e) { if (e instanceof PermanentError && /HTTP 404/.test(e.message)) return null; throw e; }
+      const d = toLeadDetail(j);
+      return d.id === leadId ? d : null;
     },
     async updateOpportunity(oppId, patch) {
       if (!oppOk(oppId)) throw new PermanentError('Close: not an opportunity id');
