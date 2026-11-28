@@ -59,6 +59,13 @@ export interface Config {
   /** Mercury read-only token: live balances and the transactions Ledger prepares for Xero. */
   mercuryToken?: string;
   mercuryBaseUrl: string;
+  /** Plaid (read only) for Finances → Personal: Alex's own cards and bank accounts. All optional; without
+   *  PLAID_CLIENT_ID + PLAID_SECRET the Personal tab keeps the P/L sheet figures. PLAID_ENV: sandbox | production (default). */
+  plaidClientId?: string;
+  plaidSecret?: string;
+  plaidEnv: 'sandbox' | 'production';
+  /** Products Plaid Link starts with (PLAID_PRODUCTS, comma list of liabilities / transactions / investments; default liabilities). */
+  plaidProducts: string[];
   /** Ledger prepares reconciliation for Mercury lines from this date (YYYY-MM-DD), daily at LEDGER_PREP_HOUR ET. */
   ledgerPrepFrom: string;
   ledgerPrepHour: number;
@@ -257,6 +264,11 @@ export function loadConfig(env = process.env): Config {
     xeroApiUrl: env.XERO_API_URL || 'https://api.xero.com',
     mercuryToken: env.MERCURY_TOKEN || undefined,
     mercuryBaseUrl: env.MERCURY_BASE_URL || 'https://api.mercury.com/api/v1',
+    plaidClientId: (env.PLAID_CLIENT_ID ?? '').trim() || undefined,
+    plaidSecret: (env.PLAID_SECRET ?? '').trim() || undefined,
+    plaidEnv: (env.PLAID_ENV ?? '').trim().toLowerCase() === 'sandbox' ? 'sandbox' : 'production',
+    // Read-only products only: anything else (transfer, payment_initiation, auth…) is dropped.
+    plaidProducts: ((p) => (p.length ? p : ['liabilities']))((env.PLAID_PRODUCTS || 'liabilities').split(',').map((x) => x.trim().toLowerCase()).filter((x) => ['liabilities', 'transactions', 'investments'].includes(x))),
     ledgerPrepFrom: (env.LEDGER_PREP_FROM || '2026-11-01').trim(),
     ledgerPrepHour: num('LEDGER_PREP_HOUR', 7, env),
     ledgerPrepWrite: (env.LEDGER_PREP_WRITE || 'off').toLowerCase() === 'on',

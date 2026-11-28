@@ -58,6 +58,8 @@ import { agentConversation, agentConversations } from './agentTalk.js';
 import { createInDulcySign, draftForm, saveDraft } from './contracts.js';
 // Phone notifications (Web Push), Alex 2026-11-27.
 import { kickFlush, notifyChatReply, pushRoute, webPushSender, type PushSender } from './push.js';
+// Finances → Personal through Plaid (read only, owner only), Alex 2026-11-28.
+import { personalRoute, plaidFor } from './plaid.js';
 
 export interface HqDeps {
   at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string;
@@ -77,6 +79,14 @@ const SECURITY_HEADERS: Record<string, string> = {
   'x-frame-options': 'DENY',
   'strict-transport-security': 'max-age=31536000',
   'content-security-policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+};
+/**
+ * The HQ app page only (never the portal, never the API): Finances → Personal opens Plaid Link, which
+ * is Plaid's own script and frame on cdn.plaid.com (Plaid's documented CSP for Link on the web).
+ */
+export const HQ_PAGE_HEADERS: Record<string, string> = {
+  ...SECURITY_HEADERS,
+  'content-security-policy': "default-src 'self'; script-src 'self' https://cdn.plaid.com/link/v2/stable/link-initialize.js; frame-src https://cdn.plaid.com/; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://production.plaid.com https://sandbox.plaid.com; font-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
 };
 
 function json(res: http.ServerResponse, status: number, body: unknown, extra: Record<string, string | string[]> = {}) {
@@ -133,7 +143,7 @@ function serveStatic(res: http.ServerResponse, webDir: string, rel: string, fall
   const base = path.basename(file);
   const fixedName = base === 'sw.js' || base === 'manifest.webmanifest';
   res.writeHead(200, {
-    'content-type': MIME[path.extname(file)] ?? 'application/octet-stream', ...SECURITY_HEADERS,
+    'content-type': MIME[path.extname(file)] ?? 'application/octet-stream', ...(base === 'index.html' && fallback === 'index.html' ? HQ_PAGE_HEADERS : SECURITY_HEADERS),
     'cache-control': isIndex || fixedName ? 'no-cache' : 'public, max-age=31536000, immutable',
     ...(base === 'sw.js' ? { 'service-worker-allowed': '/' } : {}),
   });
@@ -449,6 +459,13 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       // Round 4: results for a custom range (from / to, both days included). Not money: everyone reads.
       if (p === '/hq/api/clients/results' && req.method === 'GET') {
         json(res, 200, await customResults(needAt(), db, deps.bisonStats ?? bisonStatsFrom(cfg, deps.fetchImpl), url.searchParams.get('from') ?? '', url.searchParams.get('to') ?? '', url.searchParams.get('refresh') === '1'));
+        return true;
+      }
+      // Finances → Personal (Plaid, read only): owner only. Members and "view as" get 403, nothing else.
+      if (p === '/hq/api/finances/personal' || p.startsWith('/hq/api/finances/personal/')) {
+        if (!owner) { json(res, 403, { error: 'only the owner sees money' }); return true; }
+        const r = await personalRoute(db, cfg, plaidFor(cfg, deps.fetchImpl), user, req.method ?? 'GET', p.slice('/hq/api/finances/personal'.length), write ? await readJson(req, 5_000) : {}, url.searchParams.get('refresh') === '1');
+        json(res, r.status, r.body);
         return true;
       }
       // Batch 2: agency numbers and money, owner only (members get 403, nothing else).

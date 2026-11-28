@@ -639,3 +639,16 @@ CREATE TABLE IF NOT EXISTS hq_push_presence (
   visible      BOOLEAN NOT NULL DEFAULT false,
   seen_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Finances → Personal (Alex 2026-11-28): Alex's own cards and bank accounts linked through Plaid,
+-- read only. access_token_enc is the Plaid access token sealed with AES-256-GCM (key derived from
+-- ENGINE_SECRET, bound to item_id); the clear token is never stored, logged or sent to a browser.
+CREATE TABLE IF NOT EXISTS hq_plaid_items (
+  id                SERIAL PRIMARY KEY,
+  item_id           TEXT NOT NULL UNIQUE,
+  institution       TEXT NOT NULL DEFAULT '',
+  access_token_enc  TEXT NOT NULL,
+  added_by          TEXT NOT NULL DEFAULT '',
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
