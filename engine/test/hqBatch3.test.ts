@@ -160,7 +160,7 @@ test('verification: per campaign and verifier; many "address not found" = a veri
   assert.deepEqual(r.cohorts.map((c) => [c.verifier, c.emailType, c.leads, c.contacted, c.contactedEstimated, c.bounces, c.notFound, c.rate]), [
     ['LeadMagic', 'Direct', 600, 600, true, 30, 30, 5], ['MillionVerifier', 'Generic', 400, 400, true, 4, 0, 1],
   ], 'the verifier comes from the list when the row is not tagged; contacted is estimated from the list mix');
-  assert.match(r.line, /^LeadMagic \(Direct\) emails: 30 of 30 bounces are "address not found" → a verification problem/);
+  assert.match(r.line, /^LeadMagic emails \(Direct\): 30 of 30 bounces are "address not found" → a verification problem/);
   // The old n8n cohorts give the real contacted number.
   const [r2] = verificationRows(camps, lists, bounces, [{ campaignRec: 'recCAMP000000001A', campaignName: '', provider: 'LeadMagic', emailType: 'Direct', leads: 600, contacted: 500, bounces: 0 }]);
   assert.deepEqual([r2.cohorts[0].contacted, r2.cohorts[0].contactedEstimated, r2.cohorts[0].rate], [500, false, 6]);

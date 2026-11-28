@@ -15,7 +15,8 @@ const nf = (x: number) => x.toLocaleString('en-US');
 
 /* ---------- Warm-up off: Atlas's one line ---------- */
 const WHY_SHORT: Record<string, string> = { resting: 'resting', replacing: 'replacing', spam: 'spam review', bounces: 'paused by EmailBison' };
-export function WarmupLine({ w, client }: { w: WarmupSummaryR2; client?: string }) {
+/** Only the expected warm-up off (resting etc.). Round 4: the unexpected ones are a problem card with one Fix it (Deliverability.tsx). */
+export function WarmupLine({ w }: { w: WarmupSummaryR2 }) {
   if (!w.off) return null;
   return (
     <div className={cx('flex gap-3 rounded-xl border px-4 py-3 text-sm leading-snug', w.unexpected ? 'border-bad-line bg-bad-soft' : 'border-line bg-sunken')}>
@@ -26,7 +27,6 @@ export function WarmupLine({ w, client }: { w: WarmupSummaryR2; client?: string 
           {(['resting', 'replacing', 'spam', 'bounces'] as const).filter((k) => w.byWhy[k]).map((k) => <Pill key={k}>warm-up off ({WHY_SHORT[k]}) {nf(w.byWhy[k])}</Pill>)}
           {w.unexpected > 0 && <Pill tone="bad">unexpected {nf(w.unexpected)}</Pill>}
         </div>
-        {w.unexpected > 0 && <FixItButton agent="Atlas" title={`Turn warm-up back on for ${w.unexpected} inbox${w.unexpected === 1 ? '' : 'es'}`} detail={w.line} client={client} className="pt-0.5" />}
       </div>
     </div>
   );
@@ -35,12 +35,18 @@ export function WarmupLine({ w, client }: { w: WarmupSummaryR2; client?: string 
 /* ---------- Placement: bands per test date ---------- */
 const BAND_TONE = ['bg-bad', 'bg-warn', 'bg-[color-mix(in_oklab,var(--warn)_35%,var(--good))]', 'bg-good'];
 const BAND_TEXT = ['text-bad', 'text-warn', 'text-fg-2', 'text-good'];
-export function PlacementRuns({ runs, bands }: { runs: TestRunR2[]; bands: string[] }) {
+/** Round 4: the newest run's tests still waiting at EmailGuard (null/not connected = only the scored count). */
+export interface PendingR4 { connected: boolean; waiting: number; since: string }
+export function PlacementRuns({ runs, bands, pending }: { runs: TestRunR2[]; bands: string[]; pending?: PendingR4 | null }) {
   if (!runs.length) return null;
+  const waiting = pending?.connected && pending.waiting > 0 && pending.since === runs[0].date ? pending.waiting : 0;
   return (
     <Card className="min-w-0 overflow-hidden p-0">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3 sm:px-5">
-        <h2 className="font-semibold text-fg">Inbox placement tests</h2>
+        <div className="min-w-0">
+          <h2 className="font-semibold text-fg">Inbox placement tests</h2>
+          <p className="tabular text-sm text-fg-2"><span className="font-semibold text-fg">{sd(runs[0].date)}</span> run: {nf(runs[0].tested)} scored{waiting ? <> · <span className="font-semibold text-warn">{nf(waiting)} waiting for EmailGuard</span></> : ''}</p>
+        </div>
         <div className="flex flex-wrap items-center gap-3 text-xs text-muted" aria-hidden="true">
           {bands.map((b, i) => <span key={b} className="inline-flex items-center gap-1.5"><span className={cx('h-2.5 w-2.5 rounded-sm', BAND_TONE[i])} />{b}</span>)}
         </div>
@@ -49,13 +55,13 @@ export function PlacementRuns({ runs, bands }: { runs: TestRunR2[]; bands: strin
         <table className="w-full min-w-[560px] text-left text-sm">
           <caption className="sr-only">Accounts tested per test date and how many scored in each band</caption>
           <thead className="border-b border-line bg-sunken text-xs text-muted">
-            <tr><th className="px-4 py-2 font-medium sm:px-5">Test date</th><th className="px-2 py-2 text-right font-medium">Tested</th>{bands.map((b) => <th key={b} className="w-16 px-2 py-2 text-right font-medium">{b}</th>)}<th className="w-[34%] px-4 py-2 font-medium"><span className="sr-only">Share</span></th></tr>
+            <tr><th className="px-4 py-2 font-medium sm:px-5">Test date</th><th className="px-2 py-2 text-right font-medium">Scored</th>{bands.map((b) => <th key={b} className="w-16 px-2 py-2 text-right font-medium">{b}</th>)}<th className="w-[34%] px-4 py-2 font-medium"><span className="sr-only">Share</span></th></tr>
           </thead>
           <tbody className="divide-y divide-line">
-            {runs.map((r) => (
+            {runs.map((r, i) => (
               <tr key={r.date}>
                 <td className="tabular px-4 py-2.5 font-semibold text-fg sm:px-5">{sd(r.date)}</td>
-                <td className="tabular px-2 py-2.5 text-right font-semibold text-fg">{nf(r.tested)}</td>
+                <td className="tabular px-2 py-2.5 text-right font-semibold text-fg">{nf(r.tested)}{waiting && i === 0 ? <div className="text-[11px] font-medium text-warn">+{nf(waiting)} waiting</div> : null}</td>
                 {r.bands.map((n, i) => <td key={i} className={cx('tabular px-2 py-2.5 text-right', n ? cx('font-semibold', BAND_TEXT[i]) : 'text-faint')}>{nf(n)}</td>)}
                 <td className="px-4 py-2.5">
                   <div className="flex h-3 w-full overflow-hidden rounded-full bg-sunken" role="img" aria-label={r.bands.map((n, i) => `${bands[i]}: ${n}`).join(', ')}>
@@ -67,7 +73,7 @@ export function PlacementRuns({ runs, bands }: { runs: TestRunR2[]; bands: strin
           </tbody>
         </table>
       </div>
-      <p className="border-t border-line px-4 py-2 text-xs text-muted sm:px-5">One row per Friday test: each inbox's score that day (overall placement %). Under 60% = rested 7 days.</p>
+      <p className="border-t border-line px-4 py-2 text-xs text-muted sm:px-5">One row per test date: each inbox's score that day (overall placement %). Under 60% = rested 7 days. Waiting = tests started but not scored by EmailGuard yet (they are not skipped).</p>
     </Card>
   );
 }
@@ -157,7 +163,7 @@ export function CostTotal({ costs, rule }: { costs: ClientCostR2[]; rule: string
       <div><div className="text-xs font-medium text-muted">Domains</div><div className="tabular text-xl font-bold text-fg">{nf(t.d)}</div></div>
       <div><div className="text-xs font-medium text-muted">Inboxes</div><div className="tabular text-xl font-bold text-fg">{nf(t.i)}</div></div>
       <div><div className="text-xs font-medium text-muted">Monthly cost{est ? ' (estimated)' : ''}</div><div className="tabular text-xl font-bold text-fg">{usd(Math.round(t.m * 100) / 100)}</div></div>
-      <p className="text-xs text-muted sm:ml-auto sm:max-w-xs">{rule} Owner only.</p>
+      <p className="text-xs text-muted sm:ml-auto sm:max-w-xs">{rule}</p>
     </Card>
   );
 }
