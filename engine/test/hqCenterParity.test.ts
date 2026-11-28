@@ -289,12 +289,16 @@ test('API: Clone (a Draft copy, no list or inboxes) and Delete (typed DELETE; Bi
   assert.ok(!(CX.lists in made.fields) && !(CX.accounts in made.fields) && !(CF.bisonAction in made.fields) && !(CX.stage in made.fields), 'never the lead list, inboxes, EmailBison identity or action flags');
   assert.match(String(made.fields[CF.startTime]), /^08:\d\d$/); assert.match(String(made.fields[CF.endTime]), /^18:\d\d$/);
   writes = [];
+  const off = await call('POST', '/hq/api/campaigns/recCAMPNEW000010A/do', alex, { action: 'delete', typed: 'DELETE', confirm: true });
+  assert.equal(off.status, 403, 'Delete campaign is off in HQ until Alex decides');
+  process.env.HQ_CAMPAIGN_DELETE = 'on';
   const noType = await call('POST', '/hq/api/campaigns/recCAMPNEW000010A/do', alex, { action: 'delete', confirm: true });
   assert.deepEqual([noType.status, writes.length], [400, 0]);
   const del = await call('POST', '/hq/api/campaigns/recCAMPNEW000010A/do', alex, { action: 'delete', typed: 'DELETE', confirm: true });
   assert.equal(del.status, 200, del.text);
   assert.deepEqual(writes[0].fields, { [CF.bisonAction]: null }, 'an older Bison Action is cleared first so the automation fires');
   assert.equal(writes[1].fields[CF.bisonAction], 'Delete');
+  delete process.env.HQ_CAMPAIGN_DELETE;
   assert.equal(JSON.parse(String(writes[1].fields[CF.automationRequest])).kind, 'Delete');
   assert.equal(writes.length, 2, 'HQ never deletes a record itself');
 });

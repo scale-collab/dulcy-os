@@ -8,6 +8,9 @@ import { api, type SendingBoxR2 } from '../../api';
 import { Button, Card, cx, ErrorBox, go, Pill, SkeletonCard, showToast } from '../../ui';
 import { num, Sheet, slash, slashTime } from './shared';
 
+/** Delete campaign from HQ: off until Alex decides (RULES 2026-11-23: Delete stays in n8n for now). */
+const DELETE_IN_HQ = false;
+
 type Kind = 'text' | 'long' | 'number' | 'date' | 'bool' | 'select' | 'multi' | 'time' | 'json' | 'url';
 interface Def { kind: Kind; label: string; choices: string[] | null }
 type Val = string | number | boolean | string[] | null;
@@ -207,8 +210,9 @@ export function CampaignCenterSection({ id, section, onDone }: { id: string; sec
               does="Creates a Draft copy of this campaign with the reusable build only (client, strategy, copy, sequence, schedule, bounce settings). Never the lead list, inboxes, EmailBison identity or results: link those before building." />
             <DoButton label="Clear saved status" path={doPath} body={{ action: 'clear-status' }} disabled={ro || d.locked || !(d.saved.processing || d.saved.message || d.saved.error)} why={d.locked ? 'A step is running.' : 'Nothing saved to clear.'} onDone={reload}
               does="Clears Processing Status, Workflow Message and Workflow Error on this campaign. Engine fields are not changed and nothing is stopped." />
-            <DoButton label="Delete" tone="danger" typed="DELETE" path={doPath} body={{ action: 'delete' }} disabled={ro || d.locked} why={d.locked ? 'A step is running.' : 'Only Alex can press this.'} onDone={() => go('campaigns')}
-              does="Sends Delete to the Airtable automation (Bison Action = Delete): it deletes the EmailBison campaign first when there is one, then this Airtable record. This cannot be undone." />
+            {/* Hidden until Alex decides (rule 2026-11-23: "Delete stays in n8n for now"). */}
+            {DELETE_IN_HQ && <DoButton label="Delete" tone="danger" typed="DELETE" path={doPath} body={{ action: 'delete' }} disabled={ro || d.locked} why={d.locked ? 'A step is running.' : 'Only Alex can press this.'} onDone={() => go('campaigns')}
+              does="Sends Delete to the Airtable automation (Bison Action = Delete): it deletes the EmailBison campaign first when there is one, then this Airtable record. This cannot be undone." />}
           </div>
         </Card>
       </>}

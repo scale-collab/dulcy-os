@@ -457,6 +457,8 @@ export async function campaignDo(at: HqAirtable, db: Db, cfg: Config, id: string
       return ok(`Draft copy "${values[CX.name]}" created without the lead list or inboxes; link them before building.`, { id: newId });
     }
     case 'delete': {
+      // Off until Alex decides (RULES 2026-11-23: Delete stays in n8n for now). HQ_CAMPAIGN_DELETE=on enables it.
+      if (process.env.HQ_CAMPAIGN_DELETE !== 'on') return refuse(403, 'Delete campaign is off in HQ for now: delete stays in n8n until Alex decides.');
       if (String(body?.typed ?? '').trim() !== 'DELETE') return refuse(400, 'Type DELETE to delete this campaign.');
       if (locked) return refuse(409, 'A step is running on this campaign: wait for its result.');
       // The automation fires when Bison Action becomes non-empty: clear an older action first (the screen does the same).
