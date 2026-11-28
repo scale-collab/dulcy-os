@@ -28,12 +28,14 @@ const rec = (n: number | string) => `recCONTENT${String(n).padStart(7, '0')}`;
 const clipRec = (n: number) => `recCLIP${String(n).padStart(10, '0')}`;
 
 // ---------- the Content Center's rules ----------
-test('content: nextIdeaDates (ported) — main = Tue/Thu publish, recorded the Sunday before or today; Raw = this week\'s Friday', () => {
+test('content: nextIdeaDates — main = Tue/Thu publish, recorded on a Friday (Alex 2026-11-28); Raw = this week\'s Friday', () => {
   const s = { videosPerWeek: 5, clipsPerWeek: 3, minimumSpacingDays: 1 };
   const thu = at12('2026-11-26');
-  assert.deepEqual(nextIdeaDates([], s, thu, 'Alex Woung'), { recording: '2026-11-26', publish: '2026-12-01' }, 'first Tuesday; planned Sunday is past → today');
-  assert.deepEqual(nextIdeaDates([{ recording: '', publish: '2026-12-01' }], s, thu, 'Alex Woung'), { recording: '2026-11-26', publish: '2026-12-03' });
-  assert.deepEqual(nextIdeaDates([{ recording: '', publish: '2026-12-01' }, { recording: '', publish: '2026-12-03' }], s, thu, 'Alex Woung'), { recording: '2026-11-29', publish: '2026-12-08' }, 'the Sunday one week before the publish week');
+  assert.deepEqual(nextIdeaDates([], s, thu, 'Alex Woung'), { recording: '2026-11-27', publish: '2026-12-01' }, 'first Tuesday; planned Friday is past → the next Friday');
+  assert.deepEqual(nextIdeaDates([{ recording: '', publish: '2026-12-01' }], s, thu, 'Alex Woung'), { recording: '2026-11-27', publish: '2026-12-03' });
+  assert.deepEqual(nextIdeaDates([{ recording: '', publish: '2026-12-01' }, { recording: '', publish: '2026-12-03' }], s, thu, 'Alex Woung'), { recording: '2026-11-27', publish: '2026-12-08' }, 'the Friday before the week before the publish week');
+  assert.deepEqual(nextIdeaDates([], s, at12('2026-12-01'), 'Alex Woung'), { recording: '2026-12-04', publish: '2026-12-08' }, 'always a Friday, at least 4 days before it goes out');
+  assert.equal(new Date(nextIdeaDates([{ recording: '', publish: '2026-12-15' }], s, thu, 'Alex Woung').recording + 'T12:00:00Z').getUTCDay(), 5);
   assert.deepEqual(nextIdeaDates([], s, thu, 'Alex Woung Raw'), { recording: '2026-11-27', publish: '2026-12-01' }, 'Raw: Friday of this Mon–Sun week');
   assert.deepEqual(nextIdeaDates([{ recording: '2026-11-27', publish: '2026-12-01' }], s, thu, 'Alex Woung Raw'), { recording: '2026-11-27', publish: '2026-12-02' }, 'spacing 1 day');
   assert.deepEqual(nextIdeaDates([{ recording: '2026-11-27', publish: '2026-12-01' }], { ...s, minimumSpacingDays: 2 }, thu, 'Alex Woung Raw').publish, '2026-12-03');
