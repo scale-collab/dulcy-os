@@ -18,7 +18,9 @@ import { decide, groupByPile, pendingDecisions, type HqAirtable } from './decisi
 import { listTasks, markDone, notYet, quickAdd, validNewTask } from './tasks.js';
 import { agentActivity, agentRuns, agentTasks, finishAgentTask, jobHealth, teamCheck, isBoardDue, isBoardStatus, loadTeamBoard } from './team.js';
 import { archiveThread, canTalkTo, chatTurn, latestThread, listThreads, readThread, suggestQuestions, type ChatModel } from './chat.js';
-import { clientDetail, clientFinance, clientNumbers, listClients, parseWindow } from './clients.js';
+import { clientDetail, clientFinance, clientNumbers, companyFinances, listClients, parseWindow } from './clients.js';
+// Round 4 (2026-11-28): custom range results, profit per client, Finances (company + personal).
+import { bisonStatsFrom, customResults, profitView, type BisonStatsFn } from './clientProfit.js';
 // Batch 2: owner money on Clients (Xero via Ledger's client, the P/L sheet via the Google provider).
 import { createSheetsClient, type SheetsClient } from '../providers/google.js';
 import { createXeroClient, type XeroClient } from '../providers/xero.js';
@@ -60,6 +62,8 @@ export interface HqDeps {
   at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string;
   // Batch 2: read-only money sources for the owner's Clients screen (fakes in tests).
   sheets?: Pick<SheetsClient, 'tab'>; xero?: Pick<XeroClient, 'get' | 'pages'>;
+  /** Round 4: EmailBison workspace totals for a custom range (fake in tests). */
+  bisonStats?: BisonStatsFn;
   // Batch 4a: Sales insights deps (Close, calendar; fakes in tests).
   sales?: SalesDeps;
   /** Phone notifications: the push sender (tests pass a fake; nothing goes out from tests). */
@@ -441,13 +445,22 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         json(res, 200, await listClients(needAt(), db, owner, { all: url.searchParams.get('all') === '1', refresh: url.searchParams.get('refresh') === '1', window: parseWindow(url.searchParams.get('window')), finance: owner ? financeDeps() : undefined }));
         return true;
       }
+      // Round 4: results for a custom range (from / to, both days included). Not money: everyone reads.
+      if (p === '/hq/api/clients/results' && req.method === 'GET') {
+        json(res, 200, await customResults(needAt(), db, deps.bisonStats ?? bisonStatsFrom(cfg, deps.fetchImpl), url.searchParams.get('from') ?? '', url.searchParams.get('to') ?? '', url.searchParams.get('refresh') === '1'));
+        return true;
+      }
       // Batch 2: agency numbers and money, owner only (members get 403, nothing else).
-      if ((p === '/hq/api/clients/numbers' || p === '/hq/api/clients/finance') && req.method === 'GET') {
+      // Round 4: profit per client and Finances (company + personal), owner only too.
+      if ((p === '/hq/api/clients/numbers' || p === '/hq/api/clients/finance' || p === '/hq/api/clients/profit' || p === '/hq/api/finances') && req.method === 'GET') {
         if (!owner) { json(res, 403, { error: 'only the owner sees money' }); return true; }
-        if (p.endsWith('/numbers')) {
-          const per = url.searchParams.get('period') ?? 'this-month';
-          json(res, 200, await clientNumbers(needAt(), db, ((PERIODS as readonly string[]).includes(per) ? per : 'this-month') as Period, financeDeps()));
-        } else json(res, 200, await clientFinance(needAt(), db, financeDeps(), url.searchParams.get('refresh') === '1'));
+        const per = url.searchParams.get('period') ?? 'this-month';
+        const period = (per === 'custom' || (PERIODS as readonly string[]).includes(per) ? per : 'this-month') as Period | 'custom';
+        const from = url.searchParams.get('from'); const to = url.searchParams.get('to');
+        if (p.endsWith('/numbers')) json(res, 200, await clientNumbers(needAt(), db, period, financeDeps(), new Date(), { from, to }));
+        else if (p.endsWith('/profit')) json(res, 200, await profitView(needAt(), db, cfg, financeDeps(), period, from ?? undefined, to ?? undefined));
+        else if (p === '/hq/api/finances') json(res, 200, await companyFinances(needAt(), db, financeDeps(), url.searchParams.get('refresh') === '1'));
+        else json(res, 200, await clientFinance(needAt(), db, financeDeps(), url.searchParams.get('refresh') === '1'));
         return true;
       }
       m = p.match(/^\/hq\/api\/clients\/(rec[A-Za-z0-9]{14})$/);

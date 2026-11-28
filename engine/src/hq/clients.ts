@@ -20,10 +20,10 @@ import { hasPlan, type PlanRef } from './generators.js';
 import { pendingDecisions, type DecisionCard, type HqAirtable } from './decisions.js';
 import { agentTasks } from './team.js';
 import {
-  DEAL_LABEL, HEALTH_LABEL, NO_FIXED_KPI, SHEET_ALIASES, WINDOWS, agencyNumbers, dealFor, healthOf, kpiNumber, ltvOf, monthsBetween, resultsFor,
+  DEAL_LABEL, HEALTH_LABEL, NO_FIXED_KPI, SHEET_ALIASES, WINDOWS, agencyNumbers, customRanges, dealFor, healthOf, kpiNumber, ltvOf, monthsBetween, resultsFor,
   type BookClient, type Deal, type DealLine, type DealType, type Health, type Insight, type OverviewRow, type Period, type Results, type Window,
 } from './clientDeals.js';
-import { billingByClient, readFinance, type Finance, type FinanceDeps } from './finance.js';
+import { billingByClient, financesView, readFinance, type Finance, type FinanceDeps } from './finance.js';
 
 export const CACHE_MS = 5 * 60_000;
 /** Bounce over 2.5% = watch, over 4% = pause (RULES.md); 60%+ sent = plan the next campaign. */
@@ -32,7 +32,7 @@ export const CAMPAIGN_HEALTH_LIMITS = { watch: 2.5, pause: 4, next: 0.6 } as con
 const WS_EXTRA = ['Outstanding Receivables', 'Client Health Reasons', 'Client Start Date', 'Client End Date', 'Inactive Reason', 'Client', 'Billing Rate', 'Calls Booked KPI (from Onboarding)', 'Onboarding'];
 /** Airtable "Email Analytics Overview": one row per client and window (EmailBison numbers). */
 export const OVERVIEW = 'tblZkEi6qylqfOj9Z';
-const OVERVIEW_FIELDS = ['Date Period', 'Client ID', 'Emails Sent', 'Unique Replies', 'Interested', 'Meetings Booked', 'Updated At'];
+const OVERVIEW_FIELDS = ['Date Period', 'Client ID', 'Emails Sent', 'Unique Replies', 'Interested', 'Meetings Booked', 'Updated At', 'Total Leads Contacted'];
 /** Airtable "Call Feedback" (the client's verdict per booked call) and "Client Closed Deals". */
 export const CALL_FEEDBACK = 'tbljJ0uWryVMuilXn';
 export const CF = { status: 'fldXNEJcG9LUnR73H', stars: 'fld1KGADNp3pX2mLi', notes: 'fldZXCeH23P9azJqb', bison: 'fldiZYJuFW6Sa4wN5', created: 'fldKRdKwzeOHvYM7n', newDate: 'fldsgmVQKkbAoTvsE' } as const;
@@ -140,7 +140,7 @@ export async function readClientsSource(at: HqAirtable, db: Db): Promise<Clients
   return {
     ...rows, campaigns: rows.campaigns.filter((c) => s(c.fields['Campaign Status']) === 'Active'),
     waiting: waiting.filter((r) => s(r.fields[RA.state]) === 'Needs Approval'), decisions, plans, readAt: new Date().toISOString(),
-    overview: overview.map((r) => ({ period: s(r.fields['Date Period']), clientId: s(r.fields['Client ID']), sent: n(r.fields['Emails Sent']) ?? 0, replies: n(r.fields['Unique Replies']) ?? 0, interested: n(r.fields.Interested) ?? 0, meetings: n(r.fields['Meetings Booked']) ?? 0, updatedAt: s(r.fields['Updated At']) })).filter((r) => r.clientId),
+    overview: overview.map((r) => ({ period: s(r.fields['Date Period']), clientId: s(r.fields['Client ID']), sent: n(r.fields['Emails Sent']) ?? 0, replies: n(r.fields['Unique Replies']) ?? 0, interested: n(r.fields.Interested) ?? 0, meetings: n(r.fields['Meetings Booked']) ?? 0, updatedAt: s(r.fields['Updated At']), contacted: n(r.fields['Total Leads Contacted']) })).filter((r) => r.clientId),
     feedback,
   };
 }
@@ -306,10 +306,20 @@ export async function listClients(at: HqAirtable, db: Db, canSeeMoney: boolean, 
 }
 
 /** GET /clients/numbers (owner only, checked in the route): agency numbers for a period. */
-export async function clientNumbers(at: HqAirtable, db: Db, period: Period, finance?: FinanceDeps, now = new Date()) {
+/** Round 4: period 'custom' takes from / to (both days included); a bad range answers 400. */
+export async function clientNumbers(at: HqAirtable, db: Db, period: Period | 'custom', finance?: FinanceDeps, now = new Date(), custom?: { from?: string | null; to?: string | null }) {
+  const ranges = period === 'custom' ? customRanges(custom?.from, custom?.to) : undefined;
+  if (period === 'custom' && !ranges) throw Object.assign(new Error('pick a from and a to date (to on or after from, 3 years at most)'), { status: 400 });
   const [src, fin] = await Promise.all([cachedSource(at, db), financeFor(true, finance)]);
   const book = buildAll(src, true, now, { finance: fin }).map((b) => b.book).filter((b): b is BookClient => !!b);
-  return { numbers: agencyNumbers(book, period, now), readAt: src.readAt };
+  return { numbers: agencyNumbers(book, period, now, ranges ?? undefined), readAt: src.readAt };
+}
+
+/** Round 4: GET /finances (owner only, checked in the route): company money from Xero; Personal cards apart. */
+export async function companyFinances(at: HqAirtable, db: Db, finance: FinanceDeps, refresh = false) {
+  const [src, fin] = await Promise.all([cachedSource(at, db), readFinance(finance, new Date(), refresh)]);
+  const rows = buildClients(src, true, new Date(), { finance: fin });
+  return financesView(fin, summarize(rows, true, src.readAt).mrr ?? 0);
 }
 
 /** GET /clients/finance (owner only, checked in the route): Xero + P/L sheet money. */

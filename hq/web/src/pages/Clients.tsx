@@ -1,16 +1,22 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { api, type AgencyNumbers, type Client, type ClientFinance, type ClientHealth, type ClientInsight, type ClientPeriod, type ClientsSummary, type ResultsWindow, type User } from '../api';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { api, type AgencyNumbers, type Client, type ClientCustomResults, type ClientHealth, type ClientInsight, type ClientPeriod, type ClientProfit, type ClientProfitView, type ClientsSummary, type CustomRange, type ResultsWindow, type User } from '../api';
 import { Card, cx, Empty, ErrorBox, go, Icon, IconButton, PageSkeleton, PageTitle, Pill, SectionHeader, setCount, StatusDot, timeAgo, usd, useCounts, type Tone } from '../ui';
-import { ClientPicker, rememberedClient } from '../clientPicker';
+import { slashDate } from '../dates';
 
 interface ClientsData { clients: Client[]; summary: ClientsSummary; window: ResultsWindow }
 
 export const healthTone: Record<ClientHealth, Tone> = { safe: 'good', at_risk: 'warn', attention: 'bad', unknown: 'idle', inactive: 'idle' };
 const pillTone = (h: ClientHealth) => (h === 'safe' ? 'good' : h === 'at_risk' ? 'warn' : h === 'attention' ? 'bad' : 'plain');
-export const WINDOW_LABEL: Record<ResultsWindow, string> = { 10: 'Last 10 days', 30: 'Last 30 days', 60: 'Last 60 days', 120: 'Last 120 days', all: 'All time' };
-const PERIOD_LABEL: Record<ClientPeriod, string> = { 'this-month': 'This month', 'last-month': 'Last month', '3m': 'Last 3 months', '6m': 'Last 6 months', '12m': 'Last 12 months', 'this-year': 'This year vs last year' };
+export const WINDOW_LABEL: Record<ResultsWindow | 'custom', string> = { 10: 'Last 10 days', 30: 'Last 30 days', 60: 'Last 60 days', 120: 'Last 120 days', all: 'All time', custom: 'Custom' };
+const PERIOD_LABEL: Record<ClientPeriod | 'custom', string> = { 'this-month': 'This month', 'last-month': 'Last month', '3m': 'Last 3 months', '6m': 'Last 6 months', '12m': 'Last 12 months', 'this-year': 'This year vs last year', custom: 'Custom' };
 const read = (k: string, d: string) => { try { return localStorage.getItem(k) || d; } catch { return d; } };
 const save = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* per device only */ } };
+const isDay = (x: string) => /^\d{4}-\d{2}-\d{2}$/.test(x);
+/** A saved custom range ("from|to"), or empty dates. */
+const readRange = (k: string): CustomRange => { const [from = '', to = ''] = read(k, '').split('|'); return isDay(from) && isDay(to) ? { from, to } : { from: '', to: '' }; };
+const saveRange = (k: string, r: CustomRange) => save(k, `${r.from}|${r.to}`);
+const rangeOk = (r: CustomRange) => isDay(r.from) && isDay(r.to) && r.from <= r.to;
+const rangeQuery = (r: CustomRange) => `from=${r.from}&to=${r.to}`;
 export const num = (x: number | null | undefined) => (x === null || x === undefined ? '–' : x.toLocaleString('en-US'));
 export const pct1 = (x: number | null | undefined) => (x === null || x === undefined ? '–' : `${Math.round(x * 1000) / 10}%`);
 /** A money amount with its deal: "$1,500/mo + $250/call". */
@@ -20,30 +26,36 @@ export function dealLine(c: Client): string {
   return [m.fee ? `${usd(m.fee)}/mo` : '', m.perCall ? `${usd(m.perCall)}/call` : ''].filter(Boolean).join(' + ');
 }
 
-/** Clients: health on the promised KPI first, then results; agency numbers and money for the owner only. */
+/** Clients: health on the promised KPI first, then results; agency numbers and profit per client for the owner. */
 export default function Clients({ user }: { user: User }) {
   const owner = user.role === 'owner';
   const [all, setAll] = useState(() => read('hq-clients-all', '0') === '1');
-  const [win, setWin] = useState<ResultsWindow>(() => read('hq-clients-window', '30') as ResultsWindow);
-  const [pick, setPick] = useState(() => rememberedClient('clients', undefined));
+  const [win, setWin] = useState<ResultsWindow | 'custom'>(() => read('hq-clients-window', '30') as ResultsWindow | 'custom');
+  const [winRange, setWinRange] = useState<CustomRange>(() => readRange('hq-clients-window-range'));
   const [d, setD] = useState<ClientsData | null>(null);
+  const [custom, setCustom] = useState<ClientCustomResults | null>(null);
+  const [customError, setCustomError] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  // The list (health) always reads a fixed window; a Custom range is read on its own (EmailBison for those days).
+  const listWin = win === 'custom' ? '30' : win;
   const load = useCallback((refresh = false) => {
     setError(''); setBusy(true);
-    api<ClientsData>(`/clients?window=${win}${all ? '&all=1' : ''}${refresh ? '&refresh=1' : ''}`)
+    api<ClientsData>(`/clients?window=${listWin}${all ? '&all=1' : ''}${refresh ? '&refresh=1' : ''}`)
       .then((x) => { setD(x); setCount('clientsRed', x.clients.filter((c) => c.active && c.health === 'attention').length); })
       .catch((e) => setError(e.message)).finally(() => setBusy(false));
-  }, [all, win]);
+  }, [all, listWin]);
   useEffect(() => load(), [load]);
+  useEffect(() => {
+    setCustom(null); setCustomError('');
+    if (win !== 'custom' || !rangeOk(winRange)) return;
+    api<ClientCustomResults>(`/clients/results?${rangeQuery(winRange)}`).then(setCustom).catch((e) => setCustomError(e.message));
+  }, [win, winRange]);
   const toggle = () => { const v = !all; setAll(v); save('hq-clients-all', v ? '1' : '0'); };
-  const options = useMemo(() => (d?.clients ?? []).filter((c) => c.active).map((c) => ({ key: c.key, name: c.name })), [d]);
-  const onPick = useCallback((k: string) => setPick(k), []);
   const s = d?.summary;
   const kicker = s ? `${s.active} active client${s.active === 1 ? '' : 's'}${s.internal ? ' + Dulcy' : ''}${s.attention ? ` · ${s.attention} need${s.attention === 1 ? 's' : ''} attention` : ''}` : 'Clients';
   const right = (
     <>
-      <ClientPicker screen="clients" value={pick} options={options} onChange={onPick} />
       <button role="switch" aria-checked={all} onClick={toggle} className="inline-flex min-h-10 items-center gap-2.5 rounded-xl border border-line bg-surface px-3 text-sm font-medium text-fg-2 shadow-card hover:bg-hover">
         <span aria-hidden="true" className={cx('relative h-5 w-9 rounded-full transition', all ? 'bg-accent' : 'bg-line-strong')}><span className={cx('absolute top-0.5 h-4 w-4 rounded-full bg-surface shadow transition-all', all ? 'left-[18px]' : 'left-0.5')} /></span>
         Inactive{s ? ` (${s.inactive})` : ''}
@@ -54,12 +66,15 @@ export default function Clients({ user }: { user: User }) {
   const title = <PageTitle title="Clients" kicker={kicker} sub="Health against each client's promised meetings, then results." right={right} />;
   if (error && !d) return <>{title}<ErrorBox error={error} retry={() => load()} /></>;
   if (!d) return <>{title}<PageSkeleton kind="grid" /></>;
-  const shown = d.clients.filter((c) => !pick || c.key === pick);
+  const shown = d.clients;
+  // Custom range: each active client's results for those days replace the fixed window's.
+  const byId = new Map((custom?.rows ?? []).map((r) => [r.id, r]));
+  const resultsRows = shown.filter((c) => c.active).map((c) => (win === 'custom' ? { ...c, results: byId.get(c.id)?.results ?? null } : c));
   return (
     <div>
       {title}
       {error && <div className="mb-4"><ErrorBox error={error} retry={() => load()} /></div>}
-      {owner && <SalesLink />}
+      {owner && <OwnerLinks />}
       {owner && <AgencyBlock />}
 
       <SectionHeader title="Client health" icon="target" right={<span className="text-xs text-muted">Safe · At risk · Needs attention, on the promised KPI</span>} />
@@ -70,33 +85,66 @@ export default function Clients({ user }: { user: User }) {
 
       <section className="mt-8">
         <SectionHeader title="Results by client" icon="trendUp" right={
-          <select aria-label="Period for results" value={win} onChange={(e) => { const v = e.target.value as ResultsWindow; setWin(v); save('hq-clients-window', v); }}
-            className="min-h-10 rounded-xl border border-line bg-surface px-3 text-sm font-medium text-fg focus:outline-none focus:ring-2 focus:ring-accent">
-            {(Object.keys(WINDOW_LABEL) as ResultsWindow[]).map((w) => <option key={w} value={w}>{WINDOW_LABEL[w]}</option>)}
-          </select>
+          <RangeSelect label="Period for results" value={win} options={WINDOW_LABEL} range={winRange}
+            onChange={(v, r) => { setWin(v); save('hq-clients-window', v); if (r) { setWinRange(r); saveRange('hq-clients-window-range', r); } }} />
         } />
-        <ResultsTable clients={shown.filter((c) => c.active)} />
-        <p className="mt-2 text-xs text-muted">EmailBison numbers (Airtable "Email Analytics Overview", synced nightly). Emails per meeting = emails sent ÷ meetings booked.</p>
+        {win === 'custom' && !rangeOk(winRange) && <Card className="mb-3 text-sm text-muted">Pick a from and a to date, then Show.</Card>}
+        {customError && <div className="mb-3"><ErrorBox error={customError} /></div>}
+        {win === 'custom' && rangeOk(winRange) && !custom && !customError ? <Card className="text-sm text-muted">Reading EmailBison for {slashRange(winRange)}…</Card> : <ResultsTable clients={resultsRows} notes={win === 'custom' ? byId : undefined} />}
+        {custom?.errors.map((e) => <Line key={e} warn>{e}</Line>)}
+        <p className="mt-2 text-xs text-muted">{win === 'custom'
+          ? 'EmailBison totals for the chosen days; meetings = bookings in those days (Airtable Emails). People contacted = unique leads emailed.'
+          : 'EmailBison numbers (Airtable "Email Analytics Overview", synced nightly). People contacted = unique leads emailed (Total Leads Contacted). Emails per meeting = emails sent ÷ meetings booked.'}</p>
       </section>
 
-      {owner && <MoneyBlock />}
+      {owner && <ProfitBlock />}
       <p className="mt-6 text-xs text-muted">From Airtable, read {timeAgo(d.summary.readAt) || 'just now'}; kept for 5 minutes.</p>
     </div>
   );
 }
 
-/** Owner only: the way into Sales (on the phone there is no room for another header icon). */
-function SalesLink() {
+/** The ways into Sales and Finances (on the phone there is no room for more header icons). */
+function OwnerLinks() {
   const n = useCounts().sales;
-  return (
-    <Card onClick={() => go('sales')} label="Open Sales" className="mb-4 flex items-center gap-3 px-4 py-3">
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent-ink"><Icon name="dollar" size={18} /></span>
-      <span className="min-w-0 flex-1"><span className="block text-[15px] font-semibold text-fg">Sales</span><span className="block truncate text-sm text-muted">New deals: booked call to signed and paid</span></span>
-      {!!n && <span className="tabular rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-accent-fg" aria-label={`${n} need action`}>{n}</span>}
+  const link = (to: string, icon: 'dollar' | 'layers', name: string, sub: string, badge?: number) => (
+    <Card onClick={() => go(to)} label={`Open ${name}`} className="flex items-center gap-3 px-4 py-3">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent-ink"><Icon name={icon} size={18} /></span>
+      <span className="min-w-0 flex-1"><span className="block text-[15px] font-semibold text-fg">{name}</span><span className="block truncate text-sm text-muted">{sub}</span></span>
+      {!!badge && <span className="tabular rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-accent-fg" aria-label={`${badge} need action`}>{badge}</span>}
       <Icon name="chevronRight" size={18} className="text-faint" />
     </Card>
   );
+  return (
+    <div className="mb-4 grid gap-3 sm:grid-cols-2">
+      {link('sales', 'dollar', 'Sales', 'New deals: booked call to signed and paid', n)}
+      {link('finances', 'layers', 'Finances', 'Company income and costs (Xero), Personal')}
+    </div>
+  );
 }
+
+/** A period dropdown with a Custom choice: from / to dates and Show. Round 4 (Alex 2026-11-28). */
+function RangeSelect<K extends string>({ label, value, options, range, onChange }: { label: string; value: K; options: Record<K, string>; range: CustomRange; onChange: (v: K, r?: CustomRange) => void }) {
+  const [from, setFrom] = useState(range.from); const [to, setTo] = useState(range.to);
+  const ok = rangeOk({ from, to });
+  const input = 'mt-0.5 block min-h-10 rounded-xl border border-line bg-surface px-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-accent';
+  return (
+    <span className="flex flex-wrap items-end justify-end gap-2">
+      <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value as K)}
+        className="min-h-10 rounded-xl border border-line bg-surface px-3 text-sm font-medium text-fg focus:outline-none focus:ring-2 focus:ring-accent">
+        {(Object.keys(options) as K[]).map((k) => <option key={k} value={k}>{options[k]}</option>)}
+      </select>
+      {value === 'custom' && (
+        <>
+          <label className="text-xs text-muted">From<input type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} className={input} /></label>
+          <label className="text-xs text-muted">To<input type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} className={input} /></label>
+          <button disabled={!ok || (from === range.from && to === range.to)} onClick={() => onChange(value, { from, to })} className="min-h-10 rounded-xl bg-ink px-4 text-sm font-semibold text-ink-fg disabled:opacity-40">Show</button>
+        </>
+      )}
+    </span>
+  );
+}
+/** "11/1 to 11/30" (dates with slashes). */
+const slashRange = (r: CustomRange) => `${slashDate(r.from)} to ${slashDate(r.to)}`;
 
 /** Problem → Decision → what supports it, one short line each. */
 export function InsightLines({ i, className }: { i: ClientInsight; className?: string }) {
@@ -159,22 +207,23 @@ function Num({ label, sub, v, tone }: { label: string; sub: string; v: string; t
   );
 }
 
-function ResultsTable({ clients }: { clients: Client[] }) {
+function ResultsTable({ clients, notes }: { clients: Client[]; notes?: Map<string, { note: string }> }) {
   if (!clients.length) return <Card className="text-sm text-muted">No active clients.</Card>;
   const th = 'px-3 py-2.5 text-right font-medium';
   return (
     <Card className="overflow-x-auto p-0">
-      <table className="w-full min-w-[640px] text-left text-sm">
+      <table className="w-full min-w-[720px] text-left text-sm">
         <thead className="border-b border-line bg-sunken text-xs text-muted">
-          <tr><th className="px-5 py-2.5 font-medium">Client</th><th className={th}>Sent</th><th className={th}>Interested</th><th className={th}>Meetings</th><th className={th}>Emails / meeting</th><th className={th}>Emails / positive reply</th><th className={th}>Interested → booked</th></tr>
+          <tr><th className="px-5 py-2.5 font-medium">Client</th><th className={th}>Sent</th><th className={th}>People contacted</th><th className={th}>Interested</th><th className={th}>Meetings</th><th className={th}>Emails / meeting</th><th className={th}>Emails / positive reply</th><th className={th}>Interested → booked</th></tr>
         </thead>
         <tbody className="divide-y divide-line">
           {clients.map((c) => {
             const r = c.results;
             return (
               <tr key={c.id} className="cursor-pointer hover:bg-hover" onClick={() => go(`clients/${c.id}`)}>
-                <td className="px-5 py-3 font-medium text-fg"><span className="inline-flex items-center gap-2"><StatusDot tone={healthTone[c.health]} />{c.name}</span>{r?.stale && <span className="ml-2 text-xs text-warn">sync stopped</span>}</td>
+                <td className="px-5 py-3 font-medium text-fg"><span className="inline-flex items-center gap-2"><StatusDot tone={healthTone[c.health]} />{c.name}</span>{r?.stale && <span className="ml-2 text-xs text-warn">sync stopped</span>}{notes?.get(c.id)?.note && <span className="ml-2 text-xs text-warn">{notes.get(c.id)!.note}</span>}</td>
                 <td className="tabular px-3 py-3 text-right text-fg-2">{num(r?.sent)}</td>
+                <td className="tabular px-3 py-3 text-right text-fg-2">{num(r?.contacted)}</td>
                 <td className="tabular px-3 py-3 text-right text-fg-2">{num(r?.interested)}</td>
                 <td className="tabular px-3 py-3 text-right font-semibold text-fg">{num(r?.meetings)}</td>
                 <td className="tabular px-3 py-3 text-right text-fg-2">{num(r?.emailsPerMeeting)}</td>
@@ -189,26 +238,29 @@ function ResultsTable({ clients }: { clients: Client[] }) {
   );
 }
 
-/** Owner only (the server answers 403 to members). */
+/** A period choice with its Custom range, remembered on this device. */
+function usePeriod(key: string): [ClientPeriod | 'custom', CustomRange, (v: ClientPeriod | 'custom', r?: CustomRange) => void, string] {
+  const [period, setPeriod] = useState<ClientPeriod | 'custom'>(() => read(key, 'this-month') as ClientPeriod | 'custom');
+  const [range, setRange] = useState<CustomRange>(() => readRange(`${key}-range`));
+  const set = useCallback((v: ClientPeriod | 'custom', r?: CustomRange) => { setPeriod(v); save(key, v); if (r) { setRange(r); saveRange(`${key}-range`, r); } }, [key]);
+  // '' = nothing to ask yet (Custom with no dates picked).
+  const query = period !== 'custom' ? `period=${period}` : rangeOk(range) ? `period=custom&${rangeQuery(range)}` : '';
+  return [period, range, set, query];
+}
+
+/** The server answers 403 to members. */
 function AgencyBlock() {
-  const [period, setPeriod] = useState<ClientPeriod>(() => read('hq-clients-period', 'this-month') as ClientPeriod);
+  const [period, range, setPeriod, query] = usePeriod('hq-clients-period');
   const [n, setN] = useState<AgencyNumbers | null>(null);
   const [error, setError] = useState('');
-  useEffect(() => { setError(''); api<{ numbers: AgencyNumbers }>(`/clients/numbers?period=${period}`).then((x) => setN(x.numbers)).catch((e) => setError(e.message)); }, [period]);
+  useEffect(() => { setError(''); setN(null); if (query) api<{ numbers: AgencyNumbers }>(`/clients/numbers?${query}`).then((x) => setN(x.numbers)).catch((e) => setError(e.message)); }, [query]);
   const vs = (a: number | null, b: number | null, fmt = (x: number) => String(x)) => (b === null || a === null ? '' : `${n?.prev.label}: ${fmt(b)}`);
   return (
     <section className="mb-8">
-      <SectionHeader title="Agency numbers" icon="activity" right={
-        <span className="flex items-center gap-2">
-          <span className="hidden text-xs text-muted sm:inline">owner only</span>
-          <select aria-label="Period" value={period} onChange={(e) => { const v = e.target.value as ClientPeriod; setPeriod(v); save('hq-clients-period', v); }}
-            className="min-h-10 rounded-xl border border-line bg-surface px-3 text-sm font-medium text-fg focus:outline-none focus:ring-2 focus:ring-accent">
-            {(Object.keys(PERIOD_LABEL) as ClientPeriod[]).map((p) => <option key={p} value={p}>{PERIOD_LABEL[p]}</option>)}
-          </select>
-        </span>
-      } />
+      <SectionHeader title="Agency numbers" icon="activity" right={<RangeSelect label="Period" value={period} options={PERIOD_LABEL} range={range} onChange={setPeriod} />} />
       {error && <ErrorBox error={error} />}
-      {!n && !error && <Card className="text-sm text-muted">Loading…</Card>}
+      {!query && <Card className="text-sm text-muted">Pick a from and a to date, then Show.</Card>}
+      {!n && !error && query && <Card className="text-sm text-muted">Loading…</Card>}
       {n && (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -238,45 +290,65 @@ function Tile({ label, v, sub, tone, title }: { label: string; v: string; sub?: 
   );
 }
 
-/** Owner only: Xero income and the P/L sheet's card debts. */
-function MoneyBlock() {
-  const [f, setF] = useState<ClientFinance | null>(null);
+/**
+ * Profit per client (the server answers 403 to members). Revenue from the deal in the period minus
+ * the costs HQ knows; every cost it cannot read says UNKNOWN (never a guessed number).
+ * Company income and costs moved to Finances (round 4, Alex 2026-11-28).
+ */
+function ProfitBlock() {
+  const [period, range, setPeriod, query] = usePeriod('hq-clients-profit-period');
+  const [p, setP] = useState<ClientProfitView | null>(null);
   const [error, setError] = useState('');
-  useEffect(() => { api<ClientFinance>('/clients/finance').then(setF).catch((e) => setError(e.message)); }, []);
+  useEffect(() => { setError(''); setP(null); if (query) api<ClientProfitView>(`/clients/profit?${query}`).then(setP).catch((e) => setError(e.message)); }, [query]);
+  const th = 'px-3 py-2.5 text-right font-medium';
+  const cost = (c: ClientProfit, label: string) => c.costs.find((x) => x.label === label);
+  const unknown = 'text-xs font-semibold text-warn';
+  const amount = (x?: { amount: number | null; note: string }) => <td className={cx('tabular px-3 py-3 text-right', !x || x.amount === null ? unknown : 'text-fg-2')} title={x?.note}>{!x || x.amount === null ? 'UNKNOWN' : usd(x.amount)}</td>;
   return (
     <section className="mt-8">
-      <SectionHeader title="Money" icon="dollar" right={<span className="text-xs text-muted">owner only · Xero + Dulcy Media P/L</span>} />
+      <SectionHeader title="Profit per client" icon="dollar" right={<RangeSelect label="Period for profit" value={period} options={PERIOD_LABEL} range={range} onChange={setPeriod} />} />
       {error && <ErrorBox error={error} />}
-      {!f && !error && <Card className="text-sm text-muted">Loading…</Card>}
-      {f && (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Tile label="Income this month" v={f.xero ? usd(f.xero.thisMonth.income) : 'UNKNOWN'} sub="Xero P&L, so far" />
-            <Tile label="Income last month" v={f.xero ? usd(f.xero.lastMonth.income) : 'UNKNOWN'} sub="Xero P&L" />
-            <Tile label="Costs this month" v={f.xero ? usd(f.xero.thisMonth.costs) : 'UNKNOWN'} sub="Xero P&L" />
-            <Tile label="Card debt" v={f.cardTotals ? usd(f.cardTotals.balance) : 'UNKNOWN'} sub={f.cardTotals ? `statements ${usd(f.cardTotals.statement)}` : 'P/L sheet'} />
-          </div>
-          {f.cards && f.cards.length > 0 && (
+      {!query && <Card className="text-sm text-muted">Pick a from and a to date, then Show.</Card>}
+      {!p && !error && query && <Card className="text-sm text-muted">Loading…</Card>}
+      {p && (
+        <div className="space-y-2">
+          {!p.clients.length ? <Card className="text-sm text-muted">No active paying clients.</Card> : (
             <Card className="overflow-x-auto p-0">
-              <table className="w-full min-w-[520px] text-left text-sm">
-                <thead className="border-b border-line bg-sunken text-xs text-muted"><tr><th className="px-5 py-2.5 font-medium">Card</th><th className="px-3 py-2.5 font-medium">Due</th><th className="px-3 py-2.5 text-right font-medium">Statement</th><th className="px-3 py-2.5 text-right font-medium">Balance</th><th className="px-5 py-2.5 text-right font-medium">Minimum</th></tr></thead>
+              <table className="w-full min-w-[720px] text-left text-sm">
+                <thead className="border-b border-line bg-sunken text-xs text-muted">
+                  <tr><th className="px-5 py-2.5 font-medium">Client</th><th className={th}>Revenue</th><th className={th}>Inboxes</th><th className={th}>Domains</th><th className={th}>Leads + verification</th><th className={cx(th, 'pr-5')}>Profit</th></tr>
+                </thead>
                 <tbody className="divide-y divide-line">
-                  {f.cards.map((c) => <tr key={c.card}><td className="px-5 py-2.5 font-medium text-fg">{c.card}</td><td className="px-3 py-2.5 text-fg-2">{c.dueDate || '–'}</td><td className="tabular px-3 py-2.5 text-right text-fg-2">{usd(c.statement)}</td><td className="tabular px-3 py-2.5 text-right font-semibold text-fg">{usd(c.balance)}</td><td className="tabular px-5 py-2.5 text-right text-fg-2">{usd(c.minimum)}</td></tr>)}
+                  {p.clients.map((c) => (
+                    <tr key={c.id} className="cursor-pointer hover:bg-hover" onClick={() => go(`clients/${c.id}`)}>
+                      <td className="px-5 py-3"><div className="font-medium text-fg">{c.name}</div><div className="text-xs text-muted">{c.revenueNote}</div></td>
+                      <td className={cx('tabular px-3 py-3 text-right', c.revenue === null ? unknown : 'text-fg-2')}>{c.revenue === null ? 'UNKNOWN' : usd(c.revenue)}</td>
+                      {amount(cost(c, 'Inboxes'))}{amount(cost(c, 'Domains'))}{amount(cost(c, 'Leads and verification'))}
+                      <td className={cx('tabular py-3 pl-3 pr-5 text-right font-semibold', c.profit === null ? unknown : c.profit < 0 ? 'text-bad' : 'text-fg')}>{c.profit === null ? 'UNKNOWN' : usd(c.profit)}</td>
+                    </tr>
+                  ))}
                 </tbody>
+                {p.totals.clientsWithRevenue > 0 && (
+                  <tfoot className="border-t border-line bg-sunken text-sm">
+                    <tr>
+                      <td className="px-5 py-2.5 font-semibold text-fg">Total{p.totals.clientsWithRevenue < p.clients.length ? ` (${p.totals.clientsWithRevenue} with revenue)` : ''}</td>
+                      <td className="tabular px-3 py-2.5 text-right font-semibold text-fg">{usd(p.totals.revenue)}</td>
+                      <td colSpan={3} className="tabular px-3 py-2.5 text-right text-fg-2">known costs {usd(p.totals.knownCosts)}</td>
+                      <td className="tabular py-2.5 pl-3 pr-5 text-right font-bold text-fg">{usd(p.totals.profit)}</td>
+                    </tr>
+                  </tfoot>
+                )}
               </table>
             </Card>
           )}
-          {f.xero && f.xero.invoices.length > 0 && (
-            <Card className="text-sm">
-              <div className="mb-1 text-xs font-medium text-muted">Open client invoices (Xero)</div>
-              <ul className="space-y-1">{f.xero.invoices.map((i, k) => <li key={k} className="flex justify-between gap-3"><span className="truncate text-fg-2">{i.contact}</span><span className={cx('tabular shrink-0', i.late ? 'font-semibold text-bad' : 'text-fg-2')}>{usd(i.amount)} · {i.late ? `late since ${i.due}` : `due ${i.due}`}</span></li>)}</ul>
-            </Card>
-          )}
-          {f.notInAirtable.length > 0 && <Line>On the P/L sheet but not an active Airtable client: {f.notInAirtable.join(', ')}.</Line>}
-          {f.errors.map((e) => <Line key={e} warn>{e}</Line>)}
+          <Line>{p.range.label} ({slashDate(p.range.from)} to {slashDate(lastDay(p.range.to))}). Profit = revenue minus the known costs; UNKNOWN costs are not in it.</Line>
+          <ul className="list-disc space-y-0.5 pl-5 text-xs text-muted">{p.rules.map((r) => <li key={r}>{r}</li>)}</ul>
+          {p.errors.map((e) => <Line key={e} warn>{e}</Line>)}
         </div>
       )}
     </section>
   );
 }
+/** A range end is the day after (exclusive): the last day shown. */
+const lastDay = (to: string) => { const t = Date.parse(`${to}T12:00:00Z`) - 86_400_000; return Number.isFinite(t) ? new Date(t).toISOString().slice(0, 10) : to; };
 const Line = ({ children, warn }: { children: ReactNode; warn?: boolean }) => <p className={cx('text-xs', warn ? 'text-warn' : 'text-muted')}>{children}</p>;

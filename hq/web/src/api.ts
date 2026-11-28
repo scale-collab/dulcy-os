@@ -264,7 +264,9 @@ export type DealType = 'retainer' | 'per_call' | 'both' | 'unknown';
 export interface ClientInsight { problem: string; decision: string; support: string }
 export type ResultsWindow = '10' | '30' | '60' | '120' | 'all';
 export interface ClientResults {
-  window: ResultsWindow; sent: number; replies: number; interested: number; meetings: number;
+  window: ResultsWindow | 'custom'; sent: number; replies: number; interested: number; meetings: number;
+  /** People contacted: unique leads emailed (EmailBison total_leads_contacted); null when not on record. */
+  contacted: number | null;
   emailsPerMeeting: number | null; emailsPerPositive: number | null; interestedToBooked: number | null; stale: boolean;
 }
 export interface ClientFeedback { calls: number; qualified: number; unqualified: number; noShow: number; rated: number; avgStars: number | null; recent: { status: string; stars: number | null; notes: string; when: string }[] }
@@ -277,7 +279,7 @@ export interface ClientDetailResults {
 export type ClientPeriod = 'this-month' | 'last-month' | '3m' | '6m' | '12m' | 'this-year';
 export interface ClientRangeNumbers { label: string; from: string; to: string; newClients: number; lost: number; net: number; activeAtStart: number; churnRate: number | null; newNames: string[]; lostNames: string[] }
 /** Owner only (members get 403). */
-export interface AgencyNumbers { period: ClientPeriod; mrr: number; activeClients: number; avgLtv: number | null; avgRetentionMonths: number | null; cur: ClientRangeNumbers; prev: ClientRangeNumbers; counted: number; noEndDate: string[] }
+export interface AgencyNumbers { period: ClientPeriod | 'custom'; mrr: number; activeClients: number; avgLtv: number | null; avgRetentionMonths: number | null; cur: ClientRangeNumbers; prev: ClientRangeNumbers; counted: number; noEndDate: string[] }
 export interface ClientFinance {
   mrr: number;
   xero: { thisMonth: { from: string; to: string; income: number; costs: number }; lastMonth: { from: string; to: string; income: number; costs: number }; invoices: { contact: string; amount: number; due: string; late: boolean }[] } | null;
@@ -285,6 +287,24 @@ export interface ClientFinance {
   cardTotals: { statement: number; balance: number; minimum: number } | null;
   billing: { name: string; day: string; monthly: number; perCall: number; processor: string }[] | null;
   notInAirtable: string[]; errors: string[]; readAt: string;
+}
+/* ---------- Round 4 (2026-11-28): custom range results, profit per client, Finances ---------- */
+export interface CustomRange { from: string; to: string }
+export interface ClientCustomResults { from: string; to: string; label: string; rows: { id: string; key: string; name: string; results: ClientResults | null; note: string }[]; errors: string[]; readAt: string }
+export interface ProfitCost { label: string; amount: number | null; note: string }
+export interface ClientProfit { id: string; key: string; name: string; months: number; revenue: number | null; revenueNote: string; costs: ProfitCost[]; knownCosts: number; profit: number | null; unknown: string[] }
+/** Owner only (members get 403). */
+export interface ClientProfitView {
+  period: ClientPeriod | 'custom'; range: { from: string; to: string; label: string }; clients: ClientProfit[];
+  totals: { revenue: number; knownCosts: number; profit: number; clientsWithRevenue: number }; rules: string[]; errors: string[]; readAt: string;
+}
+export interface FinanceCard { card: string; dueDate: string; statement: number; balance: number; minimum: number; available: number | null; apr: string }
+export interface FinanceMonth { from: string; to: string; income: number; costs: number; net: number; label: string; lines?: { section: string; name: string; amount: number }[] }
+/** Owner only (members get 403). */
+export interface FinancesData {
+  company: { xero: FinanceMonth[] | null; invoices: { contact: string; amount: number; due: string; late: boolean }[]; mrr: number; cards: FinanceCard[] | null; cardTotals: { statement: number; balance: number; minimum: number } | null };
+  personal: { cards: FinanceCard[] | null; cardTotals: { statement: number; balance: number; minimum: number } | null };
+  sources: { income: string; cards: string; personalRule: string }; errors: string[]; readAt: string;
 }
 // ---------- Batch 4b: Needs you (to-do), Team board, Chat threads and suggestions ----------
 /** One to-do on "Needs you": the problem (title), what to do (todo), why (why), one action. */
