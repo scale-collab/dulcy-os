@@ -323,8 +323,8 @@ function Pipeline({ p, days, tab = 'pipeline' }: { p: SalesView4a['pipeline']; d
                         <button onClick={() => go(`sales/${d.id}`)} className="flex min-h-11 min-w-0 flex-1 items-center gap-3 px-3 py-2 text-left">
                           <div className="min-w-0 flex-1">
                             <div className="truncate text-sm font-medium text-fg">{d.name}{who(d) && <span className="font-normal text-muted"> · {who(d)}</span>}</div>
-                            <div className="truncate text-xs text-muted">{[d.callDate ? `call ${day(d.callDate)}` : 'no call in Sales Data', d.airtableStage, d.lost ? 'lost' : ''].filter(Boolean).join(' · ')}</div>
-                            {d.coleNext && <div className="truncate text-xs text-fg-2">Cole: {d.coleNext}</div>}
+                            <div className="text-xs text-muted sm:truncate">{[d.callDate ? `call ${day(d.callDate)}` : 'no call in Sales Data', d.airtableStage, d.lost ? 'lost' : ''].filter(Boolean).join(' · ')}</div>
+                            {d.coleNext && <div className="text-xs text-fg-2 sm:truncate">Cole: {d.coleNext}</div>}
                           </div>
                           {d.needs[0] && <ActionPill kind={d.needs[0].kind} />}
                           <Icon name="chevronRight" size={16} className="shrink-0 text-faint" />

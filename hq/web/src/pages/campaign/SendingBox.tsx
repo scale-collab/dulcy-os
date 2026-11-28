@@ -86,7 +86,7 @@ function Tile({ label, n, tone, active, onClick, help }: { label: string; n: num
   return (
     <button onClick={onClick} title={help} aria-pressed={active} className={cx('-mb-px -mr-px min-w-0 border-b border-r border-line bg-surface px-3 py-2.5 text-left transition hover:bg-hover sm:px-4', active && 'bg-accent-soft')}>
       <div className={cx('tabular text-[20px] font-bold leading-none', n ? tone ?? 'text-fg' : 'text-faint')}>{n}</div>
-      <div className="mt-1 truncate text-xs font-medium text-muted">{label}</div>
+      <div className="mt-1 text-xs font-medium text-muted max-sm:leading-snug sm:truncate">{label}</div>
     </button>
   );
 }

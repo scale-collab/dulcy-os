@@ -111,7 +111,7 @@ function Block({ icon, tone, title, sub, right, children }: { icon: string; tone
         <span aria-hidden="true" className={cx('grid h-9 w-9 shrink-0 place-items-center rounded-xl', TONES[tone])}><Icon name={icon} size={18} strokeWidth={2} /></span>
         <div className="min-w-0 flex-1">
           <h2 className="text-[17px] font-semibold leading-tight tracking-tight text-fg">{title}</h2>
-          {sub && <div className="truncate text-xs text-muted">{sub}</div>}
+          {sub && <div className="text-xs text-muted sm:truncate">{sub}</div>}
         </div>
         {right}
       </div>
