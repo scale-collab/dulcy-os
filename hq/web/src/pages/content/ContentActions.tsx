@@ -124,6 +124,7 @@ export function Distribution({ id, d, reload }: { id: string; d: ContentItemDeta
           ))}
         </dl>
         {d.distribution.status && <p className="mt-2 text-center text-xs text-muted">Posts: {d.distribution.status}</p>}
+        {d.completion && <p className={cx('mt-2 text-center text-sm', d.completion.complete ? 'text-good' : 'text-fg-2')}>{d.completion.complete ? `Distribution complete: ${d.completion.detail}` : `Not complete yet: ${d.completion.detail}`}</p>}
       </Card>
       <div className="space-y-2">
         {d.distribution.platforms.map((p) => <PlatformRow key={p.platform} id={id} p={p} reload={reload} publishDate={d.publishDate ?? ''} clipsPerWeek={d.settings?.clipsPerWeek ?? 3} />)}

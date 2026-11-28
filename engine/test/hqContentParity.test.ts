@@ -18,7 +18,7 @@ import { upsertUser } from '../src/hq/auth.js';
 import { CF, CONTENT, SETTINGS } from '../src/agents/sienna.js';
 import { CLIPS, KL, SF_CC, XF, _resetContentCache, buildContent, ccSettingsOf, readContentSource } from '../src/hq/content.js';
 import { AF, DF, DISTRIBUTION, HOOKS, _resetHookCache, buildYouTubeDescription } from '../src/hq/contentActions.js';
-import { PF, clampSettings, composeUrl, currentReview, newsletterHtml, redditCommunityForRecord } from '../src/hq/contentCenter.js';
+import { PF, clampSettings, completionDetail, composeUrl, currentReview, distributionCompletion, newsletterHtml, redditCommunityForRecord } from '../src/hq/contentCenter.js';
 
 const url = process.env.TEST_DATABASE_URL;
 const skip = !url ? 'TEST_DATABASE_URL not set' : false;
@@ -56,6 +56,16 @@ test('parity: the Content Center helpers, ported unchanged', () => {
   assert.equal(currentReview(crec('1'), JSON.stringify({ ...snap, final: { ...snap.final, url: 'https://evil.example/x.mp4' } }), 'P1.c1', [rec('A')]), null);
   assert.equal(currentReview(crec('1'), JSON.stringify(snap), 'P1.c2', [rec('A')]), null, 'another original clip');
   assert.equal(currentReview(crec('1'), '{not json', 'P1.c1', [rec('A')]), null);
+  // distributionCompletion: done only when every chosen channel has a published URL or a real schedule.
+  const row = (id: string, platform: string, status: string, extra: Record<string, string> = {}) => ({ id, platform, outputType: 'x', title: 't', body: 'b', media: '', account: '', approval: 'Approved', status, scheduledAt: '', postUrl: '', parentIds: [rec('V')], queueReceipt: '', ...extra });
+  const input = { id: rec('V'), finalAssetUrl: 'https://f.io/v', youtubeUrl: 'https://youtu.be/x', publishingStatus: 'Published', publishDate: '', requiredIds: [drec('1'), drec('2')], channels: ['Instagram', 'Reddit'], now: Date.parse('2026-11-28T12:00:00Z'),
+    rows: [row(drec('1'), 'Instagram', 'Scheduled', { scheduledAt: '2026-12-01T16:00:00Z' }), row(drec('2'), 'Reddit', 'Published', { postUrl: 'https://www.reddit.com/r/x/comments/1' })] };
+  const done = distributionCompletion(input);
+  assert.deepEqual([done.complete, done.scheduled, done.published], [true, 1, 1]);
+  assert.equal(completionDetail(done), '1 scheduled, 1 published. Individual publication statuses remain unchanged.');
+  assert.equal(distributionCompletion({ ...input, publishingStatus: '' }).reason, 'Verify the long-form publication or schedule.');
+  assert.equal(distributionCompletion({ ...input, rows: [input.rows[0], row(drec('2'), 'Reddit', 'Draft')] }).reason, 'Reddit queue verification is missing, expired or changed.');
+  assert.equal(distributionCompletion({ ...input, channels: ['Instagram', 'Newsletter'] }).reason, 'A selected distribution channel has no output.');
 });
 
 test('parity: history shows rejected and older items; an idea with no channel is listed', async () => {
@@ -288,6 +298,7 @@ test('parity API: the video page shows the Content Center panel (clips shortlist
     [crec('2'), 70, 'Not yet verified', '', null, '', 'imported words'],
   ], 'best score first; the verified copy over the imported media');
   assert.deepEqual([d.body.channel, d.body.brief.minScore, d.body.settings], [RAW, 72, { clipsPerWeek: 3, minimumClipScore: 72 }]);
+  assert.deepEqual(d.body.completion, { complete: false, detail: 'Verify the long-form publication or schedule.' }, 'the Content Center\'s completion check, from this video\'s drafts');
   const drafts = d.body.distribution.platforms.flatMap((p: any) => p.drafts);
   const rd = drafts.find((x: any) => x.id === drec('RD'));
   assert.deepEqual([rd.community, rd.composeUrl, rd.html], ['ColdEmailsForLiving', 'https://www.reddit.com/r/ColdEmailsForLiving/submit?selftext=true', '']);

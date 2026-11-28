@@ -470,6 +470,8 @@ export interface ContentItemDetail {
   /** Parity 2026-11-28 (contentCenter.ts contentItemFull). */
   channel?: string; recordingDate?: string; publishDate?: string; settings?: { clipsPerWeek: number; minimumClipScore: number };
   clips?: ContentShortClip[]; opusUrl?: string;
+  /** The Content Center's distribution-complete check (scheduled / published per chosen channel), or what is still missing. */
+  completion?: { complete: boolean; detail: string };
   distribution: { status: string; platforms: ContentPlatform[]; posted: number; totals: { posts: number; views: number; likes: number; comments: number } };
 }
 export type ContentCenterView = Omit<ContentView, 'pipeline'> & { pipeline: { stages: ContentView['pipeline']['stages']; ccStages: ContentCcStage[]; rows: ContentItem[]; leftOut: number; history?: boolean } };

@@ -21,10 +21,10 @@ import type { AirtableRecord } from '../providers/airtable.js';
 import type { HqAirtable } from './decisions.js';
 import { CF, CONTENT, SETTINGS } from '../agents/sienna.js';
 import { CHANNELS, CLIPS, CC_DEFAULT_SETTINGS, KL, SF_CC, XF, _resetContentCache, ccSettingsOf, ideaNeedsApproval, type CcChannelSettings, type Channel } from './content.js';
-import { AF, contentItemDetail, type RunResult } from './contentActions.js';
+import { AF, DF, DISTRIBUTION, contentItemDetail, type RunResult } from './contentActions.js';
 
 /** Content Channels / Content Clips fields only these pieces read. */
-export const PF = { previousThumbnailUrl: 'fldlQMtp6d4MuiiAn', clipSnapshot: 'fldG9gklzS07bEbrz', clipTranscript: 'fldL2TMrJ9rnwXltx' } as const;
+export const PF = { previousThumbnailUrl: 'fldlQMtp6d4MuiiAn', clipSnapshot: 'fldG9gklzS07bEbrz', clipTranscript: 'fldL2TMrJ9rnwXltx', queueReceipt: 'fld1BFhcLfquycPTC' } as const;
 /** The Content Center's REDDIT_COMMUNITIES (the draft's subreddit is picked from its record id). */
 export const REDDIT_COMMUNITIES = ['Coldemailing', 'ColdEmailsForLiving', 'EmailOutreach'] as const;
 
@@ -77,6 +77,55 @@ export function currentReview(clipId: string, snapshot: string, opusId: string, 
       && /^[A-Za-z0-9]+$/.test(c.final.clipId) && /^https:\/\/signed-ext\.cdn\.opus\.pro\//.test(c.final.url || '') ? c : null;
   } catch { return null; }
 }
+// ---------- distributionCompletion, unchanged (display only: never calls a provider or writes) ----------
+export interface CompletionRow { id: string; platform: string; outputType: string; title: string; body: string; media: string; account: string; approval: string; status: string; scheduledAt: string; postUrl: string; parentIds: string[]; queueReceipt: string }
+export interface CompletionInput { id: string; finalAssetUrl: string; youtubeUrl: string; publishingStatus: string; publishDate: string; requiredIds: string[]; channels: string[]; rows: CompletionRow[]; now: number }
+const QUEUE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const completionUrl = (value: string) => { try { const u = new URL(value); return u.protocol === 'https:' && Boolean(u.hostname); } catch { return false; } };
+const queueContentKey = (row: CompletionRow) => JSON.stringify([row.platform, row.outputType, row.title, row.body, row.media, row.account]);
+function verifiedAutomationQueue(row: CompletionRow, parentId: string, now: number): boolean {
+  try {
+    const q = JSON.parse(row.queueReceipt);
+    const checked = Date.parse(q.verifiedAt), expires = Date.parse(q.validUntil), scheduled = Date.parse(q.scheduledAt);
+    return row.platform === 'Reddit' && row.status === 'Draft' && !/denied|rejected|failed|cancelled|canceled|blocked/i.test(row.approval)
+      && q.version === 1 && q.kind === 'browser-automation' && q.enabled === true && q.userApproved === true
+      && typeof q.automationId === 'string' && q.automationId.length > 10 && typeof q.contextVersion === 'string' && q.contextVersion.length > 10
+      && q.recordId === row.id && q.parentId === parentId && q.contentKey === queueContentKey(row)
+      && typeof q.destination === 'string' && /^r\/[A-Za-z0-9_]+$/.test(q.destination)
+      && Number.isFinite(checked) && Number.isFinite(expires) && Number.isFinite(scheduled)
+      && checked <= now && expires > now && expires > checked && expires - checked <= QUEUE_MAX_AGE_MS && scheduled > now && expires <= scheduled
+      && (!row.scheduledAt || Date.parse(row.scheduledAt) === scheduled);
+  } catch { return false; }
+}
+export function distributionCompletion(input: CompletionInput) {
+  const result = { complete: false, scheduled: 0, published: 0, automationQueued: 0, total: input.requiredIds.length, reason: '' };
+  const fail = (reason: string) => ({ ...result, reason });
+  if (!completionUrl(input.finalAssetUrl) || !completionUrl(input.youtubeUrl)) return fail('Finished video or YouTube destination is missing.');
+  const longFormReady = input.publishingStatus === 'Published' || (input.publishingStatus === 'Scheduled' && Number.isFinite(Date.parse(input.publishDate)));
+  if (!longFormReady) return fail('Verify the long-form publication or schedule.');
+  if (!input.requiredIds.length || !input.channels.length) return fail('The required distribution outputs are not established.');
+  if (new Set(input.requiredIds).size !== input.requiredIds.length) return fail('Reconcile duplicate distribution links.');
+  const rows: CompletionRow[] = [];
+  for (const id of input.requiredIds) {
+    const matches = input.rows.filter((row) => row.id === id && row.parentIds.includes(input.id));
+    if (matches.length !== 1) return fail('A required distribution record is missing or ambiguous.');
+    rows.push(matches[0]);
+  }
+  const channelPlatform: Record<string, string> = { Instagram: 'Instagram', 'YouTube Shorts': 'YouTube', 'X / Twitter': 'X', Reddit: 'Reddit', LinkedIn: 'LinkedIn', Blog: 'Blog', Resource: 'Resource', Newsletter: 'Newsletter' };
+  if (input.channels.some((c) => !channelPlatform[c] || !rows.some((row) => row.platform === channelPlatform[c]))) return fail('A selected distribution channel has no output.');
+  if (input.rows.some((row) => row.parentIds.includes(input.id) && !input.requiredIds.includes(row.id))) return fail('Reconcile the distribution manifest.');
+  for (const row of rows) {
+    if (/denied|rejected|failed|cancelled|canceled|blocked/i.test(row.approval) || /failed|cancelled|canceled|blocked/i.test(row.status)) return fail('A required output is blocked or failed.');
+    if (row.status === 'Published' && completionUrl(row.postUrl)) { result.published++; continue; }
+    if (row.status === 'Scheduled' && row.approval === 'Approved' && Number.isFinite(Date.parse(row.scheduledAt))) { result.scheduled++; continue; }
+    if (verifiedAutomationQueue(row, input.id, input.now)) { result.automationQueued++; continue; }
+    return fail(row.platform === 'Reddit' ? 'Reddit queue verification is missing, expired or changed.' : 'A required output still needs a verified schedule or published URL.');
+  }
+  return { ...result, complete: true, reason: '' };
+}
+export const completionDetail = (v: ReturnType<typeof distributionCompletion>) =>
+  `${v.scheduled} scheduled, ${v.published} published${v.automationQueued ? `, ${v.automationQueued} Reddit queued via automation (not natively scheduled or published)` : ''}. Individual publication statuses remain unchanged.`;
+
 /** The settings panel's input clamps, then its save rule (Alex Woung: 2 videos a week, 2 days apart, fixed). Pure. */
 export function clampSettings(ch: Channel, x: Record<string, unknown>, current: CcChannelSettings): CcChannelSettings {
   const n = (k: string, lo: number, hi: number, fb: number) => Math.max(lo, Math.min(hi, Number(x[k]) || fb));
@@ -244,10 +293,23 @@ export async function contentItemFull(at: Pick<HqAirtable, 'get' | 'list'>, db: 
   const base = await contentItemDetail(at, db, id);
   if (!('item' in base) || !base.item) return base;
   const [extra, settingsRows] = await Promise.all([
-    at.get(CONTENT, id, [CF.channel, CF.recordingDate, XF.publishDate, PF.previousThumbnailUrl, XF.shortProjectId, XF.clips]),
+    at.get(CONTENT, id, [CF.channel, CF.recordingDate, XF.publishDate, PF.previousThumbnailUrl, XF.shortProjectId, XF.clips, XF.finalAssetUrl, XF.youtubeUrl, XF.publishingStatus, XF.distributionRecords, XF.distributionChannels]),
     at.list(SETTINGS, 'TRUE()', SETTINGS_READ, 20),
   ]);
   const f = extra?.fields ?? {};
+  // The Content Center's "distribution complete" check, from the video's own Content Distribution rows (fresh).
+  const required = ids(f[XF.distributionRecords]);
+  const distRows = required.length
+    ? (await at.list(DISTRIBUTION, `OR(${required.slice(0, 100).map((x) => `RECORD_ID()='${x}'`).join(',')})`, [DF.parent, DF.platform, DF.outputType, DF.title, DF.body, DF.media, DF.channel, DF.approval, DF.publishing, DF.scheduledAt, DF.postUrl, PF.queueReceipt], 100))
+    : [];
+  const completion = distributionCompletion({
+    id, finalAssetUrl: s(f[XF.finalAssetUrl]), youtubeUrl: s(f[XF.youtubeUrl]), publishingStatus: s(f[XF.publishingStatus]), publishDate: s(f[XF.publishDate]),
+    requiredIds: Array.isArray(f[XF.distributionRecords]) ? (f[XF.distributionRecords] as unknown[]).map((x: any) => (typeof x === 'string' ? x : x?.id)) : [],
+    channels: Array.isArray(f[XF.distributionChannels]) ? (f[XF.distributionChannels] as unknown[]).map(s) : [], now: Date.now(),
+    rows: distRows.map((x) => ({ id: x.id, platform: s(x.fields[DF.platform]), outputType: s(x.fields[DF.outputType]), title: s(x.fields[DF.title]), body: s(x.fields[DF.body]), media: s(x.fields[DF.media]),
+      account: s(x.fields[DF.channel]), approval: s(x.fields[DF.approval]), status: s(x.fields[DF.publishing]), scheduledAt: s(x.fields[DF.scheduledAt]), postUrl: s(x.fields[DF.postUrl]),
+      parentIds: ids(x.fields[DF.parent]), queueReceipt: s(x.fields[PF.queueReceipt]) })),
+  });
   const channel = s(f[CF.channel]);
   const set = ccSettingsOf(settingsRows).settings[isChannel(channel) ? channel : 'Alex Woung'];
   const clipIds = ids(f[XF.clips]);
@@ -265,6 +327,7 @@ export async function contentItemFull(at: Pick<HqAirtable, 'get' | 'list'>, db: 
       thumbnail: { ...item.thumbnail, previousUrl: https(s(f[PF.previousThumbnailUrl])) },
       brief: { ...item.brief, minScore: set.minimumClipScore },
       settings: { clipsPerWeek: set.clipsPerWeek, minimumClipScore: set.minimumClipScore },
+      completion: { complete: completion.complete, detail: completion.complete ? completionDetail(completion) : completion.reason },
       clips, opusUrl: project && /^[A-Za-z0-9_-]+$/.test(project) ? `https://clip.opus.pro/clip/${encodeURIComponent(project)}` : '',
       distribution: {
         ...item.distribution,
