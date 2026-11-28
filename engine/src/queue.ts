@@ -23,6 +23,8 @@ export interface EnqueueInput {
   maxAttempts?: number;
   /** Whole-job time limit in ms. */
   deadlineMs?: number;
+  /** Start no earlier than this many ms from now (default: right away). */
+  runAfterMs?: number;
 }
 
 export type EnqueueResult =
@@ -41,10 +43,11 @@ export async function enqueue(db: Db, e: EnqueueInput): Promise<EnqueueResult> {
   }
   try {
     const r = await db.query<Job>(
-      `INSERT INTO jobs (kind, record_id, client_id, input, request_id, dry_run, max_attempts, deadline_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7, CASE WHEN $8::bigint IS NULL THEN NULL ELSE now() + ($8::bigint * interval '1 millisecond') END)
+      `INSERT INTO jobs (kind, record_id, client_id, input, request_id, dry_run, max_attempts, deadline_at, run_after)
+       VALUES ($1,$2,$3,$4,$5,$6,$7, CASE WHEN $8::bigint IS NULL THEN NULL ELSE now() + ($8::bigint * interval '1 millisecond') END,
+               now() + (COALESCE($9::bigint, 0) * interval '1 millisecond'))
        RETURNING *`,
-      [e.kind, e.recordId, e.clientId ?? null, e.input ?? {}, e.requestId ?? null, e.dryRun, e.maxAttempts ?? 3, e.deadlineMs ?? null],
+      [e.kind, e.recordId, e.clientId ?? null, e.input ?? {}, e.requestId ?? null, e.dryRun, e.maxAttempts ?? 3, e.deadlineMs ?? null, e.runAfterMs && e.runAfterMs > 0 ? Math.round(e.runAfterMs) : null],
     );
     return { status: 'queued', job: r.rows[0] };
   } catch (err: unknown) {

@@ -9,7 +9,36 @@ function num(name: string, fallback: number, env: NodeJS.ProcessEnv = process.en
   return n;
 }
 
+/** Where an instant webhook can come from (POST /hooks/<source>, Alex 2026-11-28: agents start on events, not timers). */
+export const HOOK_SOURCES = ['emailbison', 'n8n', 'make', 'airtable', 'slack', 'fathom', 'close'] as const;
+export type HookSource = (typeof HOOK_SOURCES)[number];
+/** The jobs and loops that now start on events; each keeps a slow backup sweep (<KEY>_BACKUP_EVERY_MIN, default 360, 0 = off). */
+export const INSTANT_KEYS = ['sean.draft', 'bounce.check', 'riley.collect', 'cole.review', 'sales.won_sync', 'sienna.prep', 'campaign.pipeline', 'atlas.tasks', 'ledger.check', 'account.health', 'airtable.bridge', 'decisions.loop'] as const;
+export const backupEnvName = (key: string) => `${key.replace(/[._]/g, '_').toUpperCase()}_BACKUP_EVERY_MIN`;
+
 export interface Config {
+  /**
+   * Instant webhooks (2026-11-28): HOOK_SECRET_<SOURCE> per source (EmailBison/n8n/Make/Airtable: the shared secret;
+   * Slack: the app's Signing Secret; Fathom: the webhook's whsec_ secret; Close: the subscription's signature_key).
+   * A source without a secret answers 404 and its jobs keep their old timer.
+   */
+  hookSecrets: Partial<Record<HookSource, string>>;
+  /** Events for the same job within this many seconds become one run (default 30). */
+  instantWindowSec: number;
+  /**
+   * The bounce check's own window (BOUNCE_CHECK_WINDOW_SEC, default 120): a busy workspace bounces every few seconds,
+   * so its check runs at most about every 2 minutes per workspace (still far sooner than the old 30-minute timer).
+   */
+  bounceWindowSec: number;
+  /** Backup sweep per instant job or loop, in minutes (0 = off). Used only once that job's webhook source has a secret. */
+  backupEveryMin: Record<string, number>;
+  /** On switches that used to be "the timer is set": SEAN=on, BOUNCE_CHECK=on, ACCOUNT_HEALTH=on, LEDGER_CHECK=on (an old *_EVERY_MIN > 0 still counts as on). */
+  seanOn: boolean;
+  bounceCheckOn: boolean;
+  accountHealthOn: boolean;
+  ledgerCheckOn: boolean;
+  /** Echo's follow-ups are due-time work: checked every SEAN_FOLLOWUP_EVERY_MIN (default 60) once Echo is instant, and right after every reply or send. */
+  seanFollowupEveryMin: number;
   port: number;
   databaseUrl: string;
   /** Shared secret Airtable uses to sign requests (HMAC-SHA256). */
@@ -284,7 +313,17 @@ export function loadConfig(env = process.env): Config {
   if (engineSecret.length < 32) throw new Error('ENGINE_SECRET must be set (32+ characters)');
   const databaseUrl = env.DATABASE_URL ?? '';
   if (!databaseUrl) throw new Error('DATABASE_URL must be set');
+  const onOff = (name: string) => (env[name] || '').toLowerCase() === 'on';
   return {
+    hookSecrets: Object.fromEntries(HOOK_SOURCES.map((k) => [k, (env[`HOOK_SECRET_${k.toUpperCase()}`] ?? '').trim()]).filter(([, v]) => v.length >= 16)),
+    instantWindowSec: Math.max(5, Math.min(300, num('INSTANT_WINDOW_SEC', 30, env))),
+    bounceWindowSec: Math.max(5, Math.min(3600, num('BOUNCE_CHECK_WINDOW_SEC', 120, env))),
+    backupEveryMin: Object.fromEntries(INSTANT_KEYS.map((k) => [k, Math.max(0, num(backupEnvName(k), 360, env))])),
+    seanOn: onOff('SEAN') || num('SEAN_EVERY_MIN', 0, env) > 0,
+    bounceCheckOn: onOff('BOUNCE_CHECK') || num('BOUNCE_CHECK_EVERY_MIN', 0, env) > 0,
+    accountHealthOn: onOff('ACCOUNT_HEALTH') || num('ACCOUNT_HEALTH_EVERY_MIN', 0, env) > 0,
+    ledgerCheckOn: onOff('LEDGER_CHECK') || num('LEDGER_CHECK_EVERY_MIN', 0, env) > 0,
+    seanFollowupEveryMin: Math.max(0, num('SEAN_FOLLOWUP_EVERY_MIN', 60, env)),
     port: num('PORT', 8080, env),
     databaseUrl,
     engineSecret,
