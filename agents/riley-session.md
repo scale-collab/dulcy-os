@@ -109,6 +109,7 @@ Your n8n connector only reads; the engine on the server has the n8n key and make
    - `path` is inside the node's `parameters`, dots between keys, numbers for list positions (`rule.interval.0.minutesInterval`). `"$disabled"` switches a whole node off (`true`) or on (`false`).
    - `old` = exactly what get_workflow_details shows now (`null` if the parameter is absent). The engine stops if it no longer matches ("changed since diagnosis").
    - `new` = the value to set (`null` removes it). Whole objects and lists are fine (e.g. a Code node's full `jsCode`).
+   - **Text edit inside a long string** (e.g. one line of a Code node's `jsCode`): use `{"node": "...", "path": "jsCode", "find": "<exact text>", "replace": "<new text>"}` instead of old/new. `find` must appear exactly once in the live value, else the engine stops ("no longer there" / "appears N times"). Prefer this for Code nodes: copying a whole script exactly is fragile.
    - Parameters only: no new nodes, no new connections. If the fix needs those, use **Manual (Alex)** with click-by-click steps.
    - **Never** a credential, key, token, password or auth setting (paths like `authentication`, `apiKey`, a header named `Authorization`): the engine refuses them. Those are **Manual (Alex)**.
 3. Put the same change in plain words in **Fix** (node › field: old → new, the risk) and the human Rollback in **Rollback**. On ✅ the engine saves the full previous workflow and adds the rollback line itself (`riley-n8n-rollback <issueId> --yes` on the server).
