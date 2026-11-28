@@ -11,6 +11,40 @@ interface Detail {
   agent: { name: string; role: string; does: string; reportsTo: string; manages: string[] };
   status: TeamLine; lastOk: string | null; lastFail: string | null;
   runs: Run[]; decisions: Decision[]; activity: Activity[]; tasks: AgentTask[]; reports: Report[]; work?: AgentWork;
+  starts?: Starts;
+}
+/** A routine start (agents start instantly, 2026-11-28): when, why, and the session it opened. */
+interface Start { id: number; at: string; status: string; reasons: string[]; sessionUrl: string; error: string }
+interface Starts { configured: boolean; fires: Start[]; waiting: string[] }
+const START_LABEL: Record<string, string> = { started: 'Started now', sending: 'Starting…', uncertain: 'Start not confirmed', waiting: 'Waiting (rate limit)', failed: 'Start failed' };
+const startTone = (s: string) => (s === 'started' ? 'good' : s === 'failed' ? 'bad' : s === 'uncertain' || s === 'waiting' ? 'warn' : 'plain') as 'good' | 'bad' | 'warn' | 'plain';
+const safeSession = (u: string) => (/^https:\/\/[^\s"'<>]+$/.test(u) ? u : '');
+
+/** "Started now · session link": the agent's last routine starts, and reasons waiting for the next one. */
+function StartsCard({ name, starts }: { name: string; starts?: Starts }) {
+  if (!starts || (!starts.configured && !starts.fires.length)) return null;
+  return (
+    <section className="mt-6">
+      <SectionHeader title="Instant starts" icon="activity" right={<span className="text-xs text-muted">{starts.configured ? `${name} starts as soon as there is work` : `${name} runs only when started by hand`}</span>} />
+      <Card className="divide-y divide-line p-0">
+        {starts.waiting.length > 0 && (
+          <div className="px-5 py-3 text-sm text-fg-2"><Pill>Next start</Pill> <span className="ml-1">{starts.waiting.length} waiting: {starts.waiting.slice(0, 3).join(' · ')}</span></div>
+        )}
+        {starts.fires.map((f) => (
+          <div key={f.id} className="px-5 py-3">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <Pill tone={startTone(f.status)}>{START_LABEL[f.status] ?? f.status}</Pill>
+              <span className="text-muted">{timeAgo(f.at)}</span>
+              {safeSession(f.sessionUrl) && <a href={safeSession(f.sessionUrl)} target="_blank" rel="noopener noreferrer" className="font-semibold text-accent-ink hover:underline">Open the session</a>}
+            </div>
+            {f.reasons.length > 0 && <div className="mt-1 break-words text-sm text-fg-2">{f.reasons.slice(0, 3).join(' · ')}{f.reasons.length > 3 ? ` · +${f.reasons.length - 3} more` : ''}</div>}
+            {f.error && f.status !== 'started' && <div className="mt-1 break-words text-xs text-muted">{f.error}</div>}
+          </div>
+        ))}
+        {!starts.fires.length && !starts.waiting.length && <div className="px-5 py-4 text-sm text-muted">No starts yet.</div>}
+      </Card>
+    </section>
+  );
 }
 const runTone = (s: string) => (s === 'succeeded' ? 'good' : s === 'failed' || s === 'needs_review' ? 'bad' : 'plain') as 'good' | 'bad' | 'plain';
 
@@ -90,6 +124,8 @@ function AgentDetail({ name }: { name: string }) {
           </Card>
         </section>
       </div>
+
+      <StartsCard name={a.name} starts={d.starts} />
 
       <section className="mt-6"><SectionHeader title="Reports" icon="file" /><ReportList reports={d.reports} empty={`No reports from ${a.name} yet.`} /></section>
 

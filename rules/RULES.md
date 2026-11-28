@@ -288,6 +288,8 @@ Format: `- [date] rule. (why / source)`
 
 - [2026-11-29] **Delete in HQ (Alex):** campaigns and lead lists have a Delete button in HQ, the same as the Campaign Center / Lead List Center (typed DELETE; campaign = Bison Action Delete through the Airtable automation; lead list = removes only the Airtable record). Replaces the 2026-11-23 "Delete stays in n8n for now".
 
+- [2026-11-28] **Agents start instantly, never on a timer (Alex):** "I don't want any agents to run on schedules; it should be like an instant webhook. When we call these agents they should work on it ASAP, not wait." When an agent has work (a card approved, a new System Issue, a new clip, an Ask), the engine starts that agent right away (routine API trigger). No cron schedules for agents; a timer is only a backup if Alex asks for one.
+
 ## HQ phone notifications (Alex, 2026-11-27)
 - **Rule:** HQ pings phones (iPhone from the Home Screen app, and computers) by Web Push for four kinds: **(1) new decisions** (each new Decisions card; several within ~3 minutes = one grouped ping "4 new decisions"), **(2) agent messages to you** (a chat answer when you are not on that chat; asks and tasks waiting on you), **(3) urgent problems** (campaign over 4% bounce or paused, inbox in spam, warm-up off, a fix or engine run that failed and needs Alex), **(4) good news** (meeting booked, client signed or paid). Tapping a ping opens that exact item in HQ.
 - **Always on:** no quiet hours. Each person can switch any of the 4 kinds off on HQ → Notifications (all on by default).

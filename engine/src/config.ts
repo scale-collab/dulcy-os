@@ -101,6 +101,12 @@ export interface Config {
   n8nApiKey: string;
   n8nBaseUrl: string;
   /**
+   * Agents start instantly (Alex 2026-11-28): each agent's Claude Code routine API trigger, from
+   * <AGENT>_FIRE_URL + <AGENT>_FIRE_TOKEN (e.g. RILEY_FIRE_URL / RILEY_FIRE_TOKEN). Keyed by the agent
+   * name ('Riley'). An agent without both runs only when started by hand. The token is never logged.
+   */
+  agentFire: Record<string, { url: string; token: string }>;
+  /**
    * HQ Content (round 5): the n8n webhooks the Content Center's buttons call. Each is a full URL from
    * CONTENT_HOOK_<NAME> (SCRIPT, THUMBNAIL, THUMBNAIL_REVISE, YOUTUBE, DISTRIBUTION, SCHEDULE,
    * NEWSLETTER, FRAMER). The paths are secret (the webhooks have no auth), so they are never in the repo.
@@ -260,6 +266,19 @@ export interface Config {
   voiceTurnsPerHour: number;
 }
 
+/** <AGENT>_FIRE_URL (https only) + <AGENT>_FIRE_TOKEN pairs → { Agent: { url, token } }. */
+export function fireTargets(env: NodeJS.ProcessEnv): Record<string, { url: string; token: string }> {
+  const out: Record<string, { url: string; token: string }> = {};
+  for (const k of Object.keys(env)) {
+    const m = /^([A-Z][A-Z0-9]{1,30})_FIRE_URL$/.exec(k);
+    if (!m) continue;
+    const url = String(env[k] ?? '').trim(); const token = String(env[`${m[1]}_FIRE_TOKEN`] ?? '').trim();
+    if (!/^https:\/\/[^\s"'<>]+$/.test(url) || !token || /\s/.test(token)) continue;
+    out[m[1][0] + m[1].slice(1).toLowerCase()] = { url, token };
+  }
+  return out;
+}
+
 export function loadConfig(env = process.env): Config {
   const engineSecret = env.ENGINE_SECRET ?? '';
   if (engineSecret.length < 32) throw new Error('ENGINE_SECRET must be set (32+ characters)');
@@ -330,6 +349,7 @@ export function loadConfig(env = process.env): Config {
     rileyEveryMin: num('RILEY_EVERY_MIN', 15, env),
     n8nApiKey: env.N8N_API_KEY || '',
     n8nBaseUrl: env.N8N_BASE_URL || 'http://localhost:5678',
+    agentFire: fireTargets(env),
     contentHooks: Object.fromEntries(['SCRIPT', 'THUMBNAIL', 'THUMBNAIL_REVISE', 'YOUTUBE', 'DISTRIBUTION', 'SCHEDULE', 'NEWSLETTER', 'FRAMER', 'CLIP_REVIEW']
       .map((k) => [k, (env[`CONTENT_HOOK_${k}`] || '').trim()]).filter(([, v]) => /^https:\/\/[^\s]+$/.test(v))),
     contentWebhookBase: (env.CONTENT_WEBHOOK_BASE || 'https://n8n.dulcy.io').trim().replace(/\/+$/, ''),

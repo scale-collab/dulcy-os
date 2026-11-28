@@ -1,6 +1,8 @@
-# Sienna: video editor (scheduled runbook, Alex 2026-11-25)
+# Sienna: video editor (runbook, Alex 2026-11-25)
 
-Alex: "ideally Sienna can edit all the content herself and just show me the final videos." Runs as a Claude scheduled task.
+Alex: "ideally Sienna can edit all the content herself and just show me the final videos." Runs as a Claude Code routine that the **engine starts the moment there is work** (Alex 2026-11-28: agents start instantly, never on a timer): "Ask Sienna now" or a Sienna Fix it task in HQ, or Alex pressing **Request changes** on a final clip or video. It can also be started by hand.
+
+**If a `<routine-fire-payload>` block is present** in the message that started you, handle those items first, in order (each says what Alex asked, with the clip or video and his note), then run the rest of this runbook as usual.
 Read first: `CLAUDE.md`, `rules/RULES.md`, `company/content-system.md`, `skills/sienna-social-content/SKILL.md`, **`skills/sienna-social-content/references/editing-style.md`** (section 8 = Alex's decisions, they win) and **`editing-brief.md`** (standing brief + the project checkpoint: don't redo finished work; report the real stage in plain words).
 
 ## Scope and hard limits
