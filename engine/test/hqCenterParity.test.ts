@@ -14,7 +14,7 @@ import { ACCOUNTS, EA } from '../src/stages/accountHealth.js';
 import { EX, _resetDelivCache } from '../src/hq/deliverability.js';
 import { CAMPAIGNS_T, KF, LEAD_LISTS_T, LF, LLF, WORKSPACES_T, _resetCampaignsCache } from '../src/hq/campaigns.js';
 import { CX, LX } from '../src/hq/centerActions.js';
-import { CAMPAIGN_EDIT, CF, CLONE_FIELDS, LIST_EDIT, LL, TOP_UP_COPY_FIELDS, addWeekdayHours, approvalOf, checkEdits, checkValue, clientPrefixed, espOf, manualQaUpdate, parseReviewVariants, seqField, sequenceFromReview } from '../src/hq/centerParity.js';
+import { CAMPAIGN_EDIT, CF, CLONE_FIELDS, LIST_EDIT, LL, TOP_UP_COPY_FIELDS, addWeekdayHours, approvalOf, checkEdits, checkValue, clientPrefixed, espOf, listDo, manualQaUpdate, parseReviewVariants, seqField, sequenceFromReview } from '../src/hq/centerParity.js';
 import { CC } from '../src/agents/scribe.js';
 import { CAMPAIGN_FIELDS } from '../src/campaign/campaignFields.js';
 
@@ -289,16 +289,12 @@ test('API: Clone (a Draft copy, no list or inboxes) and Delete (typed DELETE; Bi
   assert.ok(!(CX.lists in made.fields) && !(CX.accounts in made.fields) && !(CF.bisonAction in made.fields) && !(CX.stage in made.fields), 'never the lead list, inboxes, EmailBison identity or action flags');
   assert.match(String(made.fields[CF.startTime]), /^08:\d\d$/); assert.match(String(made.fields[CF.endTime]), /^18:\d\d$/);
   writes = [];
-  const off = await call('POST', '/hq/api/campaigns/recCAMPNEW000010A/do', alex, { action: 'delete', typed: 'DELETE', confirm: true });
-  assert.equal(off.status, 403, 'Delete campaign is off in HQ until Alex decides');
-  process.env.HQ_CAMPAIGN_DELETE = 'on';
   const noType = await call('POST', '/hq/api/campaigns/recCAMPNEW000010A/do', alex, { action: 'delete', confirm: true });
   assert.deepEqual([noType.status, writes.length], [400, 0]);
   const del = await call('POST', '/hq/api/campaigns/recCAMPNEW000010A/do', alex, { action: 'delete', typed: 'DELETE', confirm: true });
   assert.equal(del.status, 200, del.text);
   assert.deepEqual(writes[0].fields, { [CF.bisonAction]: null }, 'an older Bison Action is cleared first so the automation fires');
   assert.equal(writes[1].fields[CF.bisonAction], 'Delete');
-  delete process.env.HQ_CAMPAIGN_DELETE;
   assert.equal(JSON.parse(String(writes[1].fields[CF.automationRequest])).kind, 'Delete');
   assert.equal(writes.length, 2, 'HQ never deletes a record itself');
 });
@@ -414,4 +410,22 @@ test('API: lead list edits, verification route, LeadMagic recovery, Use campaign
   assert.equal((await call('POST', '/hq/api/campaigns/lists/recLISTNEW000100A/edit', alex, { changes: { icp: 'x' }, confirm: true })).status, 409, 'a step pressed: edits wait');
   const jobs = (await db.query(`SELECT count(*)::int AS n FROM jobs`)).rows[0].n;
   assert.equal(jobs, 0, 'no engine job was queued by any of these');
+});
+
+test('Delete lead list (Alex 2026-11-29, same as the Lead List Center): typed DELETE, removes only that record', { skip: !process.env.TEST_DATABASE_URL }, async () => {
+  const removed: string[] = [];
+  const fake = {
+    async get(_t: string, id: string) { return { id, fields: { [LX.name]: 'Test list' } } as any; },
+    async list() { return []; }, async create() { return 'recX'; }, async update() { /* none */ },
+    async remove(t: string, id: string) { removed.push(`${t}:${id}`); },
+  };
+  const id = 'recLIST000000001A';
+  const noType = await listDo(fake as any, db, id, { action: 'delete', confirm: true }, 'Alex');
+  assert.equal(noType.status, 400);
+  assert.deepEqual(removed, []);
+  const ok = await listDo(fake as any, db, id, { action: 'delete', typed: 'DELETE', confirm: true }, 'Alex');
+  assert.equal(ok.status, 200, JSON.stringify(ok.body));
+  assert.deepEqual(removed, [`${LEAD_LISTS_T}:${id}`]);
+  const noRemove = await listDo({ ...fake, remove: undefined } as any, db, id, { action: 'delete', typed: 'DELETE', confirm: true }, 'Alex');
+  assert.equal(noRemove.status, 503);
 });
