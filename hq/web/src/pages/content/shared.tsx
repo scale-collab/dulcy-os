@@ -16,9 +16,9 @@ export const dateOnly = day;
 /** The real channel names (round 4, Alex 2026-11-28): "Alex Woung" and "Alex Woung Raw", never "Main" / "Raw". */
 export const shortLabel = (ch: string) => ch || 'No channel';
 export const todayEt = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-export const HOW: Record<string, string> = { hq: 'In HQ', engine: 'Automatic', field: 'Button in the Content Center', button: 'Button in the Content Center', manual: 'By hand' };
+export const HOW: Record<string, string> = { hq: 'In HQ', engine: 'Automatic', field: 'Button in HQ', button: 'Button in HQ', manual: 'By hand' };
 /** Where a workflow step happens (round 4). */
-export const WHERE: Record<string, string> = { hq: 'In HQ', sienna: 'Sienna, automatic', contentCenter: 'Content Center button', byHand: 'By hand', notAutomated: 'Not automated yet' };
+export const WHERE: Record<string, string> = { hq: 'In HQ', sienna: 'Sienna, automatic', byHand: 'By hand', notAutomated: 'Not automated yet' };
 
 /** Copy text to the clipboard; true when it worked (a private window or old browser may refuse). */
 export async function copyText(text: string): Promise<boolean> {

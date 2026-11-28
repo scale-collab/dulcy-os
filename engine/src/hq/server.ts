@@ -613,11 +613,12 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
           json(res, r.status, r.error ? { error: r.error } : { ok: true, message: r.message });
           return true;
         }
-        const dm = p.match(/^\/hq\/api\/content\/drafts\/(rec[A-Za-z0-9]{14})(?:\/(schedule))?$/);
+        const dm = p.match(/^\/hq\/api\/content\/drafts\/(rec[A-Za-z0-9]{14})(?:\/schedule)?$/);
+        const scheduling = !!dm && p.endsWith('/schedule');
         if (dm && req.method === 'POST') {
           const b = await readJson(req, 2_000);
-          if (!dm[2] && !['approve', 'changes'].includes(b.verdict)) { json(res, 400, { error: 'verdict must be approve or changes' }); return true; }
-          const r = dm[2] ? await scheduleDraft(runDeps(), dm[1], String(b.at ?? '')) : await decideDraft(runDeps(), dm[1], b.verdict);
+          if (!scheduling && !['approve', 'changes'].includes(b.verdict)) { json(res, 400, { error: 'verdict must be approve or changes' }); return true; }
+          const r = scheduling ? await scheduleDraft(runDeps(), dm[1], String(b.at ?? '')) : await decideDraft(runDeps(), dm[1], b.verdict);
           json(res, r.status, r.error ? { error: r.error } : { ok: true, message: r.message });
           return true;
         }

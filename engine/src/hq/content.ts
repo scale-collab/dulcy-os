@@ -758,6 +758,8 @@ export function buildContent(src: ContentSource, baseId: string, now = Date.now(
       return {
         id: v.id, title: v.title, recordingDate: v.recordingDate, publishDate: v.publishDate, late: !!v.recordingDate && v.recordingDate < fweek.start,
         scriptReady: v.hasScript, script: s(h[CF.script]), angle: parts.angle, ideaHook: parts.hook, ...prep,
+        /** Round 5: Friday's last step (upload, then Sync Frame.io) links the Raw folder. */
+        rawFolderUrl: httpsOnly(v.rawFolderUrl),
       };
     });
     return { channel: ch, key: CHANNEL_KEY[ch], label: CHANNEL_LABEL[ch], target: targets[ch], approved: items.length, ready: items.filter((x) => x.scriptReady).length, items };

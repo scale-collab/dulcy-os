@@ -4,7 +4,7 @@ How the Dulcy lead engine works from start to finish, in plain words.
 **Keep this file current:** every engine change updates this guide in the same pull request (rule 2026-11-23).
 Technical details for developers are in `README.md`.
 
-Last updated: 2026-11-28 (HQ Content round 4: Next step per video, real channel names, posted dates; before: HQ Clients)
+Last updated: 2026-11-28 (HQ Content round 5: the Content Center's buttons and Distribution inside HQ; before: Content round 4)
 
 ---
 
@@ -961,6 +961,29 @@ Where this differs from the two sections above, this wins.
      - **Dates with slashes, no weekday** (11/27).
      - **Posted date:** a video on YouTube shows the day it was posted: YouTube Published At, else Publish Date, else the date YouTube gives in the channel's public feed (youtube.com/feeds/videos.xml; at most 2 reads, cached 1 hour, read-only). On the calendar it is a grey "Posted" chip, never under "No date yet". A data problem "Posted, but no posted date saved" asks Sienna to save the Publish Date.
      - **Each video's page:** one **Next step** box at the top (what happens next, where it happens, the one button), then **Script, hooks and Gamma outline** (Open script / Copy script / Copy outline), then **All steps** in order, each done / next / later with where it runs: *In HQ* (approve), *Sienna, automatic* (script by the next half hour; **Ask Sienna now** puts a task on her list, nothing is written to Airtable), *Content Center button* (Set up Frame.io, Sync Frame.io, Edit full video, Generate thumbnail, Prepare YouTube details, Create short clips, Generate posts: HQ can't press these yet, the button opens the Content Center), *By hand* (record and upload to the Frame.io Raw folder; post in YouTube Studio), or *Not automated yet* (the Gamma doc: copy Sienna's outline into Gamma and paste the link into the video's Notes).
+   - **Round 5 (Alex, 2026-11-28: "I don't want what's in Airtable to stay in Airtable"):** the Content Center lives in HQ now.
+     - **Every button on the video's page** (Next step box and All steps): Set up Frame.io, Sync Frame.io, Use OpusClip / Use DaVinci Resolve, Edit full video, Generate script, Generate thumbnail, Approve thumbnail, Request changes, Prepare YouTube details, Save the YouTube link, Create short clips, Check clip status, Choose where the posts go, Generate posts, Retry the posts. Each does what the Content Center's button does, the same way:
+       | HQ button | What it does (same as the Content Center) |
+       |---|---|
+       | Set up Frame.io, Sync Frame.io | Content Automation Action "Sync Frame.io" → Airtable automation "Content OS Action Script" → n8n Frame.io Sync |
+       | Edit full video, Create short clips | Content Automation Action "Submit to OpusClip" → n8n OpusClip Submit and Refresh (short clips only after the job identity check) |
+       | Check clip status | Content Automation Action "Refresh Opus Clips" |
+       | Generate posts | Content Automation Action "Generate Distribution Pack" → n8n Generate Distribution Pack |
+       | Choose where the posts go | Requested Clip Count, Minimum Clip Score, Distribution Channels (then "Generate Distribution Pack" when clips exist) |
+       | Use OpusClip / Use DaVinci Resolve | Editing Route "OpusClip" / "Manual Editor" |
+       | Generate script | n8n webhook "[Content OS] Generate Teleprompter Script", body `{recordId, action: "Generate Script"}` |
+       | Generate thumbnail | n8n "[Content OS] Generate Thumbnail", `{recordId, action: "Generate Thumbnail"}` |
+       | Request changes (thumbnail) | n8n "[Content OS] Revise Thumbnail", `{recordId, action, changes, requestId, expectedThumbnailUrl}` (must answer 202 with the same request id) |
+       | Approve thumbnail | Thumbnail Status "Approved" |
+       | Prepare YouTube details | n8n "[Content OS] Prepare YouTube Details", `{recordId, action}`; if n8n answers with an error, the Content Center's own channel template |
+       | Save the YouTube link | YouTube URL |
+       | Retry the posts | n8n "[Content OS] Generate Distribution Pack", `{recordId, action}` (only while that run is stuck) |
+       The same guards as the Content Center: nothing runs while another automation is in the field ("Running: Sync Frame.io" shows on the video), only approved ideas, no thumbnail change once on YouTube. Every press is logged in `hq_content_log`.
+     - **Distribution** (on the video's page, once it is on YouTube or has posts): one row per platform (Instagram, TikTok, YouTube Shorts, Reddit, X, LinkedIn, blog, newsletter, as the video has them), each with the generated post to read and copy, **Approve** / **Needs changes** (Approval Status "Approved" / "Rejected"), and **Record the post**: link, posted date, views, likes, comments. Totals at the top (posted, views, likes, comments). The stats are kept in HQ (`hq_content_posts`); the link also goes to the draft's Published URL with Publishing Status "Published", as the Content Center's "mark as published" writes it. TikTok has no draft in the Content OS: post the short by hand and record it here.
+       - **Approve never schedules or posts.** For an approved Instagram / YouTube Shorts post you can pick a time and press **Schedule**: HQ saves Scheduled At and calls the Content Center's scheduling flow ("[Content OS] Schedule Approved Social Posts", `{distributionRecordId}`; OpusClip posts it at that time). Reddit, X, LinkedIn and TikTok are posted by hand. Approving a newsletter prepares its preview (nothing is sent); approving a blog makes an unpublished Framer draft, as in the Content Center.
+     - **Friday** walks each idea step by step: **1 Hook** (pick the one you'll say), **2 Script** (with checks, titles, thumbnail idea, Gamma), **3 Teleprompter** (full screen, big text that scrolls by itself; Space starts / stops, arrows change speed, Esc closes; the hook you picked, then the script), **4 Upload** (Raw folder link and the Sync Frame.io button). Then **Next idea**.
+     - **Still in the Content Center:** approving a final clip (its approve writes Review Intent JSON and n8n checks in Airtable that you wrote it; HQ's Airtable token can't prove that). Resources (Gamma) stay paused, as in the Content Center.
+     - **Set up once (Riley):** the webhooks have no password, so their addresses are secret and not in the repo. Put each full URL on the server as `CONTENT_HOOK_SCRIPT`, `CONTENT_HOOK_THUMBNAIL`, `CONTENT_HOOK_THUMBNAIL_REVISE`, `CONTENT_HOOK_YOUTUBE`, `CONTENT_HOOK_DISTRIBUTION`, `CONTENT_HOOK_SCHEDULE`, `CONTENT_HOOK_NEWSLETTER`, `CONTENT_HOOK_FRAMER`, or set `N8N_API_KEY` (and `N8N_BASE_URL`) and HQ reads each path once from the workflow's webhook node (joined to `CONTENT_WEBHOOK_BASE`, default `https://n8n.dulcy.io`). A button whose webhook isn't set says so and sends nothing. The field buttons (Frame.io, OpusClip, posts) need nothing extra.
    - **Needs you** (default): only what needs you.
      - **Ideas to approve**, grouped Main / Raw, newest first, each with Sienna's hook, angle and "why now", and who proposed it (Sienna, or the n8n Reddit intake).
        - **Approve** writes exactly what the Content Center's "Approve & schedule" writes: Idea Decision "Approved", Production Stage "Idea Approved", and Recording Date + Publish Date from the same scheduling rule.
@@ -983,11 +1006,13 @@ Where this differs from the two sections above, this wins.
      |---|---|---|
      | New ideas | automatic | engine `sienna.ideas` (Fri 7 AM) + n8n "[Content OS] Reddit … Weekly Intake" ×5 (Sat 9 AM) |
      | Approve / Reject idea | **HQ** (or Content Center) | the fields above; after Approve, engine `sienna.prep` (every 30 min) writes the script, hooks, titles, thumbnail idea, Gamma outline. No n8n flow reads Idea Decision |
-     | Generate script by hand | Content Center button | n8n "[Content OS] Generate Teleprompter Script" (2 copies) |
-     | Sync Frame.io / Submit to OpusClip / Refresh Opus Clips / Generate Distribution Pack | Content Center (Content Automation Action field) | Airtable automation "Content OS Action Script" → n8n Frame.io Sync / OpusClip Submit and Refresh / Generate Distribution Pack |
-     | Thumbnail, Revise thumbnail, YouTube details | Content Center buttons | n8n Generate Thumbnail / Revise Thumbnail / Prepare YouTube Details |
+     | Generate script by hand | **HQ** (round 5) | n8n "[Content OS] Generate Teleprompter Script" (2 copies; HQ calls `M6KIF3eRsCf3hQTIK3cNI` unless `CONTENT_HOOK_SCRIPT` says otherwise) |
+     | Sync Frame.io / Submit to OpusClip / Refresh Opus Clips / Generate Distribution Pack | **HQ** (Content Automation Action field) | Airtable automation "Content OS Action Script" → n8n Frame.io Sync / OpusClip Submit and Refresh / Generate Distribution Pack |
+     | Thumbnail, Revise thumbnail, YouTube details | **HQ** | n8n Generate Thumbnail / Revise Thumbnail / Prepare YouTube Details |
      | Clip approve / reject | Content Center | n8n "[Content OS] Current Clip Review and Preview" |
-     | Posts: newsletter, Framer blog, scheduling | Content Center → Posts | n8n Prepare Newsletter Preview / Publish Framer Blog Draft / Schedule Approved Social Posts. **Never from HQ** |
+     | Posts: approve, newsletter preview, Framer draft | **HQ** → Distribution | Approval Status; n8n Prepare Newsletter Preview / Publish Framer Blog Draft |
+     | Posts: scheduling | **HQ** → Distribution → Schedule (approved Instagram / YouTube Shorts only, only when you press it) | Scheduled At + n8n Schedule Approved Social Posts |
+     | Posted link and stats | **HQ** → Distribution → Record the post | Published URL / Publishing Status (drafts) + `hq_content_posts` |
    - **Clean-up for Riley (the same job twice), shown once in HQ:**
      - three script writers: `sienna.prep` + 2 copies of the n8n Teleprompter Script;
      - two idea sources: `sienna.ideas` + the 5 Reddit intakes;

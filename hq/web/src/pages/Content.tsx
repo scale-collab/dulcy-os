@@ -6,16 +6,18 @@
 // Round 4 (Alex, 2026-11-28): the "This week" tab is gone (its data problems are one line on Needs you,
 // with one "Have Sienna fix it"); the ideas per channel fold closed; the real channel names ("Alex Woung",
 // "Alex Woung Raw"); dates with slashes. Old #/content/week links open Needs you.
-// The only write is the idea decision (the Content Center's own Approve & schedule / Reject idea fields).
-// No Airtable record links (RULES 2026-11-27); the one link left is the Content Center page for the
-// steps HQ cannot do (clip approval, the n8n buttons). Everything is rendered as escaped text.
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+// Round 5 (Alex, 2026-11-28): the Content Center's buttons are HQ buttons (on each video's page), with
+// Distribution per platform; Friday walks each idea step by step (hook, script, teleprompter, upload).
+// No Airtable record links (RULES 2026-11-27); the one Content Center link left is the final-clip
+// approval (its owner check). Everything is rendered as escaped text.
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { api, type ContentCenterView, type ContentIdea, type FridayIdea } from '../api';
 import { Button, Card, cx, Empty, ErrorBox, ExtLink, go, Icon, IconButton, Label, PageSkeleton, PageTitle, Pill, SectionHeader, setCount, timeAgo } from '../ui';
 import { FixItButton } from '../fixIt';
 import ContentItems from './content/ContentItems';
 import ContentCalendar from './content/ContentCalendar';
 import { DecideButtons, GammaBlock, Head, Notes, dateOnly, day, shortLabel } from './content/shared';
+import { RunButton } from './content/ContentActions';
 
 const VIEWS = [
   { key: 'needs', label: 'Needs you', short: 'Needs' },
@@ -66,7 +68,7 @@ export default function Content({ a, b, c }: { a?: string; b?: string; c?: strin
           {view === 'items' && <ContentItems d={d} id={b} onChanged={() => load(true)} />}
           {view === 'calendar' && <ContentCalendar d={d} />}
           {view === 'friday' && <FridayView d={d} channel={b} index={Number(c) || 1} />}
-          <p className="mt-8 text-xs text-muted">From the Content Center's tables, read {timeAgo(d.readAt) || 'just now'}; kept for 1 minute. HQ never posts, schedules or deletes.</p>
+          <p className="mt-8 text-xs text-muted">From the Content OS tables, read {timeAgo(d.readAt) || 'just now'}; kept for 1 minute. HQ never posts or deletes; it schedules a post only when you press Schedule.</p>
         </div>
       )}
     </div>
@@ -122,7 +124,7 @@ function NeedsView({ d }: { d: ContentCenterView }) {
 
       {d.needs.finals.length > 0 && (
         <section>
-          <Head title="Final videos to check" icon="film" sub="Sienna checked these clips. Watch them, then approve in the Content Center: its approve runs an owner check HQ can't do yet."
+          <Head title="Final videos to check" icon="film" sub="Sienna checked these clips. Watch them here. Approving a clip still happens in the Content Center: its approve checks in Airtable that you yourself approved it, which HQ can't prove yet."
             right={<span className="tabular shrink-0 text-xs text-muted">{(() => { const k = d.needs.finals.reduce((a, f) => a + f.clips.length, 0); return `${k} clip${k === 1 ? '' : 's'}`; })()}</span>} />
           <div className="space-y-3">
             {d.needs.finals.map((f) => (
@@ -153,7 +155,7 @@ function NeedsView({ d }: { d: ContentCenterView }) {
 
       {d.needs.alexSteps.length > 0 && (
         <section>
-          <Head title="Other steps waiting on you" icon="list" sub="Done by hand or in the Content Center. Tap one to see the video." right={<span className="tabular shrink-0 text-xs text-muted">{d.needs.alexSteps.length}</span>} />
+          <Head title="Other steps waiting on you" icon="list" sub="Tap one: the video's page has the button for it." right={<span className="tabular shrink-0 text-xs text-muted">{d.needs.alexSteps.length}</span>} />
           <Card className="overflow-hidden p-0">
             <ul className="divide-y divide-line">
               {d.needs.alexSteps.map((s) => (
@@ -231,7 +233,7 @@ function FridayView({ d, channel, index }: { d: ContentCenterView; channel?: str
   if (!ch) return null;
   return (
     <div>
-      <Head title={`Recording day · Friday ${dateOnly(d.friday.date)}`} icon="film" sub="This Friday's approved ideas in recording order. One per screen: say a hook, then the script." />
+      <Head title={`Recording day · Friday ${dateOnly(d.friday.date)}`} icon="film" sub="This Friday's approved ideas in recording order. One per screen, step by step: hook, script, teleprompter, upload." />
       <div role="tablist" aria-label="Channel" className="grid grid-cols-2 gap-1 rounded-xl border border-line bg-sunken p-1 sm:inline-grid sm:min-w-80">
         {chans.map((x) => (
           <button key={x.key} role="tab" aria-selected={x.key === ch.key} onClick={() => go(`content/friday/${x.key}`)}
@@ -255,7 +257,7 @@ function FridayView({ d, channel, index }: { d: ContentCenterView; channel?: str
               ))}
             </div>
           )}
-          <FridayCard key={it.id} it={it} n={i} of={items.length} raw={ch.key === 'raw'} />
+          <FridayCard key={it.id} it={it} n={i} of={items.length} raw={ch.key === 'raw'} onNextIdea={i < items.length ? () => to(i + 1) : undefined} />
           <div className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-10 mt-4 grid grid-cols-2 gap-2 rounded-2xl border border-line bg-surface/95 p-2 shadow-pop backdrop-blur md:bottom-4">
             <Button size="lg" icon="arrowLeft" disabled={i <= 1} onClick={() => to(i - 1)}>Previous</Button>
             <Button size="lg" tone="primary" disabled={i >= items.length} onClick={() => to(i + 1)}>Next<Icon name="arrowRight" size={19} strokeWidth={2.1} /></Button>
@@ -274,7 +276,19 @@ function Block({ label, children, tone }: { label: string; children: ReactNode; 
     </section>
   );
 }
-function FridayCard({ it, n, of, raw }: { it: FridayIdea; n: number; of: number; raw: boolean }) {
+/**
+ * One Friday idea, walked through step by step (Alex, round 5: "Friday is fine if it walks me through the
+ * scripts step by step"): 1 pick a hook, 2 read the script, 3 record with the teleprompter (the hook you
+ * picked, then the script, scrolling), 4 upload and press Sync Frame.io. Next step / Next idea at the bottom.
+ */
+const FRIDAY_STEPS = ['Hook', 'Script', 'Teleprompter', 'Upload'] as const;
+function FridayCard({ it, n, of, raw, onNextIdea }: { it: FridayIdea; n: number; of: number; raw: boolean; onNextIdea?: () => void }) {
+  const [step, setStep] = useState(0);
+  const [hook, setHook] = useState(0);
+  const [prompter, setPrompter] = useState(false);
+  const [synced, setSynced] = useState('');
+  const hooks = it.hooks.length ? it.hooks : it.ideaHook ? [it.ideaHook] : [];
+  const spoken = [hooks[hook] ?? '', it.script].filter(Boolean).join('\n\n');
   return (
     <Card className="mt-4 p-5 sm:p-8">
       <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
@@ -285,29 +299,131 @@ function FridayCard({ it, n, of, raw }: { it: FridayIdea; n: number; of: number;
         {!it.scriptReady && <Pill tone="warn">No script yet</Pill>}
       </div>
       <h2 className="mt-2 break-words text-2xl font-bold leading-tight tracking-tight text-fg sm:text-[32px]">{it.title}</h2>
-      {it.hooks.length > 0 ? (
-        <Block label="Hooks (say one first)">
-          <ol className="list-decimal space-y-2 pl-6 text-lg leading-7 text-fg sm:text-xl sm:leading-8">{it.hooks.map((h) => <li key={h}>{h}</li>)}</ol>
-        </Block>
-      ) : it.ideaHook ? <Block label="Hook"><p className="text-lg leading-7 text-fg sm:text-xl">{it.ideaHook}</p></Block> : null}
-      <Block label={raw ? 'Talking points' : 'Script'}>
-        {it.script ? <div className="whitespace-pre-wrap break-words text-lg leading-8 text-fg sm:text-xl sm:leading-9">{it.script}</div>
-          : <p className="text-[15px] text-muted">Not written yet. Sienna writes it within 30 minutes of the approval.{it.angle ? ` Angle: ${it.angle}` : ''}</p>}
-      </Block>
-      {it.checks.length > 0 && <Block label="Check before recording" tone="warn"><ul className="list-disc space-y-1 pl-5 text-[15px] text-fg">{it.checks.map((c) => <li key={c}>{c}</li>)}</ul></Block>}
-      {it.titles.length > 0 && <Block label="Title options"><ul className="list-disc space-y-1 pl-5 text-[17px] text-fg">{it.titles.map((t) => <li key={t}>{t}</li>)}</ul></Block>}
-      {it.thumbnail && <Block label="Thumbnail idea"><p className="text-[17px] text-fg">{it.thumbnail}</p></Block>}
-      {!raw && (
-        <Block label="Gamma (on screen)">
-          <GammaBlock gamma={it.gamma} gammaUrl={it.gammaUrl} scriptReady={it.scriptReady} />
+
+      {/* The four steps of recording this idea */}
+      <ol aria-label="Recording steps" className="mt-5 grid grid-cols-4 gap-1 rounded-xl border border-line bg-sunken p-1">
+        {FRIDAY_STEPS.map((label, k) => (
+          <li key={label}>
+            <button onClick={() => setStep(k)} aria-current={k === step ? 'step' : undefined}
+              className={cx('flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg px-1 text-[13px] font-semibold transition sm:text-sm', k === step ? 'bg-surface text-fg shadow-card' : k < step ? 'text-good' : 'text-muted hover:text-fg')}>
+              <span className={cx('tabular grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px]', k === step ? 'bg-accent text-accent-fg' : k < step ? 'bg-good-soft text-good' : 'border border-line-strong')}>{k < step ? <Icon name="check" size={11} strokeWidth={2.8} /> : k + 1}</span>
+              <span className="truncate">{label}</span>
+            </button>
+          </li>
+        ))}
+      </ol>
+
+      {step === 0 && (
+        <Block label={hooks.length > 1 ? 'Step 1 · Pick the hook you will say first' : 'Step 1 · The hook'}>
+          {hooks.length ? (
+            <div role="radiogroup" aria-label="Hooks" className="space-y-2">
+              {hooks.map((h, k) => (
+                <button key={h} role="radio" aria-checked={k === hook} onClick={() => setHook(k)}
+                  className={cx('flex w-full items-start gap-3 rounded-xl border p-4 text-left text-lg leading-7 text-fg sm:text-xl sm:leading-8', k === hook ? 'border-accent bg-accent-soft' : 'border-line bg-surface hover:border-line-strong')}>
+                  <span className={cx('mt-1.5 h-4 w-4 shrink-0 rounded-full border-2', k === hook ? 'border-accent bg-accent' : 'border-line-strong')} aria-hidden="true" />{h}
+                </button>
+              ))}
+            </div>
+          ) : <p className="text-[15px] text-muted">No hook written. Open with the main point.{it.angle ? ` Angle: ${it.angle}` : ''}</p>}
         </Block>
       )}
-      <div className="mt-6"><Button icon="list" onClick={() => go(`content/items/${it.id}`)}>See this video's steps</Button></div>
+
+      {step === 1 && (
+        <>
+          <Block label={`Step 2 · ${raw ? 'Talking points' : 'Script'}`}>
+            {it.script ? <div className="whitespace-pre-wrap break-words text-lg leading-8 text-fg sm:text-xl sm:leading-9">{it.script}</div>
+              : <p className="text-[15px] text-muted">Not written yet. Sienna writes it within 30 minutes of the approval.{it.angle ? ` Angle: ${it.angle}` : ''}</p>}
+          </Block>
+          {it.checks.length > 0 && <Block label="Check before recording" tone="warn"><ul className="list-disc space-y-1 pl-5 text-[15px] text-fg">{it.checks.map((c) => <li key={c}>{c}</li>)}</ul></Block>}
+          {it.titles.length > 0 && <Block label="Title options"><ul className="list-disc space-y-1 pl-5 text-[17px] text-fg">{it.titles.map((t) => <li key={t}>{t}</li>)}</ul></Block>}
+          {it.thumbnail && <Block label="Thumbnail idea"><p className="text-[17px] text-fg">{it.thumbnail}</p></Block>}
+          {!raw && <Block label="Gamma (on screen)"><GammaBlock gamma={it.gamma} gammaUrl={it.gammaUrl} scriptReady={it.scriptReady} /></Block>}
+        </>
+      )}
+
+      {step === 2 && (
+        <Block label="Step 3 · Record with the teleprompter">
+          <p className="text-[15px] text-fg-2">Full screen, large text, scrolling at your pace: {hooks[hook] ? 'the hook you picked, then ' : ''}the {raw ? 'talking points' : 'script'}. Space starts and stops it; the arrows change the speed; Esc closes it.</p>
+          <Button className="mt-3" size="lg" tone="primary" icon="play" disabled={!spoken} onClick={() => setPrompter(true)}>Start teleprompter</Button>
+          {!spoken && <p className="mt-2 text-sm text-warn">Nothing to read yet: the script is not written.</p>}
+        </Block>
+      )}
+
+      {step === 3 && (
+        <Block label="Step 4 · Upload, then Sync Frame.io">
+          <ol className="list-decimal space-y-1.5 pl-5 text-[15px] text-fg">
+            <li>Upload the recording to this video's Raw folder in Frame.io.</li>
+            <li>Press "Sync Frame.io": it finds the file and marks the video Recorded.</li>
+          </ol>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {it.rawFolderUrl && <a href={it.rawFolderUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line-strong bg-surface px-4 text-[15px] font-semibold text-fg hover:bg-hover"><Icon name="external" size={16} />Upload to the Raw folder</a>}
+            {synced ? <span role="status" className="text-sm text-good">{synced}</span> : <RunButton id={it.id} b={{ kind: 'run', run: it.rawFolderUrl ? 'syncFrame' : 'setupFrame', label: it.rawFolderUrl ? 'Sync Frame.io' : 'Set up Frame.io' }} primary onDone={setSynced} />}
+          </div>
+          {!it.rawFolderUrl && <p className="mt-2 text-sm text-fg-2">No Raw folder yet: "Set up Frame.io" makes it, then upload and press Sync Frame.io.</p>}
+          <div className="mt-4"><Button icon="list" onClick={() => go(`content/items/${it.id}`)}>See this video's steps</Button></div>
+        </Block>
+      )}
+
+      <div className="mt-6 flex flex-wrap gap-2 border-t border-line pt-4">
+        {step > 0 && <Button icon="arrowLeft" onClick={() => setStep(step - 1)}>Back</Button>}
+        {step < FRIDAY_STEPS.length - 1
+          ? <Button tone="accent" onClick={() => setStep(step + 1)}>Next: {FRIDAY_STEPS[step + 1]}<Icon name="arrowRight" size={17} strokeWidth={2.1} /></Button>
+          : onNextIdea ? <Button tone="accent" onClick={onNextIdea}>Next idea<Icon name="arrowRight" size={17} strokeWidth={2.1} /></Button> : <span className="self-center text-sm text-good">Last idea for this channel.</span>}
+      </div>
+      {prompter && <Teleprompter title={it.title} text={spoken} onClose={() => setPrompter(false)} />}
     </Card>
   );
 }
 
-/** Today's card (owner only): what content needs and Friday's count vs target. */
+/** Full-screen teleprompter: large text that scrolls by itself. Space = start / stop, arrows = speed, Esc = close. */
+function Teleprompter({ title, text, onClose }: { title: string; text: string; onClose: () => void }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = useState(3); // 1–10
+  const [size, setSize] = useState(40);
+  useEffect(() => {
+    if (!playing) return;
+    let raf = 0; let last = performance.now();
+    const tick = (t: number) => { const el = box.current; if (el) { el.scrollTop += ((t - last) / 1000) * speed * 12; if (el.scrollTop + el.clientHeight >= el.scrollHeight - 1) setPlaying(false); } last = t; raf = requestAnimationFrame(tick); };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [playing, speed]);
+  useEffect(() => {
+    const on = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      else if (e.key === ' ') { e.preventDefault(); setPlaying((x) => !x); }
+      else if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { e.preventDefault(); setSpeed((x) => Math.min(10, x + 1)); }
+      else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') { e.preventDefault(); setSpeed((x) => Math.max(1, x - 1)); }
+    };
+    window.addEventListener('keydown', on);
+    const prev = document.body.style.overflow; document.body.style.overflow = 'hidden';
+    return () => { window.removeEventListener('keydown', on); document.body.style.overflow = prev; };
+  }, [onClose]);
+  return (
+    <div role="dialog" aria-modal="true" aria-label={`Teleprompter: ${title}`} className="fixed inset-0 z-50 flex flex-col bg-black text-white">
+      <div ref={box} onClick={() => setPlaying((x) => !x)} className="flex-1 overflow-y-auto px-5 pb-[60vh] pt-[30vh] sm:px-16">
+        <div className="mx-auto max-w-4xl whitespace-pre-wrap break-words font-semibold" style={{ fontSize: `${size}px`, lineHeight: 1.45 }}>{text}</div>
+      </div>
+      <div className="pointer-events-none absolute inset-x-0 top-[30vh] h-0.5 bg-white/25" aria-hidden="true" />
+      <div className="flex flex-wrap items-center justify-center gap-2 border-t border-white/15 bg-black/90 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+        <button onClick={() => setPlaying((x) => !x)} className="inline-flex min-h-12 min-w-28 items-center justify-center gap-2 rounded-xl bg-white px-4 font-semibold text-black"><Icon name={playing ? 'pause' : 'play'} size={18} />{playing ? 'Pause' : 'Start'}</button>
+        <span className="tabular inline-flex items-center gap-1 rounded-xl border border-white/25 px-1">
+          <button aria-label="Slower" onClick={() => setSpeed((x) => Math.max(1, x - 1))} className="grid h-11 w-11 place-items-center text-xl">−</button>
+          <span className="w-16 text-center text-sm">Speed {speed}</span>
+          <button aria-label="Faster" onClick={() => setSpeed((x) => Math.min(10, x + 1))} className="grid h-11 w-11 place-items-center text-xl">+</button>
+        </span>
+        <span className="tabular inline-flex items-center gap-1 rounded-xl border border-white/25 px-1">
+          <button aria-label="Smaller text" onClick={() => setSize((x) => Math.max(24, x - 4))} className="grid h-11 w-11 place-items-center text-sm">A−</button>
+          <button aria-label="Larger text" onClick={() => setSize((x) => Math.min(80, x + 4))} className="grid h-11 w-11 place-items-center text-lg">A+</button>
+        </span>
+        <button onClick={() => { if (box.current) box.current.scrollTop = 0; setPlaying(false); }} className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-white/25 px-4 font-semibold"><Icon name="undo" size={16} />Top</button>
+        <button onClick={onClose} className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-white/25 px-4 font-semibold"><Icon name="x" size={16} />Close</button>
+      </div>
+    </div>
+  );
+}
+
+/** Today's card: what content needs and Friday's count vs target. */
 export function ContentCard() {
   const [d, setD] = useState<import('../api').ContentSummary | null>(null);
   useEffect(() => { api<import('../api').ContentSummary>('/content/summary').then((x) => { setD(x); setCount('content', x.counts.total); }).catch(() => setD(null)); }, []);
