@@ -266,3 +266,4 @@ Newest at the bottom. Format: `date | decision | why | who`
 - 2026-11-29: Alex: HQ gets Delete for campaigns and lead lists, same as the Airtable centers (typed DELETE).
 - 2026-11-28: Alex: agents are event-driven (instant start on approval/new work), not scheduled. Riley/Sienna routines get an API trigger; the engine fires them; cron schedules removed.
 - 2026-11-28: Alex: hourly backup sweep (was 6 h); content work instant, ideas Friday morning; weekly creator watch stays Friday.
+- 2026-11-28: Alex: "Riley should fix n8n herself, not give me click steps." The engine's n8nPatch now also adds/copies nodes, wires outputs (incl. error outputs), and sets node settings (On Error, retries) and workflow settings (Available in MCP). Same ✅, all-or-nothing, full rollback; new logins, triggers and secrets stay Manual (Alex).
