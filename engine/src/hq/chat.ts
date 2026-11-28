@@ -197,7 +197,20 @@ export function defaultModel(cfg: Config): ChatModel {
   };
 }
 
-export interface TurnInput { agent: AgentName; message: string; threadId?: number; askedBy?: string; parentId?: number }
+/**
+ * voice: the question was spoken in HQ voice mode and the answer will be read aloud (Alex 2026-11-28).
+ * Same chat, same tools, same rules; only the answer is shorter and plain.
+ */
+export interface TurnInput { agent: AgentName; message: string; threadId?: number; askedBy?: string; parentId?: number; voice?: boolean }
+
+/** What the agent is told when the answer will be spoken. Approval rules do not change by voice. */
+export const VOICE_GUIDE = [
+  'VOICE MODE: the owner is talking to you out loud in HQ and your answer will be read aloud.',
+  '- Answer in 1 to 3 short spoken sentences: result first, exact numbers, no lists, no tables, no headings, no markdown, no links or IDs read out.',
+  '- Still end with the line "Sources: ..." (it is shown on screen, not spoken).',
+  '- Voice never approves, sends, launches, pauses, spends or changes anything. If asked to, say it is waiting as a card in Decisions (or the right screen) for the owner to press, and do nothing else.',
+  '- If the question needs a long answer, give the one-line headline and offer to put the detail in the chat.',
+].join('\n');
 
 /** One chat turn: save the question, run the agent with its read-only tools, save and return the answer. */
 export async function chatTurn(deps: ChatDeps, t: TurnInput): Promise<{ threadId: number; agent: AgentName; question: SavedMessage; reply: SavedMessage }> {
@@ -218,13 +231,13 @@ export async function chatTurn(deps: ChatDeps, t: TurnInput): Promise<{ threadId
     threadId = Number((await db.query(`INSERT INTO hq_chat_threads (user_id, agent, asked_by, parent_id, title) VALUES ($1,$2,$3,$4,$5) RETURNING id`,
       [user.id, t.agent, t.askedBy ?? 'user', t.parentId ?? null, t.message.replace(/\s+/g, ' ').slice(0, 80)])).rows[0].id);
   }
-  const question = await saveMessage(db, { threadId, role: 'user', author: t.askedBy ?? user.name, text: t.message, sources: [], tools: [] });
+  const question = await saveMessage(db, { threadId, role: 'user', author: t.askedBy ?? user.name, text: t.message, sources: [], tools: [], ...(t.voice ? { usage: { via: 'voice' } } : {}) });
   const past = (await db.query(`SELECT role, text FROM (SELECT id, role, text FROM hq_chat_messages WHERE thread_id=$1 ORDER BY id DESC LIMIT $2) x ORDER BY id`, [threadId, HISTORY])).rows;
   const messages = history(past);
 
   const k = (rel: string) => readKnowledge(cfg.knowledgeDir, rel);
   const stable = [guide(t.agent, asked), k(AGENTS[t.agent].skill).slice(0, 40_000), k('rules/RULES.md').slice(0, 60_000)];
-  const varying = `Now: ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'full', timeStyle: 'short' })} (New York). You are talking with ${asked ? 'Ada' : `${user.name} (${user.role})`}.`;
+  const varying = `Now: ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'full', timeStyle: 'short' })} (New York). You are talking with ${asked ? 'Ada' : `${user.name} (${user.role})`}.${t.voice && !asked ? `\n${VOICE_GUIDE}` : ''}`;
   const tools = t.agent === 'Ada' && !asked ? [...TOOLS, ASK_TOOL] : TOOLS;
 
   const sources = new Set<string>(); const used: SavedMessage['tools'] = [];

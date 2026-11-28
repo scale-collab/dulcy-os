@@ -214,18 +214,18 @@ function ClientCounts({ clients }: { clients: ClientTiles[] }) {
         <h2 className="text-sm font-semibold text-fg">Inboxes per client</h2>
         <p className="text-xs text-muted">How many of each client's inboxes are in each status. Tap a client to see only theirs.</p>
       </div>
-      <div className="flex items-center justify-end gap-1 border-b border-line px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted sm:gap-4 sm:px-5" aria-hidden="true"><span className="w-12 text-right">Spam</span><span className="w-12 text-right">Rest</span><span className="w-12 text-right">At risk</span><span className="w-12 text-right">OK</span></div>
+      <div className="flex items-center justify-end gap-1 border-b border-line px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted sm:gap-4 sm:px-5" aria-hidden="true"><span className="w-10 text-right sm:w-12">Spam</span><span className="w-10 text-right sm:w-12">Rest</span><span className="w-10 text-right sm:w-12">At risk</span><span className="w-10 text-right sm:w-12">OK</span></div>
       <ul className="divide-y divide-line">
         {clients.map((c) => (
           <li key={c.key}>
             <button onClick={() => route('attention', c.key)} className="flex min-h-11 w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm hover:bg-hover sm:px-5"
               aria-label={`${c.name}: ${c.tiles.spam} spam, ${c.tiles.resting} resting, ${c.tiles.risk} at risk, ${c.tiles.healthy} healthy`}>
-              <span className="min-w-0 truncate font-medium text-fg">{c.name}</span>
+              <span className="min-w-0 break-words font-medium text-fg sm:truncate">{c.name}</span>
               <span className="tabular flex shrink-0 gap-1 sm:gap-4">
-                <span className={cx('w-12 text-right font-semibold', c.tiles.spam ? 'text-bad' : 'text-faint')}>{c.tiles.spam}</span>
-                <span className={cx('w-12 text-right', c.tiles.resting ? 'text-info' : 'text-faint')}>{c.tiles.resting}</span>
-                <span className={cx('w-12 text-right', c.tiles.risk ? 'text-warn' : 'text-faint')}>{c.tiles.risk}</span>
-                <span className="w-12 text-right text-fg-2">{c.tiles.healthy}</span>
+                <span className={cx('w-10 text-right sm:w-12 font-semibold', c.tiles.spam ? 'text-bad' : 'text-faint')}>{c.tiles.spam}</span>
+                <span className={cx('w-10 text-right sm:w-12', c.tiles.resting ? 'text-info' : 'text-faint')}>{c.tiles.resting}</span>
+                <span className={cx('w-10 text-right sm:w-12', c.tiles.risk ? 'text-warn' : 'text-faint')}>{c.tiles.risk}</span>
+                <span className="w-10 text-right sm:w-12 text-fg-2">{c.tiles.healthy}</span>
               </span>
             </button>
           </li>
@@ -405,7 +405,8 @@ type BulkPick = { picked: Set<string>; all: boolean; toggle: (ids: string[], on:
 function PickBox({ pick, ids, label }: { pick: BulkPick; ids: string[]; label: string }) {
   if (!pick) return null;
   const on = pick.all || ids.every((id) => pick.picked.has(id));
-  return <input type="checkbox" checked={on} disabled={pick.all} onChange={(e) => pick.toggle(ids, e.target.checked)} aria-label={label} className="h-4 w-4 shrink-0 accent-[var(--accent)]" />;
+  // Phone: a 40 px tap area around the box (negative margin keeps the row where it was).
+  return <label className="-m-2.5 inline-grid shrink-0 cursor-pointer place-items-center p-2.5 sm:m-0 sm:p-0"><input type="checkbox" checked={on} disabled={pick.all} onChange={(e) => pick.toggle(ids, e.target.checked)} aria-label={label} className="h-5 w-5 shrink-0 accent-[var(--accent)] sm:h-4 sm:w-4" /></label>;
 }
 function DomainGroup({ g, showClient, canEdit, live, onSaved, pick }: { g: InboxGroup; showClient: boolean; canEdit: boolean; live: boolean; onSaved: () => void; pick: BulkPick }) {
   const [edit, setEdit] = useState<string | null>(null);

@@ -92,6 +92,9 @@ const ICONS: Record<string, ReactNode> = {
   calendar: <><rect x="3" y="4" width="18" height="18" rx="2" />{P('M16 2v4M8 2v4M3 10h18')}</>,
   phone: P('M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z'),
   star: P('m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z'),
+  // Voice mode (2026-11-28)
+  mic: <><rect x="9" y="2" width="6" height="12" rx="3" />{P('M5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8')}</>,
+  waves: P('M2 10v4M6 6v12M10 3v18M14 8v8M18 5v14M22 10v4'),
   'chevron-down': P('m6 9 6 6 6-6'),
   menu: P('M4 6h16M4 12h16M4 18h16'),
   target: <><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" /></>,
@@ -196,7 +199,9 @@ const CHIP: Record<ChipTone, string> = {
   accent: 'bg-accent-soft text-accent-ink',
 };
 export function Pill({ children, tone = 'plain', className, icon }: { children: ReactNode; tone?: ChipTone; className?: string; icon?: string }) {
-  return <span className={cx('inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium', CHIP[tone], className)}>{icon && <Icon name={icon} size={12} strokeWidth={2.2} />}{children}</span>;
+  // Phone: plain text truncates inside the pill (phone pass 2026-11-28), so a long client name never spills over its neighbours.
+  const body = typeof children === 'string' || typeof children === 'number' ? <span className="max-sm:min-w-0 max-sm:truncate">{children}</span> : children;
+  return <span className={cx('inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium', CHIP[tone], className)}>{icon && <Icon name={icon} size={12} strokeWidth={2.2} />}{body}</span>;
 }
 export function Count({ n, strong }: { n: number; strong?: boolean }) {
   return <span className={cx('tabular inline-flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-xs font-bold', strong && n ? 'bg-ink text-ink-fg' : 'bg-sunken text-muted border border-line')}>{n}</span>;
@@ -207,8 +212,8 @@ export function Label({ children, className }: { children: ReactNode; className?
 }
 export function SectionHeader({ title, icon, right, className }: { title: ReactNode; icon?: string; right?: ReactNode; className?: string }) {
   return (
-    <div className={cx('mb-3 flex min-h-6 items-center justify-between gap-3', className)}>
-      <h2 className="flex items-center gap-2 text-sm font-semibold text-fg">{icon && <Icon name={icon} size={16} className="text-muted" />}{title}</h2>
+    <div className={cx('mb-3 flex min-h-6 flex-wrap items-center justify-between gap-x-3 gap-y-1', className)}>
+      <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-fg">{icon && <Icon name={icon} size={16} className="text-muted" />}{title}</h2>
       {right}
     </div>
   );
@@ -299,7 +304,8 @@ export function PageTitle({ kicker, title, sub, right }: { kicker?: ReactNode; t
         <h1 className="text-[26px] font-bold leading-tight tracking-tight text-fg sm:text-[28px]">{title}</h1>
         {sub && <div className="mt-1 text-[15px] text-muted">{sub}</div>}
       </div>
-      {right && <div className="flex shrink-0 items-center gap-2">{right}</div>}
+      {/* Phone: the buttons wrap on their own line(s) instead of pushing the page sideways. */}
+      {right && <div className="flex max-w-full flex-wrap items-center gap-2 sm:shrink-0">{right}</div>}
     </div>
   );
 }
@@ -334,7 +340,9 @@ export function dueLabel(due: string): string {
   if (diff < 0) return `${-diff} d overdue`;
   if (diff === 0) return 'due today';
   if (diff === 1) return 'due tomorrow';
-  return `due ${new Date(`${d}T12:00:00Z`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+  // Slashes (RULES 2026-11-27): "due 12/4"; the year only when it is not this year.
+  const [y, m, day] = d.split('-').map(Number);
+  return `due ${m}/${day}${y !== Number(today.slice(0, 4)) ? `/${y}` : ''}`;
 }
 
 /** Safe link: only http(s), opens in a new tab without the opener. */
@@ -414,7 +422,7 @@ export function Toaster() {
   }, [t]);
   if (!t) return null;
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-16 z-50 flex justify-center px-4 md:bottom-6 md:top-auto md:pl-64">
+    <div className="pointer-events-none fixed inset-x-0 top-[calc(4rem+env(safe-area-inset-top))] z-50 flex justify-center px-4 md:bottom-6 md:top-auto md:pl-64">
       <div role="status" aria-live="polite" className={cx('anim-in pointer-events-auto flex min-h-12 max-w-lg items-center gap-3 rounded-2xl px-4 py-2.5 text-[15px] font-medium shadow-pop',
         t.tone === 'bad' ? 'bg-bad text-surface' : 'bg-ink text-ink-fg')}>
         <Icon name={t.tone === 'bad' ? 'alert' : t.tone === 'good' ? 'check' : 'sparkles'} size={17} strokeWidth={2.2} />

@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { api, type ContentDraft, type ContentItemDetail, type ContentPlatform, type ContentPostStats, type ContentStepButton } from '../../api';
 import { Button, Card, cx, ErrorBox, ExtLink, Icon, Pill } from '../../ui';
 import { copyText, day, Head } from './shared';
+import { suggestedTime } from './ContentCenterParts';
 
 const field = 'min-h-11 w-full rounded-xl border border-line bg-surface px-3 py-2 text-[15px] text-fg placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-accent';
 
@@ -123,15 +124,16 @@ export function Distribution({ id, d, reload }: { id: string; d: ContentItemDeta
           ))}
         </dl>
         {d.distribution.status && <p className="mt-2 text-center text-xs text-muted">Posts: {d.distribution.status}</p>}
+        {d.completion && <p className={cx('mt-2 text-center text-sm', d.completion.complete ? 'text-good' : 'text-fg-2')}>{d.completion.complete ? `Distribution complete: ${d.completion.detail}` : `Not complete yet: ${d.completion.detail}`}</p>}
       </Card>
       <div className="space-y-2">
-        {d.distribution.platforms.map((p) => <PlatformRow key={p.platform} id={id} p={p} reload={reload} />)}
+        {d.distribution.platforms.map((p) => <PlatformRow key={p.platform} id={id} p={p} reload={reload} publishDate={d.publishDate ?? ''} clipsPerWeek={d.settings?.clipsPerWeek ?? 3} />)}
       </div>
     </section>
   );
 }
 
-function PlatformRow({ id, p, reload }: { id: string; p: ContentPlatform; reload: () => void }) {
+function PlatformRow({ id, p, reload, publishDate, clipsPerWeek }: { id: string; p: ContentPlatform; reload: () => void; publishDate: string; clipsPerWeek: number }) {
   const posted = p.drafts.some((x) => x.publishing === 'Published' || x.stats?.url) || !!p.manual?.url;
   const toReview = p.drafts.filter((x) => x.approval !== 'Approved' && x.approval !== 'Rejected' && x.publishing === 'Draft').length;
   return (
@@ -149,17 +151,24 @@ function PlatformRow({ id, p, reload }: { id: string; p: ContentPlatform; reload
           </>
         )}
         {p.platform !== 'TikTok' && !p.drafts.length && <p className="text-sm text-muted">{p.chosen ? 'Chosen for this video. The post shows here after "Generate posts".' : 'No post for this platform.'}</p>}
-        {p.drafts.map((x) => <DraftCard key={x.id} id={id} x={x} platform={p.platform} reload={reload} />)}
+        {p.drafts.map((x, i) => <DraftCard key={x.id} id={id} x={x} platform={p.platform} reload={reload} suggested={suggestedTime(x.platform, i, publishDate, clipsPerWeek)} />)}
       </div>
     </details>
   );
 }
 
-function DraftCard({ id, x, platform, reload }: { id: string; x: ContentDraft; platform: string; reload: () => void }) {
+function DraftCard({ id, x, platform, reload, suggested }: { id: string; x: ContentDraft; platform: string; reload: () => void; suggested: string }) {
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
-  const [at, setAt] = useState('');
+  // The Content Center's suggested posting time is the starting value (its schedule box); Alex can change it.
+  const [at, setAt] = useState(() => {
+    const t = Date.parse(x.scheduledAt);
+    return Number.isFinite(t) ? new Date(t - new Date(t).getTimezoneOffset() * 60_000).toISOString().slice(0, 16) : suggested;
+  });
+  const [preview, setPreview] = useState(false);
+  const newsletter = !!x.html;
+  const manual = /reddit|linkedin|twitter|^x$/i.test(x.platform);
   const act = async (what: 'approve' | 'changes' | 'schedule') => {
     setBusy(what); setError(''); setMsg('');
     try {
@@ -175,10 +184,21 @@ function DraftCard({ id, x, platform, reload }: { id: string; x: ContentDraft; p
         {x.outputType && <span className="text-xs text-muted">{x.outputType}</span>}
       </div>
       {x.title && <div className="mt-2 break-words text-[15px] font-semibold text-fg">{x.title}</div>}
+      {x.community && <p className="mt-1 text-sm text-fg-2">Post it once in <strong className="text-fg">r/{x.community}</strong>; adjust it so it sounds natural in that conversation.</p>}
       {x.body && (
         <div className="mt-2">
-          <div className="max-h-64 overflow-y-auto whitespace-pre-wrap break-words rounded-xl bg-sunken p-3 text-sm leading-6 text-fg">{x.body}</div>
-          <div className="mt-1 flex flex-wrap items-center gap-2"><CopyLine text={x.body} label="Copy post" />{x.media && <ExtLink href={x.media}>Open the clip</ExtLink>}</div>
+          {newsletter && preview
+            ? <iframe title={`Newsletter preview: ${x.title}`} srcDoc={x.html} sandbox="allow-popups allow-popups-to-escape-sandbox" className="h-[28rem] w-full rounded-xl border border-line bg-white" />
+            : <div className="max-h-64 overflow-y-auto whitespace-pre-wrap break-words rounded-xl bg-sunken p-3 text-sm leading-6 text-fg">{x.body}</div>}
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            {/reddit/i.test(x.platform) && <CopyLine text={x.title} label="Copy title" />}
+            <CopyLine text={x.body} label={newsletter ? 'Copy text' : 'Copy post'} />
+            {newsletter && <CopyLine text={x.html ?? ''} label="Copy HTML" />}
+            {newsletter && <Button tone="ghost" icon="mail" className="min-h-9 px-3 text-sm" onClick={() => setPreview(!preview)}>{preview ? 'Show the text' : 'Email preview'}</Button>}
+            {x.media && <ExtLink href={x.media}>Open the clip</ExtLink>}
+            {manual && x.composeUrl && x.publishing !== 'Published' && <ExtLink href={x.composeUrl}>{/reddit/i.test(x.platform) ? `Open r/${x.community}` : /linkedin/i.test(x.platform) ? 'Open LinkedIn' : 'Open the X composer'}</ExtLink>}
+          </div>
+          {newsletter && <p className="mt-1 text-xs text-muted">Audience: Close leads with "Subscribed to Newsletter? = Yes". Approving prepares this email for a final review; it does not send it.</p>}
         </div>
       )}
       {x.lastError && <p className="mt-2 break-words text-sm text-bad">{x.lastError}</p>}

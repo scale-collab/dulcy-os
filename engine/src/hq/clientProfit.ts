@@ -192,7 +192,7 @@ export async function profitView(at: HqAirtable, db: Db, cfg: DelivCfg, finance:
     totals: { revenue: r2(known.reduce((a, c) => a + (c.revenue ?? 0), 0)), knownCosts: r2(known.reduce((a, c) => a + c.knownCosts, 0)), profit: r2(known.reduce((a, c) => a + (c.profit ?? 0), 0)), clientsWithRevenue: known.length },
     rules: [
       'Revenue = the deal (monthly fee x months in the period + per-call price x meetings booked in it), not Xero payments.',
-      `Inboxes = today's inbox count x $${INBOX_MONTHLY_DEFAULT.toFixed(2)} a month (Dulcy's discounted price).`,
+      `Inboxes = today's inbox count x $${INBOX_MONTHLY_DEFAULT.toFixed(2)} a month.`,
       `Domains = .com domains x $${DOMAIN_COM_YEARLY} a year; other domain endings: price UNKNOWN.`,
       'Leads and verification: UNKNOWN (not counted).',
     ],

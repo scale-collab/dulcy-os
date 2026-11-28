@@ -4,7 +4,7 @@
 // and lists finished 60+ days ago are hidden unless asked. Tap a list for its stage tabs and buttons.
 import { useEffect, useMemo, useState } from 'react';
 import { api, type LeadListRowR2, type LeadListsR2 } from '../api';
-import { Button, Card, cx, Empty, ErrorBox, go, PageSkeleton, Pill, timeAgo } from '../ui';
+import { Card, cx, Empty, ErrorBox, go, PageSkeleton, Pill, timeAgo } from '../ui';
 import { Select } from '../charts';
 import { num, slash } from './campaign/shared';
 
@@ -40,7 +40,6 @@ export function LeadLists({ client, refresh }: { client: string; refresh: number
     <div className="mt-4">
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <Pill>{rows.length} showing</Pill><Pill tone="good">{c.done} ready</Pill><Pill tone="info">{c.running} running</Pill>{c.failed > 0 && <Pill tone="bad">{c.failed} failed</Pill>}<Pill tone="accent">{c.listOnly} list only</Pill>
-        <span className="ml-auto"><Button icon="plus" disabled title="Creating a lead list on its own comes next in HQ. New campaign makes the list with the campaign.">New lead list (comes next)</Button></span>
       </div>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <Select label="Show" value={show} onChange={setShow} options={SHOW} />
@@ -102,7 +101,7 @@ function StageCell({ r }: { r: LeadListRowR2 }) {
       <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-line" role="progressbar" aria-label="Lead list stage" aria-valuemin={0} aria-valuemax={r.steps} aria-valuenow={r.step}>
         <div className={cx('h-full rounded-full', r.group === 'failed' ? 'bg-bad' : 'bg-accent')} style={{ width: `${Math.round((r.step / r.steps) * 100)}%` }} />
       </div>
-      <div className="mt-0.5 text-[11px] text-muted">step {r.step} of {r.steps}{r.progress !== null ? ` · ${Math.round(r.progress * 100)}% of this step` : ''}</div>
+      <div className="mt-0.5 text-[11px] text-muted max-sm:text-xs">step {r.step} of {r.steps}{r.progress !== null ? ` · ${Math.round(r.progress * 100)}% of this step` : ''}</div>
     </div>
   );
 }

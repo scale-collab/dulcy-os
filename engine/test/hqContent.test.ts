@@ -181,6 +181,16 @@ test('content: Needs you groups ideas by channel and shows only clips Sienna pas
   assert.match(contentNotes(source(many), { fri: '2026-11-27', fweek: weekOf('2026-11-27'), today: '2026-11-26', pipeline: [] })[0].data, /^17 rows have Status Scheduled/);
 });
 
+test('content (QA 11/29): an Alex Woung recording date off Friday is a Sienna note, worded after Alex confirmed Friday', () => {
+  const notes = contentNotes(source([]), { fri: '2026-11-27', fweek: weekOf('2026-11-27'), today: '2026-11-26', pipeline: [{ recordingDate: '2026-11-29', channel: 'Alex Woung', stage: 'approved' }] });
+  const n = notes.find((x) => x.problem === 'Alex Woung recording dates are not on Friday');
+  assert.ok(n, 'the note is there');
+  assert.equal(n!.owner, 'Sienna');
+  assert.match(n!.data, /record on Sunday: their dates were set before the Friday rule/);
+  assert.doesNotMatch(`${n!.data} ${n!.fix}`, /once Alex confirms/, 'Alex confirmed Friday on 11/28');
+  assert.match(n!.fix, /Recording date/);
+});
+
 test('content (Batch 5): the Content Center\'s 10 stages, its item order and the blocks each item shows', () => {
   const cc = (f: Record<string, unknown>, clipIds: string[] = []) => ccStageOf(videoOf(v(1, { [CF.channel]: MAIN, ...f, ...(clipIds.length ? { [XF.clips]: clipIds } : {}) }), new Set()));
   assert.deepEqual(['', 'Idea Approved', 'Script', 'Scheduled to Record', 'Recorded', 'Editing', 'Ready for Thumbnail', 'Ready for Clips', 'Ready to Publish', 'Final Review'].map((x) => normalizedStage(x)),
@@ -292,7 +302,9 @@ test('content (round 4): each video\'s steps, the one Next step, and where each 
   const ready = steps({ [CF.script]: 'x' }, { hasPrep: true, gamma: '1. Slide' });
   assert.deepEqual(ready.find((s) => s.key === 'script')!.buttons.map((b) => b.kind), ['openScript']);
   const g = ready.find((s) => s.key === 'gamma')!;
-  assert.deepEqual([g.state, g.where, g.optional, g.buttons.map((b) => b.kind)], ['now', 'notAutomated', true, ['copyGamma', 'link']]);
+  // 2026-11-28 (no paid Gamma API): the outline becomes the HQ resource ("Make the resource"), Copy outline stays.
+  assert.deepEqual([g.state, g.where, g.optional, g.buttons.map((b) => b.kind)], ['now', 'hq', true, ['resource', 'copyGamma']]);
+  assert.equal(steps({ [CF.script]: 'x' }, { hasPrep: false, gamma: '' }).find((s) => s.key === 'gamma')!.where, 'notAutomated', 'no outline: nothing to make yet');
   assert.deepEqual(nowKeys(ready), ['gamma', 'folder']);
   // Round 5: the Content Center's "Set up Frame.io" is an HQ button now.
   assert.deepEqual([ready.find((s) => s.key === 'folder')!.where, ready.find((s) => s.key === 'folder')!.buttons.map((b) => [b.kind, b.run])], ['hq', [['run', 'setupFrame']]]);
@@ -418,7 +430,7 @@ test('content API: needs a session, owner only (members get 403 on every route),
   const alex = await login('alex@dulcy.io');
   const r = await call('/hq/api/content', { cookie: alex });
   assert.equal(r.status, 200, r.text);
-  assert.deepEqual(r.body.needs.ideas.map((g: any) => [g.key, g.items.map((i: any) => i.title)]), [['main', ['Main: pick this']], ['raw', ['Raw: pick this']]], 'a row without a channel is not shown');
+  assert.deepEqual(r.body.needs.ideas.map((g: any) => [g.key, g.items.map((i: any) => i.title)]), [['main', ['Main: pick this']], ['raw', ['Raw: pick this']], ['none', ['No channel']]], 'parity 2026-11-28: an idea with no channel is listed on its own, to pick its channel (the Content Center\'s "Content for") before approving');
   assert.deepEqual(r.body.needs.finals.map((f: any) => f.clips.map((c: any) => c.name)), [['Clip ok']]);
   assert.equal(r.body.links.contentCenter, 'https://airtable.com/appxqINt5XKw7a76A/pagacLOPVCIQb1RQt');
   assert.ok(r.body.overlaps.length >= 3, 'overlaps for Riley');

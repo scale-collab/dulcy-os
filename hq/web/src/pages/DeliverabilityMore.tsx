@@ -169,7 +169,7 @@ export function VerificationTab({ client, refresh }: { client: string; refresh: 
       <Conclusion c={d.conclusion} />
       {d.totals.length > 0 && (
         <Card className="overflow-x-auto p-0">
-          <table className="w-full min-w-[520px] text-left text-sm">
+          <table className="sticky-first w-full min-w-[520px] text-left text-sm">
             <caption className="sr-only">Per verifier</caption>
             <thead className="border-b border-line bg-sunken text-xs text-muted"><tr><th className="px-4 py-2 font-medium">Verified by</th><th className="px-3 py-2 text-right font-medium">Emails</th><th className="px-3 py-2 text-right font-medium">Contacted</th><th className="px-3 py-2 text-right font-medium">Bounces</th><th className="px-3 py-2 text-right font-medium">Rate</th><th className="px-4 py-2 text-right font-medium">Not found</th></tr></thead>
             <tbody className="divide-y divide-line">

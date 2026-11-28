@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { api, type LeadListDetailR2 } from '../../api';
 import { BackLink, Card, cx, ErrorBox, ExtLink, go, Icon, PageSkeleton, Pill, SectionHeader, timeAgo } from '../../ui';
 import { ActionBar, AutomationStatus, num, slash, slashTime, Tabs } from './shared';
+import { ListCenterSection } from './CenterParity';
 
 type Tab = 'overview' | 'source' | 'companies' | 'contacts' | 'verification' | 'enrichment' | 'qa';
 const TABS: { key: Tab; label: string }[] = [
@@ -57,7 +58,7 @@ export function LeadListPage({ id }: { id: string }) {
           </div>
         </div>
         <div className="mt-4 flex items-start gap-2 rounded-xl bg-accent-soft px-3.5 py-3 text-[15px] text-fg"><Icon name="arrowRight" size={18} className="mt-0.5 shrink-0 text-accent-ink" /><span><span className="font-semibold">Next: </span>{d.next}</span>
-          {SECTION_OF_STAGE[l.stage] && tab === 'overview' && <button onClick={() => setTab(SECTION_OF_STAGE[l.stage])} className="ml-auto shrink-0 text-sm font-semibold text-accent-ink hover:underline">Go to {TABS.find((t) => t.key === SECTION_OF_STAGE[l.stage])?.label}</button>}
+          {SECTION_OF_STAGE[l.stage] && tab === 'overview' && <button onClick={() => setTab(SECTION_OF_STAGE[l.stage])} className="-my-2.5 ml-auto shrink-0 py-2.5 text-sm font-semibold text-accent-ink hover:underline sm:my-0 sm:py-0">Go to {TABS.find((t) => t.key === SECTION_OF_STAGE[l.stage])?.label}</button>}
         </div>
         <AutomationStatus a={l.automation} className="mt-4" />
       </Card>
@@ -150,6 +151,8 @@ export function LeadListPage({ id }: { id: string }) {
           {bar('qa')}
         </div>
       )}
+      {/* Center parity (2026-11-28): the Lead List Center's field edits and non-engine buttons for this tab. */}
+      <ListCenterSection id={id} tab={tab} onDone={load} />
       <p className="mt-6 text-xs text-muted">Read {timeAgo(d.readAt) || 'just now'} from Airtable and the engine. Buttons press the same engine steps as the Airtable Lead List Center.</p>
     </div>
   );

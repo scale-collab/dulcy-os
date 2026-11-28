@@ -587,7 +587,7 @@ export function salesNotes(deals: Deal[], src: Pick<SalesSource, 'sales' | 'feed
   if (dupes.length) out.push({ problem: 'One deal, several agreement records', data: few(dupes.map((d) => `${label(d)}: ${d.agreements.length} records (${[...new Set(d.agreementRoles.filter((r) => !r.primary).map((r) => r.why))].join('; ')})`)), fix: 'Atlas: void the old ones or mark them Test Only in Dulcy Sign / New Client Intake (nothing goes to the client).', why: 'HQ shows the current agreement and folds the others with the reason.', owner: 'Atlas' });
   const signedDeals = deals.filter((d) => d.salesRec && d.stages.signed);
   const won = src.sales.filter((r) => s(r.fields[SF.stage]) === 'Won' || yes(r.fields[SF.closed]) || s(r.fields[SF.closedDate]));
-  if (signedDeals.length && !won.length) out.push({ problem: 'No Sales Data row is marked Won', data: `${signedDeals.length} signed · 0 of ${src.sales.length} Sales Data rows have Won, Deal Closed? or Deal Closed Date`, fix: 'Cole: move signed deals to Won in Close.', why: 'Sales Goals (close rate, revenue to goal) read those fields, so they show 0 closed. HQ counts signed agreements instead.', owner: 'Cole' });
+  if (signedDeals.length && !won.length) out.push({ problem: 'No Sales Data row is marked Won', data: `${signedDeals.length} signed · 0 of ${src.sales.length} Sales Data rows have Won, Deal Closed? or Deal Closed Date`, fix: 'Cole: move signed deals to Won in Close; the Close → Airtable Won sync then marks their Sales Data rows Won.', why: 'Sales Goals (close rate, revenue to goal) read those fields, so they show 0 closed. HQ counts signed agreements instead.', owner: 'Cole' });
   return out.map((x) => ({ ...x, actions: noteActions(x) }));
 }
 

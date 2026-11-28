@@ -18,6 +18,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, type CampaignListR2, type CampaignRowR2, type ChannelB3, type NeedKind, type PlansR2 } from '../api';
 import { Button, Card, cx, Empty, ErrorBox, go, IconButton, PageSkeleton, PageTitle, Pill, setCount, timeAgo } from '../ui';
 import { ClientPicker, rememberedClient } from '../clientPicker';
+import { NewCampaignByHand, NewLeadList, SyncButton } from './campaign/CenterParity';
 import { Select } from '../charts';
 import { NoteList } from './Inbox';
 import { LeadLists } from './LeadLists';
@@ -62,6 +63,8 @@ function Shell({ channel, section, view = 'all', client }: { channel: string; se
   const [busy, setBusy] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const [creating, setCreating] = useState(false);
+  const [byHand, setByHand] = useState(false);
+  const [newList, setNewList] = useState(false);
   const load = useCallback((again = false) => {
     setBusy(true); setError('');
     const qs = new URLSearchParams({ ...(client ? { client } : {}), ...(again ? { refresh: '1' } : {}) });
@@ -80,12 +83,15 @@ function Shell({ channel, section, view = 'all', client }: { channel: string; se
         kicker={d ? `${d.counts.live} live · ${d.counts.building} building${clientName ? ` · ${clientName}` : ''}` : 'Every campaign, every active client'}
         sub={section === 'lists' ? 'Build, verify, enrich and check lead lists. Tap a list for its steps and buttons.' : 'Plan, approve, launch and watch campaigns. Tap a campaign for its buttons, copy, lead list and inboxes.'}
         right={(
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 max-sm:flex-wrap">
             {section === 'campaigns' && <Button tone="primary" icon="plus" onClick={() => setCreating(true)} disabled={!plans?.canAct} title={plans?.canAct ? 'Atlas plans a new campaign for a client' : 'Alex starts new campaigns'}>New campaign</Button>}
+            {section === 'campaigns' && plans?.canAct && <Button icon="plus" onClick={() => setByHand(true)} title="A Draft campaign and its lead list, made by hand (the Airtable Campaign Center's New Campaign)">By hand</Button>}
+            {section === 'campaigns' && plans?.canAct && <SyncButton which="campaigns" />}
+            {section === 'lists' && plans?.canAct && <Button tone="primary" icon="plus" onClick={() => setNewList(true)}>New lead list</Button>}
             <IconButton icon="refresh" label="Refresh" onClick={() => { setRefresh((x) => x + 1); load(true); }} className={cx('border border-line bg-surface', busy && '[&_svg]:animate-spin')} />
           </div>
         )} />
-      <div role="tablist" aria-label="Channel" className="grid grid-cols-4 gap-1 rounded-xl border border-line bg-sunken p-1 sm:inline-grid sm:grid-flow-col sm:auto-cols-fr">
+      <div role="tablist" aria-label="Channel" className="grid grid-cols-2 gap-1 rounded-xl border border-line bg-sunken p-1 sm:inline-grid sm:grid-flow-col sm:auto-cols-fr">
         {channels.map((x) => (
           <button key={x.key} role="tab" aria-selected={channel === x.key} onClick={() => go(x.key === 'email' ? 'campaigns' : `campaigns/${x.key}`)}
             className={cx('flex min-h-10 min-w-0 items-center justify-center gap-1.5 rounded-lg px-1.5 text-[13px] font-semibold transition sm:px-4 sm:text-sm', channel === x.key ? 'bg-surface text-fg shadow-card' : 'text-muted hover:text-fg')}>
@@ -113,6 +119,8 @@ function Shell({ channel, section, view = 'all', client }: { channel: string; se
           {section === 'lists' && <LeadLists client={client} refresh={refresh} />}
         </>
       )}
+      {byHand && <NewCampaignByHand clients={options} client={client} onClose={() => setByHand(false)} />}
+      {newList && <NewLeadList clients={options} client={client} onClose={() => setNewList(false)} />}
       {creating && <NewCampaignSheet clients={options} client={client} atlasOn={!!plans?.atlasOn} dryRun={!!plans?.planDryRun} onClose={() => setCreating(false)} onDone={() => load(true)} />}
     </div>
   );

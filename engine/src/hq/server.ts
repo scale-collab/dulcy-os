@@ -33,10 +33,11 @@ import { askVisible, finishAsk, getAsk, isSnooze, listAsks, quietItem, snoozeAsk
 import { isNeedDay, loadNeeds, loadNeedsDay, needCounts, type NeedExtras } from './needs.js';
 import { todayBlocks } from './today.js';
 import { workSummary } from './agentTasks.js';
-import { actOnThread, listInbox, threadDetail } from './inbox.js';
-import { calendarInvite, replierDetail, saveReplier } from './replier.js';
+import { actOnThread, echoLive, listInbox, threadDetail } from './inbox.js';
+import { linkDraftsReport, redoLinkDrafts } from './inboxRedo.js';
+import { calendarInvite, replierDetail, replierModeFor, saveReplier } from './replier.js';
 import { campaignDetail, listCampaigns, listLeadLists } from './campaigns.js';
-import { howOfRows, round2Campaigns } from './campaignRoutes.js';
+import { howOfRows, parityRoutes, round2Campaigns } from './campaignRoutes.js';
 import { senderIndex } from './sendingAccounts.js';
 import { deliverabilityView, inboxIndex } from './deliverability.js';
 // Batch 3: inbox limits + ramp, bounce analytics, verification (Fix it is Batch 1's fixIt.ts).
@@ -47,7 +48,9 @@ import { buildDeliverability, cachedDeliv, inboxCosts } from './deliverability.j
 import { bouncesView, verificationView } from './bounceStats.js';
 import { portalRoute, resolvePortalClient } from './portal.js';
 import { contentSummary, contentView, decideIdea } from './content.js';
-import { contentItemDetail, decideDraft, isRunKey, recordPost, runContentAction, scheduleDraft } from './contentActions.js';
+import { decideDraft, isRunKey, recordPost, runContentAction, scheduleDraft } from './contentActions.js';
+import { addIdea, contentItemFull, contentSettings, deleteItem, saveContentSettings, saveYoutube, setChannel, setDate } from './contentCenter.js';
+import { contentResource, contentReviewDetail, reviewClip, reviewVideo, saveGammaLink } from './contentReview.js';
 import { allDeals, dealDetail, nyDay, salesView } from './sales.js';
 // Batch 4a: Sales insights (periods, capacity, Close hottest deals) and the contract draft.
 import { DULCY_WS, insightsView, saveCapacitySettings, salesDeps, type SalesDeps } from './salesInsights.js';
@@ -56,6 +59,7 @@ import { numbersView, resolvePeriod } from './salesPeriods.js';
 import { closeFunnel, closePipeline, readCloseRange } from './salesClose.js';
 // Round 5: Sales goals (read from Airtable Sales Goals) and Cole's take.
 import { defaultTakeModel, readGoalRows, salesGoalsView, type TakeModel } from './salesGoals.js';
+import { wonSyncView } from './wonSync.js';
 import { pricingView } from './pricing.js';
 import { agentConversation, agentConversations } from './agentTalk.js';
 import { createInDulcySign, draftForm, pullFromClose, saveDraft } from './contracts.js';
@@ -63,6 +67,8 @@ import { createInDulcySign, draftForm, pullFromClose, saveDraft } from './contra
 import { kickFlush, notifyChatReply, pushRoute, webPushSender, type PushSender } from './push.js';
 // Finances → Personal through Plaid (read only, owner only), Alex 2026-11-28.
 import { personalRoute, plaidFor } from './plaid.js';
+// Voice mode (talk to the agents), Alex 2026-11-28.
+import { planTurn, runTurn, speakMessage, turnBodyLimit, voiceProvider, voiceState, type VoiceProvider } from './voice.js';
 
 export interface HqDeps {
   at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string;
@@ -76,6 +82,8 @@ export interface HqDeps {
   pushSender?: PushSender;
   /** Round 5: Cole's take on the sales numbers (null = the rule line only; tests pass a fake). */
   coleTakeModel?: TakeModel | null;
+  /** Voice: speech to text and text to speech (default: OpenAI through fetchImpl). */
+  voice?: VoiceProvider;
 }
 
 const SECURITY_HEADERS: Record<string, string> = {
@@ -207,6 +215,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
   const sales: SalesDeps = deps.sales ?? salesDeps(db, cfg, deps.fetchImpl);
   const pushSender: PushSender = deps.pushSender ?? webPushSender();
   const takeModel: TakeModel | null = deps.coleTakeModel !== undefined ? deps.coleTakeModel : defaultTakeModel(cfg);
+  const voice: VoiceProvider = deps.voice ?? voiceProvider(cfg, deps.fetchImpl);
 
   return async function handle(req: http.IncomingMessage, res: http.ServerResponse, url: URL): Promise<boolean> {
     const host = hostOf(req);
@@ -511,10 +520,27 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         json(res, 200, await listInbox(needAt(), { tab: sp.get('tab') ?? undefined, client: sp.get('client') ?? undefined, page: Number(sp.get('page')) || 1, q: sp.get('q') ?? undefined, refresh: sp.get('refresh') === '1' }));
         return true;
       }
+      // Inbox round (2026-11-28): old drafts with a booking link (read only) + "Have Echo redo it", and Echo live.
+      if (p === '/hq/api/inbox/link-drafts' && req.method === 'GET') {
+        json(res, 200, await linkDraftsReport(needAt(), db, { client: url.searchParams.get('client') ?? undefined, refresh: url.searchParams.get('refresh') === '1' }));
+        return true;
+      }
+      if (p === '/hq/api/inbox/redo' && req.method === 'POST') {
+        const b = await readJson(req, 20_000);
+        const r = await redoLinkDrafts(needAt(), db, cfg, user, b);
+        json(res, r.status, 'error' in r ? { error: r.error } : { ok: true, queued: r.queued, skipped: r.skipped });
+        return true;
+      }
+      if (p === '/hq/api/inbox/live' && req.method === 'GET') {
+        json(res, 200, await echoLive(needAt(), db));
+        return true;
+      }
       m = p.match(/^\/hq\/api\/inbox\/(rec[A-Za-z0-9]{14})$/);
       if (m && req.method === 'GET') {
         const t = await threadDetail(needAt(), m[1]);
-        if (!t) json(res, 404, { error: 'no such thread' }); else json(res, 200, t);
+        if (!t) { json(res, 404, { error: 'no such thread' }); return true; }
+        const replier = await replierModeFor({ at: needAt(), cfg }, t.row.wsRec).catch(() => null);
+        json(res, 200, { ...t, replier });
         return true;
       }
       if (m && req.method === 'POST') {
@@ -548,6 +574,9 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       // accounts box, new campaigns (plans) and the copy. Reads for everyone; every press is owner only,
       // needs confirm: true, and writes only what the Airtable button writes (centerActions.ts).
       if (p.startsWith('/hq/api/campaigns/')) {
+        // Center parity (2026-11-28): the rest of the two Airtable screens (centerParity.ts).
+        const rp = await parityRoutes(p, req, needAt, db, cfg, user, owner, deps.fetchImpl);
+        if (rp) { json(res, rp.status, rp.body); return true; }
         const r2 = await round2Campaigns(p, req, url, needAt, db, cfg, user, owner);
         if (r2) { json(res, r2.status, r2.body); return true; }
       }
@@ -604,7 +633,26 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       // same-origin check above; nothing posts.
       if (p === '/hq/api/content' || p.startsWith('/hq/api/content/')) {
         if (!owner) { json(res, 403, { error: 'only the owner sees content' }); return true; }
-        if (p === '/hq/api/content' && req.method === 'GET') { json(res, 200, await contentView(needAt(), db, cfg.airtableBaseId, { refresh: url.searchParams.get('refresh') === '1' })); return true; }
+        if (p === '/hq/api/content' && req.method === 'GET') { json(res, 200, await contentView(needAt(), db, cfg.airtableBaseId, { refresh: url.searchParams.get('refresh') === '1', history: url.searchParams.get('history') === '1' })); return true; }
+        // Parity (2026-11-28): the Content Center's settings panel, "+ Add content idea", and on a video: "Content for",
+        // the two dates, the YouTube boxes and the trash button (contentCenter.ts, each the Content Center's way).
+        const ccDeps = () => ({ at: needAt(), db, by: user.name });
+        if (p === '/hq/api/content/settings' && req.method === 'GET') { json(res, 200, await contentSettings(needAt())); return true; }
+        if (p === '/hq/api/content/settings' && req.method === 'POST') {
+          const r = await saveContentSettings(ccDeps(), await readJson(req, 5_000));
+          json(res, r.status, r.error ? { error: r.error } : { ok: true, message: r.message }); return true;
+        }
+        if (p === '/hq/api/content/ideas' && req.method === 'POST') {
+          const r = await addIdea(ccDeps(), await readJson(req, 12_000));
+          json(res, r.status, r.error ? { error: r.error } : { ok: true, id: r.id, message: r.message }); return true;
+        }
+        const pm = p.match(/^\/hq\/api\/content\/items\/(rec[A-Za-z0-9]{14})\/(channel|dates|youtube|delete)$/);
+        if (pm && req.method === 'POST') {
+          const b = await readJson(req, 30_000);
+          const fn = { channel: setChannel, dates: setDate, youtube: saveYoutube, delete: deleteItem }[pm[2] as 'channel' | 'dates' | 'youtube' | 'delete'];
+          const r = await fn(ccDeps(), pm[1], b);
+          json(res, r.status, r.error ? { error: r.error } : { ok: true, message: r.message }); return true;
+        }
         if (p === '/hq/api/content/summary' && req.method === 'GET') { json(res, 200, await contentSummary(needAt(), db, cfg.airtableBaseId)); return true; }
         const cm = p.match(/^\/hq\/api\/content\/ideas\/(rec[A-Za-z0-9]{14})$/);
         if (cm && req.method === 'POST') {
@@ -615,8 +663,39 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
           return true;
         }
         const runDeps = () => ({ at: needAt(), db, cfg, fetchImpl: deps.fetchImpl, by: user.name });
-        const im = p.match(/^\/hq\/api\/content\/items\/(rec[A-Za-z0-9]{14})(?:\/(run|posted))?$/);
-        if (im && !im[2] && req.method === 'GET') { const r = await contentItemDetail(needAt(), db, im[1]); json(res, r.status, r.error ? { error: r.error } : r.item); return true; }
+        const im = p.match(/^\/hq\/api\/content\/items\/(rec[A-Za-z0-9]{14})(?:\/(run|posted|video-review|gamma|resource))?$/);
+        if (im && !im[2] && req.method === 'GET') {
+          // Parity (contentItemFull: the Content Center panel's extras) + the final review (clips + full video) and the Gamma box (2026-11-28).
+          const r = await contentItemFull(needAt(), db, im[1]);
+          if (!('item' in r)) { json(res, r.status, { error: r.error }); return true; }
+          json(res, r.status, { ...r.item, ...(await contentReviewDetail(needAt(), im[1], cfg.contentReviewSecret)) });
+          return true;
+        }
+        // Sienna's list for a "Request changes" note (the Fix it path: a task only, nothing sent).
+        const askSienna = async (x?: { title: string; detail: string }, id = '') => { if (x) await fixIt(db, user, { agent: 'Sienna', title: x.title, detail: x.detail, link: id ? `content/items/${id}` : '' }); };
+        if (im && im[2] === 'resource' && req.method === 'GET') { const r = await contentResource(needAt(), im[1]); json(res, r.status, r.error ? { error: r.error } : r.doc); return true; }
+        if (im && im[2] === 'gamma' && req.method === 'POST') {
+          const r = await saveGammaLink(runDeps(), im[1], (await readJson(req, 2_000)).url);
+          json(res, r.status, r.error ? { error: r.error } : { ok: true, message: r.message });
+          return true;
+        }
+        if (im && im[2] === 'video-review' && req.method === 'POST') {
+          const b = await readJson(req, 5_000);
+          if (!['approve', 'changes'].includes(b.verdict)) { json(res, 400, { error: 'verdict must be approve or changes' }); return true; }
+          const r = await reviewVideo(runDeps(), im[1], b.verdict, b.note);
+          if (!r.error) await askSienna(r.askSienna, im[1]);
+          json(res, r.status, r.error ? { error: r.error } : { ok: true, message: r.message });
+          return true;
+        }
+        const km = p.match(/^\/hq\/api\/content\/clips\/(rec[A-Za-z0-9]{14})\/review$/);
+        if (km && req.method === 'POST') {
+          const b = await readJson(req, 5_000);
+          if (!['refresh', 'approve', 'changes'].includes(b.action)) { json(res, 400, { error: 'action must be refresh, approve or changes' }); return true; }
+          const r = await reviewClip(runDeps(), km[1], b.action, { finalClipId: b.finalClipId, note: b.note });
+          if (!r.error) await askSienna(r.askSienna, typeof b.videoId === 'string' && /^rec[A-Za-z0-9]{14}$/.test(b.videoId) ? b.videoId : '');
+          json(res, r.status, r.error ? { error: r.error } : { ok: true, message: r.message });
+          return true;
+        }
         if (im && im[2] === 'run' && req.method === 'POST') {
           const b = await readJson(req, 5_000);
           if (!isRunKey(b.action)) { json(res, 400, { error: 'unknown action' }); return true; }
@@ -707,7 +786,8 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         if (p === '/hq/api/sales/goals' && req.method === 'GET') {
           const now = Date.now(); const refresh = url.searchParams.get('refresh') === '1';
           const [{ deals }, rows] = await Promise.all([allDeals(needAt(), db, refresh, now, extras), readGoalRows(needAt(), refresh, now).catch(() => null)]);
-          json(res, 200, await salesGoalsView(db, takeModel, rows, deals, nyDay(now), owner));
+          const [view, wonSync] = await Promise.all([salesGoalsView(db, takeModel, rows, deals, nyDay(now), owner), wonSyncView(db, cfg, nyDay(now).slice(0, 7)).catch(() => null)]);
+          json(res, 200, { ...view, wonSync });
           return true;
         }
         if (p === '/hq/api/sales/settings' && req.method === 'POST') {
@@ -834,6 +914,32 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         try { if (await notifyChatReply(db, user, r)) void kickFlush(db, cfg, pushSender); } catch (e) { console.error(JSON.stringify({ level: 'warn', message: 'chat push not queued', err: String((e as Error).message ?? e).slice(0, 200) })); }
         json(res, 200, r);
         return true;
+      }
+
+      // ---- Voice mode (Alex 2026-11-28): HQ Chat by voice. Read only like every chat. ----
+      if (p.startsWith('/hq/api/voice/')) {
+        const vs = voiceState(cfg, Boolean(deps.chatModel || cfg.anthropicApiKey), Boolean(deps.voice || cfg.openAiApiKey));
+        if (p === '/hq/api/voice/status' && req.method === 'GET') { json(res, 200, vs); return true; }
+        if (!vs.on) { json(res, 503, { error: vs.reason, off: true }); return true; }
+        if (p === '/hq/api/voice/turn' && req.method === 'POST') {
+          const plan = await planTurn(db, cfg, user, await readJson(req, turnBodyLimit(cfg)));
+          if ('error' in plan) { json(res, plan.status, { error: plan.error }); return true; }
+          // What was heard goes out first, then the answer: one JSON object per line.
+          res.writeHead(200, { 'content-type': 'application/x-ndjson; charset=utf-8', 'cache-control': 'no-store', 'x-accel-buffering': 'no', ...SECURITY_HEADERS });
+          const r = await runTurn({ db, cfg, at, chatModel: deps.chatModel, user, voice }, plan, (line) => { res.write(`${JSON.stringify(line)}\n`); });
+          res.end();
+          if (r) { try { if (await notifyChatReply(db, user, r)) void kickFlush(db, cfg, pushSender); } catch { /* a push problem never fails the answer */ } }
+          return true;
+        }
+        if (p === '/hq/api/voice/speak' && req.method === 'POST') {
+          const b = await readJson(req, 1_000);
+          const r = await speakMessage({ db, cfg, user, voice }, Number(b.messageId));
+          if ('error' in r) { json(res, r.status, { error: r.error }); return true; }
+          res.writeHead(200, { 'content-type': 'audio/mpeg', 'content-length': String(r.audio.length), 'cache-control': 'no-store', ...SECURITY_HEADERS });
+          res.end(Buffer.from(r.audio));
+          return true;
+        }
+        json(res, 404, { error: 'not found' }); return true;
       }
 
       json(res, 404, { error: 'not found' });

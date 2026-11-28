@@ -283,6 +283,7 @@ export const NOT_COUNTED = [
   'Personal income from outside Dulcy: not tracked (UNKNOWN), not counted.',
   'Card balances and minimums: the spending on the cards is in the costs and expenses already, so card payments are not counted again.',
   'This month so far: company income and costs to today; personal expenses for the whole month.',
+  'Coming up: costs beside the list in the P/L sheet (e.g. HOA, health insurance, paused savings) are not paid yet, so they are not counted until you start paying them (Alex 2026-11-28).',
 ];
 /** GET /finances (owner only, checked in the route). Pure. */
 export function financesView(fin: Finance, mrr: number): FinancesView {

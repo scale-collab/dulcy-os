@@ -66,7 +66,7 @@ function ReplierForm({ d, reload }: { d: ReplierDetail; reload: () => void }) {
             <Toggle label="AI replier on" help="Off: Echo drafts nothing for this client." on={v.enabled} set={(x) => set('enabled', x)} ro={ro} />
             <Select label="Who replies" help="Who answers this client's prospects." value={v.handoff} options={d.options.handoff} names={HANDOFF} set={(x) => set('handoff', x)} ro={ro} />
             <Select label="Send mode" help="Approval Required is the safe default." value={v.defaultMode} options={d.options.defaultMode} names={MODE} set={(x) => set('defaultMode', x)} ro={ro} />
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <Num label="Min. confidence %" help="For “sends when confident”." value={v.minConfidence} min={0} max={100} step={0.5} set={(x) => set('minConfidence', x)} ro={ro} />
               <Num label="Max auto replies" help="Per thread, then a person." value={v.maxAuto} min={0} max={20} step={1} set={(x) => set('maxAuto', x)} ro={ro} />
             </div>
@@ -81,7 +81,7 @@ function ReplierForm({ d, reload }: { d: ReplierDetail; reload: () => void }) {
           </Group>
 
           <Group title="Voice" icon="pen">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <Select label="Tone" value={v.tone} options={['', ...d.options.tone]} names={{ '': 'Not set' }} set={(x) => set('tone', x)} ro={ro} />
               <Select label="Length" value={v.length} options={['', ...d.options.length]} names={{ '': 'Not set', 'Very Brief': 'Very brief (1-2 lines)', Brief: 'Brief (< 60 words)', Standard: 'Standard (< 120 words)' }} set={(x) => set('length', x)} ro={ro} />
               <Text label="Writes as: first name" value={v.firstName} max={60} set={(x) => set('firstName', x)} ro={ro} />
@@ -254,7 +254,7 @@ function Select({ label, help, value, options, names, set, ro }: { label: string
 }
 function Toggle({ label, help, on, set, ro }: { label: string; help?: string; on: boolean; set: (x: boolean) => void; ro: boolean }) {
   return (
-    <button type="button" role="switch" aria-checked={on} disabled={ro} onClick={() => set(!on)} className="flex w-full items-start gap-3 rounded-xl text-left disabled:cursor-default">
+    <button type="button" role="switch" aria-checked={on} disabled={ro} onClick={() => set(!on)} className="flex min-h-10 w-full items-start gap-3 rounded-xl text-left disabled:cursor-default sm:min-h-0">
       <span aria-hidden="true" className={cx('relative mt-0.5 h-6 w-10 shrink-0 rounded-full transition', on ? 'bg-accent' : 'bg-line-strong', ro && 'opacity-60')}><span className={cx('absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow transition-all', on ? 'left-[18px]' : 'left-0.5')} /></span>
       <span className="min-w-0"><span className="block text-sm font-semibold text-fg">{label}</span>{help && <span className="block text-xs text-muted">{help}</span>}</span>
     </button>

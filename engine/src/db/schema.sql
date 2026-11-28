@@ -672,3 +672,15 @@ CREATE TABLE IF NOT EXISTS hq_content_posts (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (content_id, slot)
 );
+
+-- HQ voice (Alex 2026-11-28): one row per voice turn (speech to text) or read-aloud (text to speech),
+-- for the hourly limit and the cost. Counts only: the clip and the words are never stored here.
+CREATE TABLE IF NOT EXISTS hq_voice_uses (
+  id          BIGSERIAL PRIMARY KEY,
+  user_id     INT NOT NULL REFERENCES hq_users(id) ON DELETE CASCADE,
+  kind        TEXT NOT NULL,                   -- 'turn' | 'speak'
+  seconds     NUMERIC,                         -- clip length (turn)
+  chars       INT,                             -- characters read out (speak)
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS hq_voice_uses_recent ON hq_voice_uses (user_id, kind, created_at DESC);

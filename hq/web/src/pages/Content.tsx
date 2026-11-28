@@ -8,16 +8,20 @@
 // "Alex Woung Raw"); dates with slashes. Old #/content/week links open Needs you.
 // Round 5 (Alex, 2026-11-28): the Content Center's buttons are HQ buttons (on each video's page), with
 // Distribution per platform; Friday walks each idea step by step (hook, script, teleprompter, upload).
-// No Airtable record links (RULES 2026-11-27); the one Content Center link left is the final-clip
-// approval (its owner check). Everything is rendered as escaped text.
+// No Airtable record links (RULES 2026-11-27). 2026-11-28: the final-clip approval moved into HQ too (on
+// the video's page: Approve / Request changes), and #/content/items/<rec>/resource is the resource document.
+// Everything is rendered as escaped text.
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { api, type ContentCenterView, type ContentIdea, type FridayIdea } from '../api';
 import { Button, Card, cx, Empty, ErrorBox, ExtLink, go, Icon, IconButton, Label, PageSkeleton, PageTitle, Pill, SectionHeader, setCount, timeAgo } from '../ui';
 import { FixItButton } from '../fixIt';
 import ContentItems from './content/ContentItems';
 import ContentCalendar from './content/ContentCalendar';
+import ContentResource from './content/ContentResource';
 import { DecideButtons, GammaBlock, Head, Notes, dateOnly, day, shortLabel } from './content/shared';
 import { RunButton } from './content/ContentActions';
+import { AddIdea, ChannelPicker, ContentSettings } from './content/ContentCenterParts';
 
 const VIEWS = [
   { key: 'needs', label: 'Needs you', short: 'Needs' },
@@ -28,27 +32,34 @@ const VIEWS = [
 type View = (typeof VIEWS)[number]['key'];
 const isView = (x?: string): x is View => VIEWS.some((v) => v.key === x);
 
-/** #/content[/needs | items[/<rec>] | calendar | friday[/main|raw[/<n>]]]; the old #/content/pipeline opens Content, #/content/week opens Needs you. */
+/** #/content[/needs | items[/<rec>] | calendar | friday[/main|raw[/<n>]] | settings]; the old #/content/pipeline opens Content, #/content/week opens Needs you. */
 export default function Content({ a, b, c }: { a?: string; b?: string; c?: string }) {
-  const view: View = a === 'pipeline' ? 'items' : isView(a) ? a : 'needs';
+  const settings = a === 'settings';
+  const view: View = a === 'pipeline' ? 'items' : isView(a) ? a : settings ? 'items' : 'needs';
   const [d, setD] = useState<ContentCenterView | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  // Parity: the Content Center's "Hide older and completed history" (unticked = history=1: rejected and older items too).
+  const [history, setHistory] = useState(false);
   const load = useCallback((refresh = false) => {
     setBusy(true); setError('');
-    api<ContentCenterView>(`/content${refresh ? '?refresh=1' : ''}`).then((x) => { setD(x); setCount('content', x.counts.total); }).catch((e) => setError(e.message)).finally(() => setBusy(false));
-  }, []);
+    const q = [refresh ? 'refresh=1' : '', history ? 'history=1' : ''].filter(Boolean).join('&');
+    api<ContentCenterView>(`/content${q ? `?${q}` : ''}`).then((x) => { setD(x); setCount('content', x.counts.total); }).catch((e) => setError(e.message)).finally(() => setBusy(false));
+  }, [history]);
   useEffect(() => load(), [load]);
 
   const fri = d?.friday;
-  const kicker = fri ? `Friday ${dateOnly(fri.date)} · ${fri.channels.map((x) => `${x.label} ${x.ready}/${x.target} ready`).join(' · ')}` : 'Alex Woung and Alex Woung Raw';
+  const kicker = fri ? `Recording ${dateOnly(fri.date)} · ${fri.channels.map((x) => `${x.label} ${x.ready}/${x.target} ready`).join(' · ')}` : 'Alex Woung and Alex Woung Raw';
   return (
     <div>
       <PageTitle title="Content" kicker={kicker} sub="Ideas, recording, editing, publishing and clips in one place."
-        right={<IconButton icon="refresh" label="Refresh" onClick={() => load(true)} className={cx('border border-line bg-surface', busy && '[&_svg]:animate-spin')} />} />
+        right={<div className="flex gap-2">
+          <IconButton icon="wrench" label="Content settings" active={settings} onClick={() => go(settings ? 'content/items' : 'content/settings')} className="border border-line bg-surface" />
+          <IconButton icon="refresh" label="Refresh" onClick={() => load(true)} className={cx('border border-line bg-surface', busy && '[&_svg]:animate-spin')} />
+        </div>} />
       <div role="tablist" aria-label="Content views" className="grid grid-cols-4 gap-1 rounded-2xl border border-line bg-sunken p-1 sm:inline-flex">
         {VIEWS.map((x) => {
-          const on = x.key === view;
+          const on = x.key === view && !settings;
           const n = x.key === 'needs' ? d?.counts.total ?? 0 : 0;
           return (
             <button key={x.key} role="tab" aria-selected={on} onClick={() => go(`content/${x.key}`)} aria-label={n ? `${x.label}, ${n}` : undefined}
@@ -62,10 +73,11 @@ export default function Content({ a, b, c }: { a?: string; b?: string; c?: strin
       </div>
       {error && <div className="mt-4"><ErrorBox error={error} retry={() => load()} /></div>}
       {!d && !error && <div className="mt-4"><PageSkeleton kind="list" /></div>}
-      {d && (
+      {settings && <div className="mt-5"><ContentSettings /></div>}
+      {d && !settings && (
         <div className="mt-5">
-          {view === 'needs' && <NeedsView d={d} />}
-          {view === 'items' && <ContentItems d={d} id={b} onChanged={() => load(true)} />}
+          {view === 'needs' && <NeedsView d={d} onChanged={() => load(true)} />}
+          {view === 'items' && (c === 'resource' && b ? <ContentResource id={b} /> : <ContentItems d={d} id={b} onChanged={() => load(true)} history={history} onHistory={setHistory} />)}
           {view === 'calendar' && <ContentCalendar d={d} />}
           {view === 'friday' && <FridayView d={d} channel={b} index={Number(c) || 1} />}
           <p className="mt-8 text-xs text-muted">From the Content OS tables, read {timeAgo(d.readAt) || 'just now'}; kept for 1 minute. HQ never posts or deletes; it schedules a post only when you press Schedule.</p>
@@ -76,8 +88,9 @@ export default function Content({ a, b, c }: { a?: string; b?: string; c?: strin
 }
 
 /* ---------- Needs you: Alex's to-do for content, most important first ---------- */
-function NeedsView({ d }: { d: ContentCenterView }) {
+function NeedsView({ d, onChanged }: { d: ContentCenterView; onChanged: () => void }) {
   const [gone, setGone] = useState<Record<string, string>>({});
+  const [adding, setAdding] = useState(false);
   const nIdeas = d.needs.ideas.reduce((a, g) => a + g.items.filter((i) => !gone[i.id]).length, 0);
   const nothing = !nIdeas && !d.needs.finals.length && !d.needs.alexSteps.length;
   return (
@@ -85,9 +98,9 @@ function NeedsView({ d }: { d: ContentCenterView }) {
       {/* The data problems (they were the "This week" tab): one line; open it for the list and one Fix it button. */}
       {d.notes.length > 0 && (
         <details className="group rounded-xl border border-warn/25 bg-warn-soft text-sm">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 font-medium text-fg [&::-webkit-details-marker]:hidden">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 py-2 font-medium text-fg sm:py-0 [&::-webkit-details-marker]:hidden">
             <Icon name="alert" size={16} className="shrink-0 text-warn" />
-            <span className="min-w-0 flex-1 truncate">{d.notes.length} data problem{d.notes.length === 1 ? '' : 's'} · {d.notes[0].problem}</span>
+            <span className="min-w-0 flex-1 sm:truncate">{d.notes.length} data problem{d.notes.length === 1 ? '' : 's'} · {d.notes[0].problem}</span>
             <Icon name="chevronDown" size={16} className="shrink-0 text-muted transition group-open:rotate-180" />
           </summary>
           <div className="space-y-3 border-t border-warn/20 px-3 pb-3 pt-3">
@@ -97,6 +110,7 @@ function NeedsView({ d }: { d: ContentCenterView }) {
         </details>
       )}
       {nothing && <Card><Empty icon="check" tone="good" title="Nothing needs you" sub="No ideas to decide and no final videos to check. Sienna adds ideas Friday at 7 AM." /></Card>}
+      {adding ? <AddIdea onClose={() => setAdding(false)} onAdded={() => { setAdding(false); onChanged(); }} /> : <Button icon="plus" onClick={() => setAdding(true)}>Add content idea</Button>}
 
       {/* Ideas per channel: one dropdown each, closed (Alex, round 4: "one big list is elongated to read"). */}
       {d.needs.ideas.some((g) => g.items.length) && (
@@ -113,7 +127,7 @@ function NeedsView({ d }: { d: ContentCenterView }) {
                     <Icon name="chevronDown" size={18} className="shrink-0 text-muted transition group-open:rotate-180" />
                   </summary>
                   <div className="space-y-3 border-t border-line p-3 sm:p-4">
-                    {g.items.map((i) => <IdeaCard key={i.id} idea={i} done={gone[i.id]} onDone={(msg) => setGone((x) => ({ ...x, [i.id]: msg }))} />)}
+                    {g.items.map((i) => <IdeaCard key={i.id} idea={i} noChannel={g.key === 'none'} onChanged={onChanged} done={gone[i.id]} onDone={(msg) => setGone((x) => ({ ...x, [i.id]: msg }))} />)}
                   </div>
                 </details>
               );
@@ -124,7 +138,7 @@ function NeedsView({ d }: { d: ContentCenterView }) {
 
       {d.needs.finals.length > 0 && (
         <section>
-          <Head title="Final videos to check" icon="film" sub="Sienna checked these clips. Watch them here. Approving a clip still happens in the Content Center: its approve checks in Airtable that you yourself approved it, which HQ can't prove yet."
+          <Head title="Final videos to check" icon="film" sub="Sienna checked these clips. Open the video to watch each one and approve it or say what to change."
             right={<span className="tabular shrink-0 text-xs text-muted">{(() => { const k = d.needs.finals.reduce((a, f) => a + f.clips.length, 0); return `${k} clip${k === 1 ? '' : 's'}`; })()}</span>} />
           <div className="space-y-3">
             {d.needs.finals.map((f) => (
@@ -144,7 +158,7 @@ function NeedsView({ d }: { d: ContentCenterView }) {
                   ))}
                 </ul>
                 <div className="border-t border-line px-4 py-3 sm:px-5">
-                  <a href={d.links.contentCenter} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-ink px-4 text-[15px] font-semibold text-ink-fg hover:bg-ink-hover sm:w-auto"><Icon name="external" size={16} />Approve in the Content Center</a>
+                  <Button tone="primary" icon="check" className="w-full sm:w-auto" onClick={() => f.parentId && go(`content/items/${f.parentId}`)}>Review and approve</Button>
                 </div>
               </Card>
             ))}
@@ -177,7 +191,7 @@ function NeedsView({ d }: { d: ContentCenterView }) {
           <ul className="mt-2 divide-y divide-line">
             {d.log.map((l, n) => (
               <li key={n} className="py-2">
-                <div className="text-fg-2"><span className="font-medium text-fg">{l.by}</span> {l.action === 'idea_approve' ? 'approved' : 'rejected'} "{l.title}" · <span className="text-muted">{timeAgo(l.at)}</span></div>
+                <div className="text-fg-2"><span className="font-medium text-fg">{l.by}</span> {logVerb(l.action)} "{l.title}" · <span className="text-muted">{timeAgo(l.at)}</span></div>
                 <div className="break-words text-xs text-muted">{l.changes.map((c) => `${c.field}: ${String(c.from || 'empty')} → ${String(c.to ?? 'empty')}`).join(' · ')}</div>
               </li>
             ))}
@@ -188,7 +202,15 @@ function NeedsView({ d }: { d: ContentCenterView }) {
   );
 }
 
-function IdeaCard({ idea, done, onDone }: { idea: ContentIdea; done?: string; onDone: (msg: string) => void }) {
+/** What a Changes-from-HQ line did (hq_content_log action). */
+const LOG_VERB: Record<string, string> = {
+  idea_approve: 'approved', idea_reject: 'rejected', idea_add: 'added the idea', set_channel: 'set the channel of', set_recording_date: 'changed the recording date of',
+  set_publish_date: 'changed the publish date of', youtube_save: 'saved the YouTube details of', delete: 'deleted', settings_save: 'saved', draft_approve: 'approved the post',
+  draft_changes: 'asked for changes to', draft_schedule: 'scheduled', draft_published: 'recorded the post', post_stats: 'recorded the stats of',
+};
+const logVerb = (a: string) => LOG_VERB[a] ?? (a.startsWith('run_') ? `pressed ${a.slice(4)} on` : a.startsWith('draft_') ? 'updated the post' : 'changed');
+
+function IdeaCard({ idea, done, onDone, noChannel, onChanged }: { idea: ContentIdea; done?: string; onDone: (msg: string) => void; noChannel?: boolean; onChanged?: () => void }) {
   if (done) return <Card className="flex items-start gap-3 py-4"><Icon name="check" size={18} className="mt-0.5 text-good" /><div className="min-w-0"><div className="break-words font-semibold text-fg">{idea.title}</div><div className="text-sm text-fg-2">{done}</div></div></Card>;
   return (
     <Card className="p-4 sm:p-5">
@@ -200,7 +222,7 @@ function IdeaCard({ idea, done, onDone }: { idea: ContentIdea; done?: string; on
         <span>By {idea.by}</span>
         {idea.proposed && <span>· {timeAgo(idea.proposed)}</span>}
         {idea.decision !== 'Needs Review' && <Pill tone="info">{idea.decision}</Pill>}
-        {idea.sourceUrl && <ExtLink href={idea.sourceUrl}>{idea.source || 'Source'}</ExtLink>}
+        {idea.sourceUrl && <ExtLink href={idea.sourceUrl} className="max-sm:inline-flex max-sm:min-h-10 max-sm:items-center">{idea.source || 'Source'}</ExtLink>}
       </div>
       {(idea.angle || idea.hook || idea.why) && (
         <dl className="mt-3 space-y-1.5 text-sm leading-snug">
@@ -209,6 +231,7 @@ function IdeaCard({ idea, done, onDone }: { idea: ContentIdea; done?: string; on
           {idea.why && <div><dt className="inline font-medium text-fg">Why now: </dt><dd className="inline text-fg-2">{idea.why}</dd></div>}
         </dl>
       )}
+      {noChannel && <div className="mt-4"><ChannelPicker id={idea.id} channel="" onDone={() => onChanged?.()} /></div>}
       <DecideButtons id={idea.id} onDone={onDone} className="mt-4" />
     </Card>
   );
@@ -233,7 +256,7 @@ function FridayView({ d, channel, index }: { d: ContentCenterView; channel?: str
   if (!ch) return null;
   return (
     <div>
-      <Head title={`Recording day · Friday ${dateOnly(d.friday.date)}`} icon="film" sub="This Friday's approved ideas in recording order. One per screen, step by step: hook, script, teleprompter, upload." />
+      <Head title={`Recording day · ${dateOnly(d.friday.date)}`} icon="film" sub="This Friday's approved ideas in recording order. One per screen, step by step: hook, script, teleprompter, upload." />
       <div role="tablist" aria-label="Channel" className="grid grid-cols-2 gap-1 rounded-xl border border-line bg-sunken p-1 sm:inline-grid sm:min-w-80">
         {chans.map((x) => (
           <button key={x.key} role="tab" aria-selected={x.key === ch.key} onClick={() => go(`content/friday/${x.key}`)}
@@ -307,7 +330,7 @@ function FridayCard({ it, n, of, raw, onNextIdea }: { it: FridayIdea; n: number;
             <button onClick={() => setStep(k)} aria-current={k === step ? 'step' : undefined}
               className={cx('flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg px-1 text-[13px] font-semibold transition sm:text-sm', k === step ? 'bg-surface text-fg shadow-card' : k < step ? 'text-good' : 'text-muted hover:text-fg')}>
               <span className={cx('tabular hidden h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] sm:grid', k === step ? 'bg-accent text-accent-fg' : k < step ? 'bg-good-soft text-good' : 'border border-line-strong')}>{k < step ? <Icon name="check" size={11} strokeWidth={2.8} /> : k + 1}</span>
-              <span className="truncate sm:hidden">{k + 1} {label === 'Teleprompter' ? 'Prompter' : label}</span><span className="hidden truncate sm:inline">{label}</span>
+              <span className="truncate sm:hidden">{label === 'Teleprompter' ? 'Prompter' : label}</span><span className="hidden truncate sm:inline">{label}</span>
             </button>
           </li>
         ))}
@@ -399,10 +422,12 @@ function Teleprompter({ title, text, onClose }: { title: string; text: string; o
     const prev = document.body.style.overflow; document.body.style.overflow = 'hidden';
     return () => { window.removeEventListener('keydown', on); document.body.style.overflow = prev; };
   }, [onClose]);
-  return (
-    <div role="dialog" aria-modal="true" aria-label={`Teleprompter: ${title}`} className="fixed inset-0 z-50 flex flex-col bg-black text-white">
-      <div ref={box} onClick={() => setPlaying((x) => !x)} className="flex-1 overflow-y-auto px-5 pb-[60vh] pt-[30vh] sm:px-16">
-        <div className="mx-auto max-w-4xl whitespace-pre-wrap break-words font-semibold" style={{ fontSize: `${size}px`, lineHeight: 1.45 }}>{text}</div>
+  // On <body> (phone pass 2026-11-28): inside the page's fade-in it sat under the sticky header and the bottom bar.
+  return createPortal(
+    <div role="dialog" aria-modal="true" aria-label={`Teleprompter: ${title}`} className="fixed inset-0 z-50 flex flex-col bg-black pt-[env(safe-area-inset-top)] text-white">
+      {/* The 30vh / 60vh room is on the text, not the scroll box: as box padding it pushed Close and the size buttons off a phone screen. */}
+      <div ref={box} onClick={() => setPlaying((x) => !x)} className="min-h-0 flex-1 overflow-y-auto px-5 sm:px-16">
+        <div className="mx-auto max-w-4xl whitespace-pre-wrap break-words pb-[60vh] pt-[30vh] font-semibold" style={{ fontSize: `${size}px`, lineHeight: 1.45 }}>{text}</div>
       </div>
       <div className="pointer-events-none absolute inset-x-0 top-[30vh] h-0.5 bg-white/25" aria-hidden="true" />
       <div className="flex flex-wrap items-center justify-center gap-2 border-t border-white/15 bg-black/90 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
@@ -419,7 +444,8 @@ function Teleprompter({ title, text, onClose }: { title: string; text: string; o
         <button onClick={() => { if (box.current) box.current.scrollTop = 0; setPlaying(false); }} className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-white/25 px-4 font-semibold"><Icon name="undo" size={16} />Top</button>
         <button onClick={onClose} className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-white/25 px-4 font-semibold"><Icon name="x" size={16} />Close</button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -438,7 +464,7 @@ export function ContentCard() {
       <SectionHeader title="Content" icon="film" />
       <Card onClick={() => go(d.counts.total ? 'content/needs' : 'content/friday')} label="Open Content" className="p-4">
         <div className="text-[15px] font-semibold text-fg">{lines.length ? lines.join(' · ') : 'Nothing needs you'}</div>
-        <div className="mt-1 text-sm text-fg-2">Friday {dateOnly(d.friday.date)}: {d.friday.channels.map((c) => `${c.label} ${c.ready}/${c.target} ready`).join(' · ')}</div>
+        <div className="mt-1 text-sm text-fg-2">Recording {dateOnly(d.friday.date)}: {d.friday.channels.map((c) => `${c.label} ${c.ready}/${c.target} ready`).join(' · ')}</div>
         <div className="mt-2 flex items-center gap-1 text-sm font-semibold text-accent-ink">Open Content<Icon name="chevronRight" size={16} /></div>
       </Card>
     </section>

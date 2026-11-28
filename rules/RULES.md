@@ -284,6 +284,8 @@ Format: `- [date] rule. (why / source)`
 
 - [2026-11-28] **Dulcy vs Dulcy Free Campaigns (Alex):** two separate clients and EmailBison workspaces (2 = Dulcy, 41 = Dulcy Free Campaigns: free campaigns for prospects, e.g. Chop Shop, with 20 of Alex's inboxes). Never merge them in HQ, counts or reports. Merging them was an old mistake. **HQ round 5:** the content workflow moves fully into HQ (no Airtable Content Center links); draft contracts take no typing (dropdowns/checkboxes, "Pull from Close"); every "data to fix" gets its agent's fix button.
 
+- [2026-11-28] **Won deals (Alex):** a deal is marked Won in **Close**; the engine copies that into Airtable Sales Data (so the monthly goals count it). Close is the source of truth; Airtable follows. Why: no Sales Data rows were marked Won, so the goals came out too low.
+
 ## HQ phone notifications (Alex, 2026-11-27)
 - **Rule:** HQ pings phones (iPhone from the Home Screen app, and computers) by Web Push for four kinds: **(1) new decisions** (each new Decisions card; several within ~3 minutes = one grouped ping "4 new decisions"), **(2) agent messages to you** (a chat answer when you are not on that chat; asks and tasks waiting on you), **(3) urgent problems** (campaign over 4% bounce or paused, inbox in spam, warm-up off, a fix or engine run that failed and needs Alex), **(4) good news** (meeting booked, client signed or paid). Tapping a ping opens that exact item in HQ.
 - **Always on:** no quiet hours. Each person can switch any of the 4 kinds off on HQ → Notifications (all on by default).
@@ -291,6 +293,12 @@ Format: `- [date] rule. (why / source)`
 - **Slack pings stay.** Notifications are added next to Slack; nothing posted to Slack was removed.
 - **Bounded:** at most 1 ping a minute per person (the rest grouped into one), at most 60 a day, never the same thing twice, and nothing that existed before notifications were turned on.
 - **Why:** Alex wants HQ on his phone to tell him when something needs him or went well, without opening it to check. How to turn it on: `engine/GUIDE.md` → HQ → "Phone notifications".
+
+## HQ voice: talk to the agents (Alex, 2026-11-28)
+- **Rule:** voice in HQ is HQ Chat by voice (Talk button, full-screen voice mode), not a phone number yet. What Alex says is a normal message in the same chat thread; the agent answers through the normal chat path, in 1-3 spoken sentences.
+- **Approval rules do not change by voice:** agents stay read-only / draft-only. Voice never approves a decision, sends, launches, pauses, spends or changes anything; whatever needs approval stays a card in Decisions for Alex. Members talk only in their own chats; money (Ledger, Sienna) stays owner-only.
+- **Bounded:** `VOICE=on` switch (off by default), clips at most 60 s and never stored, 60 voice turns per person per hour.
+- **Why:** Alex: "What about being able to call and talk to the agents, like how GPT does it?" How to switch it on and the cost: `engine/GUIDE.md` → HQ → "Talk to the agents (voice mode)". A real phone number (Twilio / ElevenLabs) is a later step, not built.
 
 ## HQ round 2 rules (Alex, 2026-11-27 evening)
 - **Bounce is one signal, not the headline.** Don't make HQ or the agents bounce-centric; group campaigns by how they're doing (performing well, on pace, needs more time, needs a look).
@@ -304,3 +312,6 @@ Format: `- [date] rule. (why / source)`
 - **Launch / Pause in HQ (Alex, 2026-11-27):** Pause acts at once (no "are you sure"). Launch asks one last time before it goes live. Alex approves the direction (plan, copy) and the agents work toward getting it done.
 
 - [2026-11-28] **Content lives in HQ (Alex, round 5):** the Airtable Content Center does not stay in Airtable. Every step it offers (Frame.io, edit, thumbnail, YouTube details, clips, posts) is an HQ button that does the same thing the same way (same Content Automation Action value, n8n webhook and body, or field write), and distribution happens in HQ: per platform the post to review, Approve, and where / when it was posted with views, likes, comments. Approve never schedules; scheduling (Instagram / YouTube Shorts via OpusClip) runs only when Alex presses Schedule; HQ never posts. Calendar and Friday stay; Friday walks each script step by step. Why: Alex, "I want to build the content center inside Dulcy HQ… distribute it on Instagram, Reddit, TikTok, Twitter… That's what I want to do in here."
+
+- [2026-11-28] **Won lives in Close; Airtable follows (Alex):** "It should be marked [Won] in Close and then it feeds back to Airtable." A deal is marked Won in Close only; the engine stage `sales.won_sync` copies it to the matching Sales Data row (Stage Won, Deal Closed?, Deal Closed Date, Offer Amount if empty) so the Sales Goals rollups count it. Matched by contact email, then company; ambiguous = skipped and shown in HQ for Cole. Never writes Close, never moves a row away from Won. Dry run until `sales.won_sync` is in LIVE_STAGES. **Why:** no Sales Data row was ever marked Won, so Sales Goals and the n8n goals workflow counted 0 closed deals.
+- [2026-11-28] **Final clips and Gamma in HQ (Alex):** the final-clip approval moves into HQ too (video page: full video + each final clip, Approve / Request changes with a note; same Review Intent and n8n check as the Content Center). The n8n owner check is only widened (HQ-signed intent) with Alex's ✅ on its Decision. Gamma's API needs a paid plan, so the Gamma outline becomes an HQ resource document (Alex's PDF style, Download PDF via print); no new paid service, no Drive write. Why: Alex, "For the final clip: yes, everything. For creating Gamma: can that not happen on a free plan? If not, just make it a Google Doc / a PDF."

@@ -22,7 +22,7 @@ export function BarList({ title, rows, unit = 'bounces', onPick, picked, empty =
             const body = (
               <>
                 <div className="flex items-baseline justify-between gap-3 text-sm">
-                  <span className="min-w-0 truncate text-fg-2">{r.label}</span>
+                  <span className="min-w-0 break-words text-fg-2 sm:truncate">{r.label}</span>
                   <span className="tabular shrink-0 text-xs text-muted"><span className="font-semibold text-fg">{r.n.toLocaleString('en-US')}</span> · {pct(r.share)}</span>
                 </div>
                 <div className="mt-1 h-2 w-full rounded-full bg-sunken" aria-hidden="true">
@@ -34,7 +34,7 @@ export function BarList({ title, rows, unit = 'bounces', onPick, picked, empty =
             return (
               <li key={r.key} title={tip}>
                 {onPick && r.key !== 'rest'
-                  ? <button onClick={() => onPick(r.key)} aria-pressed={picked === r.key} aria-label={tip} className="block w-full rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-accent">{body}</button>
+                  ? <button onClick={() => onPick(r.key)} aria-pressed={picked === r.key} aria-label={tip} className="block w-full rounded-lg py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-accent sm:py-0">{body}</button>
                   : <div aria-label={tip}>{body}</div>}
               </li>
             );

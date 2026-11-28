@@ -24,7 +24,7 @@ export default function DealCalls({ calls }: { calls: DealCall[] }) {
             {c.about && <div className="mt-0.5 break-words text-sm leading-snug text-fg-2">{c.about}{c.aboutBy && <span className="text-xs text-muted"> · {BY[c.aboutBy]}</span>}</div>}
             {(c.link || c.reviewId) && (
               <div className="mt-1 flex flex-wrap items-center gap-3 text-sm">
-                {c.link && <ExtLink href={c.link}>{c.linkKind === 'fathom' ? 'Fathom recording' : 'Recording'}</ExtLink>}
+                {c.link && <ExtLink href={c.link} className="max-sm:inline-flex max-sm:min-h-10 max-sm:items-center">{c.linkKind === 'fathom' ? 'Fathom recording' : 'Recording'}</ExtLink>}
                 {c.reviewId && <button onClick={() => go(`report/${c.reviewId}`)} className="inline-flex min-h-8 items-center gap-1 font-semibold text-accent-ink hover:underline">Cole's review<Icon name="chevronRight" size={14} /></button>}
               </div>
             )}

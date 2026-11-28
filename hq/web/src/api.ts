@@ -113,15 +113,42 @@ export interface InboxRow {
   bookedLine: string; bookedUrl: string;
   /** "Wed Dec 3, 5:00 PM ET": Send books this time first. */
   booksAt: string;
+  kind: 'reply' | 'followup'; lastSentByUs: boolean;
+  /** A pending draft with a booking link instead of two specific times. */
+  linkDraft: { links: string[]; times: number; noTimesThen: boolean; askedForLink: boolean } | null;
 }
 export interface InboxList {
   tab: InboxTab; client: string; rows: InboxRow[]; total: number; page: number; pages: number; counts: Record<InboxTab, number>;
   clients: { key: string; name: string; count: number }[]; notes: Note[]; readAt: string;
+  /** Every client with threads: its workspace record opens #/clients/<wsRec>/replier. */
+  replierClients: { key: string; name: string; wsRec: string }[];
+  /** Pending drafts with a booking link (the "Old drafts with a link" filter). */
+  linkDrafts: number;
 }
 export interface InboxMsg { who: 'them' | 'us' | 'unknown'; head: string; body: string; quoted: string }
+/** One message of the thread, oldest first. */
+export interface ThreadMsg {
+  who: 'them' | 'us' | 'unknown'; name: string; email: string; at: string; body: string; quoted: string;
+  kind: 'sequence' | 'reply' | 'message'; step: number | null; stepFrom: 'copy' | 'order' | null; latest: boolean;
+}
+export interface ReplierMode { mode: 'off' | 'draft-only' | 'approval' | 'auto'; label: string; why: string; lines: string[]; clientId: string; clientName: string; found: boolean }
 export interface InboxThread {
-  row: InboxRow; subject: string; campaign: string; latest: string; messages: InboxMsg[]; draft: string; reason: string; question: string;
+  row: InboxRow; subject: string; campaign: string; latest: string; messages: InboxMsg[]; timeline: ThreadMsg[]; stepsFromCopy: boolean; draft: string; reason: string; question: string;
   offeredTimes: string[]; bookingLinks: string[]; threadUrl: string; decisionId: string; canAct: boolean; canEdit: boolean; sentAt: string; dueAt: string; notes: Note[];
+  replier: ReplierMode | null;
+}
+export interface LinkDraftRow {
+  id: string; prospect: string; company: string; client: string; clientKey: string; wsRec: string; at: string; kind: 'reply' | 'followup';
+  links: string[]; times: number; noTimesThen: boolean; askedForLink: boolean; gap: boolean; blocked: string;
+  task: { status: string; note: string; updated: string } | null;
+}
+export interface LinkDraftsReport { total: number; pending: number; byClient: { name: string; count: number }[]; rows: LinkDraftRow[]; readAt: string }
+export interface RedoResult { queued: { id: string; jobId: number; dryRun: boolean; task: number }[]; skipped: { id: string; why: string }[] }
+export interface EchoLive {
+  since: string; waiting: number; waitingOldest: string | null; readAt: string;
+  counts: { drafted: number; needInput: number; noReply: number; leftToClient: number; other: number; dryRun: number; redone: number };
+  recent: { id: string; at: string; action: string; kind: string; prospect: string; client: string; waiting: boolean; reason: string }[];
+  lastRuns: { kind: string; status: string; dryRun: boolean; at: string; message: string }[];
 }
 
 /* ---------- Client hub → AI replier ---------- */
@@ -429,6 +456,8 @@ export interface ContentItemFacts {
   video: { folder: boolean; finished: boolean; youtube: boolean; youtubeUrl: string };
   repurposing: { shortProject: boolean; clips: number; drafts: boolean };
   update: string; error: string;
+  /** Parity 2026-11-28: the Content Center's "Why this idea qualified" (when HQ read it). */
+  reason?: string;
   details: { productionStage: string; status: string; editingRoute: string; opusStatus: string; shortJobState: string; thumbnailStatus: string; publishingStatus: string };
 }
 /** Round 4 (2026-11-28): each video's real workflow (engine/src/hq/content.ts videoSteps). */
@@ -436,7 +465,7 @@ export type ContentStepWhere = 'hq' | 'sienna' | 'byHand' | 'notAutomated';
 /** Round 5: the Content Center's buttons, as HQ buttons (engine contentActions.ts RUN_KEYS). */
 export type ContentRunKey = 'setupFrame' | 'syncFrame' | 'routeOpus' | 'routeDavinci' | 'editFull' | 'script' | 'thumbnail' | 'thumbnailRevise' | 'thumbnailApprove'
   | 'youtubeDetails' | 'youtubeUrl' | 'shortClips' | 'refreshClips' | 'posts' | 'postsBrief' | 'postsRetry';
-export interface ContentStepButton { kind: 'decide' | 'askSienna' | 'openScript' | 'copyGamma' | 'link' | 'run' | 'distribution'; label: string; url?: string; task?: string; run?: ContentRunKey; input?: 'url' | 'changes' | 'brief' }
+export interface ContentStepButton { kind: 'decide' | 'askSienna' | 'openScript' | 'copyGamma' | 'resource' | 'link' | 'run' | 'distribution'; label: string; url?: string; task?: string; run?: ContentRunKey; input?: 'url' | 'changes' | 'brief' }
 export interface ContentStep { key: string; title: string; state: 'done' | 'now' | 'later'; where: ContentStepWhere; text: string; optional?: boolean; buttons: ContentStepButton[] }
 export interface ContentPrep { script: string; titles: string[]; hooks: string[]; thumbnail: string; gamma: string; gammaUrl: string; youtube: string; checks: string[] }
 export interface ContentItem extends ContentPipelineRow {
@@ -444,22 +473,46 @@ export interface ContentItem extends ContentPipelineRow {
   posted: boolean; postedDate: string; postedFrom: string; steps: ContentStep[]; prep: ContentPrep | null;
   /** Round 5: the Content Automation Action in the field now ('' = nothing running). */
   running: string;
+  /** Parity 2026-11-28: rejected / duplicate / archived, or older than 60 days (both only in the history list). */
+  archived: boolean; old: boolean;
 }
 /** Round 5: GET /content/items/<rec> — YouTube copy, the posts brief and Distribution (fresh reads). */
 export interface ContentPostStats { slot: string; platform: string; url: string; postedOn: string; views: number | null; likes: number | null; comments: number | null; by: string; at: string }
 export interface ContentDraft {
   id: string; platform: string; outputType: string; title: string; body: string; media: string; approval: string; publishing: string;
   scheduledAt: string; postUrl: string; lastError: string; hasClip: boolean; canSchedule: boolean; stats: ContentPostStats | null;
+  /** Parity 2026-11-28: the Reddit community (r/…), where to post it by hand, and a newsletter's branded HTML. */
+  community?: string; composeUrl?: string; html?: string;
 }
+/** Parity 2026-11-28: one clip of the video's shortlist (the Content Center's review panel, Clips tab). */
+export interface ContentShortClip { id: string; name: string; score: number | null; status: string; review: string; verifiedClipId: string; version: number | null; preview: string; opusId: string; notes: string; transcript: string }
+export interface ContentChannelSettings { channel: string; found: boolean; fixed: boolean; videosPerWeek: number; clipsPerWeek: number; autoScheduleThreshold: number; reviewThreshold: number; minimumSpacingDays: number; minimumClipScore: number }
+export interface ContentSettingsView { channels: ContentChannelSettings[] }
 export interface ContentPlatform { platform: string; drafts: ContentDraft[]; manual: ContentPostStats | null; chosen: boolean }
 export interface ContentItemDetail {
   id: string; title: string; running: string;
   youtube: { title: string; description: string; chapters: string; url: string };
-  thumbnail: { url: string; status: string };
+  thumbnail: { url: string; status: string; previousUrl?: string };
   brief: { channels: string[]; count: number; minScore: number; options: string[]; clips: number };
+  /** Parity 2026-11-28 (contentCenter.ts contentItemFull). */
+  channel?: string; recordingDate?: string; publishDate?: string; settings?: { clipsPerWeek: number; minimumClipScore: number };
+  clips?: ContentShortClip[]; opusUrl?: string;
+  /** The Content Center's distribution-complete check (scheduled / published per chosen channel), or what is still missing. */
+  completion?: { complete: boolean; detail: string };
   distribution: { status: string; platforms: ContentPlatform[]; posted: number; totals: { posts: number; views: number; likes: number; comments: number } };
+  /** 2026-11-28: the final review (clips + full video) and the Gamma box. */
+  review?: { path: 'owner' | 'signed' | 'blocked' | 'unknown'; clips: ContentReviewClip[]; video: { finalUrl: string } };
+  gamma?: { url: string; outline: boolean };
 }
-export type ContentCenterView = Omit<ContentView, 'pipeline'> & { pipeline: { stages: ContentView['pipeline']['stages']; ccStages: ContentCcStage[]; rows: ContentItem[]; leftOut: number } };
+export interface ContentReviewClip { id: string; name: string; status: string; score: number | null; qa: string; watchUrl: string; finalClipId: string; verified: { version: number; clipId: string } | null; canDecide: boolean }
+/** GET /content/items/<rec>/resource: Sienna's Gamma outline as a document (nothing saved). */
+export interface ContentResourceDoc {
+  id: string; title: string; topic: string; channel: string;
+  cover: { headline: string; subtitle: string; pill: string; footnote: string };
+  sections: { n: number; headline: string; points: { title: string; body: string }[]; layout: 'statement' | 'callout' | 'cards' | 'grid' | 'list' }[];
+  cta: { label: string; text: string; url: string; video: string; videoUrl: string }; footer: string; text: string;
+}
+export type ContentCenterView = Omit<ContentView, 'pipeline'> & { pipeline: { stages: ContentView['pipeline']['stages']; ccStages: ContentCcStage[]; rows: ContentItem[]; leftOut: number; history?: boolean } };
 
 /* ---------- Batch 3 (2026-11-27): Campaign Center layout, lead lists, inbox limits, bounces, verification ---------- */
 export interface SendingSummaryB3 { total: number; healthy: number; risk: number; spam: number; resting: number; warmupOff: number; unknown: number }

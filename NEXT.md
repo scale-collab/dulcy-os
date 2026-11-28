@@ -1,5 +1,17 @@
 # Where we are (update this at the end of every session)
 
+## Overnight 2026-11-28 → 11-29 (Alex asleep)
+Running (each merges to the branch when done; one deploy in the morning):
+1. Close Won → Airtable Sales Data sync (dry run until `sales.won_sync` is in LIVE_STAGES).
+2. Final clips approval in HQ + Gamma link box + resource PDF in Alex's slide style (may need an n8n Decision card).
+3. Voice talk with agents in HQ Chat (VOICE=on to switch on).
+4. Phone-size pass of every HQ page.
+5. Inbox prep (thread readability, replier settings link, old link drafts → "Have Echo redo it", Echo live strip).
+6. Campaign + Lead List Center parity with Airtable (table in hq/center-parity-2026-11-28.md).
+7. Riley: n8n/Make audit → automations/audit-2026-11-28.md (move-to-engine order, deactivation Decision cards; nothing changed).
+Then: Content Center parity check (after 2), and a full QA pass over every round 1-5 feedback item.
+Scheduled: 11/28 3 pm ET check of the 149 pending EmailGuard scores.
+
 Last updated: 2026-11-27 (evening)
 
 ## Pick up here (end of 2026-11-27)

@@ -98,7 +98,7 @@ export function CodeList({ rows }: { rows: CodeRowR2[] }) {
                 <span className="tabular shrink-0 text-xs text-muted"><span className="font-semibold text-fg">{nf(r.n)}</span> · {Math.round(r.share * 100)}%</span>
               </div>
               <div className="mt-1 h-2 w-full rounded-full bg-sunken" aria-hidden="true"><div className={cx('h-2 rounded-full', r.soft ? 'bg-warn' : 'bg-accent')} style={{ width: `${Math.max(2, Math.round((r.n / max) * 100))}%` }} /></div>
-              {r.enhanced.length > 0 && <div className="tabular mt-0.5 text-[11px] text-muted">{r.enhanced.map((e) => `${e.code} ×${e.n}${e.meaning ? ` (${e.meaning.toLowerCase()})` : ''}`).join(' · ')}</div>}
+              {r.enhanced.length > 0 && <div className="tabular mt-0.5 text-[11px] text-muted max-sm:text-xs">{r.enhanced.map((e) => `${e.code} ×${e.n}${e.meaning ? ` (${e.meaning.toLowerCase()})` : ''}`).join(' · ')}</div>}
             </li>
           ))}
         </ul>
@@ -122,7 +122,7 @@ export function StatsStrip({ s, days }: { s: StatsRowR2; days: number }) {
         {cell('Bounces', nf(s.bounces), `${days} days`)}
         {cell('Bounce rate', s.bounceRate === null ? '–' : `${s.bounceRate}%`, s.bounceRate === null ? 'pick a campaign' : 'campaign')}
       </div>
-      <p className="mt-1 text-[11px] text-muted">{s.note}</p>
+      <p className="mt-1 text-[11px] text-muted max-sm:text-xs">{s.note}</p>
     </div>
   );
 }

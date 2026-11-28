@@ -24,9 +24,9 @@ import type { Db } from '../db/pool.js';
 import type { Config } from '../config.js';
 import type { AirtableRecord } from '../providers/airtable.js';
 import type { HqAirtable } from './decisions.js';
-import { CF, CONTENT } from '../agents/sienna.js';
+import { CF, CONTENT, SETTINGS } from '../agents/sienna.js';
 import { n8nClient } from '../agents/rileyN8n.js';
-import { XF, _resetContentCache, ideaNeedsApproval, youtubeId } from './content.js';
+import { CHANNELS, SF_CC, XF, _resetContentCache, ccSettingsOf, ideaNeedsApproval, youtubeId, type Channel } from './content.js';
 
 export const DISTRIBUTION = 'tblDWJrmIcBJDykIP';
 /** Content Distribution field IDs (the Content Center's DISTRIBUTION_FIELD_IDS + airtable/SCHEMA.md). */
@@ -41,7 +41,7 @@ export const AF = { requestedClipCount: 'fldFyh2QYx2W9NXnM', minimumClipScore: '
 export const DISTRIBUTION_CHANNELS = ['Instagram', 'YouTube Shorts', 'Reddit', 'X / Twitter', 'LinkedIn', 'Blog', 'Newsletter'] as const;
 
 // ---------- the n8n webhooks the Content Center calls ----------
-export type HookKey = 'script' | 'thumbnail' | 'thumbnailRevise' | 'youtube' | 'distribution' | 'schedule' | 'newsletter' | 'framer';
+export type HookKey = 'script' | 'thumbnail' | 'thumbnailRevise' | 'youtube' | 'distribution' | 'schedule' | 'newsletter' | 'framer' | 'clipReview';
 /** Which n8n workflow and webhook node each Content Center fetch() goes to (automations/n8n-live-2026-11-17/INDEX.md). */
 export const HOOKS: Record<HookKey, { env: string; workflow: string; node: string; name: string }> = {
   // Two identical copies of this workflow exist (M6KIF3… and _kaI9…); which one the Content Center calls is UNKNOWN. Both do the same job.
@@ -53,6 +53,8 @@ export const HOOKS: Record<HookKey, { env: string; workflow: string; node: strin
   schedule: { env: 'SCHEDULE', workflow: 'oN0UJDUMKr12HMSe3i9lj', node: 'Webhook', name: '[Content OS] Schedule Approved Social Posts' },
   newsletter: { env: 'NEWSLETTER', workflow: 'oBtBDGl7uZ6FR2yUM9qWL', node: 'Newsletter Webhook', name: '[Content OS] Prepare Newsletter Preview' },
   framer: { env: 'FRAMER', workflow: 'mjM9mwPtY8vumhGioR8cQ', node: 'Framer Draft Webhook', name: '[Content OS] Publish Framer Blog Draft' },
+  // Final-clip review (contentReview.ts): the Content Center's "Refresh current preview" / "Approve reviewed copy" / "Reject copy".
+  clipReview: { env: 'CLIP_REVIEW', workflow: '1IWw0WOC8gwgWvnVZbeKf', node: 'Current Review Wake', name: '[Content OS] Current Clip Review and Preview' },
 };
 export type HookCfg = Pick<Config, 'contentHooks' | 'contentWebhookBase' | 'n8nApiKey' | 'n8nBaseUrl'>;
 const hookCache = new Map<HookKey, string>();
@@ -142,6 +144,13 @@ export function buildYouTubeDescription(channel: string, title: string, source: 
   return `${bridge}\n\n***\n\nDo you want done-for-you cold email:\nhttps://dulcy.io\n\nJoin Agency Ignition:\nhttps://agencyignition.io/ (7-day free trial)\n\nWant help to hit a $100k/mo (1:1):\nhttps://dealflux.io/\n\n***\n\n${summary}${chapterBlock}\n\n***\n\nConnect with me:\nInstagram: https://www.instagram.com/alexander.woung\nTwitter: https://x.com/alexwoung\nLinkedIn: https://www.linkedin.com/in/alexanderwoung/`;
 }
 
+/** The channel's Minimum Clip Score in Content Automation Settings (the Content Center's settings load; no channel = Alex Woung). */
+export async function channelMinClipScore(at: Pick<HqAirtable, 'list'>, channel: string): Promise<number> {
+  const rows = await at.list(SETTINGS, 'TRUE()', [SF_CC.channel, SF_CC.minimumClipScore], 20);
+  const ch: Channel = (CHANNELS as readonly string[]).includes(channel) ? channel as Channel : 'Alex Woung';
+  return ccSettingsOf(rows).settings[ch].minimumClipScore;
+}
+
 // ---------- the video buttons ----------
 export const RUN_KEYS = ['setupFrame', 'syncFrame', 'routeOpus', 'routeDavinci', 'editFull', 'script', 'thumbnail', 'thumbnailRevise', 'thumbnailApprove',
   'youtubeDetails', 'youtubeUrl', 'shortClips', 'refreshClips', 'posts', 'postsBrief', 'postsRetry'] as const;
@@ -218,7 +227,9 @@ export async function runContentAction(d: RunDeps, id: string, key: RunKey, body
       return field('Generate Distribution Pack', 'Making the posts (captions, Reddit drafts, newsletter). They come back here for your review; nothing is posted.');
     case 'postsBrief': {
       const count = Math.max(1, Math.min(50, Math.round(Number(body.count) || 3)));
-      const minimumScore = Math.max(0, Math.min(100, Math.round(Number(body.minScore) || 85)));
+      // The Content Center does not let you type the score here: it writes the channel's Minimum Clip Score from
+      // Settings ("Using minimum score N from Settings"; a record with no channel uses Alex Woung's).
+      const minimumScore = Math.max(0, Math.min(100, Math.round(await channelMinClipScore(d.at, r.channel) || 85)));
       const want = Array.isArray(body.channels) ? body.channels.map(String) : [];
       const channels = DISTRIBUTION_CHANNELS.filter((c) => want.includes(c));
       if (!channels.length) return { status: 400, error: 'Pick at least one place for the posts.' };
@@ -261,10 +272,15 @@ export async function runContentAction(d: RunDeps, id: string, key: RunKey, body
     case 'youtubeDetails': {
       const res = await hook('youtube', { recordId: id, action: 'Prepare YouTube Details' });
       if (res.ok) return { status: 200, message: 'Writing the YouTube title and description. vidIQ scores and refines them when YouTube Studio opens.' };
-      // The Content Center's fallback when the n8n flow answers with an error: its own channel template.
-      const title = r.ytTitle || r.title;
-      const description = r.ytDescription || buildYouTubeDescription(r.channel, title, r.description || r.script || r.transcript, r.chapters);
-      await d.at.update(CONTENT, id, { [CF.ytTitle]: title, [XF.youtubeDescription]: description });
+      // The Content Center's fallback when the n8n flow answers with an error: its own channel template, from
+      // what is typed in the YouTube boxes (each box starts as the saved value), chapters only when typed.
+      const typed = (k: string, saved: string) => (typeof body[k] === 'string' ? String(body[k]).slice(0, 20_000) : saved);
+      const chapters = typed('chapters', r.chapters).trim();
+      const title = typed('title', r.ytTitle || r.title).trim() || r.title;
+      const description = typed('description', r.ytDescription).trim() || buildYouTubeDescription(r.channel, title, r.description || r.script || r.transcript, chapters);
+      const fields: Record<string, unknown> = { [CF.ytTitle]: title, [XF.youtubeDescription]: description };
+      if (chapters) fields[AF.youtubeChapters] = chapters;
+      await d.at.update(CONTENT, id, fields);
       await log(d.db, d.by, 'run_youtubeDetails_template', id, r.title, [{ field: 'YouTube Title', from: r.ytTitle, to: title }, { field: 'YouTube Description', from: r.ytDescription ? '(kept)' : '', to: r.ytDescription ? '(kept)' : '(channel template)' }]);
       _resetContentCache();
       return { status: 200, message: 'Prepared with the channel template: the AI flow was unavailable, so review them before uploading.' };

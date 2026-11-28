@@ -228,7 +228,7 @@ export default function Notifications({ user }: { user: User }) {
               <Switch on={data.settings[k]} label={text[k].label} onChange={() => flip(k)} disabled={readOnly} />
             </li>
           ))}
-          {role === 'member' && <li className="px-5 py-3.5 text-sm text-muted">Urgent problems, money and the owner's own work go to the owner only.</li>}
+          {role === 'member' && <li className="px-5 py-3.5 text-sm text-muted">Urgent problems, money and Alex's own work go to Alex.</li>}
         </ul>
         <p className="border-t border-line px-5 py-3 text-xs text-muted">Always on, no quiet hours. At most one ping a minute (more are grouped into one) and {data.limits.perDay} a day. Tapping a ping opens that item in HQ.</p>
       </Card>
@@ -289,7 +289,7 @@ function BlockedHint() {
 function Switch({ on, onChange, label, disabled }: { on: boolean; onChange: () => void; label: string; disabled?: boolean }) {
   return (
     <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={onChange} disabled={disabled}
-      className={cx('relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition disabled:opacity-45', on ? 'border-accent bg-accent' : 'border-line-strong bg-sunken')}>
+      className={cx("relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition before:absolute before:-inset-2 before:content-[''] disabled:opacity-45", on ? 'border-accent bg-accent' : 'border-line-strong bg-sunken')}>
       <span aria-hidden="true" className={cx('inline-block h-5 w-5 rounded-full bg-surface shadow-card transition', on ? 'translate-x-6' : 'translate-x-1')} />
     </button>
   );
