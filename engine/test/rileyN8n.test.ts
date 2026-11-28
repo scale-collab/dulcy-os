@@ -9,7 +9,7 @@ import { loadConfig, type Config } from '../src/config.js';
 import { enqueue, getJob } from '../src/queue.js';
 import { runOnce } from '../src/worker.js';
 import { ISSUES, IF } from '../src/agents/riley.js';
-import { findN8nPatch, planN8nPatch, rollbackN8nFix, validateN8nPatch, putBody } from '../src/agents/rileyN8n.js';
+import { findN8nPatch, planN8nPatch, rollbackN8nFix, validateN8nPatch, putBody, patchState } from '../src/agents/rileyN8n.js';
 
 const url = process.env.TEST_DATABASE_URL;
 const skip = !url ? 'TEST_DATABASE_URL not set' : false;
@@ -240,4 +240,25 @@ test('riley-n8n-rollback: refuses when the workflow was edited after the fix, un
   assert.equal(puts().length, 0);
   assert.match(await rollbackN8nFix(db, c, ISSUE, { yes: true, force: true }), /^Done/);
   assert.equal(wfs.wfPlace1.nodes[0].parameters.rule.interval[0].minutesInterval, 1);
+});
+
+test('n8nPatch text edit: find exactly once inside a Code node, replace it; patchState follows', () => {
+  const code = "const held_email_ids=new Set(['4333','6485','5989']);\nreturn [];";
+  const wf = { nodes: [{ name: 'Prepare placement batches', parameters: { jsCode: code } }] };
+  const v = validateN8nPatch({ workflowId: 'f22muKJHad1EqaCI', changes: [{ node: 'Prepare placement batches', path: 'jsCode', find: "new Set(['4333','6485','5989'])", replace: "new Set(['5989'])" }] });
+  assert.ok('patch' in v);
+  const patch = (v as any).patch;
+  assert.equal(patchState(wf, patch), 'not_applied');
+  const plan = planN8nPatch(wf, patch);
+  assert.deepEqual(plan.mismatches, []);
+  assert.equal(plan.next.nodes[0].parameters.jsCode, "const held_email_ids=new Set(['5989']);\nreturn [];");
+  assert.equal(patchState(plan.next, patch), 'applied');
+  // The text is gone or appears twice: nothing changes.
+  assert.match(planN8nPatch(plan.next, patch).mismatches[0], /no longer there/);
+  const twice = { nodes: [{ name: 'Prepare placement batches', parameters: { jsCode: code + code } }] };
+  assert.match(planN8nPatch(twice, patch).mismatches[0], /appears 2 times/);
+  // Bad shapes and secrets are refused.
+  assert.ok('error' in validateN8nPatch({ workflowId: 'w1', changes: [{ node: 'n', path: 'jsCode', find: '', replace: 'x' }] }));
+  assert.match((validateN8nPatch({ workflowId: 'w1', changes: [{ node: 'n', path: 'jsCode', find: 'a', replace: 'apiKey = 1' }] }) as any).error, /refused/);
+  assert.ok('error' in validateN8nPatch({ workflowId: 'w1', changes: [{ node: 'n', path: '$disabled', find: 'a', replace: 'b' }] }));
 });

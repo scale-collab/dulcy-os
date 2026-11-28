@@ -22,7 +22,9 @@ const ISSUES = 'tblZvXQongRlV0vsl';
 // Same field IDs as IF in riley.ts (kept here to avoid an import loop).
 const F = { title: 'fldWzB0PQnRKmH580', status: 'fldM2brGop7OH65B7', fix: 'fldAYyN9T53XWonuM', rollback: 'fldps8hdsXGLcn9R3', details: 'fldGe3RonGYk26I4O', appliedAt: 'fld987UVKzm8db9JP', result: 'fld9ALWbV1otQ7lsg' } as const;
 
-export interface N8nChange { node: string; path: string; old: unknown; new: unknown }
+/** A whole-value change ({old, new}), or a text edit inside a string parameter ({find, replace}, e.g. one
+ *  line of a Code node's jsCode): `find` must occur exactly once in the live value (Alex 2026-11-28). */
+export interface N8nChange { node: string; path: string; old: unknown; new: unknown; find?: string; replace?: string }
 export interface N8nPatch { workflowId: string; changes: N8nChange[] }
 
 /** Anything that looks like a credential, key, token, password or auth setting: never changed by the engine. */
@@ -46,7 +48,12 @@ export function validateN8nPatch(p: unknown): { patch: N8nPatch } | { error: str
     const node = typeof c.node === 'string' ? c.node : '';
     const path = typeof c.path === 'string' ? c.path.trim() : '';
     if (!node.trim() || node.length > 200) return { error: `change ${i + 1}: "node" (the node's name) is missing` };
-    if (!('old' in c) || !('new' in c)) return { error: `change ${i + 1} (${node}): both "old" and "new" are required (old = the value Riley read, null if absent)` };
+    const textEdit = typeof c.find === 'string' || typeof c.replace === 'string';
+    if (textEdit) {
+      if (typeof c.find !== 'string' || !c.find || typeof c.replace !== 'string') return { error: `change ${i + 1} (${node}): a text edit needs a non-empty "find" and a "replace" string` };
+      if (c.find.length > 5000 || c.replace.length > 20000) return { error: `change ${i + 1} (${node}): "find"/"replace" too long` };
+      if (path === '$disabled') return { error: `change ${i + 1} (${node}): "$disabled" takes old/new, not find/replace` };
+    } else if (!('old' in c) || !('new' in c)) return { error: `change ${i + 1} (${node}): both "old" and "new" are required (old = the value Riley read, null if absent)` };
     if (path === '$disabled') {
       if (typeof c.new !== 'boolean') return { error: `change ${i + 1} (${node}): "$disabled" takes true or false` };
     } else {
@@ -54,11 +61,12 @@ export function validateN8nPatch(p: unknown): { patch: N8nPatch } | { error: str
       if (!path || segs.some((s) => !SEGMENT.test(s) || BAD_SEGMENTS.has(s))) return { error: `change ${i + 1} (${node}): path "${path}" is not a parameter path like "rule.interval.0.minutesInterval"` };
       if (segs.some((s) => SECRETISH.test(s))) return { error: `refused: "${node} › ${path}" looks like a credential, key, token, password or auth setting; the engine never changes those (Manual (Alex))` };
     }
+    if (textEdit && SECRETISH.test(String(c.replace))) return { error: `refused: the replacement text for "${node} › ${path}" mentions a credential, key, token, password or auth setting; the engine never changes those (Manual (Alex))` };
     if (secretKeyIn(c.new)) return { error: `refused: the new value for "${node} › ${path}" holds a credential/key/token/password field; the engine never changes those (Manual (Alex))` };
     const k = `${node}\u0000${path}`;
     if (seen.has(k)) return { error: `"${node} › ${path}" is changed twice in one patch` };
     seen.add(k);
-    changes.push({ node, path, old: c.old, new: c.new });
+    changes.push(textEdit ? { node, path, old: undefined, new: undefined, find: c.find as string, replace: c.replace as string } : { node, path, old: c.old, new: c.new });
   }
   return { patch: { workflowId, changes } };
 }
@@ -96,6 +104,15 @@ const canon = (v: unknown): string => {
 export const sameValue = (a: unknown, b: unknown) => canon(a) === canon(b);
 const short = (v: unknown) => { const s = v === undefined ? 'null' : JSON.stringify(v); return s.length > 80 ? `${s.slice(0, 77)}…` : s; };
 
+const occurrences = (text: string, find: string) => text.split(find).length - 1;
+/** A text edit made concrete against the live value: {old, new}, or why it can't be applied. */
+export function resolveTextEdit(value: unknown, c: N8nChange): { old: string; new: string } | { error: string } {
+  if (typeof value !== 'string') return { error: `"${c.node} › ${c.path}" is not text (a text edit needs a string parameter)` };
+  const n = occurrences(value, c.find as string);
+  if (n !== 1) return { error: `"${c.node} › ${c.path}": the text Riley read ${n ? `appears ${n} times` : 'is no longer there'} (${short(c.find)})` };
+  return { old: value, new: value.replace(c.find as string, () => c.replace as string) };
+}
+
 /** The node a change points at, or why it can't be found. */
 function nodeFor(wf: any, name: string): { node: any } | { error: string } {
   const list = (Array.isArray(wf?.nodes) ? wf.nodes : []).filter((n: any) => n?.name === name);
@@ -131,7 +148,12 @@ export function planN8nPatch(wf: any, patch: N8nPatch): PatchPlan {
     // A header/query pair like {name: "Authorization", value: "..."}: the value is a secret.
     const pairName = now.container && typeof now.container.name === 'string' ? now.container.name : '';
     if (SECRETISH.test(pairName)) { refused.push(`"${c.node} › ${c.path}" is the value of "${pairName}"`); continue; }
-    if (c.path === '$disabled' ? Boolean(now.value) !== Boolean(c.old ?? false) : !sameValue(now.value, c.old)) {
+    let newValue: unknown = c.new;
+    if (c.find !== undefined) {
+      const r = resolveTextEdit(now.value, c);
+      if ('error' in r) { mismatches.push(r.error); continue; }
+      newValue = r.new;
+    } else if (c.path === '$disabled' ? Boolean(now.value) !== Boolean(c.old ?? false) : !sameValue(now.value, c.old)) {
       mismatches.push(`"${c.node} › ${c.path}" is now ${short(now.value)} (Riley read ${short(c.old)})`); continue;
     }
     const f = nodeFor(next, c.node) as { node: any };
@@ -144,18 +166,22 @@ export function planN8nPatch(wf: any, patch: N8nPatch): PatchPlan {
         cur = cur[s];
       }
       const last = segs[segs.length - 1];
-      if (c.new === null || c.new === undefined) { if (Array.isArray(cur)) cur[Number(last)] = null; else delete cur[last]; } else cur[last] = structuredClone(c.new);
+      if (newValue === null || newValue === undefined) { if (Array.isArray(cur)) cur[Number(last)] = null; else delete cur[last]; } else cur[last] = structuredClone(newValue);
     }
-    lines.push(`${c.node} › ${c.path}: ${short(c.old)} → ${short(c.new)}`);
+    lines.push(c.find !== undefined ? `${c.node} › ${c.path}: text ${short(c.find)} → ${short(c.replace)}` : `${c.node} › ${c.path}: ${short(c.old)} → ${short(c.new)}`);
   }
   return { next, mismatches, refused, lines };
 }
 
 /** Does the workflow already hold every `new` value (the PUT went through)? every `old` (it did not)? */
 export function patchState(wf: any, patch: N8nPatch): 'applied' | 'not_applied' | 'mixed' {
+  const text = (c: N8nChange) => { const n = currentValue(wf, c); return 'error' in n || typeof n.value !== 'string' ? null : n.value; };
   const is = (c: N8nChange, v: unknown) => { const n = currentValue(wf, c); return !('error' in n) && (c.path === '$disabled' ? Boolean(n.value) === Boolean(v ?? false) : sameValue(n.value, v)); };
-  if (patch.changes.every((c) => is(c, c.new))) return 'applied';
-  if (patch.changes.every((c) => is(c, c.old))) return 'not_applied';
+  // Text edits: applied = the replacement is there and the found text is gone (or is part of it).
+  const done = (c: N8nChange) => (c.find !== undefined ? (() => { const t = text(c); return t !== null && t.includes(c.replace as string) && occurrences(t, c.find as string) <= occurrences(c.replace as string, c.find as string); })() : is(c, c.new));
+  const notYet = (c: N8nChange) => (c.find !== undefined ? (() => { const t = text(c); return t !== null && occurrences(t, c.find as string) === 1 && !t.includes(c.replace as string); })() : is(c, c.old));
+  if (patch.changes.every(done)) return 'applied';
+  if (patch.changes.every(notYet)) return 'not_applied';
   return 'mixed';
 }
 
