@@ -3,6 +3,7 @@ import { api, type AgentTask, type AgentWork, type Decision, type Report, type T
 import { Avatar, BackLink, Button, Card, cleanLine, cx, ErrorBox, go, Icon, PageSkeleton, Pill, SectionHeader, StatusDot, teamTone, timeAgo } from '../ui';
 import { ReportList } from './Reports';
 import { askForProgress, TaskList, TeamBoardView } from './AgentWork';
+import AgentTalk from './AgentTalk';
 
 interface Run { id: number; kind: string; status: string; at: string; message: string; dryRun: boolean }
 interface Activity { id: string; event: string; when: string; type: string; details: string }
@@ -16,6 +17,8 @@ const runTone = (s: string) => (s === 'succeeded' ? 'good' : s === 'failed' || s
 /** #/agents/<name>; #/agents/work is the Team board ("What everyone is working on"). */
 export default function AgentPage({ name }: { name: string }) {
   if (name.toLowerCase() === 'work') return <TeamBoardView />;
+  // Round 3: agent-to-agent conversations (read only).
+  if (name.toLowerCase() === 'talk') return <AgentTalk />;
   return <AgentDetail name={name} />;
 }
 

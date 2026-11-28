@@ -24,7 +24,7 @@ export const AF = {
 
 export type ActivityType = 'Detected' | 'Diagnosed' | 'Fixed' | 'Waiting for approval' | 'Approved' | 'Step done' | 'Step failed' | 'Info';
 export interface Activity {
-  event: string; type: ActivityType; agent?: 'Atlas' | 'Echo' | 'Scribe' | 'Engine' | 'Riley' | 'Alex' | 'Josh'; details?: string;
+  event: string; type: ActivityType; agent?: 'Atlas' | 'Echo' | 'Scribe' | 'Engine' | 'Riley' | 'Cole' | 'Alex' | 'Josh'; details?: string;
   campaignRecordIds?: string[]; bisonCampaignId?: number; leadListRecordIds?: string[]; emailAccountRecordIds?: string[]; clientRecordIds?: string[]; jobId?: string | number;
 }
 

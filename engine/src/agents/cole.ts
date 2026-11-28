@@ -1,7 +1,10 @@
 // Cole, Head of Sales (Alex 2026-11-24/25): reviews Alex's own sales calls from Fathom, the way
 // Jackson Anderson reviews calls: what was said and when, pacing, objections against the Closers.io
 // method, a score, the 3 things to fix with a better line for each, and a follow-up email DRAFT.
-// Draft only: Cole never sends anything or changes Close/Airtable. Each recording is reviewed once.
+// Draft only: Cole never sends anything or changes Airtable. Each recording is reviewed once.
+// Round 3 (Alex 2026-11-27, "Cole keeps Close current"): after the review Cole sets that lead's Close
+// opportunity confidence and value (hq/closeUpdates.ts). Live only with cole.close_update in
+// LIVE_STAGES; otherwise he records what he would change. Never an email or SMS.
 // Pacing numbers (talk share, longest monologue, questions) are computed in code, not guessed.
 import { z } from 'zod';
 import type { Stage } from '../stages/index.js';
@@ -11,6 +14,8 @@ import { createClaude } from '../providers/claude.js';
 import { createSlackClient } from '../providers/slack.js';
 import { readKnowledge } from './knowledge.js';
 import { saveReport, slackReports } from '../hq/reports.js';
+import { createCloseClient } from '../providers/close.js';
+import { closeUpdateLive, coleUpdateClose, type CloseUpdateRow } from '../hq/closeUpdates.js';
 
 const DAY = 86_400_000;
 
@@ -66,6 +71,13 @@ export const Review = z.object({
   deal_temperature: z.enum(['hot', 'warm', 'cold', 'closed', 'lost']),
   drill: z.string().describe('One concrete practice drill for Alex before the next call'),
   follow_up_email: z.object({ subject: z.string(), body: z.string().describe('Plain-text email from Alex to the prospect. Short, specific to what they said, one clear next step. No invented prices, terms, guarantees or results.') }),
+  close_confidence: z.number().int().optional().describe('0-100: how likely this deal is to close, judged from this call (what the prospect said, objections left, next step agreed)'),
+  pitched: z.object({
+    amount: z.number().nullable().describe('The price Alex pitched or agreed on the call in US dollars (e.g. 2000 for "$2K a month"); null if no price was said'),
+    period: z.enum(['monthly', 'one_time', 'annual', 'unknown']).describe('How often that price is charged, as said on the call'),
+    quote: z.string().describe('The exact words from the transcript where the price was said (copied word for word), or empty'),
+    agreed: z.boolean().describe('true if the prospect agreed to that price'),
+  }).optional().describe('The price pitched on the call, only as said in the transcript. Never a default or an invented price.'),
 });
 export type ReviewT = z.infer<typeof Review>;
 
@@ -135,8 +147,29 @@ export const coleReviewStage: Stage = async (ctx) => {
     }
     await ctx.db.query(`INSERT INTO cole_reviews (recording_id, kind, title, review) VALUES ($1,'sales',$2,$3) ON CONFLICT (recording_id) DO UPDATE SET review=EXCLUDED.review`, [m.id, m.title, JSON.stringify({ classify: c, pacing: p, review: r })]);
     reviewed++; out.push(`${m.title}: reviewed ${r.score}/10`);
+    const cu = await updateCloseAfterReview(ctx, m, c.prospect, r);
+    if (cu) out.push(`${m.title}: Close ${cu.status}${cu.changes.length ? ` (${cu.changes.map((x) => `${x.field} ${x.from || 'empty'} → ${x.to}`).join(', ')})` : ''}`);
   }
   return { message: `${reviewed} sales call${reviewed === 1 ? '' : 's'} reviewed`, reviewed, calls: out };
 };
+
+/** Cole keeps Close current: confidence and value of the prospect's open opportunity (once per recording). A Close problem never fails the review. */
+async function updateCloseAfterReview(ctx: Parameters<Stage>[0], m: FathomMeeting, prospect: string, r: ReviewT): Promise<CloseUpdateRow | null> {
+  const close = createCloseClient(ctx.cfg.closeApiKey);
+  if (!close || !r?.deal_temperature) return null;
+  const live = closeUpdateLive(ctx);
+  try {
+    return await coleUpdateClose({
+      db: ctx.db, cfg: ctx.cfg, close, live, jobId: ctx.job.id,
+      write: (oppId, patch) => ctx.paid({ callKey: `cole-close:${m.id}`, provider: 'close', units: 0, run: () => close.updateOpportunity(oppId, patch), dryRunResult: () => { throw new PermanentError('dry run: Close not changed'); } }),
+    }, {
+      recordingId: m.id, prospect, emails: m.invitees.filter((i) => i.external).map((i) => i.email), transcript: transcriptText(m, 400_000),
+      review: { deal_temperature: r.deal_temperature, close_confidence: r.close_confidence, pitched: r.pitched ? { ...r.pitched, period: r.pitched.period === 'unknown' ? null : r.pitched.period } : null },
+    });
+  } catch (e) {
+    await ctx.log('cole: Close update skipped', { err: String((e as Error).message ?? e).slice(0, 200) }, 'warn');
+    return null;
+  }
+}
 
 export function coleNeedsKey(cfg: { fathomApiKey?: string }): void { if (!cfg.fathomApiKey) throw new PermanentError('no FATHOM_API_KEY on the server'); }
