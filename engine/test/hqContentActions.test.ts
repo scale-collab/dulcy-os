@@ -217,7 +217,7 @@ test('content r5 API: field buttons write the Content Center\'s exact values (Co
   assert.deepEqual(await one(rec('CLIPS'), 'posts'), [[CONTENT, rec('CLIPS'), { [XF.action]: 'Generate Distribution Pack' }]], 'Generate posts');
   tables[CONTENT][rec('CLIPS')][XF.action] = undefined;
   assert.deepEqual(await one(rec('CLIPS'), 'postsBrief', { channels: ['Reddit', 'Resource', 'Instagram', 'Nope'], count: 4, minScore: 90 }),
-    [[CONTENT, rec('CLIPS'), { [AF.requestedClipCount]: 4, [AF.minimumClipScore]: 90, [XF.distributionChannels]: ['Instagram', 'Reddit'], [XF.action]: 'Generate Distribution Pack' }]], 'the repurposing brief (Resource stays off), then the pack');
+    [[CONTENT, rec('CLIPS'), { [AF.requestedClipCount]: 4, [AF.minimumClipScore]: 85, [XF.distributionChannels]: ['Instagram', 'Reddit'], [XF.action]: 'Generate Distribution Pack' }]], 'the repurposing brief (Resource stays off; the score is the channel\'s from Settings, default 85, never a typed one), then the pack');
   assert.deepEqual(await one(rec('FINAL'), 'youtubeUrl', { url: 'https://www.youtube.com/watch?v=KYb_fCs1klg' }), [[CONTENT, rec('FINAL'), { [XF.youtubeUrl]: 'https://www.youtube.com/watch?v=KYb_fCs1klg' }]]);
   const log = (await db.query(`SELECT action, changes FROM hq_content_log ORDER BY id`)).rows;
   assert.equal(log.length, 11, 'every write is logged');

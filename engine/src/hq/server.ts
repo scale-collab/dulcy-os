@@ -47,7 +47,8 @@ import { buildDeliverability, cachedDeliv, inboxCosts } from './deliverability.j
 import { bouncesView, verificationView } from './bounceStats.js';
 import { portalRoute, resolvePortalClient } from './portal.js';
 import { contentSummary, contentView, decideIdea } from './content.js';
-import { contentItemDetail, decideDraft, isRunKey, recordPost, runContentAction, scheduleDraft } from './contentActions.js';
+import { decideDraft, isRunKey, recordPost, runContentAction, scheduleDraft } from './contentActions.js';
+import { addIdea, contentItemFull, contentSettings, deleteItem, saveContentSettings, saveYoutube, setChannel, setDate } from './contentCenter.js';
 import { allDeals, dealDetail, nyDay, salesView } from './sales.js';
 // Batch 4a: Sales insights (periods, capacity, Close hottest deals) and the contract draft.
 import { DULCY_WS, insightsView, saveCapacitySettings, salesDeps, type SalesDeps } from './salesInsights.js';
@@ -604,7 +605,26 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       // same-origin check above; nothing posts.
       if (p === '/hq/api/content' || p.startsWith('/hq/api/content/')) {
         if (!owner) { json(res, 403, { error: 'only the owner sees content' }); return true; }
-        if (p === '/hq/api/content' && req.method === 'GET') { json(res, 200, await contentView(needAt(), db, cfg.airtableBaseId, { refresh: url.searchParams.get('refresh') === '1' })); return true; }
+        if (p === '/hq/api/content' && req.method === 'GET') { json(res, 200, await contentView(needAt(), db, cfg.airtableBaseId, { refresh: url.searchParams.get('refresh') === '1', history: url.searchParams.get('history') === '1' })); return true; }
+        // Parity (2026-11-28): the Content Center's settings panel, "+ Add content idea", and on a video: "Content for",
+        // the two dates, the YouTube boxes and the trash button (contentCenter.ts, each the Content Center's way).
+        const ccDeps = () => ({ at: needAt(), db, by: user.name });
+        if (p === '/hq/api/content/settings' && req.method === 'GET') { json(res, 200, await contentSettings(needAt())); return true; }
+        if (p === '/hq/api/content/settings' && req.method === 'POST') {
+          const r = await saveContentSettings(ccDeps(), await readJson(req, 5_000));
+          json(res, r.status, r.error ? { error: r.error } : { ok: true, message: r.message }); return true;
+        }
+        if (p === '/hq/api/content/ideas' && req.method === 'POST') {
+          const r = await addIdea(ccDeps(), await readJson(req, 12_000));
+          json(res, r.status, r.error ? { error: r.error } : { ok: true, id: r.id, message: r.message }); return true;
+        }
+        const pm = p.match(/^\/hq\/api\/content\/items\/(rec[A-Za-z0-9]{14})\/(channel|dates|youtube|delete)$/);
+        if (pm && req.method === 'POST') {
+          const b = await readJson(req, 30_000);
+          const fn = { channel: setChannel, dates: setDate, youtube: saveYoutube, delete: deleteItem }[pm[2] as 'channel' | 'dates' | 'youtube' | 'delete'];
+          const r = await fn(ccDeps(), pm[1], b);
+          json(res, r.status, r.error ? { error: r.error } : { ok: true, message: r.message }); return true;
+        }
         if (p === '/hq/api/content/summary' && req.method === 'GET') { json(res, 200, await contentSummary(needAt(), db, cfg.airtableBaseId)); return true; }
         const cm = p.match(/^\/hq\/api\/content\/ideas\/(rec[A-Za-z0-9]{14})$/);
         if (cm && req.method === 'POST') {
@@ -616,7 +636,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         }
         const runDeps = () => ({ at: needAt(), db, cfg, fetchImpl: deps.fetchImpl, by: user.name });
         const im = p.match(/^\/hq\/api\/content\/items\/(rec[A-Za-z0-9]{14})(?:\/(run|posted))?$/);
-        if (im && !im[2] && req.method === 'GET') { const r = await contentItemDetail(needAt(), db, im[1]); json(res, r.status, r.error ? { error: r.error } : r.item); return true; }
+        if (im && !im[2] && req.method === 'GET') { const r = await contentItemFull(needAt(), db, im[1]); json(res, r.status, 'item' in r ? r.item : { error: r.error }); return true; }
         if (im && im[2] === 'run' && req.method === 'POST') {
           const b = await readJson(req, 5_000);
           if (!isRunKey(b.action)) { json(res, 400, { error: 'unknown action' }); return true; }

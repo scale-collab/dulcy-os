@@ -418,7 +418,7 @@ test('content API: needs a session, owner only (members get 403 on every route),
   const alex = await login('alex@dulcy.io');
   const r = await call('/hq/api/content', { cookie: alex });
   assert.equal(r.status, 200, r.text);
-  assert.deepEqual(r.body.needs.ideas.map((g: any) => [g.key, g.items.map((i: any) => i.title)]), [['main', ['Main: pick this']], ['raw', ['Raw: pick this']]], 'a row without a channel is not shown');
+  assert.deepEqual(r.body.needs.ideas.map((g: any) => [g.key, g.items.map((i: any) => i.title)]), [['main', ['Main: pick this']], ['raw', ['Raw: pick this']], ['none', ['No channel']]], 'parity 2026-11-28: an idea with no channel is listed on its own, to pick its channel (the Content Center\'s "Content for") before approving');
   assert.deepEqual(r.body.needs.finals.map((f: any) => f.clips.map((c: any) => c.name)), [['Clip ok']]);
   assert.equal(r.body.links.contentCenter, 'https://airtable.com/appxqINt5XKw7a76A/pagacLOPVCIQb1RQt');
   assert.ok(r.body.overlaps.length >= 3, 'overlaps for Riley');

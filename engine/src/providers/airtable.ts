@@ -64,6 +64,14 @@ export function createAirtableClient(o: AirtableOptions) {
     async update(tableId: string, recordId: string, fields: Record<string, unknown>): Promise<void> {
       await call('PATCH', `/${tableId}`, { records: [{ id: recordId, fields }], typecast: true });
     },
+    /**
+     * Delete one record by ID. Only HQ Content's "Delete this content record" uses it (the Airtable Content
+     * Center's trash button, 2026-11-28 parity): Alex presses Delete and confirms, for that one record.
+     */
+    async remove(tableId: string, recordId: string): Promise<void> {
+      if (!/^rec[A-Za-z0-9]{14}$/.test(recordId)) throw new PermanentError('Airtable: not a record id');
+      await call('DELETE', `/${tableId}/${recordId}`);
+    },
     /** Update up to 10 records in one call (Airtable's limit). HQ round 2: bulk inbox limits mirror. */
     async updateMany(tableId: string, records: { id: string; fields: Record<string, unknown> }[]): Promise<void> {
       if (records.length > 10) throw new PermanentError('Airtable: at most 10 records per update');

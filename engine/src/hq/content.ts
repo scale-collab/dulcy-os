@@ -110,6 +110,35 @@ export function settingsOf(rows: AirtableRecord[]): Record<Channel, ChannelIdeaS
   }
   return next;
 }
+/**
+ * Parity (2026-11-28): the Content Center's full settings panel ("Content scheduling settings", the gear):
+ * every field it reads and writes on Content Automation Settings, with its DEFAULT_IDEA_AUTOMATION_SETTINGS.
+ */
+export const SF_CC = {
+  ...SF, autoScheduleThreshold: 'fldDIUjHLoKL6WXg2', reviewThreshold: 'fldqKEJL8Ya5sdja1', minimumClipScore: 'fld288MIFRl52mjpc',
+} as const;
+export interface CcChannelSettings { videosPerWeek: number; clipsPerWeek: number; autoScheduleThreshold: number; reviewThreshold: number; minimumSpacingDays: number; minimumClipScore: number }
+export const CC_DEFAULT_SETTINGS: Record<Channel, CcChannelSettings> = {
+  'Alex Woung': { videosPerWeek: 2, clipsPerWeek: 3, autoScheduleThreshold: 85, reviewThreshold: 75, minimumSpacingDays: 2, minimumClipScore: 85 },
+  'Alex Woung Raw': { videosPerWeek: 5, clipsPerWeek: 3, autoScheduleThreshold: 80, reviewThreshold: 70, minimumSpacingDays: 1, minimumClipScore: 85 },
+};
+/** The Content Center's settings load (Number(cell), an empty cell = 0 like the interface; else the default) and each channel's record id. Pure. */
+export function ccSettingsOf(rows: AirtableRecord[]): { settings: Record<Channel, CcChannelSettings>; ids: Record<Channel, string> } {
+  const settings: Record<Channel, CcChannelSettings> = { 'Alex Woung': { ...CC_DEFAULT_SETTINGS['Alex Woung'] }, 'Alex Woung Raw': { ...CC_DEFAULT_SETTINGS['Alex Woung Raw'] } };
+  const ids: Record<Channel, string> = { 'Alex Woung': '', 'Alex Woung Raw': '' };
+  for (const r of rows) {
+    const ch = s(r.fields[SF_CC.channel]);
+    if (!isChannel(ch)) continue;
+    if (!ids[ch]) ids[ch] = r.id;
+    const num = (id: string, fb: number) => { const x = Number(r.fields[id] ?? null); return Number.isFinite(x) ? x : fb; };
+    const cur = settings[ch];
+    settings[ch] = {
+      videosPerWeek: num(SF_CC.videosPerWeek, cur.videosPerWeek), clipsPerWeek: num(SF_CC.clipsPerWeek, cur.clipsPerWeek), autoScheduleThreshold: num(SF_CC.autoScheduleThreshold, cur.autoScheduleThreshold),
+      reviewThreshold: num(SF_CC.reviewThreshold, cur.reviewThreshold), minimumSpacingDays: num(SF_CC.minimumSpacingDays, cur.minimumSpacingDays), minimumClipScore: num(SF_CC.minimumClipScore, cur.minimumClipScore),
+    };
+  }
+  return { settings, ids };
+}
 /** Videos per week per channel, as sienna.ideas reads it (Enabled rows; default main 2, Raw 5). Pure. */
 export function targetsOf(rows: AirtableRecord[]): Record<Channel, number> {
   const out: Record<Channel, number> = { 'Alex Woung': 2, 'Alex Woung Raw': 5 };
@@ -608,7 +637,7 @@ export async function readContentSource(at: Pick<HqAirtable, 'list'>, db: Db | n
   // Long text only for what HQ shows: the ideas waiting (newest 40 per channel), the Friday ideas, and
   // (round 4) the newest 60 scripted videos not recorded yet, so each video's page can open its script and Gamma outline.
   const fri = fridayCandidates(videos, now).map((v) => v.id);
-  const waiting = CHANNELS.flatMap((ch) => videos.filter((v) => v.channel === ch && awaitingDecision(v)).sort(byNewest).slice(0, 40).map((v) => v.id));
+  const waiting = ([...CHANNELS, ''] as const).flatMap((ch) => videos.filter((v) => v.channel === ch && awaitingDecision(v)).sort(byNewest).slice(0, 40).map((v) => v.id));
   const since = addDays(etYmd(now), -60);
   const scriptedOpen = videos.filter((v) => v.channel && v.hasScript && !ideaIsArchived(v.decision) && !RECORDED_ON.has(v.stage) && !v.finalAssetUrl && !v.youtubeUrl
     && [v.recordingDate, v.publishDate, v.created ? etYmd(Date.parse(v.created)) : ''].some((d) => d && d >= since)).sort(byNewest).slice(0, 60).map((v) => v.id);
@@ -656,6 +685,8 @@ export interface ItemFacts {
   video: { folder: boolean; finished: boolean; youtube: boolean; youtubeUrl: string };
   repurposing: { shortProject: boolean; clips: number; drafts: boolean };
   update: string; error: string;
+  /** Parity: the Content Center's "Why this idea qualified" (Idea Qualification Reason), when HQ read the long text. */
+  reason?: string;
   details: { productionStage: string; status: string; editingRoute: string; opusStatus: string; shortJobState: string; thumbnailStatus: string; publishingStatus: string };
 }
 export function itemFacts(v: Video, clips: Clip[]): ItemFacts {
@@ -669,7 +700,8 @@ export function itemFacts(v: Video, clips: Clip[]): ItemFacts {
   };
 }
 
-export function buildContent(src: ContentSource, baseId: string, now = Date.now()) {
+/** opts.history (the Content Center's "Hide older and completed history" unticked): also rejected / archived ideas, rows with no channel and rows older than 60 days. */
+export function buildContent(src: ContentSource, baseId: string, now = Date.now(), opts: { history?: boolean } = {}) {
   const targets = targetsOf(src.settingsRows);
   const heavyOf = (id: string) => src.heavy.get(id)?.fields ?? {};
   const byId = new Map(src.videos.map((v) => [v.id, v]));
@@ -679,10 +711,11 @@ export function buildContent(src: ContentSource, baseId: string, now = Date.now(
   const fweek = weekOf(fri);
 
   // Needs you: ideas waiting for a decision, per channel, newest first (best score first inside a day).
-  const ideas = CHANNELS.map((ch) => {
+  // Parity (2026-11-28): an idea with no channel yet is listed too (the Content Center's "Content for" picks it; approve needs it).
+  const ideas = ([...CHANNELS, ''] as const).map((ch) => {
     const all = src.videos.filter((v) => v.channel === ch && awaitingDecision(v)).sort(byNewest);
     return {
-      channel: ch, key: CHANNEL_KEY[ch], label: CHANNEL_LABEL[ch], count: all.length,
+      channel: ch, key: ch ? CHANNEL_KEY[ch] : 'none', label: ch ? CHANNEL_LABEL[ch] : 'No channel yet', count: all.length,
       items: all.map((v) => {
         const h = heavyOf(v.id);
         const parts = ideaParts(s(h[CF.description]));
@@ -694,7 +727,7 @@ export function buildContent(src: ContentSource, baseId: string, now = Date.now(
         };
       }),
     };
-  });
+  }).filter((g) => g.channel || g.count > 0);
   // Needs you: final clips Sienna's editor passed (Needs Review + "Sienna QA: passed"), per parent video.
   const passed = src.clips.filter((c) => c.status === 'Needs Review' && siennaPassed(c));
   const parents = [...new Set(passed.map((c) => c.parentId))];
@@ -715,6 +748,8 @@ export function buildContent(src: ContentSource, baseId: string, now = Date.now(
   const recent = (v: Video) => [v.recordingDate, v.publishDate, v.date, postedOn(v, yt).date, v.created ? etYmd(Date.parse(v.created)) : ''].some((d) => d && d >= since);
   const pipeRows: {
     id: string; title: string; channel: string; key: string; stage: StageKey; cc: CcStage; thisWeek: boolean; awaiting: boolean; done: boolean; recordingDate: string; publishDate: string;
+    /** Parity: rejected / duplicate / archived (only with history), older than the 60-day window (only with history). */
+    archived: boolean; old: boolean;
     /** Round 4: when it was posted ('' = not posted, or posted with no date known) and where that date came from. */
     posted: boolean; postedDate: string; postedFrom: PostedFrom;
     status: string; productionStage: string; next: NextStep | null; flags: string[]; facts: ItemFacts;
@@ -725,8 +760,10 @@ export function buildContent(src: ContentSource, baseId: string, now = Date.now(
   }[] = [];
   let leftOut = 0;
   for (const v of src.videos) {
-    const st = v.channel ? stageOf(v, src.clips) : null;
-    if (!st || !recent(v)) { if (v.channel && !ideaIsArchived(v.decision)) leftOut++; continue; }
+    const noChannelIdea = !v.channel && awaitingDecision(v);
+    const st = v.channel || noChannelIdea || opts.history ? (stageOf(v, src.clips) ?? (opts.history ? 'idea' : null)) : null;
+    const isRecent = recent(v);
+    if (!st || (!isRecent && !noChannelIdea && !opts.history)) { if (v.channel && !ideaIsArchived(v.decision)) leftOut++; continue; }
     const flags: string[] = [];
     if (v.stage === 'Blocked') flags.push('Blocked');
     if (v.error) flags.push('Automation error');
@@ -735,17 +772,18 @@ export function buildContent(src: ContentSource, baseId: string, now = Date.now(
     const prep = h && v.hasScript ? { ...parsePrep(s(h[CF.notes]), s(h[CF.description])), script: s(h[CF.script]) } : null;
     const posted = postedOn(v, yt);
     pipeRows.push({
-      id: v.id, title: v.title, channel: v.channel, key: CHANNEL_KEY[v.channel as Channel], stage: st, cc: ccStageOf(v), thisWeek: inRange(v.recordingDate, week.start, week.end),
+      id: v.id, title: v.title, channel: v.channel, key: v.channel ? CHANNEL_KEY[v.channel as Channel] : '', stage: st, archived: ideaIsArchived(v.decision), old: !isRecent, cc: ccStageOf(v), thisWeek: inRange(v.recordingDate, week.start, week.end),
       awaiting: needsApproval(v), done: contentComplete(v), recordingDate: v.recordingDate, publishDate: v.publishDate,
       posted: postedWithProof(v), postedDate: posted.date, postedFrom: posted.from,
-      status: v.status, productionStage: v.stage, next: st === 'posted' ? null : nextStep(v, src.clips), flags, facts: itemFacts(v, src.clips), running: v.action,
+      status: v.status, productionStage: v.stage, next: st === 'posted' ? null : nextStep(v, src.clips), flags, facts: { ...itemFacts(v, src.clips), reason: s(h?.[CF.ideaReason]).slice(0, 800) }, running: v.action,
       steps: videoSteps(v, src.clips, { gamma: prep?.gamma ?? '', gammaUrl: prep?.gammaUrl ?? '', hasPrep: !!prep?.script, stuck: stuckIds.has(v.id), now, posted: posted.date }),
       prep: prep && prep.script ? prep : null,
     });
   }
   pipeRows.sort(scheduleOrder);
   // Needs you: the other Content Center steps waiting on Alex (link only).
-  const alexSteps = pipeRows.filter((r) => r.next && r.next.who === 'Alex' && r.next.how !== 'hq')
+  const liveRows = pipeRows.filter((r) => !r.archived && !r.old);
+  const alexSteps = liveRows.filter((r) => r.next && r.next.who === 'Alex' && r.next.how !== 'hq')
     .map((r) => ({ id: r.id, title: r.title, channel: r.channel, step: r.steps.find((x) => x.state === 'now' && !x.optional)?.title ?? r.next!.title, how: r.next!.automation }));
 
   // Friday.
@@ -780,13 +818,13 @@ export function buildContent(src: ContentSource, baseId: string, now = Date.now(
     };
   });
 
-  const notes = contentNotes(src, { fri, fweek, today, pipeline: pipeRows });
+  const notes = contentNotes(src, { fri, fweek, today, pipeline: liveRows });
   const ideaCount = ideas.reduce((a, c) => a + c.count, 0);
   const finalCount = finals.reduce((a, f) => a + f.clips.length, 0);
   return {
     readAt: src.readAt, friday: { date: fri, week: fweek, channels: friday }, week: { ...week, channels: weekStats },
     needs: { ideas, finals, alexSteps, waitingForSienna: src.clips.filter((c) => c.status === 'Needs Review' && !siennaChecked(c)).length },
-    pipeline: { stages: STAGES.map((k) => ({ key: k, label: STAGE_LABEL[k] })), ccStages: [...CC_STAGES], rows: pipeRows, leftOut },
+    pipeline: { stages: STAGES.map((k) => ({ key: k, label: STAGE_LABEL[k] })), ccStages: [...CC_STAGES], rows: pipeRows, leftOut: opts.history ? 0 : leftOut, history: !!opts.history },
     counts: { ideas: ideaCount, finals: finalCount, steps: alexSteps.length, total: ideaCount + finalCount + alexSteps.length },
     notes, links: { contentCenter: `https://airtable.com/${baseId}/${CONTENT_CENTER_PAGE}` },
   };
@@ -882,9 +920,9 @@ export async function contentLog(db: Db, limit = 15) {
 }
 
 /** GET /content */
-export async function contentView(at: Pick<HqAirtable, 'list'>, db: Db, baseId: string, opts: { refresh?: boolean } = {}) {
+export async function contentView(at: Pick<HqAirtable, 'list'>, db: Db, baseId: string, opts: { refresh?: boolean; history?: boolean } = {}) {
   const src = await cachedContent(at, db, opts.refresh);
-  return { ...buildContent(src, baseId), overlaps: OVERLAPS, log: await contentLog(db) };
+  return { ...buildContent(src, baseId, Date.now(), { history: opts.history }), overlaps: OVERLAPS, log: await contentLog(db) };
 }
 /** GET /content/summary (Today's card): counts and the Friday count vs target, from the same cache. */
 export async function contentSummary(at: Pick<HqAirtable, 'list'>, db: Db, baseId: string) {
