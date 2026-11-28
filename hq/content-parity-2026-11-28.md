@@ -1,10 +1,10 @@
 # HQ Content vs the Airtable Content Center: parity audit (11/28)
 
-**Result:** 84 of the Content Center's 88 views, panels, fields, buttons and settings are in HQ (52 were already there, 32 built today). 2 were left out on purpose because of a rule (the "open in Airtable" links). 2 can't move: the clip review buttons (they need Airtable to say *who* wrote the decision).
+**Result:** 86 of the Content Center's 88 views, panels, fields, buttons and settings are in HQ (55 were already there, 31 built today). 2 were left out on purpose because of a rule (the "open in Airtable" links). Nothing is left that can't move: the clip review buttons are in HQ's Final review (`engine/src/hq/contentReview.ts`, merged 11/28).
 
-Source checked: `airtable/custom-elements/content-center/source.tsx` (all of it), against `hq/web/src/pages/Content.tsx`, `hq/web/src/pages/content/*`, `engine/src/hq/content.ts`, `contentActions.ts` and the new `contentCenter.ts`. There is no `contentReview.ts` in the repo.
+Source checked: `airtable/custom-elements/content-center/source.tsx` (all of it), against `hq/web/src/pages/Content.tsx`, `hq/web/src/pages/content/*`, `engine/src/hq/content.ts`, `contentActions.ts`, `contentReview.ts` (Final review, Gamma box) and the new `contentCenter.ts`.
 
-Status key: **had** = in HQ before today · **built** = added today, wired like the Content Center · **rule** = left out on purpose because of a rule · **can't move** = needs something HQ can't do (reason and smallest fix below).
+Status key: **had** = in HQ before this work (Final review counts here: it was built in parallel the same day) · **built** = added here, wired like the Content Center · **rule** = left out on purpose because of a rule.
 
 ## A. Layout and the list
 
@@ -68,10 +68,10 @@ Status key: **had** = in HQ before today · **built** = added today, wired like 
 
 | # | Content Center | HQ (where) | Status |
 |---|---|---|---|
-| 34 | Review clips in OpusClip (short-clips project link) | Video page → Clips → "All candidates in OpusClip" | built |
-| 35 | Shortlist: score, verified status, preview, Opus identity, review version, editorial notes, transcript | Video page → Clips (best score first; the verified copy over the imported media) | built |
-| 36 | Final clip ID box + Refresh current preview | Content Center only | can't move |
-| 37 | Approve reviewed copy / Reject copy | Content Center only (HQ: "Open the clip review") | can't move |
+| 34 | Review clips in OpusClip (short-clips project link) | Video page → "All clip candidates in OpusClip" | built |
+| 35 | Shortlist: score, status, verified copy, preview, Sienna's QA note | Video page → Final review (`ContentReview.tsx`). The clip transcript is not shown there | had |
+| 36 | Final clip ID box + Refresh current preview | Video page → Final review (`contentReview.ts`: Review Intent JSON + the same n8n webhook) | had |
+| 37 | Approve reviewed copy / Reject copy | Video page → Final review → Approve / Request changes. It calls n8n only after reading back that the intent's Airtable author is team@dulcy.io, or with the signed (HMAC) path once `CONTENT_REVIEW_SECRET` and the n8n change are live; otherwise it sends nothing and says so | had |
 
 ## G. Script
 
@@ -176,12 +176,9 @@ Status key: **had** = in HQ before today · **built** = added today, wired like 
 - **Newsletter / blog / Framer**: #75–77, #82–83.
 - **Resources (Gamma)**: paused in the Content Center (`RESOURCE_AUTOMATION_ENABLED = false`); HQ refuses it the same way (#84).
 
-## Can't move (2)
+## Can't move
 
-**Problem:** the clip review buttons (#36 Refresh current preview, #37 Approve reviewed copy / Reject copy).
-**Data:** the button writes Review Intent JSON on the clip, then calls n8n "[Content OS] Current Clip Review and Preview". That flow checks Review Intent Author (a "last modified by" field) is `usrZ0Hn36coHFxw3D` / team@dulcy.io, for all three actions. A write from HQ is authored by whoever owns HQ's Airtable token, which proves nothing about who pressed the button.
-**Smallest fix:** check the token's owner once with Airtable's `GET /v0/meta/whoami`. If it is team@dulcy.io, HQ can write the same intent and call the same webhook (owner-only route, Alex's session), and the flow passes unchanged. If not, n8n must also accept an intent HQ signs (an HMAC with a secret both share) as owner proof. Either way it needs Alex's OK, because it changes what "the owner approved this clip" proves.
-**Why:** a clip approval decides what gets posted; the flow was built so only Alex's own Airtable account can make it.
+None. The clip review buttons (#36, #37) were the last ones: their n8n flow accepts only a decision whose Airtable author is team@dulcy.io. HQ's Final review (`contentReview.ts`) writes the same Review Intent JSON, reads the author back and calls n8n only when it is team@dulcy.io, or uses the HMAC-signed path once `CONTENT_REVIEW_SECRET` and the n8n change are live (that switch needs Alex's OK). Until then it sends nothing and says so.
 
 ## Left out by rule (2)
 
@@ -189,4 +186,4 @@ Status key: **had** = in HQ before today · **built** = added today, wired like 
 
 ## Tests
 
-`engine/test/hqContentParity.test.ts` (fake Airtable, fake fetch: no webhook fired, nothing posted, nothing really deleted): the exact settings write (both records, clamps, Alex Woung fixed, refused with a missing record), the add-idea create, channel / date / YouTube writes and their guards, the template fallback with typed boxes, the brief's score from Settings, the clips shortlist, Reddit community, composer link, newsletter HTML, previous thumbnail, the completion check, the confirmed delete, history mode, and owner-only + same-origin on every new route.
+`engine/test/hqContentParity.test.ts` (fake Airtable, fake fetch: no webhook fired, nothing posted, nothing really deleted): the exact settings write (both records, clamps, Alex Woung fixed, refused with a missing record), the add-idea create, channel / date / YouTube writes and their guards, the template fallback with typed boxes, the brief's score from Settings, the clips list and OpusClip link in the detail answer, Reddit community, composer link, newsletter HTML, previous thumbnail, the completion check, the confirmed delete, history mode, and owner-only + same-origin on every new route.

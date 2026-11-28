@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { api, type ChatMessage, type ChatSuggestions, type ChatThreadFull } from '../api';
 import { AGENT_COLOR, Avatar, cx, ErrorBox, go, Icon, Markdown, timeAgo } from '../ui';
+import { TalkButton } from './VoiceMode';
 
 export default function AgentChatBox({ agent, role, className }: { agent: string; role: string; className?: string }) {
   const [threadId, setThreadId] = useState<number | null | undefined>(undefined); // undefined = still looking
@@ -56,6 +57,8 @@ export default function AgentChatBox({ agent, role, className }: { agent: string
           <div className="truncate text-sm font-semibold text-fg">{agent}</div>
           <div className="truncate text-xs text-muted">{role} · also in Chat</div>
         </div>
+        {!readOnly && <TalkButton agent={agent} threadId={threadId ?? null} size="sm" disabled={!!pending || threadId === undefined}
+          onClosed={(id) => { if (id) { setThreadId(id); void api<{ thread: ChatThreadFull }>(`/chat/threads/${id}`).then((r) => setThread(r.thread)).catch((e) => setError(e.message)); } }} />}
         <button onClick={() => go(threadId ? `chat/${agent}/${threadId}` : `chat/${agent}`)} className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-xl px-2.5 text-xs font-semibold text-accent-ink transition hover:bg-hover">
           Open in Chat<Icon name="arrowRight" size={13} />
         </button>

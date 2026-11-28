@@ -1,11 +1,12 @@
 // Content parity (Alex, 2026-11-28: "the entire content center" in HQ). The Airtable Content Center pieces
 // HQ did not have yet: the settings panel (its gear), "+ Add content idea", and on each video "Content for",
-// the two dates, the YouTube boxes, the previous thumbnail, the clips shortlist and the trash button. The
+// the two dates, the YouTube boxes, the previous thumbnail and the trash button (the clips and their review
+// buttons are ContentReview.tsx's Final review). The
 // engine writes each one the Content Center's way (engine/src/hq/contentCenter.ts); this file only collects
 // the input and shows the answer. Everything is escaped text; nothing posts. Audit: hq/content-parity-2026-11-28.md.
 import { useEffect, useState } from 'react';
-import { api, type ContentChannelSettings, type ContentItemDetail, type ContentSettingsView, type ContentShortClip } from '../../api';
-import { Button, Card, cx, ErrorBox, ExtLink, go, Icon, Pill } from '../../ui';
+import { api, type ContentChannelSettings, type ContentItemDetail, type ContentSettingsView } from '../../api';
+import { Button, Card, cx, ErrorBox, ExtLink, go, Icon } from '../../ui';
 import { copyText, Head } from './shared';
 
 const field = 'min-h-11 w-full rounded-xl border border-line bg-surface px-3 py-2 text-[15px] text-fg placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-accent';
@@ -213,39 +214,6 @@ export function YouTubeEdit({ id, d, onDone }: { id: string; d: ContentItemDetai
         </div>
       </Card>
     </section>
-  );
-}
-
-/** The video's clips shortlist (the Content Center's review panel, Clips tab). Read only: approving a clip stays in the Content Center. */
-export function ClipsShortlist({ d, approveUrl }: { d: ContentItemDetail; approveUrl: string }) {
-  const clips = d.clips ?? [];
-  if (!clips.length && !d.opusUrl) return null;
-  return (
-    <section>
-      <Head title={`Clips (${clips.length})`} icon="film" sub="The imported shortlist, best score first. Edit and save in OpusClip; the final copy is checked before it is approved." />
-      {d.opusUrl && <p className="mb-2"><a href={d.opusUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line-strong bg-surface px-4 text-[15px] font-semibold text-fg hover:bg-hover"><Icon name="external" size={16} />All candidates in OpusClip</a></p>}
-      <div className="space-y-2">{clips.map((c, i) => <ClipCard key={c.id} c={c} n={i + 1} />)}</div>
-      {clips.some((c) => c.status === 'Needs Review') && (
-        <p className="mt-2 text-sm text-fg-2">Approve or reject a reviewed copy in the Content Center: its flow accepts only a decision written there by team@dulcy.io. <a href={approveUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-accent-ink underline">Open the clip review</a></p>
-      )}
-    </section>
-  );
-}
-function ClipCard({ c, n }: { c: ContentShortClip; n: number }) {
-  return (
-    <details className="group rounded-2xl border border-line bg-surface shadow-card">
-      <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 [&::-webkit-details-marker]:hidden">
-        <span className="min-w-0 flex-1"><span className="block truncate text-[15px] font-semibold text-fg">{c.name}</span><span className="text-xs text-muted">Candidate {n} · score {c.score ?? 'not given'} · {c.status || 'no status'}</span></span>
-        <Pill tone={c.verifiedClipId ? 'good' : 'plain'}>{c.review}</Pill>
-        <Icon name="chevronDown" size={18} className="shrink-0 text-muted transition group-open:rotate-180" />
-      </summary>
-      <div className="space-y-2 border-t border-line p-4 text-sm">
-        {c.preview ? <a href={c.preview} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line-strong bg-surface px-4 font-semibold text-fg hover:bg-hover"><Icon name="play" size={16} />Watch the current preview</a> : <p className="text-muted">No preview yet: it shows once OpusClip has rendered it.</p>}
-        <p className="break-all text-xs text-muted">Opus clip: {c.opusId || 'missing'} · verified copy: {c.verifiedClipId || 'none'} · review version: {c.version ?? 'none'}</p>
-        {c.notes && <div><div className="text-xs font-semibold uppercase tracking-wider text-muted">Editorial notes</div><p className="mt-1 whitespace-pre-wrap break-words text-fg-2">{c.notes}</p></div>}
-        {c.transcript && <details><summary className="cursor-pointer font-medium text-fg">Transcript</summary><p className="mt-1 whitespace-pre-wrap break-words text-fg-2">{c.transcript}</p></details>}
-      </div>
-    </details>
   );
 }
 

@@ -9,6 +9,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEve
 import { api, type ChatMessage, type ChatSuggestions, type ChatThread, type ChatThreadFull, type User } from '../api';
 import { AGENT_COLOR, Avatar, cx, ErrorBox, go, Icon, Label, Markdown, Pill, timeAgo, useRoute } from '../ui';
 import { afterReply, parseChatHash, typingIn, type ChatView, type PendingAsk } from './chatState';
+import { TalkButton } from './VoiceMode';
 
 const AGENTS = ['Ada', 'Atlas', 'Scribe', 'Scout', 'Echo', 'Riley', 'Cole', 'Ledger', 'Sienna'];
 const ROLE: Record<string, string> = { Ada: 'COO', Atlas: 'Clients + campaigns', Scribe: 'Copy and offers', Scout: 'Lead lists', Echo: 'Inbox', Riley: 'Automation', Cole: 'Sales', Ledger: 'Money', Sienna: 'Content' };
@@ -109,6 +110,20 @@ export default function Chat({ user }: { user: User; agent?: string; threadId?: 
       const v = viewRef.current;
       if (v && v.agent === asked.agent && v.threadId === asked.threadId) { setError((err as Error).message); setText(msg); }
     } finally { setPending(null); }
+  };
+
+  // Voice mode talked into this chat (or started one): show what was said.
+  const afterVoice = async (agent: string, id: number | null) => {
+    if (!id) return;
+    try {
+      const t = await api<{ thread: ChatThreadFull }>(`/chat/threads/${id}`);
+      const now = viewRef.current;
+      if (now && now.agent === agent) {
+        if (now.threadId !== id) replaceHash(`chat/${agent}/${id}`);
+        setView({ agent, threadId: id }); setThread(t.thread);
+      }
+      loadThreads();
+    } catch (e) { setError((e as Error).message); }
   };
 
   const archive = async (t: { id: number }, on: boolean) => {
@@ -254,12 +269,13 @@ export default function Chat({ user }: { user: User; agent?: string; threadId?: 
               <textarea ref={input} value={text} onChange={(e) => setText(e.target.value)} rows={1} maxLength={4000} placeholder={view.threadId ? `Reply to ${name}…` : `Message ${name}…`} aria-label={`Message ${name}`}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(); } }}
                 className="max-h-[200px] min-h-11 flex-1 resize-none bg-transparent py-2.5 text-[16px] leading-6 text-fg outline-none placeholder:text-muted focus-visible:outline-none" />
+              <TalkButton agent={name} threadId={view.threadId} disabled={!!pending} onClosed={(id) => void afterVoice(name, id)} />
               <button type="submit" disabled={!!pending || !text.trim()} aria-label="Send"
                 className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-ink text-ink-fg transition hover:bg-ink-hover active:scale-95 disabled:opacity-35">
                 <Icon name="send" size={18} strokeWidth={2} />
               </button>
             </div>
-            <div className="mt-1.5 hidden px-1 text-xs text-muted md:block">Enter to send · Shift + Enter for a new line{view.threadId ? ' · this chat keeps going: no need to start over' : ''}</div>
+            <div className="mt-1.5 hidden px-1 text-xs text-muted md:block">Enter to send · Shift + Enter for a new line · Talk to speak with {name}{view.threadId ? ' · this chat keeps going: no need to start over' : ''}</div>
           </form>
         )}
       </div>

@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { api, type LeadListDetailR2 } from '../../api';
 import { BackLink, Card, cx, ErrorBox, ExtLink, go, Icon, PageSkeleton, Pill, SectionHeader, timeAgo } from '../../ui';
 import { ActionBar, AutomationStatus, num, slash, slashTime, Tabs } from './shared';
+import { ListCenterSection } from './CenterParity';
 
 type Tab = 'overview' | 'source' | 'companies' | 'contacts' | 'verification' | 'enrichment' | 'qa';
 const TABS: { key: Tab; label: string }[] = [
@@ -150,6 +151,8 @@ export function LeadListPage({ id }: { id: string }) {
           {bar('qa')}
         </div>
       )}
+      {/* Center parity (2026-11-28): the Lead List Center's field edits and non-engine buttons for this tab. */}
+      <ListCenterSection id={id} tab={tab} onDone={load} />
       <p className="mt-6 text-xs text-muted">Read {timeAgo(d.readAt) || 'just now'} from Airtable and the engine. Buttons press the same engine steps as the Airtable Lead List Center.</p>
     </div>
   );

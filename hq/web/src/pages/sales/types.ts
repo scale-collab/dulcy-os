@@ -14,6 +14,14 @@ export interface SalesGoals {
   /** The question typed into a new chat with Cole (not sent). */
   ask: string;
   readOk: boolean;
+  /** Close → Airtable Won sync (sales.won_sync): null when Close is not connected. */
+  wonSync?: WonSync | null;
+}
+export interface WonSync {
+  live: boolean; lastRun: string;
+  marked: number; markedThisMonth: number; planned: number; already: number;
+  text: string;
+  skipped: { oppId: string; leadName: string; wonDate: string; status: 'ambiguous' | 'no_match' | 'failed' | string; note: string; closeUrl: string; fix: { agent: string; title: string; detail: string } }[];
 }
 export type CallStatus = 'Held' | 'Booked' | 'No-show' | 'Canceled' | 'Rescheduled' | 'No outcome' | 'Recorded' | '';
 export interface DealCall {

@@ -8,14 +8,16 @@
 // "Alex Woung Raw"); dates with slashes. Old #/content/week links open Needs you.
 // Round 5 (Alex, 2026-11-28): the Content Center's buttons are HQ buttons (on each video's page), with
 // Distribution per platform; Friday walks each idea step by step (hook, script, teleprompter, upload).
-// No Airtable record links (RULES 2026-11-27); the one Content Center link left is the final-clip
-// approval (its owner check). Everything is rendered as escaped text.
+// No Airtable record links (RULES 2026-11-27). 2026-11-28: the final-clip approval moved into HQ too (on
+// the video's page: Approve / Request changes), and #/content/items/<rec>/resource is the resource document.
+// Everything is rendered as escaped text.
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { api, type ContentCenterView, type ContentIdea, type FridayIdea } from '../api';
 import { Button, Card, cx, Empty, ErrorBox, ExtLink, go, Icon, IconButton, Label, PageSkeleton, PageTitle, Pill, SectionHeader, setCount, timeAgo } from '../ui';
 import { FixItButton } from '../fixIt';
 import ContentItems from './content/ContentItems';
 import ContentCalendar from './content/ContentCalendar';
+import ContentResource from './content/ContentResource';
 import { DecideButtons, GammaBlock, Head, Notes, dateOnly, day, shortLabel } from './content/shared';
 import { RunButton } from './content/ContentActions';
 import { AddIdea, ChannelPicker, ContentSettings } from './content/ContentCenterParts';
@@ -74,7 +76,7 @@ export default function Content({ a, b, c }: { a?: string; b?: string; c?: strin
       {d && !settings && (
         <div className="mt-5">
           {view === 'needs' && <NeedsView d={d} onChanged={() => load(true)} />}
-          {view === 'items' && <ContentItems d={d} id={b} onChanged={() => load(true)} history={history} onHistory={setHistory} />}
+          {view === 'items' && (c === 'resource' && b ? <ContentResource id={b} /> : <ContentItems d={d} id={b} onChanged={() => load(true)} history={history} onHistory={setHistory} />)}
           {view === 'calendar' && <ContentCalendar d={d} />}
           {view === 'friday' && <FridayView d={d} channel={b} index={Number(c) || 1} />}
           <p className="mt-8 text-xs text-muted">From the Content OS tables, read {timeAgo(d.readAt) || 'just now'}; kept for 1 minute. HQ never posts or deletes; it schedules a post only when you press Schedule.</p>
@@ -135,7 +137,7 @@ function NeedsView({ d, onChanged }: { d: ContentCenterView; onChanged: () => vo
 
       {d.needs.finals.length > 0 && (
         <section>
-          <Head title="Final videos to check" icon="film" sub="Sienna checked these clips. Watch them here. Approving a clip still happens in the Content Center: its approve checks in Airtable that you yourself approved it, which HQ can't prove yet."
+          <Head title="Final videos to check" icon="film" sub="Sienna checked these clips. Open the video to watch each one and approve it or say what to change."
             right={<span className="tabular shrink-0 text-xs text-muted">{(() => { const k = d.needs.finals.reduce((a, f) => a + f.clips.length, 0); return `${k} clip${k === 1 ? '' : 's'}`; })()}</span>} />
           <div className="space-y-3">
             {d.needs.finals.map((f) => (
@@ -155,7 +157,7 @@ function NeedsView({ d, onChanged }: { d: ContentCenterView; onChanged: () => vo
                   ))}
                 </ul>
                 <div className="border-t border-line px-4 py-3 sm:px-5">
-                  <a href={d.links.contentCenter} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-ink px-4 text-[15px] font-semibold text-ink-fg hover:bg-ink-hover sm:w-auto"><Icon name="external" size={16} />Approve in the Content Center</a>
+                  <Button tone="primary" icon="check" className="w-full sm:w-auto" onClick={() => f.parentId && go(`content/items/${f.parentId}`)}>Review and approve</Button>
                 </div>
               </Card>
             ))}

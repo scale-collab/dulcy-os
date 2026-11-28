@@ -12,9 +12,8 @@
 //   - The video's clips shortlist (the review panel's Clips tab: score, verified copy, preview, notes,
 //     transcript, the OpusClip project link) and, per post draft, the Reddit community, the composer link,
 //     the newsletter's branded HTML preview and the previous thumbnail. Read only.
-// Not moved: the clip review buttons (Refresh current preview / Approve reviewed copy / Reject copy). Their
-// n8n flow checks that Review Intent JSON was last written by team@dulcy.io (usrZ0Hn36coHFxw3D) in
-// Airtable's own UI; a write from HQ's token proves nothing about who pressed it. Owner only; same-origin
+// The clip review buttons themselves are contentReview.ts (Final review); the shortlist here is read only.
+// Owner only; same-origin
 // writes (server.ts). Every write is logged in hq_content_log. Nothing here posts, schedules or calls n8n.
 import type { Db } from '../db/pool.js';
 import type { AirtableRecord } from '../providers/airtable.js';

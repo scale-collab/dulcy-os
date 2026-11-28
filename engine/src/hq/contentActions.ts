@@ -41,7 +41,7 @@ export const AF = { requestedClipCount: 'fldFyh2QYx2W9NXnM', minimumClipScore: '
 export const DISTRIBUTION_CHANNELS = ['Instagram', 'YouTube Shorts', 'Reddit', 'X / Twitter', 'LinkedIn', 'Blog', 'Newsletter'] as const;
 
 // ---------- the n8n webhooks the Content Center calls ----------
-export type HookKey = 'script' | 'thumbnail' | 'thumbnailRevise' | 'youtube' | 'distribution' | 'schedule' | 'newsletter' | 'framer';
+export type HookKey = 'script' | 'thumbnail' | 'thumbnailRevise' | 'youtube' | 'distribution' | 'schedule' | 'newsletter' | 'framer' | 'clipReview';
 /** Which n8n workflow and webhook node each Content Center fetch() goes to (automations/n8n-live-2026-11-17/INDEX.md). */
 export const HOOKS: Record<HookKey, { env: string; workflow: string; node: string; name: string }> = {
   // Two identical copies of this workflow exist (M6KIF3… and _kaI9…); which one the Content Center calls is UNKNOWN. Both do the same job.
@@ -53,6 +53,8 @@ export const HOOKS: Record<HookKey, { env: string; workflow: string; node: strin
   schedule: { env: 'SCHEDULE', workflow: 'oN0UJDUMKr12HMSe3i9lj', node: 'Webhook', name: '[Content OS] Schedule Approved Social Posts' },
   newsletter: { env: 'NEWSLETTER', workflow: 'oBtBDGl7uZ6FR2yUM9qWL', node: 'Newsletter Webhook', name: '[Content OS] Prepare Newsletter Preview' },
   framer: { env: 'FRAMER', workflow: 'mjM9mwPtY8vumhGioR8cQ', node: 'Framer Draft Webhook', name: '[Content OS] Publish Framer Blog Draft' },
+  // Final-clip review (contentReview.ts): the Content Center's "Refresh current preview" / "Approve reviewed copy" / "Reject copy".
+  clipReview: { env: 'CLIP_REVIEW', workflow: '1IWw0WOC8gwgWvnVZbeKf', node: 'Current Review Wake', name: '[Content OS] Current Clip Review and Preview' },
 };
 export type HookCfg = Pick<Config, 'contentHooks' | 'contentWebhookBase' | 'n8nApiKey' | 'n8nBaseUrl'>;
 const hookCache = new Map<HookKey, string>();

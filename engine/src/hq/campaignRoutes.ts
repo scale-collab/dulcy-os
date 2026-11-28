@@ -20,6 +20,7 @@ import { campaignCenterView, campaignCopy, createPlan, leadListDetail, listPlans
 import { sendingAccountsView } from './sendingAccounts.js';
 import { agencyRate, campaignHow } from './today.js';
 import type { CampaignRow } from './campaigns.js';
+import { campaignDo, campaignFieldsView, createCampaignByHand, createListByHand, editCampaign, editList, listDo, listFieldsView, postSync, type ParityResult } from './centerParity.js';
 
 /** How each live campaign is doing, the same groups as Today (well / pace / time / look), so #/campaigns/live?how= filters to Today's group. */
 export function howOfRows(all: CampaignRow[]): Map<string, string> {
@@ -60,5 +61,40 @@ export async function round2Campaigns(p: string, req: http.IncomingMessage, url:
   }
   m = p.match(new RegExp(`^/hq/api/campaigns/${REC}/action$`));
   if (m && post) { if (!owner) return OWNER_ONLY; return pressCampaignAction(needAt(), db, cfg, m[1], await readBody(req), user.name); }
+  return null;
+}
+
+// HQ center parity (2026-11-28): the rest of the Airtable Campaign Center and Lead List Center
+// (centerParity.ts). Reads for everyone signed in; every write is owner only and needs confirm: true.
+//   GET  /hq/api/campaigns/:rec/fields            editable fields, approval, top-up, senders, variants
+//   POST /hq/api/campaigns/:rec/edit              { changes: { key: value }, confirm }
+//   POST /hq/api/campaigns/:rec/do                { action, confirm, ... } (copy/approval/sequence/clone/delete/senders/top-up list)
+//   POST /hq/api/campaigns/new                    { client, title, thesis, list: new|existing|none, listTitle?, listId?, confirm }
+//   POST /hq/api/campaigns/sync                   { which: campaigns|senders, confirm }
+//   GET  /hq/api/campaigns/lists/:rec/fields      the Lead List Center's editable fields
+//   POST /hq/api/campaigns/lists/:rec/edit        { changes, confirm }
+//   POST /hq/api/campaigns/lists/:rec/do          { action, confirm, ... }
+//   POST /hq/api/campaigns/lists/new              { name, client, icp, confirm }
+export async function parityRoutes(p: string, req: http.IncomingMessage, needAt: () => HqAirtable, db: Db, cfg: Config, user: HqUser, owner: boolean, fetchImpl?: typeof fetch): Promise<RouteAnswer | null> {
+  const get = req.method === 'GET'; const post = req.method === 'POST';
+  const answer = (r: ParityResult): RouteAnswer => ({ status: r.status, body: r.body });
+  if (post && ['/hq/api/campaigns/new', '/hq/api/campaigns/sync', '/hq/api/campaigns/lists/new'].includes(p)) {
+    if (!owner) return OWNER_ONLY;
+    const body = await readBody(req);
+    if (p === '/hq/api/campaigns/new') return answer(await createCampaignByHand(needAt(), db, body, user.name));
+    if (p === '/hq/api/campaigns/lists/new') return answer(await createListByHand(needAt(), db, body, user.name));
+    return answer(await postSync(db, cfg, body, user.name, fetchImpl));
+  }
+  let m = p.match(new RegExp(`^/hq/api/campaigns/lists/${REC}/(fields|edit|do)$`));
+  if (m) {
+    if (m[2] === 'fields' && get) { const d = await listFieldsView(needAt(), db, m[1], owner); return d ? { status: 200, body: d } : { status: 404, body: { error: 'no such lead list' } }; }
+    if (m[2] !== 'fields' && post) { if (!owner) return OWNER_ONLY; const body = await readBody(req, 120_000); return answer(m[2] === 'edit' ? await editList(needAt(), db, m[1], body, user.name) : await listDo(needAt(), db, m[1], body, user.name)); }
+    return null;
+  }
+  m = p.match(new RegExp(`^/hq/api/campaigns/${REC}/(fields|edit|do)$`));
+  if (m) {
+    if (m[2] === 'fields' && get) { const d = await campaignFieldsView(needAt(), db, m[1], owner); return d ? { status: 200, body: d } : { status: 404, body: { error: 'no such campaign' } }; }
+    if (m[2] !== 'fields' && post) { if (!owner) return OWNER_ONLY; const body = await readBody(req, 600_000); return answer(m[2] === 'edit' ? await editCampaign(needAt(), db, m[1], body, user.name) : await campaignDo(needAt(), db, cfg, m[1], body, user.name)); }
+  }
   return null;
 }

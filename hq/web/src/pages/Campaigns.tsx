@@ -18,6 +18,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, type CampaignListR2, type CampaignRowR2, type ChannelB3, type NeedKind, type PlansR2 } from '../api';
 import { Button, Card, cx, Empty, ErrorBox, go, IconButton, PageSkeleton, PageTitle, Pill, setCount, timeAgo } from '../ui';
 import { ClientPicker, rememberedClient } from '../clientPicker';
+import { NewCampaignByHand, NewLeadList, SyncButton } from './campaign/CenterParity';
 import { Select } from '../charts';
 import { NoteList } from './Inbox';
 import { LeadLists } from './LeadLists';
@@ -62,6 +63,8 @@ function Shell({ channel, section, view = 'all', client }: { channel: string; se
   const [busy, setBusy] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const [creating, setCreating] = useState(false);
+  const [byHand, setByHand] = useState(false);
+  const [newList, setNewList] = useState(false);
   const load = useCallback((again = false) => {
     setBusy(true); setError('');
     const qs = new URLSearchParams({ ...(client ? { client } : {}), ...(again ? { refresh: '1' } : {}) });
@@ -82,6 +85,9 @@ function Shell({ channel, section, view = 'all', client }: { channel: string; se
         right={(
           <div className="flex items-center gap-2">
             {section === 'campaigns' && <Button tone="primary" icon="plus" onClick={() => setCreating(true)} disabled={!plans?.canAct} title={plans?.canAct ? 'Atlas plans a new campaign for a client' : 'Alex starts new campaigns'}>New campaign</Button>}
+            {section === 'campaigns' && plans?.canAct && <Button icon="plus" onClick={() => setByHand(true)} title="A Draft campaign and its lead list, made by hand (the Airtable Campaign Center's New Campaign)">By hand</Button>}
+            {section === 'campaigns' && plans?.canAct && <SyncButton which="campaigns" />}
+            {section === 'lists' && plans?.canAct && <Button tone="primary" icon="plus" onClick={() => setNewList(true)}>New lead list</Button>}
             <IconButton icon="refresh" label="Refresh" onClick={() => { setRefresh((x) => x + 1); load(true); }} className={cx('border border-line bg-surface', busy && '[&_svg]:animate-spin')} />
           </div>
         )} />
@@ -113,6 +119,8 @@ function Shell({ channel, section, view = 'all', client }: { channel: string; se
           {section === 'lists' && <LeadLists client={client} refresh={refresh} />}
         </>
       )}
+      {byHand && <NewCampaignByHand clients={options} client={client} onClose={() => setByHand(false)} />}
+      {newList && <NewLeadList clients={options} client={client} onClose={() => setNewList(false)} />}
       {creating && <NewCampaignSheet clients={options} client={client} atlasOn={!!plans?.atlasOn} dryRun={!!plans?.planDryRun} onClose={() => setCreating(false)} onDone={() => load(true)} />}
     </div>
   );
