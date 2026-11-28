@@ -17,6 +17,8 @@ import { DECISIONS, DF } from '../decisions/fields.js';
 import { loadSettings, parseSettings, settingsBlock, blockedBy, typeAllowed, autoSendDecision, extraTypeOn, type ClientSettings } from './settings.js';
 import { logActivity } from '../activity.js';
 import { findPlaceholders } from './placeholders.js';
+import { redoOf, redoKey, redoProblem, redoInstruction, redoTitle, pendingDecisionFor } from './redo.js';
+import { trackClose, trackTask } from '../hq/agentTasks.js';
 
 export const DraftSchema = z.object({
   action: z.enum(['reply', 'skip', 'ask_alex']),
@@ -134,12 +136,22 @@ export const seanDraftStage: Stage = async (ctx) => {
   const max = Number(ctx.job.input.max ?? cfg.seanMaxPerRun) || 20;
 
   const read = [...Object.values(EF), RA.clients, RA.wsRecord, RA.policy, RA.intent];
-  // Interested-type replies first; out-of-office / not-interested ones after (drafted only where the client turns them on).
-  const main = await at.list(EMAILS, waitingFormula(days), read, 200);
-  const seen = new Set(main.map((r) => r.id));
-  const recs = [...main, ...(await at.list(EMAILS, waitingFormula(days, true), read, 200)).filter((r) => !seen.has(r.id))];
-  const done = new Set((await ctx.db.query(`SELECT email_record || '|' || reply_at AS k FROM sean_drafts WHERE action <> 'dry_run'`)).rows.map((r: any) => String(r.k)));
-  const todo = recs.filter((r) => !done.has(`${r.id}|${val(r.fields[EF.latestReplyAt])}`)).slice(0, max);
+  // "Have Echo redo it" (HQ): this one pending draft only, drafted again with two times.
+  const redo = redoOf(ctx.job.input);
+  let recs: Awaited<ReturnType<typeof at.list>>, todo: typeof recs;
+  if (redo) {
+    const one = await at.get(EMAILS, redo, [...read, RA.state, RA.humanAction, RA.draft, RA.updatedAt, RA.ownership]);
+    const why = one ? redoProblem(one.fields, 'reply') : 'the thread is gone';
+    if (why) { await trackClose(ctx.db, redoKey(redo), `Not redone: ${why}`); return { message: `Redo not done: ${why}`, redo, drafted: 0 }; }
+    recs = [one!]; todo = recs;
+  } else {
+    // Interested-type replies first; out-of-office / not-interested ones after (drafted only where the client turns them on).
+    const main = await at.list(EMAILS, waitingFormula(days), read, 200);
+    const seen = new Set(main.map((r) => r.id));
+    recs = [...main, ...(await at.list(EMAILS, waitingFormula(days, true), read, 200)).filter((r) => !seen.has(r.id))];
+    const done = new Set((await ctx.db.query(`SELECT email_record || '|' || reply_at AS k FROM sean_drafts WHERE action <> 'dry_run'`)).rows.map((r: any) => String(r.k)));
+    todo = recs.filter((r) => !done.has(`${r.id}|${val(r.fields[EF.latestReplyAt])}`)).slice(0, max);
+  }
   if (!todo.length) return { message: `${recs.length} waiting replies, none new`, waiting: recs.length, drafted: 0 };
 
   const dir = cfg.knowledgeDir;
@@ -152,10 +164,12 @@ export const seanDraftStage: Stage = async (ctx) => {
   for (const r of todo) {
     const f = r.fields;
     const replyAt = val(f[EF.latestReplyAt]);
+    // A redo is logged under its own key, so the normal run's "already drafted" list is unchanged.
+    const logKey = redo ? `redo:${replyAt}:${val(f[RA.updatedAt])}` : replyAt;
     const ws = Number(val(f[EF.workspace]));
     const wsRec = wsRecordOf(f);
     const client = clientFileFor(dir, ws);
-    if (!client) { counts.noClientFile++; continue; }
+    if (!client) { counts.noClientFile++; if (redo) await trackClose(ctx.db, redoKey(redo), 'Not redone: no client file for this workspace'); continue; }
     if (!perClient.has(String(ws))) {
       const settings = ctx.dryRun ? parseSettings(null) : await loadSettings(at, wsRec);
       perClient.set(String(ws), {
@@ -170,7 +184,8 @@ export const seanDraftStage: Stage = async (ctx) => {
     const blocked = blockedBy(settings, { weReplied: !!val(f[RA.sentAt]) })
       || (extra && !extraTypeOn(settings, extra) ? `${extra} replies are not answered for this client (Inbox Manager settings)` : '');
     if (blocked) {
-      await ctx.db.query(`INSERT INTO sean_drafts (email_record, reply_at, action, reason) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING`, [r.id, replyAt, ctx.dryRun ? 'dry_run' : 'client_off', blocked]);
+      await ctx.db.query(`INSERT INTO sean_drafts (email_record, reply_at, action, reason) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING`, [r.id, logKey, ctx.dryRun ? 'dry_run' : 'client_off', blocked]);
+      if (redo) await trackClose(ctx.db, redoKey(redo), `Not redone: ${blocked}`);
       if (extra && !blockedBy(settings, { weReplied: !!val(f[RA.sentAt]) })) counts.typeOff++; else counts.clientOff++;
       continue;
     }
@@ -191,10 +206,11 @@ export const seanDraftStage: Stage = async (ctx) => {
       `Lead status: ${val(f[EF.leadStatus])}`,
       `\nConversation (oldest first, latest at the end):\n${trimHistory(val(f[EF.history]) || val(f[EF.latestReply]))}`,
       `\nLatest message from the prospect:\n${val(f[EF.latestReply])}`,
+      ...(redo ? [redoInstruction(val(f[RA.draft]))] : []),
     ].join('\n');
 
     const d: Draft = await ctx.paid({
-      callKey: `draft:${r.id}:${replyAt}`, provider: 'anthropic', units: 1,
+      callKey: redo ? `redo:${r.id}:${replyAt}:${val(f[RA.updatedAt])}` : `draft:${r.id}:${replyAt}`, provider: 'anthropic', units: 1,
       run: () => claude!.structured(DraftSchema, [shared, SEAN_BRIEF, block], varying, user),
       dryRunResult: () => ({ action: 'skip', intent: 'Other', reason: 'dry run (sean.draft not in LIVE_STAGES): Claude not called', they_said: '', draft: '', question_for_alex: '', confidence: 0, follow_up_on: '', time_choice: 'none', chosen_time: '' }),
     });
@@ -215,7 +231,15 @@ export const seanDraftStage: Stage = async (ctx) => {
       plan = await planBooking(cfg, wsRec, pick, tz);
     }
 
-    await ctx.step(`write:${r.id}:${replyAt}`, async () => {
+    // A redo that Echo now thinks needs no reply leaves the old draft as it was (a person decides).
+    if (redo && d.action === 'skip') {
+      if (ctx.dryRun) await trackTask(ctx.db, { agent: 'Echo', key: redoKey(redo), title: redoTitle(val(f[EF.leadName]) || val(f[EF.leadEmail]), val(f[EF.company])), status: 'open', note: 'Dry run (sean.draft is not in LIVE_STAGES): nothing redrafted' });
+      else await trackClose(ctx.db, redoKey(redo), `Not redone: Echo now thinks no reply is needed (${d.reason.slice(0, 160)}); the old draft is unchanged`);
+      counts.skip++;
+      continue;
+    }
+
+    await ctx.step(`${redo ? 'redo-write' : 'write'}:${r.id}:${replyAt}`, async () => {
       const replyId = Number(val(f[EF.replyId]));
       const typeOff = d.action !== 'skip' && !typeAllowed(settings, d.intent);
       if (typeOff) d.reason = `${d.intent} replies are switched off for this client (Inbox Manager → Reply types). ${d.reason}`;
@@ -237,7 +261,7 @@ export const seanDraftStage: Stage = async (ctx) => {
       } : null;
       // The client's own send mode (Default Mode / OOO Mode / routing / confidence / max automatic).
       const autoBefore = (() => { try { return Number(JSON.parse(val(f[RA.policy]) || '{}').autoSent ?? 0) || 0; } catch { return 0; } })();
-      const auto = live.kind === 'manual' ? { auto: false, why: 'a person has to send the calendar invite' } : autoSendDecision(settings, { ...d, action, draft: draftText }, autoBefore, cfg.seanAutoSendOn);
+      const auto = redo ? { auto: false, why: 'a redo always waits for a person' } : live.kind === 'manual' ? { auto: false, why: 'a person has to send the calendar invite' } : autoSendDecision(settings, { ...d, action, draft: draftText }, autoBefore, cfg.seanAutoSendOn);
       if (live.kind === 'manual' && live.reconnect && !ctx.dryRun) await askReconnect(ctx.db, client.name, wsRec, live.why);
       const offersTimes = live.kind !== 'book' && live.kind !== 'manual';
       if (!ctx.dryRun) {
@@ -258,7 +282,7 @@ export const seanDraftStage: Stage = async (ctx) => {
         } else if (action !== 'skip') {
           if (offersTimes && offer.slots.length) await rememberOffered(ctx.db, wsRec, offer.slots, r.id);
           const who = `${val(f[EF.leadName]) || 'prospect'}${val(f[EF.company]) ? ` at ${val(f[EF.company])}` : ''}`;
-          decisionId = await at.create(DECISIONS, {
+          const card = {
             // One card does both, in order: book, then send (Alex 2026-11-27).
             [DF.title]: bookingPolicy ? `Book ${bookingPolicy.label} + send confirmation: ${who}` : live.kind === 'manual' && action === 'reply' ? `Reply to ${who} + send the invite by hand (${live.label})`
               : action === 'reply' ? `Reply to ${who}` : `Need your input: reply to ${who}`,
@@ -270,11 +294,18 @@ export const seanDraftStage: Stage = async (ctx) => {
             [DF.fix]: draftText,
             [DF.details]: `Thread: https://send.dulcy.io/inbox?reply_uuid=${val(f[EF.replyUuid])}\nCampaign: ${val(f[EF.campaign])}\n\nLatest message:\n${val(f[EF.latestReply]).slice(0, 2500)}`,
             [DF.action]: action === 'reply' ? 'Approve Reply' : 'None',
-          });
+          };
+          // A redo updates the thread's pending card (one card per thread); otherwise a new card.
+          const pending = redo ? await pendingDecisionFor(at, r.id) : '';
+          if (pending) { await at.update(DECISIONS, pending, card); decisionId = pending; } else decisionId = await at.create(DECISIONS, card);
         }
       }
       await ctx.db.query(`INSERT INTO sean_drafts (email_record, reply_at, action, reason, decision_id) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (email_record, reply_at) DO UPDATE SET action = EXCLUDED.action, reason = EXCLUDED.reason, decision_id = EXCLUDED.decision_id WHERE sean_drafts.action = 'dry_run'`,
-        [r.id, replyAt, ctx.dryRun ? 'dry_run' : action, d.reason.slice(0, 500), decisionId || null]);
+        [r.id, logKey, ctx.dryRun ? 'dry_run' : action, d.reason.slice(0, 500), decisionId || null]);
+      if (redo) {
+        if (ctx.dryRun) await trackTask(ctx.db, { agent: 'Echo', key: redoKey(redo), title: redoTitle(val(f[EF.leadName]) || val(f[EF.leadEmail]), val(f[EF.company])), status: 'open', note: 'Dry run (sean.draft is not in LIVE_STAGES): nothing redrafted' });
+        else await trackClose(ctx.db, redoKey(redo), offersTimes && offer.times.length >= 2 ? `Redrafted with two times: ${offer.times.slice(0, 2).join(' or ')}. Waiting for approval.` : `Redrafted, but ${client.name}'s calendar gave no two open times: check the new draft. Waiting for approval.`);
+      }
       counts[action as 'reply' | 'skip' | 'ask_alex']++;
       if (auto.auto) counts.auto++;
       return { decisionId };

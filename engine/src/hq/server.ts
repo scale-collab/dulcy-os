@@ -33,8 +33,9 @@ import { askVisible, finishAsk, getAsk, isSnooze, listAsks, quietItem, snoozeAsk
 import { isNeedDay, loadNeeds, loadNeedsDay, needCounts, type NeedExtras } from './needs.js';
 import { todayBlocks } from './today.js';
 import { workSummary } from './agentTasks.js';
-import { actOnThread, listInbox, threadDetail } from './inbox.js';
-import { calendarInvite, replierDetail, saveReplier } from './replier.js';
+import { actOnThread, echoLive, listInbox, threadDetail } from './inbox.js';
+import { linkDraftsReport, redoLinkDrafts } from './inboxRedo.js';
+import { calendarInvite, replierDetail, replierModeFor, saveReplier } from './replier.js';
 import { campaignDetail, listCampaigns, listLeadLists } from './campaigns.js';
 import { howOfRows, parityRoutes, round2Campaigns } from './campaignRoutes.js';
 import { senderIndex } from './sendingAccounts.js';
@@ -518,10 +519,27 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         json(res, 200, await listInbox(needAt(), { tab: sp.get('tab') ?? undefined, client: sp.get('client') ?? undefined, page: Number(sp.get('page')) || 1, q: sp.get('q') ?? undefined, refresh: sp.get('refresh') === '1' }));
         return true;
       }
+      // Inbox round (2026-11-28): old drafts with a booking link (read only) + "Have Echo redo it", and Echo live.
+      if (p === '/hq/api/inbox/link-drafts' && req.method === 'GET') {
+        json(res, 200, await linkDraftsReport(needAt(), db, { client: url.searchParams.get('client') ?? undefined, refresh: url.searchParams.get('refresh') === '1' }));
+        return true;
+      }
+      if (p === '/hq/api/inbox/redo' && req.method === 'POST') {
+        const b = await readJson(req, 20_000);
+        const r = await redoLinkDrafts(needAt(), db, cfg, user, b);
+        json(res, r.status, 'error' in r ? { error: r.error } : { ok: true, queued: r.queued, skipped: r.skipped });
+        return true;
+      }
+      if (p === '/hq/api/inbox/live' && req.method === 'GET') {
+        json(res, 200, await echoLive(needAt(), db));
+        return true;
+      }
       m = p.match(/^\/hq\/api\/inbox\/(rec[A-Za-z0-9]{14})$/);
       if (m && req.method === 'GET') {
         const t = await threadDetail(needAt(), m[1]);
-        if (!t) json(res, 404, { error: 'no such thread' }); else json(res, 200, t);
+        if (!t) { json(res, 404, { error: 'no such thread' }); return true; }
+        const replier = await replierModeFor({ at: needAt(), cfg }, t.row.wsRec).catch(() => null);
+        json(res, 200, { ...t, replier });
         return true;
       }
       if (m && req.method === 'POST') {

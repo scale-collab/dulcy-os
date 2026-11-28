@@ -30,7 +30,7 @@ import type { AgentTask } from '../src/hq/agentTasks.js';
 import type { DecisionCard } from '../src/hq/decisions.js';
 import { ISSUES, IF } from '../src/agents/riley.js';
 import { EF, SETTINGS } from '../src/agents/emailsFields.js';
-import { WORKSPACES, XF, _resetInboxCache, bookingLinks, oneLine, parseHistory, tabOf } from '../src/hq/inbox.js';
+import { WORKSPACES, XF, CAMPAIGNS as INBOX_CAMPAIGNS, _resetCopyCache, _resetInboxCache, bookingLinks, oneLine, parseHistory, tabOf } from '../src/hq/inbox.js';
 import { SF, CALENDAR_PROVIDERS, calendarInvite, isTimezone, providerKeyOf, validateSave, valuesOf } from '../src/hq/replier.js';
 
 const url = process.env.TEST_DATABASE_URL;
@@ -1244,6 +1244,70 @@ test('inbox thread: conversation, reason + draft, offered times, booking-link wa
   assert.deepEqual(b.bookingLinks, ['https://calendly.com/ryan/x']);
   assert.equal(b.notes[0].problem, 'Booking link instead of two times', 'a warning, not a block');
   assert.equal((await call('GET', '/hq/api/inbox/recNOPE0000000001', { cookie })).status, 404);
+});
+
+test('inbox round: thread timeline (Email 1 from the campaign copy), replier mode panel, replier links', { skip }, async () => {
+  inboxTables(); _resetCopyCache();
+  tables[EMAILS].recEMAIL000000001[EF.campaign] = '[Dulcy] Agencies';
+  tables[EMAILS].recEMAIL000000001[EF.history] = 'Jane Roe jane@acme.com · Received Nov 24, 2026, 9:48 PM UTC\n\nCan you do Tuesday?\n\nOn Mon, Nov 23, 2026 at 9:00 AM Alex Woung <\nalex@dulcy.io> wrote:\n\n│ Hey Jane,\n│ Could I build you a free list of 1,000 potential clients for your agency outreach?\n│ Names, emails, companies: the details you need.';
+  tables[INBOX_CAMPAIGNS] = { recCAMP0000000001: { Name: '[Dulcy] Agencies', 'Campaign Body 1 Version 1': '{Hey|Hi} {FIRST\\_NAME},\nCould I {build you|put together for you} a free list of 1,000 potential clients for your agency outreach?\nNames, emails, companies: {the details you need|what you need}.' }, recCAMP0000000002: { Name: 'Other', 'Campaign Body 1 Version 1': 'unrelated' } };
+  tables[SETTINGS] = { recSET00000000001: settingsRow({ [SF.wsRec]: 'recWSDULCY0000001', [SF.calStatus]: 'Connected', [SF.calJson]: JSON.stringify({ connectionStatus: 'connected' }) }) };
+  const { cookie } = await login();
+  const t = (await call('GET', '/hq/api/inbox/recEMAIL000000001', { cookie })).body;
+  assert.deepEqual(t.timeline.map((m: any) => [m.kind, m.who, m.step, m.stepFrom, m.latest]), [['sequence', 'us', 1, 'copy', false], ['reply', 'them', null, null, true]]);
+  assert.equal(t.stepsFromCopy, true);
+  assert.deepEqual([t.replier.mode, t.replier.clientId], ['draft-only', 'recWSDULCY0000001'], 'the test server has no live reply sender');
+  assert.match(t.replier.lines.join(' '), /Echo offers two real times/);
+  assert.ok(t.messages, 'the old messages list stays for older screens');
+  const l = (await call('GET', '/hq/api/inbox', { cookie })).body;
+  assert.deepEqual(l.replierClients.map((c: any) => [c.key, c.wsRec]), [['dulcy', 'recWSDULCY0000001'], ['twentywestmedia', 'recWSTWMINT000001']]);
+  assert.equal(l.linkDrafts, 1);
+});
+
+test('inbox round: old drafts with a link (read only) and Have Echo redo it (task + job, nothing sent)', { skip }, async () => {
+  inboxTables();
+  // A reply someone already answered by hand: listed, but not redone.
+  tables[EMAILS].recEMAIL000000008 = thread({ [EF.leadName]: 'Cara', [RA.draft]: 'Pick a time: https://cal.com/x/y', [EF.lastSent]: 'Last Email Sent By Dulcy', [EF.latestReplyAt]: H(3) });
+  const { cookie } = await login();
+  const before = writes.length;
+  const r = (await call('GET', '/hq/api/inbox/link-drafts', { cookie })).body;
+  assert.deepEqual([r.total, r.pending], [2, 3]);
+  assert.deepEqual(r.rows.map((x: any) => [x.id, x.kind, x.blocked ? 'blocked' : 'ok', x.links[0]]), [
+    ['recEMAIL000000002', 'followup', 'ok', 'https://calendly.com/ryan/x'], ['recEMAIL000000008', 'reply', 'blocked', 'https://cal.com/x/y'],
+  ]);
+  assert.match(r.rows[1].blocked, /already answered/);
+  assert.equal(writes.length, before, 'the report writes nothing');
+  assert.equal((await call('POST', '/hq/api/inbox/redo', { body: {}, cookie })).status, 400);
+  const q = await call('POST', '/hq/api/inbox/redo', { body: { ids: 'all' }, cookie });
+  assert.equal(q.status, 200, JSON.stringify(q.body));
+  assert.deepEqual(q.body.queued.map((x: any) => [x.id, x.dryRun]), [['recEMAIL000000002', true]]);
+  assert.deepEqual(q.body.skipped.map((x: any) => x.id), ['recEMAIL000000008']);
+  const job = (await db.query(`SELECT kind, record_id, input, dry_run FROM jobs`)).rows;
+  assert.deepEqual(job, [{ kind: 'sean.followup', record_id: 'recEMAIL000000002', input: { redo: 'recEMAIL000000002' }, dry_run: true }], 'one Echo job, dry run unless live');
+  const task = (await db.query(`SELECT agent, status, source_key, job_kind, link FROM hq_agent_tasks`)).rows;
+  assert.deepEqual(task, [{ agent: 'Echo', status: 'in_progress', source_key: 'echo-redo:recEMAIL000000002', job_kind: 'sean.followup', link: 'thread/recEMAIL000000002' }]);
+  assert.equal(writes.length, before, 'nothing written to Airtable, nothing sent');
+  const again = (await call('GET', '/hq/api/inbox/link-drafts', { cookie })).body;
+  assert.equal(again.rows[0].task.status, 'in_progress');
+  // Josh (member) sees the Inbox and can ask for a redo too; never money.
+  await upsertUser(db, 'josh@dulcy.io', 'member', PW, 'Josh');
+  const josh = await login('josh@dulcy.io');
+  assert.equal((await call('GET', '/hq/api/inbox/link-drafts', { cookie: josh.cookie })).status, 200);
+});
+
+test('inbox round: Echo live (last hour from Echo\'s run log, waiting for approval)', { skip }, async () => {
+  inboxTables();
+  await db.query(`TRUNCATE sean_drafts`);
+  await db.query(`INSERT INTO sean_drafts (email_record, reply_at, action, reason, created_at) VALUES
+    ('recEMAIL000000001','a','reply','asked for a time', now() - interval '5 minutes'),
+    ('recEMAIL000000002','followup:x','ask_alex','needs a price', now() - interval '20 minutes'),
+    ('recEMAIL000000003','b','skip','not interested', now() - interval '2 hours'),
+    ('recEMAIL000000004','c','dry_run','', now() - interval '1 minute')`);
+  const { cookie } = await login();
+  const l = (await call('GET', '/hq/api/inbox/live', { cookie })).body;
+  assert.deepEqual(l.counts, { drafted: 1, needInput: 1, noReply: 0, leftToClient: 0, other: 0, dryRun: 1, redone: 0 });
+  assert.equal(l.waiting, 2);
+  assert.deepEqual(l.recent.map((x: any) => [x.prospect, x.kind, x.waiting]), [['Jane Roe', 'reply', true], ['Bob', 'followup', true]]);
 });
 
 test('inbox Send / Send edited / Skip: the same writes as the Decisions reply card', { skip }, async () => {

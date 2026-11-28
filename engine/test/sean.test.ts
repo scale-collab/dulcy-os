@@ -13,6 +13,8 @@ import { DECISIONS, DF } from '../src/decisions/fields.js';
 import { clientFileFor } from '../src/agents/knowledge.js';
 import { freeSlots, rememberOffered, pickTwo } from '../src/agents/calendar.js';
 import { parsePlan, dueAfter, armFields, allSteps, DEFAULT_PLAN, dueFormula } from '../src/agents/followups.js';
+import { redoKey, redoTitle } from '../src/agents/redo.js';
+import { upsertAgentTask } from '../src/hq/agentTasks.js';
 
 const url = process.env.TEST_DATABASE_URL;
 const skip = !url ? 'TEST_DATABASE_URL not set' : false;
@@ -44,6 +46,8 @@ before(async () => {
     res.setHeader('content-type', 'application/json');
     if (req.method === 'GET') {
       const formula = u.searchParams.get('filterByFormula') ?? ''; formulas.push(formula);
+      const one = /^RECORD_ID\(\)='(rec\w+)'$/.exec(formula);
+      if (table === EMAILS && one) return res.end(JSON.stringify({ records: (emails[one[1]] ?? due[one[1]]) ? [{ id: one[1], fields: emails[one[1]] ?? due[one[1]] }] : [] }));
       if (table === EMAILS && /Dulcy Reply Agent Due At/.test(formula)) return res.end(JSON.stringify({ records: Object.entries(due).filter(([, f]) => f[RA.state] === 'Scheduled' && f[RA.dueAt]).map(([id, fields]) => ({ id, fields })) }));
       if (table === EMAILS && /Last Email Sent By Prospect/.test(formula)) return res.end(JSON.stringify({ records: Object.entries(emails).map(([id, fields]) => ({ id, fields })) }));
       if (table === EMAILS) return res.end(JSON.stringify({ records: booked.map((fields, i) => ({ id: `recBooked${i}`, fields })) }));
@@ -326,4 +330,56 @@ test('Echo offers on-the-hour or half-hour times when a calendar returns 5-minut
   const s = ['2026-11-30T15:25:00Z', '2026-11-30T15:30:00Z', '2026-11-30T15:35:00Z', '2026-12-01T14:05:00Z', '2026-12-01T14:30:00Z'];
   assert.deepEqual(pickTwo(s), ['2026-11-30T15:30:00Z', '2026-12-01T14:30:00Z']);
   assert.deepEqual(pickTwo(['2026-11-30T15:25:00Z', '2026-12-01T14:05:00Z']), ['2026-11-30T15:25:00Z', '2026-12-01T14:05:00Z'], 'odd times still offered when nothing else is free');
+});
+
+// ---------- "Have Echo redo it" (HQ Inbox → Old drafts with a link, 2026-11-28) ----------
+async function runRedo(conf: Config, rec: string, kind = 'sean.draft') {
+  const q = await enqueue(db, { kind, recordId: rec, input: { redo: rec }, dryRun: conf.dryRun && !conf.liveStages.includes(kind), maxAttempts: 3, deadlineMs: 60_000 });
+  for (let i = 0; i < 10; i++) { await runOnce(db, conf); const j = await getJob(db, q.job.id); if (['succeeded', 'failed', 'needs_review'].includes(j!.job.status)) return j!; }
+  throw new Error('job did not settle');
+}
+test('redo: one pending link draft is drafted again (redo instruction), never auto-sent, the task closes; blocked ones are not', { skip }, async () => {
+  await db.query('TRUNCATE hq_agent_tasks RESTART IDENTITY CASCADE');
+  settings = [{ Enabled: true, 'Default Mode': 'Autopilot', 'Calendar Link': 'https://calendly.com/client/intro', 'Calendar Settings JSON': '{}' }];
+  emails.recREDO0000000001 = thread({ [RA.state]: 'Needs Approval', [RA.humanAction]: 'None', [EF.lastSent]: 'Last Email Sent By Prospect', [RA.draft]: 'Grab a time: https://calendly.com/client/intro', [RA.updatedAt]: '2026-11-24T15:05:00.000Z', [RA.policy]: JSON.stringify({ agent: 'sean', calendarEvidence: { times: [], link: 'https://calendly.com/client/intro' } }) });
+  await upsertAgentTask(db, { agent: 'Echo', key: redoKey('recREDO0000000001'), title: redoTitle('Jane Doe', 'Acme'), status: 'in_progress' });
+  claudeAnswers = [{ action: 'reply', intent: 'Interested', reason: 'asked about cost', they_said: 'Asked the cost', draft: 'Hi Jane, it depends on goals. Would Tue 2pm or Wed 10am ET work?', question_for_alex: '', confidence: 99 }];
+  const j = await runRedo(cfg(), 'recREDO0000000001');
+  assert.equal(j.job.status, 'succeeded', j.job.error ?? '');
+  assert.equal(claudeCalls.length, 1);
+  assert.match(claudeCalls[0].body.messages[0].content, /Redo \(asked in HQ\)[\s\S]*Earlier draft:\nGrab a time/);
+  assert.equal(emails.recREDO0000000001[RA.draft], 'Hi Jane, it depends on goals. Would Tue 2pm or Wed 10am ET work?');
+  assert.equal(emails.recREDO0000000001[RA.state], 'Needs Approval');
+  assert.equal(emails.recREDO0000000001[RA.humanAction], 'None', 'a redo is never auto-sent, even on Autopilot');
+  assert.equal(Object.keys(decisions).length, 1, 'one approval card');
+  const log = (await db.query(`SELECT reply_at, action FROM sean_drafts WHERE email_record='recREDO0000000001'`)).rows;
+  assert.equal(log.length, 1); assert.match(log[0].reply_at, /^redo:/); assert.equal(log[0].action, 'reply');
+  const task = (await db.query(`SELECT status, progress_note FROM hq_agent_tasks WHERE source_key=$1`, [redoKey('recREDO0000000001')])).rows[0];
+  assert.equal(task.status, 'done'); assert.match(task.progress_note, /Waiting for approval/);
+
+  // Someone already answered by hand: no Claude call, nothing written, the task says why.
+  claudeCalls = [];
+  emails.recREDO0000000002 = thread({ [RA.state]: 'Needs Approval', [RA.humanAction]: 'None', [EF.lastSent]: 'Last Email Sent By Dulcy', [RA.draft]: 'https://calendly.com/client/intro', [RA.policy]: '{}' });
+  await upsertAgentTask(db, { agent: 'Echo', key: redoKey('recREDO0000000002'), title: redoTitle('Jane Doe', 'Acme'), status: 'in_progress' });
+  const before = JSON.stringify(emails.recREDO0000000002);
+  const k = await runRedo(cfg(), 'recREDO0000000002');
+  assert.equal(k.job.status, 'succeeded');
+  assert.equal(claudeCalls.length, 0);
+  assert.equal(JSON.stringify(emails.recREDO0000000002), before);
+  assert.match((await db.query(`SELECT progress_note FROM hq_agent_tasks WHERE source_key=$1`, [redoKey('recREDO0000000002')])).rows[0].progress_note, /Not redone: someone already answered/);
+});
+
+test('redo: a pending follow-up with a link is drafted again by sean.followup, never auto-sent', { skip }, async () => {
+  await db.query('TRUNCATE hq_agent_tasks RESTART IDENTITY CASCADE');
+  settings = [{ Enabled: true, 'Default Mode': 'Autopilot', 'Calendar Link': 'https://calendly.com/client/intro', 'Calendar Settings JSON': '{}' }];
+  due.recREDO0000000003 = thread({ [RA.state]: 'Needs Approval', [RA.humanAction]: 'None', [RA.dueAt]: '2026-11-20T15:00:00.000Z', [RA.followupType]: 'No Response', [EF.lastSent]: 'Last Email Sent By Dulcy', [RA.draft]: 'Any thoughts? https://calendly.com/client/intro', [RA.updatedAt]: '2026-11-20T15:05:00.000Z', [RA.policy]: JSON.stringify({ agent: 'sean', kind: 'followup', seanFollowupsSent: 0 }) });
+  await upsertAgentTask(db, { agent: 'Echo', key: redoKey('recREDO0000000003'), title: redoTitle('Jane Doe', 'Acme'), status: 'in_progress' });
+  claudeAnswers = [{ action: 'reply', intent: 'Interested', reason: 'open question', they_said: 'Asked the cost', draft: 'Jane, would Tue 2pm or Wed 10am ET suit to go through cost?', question_for_alex: '', confidence: 99 }];
+  const j = await runRedo(cfg({ liveStages: ['sean.draft', 'sean.followup'] }), 'recREDO0000000003', 'sean.followup');
+  assert.equal(j.job.status, 'succeeded', j.job.error ?? '');
+  assert.match(claudeCalls[0].body.messages[0].content, /Redo \(asked in HQ\)/);
+  assert.equal(due.recREDO0000000003[RA.draft], 'Jane, would Tue 2pm or Wed 10am ET suit to go through cost?');
+  assert.equal(due.recREDO0000000003[RA.humanAction], 'None');
+  assert.equal(due.recREDO0000000003[RA.state], 'Needs Approval');
+  assert.equal((await db.query(`SELECT status FROM hq_agent_tasks WHERE source_key=$1`, [redoKey('recREDO0000000003')])).rows[0].status, 'done');
 });

@@ -12,6 +12,8 @@ import { shortClient } from '../agents/ada.js';
 import { clientKey } from './clients.js';
 import { decide, replyButtons, type HqAirtable, type Verdict } from './decisions.js';
 import { bookingOf, bookedLine } from '../agents/booking.js';
+import { buildTimeline, stepCopies, type StepCopy, type ThreadMsg } from './thread.js';
+import type { Db } from '../db/pool.js';
 
 export const WORKSPACES = 'tblcjRBGJEWh5KgOt';
 /** Emails fields only the Inbox reads (kept here so Echo's own read lists stay as they are). */
@@ -67,6 +69,47 @@ export function bookingLinks(draft: string, savedLink = ''): string[] {
   return [...found];
 }
 
+/** Specific times written in a draft: "Tue, Dec 1 at 2:00 PM", "Wed 10am", "Thursday at 3:30pm ET". */
+const TIME_RE = /\b(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*\.?,?\s+(?:[a-z]{3,9}\.?\s+\d{1,2},?\s+)?(?:at\s+)?\d{1,2}(?::\d{2})?\s*(?:am|pm|a\.m\.|p\.m\.)/gi;
+
+/** How many distinct specific times a draft offers (the calendar's own times count first). Pure. */
+export function timesInDraft(draft: string, offered: string[] = []): number {
+  const text = String(draft ?? '');
+  const lower = text.toLowerCase().replace(/\s+/g, ' ');
+  const hits = new Set<string>();
+  for (const t of offered) {
+    const core = String(t).toLowerCase().replace(/\s+(?:e[sd]t|c[sd]t|m[sd]t|p[sd]t|et|ct|mt|pt|utc|gmt)$/, '').replace(/\s+/g, ' ').trim();
+    if (core && lower.includes(core)) hits.add(core);
+  }
+  for (const m of text.match(TIME_RE) ?? []) hits.add(m.toLowerCase().replace(/\s+/g, ' '));
+  return hits.size;
+}
+
+export interface LinkDraft {
+  /** The booking link(s) in the draft. */
+  links: string[];
+  /** Specific times the draft offers (0 or 1: under two). */
+  times: number;
+  /** The client's calendar gave Echo no open times when it drafted. */
+  noTimesThen: boolean;
+  /** The prospect asked for a link themselves (then a link is allowed: RULES 2026-11-25). */
+  askedForLink: boolean;
+}
+
+/**
+ * A pending draft that offers a booking link and fewer than two specific times (null = fine). Pure.
+ * draft: the Echo draft. policy: the row's Reply Agent policy JSON. prospect: what they wrote.
+ */
+export function linkDraftOf(draft: string, policy: Record<string, any>, prospect = ''): LinkDraft | null {
+  const links = bookingLinks(draft, String(policy?.calendarEvidence?.link ?? ''));
+  if (!links.length) return null;
+  const offered: string[] = Array.isArray(policy?.calendarEvidence?.times) ? policy.calendarEvidence.times.map(String) : [];
+  const times = timesInDraft(draft, offered);
+  if (times >= 2) return null;
+  const said = `${String(policy?.they_said ?? '')}\n${String(prospect ?? '').split(/\nOn\s[^\n]+wrote:/)[0]}`;
+  return { links, times, noTimesThen: offered.length < 2, askedForLink: /\b(?:booking|calendar|calendly|scheduling|meeting)\s+link\b|\blink to (?:book|your calendar|schedule)\b|\bbooking page\b/i.test(said) };
+}
+
 export interface InboxRow {
   id: string; tab: InboxTab | null; prospect: string; email: string; company: string; client: string; clientKey: string; wsRec: string;
   intent: string; at: string; theySaid: string; followup: number; followupType: string; nextFollowUp: string | null; bookedAt: string;
@@ -75,6 +118,12 @@ export interface InboxRow {
   bookedLine: string; bookedUrl: string;
   /** Echo will book this on approve: "Wed Dec 3, 5:00 PM ET" ('' = no booking on this draft). */
   booksAt: string;
+  /** A reply to the prospect or one of Echo's follow-ups. */
+  kind: 'reply' | 'followup';
+  /** The last email in the thread is ours (Last Email Sent By Dulcy). */
+  lastSentByUs: boolean;
+  /** A pending draft that offers a booking link instead of two specific times (null = fine). */
+  linkDraft: LinkDraft | null;
 }
 export interface Note { problem: string; data: string; fix: string }
 
@@ -107,6 +156,8 @@ export function toRow(r: AirtableRecord, names: WorkspaceName, any = false): Inb
     bookingLink: tab === 'approve' && bookingLinks(draft, String(p.calendarEvidence?.link ?? '')).length > 0, gap: /\[GAP|\{\{/.test(draft),
     bookedLine: bookedLine(booking), bookedUrl: booking?.status === 'booked' ? String(booking.meetLink || booking.htmlLink || '') : '',
     booksAt: booking?.status === 'pending' ? booking.label : '',
+    kind: kind ? 'followup' : 'reply', lastSentByUs: val(f[EF.lastSent]) === 'Last Email Sent By Dulcy',
+    linkDraft: tab === 'approve' ? linkDraftOf(draft, p, val(f[EF.latestReply])) : null,
   };
 }
 
@@ -162,7 +213,52 @@ export async function listInbox(at: HqAirtable, q: { tab?: string; client?: stri
   const rows = forClient.filter((r) => r.tab === tab && (!needle || `${r.prospect} ${r.email} ${r.company} ${r.theySaid}`.toLowerCase().includes(needle))).sort(SORT[tab]);
   const pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const page = Math.min(pages, Math.max(1, Math.floor(Number(q.page) || 1)));
-  return { tab, client, rows: rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), total: rows.length, page, pages, counts, clients, notes: inboxNotes(tab, rows), readAt: src.readAt };
+  // Every client with a thread here, for the "Replier settings" links (#/clients/<workspace>/replier).
+  const replierClients = [...src.rows.reduce((m, r) => { if (r.clientKey && r.wsRec && !m.has(r.clientKey)) m.set(r.clientKey, { key: r.clientKey, name: r.client, wsRec: r.wsRec }); return m; }, new Map<string, { key: string; name: string; wsRec: string }>()).values()]
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const linkDrafts = forClient.filter((r) => r.tab === 'approve' && r.linkDraft).length;
+  return { tab, client, rows: rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), total: rows.length, page, pages, counts, clients, replierClients, linkDrafts, notes: inboxNotes(tab, rows), readAt: src.readAt };
+}
+
+// ---------- Echo live (Alex 2026-11-27: "Echo watched live") ----------
+const LIVE_ACTION: Record<string, 'drafted' | 'needInput' | 'noReply' | 'leftToClient' | 'other'> = {
+  reply: 'drafted', ask_alex: 'needInput', skip: 'noReply', client_off: 'leftToClient', complete: 'noReply', answered: 'other',
+};
+/**
+ * What Echo did in the last hour, read only: drafts written (from Echo's own run log, sean_drafts),
+ * the ones waiting for approval now, and Echo's last runs. No names of money, nothing written.
+ */
+export async function echoLive(at: HqAirtable, db: Db, now = Date.now()) {
+  const sinceIso = new Date(now - 3_600_000).toISOString();
+  const [done, runs, src] = await Promise.all([
+    db.query(`SELECT email_record, reply_at, action, reason, created_at FROM sean_drafts WHERE created_at > $1 ORDER BY created_at DESC LIMIT 200`, [sinceIso]),
+    db.query(`SELECT DISTINCT ON (kind) id, kind, status, dry_run, result, error, created_at, updated_at FROM jobs WHERE kind IN ('sean.draft','sean.followup') ORDER BY kind, id DESC`),
+    cachedInbox(at).catch(() => null),
+  ]);
+  const byId = new Map((src?.rows ?? []).map((r) => [r.id, r]));
+  const counts = { drafted: 0, needInput: 0, noReply: 0, leftToClient: 0, other: 0, dryRun: 0, redone: 0 };
+  for (const d of done.rows) {
+    if (d.action === 'dry_run') { counts.dryRun++; continue; }
+    counts[LIVE_ACTION[String(d.action)] ?? 'other']++;
+    if (String(d.reply_at).startsWith('redo:')) counts.redone++;
+  }
+  const waiting = (src?.rows ?? []).filter((r) => r.tab === 'approve' && !r.pressed);
+  const recent = done.rows.filter((d) => d.action !== 'dry_run').slice(0, 8).map((d) => {
+    const r = byId.get(String(d.email_record));
+    return {
+      id: String(d.email_record), at: new Date(d.created_at).toISOString(), action: String(d.action), kind: String(d.reply_at).startsWith('followup:') ? 'followup' : String(d.reply_at).startsWith('redo:') ? 'redo' : 'reply',
+      prospect: r?.prospect ?? '', client: r?.client ?? '', waiting: !!r && r.tab === 'approve' && !r.pressed, reason: String(d.reason ?? '').slice(0, 160),
+    };
+  });
+  const lastRuns = runs.rows.map((j) => ({
+    kind: String(j.kind) === 'sean.followup' ? 'Follow-ups' : 'Replies', status: String(j.status), dryRun: j.dry_run === true,
+    at: new Date(j.updated_at).toISOString(), message: String(j.result?.message ?? j.error ?? '').slice(0, 200),
+  }));
+  return {
+    since: sinceIso, counts, waiting: waiting.length,
+    waitingOldest: waiting.reduce((o, r) => (!o || (r.at && r.at < o) ? r.at : o), '') || null,
+    recent, lastRuns, readAt: new Date(now).toISOString(),
+  };
 }
 
 // ---------- Thread ----------
@@ -203,6 +299,26 @@ export async function linkedDecision(at: Pick<HqAirtable, 'list'>, emailRec: str
     .map((d) => ({ id: d.id, isReply: val(d.fields[DF.action]) === 'Approve Reply' }))[0] ?? null;
 }
 
+/** The Campaigns table: each campaign's step copy (to label our cold emails Email 1 / 2 / 3). */
+export const CAMPAIGNS = 'tblAVAA6uBPaMj28P';
+const copyCache = new Map<string, { at: number; data: Promise<StepCopy[]> }>();
+export function _resetCopyCache() { copyCache.clear(); }
+/** An Airtable formula string literal (double quotes; backslash and quote escaped). Pure. */
+export const formulaString = (s: string) => `"${String(s).split('\\').join('\\\\').split('"').join('\\"')}"`;
+/** The step copy of the campaign with this exact name ([] = none found). Kept 10 minutes. */
+export function campaignCopies(at: Pick<HqAirtable, 'list'>, name: string, now = Date.now()): Promise<StepCopy[]> {
+  const n = String(name ?? '').trim();
+  if (!n) return Promise.resolve([]);
+  const hit = copyCache.get(n);
+  if (hit && now - hit.at < 600_000) return hit.data;
+  const data = at.list(CAMPAIGNS, `{Name}=${formulaString(n)}`, [], 3, { byName: true })
+    .then((rs) => { const r = rs.find((x) => val(x.fields.Name) === n); return r ? stepCopies(r.fields) : []; });
+  if (copyCache.size > 200) copyCache.clear();
+  copyCache.set(n, { at: now, data });
+  data.catch(() => copyCache.delete(n));
+  return data;
+}
+
 export async function threadDetail(at: HqAirtable, id: string) {
   if (!/^rec[A-Za-z0-9]{14}$/.test(id)) return null;
   const [r, names] = await Promise.all([at.get(EMAILS, id, [...READ, EF.history, RA.customReply]), workspaceNames(at)]);
@@ -212,6 +328,8 @@ export async function threadDetail(at: HqAirtable, id: string) {
   const p = policyOf(f);
   const draft = val(f[RA.draft]);
   const latest = val(f[EF.latestReply]).trim();
+  const copies = await campaignCopies(at, val(f[EF.campaign])).catch(() => [] as StepCopy[]);
+  const timeline: ThreadMsg[] = buildTimeline(val(f[EF.history]), { prospectEmail: val(f[EF.leadEmail]), latest, latestAt: val(f[EF.latestReplyAt]), copies });
   const messages = parseHistory(val(f[EF.history]));
   const first = messages.findIndex((m) => same(m.body, oneLine(latest, 100000)) || same(`${m.body}\n${m.quoted}`, latest) || same(m.body, latest));
   if (first >= 0 && latest) messages.splice(first, 1);
@@ -229,7 +347,7 @@ export async function threadDetail(at: HqAirtable, id: string) {
   if (['taken', 'failed'].includes(String(booking?.status)) && booking?.error && canAct && !val(f[RA.lastError])) notes.push({ problem: `${booking.label} was not booked`, data: booking.error.slice(0, 300), fix: 'The draft below replaces the confirmation; send it or edit it.' });
   if (!canAct && val(f[RA.state]) === 'Needs Approval') notes.push({ problem: 'Already pressed', data: `Human Action is "${val(f[RA.humanAction])}"`, fix: 'The engine sender picks it up within a minute; nothing to do.' });
   return {
-    row, subject: val(f[EF.subject]), campaign: val(f[EF.campaign]), latest, messages, draft, reason: val(f[RA.seanReason]) || String(p.reason ?? ''),
+    row, subject: val(f[EF.subject]), campaign: val(f[EF.campaign]), latest, messages, timeline, stepsFromCopy: copies.length > 0, draft, reason: val(f[RA.seanReason]) || String(p.reason ?? ''),
     question: val(f[RA.seanInput]) || String(p.question_for_alex ?? ''), offeredTimes: times, bookingLinks: links,
     threadUrl: uuid ? `https://send.dulcy.io/inbox?reply_uuid=${encodeURIComponent(uuid)}` : '',
     decisionId: decision?.id ?? '', canAct, canEdit: canAct, sentAt: val(f[RA.sentAt]), dueAt: val(f[RA.dueAt]), notes,

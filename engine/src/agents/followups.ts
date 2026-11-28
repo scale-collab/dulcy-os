@@ -17,6 +17,8 @@ import { loadSettings, parseSettings, settingsBlock, blockedBy, typeAllowed, aut
 import { logActivity } from '../activity.js';
 import { rememberOffered } from './calendar.js';
 import { DECISIONS, DF } from '../decisions/fields.js';
+import { redoOf, redoKey, redoProblem, redoInstruction, redoTitle, pendingDecisionFor } from './redo.js';
+import { trackClose, trackTask } from '../hq/agentTasks.js';
 
 export { DEFAULT_PLAN, CLOSE_LOOP, parsePlan, allSteps, dueAfter, type FollowupStep, type FollowupPlan } from './followupPlan.js';
 import { DEFAULT_PLAN, parsePlan, allSteps, dueAfter, type FollowupPlan } from './followupPlan.js';
@@ -82,10 +84,21 @@ export const seanFollowupStage: Stage = async (ctx) => {
   const at = createAirtableClient({ apiKey: cfg.airtableApiKey, baseId: cfg.airtableBaseId, baseUrl: cfg.airtableBaseUrl });
   const max = Number(ctx.job.input.max ?? cfg.seanMaxPerRun) || 20;
 
-  const recs = await at.list(EMAILS, dueFormula(), [...Object.values(EF), RA.clients, RA.wsRecord, RA.policy, RA.dueAt, RA.followupType, RA.intent], 200);
-  const keyOf = (r: { id: string; fields: Record<string, unknown> }) => `${r.id}|followup:${val(r.fields[RA.dueAt])}`;
-  const done = new Set((await ctx.db.query(`SELECT email_record || '|' || reply_at AS k FROM sean_drafts WHERE action <> 'dry_run'`)).rows.map((r: any) => String(r.k)));
-  const todo = recs.filter((r) => !done.has(keyOf(r))).slice(0, max);
+  const fields = [...Object.values(EF), RA.clients, RA.wsRecord, RA.policy, RA.dueAt, RA.followupType, RA.intent];
+  // "Have Echo redo it" (HQ): this one pending follow-up only, drafted again with two times.
+  const redo = redoOf(ctx.job.input);
+  let recs: Awaited<ReturnType<typeof at.list>>, todo: typeof recs;
+  if (redo) {
+    const one = await at.get(EMAILS, redo, [...fields, RA.state, RA.humanAction, RA.draft, RA.updatedAt, RA.ownership]);
+    const why = one ? redoProblem(one.fields, 'followup') : 'the thread is gone';
+    if (why) { await trackClose(ctx.db, redoKey(redo), `Not redone: ${why}`); return { message: `Redo not done: ${why}`, redo, drafted: 0 }; }
+    recs = [one!]; todo = recs;
+  } else {
+    recs = await at.list(EMAILS, dueFormula(), fields, 200);
+    const keyOf = (r: { id: string; fields: Record<string, unknown> }) => `${r.id}|followup:${val(r.fields[RA.dueAt])}`;
+    const done = new Set((await ctx.db.query(`SELECT email_record || '|' || reply_at AS k FROM sean_drafts WHERE action <> 'dry_run'`)).rows.map((r: any) => String(r.k)));
+    todo = recs.filter((r) => !done.has(keyOf(r))).slice(0, max);
+  }
   if (!todo.length) return { message: `${recs.length} follow-ups due, none new`, due: recs.length, drafted: 0 };
 
   const dir = cfg.knowledgeDir;
@@ -101,14 +114,16 @@ export const seanFollowupStage: Stage = async (ctx) => {
     const wsRec = wsRecordOf(f);
     const policy = policyOf(f);
     const sent = Number(policy.seanFollowupsSent ?? 0) || 0;
+    const logKey = redo ? `redo:followup:${val(f[RA.dueAt])}:${val(f[RA.updatedAt])}` : `followup:${val(f[RA.dueAt])}`;
     const record = (action: string, reason: string, decisionId = '') => ctx.db.query(
       `INSERT INTO sean_drafts (email_record, reply_at, action, reason, decision_id) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (email_record, reply_at) DO UPDATE SET action = EXCLUDED.action, reason = EXCLUDED.reason, decision_id = EXCLUDED.decision_id WHERE sean_drafts.action = 'dry_run'`,
-      [r.id, `followup:${val(f[RA.dueAt])}`, ctx.dryRun ? 'dry_run' : action, reason.slice(0, 500), decisionId || null]);
+      [r.id, logKey, ctx.dryRun ? 'dry_run' : action, reason.slice(0, 500), decisionId || null]);
+    const notRedone = async (why: string) => { if (redo) await trackClose(ctx.db, redoKey(redo), `Not redone: ${why}`); };
 
     // The prospect answered after our last email: that is a reply for Echo's normal drafting, not a follow-up.
-    if (type === 'No Response' && val(f[EF.lastSent]) === 'Last Email Sent By Prospect') { await record('answered', 'prospect wrote after our last email'); counts.answered++; continue; }
+    if (type === 'No Response' && val(f[EF.lastSent]) === 'Last Email Sent By Prospect') { if (redo) { await notRedone('the prospect answered since; Echo drafts a reply instead'); continue; } await record('answered', 'prospect wrote after our last email'); counts.answered++; continue; }
     const client = clientFileFor(dir, ws);
-    if (!client) { counts.noClientFile++; continue; }
+    if (!client) { counts.noClientFile++; await notRedone('no client file for this workspace'); continue; }
     if (!perClient.has(String(ws))) {
       const settings = ctx.dryRun ? parseSettings(null) : await loadSettings(at, wsRec);
       perClient.set(String(ws), {
@@ -119,8 +134,9 @@ export const seanFollowupStage: Stage = async (ctx) => {
     }
     const { block, booking, plan, settings } = perClient.get(String(ws))!;
     const blocked = blockedBy(settings, { weReplied: type === 'No Response' });
-    if (blocked) { await record('client_off', blocked); counts.clientOff++; continue; }
+    if (blocked) { await record('client_off', blocked); counts.clientOff++; await notRedone(blocked); continue; }
     const steps = allSteps(plan);
+    if (redo && (!plan.enabled || sent >= steps.length)) { await notRedone(plan.enabled ? 'all follow-ups were sent' : 'follow-ups are off for this client'); continue; }
     if (!plan.enabled || sent >= steps.length) {
       if (!ctx.dryRun) await at.update(EMAILS, r.id, { [RA.state]: 'Thread Complete', [RA.dueAt]: null, [RA.updatedAt]: new Date().toISOString() });
       await record('complete', plan.enabled ? 'all follow-ups sent' : 'follow-ups are off for this client'); counts.complete++; continue;
@@ -139,15 +155,24 @@ export const seanFollowupStage: Stage = async (ctx) => {
       `Lead status: ${val(f[EF.leadStatus])}`,
       `\nConversation (oldest first, latest at the end):\n${trimHistory(val(f[EF.history]) || val(f[EF.latestReply]))}`,
       `\nThe prospect's last message:\n${val(f[EF.latestReply])}`,
+      ...(redo ? [redoInstruction(val(f[RA.draft]))] : []),
     ].join('\n');
 
     const d: Draft = await ctx.paid({
-      callKey: `followup:${r.id}:${val(f[RA.dueAt])}`, provider: 'anthropic', units: 1,
+      callKey: redo ? `redo-followup:${r.id}:${val(f[RA.dueAt])}:${val(f[RA.updatedAt])}` : `followup:${r.id}:${val(f[RA.dueAt])}`, provider: 'anthropic', units: 1,
       run: () => claude!.structured(DraftSchema, [shared, FOLLOWUP_BRIEF, block], varying, user),
       dryRunResult: () => ({ action: 'skip', intent: 'Other', reason: 'dry run: Claude not called', they_said: '', draft: '', question_for_alex: '', confidence: 0, follow_up_on: '', time_choice: 'none', chosen_time: '' }),
     });
 
-    await ctx.step(`followup-write:${r.id}:${val(f[RA.dueAt])}`, async () => {
+    // A redo that Echo now thinks is not worth sending leaves the old draft as it was (a person decides).
+    if (redo && d.action === 'skip') {
+      if (ctx.dryRun) await trackTask(ctx.db, { agent: 'Echo', key: redoKey(redo), title: redoTitle(val(f[EF.leadName]) || val(f[EF.leadEmail]), val(f[EF.company])), status: 'open', note: 'Dry run (sean.followup is not in LIVE_STAGES): nothing redrafted' });
+      else await notRedone(`Echo now thinks this follow-up is not worth sending (${d.reason.slice(0, 160)}); the old draft is unchanged`);
+      counts.skip++;
+      continue;
+    }
+
+    await ctx.step(`${redo ? 'redo-followup-write' : 'followup-write'}:${r.id}:${val(f[RA.dueAt])}`, async () => {
       const replyId = Number(val(f[EF.replyId]));
       const typeOff = d.action !== 'skip' && type !== 'No Response' && !typeAllowed(settings, type);
       if (typeOff) d.reason = `${type} follow-ups are switched off for this client (Inbox Manager → Reply types). ${d.reason}`;
@@ -157,7 +182,7 @@ export const seanFollowupStage: Stage = async (ctx) => {
       // Follow-ups route by the thread's reply type (Out of Office / Check Back Later / the original intent).
       const autoBefore = Number(policy.autoSent ?? 0) || 0;
       const routeIntent = type !== 'No Response' ? type : (val(f[RA.intent]) || d.intent);
-      const auto = autoSendDecision(settings, { ...d, action, intent: routeIntent }, autoBefore, cfg.seanAutoSendOn);
+      const auto = redo ? { auto: false, why: 'a redo always waits for a person' } : autoSendDecision(settings, { ...d, action, intent: routeIntent }, autoBefore, cfg.seanAutoSendOn);
       if (!ctx.dryRun) {
         await at.update(EMAILS, r.id, {
           [RA.state]: action === 'skip' ? 'Thread Complete' : 'Needs Approval',
@@ -172,7 +197,7 @@ export const seanFollowupStage: Stage = async (ctx) => {
         } else if (action !== 'skip') {
           if (offer.slots.length) await rememberOffered(ctx.db, wsRec, offer.slots, r.id);
           const who = `${val(f[EF.leadName]) || 'prospect'}${val(f[EF.company]) ? ` at ${val(f[EF.company])}` : ''}`;
-          decisionId = await at.create(DECISIONS, {
+          const card = {
             [DF.title]: action === 'reply' ? `Follow-up ${n} to ${who}` : `Need your input: follow-up ${n} to ${who}`,
             [DF.agent]: 'Echo', [DF.status]: 'New', [DF.client]: client.name, [DF.emailsRecord]: r.id,
             [DF.issue]: `${type === 'No Response' ? 'No answer to our last email' : type}. ${d.they_said}`.trim(),
@@ -180,10 +205,17 @@ export const seanFollowupStage: Stage = async (ctx) => {
             [DF.fix]: d.draft,
             [DF.details]: `Thread: https://send.dulcy.io/inbox?reply_uuid=${val(f[EF.replyUuid])}\nCampaign: ${val(f[EF.campaign])}\n\nTheir last message:\n${val(f[EF.latestReply]).slice(0, 2500)}`,
             [DF.action]: action === 'reply' ? 'Approve Reply' : 'None',
-          });
+          };
+          // A redo updates the thread's pending card (one card per thread); otherwise a new card.
+          const pending = redo ? await pendingDecisionFor(at, r.id) : '';
+          if (pending) { await at.update(DECISIONS, pending, card); decisionId = pending; } else decisionId = await at.create(DECISIONS, card);
         }
       }
       await record(action, d.reason, decisionId);
+      if (redo) {
+        if (ctx.dryRun) await trackTask(ctx.db, { agent: 'Echo', key: redoKey(redo), title: redoTitle(val(f[EF.leadName]) || val(f[EF.leadEmail]), val(f[EF.company])), status: 'open', note: 'Dry run (sean.followup is not in LIVE_STAGES): nothing redrafted' });
+        else await trackClose(ctx.db, redoKey(redo), offer.times.length >= 2 ? `Redrafted with two times: ${offer.times.slice(0, 2).join(' or ')}. Waiting for approval.` : `Redrafted, but ${client.name}'s calendar gave no two open times: check the new draft. Waiting for approval.`);
+      }
       counts[action as 'reply' | 'skip' | 'ask_alex']++;
       return { decisionId };
     });
