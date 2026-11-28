@@ -29,6 +29,7 @@ import { CAMPAIGNS_T, LEAD_LISTS_T, LIST_ORDER, LLF, campaignActivity, cachedCam
 import { CAMPAIGN_FIELDS } from '../campaign/campaignFields.js';
 // Copy fields (Campaigns (Review) and sequence fields).
 import { CC } from '../agents/scribe.js';
+import { outputCopy, type SignatureInfo } from '../campaign/airtableCopy.js';
 
 // ---------- fields ----------
 /** Lead Lists fields the HQ Lead List Center reads (engine fields from airtable/bridge.ts F). Never a key or password field. */
@@ -70,7 +71,7 @@ export interface ActionView {
   dryRun: boolean; tone: 'primary' | 'quiet' | 'danger'; needsNotes?: boolean;
 }
 const dry = (cfg: Pick<Config, 'dryRun' | 'liveStages'>, kind: string) => !!kind && cfg.dryRun && !cfg.liveStages.includes(kind);
-const OWNER_ONLY = 'Only Alex (owner) can press this.';
+const OWNER_ONLY = 'Only Alex can press this.';
 
 // ---------- the Lead List Center buttons ----------
 export interface ListState {
@@ -422,16 +423,60 @@ export async function pressPlanAction(at: HqAirtable, db: Db, cfg: Config, planI
 }
 
 // ---------- the copy (view) ----------
-export interface CopyStep { step: number; subject: string; body: string; thread: boolean }
-/** The campaign's copy: the (Review) fields Alex and the client read, and the sequence fields the build uses. */
+export interface CopyVersion { version: number; body: string; signature: string }
+export interface CopyStep { step: number; subject: string; body: string; thread: boolean; versions: CopyVersion[]; built: { variant: number; subject: string; body: string }[] }
+
+/** Airtable long text keeps Markdown escapes ("{FIRST\_NAME}"): shown as the plain text EmailBison gets ("{FIRST_NAME}"). Pure. */
+export const unescapeCopy = (t: string) => t.replace(/\\([\\_*#\-.!()[\]{}<>|`~+=])/g, '$1');
+/** Scribe's review copy holds its versions as "Variant 1 … Variant 2 …" in one cell: one entry per version. Pure. */
+export function splitVersions(body: string): { version: number; body: string }[] {
+  const parts = body.split(/^[ \t]*(?:\*\*)?(?:variant|version)[ \t]*(\d{1,2})(?:\*\*)?[ \t]*:?[ \t]*$/im);
+  if (parts.length < 3) return body.trim() ? [{ version: 1, body: body.trim() }] : [];
+  const out: { version: number; body: string }[] = [];
+  for (let i = 1; i + 1 < parts.length; i += 2) if (parts[i + 1].trim()) out.push({ version: Number(parts[i]), body: parts[i + 1].trim() });
+  // Text before the first "Variant" heading belongs to the first version.
+  const head = parts[0].trim();
+  if (head) { if (out[0]) out[0].body = `${head}\n\n${out[0].body}`; else out.push({ version: 1, body: head }); }
+  return out;
+}
+/** Client facts the build puts in the signature (Workspace IDs: Name, Brand Name, Sender Title; campaignBuild.ts CL). */
+const SIG = { name: 'fld48x6Yg3v6RP30W', brand: 'fldTHTrYh0GCFeBLG', senderTitle: 'fldIMJnjdGGAPotMW' } as const;
+const SIG_T = 'tblcjRBGJEWh5KgOt';
+/**
+ * The signature and P.S. the campaign build adds under a body (the old n8n Output Builder's, ported in
+ * campaign/airtableCopy.ts outputCopy: "--", a rotating sign-off, {SENDER_FULL_NAME}, "<Sender Title>,
+ * <Brand Name>", then the P.S.), or "" when the body already ends with its own. The sender's full name is
+ * the {SENDER_FULL_NAME} variable: EmailBison fills it per sending inbox. No EmailBison sender signature
+ * is used (Workspace IDs → Email Signature is empty for every client, 2026-11-28). Pure.
+ */
+export function signatureFor(body: string, info: SignatureInfo): string {
+  if (!body.trim()) return '';
+  try {
+    const full = outputCopy([[{ subject: 'x', body, threadReply: false }]], 'direct', info)[0].body;
+    const base = body.replace(/\s+$/, '');
+    return full.startsWith(base) ? full.slice(base.length).trim() : '';
+  } catch { return ''; }
+}
+
+/** The campaign's copy: the review fields (each version as an email with its signature) and the sequence fields the build uses. */
 export async function campaignCopy(at: HqAirtable, db: Db, cfg: Config, id: string, canAct: boolean) {
   const seqFields = CC.seq.flatMap((x) => x.flatMap((v) => [v.subject, v.body]));
-  const read = [CX.name, CX.stage, CX.lists, ...CC.review.flatMap((x) => [x.subject, x.body]), ...seqFields, ...Object.values(CC.thread), CC.approvalSource, CC.exception, CC.submittedAt, CC.autoApproveAt, CC.clientFeedback, CC.selectChanges, CC.reviewFeedback, CC.additionalContext];
+  const read = [CX.name, CX.stage, CX.lists, CX.client, ...CC.review.flatMap((x) => [x.subject, x.body]), ...seqFields, ...Object.values(CC.thread), CC.approvalSource, CC.exception, CC.submittedAt, CC.autoApproveAt, CC.clientFeedback, CC.selectChanges, CC.reviewFeedback, CC.additionalContext];
   const rec = await at.get(CAMPAIGNS_T, id, read);
   if (!rec) return null;
   const f = rec.fields;
-  const review: CopyStep[] = CC.review.map((x, i) => ({ step: i + 1, subject: s(f[x.subject]), body: s(f[x.body]), thread: i > 0 && yes(f[CC.thread[i + 1]]) })).filter((x) => x.subject || x.body);
-  const sequence = CC.seq.flatMap((vs, i) => vs.map((v, j) => ({ step: i + 1, variant: j + 1, subject: s(f[v.subject]), body: s(f[v.body]) }))).filter((x) => x.subject || x.body);
+  const clientRec = ids(f[CX.client])[0];
+  const client = clientRec ? await at.get(SIG_T, clientRec, Object.values(SIG)).catch(() => null) : null;
+  const info: SignatureInfo = { clientName: s(client?.fields[SIG.name]), brandName: s(client?.fields[SIG.brand]), senderTitle: s(client?.fields[SIG.senderTitle]) };
+  const sequence = CC.seq.flatMap((vs, i) => vs.map((v, j) => ({ step: i + 1, variant: j + 1, subject: unescapeCopy(s(f[v.subject])), body: unescapeCopy(s(f[v.body])) }))).filter((x) => x.subject || x.body);
+  const review: CopyStep[] = CC.review.map((x, i) => {
+    const body = unescapeCopy(s(f[x.body]));
+    return {
+      step: i + 1, subject: unescapeCopy(s(f[x.subject])), body, thread: i > 0 && yes(f[CC.thread[i + 1]]),
+      versions: splitVersions(body).map((v) => ({ ...v, signature: signatureFor(v.body, info) })),
+      built: sequence.filter((q) => q.step === i + 1).map(({ variant, subject, body: b }) => ({ variant, subject, body: b })),
+    };
+  }).filter((x) => x.subject || x.body);
   const src = await cachedCampaigns(at, db);
   const ws = clientIndex(src.ws);
   const plan = await planForCampaign(db, cfg, id, ids(f[CX.lists]), (r) => ws.get(r)?.key ?? '', canAct);

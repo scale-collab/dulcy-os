@@ -401,7 +401,10 @@ export type CampaignRowB3 = CampaignRow & { approach: string; strategy: string; 
 export interface ChannelB3 { key: 'email' | 'linkedin' | 'caller' | 'mail'; label: string; live: boolean; reason: string }
 export type CampaignListB3 = Omit<CampaignList, 'rows' | 'channels'> & { rows: CampaignRowB3[]; channels: ChannelB3[] };
 export type InboxHealthB3 = 'healthy' | 'risk' | 'spam' | 'resting';
-export interface CampaignAccountB3 { id: string; status: InboxHealthB3 | null; warmupOff: boolean; email: string; dailyLimit: number | null; warmupLimit: number | null; warmup: number | null; score: number | null }
+export interface CampaignAccountB3 {
+  id: string; status: InboxHealthB3 | null; warmupOff: boolean; email: string; dailyLimit: number | null; warmupLimit: number | null; warmup: number | null; score: number | null;
+  /** Round 4: the score's test date and the placement cell with its reason (never a blank). */ scoreAt?: string; placement?: PlacementR4;
+}
 export type CampaignDetailB3 = Omit<CampaignDetail, 'campaign' | 'lists' | 'links' | 'detail'> & {
   campaign: CampaignRowB3; lists: Omit<CampaignLeadList, 'airtableUrl'>[]; links: { bison: string }; accounts: CampaignAccountB3[];
   detail: CampaignDetail['detail'] & { thesis: string; approach: string; launchDate: string };
@@ -440,12 +443,17 @@ export type CampaignListR2 = Omit<CampaignListB3, 'rows'> & { rows: CampaignRowR
 /** One button: what it does, what it spends, why it is off; comesNext = no engine path yet. */
 export interface ActionR2 { key: string; label: string; section: string; does: string; spends: string; enabled: boolean; why: string; comesNext: boolean; dryRun: boolean; tone: 'primary' | 'quiet' | 'danger'; needsNotes?: boolean }
 export interface PressR2 { ok: true; message: string; dryRun?: boolean; planId?: number }
-export type BucketR2 = 'sending' | 'ready' | 'free' | 'warming' | 'risk' | 'resting' | 'spam' | 'disconnected';
-export interface AccountLineR2 { id: string; email: string; bucket: BucketR2; status: InboxHealthB3; dailyLimit: number | null; warmupLimit: number | null; warmup: number | null; score: number | null; bounce: number | null; contacted: number; warmupOff: boolean; campaigns: string[]; note: string }
+/** Round 4: the Airtable Campaign Center's sender states (Available · Sending · Releasing Soon · Reserved Next · Disconnected · Warming). */
+export type BucketR2 = 'available' | 'sending' | 'releasing' | 'reserved' | 'disconnected' | 'warming';
+export interface PlacementR4 { text: string; why: string }
+export interface AccountLineR2 {
+  id: string; email: string; bucket: BucketR2; warming: boolean; status: InboxHealthB3; dailyLimit: number | null; warmupLimit: number | null; warmup: number | null; score: number | null; scoreAt: string; placement: PlacementR4;
+  bounce: number | null; contacted: number; warmupOff: boolean; campaigns: string[]; note: string;
+}
 export interface SendingBoxR2 {
   client: string; clientKey: string; total: number; counts: Record<BucketR2, number>; capacity: { total: number; used: number; free: number; ready: number };
-  alert: string; accounts: AccountLineR2[]; buckets: { key: BucketR2; label: string; help: string }[]; warmMin: number;
-  byClient: { key: string; name: string; total: number; sending: number; free: number; ready: number; warming: number; resting: number; spam: number; capacity: number; used: number }[]; readAt: string;
+  alert: string; accounts: AccountLineR2[]; buckets: { key: BucketR2; label: string; help: string }[]; warmingDays: number;
+  byClient: { key: string; name: string; total: number; counts: Record<BucketR2, number>; capacity: number; used: number }[]; readAt: string;
 }
 export interface PlanR2 {
   id: number; client: string; clientKey: string; state: string; label: string; campaignName: string; campaignRec: string; leadListRec: string; error: string;
@@ -456,7 +464,9 @@ export interface PlansR2 { plans: PlanR2[]; atlasOn: boolean; planDryRun: boolea
 export interface AutomationR2 { engineAction: string; engineStatus: string; engineMessage: string; processing: string; locked: boolean; topupStatus?: string; topupMessage?: string; workflowMessage?: string; error?: string }
 export interface CampaignCenterR2 { actions: ActionR2[]; automation: AutomationR2; bison: number[]; inboxes: number; plan: PlanR2 | null; canAct: boolean }
 export interface CopyR2 {
-  id: string; name: string; stage: string; review: { step: number; subject: string; body: string; thread: boolean }[]; sequence: { step: number; variant: number; subject: string; body: string }[];
+  id: string; name: string; stage: string; sequence: { step: number; variant: number; subject: string; body: string }[];
+  /** Round 4: each email's versions (Scribe's "Variant N"), with the signature + P.S. the build adds, and the spintax sequence fields the build sends. */
+  review: { step: number; subject: string; body: string; thread: boolean; versions: { version: number; body: string; signature: string }[]; built: { variant: number; subject: string; body: string }[] }[];
   approval: { source: string; exception: boolean; submittedAt: string; autoApproveAt: string; clientFeedback: string; changeArea: string; feedback: string; context: string };
   scribe: { notes: string; questions: string[]; variables: { name: string; find: string; fallback: string }[]; claims: { claim: string; source: string }[]; flagged: string[] } | null;
   plan: PlanR2 | null; comesNext: { key: string; label: string; why: string }[]; readAt: string;

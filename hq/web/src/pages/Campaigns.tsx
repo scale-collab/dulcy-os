@@ -4,7 +4,8 @@
 //   - header: Campaign Center, New campaign (Atlas plans it), Refresh;
 //   - channel tabs (Email, LinkedIn, AI caller, Direct mail) and Campaigns | Lead lists;
 //   - the shared active-client dropdown;
-//   - the Sending accounts box (sending now, free, warming, resting, spam; capacity vs used);
+//   - the Sender accounts box, as Airtable shows it (Available, Sending, Releasing Soon, Reserved Next,
+//     Disconnected, Warming, total senders; capacity vs used);
 //   - new campaigns being made (Atlas plans, with their approvals);
 //   - campaigns by stage (Live, Launch ready, Approved, Client review, Internal review, Strategy
 //     draft), each row with progress, sent, replies, interested, meetings, bounce and its inboxes.
@@ -78,7 +79,7 @@ function Shell({ channel, section, view = 'all', client }: { channel: string; se
         sub={section === 'lists' ? 'Build, verify, enrich and check lead lists. Tap a list for its steps and buttons.' : 'Plan, approve, launch and watch campaigns. Tap a campaign for its buttons, copy, lead list and inboxes.'}
         right={(
           <div className="flex items-center gap-2">
-            {section === 'campaigns' && <Button tone="primary" icon="plus" onClick={() => setCreating(true)} disabled={!plans?.canAct} title={plans?.canAct ? 'Atlas plans a new campaign for a client' : 'Only Alex (owner) starts a campaign'}>New campaign</Button>}
+            {section === 'campaigns' && <Button tone="primary" icon="plus" onClick={() => setCreating(true)} disabled={!plans?.canAct} title={plans?.canAct ? 'Atlas plans a new campaign for a client' : 'Alex starts new campaigns'}>New campaign</Button>}
             <IconButton icon="refresh" label="Refresh" onClick={() => { setRefresh((x) => x + 1); load(true); }} className={cx('border border-line bg-surface', busy && '[&_svg]:animate-spin')} />
           </div>
         )} />

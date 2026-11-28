@@ -874,6 +874,13 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
    - **Speed and cost:** one batched Airtable read for everyone (7 list calls plus the pending decisions, no per-row calls), kept 1 minute; placement tests (about 1,000 a week, last 21 days) are kept 10 minutes. Refresh re-reads after 10 seconds. Login passwords and money are never read.
    - Members (Josh) see it too.
 
+### HQ Campaigns, round 4 (2026-11-28)
+Where this differs from the sections below, this wins.
+- **Sender accounts box = the Airtable Campaign Center's sender chips**, same names and order: Available, Sending, Releasing Soon, Reserved Next, Disconnected, Warming, then total senders. Sending = in a live campaign under 60% sent; Releasing Soon = only in live campaigns at 60%+; Reserved Next = in a built / launch-ready (not live) campaign; Warming = warm-up started under 14 days ago (a label of its own: it can overlap Sending or Reserved Next, as in Airtable); Available = the rest (connected). Spam / replace and at risk are not in this box (they are on Deliverability); a resting inbox says "resting (spam protocol)" in its row. Not ported from Airtable: reserving a top-up's inboxes while its upload is pending.
+- **A campaign** is one compact card: name, client, status, the numbers in one strip, one small row of buttons (tap a grey one to see why it is off; Pause acts at once, every other button asks once), and the engine's answer in one line. Tabs: Overview, Copy, Lead list, Senders, Plan (Atlas's plan + strategy), History.
+- **Copy:** each email looks like an email: subject (a thread reply shows "Re: <email 1 subject>"), body, then the signature and P.S. the build adds ("--", a rotating sign-off, {SENDER_FULL_NAME}, "<Sender Title>, <Brand Name>" from the client's Workspace IDs record; nothing is added when the body already has its own). Scribe's "Variant 1 / 2 / 3" become Version tabs. Variables show as `{FIRST_NAME}` (Airtable's Markdown escape `{FIRST\_NAME}` is removed); spintax shows its first option, hover for the others. "Show what EmailBison gets" opens the spintax sequence fields.
+- **Senders:** every inbox has a placement cell: the score, its date when the inbox was not in the client's latest test ("80% · 11/20"), or "Not tested" with why. Why some inboxes have no fresh score: the weekly test does not cover every inbox (11/27: 947 of 1,100 active inboxes; 151 of Dulcy's 380 were left out); HQ keeps the newest score from the last 21 days.
+
 ### HQ Campaign Center + Lead List Center (Round 2, 2026-11-27)
 Where this differs from the Batch 3 section below, this wins. HQ → Campaigns is now the Airtable Campaign Center and Lead List Center, with their buttons.
 
