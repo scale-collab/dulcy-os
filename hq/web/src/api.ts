@@ -420,7 +420,7 @@ export interface CampaignAccountB3 {
   /** Round 4: the score's test date and the placement cell with its reason (never a blank). */ scoreAt?: string; placement?: PlacementR4;
 }
 export type CampaignDetailB3 = Omit<CampaignDetail, 'campaign' | 'lists' | 'links' | 'detail'> & {
-  campaign: CampaignRowB3; lists: Omit<CampaignLeadList, 'airtableUrl'>[]; links: { bison: string }; accounts: CampaignAccountB3[];
+  campaign: CampaignRowB3 & { started?: string; ended?: string }; lists: Omit<CampaignLeadList, 'airtableUrl'>[]; links: { bison: string }; accounts: CampaignAccountB3[]; take?: AtlasTakeR5;
   detail: CampaignDetail['detail'] & { thesis: string; approach: string; launchDate: string };
 };
 export interface LeadListRowB3 {
@@ -452,8 +452,11 @@ export interface LimitResultB3 { ok: true; jobId: number; dryRun: boolean; dupli
 /* ---------- Round 2 campaigns (2026-11-27): Campaign Center + Lead List Center buttons, sending accounts ---------- */
 export type SectionKeyR2 = 'live' | 'launch' | 'build' | 'review' | 'internal' | 'draft' | 'none';
 /** how: Today's group for a live campaign (well / pace / time / look); #/campaigns/live?how= filters to it. */
-export type CampaignRowR2 = CampaignRowB3 & { section: SectionKeyR2; test: boolean; how?: 'well' | 'pace' | 'time' | 'look' | null };
-export type CampaignListR2 = Omit<CampaignListB3, 'rows'> & { rows: CampaignRowR2[]; sections: { key: SectionKeyR2; label: string }[] };
+/** Round 5: started / ended (a finished campaign's last day); past = finished campaigns, newest ended first (read only). */
+export type CampaignRowR2 = CampaignRowB3 & { section: SectionKeyR2; test: boolean; how?: 'well' | 'pace' | 'time' | 'look' | null; started?: string; ended?: string };
+export type CampaignListR2 = Omit<CampaignListB3, 'rows' | 'counts'> & { rows: CampaignRowR2[]; sections: { key: SectionKeyR2; label: string }[]; past?: CampaignRowR2[]; counts: CampaignListB3['counts'] & { past?: number } };
+/** Round 5: Atlas's take on one campaign (2-3 sentences, rule-based from its numbers, his plan and his newest note). */
+export interface AtlasTakeR5 { lines: string[]; text: string; basis: 'plan' | 'note' | 'numbers'; source: string }
 /** One button: what it does, what it spends, why it is off; comesNext = no engine path yet. */
 export interface ActionR2 { key: string; label: string; section: string; does: string; spends: string; enabled: boolean; why: string; comesNext: boolean; dryRun: boolean; tone: 'primary' | 'quiet' | 'danger'; needsNotes?: boolean }
 export interface PressR2 { ok: true; message: string; dryRun?: boolean; planId?: number }
