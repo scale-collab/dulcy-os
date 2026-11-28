@@ -654,3 +654,7 @@ export interface CloseFieldChange { field: 'confidence' | 'value' | 'value_perio
 export interface CloseUpdateRow { id: number; recordingId: string; leadId: string; oppId: string; prospect: string; status: 'updated' | 'planned' | 'unchanged' | 'no_lead' | 'no_opportunity' | 'failed'; changes: CloseFieldChange[]; note: string; applied: boolean; created: string; closeUrl: string }
 export interface AgentExchange { id: string; kind: 'ask' | 'handoff'; from: string; to: string; title: string; preview: string; at: string; messages: number; threadId?: number; parentId?: number | null; taskId?: number; status?: string }
 export interface AgentExchangeDetail { exchange: AgentExchange; messages: { author: string; role: 'question' | 'answer' | 'note'; text: string; at: string }[]; parent: { id: number; agent: string; title: string } | null }
+
+/** Team → Connections (GET /team/connections): each webhook source and whether its events reach the agents. No secrets. */
+export type ConnectionStatus = 'connected' | 'waiting' | 'needs_alex' | 'not_set_up' | 'kept';
+export interface Connection { source: string; name: string; feeds: string; status: ConnectionStatus; note: string; lastEvent: string | null; events24h: number; cards: string[] }

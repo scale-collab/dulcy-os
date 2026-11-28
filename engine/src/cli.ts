@@ -62,6 +62,12 @@
 //       Put an n8n workflow back as it was before Riley's engine-applied fix on that issue (the full
 //       previous version is saved in the engine). Without --yes it only says what it would do.
 //       Refuses if the workflow was edited again after the fix, unless --force.
+//   hooks                      Webhook sources, which jobs are instant, the last 10 events.
+//   hooks connect [--yes]
+//       Connect EmailBison, Close and n8n to the engine's webhooks (n8n changes become Decision cards).
+//       Without --yes it only prints the plan (nothing changes). Run it again any time: it adds only what is missing.
+//   hooks secret <slack|fathom|close>
+//       Store a provider's webhook secret (asked hidden, or from stdin). Never shown or printed.
 //   mv-compare <recordId> <millionVerifierJobId>
 //       Free: download a MillionVerifier job and compare its verdicts with DiscoLike's own email
 //       check on the list's DiscoLike Contacts-run contacts (counts; emails masked).
@@ -402,15 +408,36 @@ async function main() {
       const r = (await db.query(`UPDATE campaign_plans SET state='planning', plan_round=plan_round+1, plan_error=NULL, updated_at=now() WHERE id=$1 AND state IN ('stuck','planning') RETURNING plan_round`, [id])).rows[0];
       if (r) await (await import('./instant/afterJob.js')).planWork(db, cfg); // Atlas starts now
       console.log(r ? `Plan ${id}: planning again (round ${r.plan_round}) now.` : `Plan ${id} is not stuck.`);
+    } else if (cmd === 'hooks' && args[0] === 'connect') {
+      // Connect every service to the engine's webhooks (2026-11-28). Dry run unless --yes. Never prints a secret.
+      const { hooksConnect } = await import('./instant/connect.js');
+      const at = cfg.airtableApiKey ? (await import('./providers/airtable.js')).createAirtableClient({ apiKey: cfg.airtableApiKey, baseId: cfg.airtableBaseId, baseUrl: cfg.airtableBaseUrl }) : null;
+      const r = await hooksConnect(db, cfg, { yes: args.includes('--yes'), airtable: at });
+      console.log(r.text);
+    } else if (cmd === 'hooks' && args[0] === 'secret') {
+      // Store a provider-issued webhook secret (Slack signing secret, Fathom whsec_, Close signature key). Hidden input.
+      const source = String(args[1] ?? '').toLowerCase();
+      const S = await import('./instant/secrets.js');
+      if (!(S.PROVIDER_SOURCES as readonly string[]).includes(source)) throw new Error('usage: hooks secret <slack|fathom|close>   (the engine makes the EmailBison, n8n, Make and Airtable secrets itself)');
+      let value: string;
+      if (process.stdin.isTTY) value = await askHidden(`Paste the ${source} secret (nothing is shown): `);
+      else { const chunks: Buffer[] = []; for await (const c of process.stdin) chunks.push(c as Buffer); value = Buffer.concat(chunks).toString('utf8'); }
+      value = value.trim();
+      if (!value) throw new Error('nothing pasted; nothing changed');
+      if (cfg.hookSecretsEnv?.[source as 'slack']) console.log(`Note: HOOK_SECRET_${source.toUpperCase()} in the server .env still wins over this one; delete that line and restart to use it.`);
+      await S.storeProviderSecret(db, cfg, source as 'slack', value); // refuses a value of the wrong shape (the value is never repeated)
+      console.log(`Saved the ${source} secret (sealed; never shown). The engine accepts ${source} webhooks within 30 seconds.`);
     } else if (cmd === 'hooks') {
       // Instant webhooks (2026-11-28): which sources are set up, what each job runs on, and the last events received.
       const { HOOK_SOURCES } = await import('./config.js');
       const { INSTANT_JOBS, isInstant, sweepEveryMin } = await import('./instant/jobs.js');
+      const S = await import('./instant/secrets.js');
+      await S.refreshHookSecrets(db, cfg);
       const last = new Map((await db.query(`SELECT source, count(*) FILTER (WHERE received_at > now() - interval '24 hours')::int AS n, max(received_at) AS at FROM hook_events GROUP BY source`)).rows.map((r) => [r.source, r]));
-      console.log('Webhook sources (URL https://<ENGINE_HOST>/hooks/<source>):');
-      for (const s of HOOK_SOURCES) { const l = last.get(s); console.log(`  ${s.padEnd(10)} ${cfg.hookSecrets[s] ? 'secret set' : 'no secret (404)'} · ${l ? `${l.n} in 24 h, last ${new Date(l.at).toISOString().slice(0, 16)}` : 'nothing received yet'}`); }
+      console.log(`Webhook sources (URL ${cfg.enginePublicUrl}/hooks/<source>):`);
+      for (const s of HOOK_SOURCES) { const l = last.get(s); console.log(`  ${s.padEnd(10)} ${cfg.hookSecrets[s] ? 'connected' : cfg.hookPending?.[s] ? 'secret made, waiting for the provider' : 'no secret (404)'} · ${l ? `${l.n} in 24 h, last ${new Date(l.at).toISOString().slice(0, 16)}` : 'nothing received yet'}`); }
       console.log('Jobs:');
-      for (const j of INSTANT_JOBS) { const every = sweepEveryMin(cfg, j.key); console.log(`  ${j.key.padEnd(18)} ${isInstant(cfg, j.key) ? `INSTANT · backup sweep ${every ? `every ${every} min` : 'off'}` : `old timer ${every ? `every ${Math.round(every * 10) / 10} min` : 'off'} (set HOOK_SECRET_${j.sources.map((s) => s.toUpperCase()).join(j.all ? ' + ' : ' or ')})`}`); }
+      for (const j of INSTANT_JOBS) { const every = sweepEveryMin(cfg, j.key); console.log(`  ${j.key.padEnd(18)} ${isInstant(cfg, j.key) ? `INSTANT · backup sweep ${every ? `every ${every} min` : 'off'}` : `old timer ${every ? `every ${Math.round(every * 10) / 10} min` : 'off'} (waits for ${j.sources.join(j.all ? ' + ' : ' or ')}: hooks connect)`}`); }
       for (const e of (await db.query(`SELECT source, event, jobs, received_at FROM hook_events ORDER BY id DESC LIMIT 10`)).rows) console.log(`  ${new Date(e.received_at).toISOString().slice(0, 19)} ${e.source} ${e.event} → ${(e.jobs ?? []).join(', ') || 'nothing'}`);
     } else if (cmd === 'campaign-plans') {
       for (const p of (await db.query(`SELECT id, client, state, copy_state, copy_round, plan->>'campaign_name' AS name, plan_error, updated_at FROM campaign_plans ORDER BY id DESC LIMIT 20`)).rows) console.log(`${p.id} · ${p.client} · ${p.state}${p.copy_state ? ` · copy ${p.copy_state} (round ${p.copy_round})` : ''} · ${p.name ?? ''} · ${new Date(p.updated_at).toISOString().slice(0, 16)}${p.plan_error ? `\n    ${String(p.plan_error).slice(0, 200)}` : ''}`);
@@ -450,7 +477,7 @@ async function main() {
         for (const e of d.errors) console.log(`(couldn't read ${e})`);
       }
     } else {
-      throw new Error('commands: hq-user, ask, riley-n8n-rollback, calendar-test, discord-check, jobs, job, campaign-plans, campaign-plan-retry, campaign-copy, atlas-health, agent, xero-connect, ledger-report, ledger-prep, ledger-ask, verify, mv-compare, campaign, topup, senders, bounce, whereis, cleanup-test, cancel');
+      throw new Error('commands: hq-user, ask, hooks [connect [--yes] | secret <slack|fathom|close>], riley-n8n-rollback, calendar-test, discord-check, jobs, job, campaign-plans, campaign-plan-retry, campaign-copy, atlas-health, agent, xero-connect, ledger-report, ledger-prep, ledger-ask, verify, mv-compare, campaign, topup, senders, bounce, whereis, cleanup-test, cancel');
     }
   } finally {
     await db.end();

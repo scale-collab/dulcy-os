@@ -270,6 +270,19 @@ export function createBisonClient(o: BisonOptions) {
       }
       return out;
     },
+    /**
+     * The workspace's webhooks (GET /api/webhook-url) and the engine's own one (hooks connect, 2026-11-28).
+     * Only the engine's "Dulcy engine" webhook is ever created or updated; others are never changed or deleted.
+     */
+    async listWebhooks(): Promise<{ id: number; name: string; url: string; events: string[] }[]> {
+      const rows = await pages<any>('/api/webhook-url', 20);
+      return rows.map((w) => ({ id: Number(w.id), name: String(w.name ?? ''), url: String(w.url ?? w.webhook_url ?? ''), events: Array.isArray(w.events) ? w.events.map(String) : [] }));
+    },
+    async createWebhook(name: string, url: string, events: string[]): Promise<{ id: number }> {
+      const r = await call('POST', '/api/webhook-url', { name, url, events }, { write: true });
+      return { id: Number(r?.data?.id ?? r?.id ?? 0) };
+    },
+    updateWebhook: (id: number, name: string, url: string, events: string[]) => call('PUT', `/api/webhook-url/${id}`, { name, url, events }, { write: true }),
     async campaignSenders(campaignId: number): Promise<BisonSender[]> {
       const rows = await pages<any>(`/api/campaigns/${campaignId}/sender-emails`, 100);
       return rows.map((x) => ({ id: String(x.id), status: String(x.status ?? '').toLowerCase(), email: x.email ? String(x.email) : undefined }));

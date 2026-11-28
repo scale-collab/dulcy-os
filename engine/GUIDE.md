@@ -234,6 +234,7 @@ SSH in: `ssh -o ServerAliveInterval=30 root@178.156.132.86`
 ## 9. Change log
 
 - **2026-11-28:**
+  - **One command connects every service** (Alex: "all the tools should be connected to the agents"): `hooks connect` (dry run) then `hooks connect --yes` wires EmailBison (every workspace with a key), Close and n8n (credential, error workflow, and cards for the n8n changes); secrets are made and kept sealed in Postgres (`hook_secrets`). Alex's part is Slack and Fathom only (`hooks secret slack|fathom`, hidden). HQ → Team → Connections shows each source. See "Agents start instantly (engine)" → Set it up.
   - **Agents start instantly** (Alex): Echo, the bounce check, Riley, Cole, the Won sync, Sienna's scripts, the campaign pipeline (Atlas plans, Scribe copy), Atlas's to-do list, Ledger's purchase check, account health, the Airtable buttons and the Decisions loop now start on their event (webhook `/hooks/<source>`, an HQ action, or another job finishing), with an hourly backup sweep instead of their timers once each webhook is set up. Set-up and the full table: "Agents start instantly (engine)".
 - **2026-11-24:**
   - **Generate Filters works for every niche** (section 2a, Alex's goal of 2026-11-23): 500 lookalike companies for the analysis (was 20); industry labels only when 60%+ of them carry them (either/or; none = no industry filter); a soft lead goal (campaign inboxes x 14 / 3, else 3,000 leads); auto-widen in a fixed order with free counts, never geography; the message shows the goal, the count, the labels with their numbers and what was widened.
@@ -769,21 +770,21 @@ Alex: "I don't want any agents to run on schedules; it should be an instant webh
 
 **What starts each agent now**
 
-| Job | Before (timer) | Now starts on | Set-up needed |
+| Job | Before (timer) | Now starts on | Connected by |
 |---|---|---|---|
-| Echo drafts (`sean.draft`) | every `SEAN_EVERY_MIN` | a prospect reply: the n8n reply intake wrote its Emails row (best: Echo reads that row), or EmailBison "Contact Replied / Interested / Untracked Reply" | n8n step 2a (EmailBison step 3 also works, but may arrive before n8n wrote the row; the backup sweep and the next reply catch it) |
-| Echo follow-ups (`sean.followup`) | every `SEAN_EVERY_MIN` | right after every reply, every sent reply or booking (engine), a manual send (n8n "Manual Emails Sent" or EmailBison "Manual Email Sent"); plus its due-time check every `SEAN_FOLLOWUP_EVERY_MIN` (60) because a follow-up acts when it is due | n8n step 2e (optional) |
-| Bounce check (`bounce.check`) | every `BOUNCE_CHECK_EVERY_MIN`, all 35 workspaces | a bounce (n8n "Bounce Data Tracker", which already gets every workspace's bounces, or EmailBison "Email Bounced"): only that workspace is checked, at once (it reads Skip Bounce Pause itself) | n8n step 2d (or EmailBison step 3) |
-| Riley logs problems (`riley.collect`) | every `RILEY_EVERY_MIN` (15) | an engine job failing (inside the engine, always), the n8n Error Workflow, a Make error | nothing for engine jobs; n8n step 2c, Make step 4 |
-| Cole call reviews (`cole.review`) | every `COLE_EVERY_MIN` (60) | Fathom "New meeting content ready" | Fathom step 6 |
-| Close → Airtable Won sync (`sales.won_sync`) | every `WON_SYNC_EVERY_MIN` (30) | a Close opportunity created or its status changed | Close step 7 |
-| Sienna scripts (`sienna.prep`) | every 30 minutes | an idea approved: in HQ (always instant), or in Airtable's Content Center | Airtable automation 5 |
-| Campaign pipeline + Atlas plans + Scribe copy (`campaign.pipeline`, `atlas.plan`, `scribe.copy`) | every `CAMPAIGN_PIPELINE_EVERY_MIN` (5) and every minute | inside the engine: each list/campaign/plan step finishing, approvals 1 and 2, a plan created or rewritten in HQ or the CLI; outside: a campaign's status, progress or portal answer changing (Airtable) | Airtable automation 6 |
+| Echo drafts (`sean.draft`) | every `SEAN_EVERY_MIN` | a prospect reply: the n8n reply intake wrote its Emails row (best: Echo reads that row), or EmailBison "Contact Replied / Interested / Untracked Reply" | `hooks connect`: EmailBison webhook + the n8n replies card (n8n is best: it posts after the Emails row is written) |
+| Echo follow-ups (`sean.followup`) | every `SEAN_EVERY_MIN` | right after every reply, every sent reply or booking (engine), a manual send (n8n "Manual Emails Sent" or EmailBison "Manual Email Sent"); plus its due-time check every `SEAN_FOLLOWUP_EVERY_MIN` (60) because a follow-up acts when it is due | `hooks connect`: EmailBison + the n8n manual-sends card |
+| Bounce check (`bounce.check`) | every `BOUNCE_CHECK_EVERY_MIN`, all 35 workspaces | a bounce (n8n "Bounce Data Tracker", which already gets every workspace's bounces, or EmailBison "Email Bounced"): only that workspace is checked, at once (it reads Skip Bounce Pause itself) | `hooks connect`: EmailBison + the n8n bounces card |
+| Riley logs problems (`riley.collect`) | every `RILEY_EVERY_MIN` (15) | an engine job failing (inside the engine, always), the n8n Error Workflow, a Make error | nothing for engine jobs; `hooks connect`: the n8n errors card; Make: Riley's sweep |
+| Cole call reviews (`cole.review`) | every `COLE_EVERY_MIN` (60) | Fathom "New meeting content ready" | Alex: Fathom (step 3 below) |
+| Close → Airtable Won sync (`sales.won_sync`) | every `WON_SYNC_EVERY_MIN` (30) | a Close opportunity created or its status changed | `hooks connect` (Close webhook) |
+| Sienna scripts (`sienna.prep`) | every 30 minutes | an idea approved: in HQ (always instant), or in Airtable's Content Center | HQ (instant); Airtable left as is |
+| Campaign pipeline + Atlas plans + Scribe copy (`campaign.pipeline`, `atlas.plan`, `scribe.copy`) | every `CAMPAIGN_PIPELINE_EVERY_MIN` (5) and every minute | inside the engine: each list/campaign/plan step finishing, approvals 1 and 2, a plan created or rewritten in HQ or the CLI; outside: a campaign's status, progress or portal answer changing (Airtable) | inside the engine; Airtable left as is (hourly backup) |
 | Atlas to-do list (`atlas.tasks`) | every 30 minutes | new campaign numbers (after each bounce check) or a campaign change in Airtable | none extra |
-| Ledger purchase yes/no (`ledger.check`) | every `LEDGER_CHECK_EVERY_MIN` | a question posted in the Ledger check channel (Slack Events) | Slack step 5 |
-| Account health (`account.health`) | every `ACCOUNT_HEALTH_EVERY_MIN` | new placement results: n8n "Check Results", or the Airtable automation | n8n step 2b or Airtable automation 7 |
-| Airtable buttons (Lead List Center, Campaign Center) | every `AIRTABLE_POLL_MS` (30 s) | the button press (Airtable automation), an HQ button, and every engine list/campaign step (its progress and result are written back at once) | Airtable automations 1 and 2 |
-| Decisions ✅/❌ and the Reply Queue buttons | every `DECISIONS_POLL_MS` (30 s) | a ✅/❌ in Slack (only that message is read), a decision or Reply Queue button in Airtable, a decision in HQ, a job ending (its new card goes to Slack at once) | Slack step 5 **and** Airtable automations 3 and 4 |
+| Ledger purchase yes/no (`ledger.check`) | every `LEDGER_CHECK_EVERY_MIN` | a question posted in the Ledger check channel (Slack Events) | Alex: Slack (step 3 below) |
+| Account health (`account.health`) | every `ACCOUNT_HEALTH_EVERY_MIN` | new placement results: n8n "Check Results", or the Airtable automation | `hooks connect`: the n8n placement card |
+| Airtable buttons (Lead List Center, Campaign Center) | every `AIRTABLE_POLL_MS` (30 s) | the button press (Airtable automation), an HQ button, and every engine list/campaign step (its progress and result are written back at once) | HQ buttons + engine steps (instant); Airtable buttons keep the 30-second check |
+| Decisions ✅/❌ and the Reply Queue buttons | every `DECISIONS_POLL_MS` (30 s) | a ✅/❌ in Slack (only that message is read), a decision or Reply Queue button in Airtable, a decision in HQ, a job ending (its new card goes to Slack at once) | Slack ✅/❌ instant once Slack is done; the loop keeps its 30-second check (Airtable left as is) |
 
 Unchanged (reports meant for a time of day): Ada's brief, Ledger's report and prep, Atlas health (Mon), Atlas ramp (daily), Sienna ideas (Fri).
 
@@ -792,70 +793,45 @@ Unchanged (reports meant for a time of day): Ada's brief, Ledger's report and pr
 - **A burst is one run.** 10 replies in a minute = 1 Echo run. If Echo is already queued, the new reply joins it. If Echo is running, it runs once more right after (it may have read before the reply came). If it just finished within the last 30 seconds (`INSTANT_WINDOW_SEC`), one catch-up run starts at the end of those 30 seconds, never more. The bounce check has its own 2-minute window per workspace (`BOUNCE_CHECK_WINDOW_SEC`, 120), because a busy workspace bounces every few seconds: the first bounce is checked at once, the rest at most every 2 minutes (the old timer was every 30 minutes).
 - **Retries never double.** Slack, Fathom and Close resend an event with the same id; the engine starts it once.
 - **Backup sweep.** A provider can drop a webhook, so each job still runs on its own every hour (Alex 2026-11-28: "yes, maybe sooner"; `<JOB>_BACKUP_EVERY_MIN`, e.g. `SEAN_DRAFT_BACKUP_EVERY_MIN=60`; `0` = off). Names: `SEAN_DRAFT_`, `BOUNCE_CHECK_`, `RILEY_COLLECT_`, `COLE_REVIEW_`, `SALES_WON_SYNC_`, `SIENNA_PREP_`, `CAMPAIGN_PIPELINE_`, `ATLAS_TASKS_`, `LEDGER_CHECK_`, `ACCOUNT_HEALTH_`, `AIRTABLE_BRIDGE_`, `DECISIONS_LOOP_` + `BACKUP_EVERY_MIN`.
-- **Nothing breaks before set-up.** A source with no secret on the server answers 404, and the jobs it feeds keep their old timer. The moment its secret is set (and the engine restarted), those jobs switch to instant + backup sweep. The Decisions loop switches only when both Slack and Airtable are set up (it gets work from both).
+- **Nothing breaks before set-up.** A source with no secret answers 404, and the jobs it feeds keep their old timer. Secrets live in Postgres (`hook_secrets`, sealed with a key from `ENGINE_SECRET`; `HOOK_SECRET_<SOURCE>` in `.env` still wins). A secret the engine made is *pending* (its webhook is accepted, its jobs keep their timer) until the provider really sends: `hooks connect` checked it, or its first signed event arrived. Then its jobs switch to instant + backup sweep, without a restart (the engine re-reads the table every 30 seconds). The Decisions loop stays on its 30-second check, because Airtable is left as is.
 - **On switches** stay as they were (an old `*_EVERY_MIN` above 0 still means "on"); new plain ones: `SEAN=on`, `BOUNCE_CHECK=on`, `ACCOUNT_HEALTH=on`, `LEDGER_CHECK=on`. `WON_SYNC_EVERY_MIN=0` still switches the Won sync off.
 - **Security.** Each source has its own secret. Slack, Fathom and Close sign every request and the engine checks the signature (and refuses anything older than 5 minutes). EmailBison, n8n, Make and Airtable send the shared secret in the `x-hook-secret` header (EmailBison cannot set headers, so for it alone the secret is the `?key=` in the URL). Wrong or missing = 401. Webhooks are served only on `engine.dulcy.io`, never on HQ or the portal.
 - **Mercury:** Mercury does offer webhooks (`transaction.created`, signed `Mercury-Signature`), but a new bank transaction is not Ledger's purchase-check work: the yes/no answers a question posted in Slack, so that is its event. No Mercury webhook is used.
 
-**Check it works:** `cd /opt/dulcy-os/engine/deploy && docker compose exec engine node dist/src/cli.js hooks` lists each source (secret set or not, events in 24 h, last one), each job (INSTANT + its backup sweep, or still on its old timer and which secret it needs) and the last 10 events with the jobs they started.
+**Check it works:** `cd /opt/dulcy-os/engine/deploy && docker compose exec engine node dist/src/cli.js hooks` lists each source (connected, secret made and waiting, or none; events in 24 h, last one), each job (INSTANT + its backup sweep, or still on its old timer) and the last 10 events with the jobs they started. HQ → Team → **Connections** shows the same per source (Connected / Waiting for a card / Needs Alex, last event), without any secret.
 
-### Set it up (Alex, once; about 45 minutes)
-Do the steps in order. Step 1 puts the secrets on the server without restarting. Do each provider (steps 2 to 8), then restart once (step 9). Until the restart, a provider that already calls gets a 404, which is harmless, and nothing changes. Exact n8n, Make and Airtable changes: `automations/instant-hooks-2026-11-28.md`.
+### Set it up (Alex, once; about 10 minutes) (2026-11-28: one command)
+Alex: "Yes, all the tools should be connected to the agents so they can use them when necessary." The engine now connects everything it has a key for by itself. Your part is Slack and Fathom, whose webhook screens have no API.
 
-**1. Secrets on the server.** The values never show on screen except when you copy one into its provider, and they are never put in git or chat.
+**1. See the plan (changes nothing):**
 ```
 ssh -o ServerAliveInterval=30 root@178.156.132.86
 cd /opt/dulcy-os/engine/deploy
-cp .env .env.bak-$(date +%F-%H%M) && chmod 600 .env.bak-*
-# a) the four shared secrets (made here):
-for S in EMAILBISON N8N MAKE AIRTABLE; do sed -i "/^HOOK_SECRET_$S=/d" .env; printf 'HOOK_SECRET_%s=%s\n' "$S" "$(openssl rand -hex 32)" >> .env; done
-# b) the three the providers give you (paste when asked; nothing is shown):
-read -r -s -p "Slack Signing Secret: " V; echo; sed -i '/^HOOK_SECRET_SLACK=/d' .env; printf 'HOOK_SECRET_SLACK=%s\n' "$V" >> .env; unset V
-read -r -s -p "Fathom webhook secret (whsec_...): " V; echo; sed -i '/^HOOK_SECRET_FATHOM=/d' .env; printf 'HOOK_SECRET_FATHOM=%s\n' "$V" >> .env; unset V
-#    (Close: step 7 writes HOOK_SECRET_CLOSE itself.)
-grep -c '^HOOK_SECRET_' .env          # counts the lines, shows no values
+docker compose exec engine node dist/src/cli.js hooks connect
 ```
-To copy a shared secret into its provider (steps 2, 3, 4 and 8), show only that one, copy it, then clear the screen: `grep '^HOOK_SECRET_N8N=' .env | cut -d= -f2; read -p "copied? " _; clear`. Skip a provider you don't want yet: delete its line (`sed -i '/^HOOK_SECRET_MAKE=/d' .env`) and its jobs stay on their old timer.
+It reads EmailBison, Close and n8n and prints what it would do. No secret is made, nothing is written anywhere.
 
-**2. n8n** (`HOOK_SECRET_N8N`): one credential, then three small changes (click-steps in the automations file):
-- Credential: n8n → Credentials → New → **Header Auth**, name `Dulcy engine hook`, Name `x-hook-secret`, Value = the secret.
-- 2a. The reply intakes (`[INBOX MANAGER] Receive Replies from EmailBison`, `… Bison Untracked Replies`, `… Receive Replies + Handwrytten Direct Mail`, `… Receive Replies from HeyReach`, `1.2 Positive Email Reply`, `… Manually Mark Reply as Interested`): after each node that creates the Emails row, one HTTP Request node `POST https://engine.dulcy.io/hooks/n8n` body `{"event":"reply"}`. Posting after the row is written matters: Echo reads the row.
-- 2b. `[Inbox Placement Tests] Check Results`: after the result is written, the same node with `{"event":"placement_results"}`.
-- 2c. Error workflow: a new workflow "Dulcy engine: errors to Riley" (Error Trigger → HTTP Request `{"event":"error", …}`); then set it as **Error Workflow** in each active workflow's settings.
-- 2d. `[Inbox Management] Bounce Data Tracker`: after its Airtable write, `{"event":"bounce","workspace_id":…,"workspace_name":…}` (from the incoming EmailBison event).
-- 2e. `Manual Emails Sent (Including Dulcy Reply Agent)`: at the end, `{"event":"sent"}`.
+**2. Do it:** `docker compose exec engine node dist/src/cli.js hooks connect --yes`
+- **EmailBison:** in every workspace the engine has a key for (`EMAILBISON_KEY_<WORKSPACE>`), one webhook `Dulcy engine` → `https://engine.dulcy.io/hooks/emailbison?key=<the engine's secret>`, events Contact Replied, Contact Interested, Untracked Reply Received, Email Bounced, Manual Email Sent. It never adds a second one and never touches another webhook (if `Dulcy engine` is there with an old URL or fewer events, it is updated). Connected at once.
+- **Close:** the webhook subscription (opportunity created / updated) through the Close API; the signature key Close returns is stored sealed and never printed. Connected at once. (If `HOOK_SECRET_CLOSE` is still in `.env` from before, it says so: delete that line, restart, run again.)
+- **n8n:** creates the Header Auth credential `Dulcy engine hook` (header `x-hook-secret` = the engine's own n8n secret) and the workflow `Dulcy engine: errors to Riley` (inactive: n8n runs an error workflow without activating it). Every change inside an existing workflow becomes a **card** for your ✅ (one Decision per group: replies, placement results, bounces, manual sends, errors), each with an exact `n8nPatch` that Riley's n8n rule applies on ✅ and that `riley-n8n-rollback <issue> --yes` undoes. Errors: workflows with no Error Workflow get the engine's; the shared error workflow most of them already use gets one "Tell engine: error" node (so nothing that works today is re-pointed). The cards apply only with `riley.apply,riley.n8n_apply` in `LIVE_STAGES` (the command reminds you).
+- **Airtable:** left as is. HQ replaced most Airtable buttons; the Airtable bridge keeps its 30-second check.
+- **Make:** left to Riley's sweep (Make has no account-wide error webhook).
+- At the end it prints a checklist: connected / waiting for a card (the Decision titles) / your 2 steps.
 
-**3. EmailBison** (`HOOK_SECRET_EMAILBISON`, optional when n8n step 2 is done: n8n already gets these events for every workspace): in **each** workspace (the bounce check covers all 35), Settings → Webhooks → Add webhook: name `Dulcy engine`, URL `https://engine.dulcy.io/hooks/emailbison?key=<HOOK_SECRET_EMAILBISON>`, events **Contact Replied, Contact Interested, Untracked Reply Received, Email Bounced, Manual Email Sent**. Send a test event from the same screen; `hooks` then shows it. (Riley can add it to every workspace through the EmailBison API, `POST /api/webhook-url`, once you say so.)
+**3. Approve the cards** in Slack (✅) or HQ → Decisions → Fixes. Then run `hooks connect --yes` once more: it sees the changes live in n8n and marks n8n connected (the first n8n event does the same on its own).
 
-**4. Make** (`HOOK_SECRET_MAKE`): in each scenario that matters, an error handler route with **HTTP → Make a request** to `https://engine.dulcy.io/hooks/make` (see the automations file). Make has no account-wide error webhook, so coverage is per scenario; Riley's session still sweeps Make runs.
+**4. Slack** (api.slack.com/apps → **Dulcy Agents**, the app whose bot token the engine uses):
+- Basic Information → App Credentials → **Signing Secret** → Show → copy. On the server: `docker compose exec engine node dist/src/cli.js hooks secret slack` and paste (nothing is shown).
+- Then **Event Subscriptions** → On → Request URL `https://engine.dulcy.io/hooks/slack` (it must say Verified) → **Subscribe to bot events**: `reaction_added`, `message.channels` (add `message.groups` if the decisions or Ledger check channel is private) → Save Changes. If Slack asks, **Reinstall to workspace**. Scopes needed: `reactions:read`, `channels:history`. The bot must be in both channels.
 
-**5. Slack** (`HOOK_SECRET_SLACK`): api.slack.com/apps → the Dulcy app (the one whose bot token the engine uses):
-- Basic Information → **Signing Secret** → Show → paste it in step 1b.
-- Right after the restart (step 9): **Event Subscriptions** → On → Request URL `https://engine.dulcy.io/hooks/slack` (Slack checks it; it must say Verified) → **Subscribe to bot events**: `reaction_added`, `message.channels` (add `message.groups` if the decisions or Ledger check channel is private) → Save. If Slack asks, **Reinstall to workspace**. Scopes needed: `reactions:read`, `channels:history` (`groups:history` for a private channel). The bot must be a member of both channels.
+**5. Fathom:** Settings → API Access → **Add webhook**: URL `https://engine.dulcy.io/hooks/fathom`, recordings **mine and shared with me**, event **New meeting content ready** → Save → copy the `whsec_…` secret it shows once. On the server: `docker compose exec engine node dist/src/cli.js hooks secret fathom` and paste (nothing is shown).
 
-**6. Fathom** (`HOOK_SECRET_FATHOM`): Fathom → Settings → API Access → **Add webhook**: URL `https://engine.dulcy.io/hooks/fathom`, recordings **mine and shared with me** (or the team's, as Cole reviews today), event **New meeting content ready**, include summary/transcript as you like (Cole reads the call from Fathom's API anyway). Copy the secret it shows once (`whsec_…`) into step 1b. The engine checks Fathom's signature (Standard Webhooks: `webhook-id`, `webhook-timestamp`, `webhook-signature`).
+No restart is needed for any of it. Run `hooks connect` (without `--yes`) any time to see what is left; it is safe to run again and only adds what is missing.
 
-**7. Close** (`HOOK_SECRET_CLOSE`): Close makes webhooks through its API only. On the server (uses the `CLOSE_API_KEY` already in `.env`; nothing is shown):
-```
-cd /opt/dulcy-os/engine/deploy
-K=$(grep '^CLOSE_API_KEY=' .env | cut -d= -f2-)
-curl -s -u "$K:" -H 'content-type: application/json' https://api.close.com/api/v1/webhook/ \
-  -d '{"url":"https://engine.dulcy.io/hooks/close","events":[{"object_type":"opportunity","action":"created"},{"object_type":"opportunity","action":"updated"}]}' \
-  | python3 -c "
-import json,sys,re
-d=json.load(sys.stdin); k=d.get('signature_key','')
-if not re.fullmatch(r'[0-9a-fA-F]{32,}', k): sys.exit('Close did not create it: ' + str(d.get('error') or d)[:300])
-env=[l for l in open('.env') if not l.startswith('HOOK_SECRET_CLOSE=')]; env.append('HOOK_SECRET_CLOSE='+k+'\n'); open('.env','w').writelines(env)
-print('Close webhook', d.get('id'), 'created; HOOK_SECRET_CLOSE saved')"
-unset K
-```
-It prints the webhook id only; the signature key goes straight into `.env`. To remove it later: `curl -s -u "$K:" -X DELETE https://api.close.com/api/v1/webhook/<id>/` (with `K` set as above).
+**Secrets:** the engine makes its own (EmailBison, n8n; Make and Airtable when they are ever needed) and keeps every secret sealed in Postgres. They are never printed, logged, shown in HQ or put in a card, and you never copy one by hand. `hooks secret <slack|fathom|close>` is the only way to give it one, with hidden input.
 
-**8. Airtable** (`HOOK_SECRET_AIRTABLE`): seven automations, each "When … → Run a script" that sends one event (script and triggers in the automations file): 1 Lead List Engine button, 2 Campaign Engine button, 3 Decision approved by hand, 4 Reply Queue button (Human Action), 5 Content idea approved, 6 Campaign status / progress / portal answer changed, 7 placement results written. Put the secret in each script's **Secrets** panel as `engineHookSecret` (never in the script text). Do these **before** the restart: once `HOOK_SECRET_AIRTABLE` is live, the 30-second Airtable poll stops and a button is picked up by its automation (or the hourly sweep).
-
-**9. Restart** so the engine reads the secrets: `bash /opt/dulcy-os/engine/deploy/deploy.sh` (last lines "Engine is up."). **Right after**, finish Slack step 5 (Request URL + events): from the restart on, ✅/❌ in Slack are read only when Slack sends them. Then run `hooks` and check every job says INSTANT.
-
-**For Riley:** `engine/src/instant/` — `hooks.ts` (route `/hooks/<source>`, signature checks, the event map), `trigger.ts` (coalescing: queued joins, running → `job_reruns`, window request id `instant:<kind>:<record>:<slot>`, one `:tail`), `afterJob.ts` (engine-internal events, called by `worker.ts`), `hq.ts` (HQ actions), `kick.ts` (the bridge and Decisions loop as kickable loops), `jobs.ts` (which job listens to which source, old timer vs backup sweep). `scheduler.ts` keeps the calendar reports and the sweeps. Tables `hook_events` (30 days) and `job_reruns`. Tests: `test/instantHooks.test.ts`.
+**For Riley:** `engine/src/instant/` — `hooks.ts` (route `/hooks/<source>`, signature checks, the event map), `trigger.ts` (coalescing: queued joins, running → `job_reruns`, window request id `instant:<kind>:<record>:<slot>`, one `:tail`), `afterJob.ts` (engine-internal events, called by `worker.ts`), `hq.ts` (HQ actions), `kick.ts` (the bridge and Decisions loop as kickable loops), `jobs.ts` (which job listens to which source, old timer vs backup sweep). `scheduler.ts` keeps the calendar reports and the sweeps. Tables `hook_events` (30 days), `job_reruns` and `hook_secrets` (`secrets.ts`: sealed secrets, pending/connected; `connect.ts`: `hooks connect`, the n8n patches and cards). Riley's n8n rule (`agents/rileyN8n.ts`) lets a new HTTP Request node use only the engine's own `Dulcy engine hook` credential (by the id stored in `hook_secrets`), and allows an Error Workflow where none is set (rollback unsets it); `riley.apply` takes `{"issueIds": [...]}` for one card over several issues. Tests: `test/instantHooks.test.ts`, `test/hooksConnect.test.ts`.
 
 ## HQ: your private app (Step 1 "Today", Step 2 "Clients" and "Deliverability", Step 3 "Inbox", "Campaigns", "Content" and "Sales", 2026-11-25/26)
 

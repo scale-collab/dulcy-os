@@ -5,6 +5,8 @@
 // Round 3 (Alex 2026-11-27, "Cole keeps Close current"): ONE write exists, updateOpportunity: an
 // opportunity's confidence (%), value and value period, on Dulcy's own Close. Nothing else is ever
 // written (no lead, contact, email, SMS, task or status change); the caller gates it (cole.close_update).
+// hooks connect (2026-11-28): closeWebhooks() lists the account's webhook subscriptions and creates / deletes
+// the engine's OWN one (its URL is the engine's /hooks/close); it never touches another subscription.
 import { PermanentError, RetryableError } from '../errors.js';
 
 export const CLOSE_API = 'https://api.close.com/api/v1';
@@ -234,5 +236,37 @@ export function createCloseClient(apiKey: string | undefined, f: typeof fetch = 
       const j = await get(`opportunity/${oppId}/`, {}, 'PUT', opportunityBody(patch));
       return toOpportunity(j);
     },
+  };
+}
+
+/** Close webhook subscriptions (hooks connect). The answer of create holds signature_key: the caller stores it sealed and never prints it. */
+export function closeWebhooks(apiKey: string, f: typeof fetch = fetch, base = CLOSE_API) {
+  const auth = `Basic ${Buffer.from(`${apiKey}:`).toString('base64')}`;
+  async function call(method: 'GET' | 'POST' | 'DELETE', path: string, body?: unknown): Promise<any> {
+    let res: Response;
+    try { res = await f(`${base.replace(/\/+$/, '')}/${path}`, { method, headers: { authorization: auth, accept: 'application/json', ...(body !== undefined ? { 'content-type': 'application/json' } : {}) }, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(20_000) }); }
+    catch { throw new RetryableError(`Close ${method} ${path}: network error or timeout`); }
+    if (res.status === 429 || res.status >= 500) throw new RetryableError(`Close ${method} ${path}: HTTP ${res.status}`);
+    if (res.status === 401 || res.status === 403) throw new PermanentError(`Close refused the API key (HTTP ${res.status})`);
+    if (!res.ok) throw new PermanentError(`Close ${method} ${path}: HTTP ${res.status}`);
+    const t = await res.text();
+    return t ? JSON.parse(t) : {};
+  }
+  return {
+    async list(): Promise<{ id: string; url: string; status: string; events: { object_type: string; action: string }[] }[]> {
+      const out: any[] = [];
+      for (let skip = 0, page = 0; page < 10; page++, skip += 100) {
+        const r = await call('GET', `webhook/?_limit=100&_skip=${skip}`);
+        const rows = Array.isArray(r?.data) ? r.data : [];
+        out.push(...rows);
+        if (!r?.has_more || !rows.length) break;
+      }
+      return out.map((w) => ({ id: str(w.id), url: str(w.url), status: str(w.status), events: Array.isArray(w.events) ? w.events.map((e: any) => ({ object_type: str(e?.object_type), action: str(e?.action) })) : [] }));
+    },
+    async create(url: string, events: { object_type: string; action: string }[]): Promise<{ id: string; signatureKey: string }> {
+      const r = await call('POST', 'webhook/', { url, events });
+      return { id: str(r?.id), signatureKey: str(r?.signature_key) };
+    },
+    remove: (id: string) => call('DELETE', `webhook/${encodeURIComponent(id)}/`),
   };
 }

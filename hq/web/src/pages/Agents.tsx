@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { api, type AgentCard, type AgentWork } from '../api';
-import { Avatar, Card, cleanLine, cx, ErrorBox, go, Icon, PageSkeleton, PageTitle, StatusDot, teamTone, toneLabel } from '../ui';
+import { api, type AgentCard, type AgentWork, type Connection } from '../api';
+import { Avatar, Card, cleanLine, cx, ErrorBox, go, Icon, PageSkeleton, PageTitle, SectionHeader, StatusDot, teamTone, timeAgo, toneLabel, type Tone } from '../ui';
 import { TeamTabs, WorkChips, WorkSummary } from './AgentWork';
 
 export default function Agents() {
@@ -45,6 +45,49 @@ export default function Agents() {
           );
         })}
       </div>
+      <Connections />
     </div>
+  );
+}
+
+const CONN: Record<Connection['status'], { label: string; tone: Tone }> = {
+  connected: { label: 'Connected', tone: 'good' },
+  waiting: { label: 'Waiting for a card', tone: 'warn' },
+  needs_alex: { label: 'Needs Alex', tone: 'bad' },
+  not_set_up: { label: 'Not set up', tone: 'idle' },
+  kept: { label: 'Kept on its check', tone: 'idle' },
+};
+
+/** Which services tell the agents the moment work arrives (webhooks). Read only; no secrets are ever sent here. */
+function Connections() {
+  const [list, setList] = useState<Connection[] | null>(null);
+  const [error, setError] = useState('');
+  useEffect(() => { api<{ connections: Connection[] }>('/team/connections').then((r) => setList(r.connections)).catch((e) => setError(e.message)); }, []);
+  if (error) return null;
+  return (
+    <section className="mt-8" aria-label="Connections">
+      <SectionHeader title="Connections" icon="link" right={<span className="text-xs text-muted">Webhooks that start the agents at once</span>} />
+      {!list ? <PageSkeleton kind="list" /> : (
+        <Card className="divide-y divide-line p-0">
+          {list.map((c) => {
+            const s = CONN[c.status];
+            return (
+              <div key={c.source} className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:gap-4">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-fg"><StatusDot tone={s.tone} label={s.label} />{c.name}</div>
+                  <div className="truncate text-xs text-muted">Feeds {c.feeds}</div>
+                  {c.status !== 'connected' && <div className="mt-0.5 text-xs text-fg-2">{c.note}</div>}
+                  {c.cards.length > 0 && <ul className="mt-1 list-disc pl-5 text-xs text-fg-2">{c.cards.map((t) => <li key={t}>{t}</li>)}</ul>}
+                </div>
+                <div className="flex shrink-0 items-center gap-3 text-xs">
+                  <span className={cx('rounded-full px-2 py-0.5 font-medium', s.tone === 'good' ? 'bg-good-soft text-good' : s.tone === 'warn' ? 'bg-warn-soft text-warn' : s.tone === 'bad' ? 'bg-bad-soft text-bad' : 'bg-sunken text-muted')}>{s.label}</span>
+                  <span className="tabular text-muted">{c.lastEvent ? `last event ${timeAgo(c.lastEvent)}${c.events24h ? ` · ${c.events24h} in 24 h` : ''}` : 'no event yet'}</span>
+                </div>
+              </div>
+            );
+          })}
+        </Card>
+      )}
+    </section>
   );
 }

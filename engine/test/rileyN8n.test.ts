@@ -425,7 +425,7 @@ test('n8nPatch structure refusals: secrets, new credentials, unknown keys, missi
   assert.match(err({ workflowId: 'w1', changes: [{ nodeSetting: { node: 'Code', key: 'onError', new: 'continueErrorOutput' } }] }), /both "old" and "new" are required/);
   assert.match(err({ workflowId: 'w1', changes: [{ workflowSetting: { key: 'timezone', old: null, new: 'UTC' } }] }), /not a workflow setting the engine changes/);
   assert.match(err({ workflowId: 'w1', changes: [{ workflowSetting: { key: 'callerPolicy', old: null, new: 'workflowsFromAList' } }] }), /a caller list is Manual/);
-  assert.match(err({ workflowId: 'w1', changes: [{ workflowSetting: { key: 'errorWorkflow', old: null, new: 'abc123' } }] }), /can't be undone/);
+  assert.ok('patch' in validateN8nPatch({ workflowId: 'w1', changes: [{ workflowSetting: { key: 'errorWorkflow', old: null, new: 'abc123' } }] }), 'an Error Workflow may be set where none is set (2026-11-28; the rollback unsets it)');
   assert.match(err({ workflowId: 'w1', changes: [slack({ onError: 'continueErrorOutput' })] }), /unknown field\(s\) onError/);
   assert.match(err({ workflowId: 'w1', changes: [{ addNode: slack().addNode, node: 'x' }] }), /one change per entry/);
   assert.match(err({ workflowId: 'w1', changes: [{ connect: { from: 'A', output: 'failure', to: 'B' } }] }), /"output" is "main" or "error"/);
@@ -507,4 +507,37 @@ test('Riley n8n apply: a patch that cannot work (error output wired without On E
   assert.equal(row2[IF.status], 'Fix failed');
   assert.equal(puts().length, 0);
   assert.equal(wfs.wfPlace1.nodes.length, 2);
+});
+
+test('hooks connect cards: one ✅ applies a group of issues (each with its own rollback); the engine’s own login is allowed; a stale one is reported', { skip }, async () => {
+  const ISSUE2 = 'recIssue000000002';
+  wfs.wfPlace2 = { ...workflow(), id: 'wfPlace2', name: 'Second workflow' };
+  await db.query(`DELETE FROM hook_secrets`);
+  await db.query(`INSERT INTO hook_secrets (source, sealed, origin, state, meta) VALUES ('n8n', 'v1:x', 'engine', 'pending', '{"credentialId":"credE"}')`);
+  const tell = { addNode: { name: 'Tell engine: reply', type: 'n8n-nodes-base.httpRequest', typeVersion: 4.2, position: [400, 0], parameters: { method: 'POST', url: 'https://engine.example.test/hooks/n8n', sendBody: true, specifyBody: 'json', jsonBody: '{"event":"reply"}' }, credentials: { httpHeaderAuth: { id: 'credE', name: 'Dulcy engine hook' } } } };
+  const good = { workflowId: 'wfPlace1', changes: [tell, { connect: { from: 'Check', to: 'Tell engine: reply' } }] };
+  const stale = { workflowId: 'wfPlace2', changes: [{ node: 'Schedule', path: 'rule.interval.0.minutesInterval', old: 5, new: 30 }] };
+  issue(good);
+  tables[ISSUES][ISSUE2] = { [IF.title]: 'n8n: second', [IF.status]: 'Waiting for Alex', [IF.fixType]: 'n8n change', [IF.details]: JSON.stringify({ n8nPatch: stale }) };
+  const c = cfg(LIVE);
+  const run = async (input: Record<string, unknown>, rid: string) => {
+    const q = await enqueue(db, { kind: 'riley.apply', recordId: rid, input, dryRun: false, maxAttempts: 1, deadlineMs: 60_000 });
+    for (let i = 0; i < 10; i++) { await runOnce(db, c); const j = (await getJob(db, q.job.id))!.job; if (['succeeded', 'failed', 'needs_review'].includes(j.status)) return j; }
+    throw new Error('job did not settle');
+  };
+  let j: any = await run({ issueIds: [ISSUE, ISSUE2] }, 'dec-group');
+  assert.equal(j.status, 'failed', 'the Decision says one was not applied');
+  assert.match(String(j.error), /1 applied, 1 not applied/);
+  assert.equal(tables[ISSUES][ISSUE][IF.status], 'Applied');
+  assert.equal(tables[ISSUES][ISSUE2][IF.status], 'New', 'changed since diagnosis: back to Riley');
+  const node = wfs.wfPlace1.nodes.find((n: any) => n.name === 'Tell engine: reply');
+  assert.deepEqual([node.credentials, node.parameters.authentication, node.parameters.genericAuthType], [{ httpHeaderAuth: { id: 'credE', name: 'Dulcy engine hook' } }, 'genericCredentialType', 'httpHeaderAuth']);
+  assert.equal(wfs.wfPlace2.nodes[0].parameters.rule.interval[0].minutesInterval, 1, 'the stale one changed nothing');
+  assert.deepEqual((await rollbacks()).map((r) => r.issue_id), [ISSUE], 'one rollback, for the applied issue');
+  // The same Decision again: the applied issue is skipped (already handled), nothing is saved twice.
+  const before = puts().length;
+  j = await run({ issueIds: [ISSUE] }, 'dec-group2');
+  assert.equal(j.status, 'succeeded'); assert.match(String(j.result.message), /0 applied, 1 already handled/);
+  assert.equal(puts().length, before);
+  await db.query(`DELETE FROM hook_secrets`);
 });

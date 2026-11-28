@@ -749,3 +749,22 @@ CREATE TABLE IF NOT EXISTS job_reruns (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (kind, record_id)
 );
+
+-- Hook secrets (Alex 2026-11-28: "all the tools should be connected to the agents", one command instead of manual setup).
+-- One row per webhook source. The engine makes its own shared secrets (EmailBison, n8n, Make, Airtable) the first time
+-- `hooks connect` needs them; the provider-issued ones (Close signature key, Fathom whsec_, Slack signing secret) are
+-- stored by `hooks connect` (Close) or `hooks secret <source>` (hidden input). HOOK_SECRET_<SOURCE> in .env still wins.
+-- sealed = AES-256-GCM with a key derived from ENGINE_SECRET (the source name as associated data); never returned,
+-- logged or shown. state: pending = the secret exists, the provider is not wired yet (events are accepted, the job keeps
+-- its old timer); connected = the provider sends events (the old timer is off, the backup sweep runs instead).
+-- meta: non-secret facts only (EmailBison workspaces done, the n8n credential / error workflow ids, Decision cards).
+CREATE TABLE IF NOT EXISTS hook_secrets (
+  source        TEXT PRIMARY KEY,
+  sealed        TEXT NOT NULL,
+  origin        TEXT NOT NULL CHECK (origin IN ('engine', 'provider')),
+  state         TEXT NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'connected')),
+  meta          JSONB NOT NULL DEFAULT '{}',
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  connected_at  TIMESTAMPTZ
+);

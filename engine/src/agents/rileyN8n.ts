@@ -12,7 +12,8 @@
 // re-activate it if it was active, mark the issue Applied. All or nothing. Live only when
 // riley.n8n_apply is in LIVE_STAGES. Credentials and anything that looks like a key, token,
 // password or auth setting are never touched; a new node may only reuse a login the workflow
-// already has. Undo: `riley-n8n-rollback <issueId>`.
+// already has, or (2026-11-28, `hooks connect`) the engine's own "Dulcy engine hook" Header Auth login
+// on an HTTP Request node, by the id the engine created (kept in hook_secrets). Undo: `riley-n8n-rollback <issueId>`.
 import { randomUUID } from 'node:crypto';
 import type { JobContext } from '../context.js';
 import type { Db } from '../db/pool.js';
@@ -189,8 +190,7 @@ function validateKind(c: Record<string, unknown>, i: number): { change: N8nChang
   if (!('old' in b) || !('new' in b)) return { error: `${at} (workflowSetting ${key}): both "old" and "new" are required (old = the value Riley read, null if absent)` };
   if (b.old !== null && !spec.check(b.old)) return { error: `${at} (workflowSetting ${key}): "old" must be null or ${spec.hint}` };
   if (!spec.check(b.new)) return { error: `${at} (workflowSetting ${key}): "new" must be ${spec.hint}` };
-  // n8n merges settings on save, so a setting that was absent can only be undone if it has a value to put back.
-  if (spec.dflt === null && b.old === null) return { error: `${at} (workflowSetting ${key}): setting an ${spec.label} where none is set can't be undone by the engine's rollback; Manual (Alex)` };
+  // An Error Workflow may be set where none is set (2026-11-28): the rollback unsets it again (rollbackSettings sends '').
   return { change: { workflowSetting: { key, old: b.old, new: b.new } }, key: `workflowSetting\u0000${key}` };
 }
 
@@ -332,7 +332,8 @@ const linkAt = (wf: any, l: N8nLink, idx: number) => (wf?.connections?.[l.from]?
 const linkExists = (wf: any, l: N8nLink, idx: number) => linkAt(wf, l, idx).some((x) => x?.node === l.to && (x?.type ?? 'main') === 'main' && (x?.index ?? 0) === l.toIndex);
 
 const nodeSettingNow = (node: any, key: string) => node?.[key] ?? NODE_SETTINGS[key].dflt;
-const wfSettingNow = (wf: any, key: string) => wf?.settings?.[key] ?? WORKFLOW_SETTINGS[key].dflt;
+/** '' counts as absent: n8n's "no error workflow" after the engine's rollback unset it. */
+const wfSettingNow = (wf: any, key: string) => { const v = wf?.settings?.[key]; return v === undefined || v === null || v === '' ? WORKFLOW_SETTINGS[key].dflt : v; };
 const eff = (v: unknown, dflt: unknown) => (v === null || v === undefined ? dflt : v);
 
 /** Plain words for a node type: "n8n-nodes-base.slack" → "Slack", "n8n-nodes-base.httpRequest" → "HTTP Request". */
@@ -385,7 +386,12 @@ export interface PatchPlan { next: any; mismatches: string[]; refused: string[];
  * just before it). Every `old` must equal what is there now (null = absent); otherwise it is a mismatch
  * and nothing should be saved. Any mismatch, refusal or invalid change = nothing is saved (all or nothing).
  */
-export function planN8nPatch(wf: any, patch: N8nPatch): PatchPlan {
+/** The engine's own n8n login for its webhook (made by `hooks connect`): the one new credential a node may use. */
+export const ENGINE_CREDENTIAL_NAME = 'Dulcy engine hook';
+export interface EngineCredential { id: string; name: string }
+export interface PlanOptions { engineCredential?: EngineCredential | null }
+
+export function planN8nPatch(wf: any, patch: N8nPatch, opts: PlanOptions = {}): PatchPlan {
   const next = structuredClone(wf);
   if (!Array.isArray(next.nodes)) next.nodes = [];
   if (!next.connections || typeof next.connections !== 'object') next.connections = {};
@@ -412,8 +418,12 @@ export function planN8nPatch(wf: any, patch: N8nPatch): PatchPlan {
             for (const a of AUTH_SELECTORS) if (typeof src.node.parameters?.[a] === 'string') node.parameters[a] = src.node.parameters[a];
           } else {
             const used = next.nodes.some((x: any) => x?.credentials?.[type]?.id === ref.id && x?.credentials?.[type]?.name === ref.name);
-            if (!used) { refused.push(`"${n.name}" would use a "${type}" login (${ref.name}) that no node in this workflow uses; the engine never adds new credentials`); bad = true; break; }
+            // The one exception: the engine's own "Dulcy engine hook" Header Auth login, on an HTTP Request node only.
+            const eng = opts.engineCredential;
+            const engine = !!eng && type === 'httpHeaderAuth' && ref.id === eng.id && ref.name === eng.name && n.type === 'n8n-nodes-base.httpRequest';
+            if (!used && !engine) { refused.push(`"${n.name}" would use a "${type}" login (${ref.name}) that no node in this workflow uses; the engine never adds new credentials`); bad = true; break; }
             creds[type] = { id: ref.id, name: ref.name };
+            if (engine && !used) { node.parameters.authentication = 'genericCredentialType'; node.parameters.genericAuthType = 'httpHeaderAuth'; }
           }
         }
         if (bad) continue;
@@ -568,7 +578,8 @@ export function rollbackSettings(previous: any, patch: N8nPatch): Record<string,
   for (const c of patch.changes) {
     if (kindOf(c) !== 'workflowSetting') continue;
     const { key } = (c as N8nWorkflowSetting).workflowSetting;
-    if (out[key] === undefined && WORKFLOW_SETTINGS[key]?.dflt !== null) out[key] = WORKFLOW_SETTINGS[key].dflt;
+    // Absent before the fix: put n8n's default back; a setting with no default (Error Workflow) is unset with ''.
+    if (out[key] === undefined) out[key] = WORKFLOW_SETTINGS[key]?.dflt ?? '';
   }
   return out;
 }
@@ -611,8 +622,16 @@ const rollbackLine = (id: number, wfName: string, wfId: string, issueId: string)
  * then makes it live by hand as before). Throws (and says why on the issue) when it is refused
  * or the workflow changed since Riley read it.
  */
-export async function applyN8nPatch(ctx: JobContext, at: Pick<AirtableClient, 'update'>, issue: AirtableRecord, fetchImpl: typeof fetch = fetch): Promise<{ message: string; [k: string]: unknown } | null> {
+/** The engine's own n8n credential (hooks connect), or null. */
+export async function engineCredential(db: Db): Promise<EngineCredential | null> {
+  const m = (await db.query(`SELECT meta FROM hook_secrets WHERE source='n8n'`)).rows[0]?.meta ?? {};
+  return typeof m.credentialId === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(m.credentialId) ? { id: m.credentialId, name: ENGINE_CREDENTIAL_NAME } : null;
+}
+
+export async function applyN8nPatch(ctx: JobContext, at: Pick<AirtableClient, 'update'>, issue: AirtableRecord, fetchImpl: typeof fetch = fetch, opts: { stepPrefix?: string } = {}): Promise<{ message: string; [k: string]: unknown } | null> {
   const cfg = ctx.cfg;
+  // One job can apply several issues (one Decision for a group of workflows): each issue gets its own step keys.
+  const sk = (k: string) => (opts.stepPrefix ? `${k}:${opts.stepPrefix}` : k);
   const found = findN8nPatch(val(issue.fields[F.details]), val(issue.fields[F.fix]));
   if (!found) return null;
   const title = val(issue.fields[F.title]);
@@ -629,11 +648,12 @@ export async function applyN8nPatch(ctx: JobContext, at: Pick<AirtableClient, 'u
     return { message: `Approved: ${title}. No n8n key on the server: Riley posts the steps on his next run.` };
   }
   const n8n = n8nClient(cfg.n8nBaseUrl, cfg.n8nApiKey, fetchImpl);
+  const planOpts: PlanOptions = { engineCredential: await engineCredential(ctx.db) };
 
   // 1. Read and check (once per job: a retry after the PUT must not see its own change as a mismatch).
   const check = async () => {
     const wf = await n8n.get(patch.workflowId);
-    const plan = planN8nPatch(wf, patch);
+    const plan = planN8nPatch(wf, patch, planOpts);
     return { wf, plan };
   };
   if (!live) {
@@ -647,7 +667,7 @@ export async function applyN8nPatch(ctx: JobContext, at: Pick<AirtableClient, 'u
     return { message: `Approved: ${title}. n8n apply is off (add ${N8N_APPLY_STAGE} to LIVE_STAGES); Riley posts the steps. Checked: ${what}` };
   }
 
-  const saved = await ctx.step('n8n:check', async () => {
+  const saved = await ctx.step(sk('n8n:check'), async () => {
     const { wf, plan } = await check();
     if (plan.refused.length) return { refused: plan.refused };
     if (plan.invalid.length) return { invalid: plan.invalid };
@@ -669,7 +689,7 @@ export async function applyN8nPatch(ctx: JobContext, at: Pick<AirtableClient, 'u
   const putAndReactivate = async () => {
     await ctx.paid({
       callKey: `put:${patch.workflowId}:${rollbackId}`, provider: 'n8n', units: 0,
-      run: async () => { await n8n.put(patch.workflowId, { ...planN8nPatch(prev, patch).next, staticData: prev.staticData }); return { ok: true }; },
+      run: async () => { await n8n.put(patch.workflowId, { ...planN8nPatch(prev, patch, planOpts).next, staticData: prev.staticData }); return { ok: true }; },
       dryRunResult: () => ({ ok: false }),
       reconcile: async () => {
         const s = patchState(await n8n.get(patch.workflowId), patch);
@@ -679,7 +699,7 @@ export async function applyN8nPatch(ctx: JobContext, at: Pick<AirtableClient, 'u
       },
     });
     await ctx.db.query('UPDATE riley_n8n_rollbacks SET applied_at=COALESCE(applied_at, now()) WHERE id=$1', [rollbackId]);
-    if (saved.active) await ctx.step('n8n:reactivate', async () => { await n8n.reactivate(patch.workflowId); return true; });
+    if (saved.active) await ctx.step(sk('n8n:reactivate'), async () => { await n8n.reactivate(patch.workflowId); return true; });
   };
   try {
     await putAndReactivate();
