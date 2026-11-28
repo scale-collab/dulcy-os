@@ -43,7 +43,7 @@ test('Cheap Inboxes: no renewal field → next yearly anniversary of created_at'
   assert.ok(d && /^\d{4}-12-01$/.test(d.renewal));
 });
 
-test('Cheap Inboxes: reads every page by offset and prices inboxes from the volume tier', async () => {
+test('Cheap Inboxes: reads every page by offset; never takes the public tier as the Dulcy price', async () => {
   const ci = await import('../src/providers/cheapInboxes.js');
   const doms = Array.from({ length: 230 }, (_, i) => ({ domain: `d${i}.com`, created_at: '2025-10-08T00:00:00Z' }));
   const mbs = Array.from({ length: 150 }, (_, i) => ({ full_email: `a@d${i % 50}.com`, status: 'active' }));
@@ -60,9 +60,8 @@ test('Cheap Inboxes: reads every page by offset and prices inboxes from the volu
   const r = await ci.readCheapInboxes({ apiKey: 'k', baseUrl: 'https://x/v1', authHeader: '' }, f);
   assert.equal(r.error, '');
   assert.equal(r.domains.size, 230);
-  assert.equal(r.mailboxPrice, 3.25);
+  assert.equal(r.mailboxPrice, null, "the API's public tier is not Dulcy's price");
   assert.equal(r.domains.get('d1.com')?.mailboxes, 3);
-  assert.equal(r.domains.get('d1.com')?.monthly, 3.25);
   assert.equal(ci.tierPrice({ tiers: [{ minQty: 0, maxQty: null, priceCents: 275 }] }, 5), 2.75);
   assert.equal(ci.tierPrice(null, 5), null);
 });
