@@ -12,7 +12,7 @@ function num(name: string, fallback: number, env: NodeJS.ProcessEnv = process.en
 /** Where an instant webhook can come from (POST /hooks/<source>, Alex 2026-11-28: agents start on events, not timers). */
 export const HOOK_SOURCES = ['emailbison', 'n8n', 'make', 'airtable', 'slack', 'fathom', 'close'] as const;
 export type HookSource = (typeof HOOK_SOURCES)[number];
-/** The jobs and loops that now start on events; each keeps a slow backup sweep (<KEY>_BACKUP_EVERY_MIN, default 360, 0 = off). */
+/** The jobs and loops that now start on events; each keeps a slow backup sweep (<KEY>_BACKUP_EVERY_MIN, default 60 (Alex 2026-11-28: hourly), 0 = off). */
 export const INSTANT_KEYS = ['sean.draft', 'bounce.check', 'riley.collect', 'cole.review', 'sales.won_sync', 'sienna.prep', 'campaign.pipeline', 'atlas.tasks', 'ledger.check', 'account.health', 'airtable.bridge', 'decisions.loop'] as const;
 export const backupEnvName = (key: string) => `${key.replace(/[._]/g, '_').toUpperCase()}_BACKUP_EVERY_MIN`;
 
@@ -318,7 +318,7 @@ export function loadConfig(env = process.env): Config {
     hookSecrets: Object.fromEntries(HOOK_SOURCES.map((k) => [k, (env[`HOOK_SECRET_${k.toUpperCase()}`] ?? '').trim()]).filter(([, v]) => v.length >= 16)),
     instantWindowSec: Math.max(5, Math.min(300, num('INSTANT_WINDOW_SEC', 30, env))),
     bounceWindowSec: Math.max(5, Math.min(3600, num('BOUNCE_CHECK_WINDOW_SEC', 120, env))),
-    backupEveryMin: Object.fromEntries(INSTANT_KEYS.map((k) => [k, Math.max(0, num(backupEnvName(k), 360, env))])),
+    backupEveryMin: Object.fromEntries(INSTANT_KEYS.map((k) => [k, Math.max(0, num(backupEnvName(k), 60, env))])),
     seanOn: onOff('SEAN') || num('SEAN_EVERY_MIN', 0, env) > 0,
     bounceCheckOn: onOff('BOUNCE_CHECK') || num('BOUNCE_CHECK_EVERY_MIN', 0, env) > 0,
     accountHealthOn: onOff('ACCOUNT_HEALTH') || num('ACCOUNT_HEALTH_EVERY_MIN', 0, env) > 0,

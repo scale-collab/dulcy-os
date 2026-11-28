@@ -265,3 +265,4 @@ Newest at the bottom. Format: `date | decision | why | who`
 - 2026-11-28: HQ voice mode (Alex: "call and talk to the agents, like how GPT does it"): Talk in HQ Chat opens a full-screen voice mode; speech goes into the same chat thread, answers are 1-3 spoken sentences, read aloud (OpenAI speech to text / text to speech, Claude answers as in chat). Approval rules unchanged: voice never approves or sends; decisions stay cards. VOICE=on switch, 60 s clips not stored, 60 turns/hour. Phone number (Twilio/ElevenLabs) later.
 - 2026-11-29: Alex: HQ gets Delete for campaigns and lead lists, same as the Airtable centers (typed DELETE).
 - 2026-11-28: Alex: agents are event-driven (instant start on approval/new work), not scheduled. Riley/Sienna routines get an API trigger; the engine fires them; cron schedules removed.
+- 2026-11-28: Alex: hourly backup sweep (was 6 h); content work instant, ideas Friday morning; weekly creator watch stays Friday.
