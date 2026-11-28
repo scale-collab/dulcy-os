@@ -20,6 +20,12 @@ import { CloseFunnel, ClosePipeline, Conversions } from './sales/SalesClose';
 import SalesPricing from './sales/SalesPricing';
 import DealCloseUpdates from './sales/DealCloseUpdates';
 import type { CloseUpdateRow } from '../api';
+// Round 5 (Alex 2026-11-28): goals under the key numbers, Cole's take (replaces "November so far vs October")
+// with Talk to Cole, named calls with Fathom links, and a fix button for the right agent on each "Data to fix".
+import { ColeTake, GoalsCard, useSalesGoals } from './sales/SalesGoals';
+import DealCalls from './sales/DealCalls';
+import { FixItButton } from '../fixIt';
+import type { DealCall, NoteAction } from './sales/types';
 
 const ACTION: Record<SalesActionKind, { label: string; tone: 'bad' | 'warn' | 'info' | 'accent' | 'good' }> = {
   call_today: { label: 'Call today', tone: 'accent' }, call_tomorrow: { label: 'Tomorrow', tone: 'info' }, no_outcome: { label: 'No outcome', tone: 'warn' },
@@ -52,6 +58,8 @@ function SalesHome({ view, days }: { view: View; days: 30 | 90 }) {
   const [error, setError] = useState('');
   const [insError, setInsError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [tick, setTick] = useState(0);
+  const goals = useSalesGoals(tick);
   const wantInsights = view === 'hot' || view === 'numbers';
   // Round 4 (Alex 2026-11-28): no "Hottest 3" strip on the first view (Hottest is its own tab).
   const load = useCallback((refresh = false) => {
@@ -63,14 +71,16 @@ function SalesHome({ view, days }: { view: View; days: 30 | 90 }) {
   useEffect(() => load(), [load]);
   const title = (
     <PageTitle title="Sales" kicker={d ? `Dulcy's own deals · ${d.counts.action} need action` : "Dulcy's own deals"} sub="Booked call to signed and paid. What needs action first."
-      right={<IconButton icon="refresh" label="Refresh" onClick={() => load(true)} className={cx('border border-line bg-surface', busy && '[&_svg]:animate-spin')} />} />
+      right={<IconButton icon="refresh" label="Refresh" onClick={() => { load(true); setTick((t) => t + 1); }} className={cx('border border-line bg-surface', busy && '[&_svg]:animate-spin')} />} />
   );
   if (error && !d) return <>{title}<ErrorBox error={error} retry={() => load()} /></>;
   if (!d) return <>{title}<PageSkeleton kind="list" /></>;
   return (
     <div>
       {title}
+      <ColeTake g={goals.g} error={goals.error} />
       <KeyNumbers now={d.top.thisMonth} last={d.top.lastMonth} />
+      {(view === 'action' || view === 'numbers') && goals.g && <GoalsCard g={goals.g} />}
       <div role="tablist" aria-label="Sales views" className="mt-5 grid grid-cols-3 gap-1 sm:flex">
         {VIEWS.map((x) => {
           const on = x.key === view;
@@ -107,7 +117,8 @@ function SalesHome({ view, days }: { view: View; days: 30 | 90 }) {
 }
 
 /** Round 4 (Alex 2026-11-28): one short row of the key numbers for the month (vs last), above Needs action:
- *  meetings booked, show rate, close rate, revenue signed. Percentages are the headline, counts underneath. */
+ *  meetings booked, show rate, close rate, revenue signed. Percentages are the headline, counts underneath.
+ *  Round 5: the "<month> so far vs <last>" line is gone; Cole's take sits above the row instead. */
 function KeyNumbers({ now, last }: { now: SalesMonth; last: SalesMonth }) {
   const p = (r?: SalesRate) => (r?.pct === null || r?.pct === undefined ? '–' : `${Math.round(r.pct)}%`);
   const prev = last.label.slice(0, 3);
@@ -118,9 +129,9 @@ function KeyNumbers({ now, last }: { now: SalesMonth; last: SalesMonth }) {
     ...(now.mrr !== undefined ? [{ label: 'Revenue signed', v: usd(now.mrr), unit: '/mo', up: (now.mrr ?? 0) - (last.mrr ?? 0), sub: `${now.closed} signed${now.mrrUnknown ? ` (${now.mrrUnknown} with no amount)` : ''} · ${prev}: ${usd(last.mrr)}` }] : []),
   ];
   return (
-    <section aria-label={`${now.label} so far vs ${last.label}`}>
+    <section aria-label={`Key numbers for ${now.label}`}>
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-xs font-medium text-muted">{now.label} so far vs {last.label}</span>
+        <span className="text-xs font-medium text-muted">{now.label}</span>
         <button onClick={() => go('sales/numbers')} className="inline-flex min-h-8 items-center gap-1 text-xs font-semibold text-accent-ink hover:underline">All numbers<Icon name="chevronRight" size={13} /></button>
       </div>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -348,6 +359,8 @@ function Notes({ notes, fold }: { notes: SalesNote[]; fold?: number }) {
                 <div className="break-words text-fg-2"><span className="text-muted">Data: </span>{n.data}</div>
                 <div className="break-words text-fg-2"><span className="text-muted">Fix: </span>{n.fix}</div>
                 <div className="break-words text-muted">Why: {n.why}</div>
+                {/* Round 5: the right agent's button; it queues a task on that agent's list (approval rules apply). */}
+                {(n as typeof n & { actions?: NoteAction[] }).actions?.map((a) => <FixItButton key={a.agent + a.title} agent={a.agent} title={a.title} detail={a.detail} className="pt-1.5" />)}
               </div>
             </div>
           </li>
@@ -437,17 +450,7 @@ function DealPage({ id }: { id: string }) {
         </Section>
 
         <Section title="Calls" icon="clock">
-          {d.calls.length ? (
-            <ul className="divide-y divide-line">
-              {d.calls.map((c, i) => (
-                <li key={`${c.day}-${i}`} className="flex items-center gap-3 px-5 py-3">
-                  <span className="tabular w-16 shrink-0 text-xs text-muted">{day(c.day)}</span>
-                  <span className="min-w-0 flex-1 text-[15px] text-fg">{c.what}</span>
-                  {c.link && <ExtLink href={c.link} className="shrink-0 text-sm">Recording</ExtLink>}
-                </li>
-              ))}
-            </ul>
-          ) : <Quiet>No call stored in Sales Data for this deal.</Quiet>}
+          <DealCalls calls={d.calls as unknown as DealCall[]} />
           <div className="border-t border-line px-5 py-3 text-xs text-muted">{[x.source && `Source: ${x.source}`, x.rep && `Rep: ${x.rep}`, x.campaign && `Campaign: ${x.campaign}`, x.bookedAt && `booked ${when(x.bookedAt)}`].filter(Boolean).join(' · ') || 'No booking details stored.'}</div>
         </Section>
 

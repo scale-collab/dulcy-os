@@ -53,6 +53,8 @@ import { DULCY_WS, insightsView, saveCapacitySettings, salesDeps, type SalesDeps
 // Round 3: period picker numbers, Close pipeline + funnel, pricing calculator, agent conversations.
 import { numbersView, resolvePeriod } from './salesPeriods.js';
 import { closeFunnel, closePipeline, readCloseRange } from './salesClose.js';
+// Round 5: Sales goals (read from Airtable Sales Goals) and Cole's take.
+import { defaultTakeModel, readGoalRows, salesGoalsView, type TakeModel } from './salesGoals.js';
 import { pricingView } from './pricing.js';
 import { agentConversation, agentConversations } from './agentTalk.js';
 import { createInDulcySign, draftForm, pullFromClose, saveDraft } from './contracts.js';
@@ -71,6 +73,8 @@ export interface HqDeps {
   sales?: SalesDeps;
   /** Phone notifications: the push sender (tests pass a fake; nothing goes out from tests). */
   pushSender?: PushSender;
+  /** Round 5: Cole's take on the sales numbers (null = the rule line only; tests pass a fake). */
+  coleTakeModel?: TakeModel | null;
 }
 
 const SECURITY_HEADERS: Record<string, string> = {
@@ -201,6 +205,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
   // Batch 4a: read-only Close / Xero / calendar readers for Sales (tests pass fakes).
   const sales: SalesDeps = deps.sales ?? salesDeps(db, cfg, deps.fetchImpl);
   const pushSender: PushSender = deps.pushSender ?? webPushSender();
+  const takeModel: TakeModel | null = deps.coleTakeModel !== undefined ? deps.coleTakeModel : defaultTakeModel(cfg);
 
   return async function handle(req: http.IncomingMessage, res: http.ServerResponse, url: URL): Promise<boolean> {
     const host = hostOf(req);
@@ -658,6 +663,13 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
           const now = Date.now();
           const { deals } = await allDeals(needAt(), db, url.searchParams.get('refresh') === '1', now, extras);
           json(res, 200, await insightsView(deals, db, sales, owner, { now, refresh: url.searchParams.get('refresh') === '1' }));
+          return true;
+        }
+        // Round 5: goals vs actuals and Cole's take (reads only; Cole's words cached for the day).
+        if (p === '/hq/api/sales/goals' && req.method === 'GET') {
+          const now = Date.now(); const refresh = url.searchParams.get('refresh') === '1';
+          const [{ deals }, rows] = await Promise.all([allDeals(needAt(), db, refresh, now, extras), readGoalRows(needAt(), refresh, now).catch(() => null)]);
+          json(res, 200, await salesGoalsView(db, takeModel, rows, deals, nyDay(now), owner));
           return true;
         }
         if (p === '/hq/api/sales/settings' && req.method === 'POST') {
