@@ -16,7 +16,7 @@ import { upsertUser } from '../src/hq/auth.js';
 import { WORKSPACES_T } from '../src/hq/campaigns.js';
 import {
   CF, CLIENT_TASKS_T, CONTRACTS_T, FEEDBACK_T, FF, IF, INTAKE_T, INVOICES_T, SALES_T, SF, TF, VF, WF,
-  _resetSalesCache, buildDeals, companyKey, cutMoney, furthest, needsFor, nyDay, pipelineOf, reportMatches, salesNotes, stagesOf, topNumbers,
+  _resetSalesCache, buildDeals, companyKey, conversions, cutMoney, furthest, needsFor, nyDay, pipelineOf, reportMatches, salesNotes, stagesOf, topNumbers,
   type ColeReport, type Deal, type SalesSource, type StageFacts,
 } from '../src/hq/sales.js';
 
@@ -180,6 +180,13 @@ test('sales: deals join Sales Data, agreements, client, payments, feedback and C
   assert.deepEqual(p.stages.map((x) => [x.key, x.count]), [['booked', 6], ['showed', 3], ['qualified', 2], ['sent', 2], ['signed', 1], ['paid', 1], ['onboarded', 0]]);
   assert.equal(p.showRate.text, '2 of 3 showed', 'past calls, canceled left out: Ann and Dan showed, Cat did not');
   assert.equal(p.closeRate.text, '1 of 2 signed');
+  // Round 4: percentages first. Stage to stage (of the deals that reached a stage, how many reached the next) and booked → signed.
+  assert.deepEqual([p.showRate.pct, p.qualifiedRate.pct, p.closeRate.pct], [66.7, 50, 50]);
+  assert.deepEqual(p.conversions.map((c) => `${c.from} → ${c.to} ${c.pct}% (${c.n}/${c.of})`), [
+    'Booked → Showed 50% (3/6)', 'Showed → Qualified 66.7% (2/3)', 'Qualified → Contract sent 100% (2/2)', 'Contract sent → Signed 50% (1/2)', 'Signed → Paid 100% (1/1)', 'Paid → Onboarded 0% (0/1)',
+  ]);
+  assert.deepEqual([p.overall.n, p.overall.of, p.overall.pct], [1, 6, 16.7]);
+  assert.deepEqual(conversions([{ label: 'A', count: 0 }, { label: 'B', count: 0 }]).map((c) => c.pct), [null], 'nothing to divide by = no percent, not 0%');
   assert.equal(p.canceled, 1);
   assert.deepEqual(p.stages.find((x) => x.key === 'paid')!.deals.map((d) => d.name), ['Ann Lee']);
   assert.equal(pipelineOf(deals, 90, TODAY).deals, 7, '90 days includes the September call');
@@ -188,6 +195,8 @@ test('sales: deals join Sales Data, agreements, client, payments, feedback and C
   const top = topNumbers(deals, TODAY, true);
   assert.deepEqual([top.thisMonth.label, top.thisMonth.booked, top.thisMonth.showed, top.thisMonth.closed, top.thisMonth.mrr], ['November', 5, 2, 1, 2000]);
   assert.deepEqual([top.lastMonth.label, top.lastMonth.booked], ['October', 0]);
+  // The first view's header: show rate (past calls, canceled left out) and close rate (of those that showed), as percents.
+  assert.deepEqual([top.thisMonth.showRate.pct, top.thisMonth.showRate.text, top.thisMonth.closeRate.pct, top.thisMonth.closeRate.text, top.lastMonth.showRate.pct], [66.7, '2 of 3 showed', 50, '1 of 2 signed', null]);
   assert.ok(!('mrr' in topNumbers(deals, TODAY, false).thisMonth), 'no MRR key for anyone but the owner');
 
   // Data notes.

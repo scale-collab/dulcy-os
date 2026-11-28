@@ -604,7 +604,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         }
         if (p === '/hq/api/sales/pricing' && (req.method === 'GET' || req.method === 'POST')) {
           const b = req.method === 'POST' ? await readJson(req, 20_000) : {};
-          json(res, 200, await pricingView(sales.pricingSheet, b.inputs ?? {}));
+          json(res, 200, await pricingView(sales.pricingSheet, b.inputs ?? {}, typeof b.plan === 'string' ? b.plan : undefined));
           return true;
         }
         if (p === '/hq/api/sales/calendar-invite' && req.method === 'POST') {

@@ -228,12 +228,13 @@ export interface SalesDealLite {
   id: string; name: string; company: string; stage: SalesStage; stageLabel: string; airtableStage: string; callDate: string; lost: boolean; signedDay: string;
   agreementState: AgreementState | null; client: string; needs: SalesAction[]; monthly?: number | null;
 }
-export interface SalesRate { n: number; of: number; text: string }
-export interface SalesMonth { month: string; label: string; booked: number; showed: number; closed: number; mrr?: number; mrrUnknown?: number }
+export interface SalesRate { n: number; of: number; text: string; pct?: number | null }
+export interface SalesConversion { from: string; to: string; n: number; of: number; pct: number | null }
+export interface SalesMonth { month: string; label: string; booked: number; showed: number; closed: number; showRate?: SalesRate; closeRate?: SalesRate; mrr?: number; mrrUnknown?: number }
 export interface SalesNote { problem: string; data: string; fix: string; why: string; owner: string }
 export interface SalesView {
   today: string; top: { thisMonth: SalesMonth; lastMonth: SalesMonth }; action: SalesDealLite[];
-  pipeline: { days: number; from: string; deals: number; canceled: number; upcoming: number; stages: { key: SalesStage; label: string; count: number; deals: SalesDealLite[] }[]; showRate: SalesRate; qualifiedRate: SalesRate; closeRate: SalesRate };
+  pipeline: { days: number; from: string; deals: number; canceled: number; upcoming: number; stages: { key: SalesStage; label: string; count: number; deals: SalesDealLite[] }[]; showRate: SalesRate; qualifiedRate: SalesRate; closeRate: SalesRate; conversions?: SalesConversion[]; overall?: SalesRate };
   notes: SalesNote[]; counts: { action: number; deals: number }; readAt: string; limits: { unsignedDays: number; callDays: number; contractDays: number };
 }
 export interface SalesAgreement {
@@ -502,9 +503,13 @@ export interface SalesCloseView {
   pipeline: { pipeline: string; total: number; prevTotal: number; stages: SalesCloseStage[]; open: number; won: number; lost: number } | null;
   funnel: (SalesFunnelSide & { prev: SalesFunnelSide; order: 'close' | 'alex'; missing: string[] }) | null;
 }
-export interface PriceInput { ref: string; label: string; value: number; kind: 'money' | 'pct' | 'number' }
-export interface PriceOutput { ref: string; label: string; value: number | string | null; kind: 'money' | 'pct' | 'number'; formula: string; fromSheet: boolean; error?: string }
-export interface PricingModel { source: 'sheet' | 'builtin'; tab: string; readAt: string; inputs: PriceInput[]; outputs: PriceOutput[]; assumptions: string[]; error?: string }
+// Round 4: the P/L sheet's "OPEX Guide" plan blocks; inputs are only the sheet's lines.
+export interface PriceInput { key: string; label: string; value: number; kind: 'money' | 'number'; group: 'revenue' | 'volume' | 'monthly' | 'oneoff'; note?: string }
+export interface PriceOutput { key: string; label: string; value: number | null; kind: 'money' | 'pct'; note?: string }
+export interface PricingModel {
+  source: 'sheet' | 'builtin'; tab: string; readAt: string; plans: { key: string; name: string }[]; plan: string;
+  inputs: PriceInput[]; outputs: PriceOutput[]; assumptions: string[]; error?: string;
+}
 export interface CloseFieldChange { field: 'confidence' | 'value' | 'value_period'; from: string; to: string }
 export interface CloseUpdateRow { id: number; recordingId: string; leadId: string; oppId: string; prospect: string; status: 'updated' | 'planned' | 'unchanged' | 'no_lead' | 'no_opportunity' | 'failed'; changes: CloseFieldChange[]; note: string; applied: boolean; created: string; closeUrl: string }
 export interface AgentExchange { id: string; kind: 'ask' | 'handoff'; from: string; to: string; title: string; preview: string; at: string; messages: number; threadId?: number; parentId?: number | null; taskId?: number; status?: string }
