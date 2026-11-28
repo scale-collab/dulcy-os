@@ -201,7 +201,7 @@ function IdeaCard({ idea, done, onDone }: { idea: ContentIdea; done?: string; on
         <span>By {idea.by}</span>
         {idea.proposed && <span>· {timeAgo(idea.proposed)}</span>}
         {idea.decision !== 'Needs Review' && <Pill tone="info">{idea.decision}</Pill>}
-        {idea.sourceUrl && <ExtLink href={idea.sourceUrl} className="inline-flex min-h-10 items-center sm:min-h-0">{idea.source || 'Source'}</ExtLink>}
+        {idea.sourceUrl && <ExtLink href={idea.sourceUrl} className="max-sm:inline-flex max-sm:min-h-10 max-sm:items-center">{idea.source || 'Source'}</ExtLink>}
       </div>
       {(idea.angle || idea.hook || idea.why) && (
         <dl className="mt-3 space-y-1.5 text-sm leading-snug">

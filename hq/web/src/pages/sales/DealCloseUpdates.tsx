@@ -22,7 +22,7 @@ export default function DealCloseUpdates({ rows }: { rows: CloseUpdateRow[] | un
                 {r.changes.map((c) => <span key={c.field} className="tabular text-sm text-fg">{FIELD[c.field] ?? c.field}: <span className="text-muted line-through">{c.from || 'empty'}</span> → <span className="font-semibold">{c.to}</span></span>)}
               </div>
               <div className="mt-1 break-words text-xs text-muted">{r.note}</div>
-              {r.closeUrl && <ExtLink href={r.closeUrl} className="mt-1 inline-flex min-h-10 items-center text-sm sm:min-h-0">Open in Close</ExtLink>}
+              {r.closeUrl && <ExtLink href={r.closeUrl} className="mt-1 text-sm max-sm:inline-flex max-sm:min-h-10 max-sm:items-center">Open in Close</ExtLink>}
             </li>
           ))}
         </ul>

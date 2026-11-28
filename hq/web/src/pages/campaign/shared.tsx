@@ -169,9 +169,9 @@ export function AutomationStatus({ a, className }: { a: AutomationR2; className?
 export function Stat({ label, v, sub, tone }: { label: string; v: string; sub?: string; tone?: 'bad' | 'warn' | 'good' }) {
   return (
     <div className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-card">
-      <div className="text-xs font-medium leading-snug text-muted sm:truncate">{label}</div>
+      <div className="text-xs font-medium text-muted max-sm:leading-snug sm:truncate">{label}</div>
       <div className={cx('tabular mt-1 text-[22px] font-bold leading-none tracking-tight', tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn' : tone === 'good' ? 'text-good' : 'text-fg')}>{v}</div>
-      {sub && <div className="mt-1.5 text-xs leading-snug text-muted sm:truncate">{sub}</div>}
+      {sub && <div className="mt-1.5 text-xs text-muted max-sm:leading-snug sm:truncate">{sub}</div>}
     </div>
   );
 }

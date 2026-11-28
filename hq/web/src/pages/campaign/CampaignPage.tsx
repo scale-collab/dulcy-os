@@ -176,10 +176,10 @@ function Numbers({ c }: { c: CampaignDetailB3['campaign'] }) {
     <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
       {items.map((x) => (
         <div key={x.label} className="min-w-0 rounded-2xl border border-line bg-sunken px-4 py-3.5">
-          <dt className="text-[13px] font-medium leading-snug text-muted sm:truncate">{x.label}</dt>
+          <dt className="text-[13px] font-medium text-muted max-sm:leading-snug sm:truncate">{x.label}</dt>
           <dd className={cx('tabular mt-1 truncate text-[28px] font-bold leading-none tracking-tight text-fg sm:text-[30px]', x.tone)}>{x.v}</dd>
           {x.bar !== undefined && <div className="mt-2.5"><Bar v={x.bar} /></div>}
-          {x.sub && <dd className="mt-1.5 text-[13px] leading-snug text-muted sm:truncate">{x.sub}</dd>}
+          {x.sub && <dd className="mt-1.5 text-[13px] text-muted max-sm:leading-snug sm:truncate">{x.sub}</dd>}
         </div>
       ))}
     </dl>
@@ -217,7 +217,7 @@ function AutomationLine({ a }: { a: AutomationR2 }) {
       <div className="min-w-0">
         <span className="font-semibold text-fg">Engine:</span> {st && <Pill tone={tone as 'bad' | 'good' | 'info' | 'plain'}>{st}</Pill>}{' '}
         {text && <span className={cx('break-words', !more && 'line-clamp-1')}>{text}</span>}
-        {text.length > 90 && <button onClick={() => setMore(!more)} className="-my-3 ml-1 inline-block py-3 text-xs font-semibold text-accent-ink hover:underline sm:my-0 sm:py-0">{more ? 'less' : 'more'}</button>}
+        {text.length > 90 && <button onClick={() => setMore(!more)} className="ml-1 text-xs font-semibold text-accent-ink hover:underline max-sm:-my-3 max-sm:inline-block max-sm:py-3">{more ? 'less' : 'more'}</button>}
       </div>
     </div>
   );

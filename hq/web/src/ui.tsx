@@ -196,8 +196,8 @@ const CHIP: Record<ChipTone, string> = {
   accent: 'bg-accent-soft text-accent-ink',
 };
 export function Pill({ children, tone = 'plain', className, icon }: { children: ReactNode; tone?: ChipTone; className?: string; icon?: string }) {
-  // Plain text truncates inside the pill (phone pass 2026-11-28): a long client name never spills over its neighbours.
-  const body = typeof children === 'string' || typeof children === 'number' ? <span className="min-w-0 truncate">{children}</span> : children;
+  // Phone: plain text truncates inside the pill (phone pass 2026-11-28), so a long client name never spills over its neighbours.
+  const body = typeof children === 'string' || typeof children === 'number' ? <span className="max-sm:min-w-0 max-sm:truncate">{children}</span> : children;
   return <span className={cx('inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium', CHIP[tone], className)}>{icon && <Icon name={icon} size={12} strokeWidth={2.2} />}{body}</span>;
 }
 export function Count({ n, strong }: { n: number; strong?: boolean }) {

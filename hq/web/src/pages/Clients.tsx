@@ -179,7 +179,7 @@ function ClientCard({ c, owner }: { c: Client; owner: boolean }) {
       {c.insight && <InsightLines i={c.insight} className="mt-4 rounded-xl bg-sunken px-3 py-2.5" />}
       {c.active && (
         <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-          <Num label="Meetings · 30 d" sub={c.kpi ? `KPI ${c.kpi}/mo` : 'KPI UNKNOWN'} v={num(c.meetings30)} tone={c.health === 'attention' ? 'bad' : c.health === 'at_risk' ? 'warn' : undefined} />
+          <Num label={"Meetings · 30\u00a0d"} sub={c.kpi ? `KPI ${c.kpi}/mo` : 'KPI UNKNOWN'} v={num(c.meetings30)} tone={c.health === 'attention' ? 'bad' : c.health === 'at_risk' ? 'warn' : undefined} />
           <Num label="Emails / meeting" sub={r ? WINDOW_LABEL[r.window].toLowerCase() : 'no data'} v={num(r?.emailsPerMeeting)} />
           <Num label="Interested → booked" sub={r ? `${num(r.interested)} interested` : 'no data'} v={pct1(r?.interestedToBooked)} />
         </div>
@@ -201,8 +201,8 @@ function Num({ label, sub, v, tone }: { label: string; sub: string; v: string; t
   return (
     <div className="min-w-0 rounded-xl bg-sunken px-1 py-2">
       <div className={cx('tabular text-xl font-bold leading-tight', tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn' : 'text-fg')}>{v}</div>
-      <div className="text-xs font-medium leading-tight text-fg-2 sm:truncate sm:text-[11px]">{label}</div>
-      <div className="mt-0.5 text-[11px] leading-tight text-muted sm:mt-0 sm:truncate sm:text-[10px]">{sub}</div>
+      <div className="text-[11px] font-medium text-fg-2 max-sm:text-xs max-sm:leading-tight sm:truncate">{label}</div>
+      <div className="text-[10px] text-muted max-sm:mt-0.5 max-sm:text-[11px] max-sm:leading-tight sm:truncate">{sub}</div>
     </div>
   );
 }
@@ -283,9 +283,9 @@ function AgencyBlock() {
 function Tile({ label, v, sub, tone, title }: { label: string; v: string; sub?: string; tone?: 'bad'; title?: string }) {
   return (
     <div title={title || undefined} className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-card">
-      <div className="text-xs font-medium leading-snug text-muted sm:truncate">{label}</div>
+      <div className="text-xs font-medium text-muted max-sm:leading-snug sm:truncate">{label}</div>
       <div className={cx('tabular mt-1 text-[24px] font-bold leading-none tracking-tight', tone === 'bad' ? 'text-bad' : 'text-fg')}>{v}</div>
-      {sub && <div className="mt-1.5 text-xs leading-snug text-muted sm:truncate">{sub}</div>}
+      {sub && <div className="mt-1.5 text-xs text-muted max-sm:leading-snug sm:truncate">{sub}</div>}
     </div>
   );
 }

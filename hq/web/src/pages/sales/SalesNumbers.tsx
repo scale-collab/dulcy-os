@@ -71,9 +71,9 @@ function CapacityBlock({ c, settings, onSaved }: { c: SalesCapacityR3; settings:
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {tiles.map((t) => (
           <div key={t.label} className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-card">
-            <div className="text-xs font-medium leading-snug text-muted sm:truncate">{t.label}</div>
+            <div className="text-xs font-medium text-muted max-sm:leading-snug sm:truncate">{t.label}</div>
             <div className="tabular mt-1 text-[24px] font-bold leading-none tracking-tight text-fg">{t.v}</div>
-            <div className="mt-1.5 text-xs leading-snug text-muted sm:truncate" title={t.sub}>{t.sub}</div>
+            <div className="mt-1.5 text-xs text-muted max-sm:leading-snug sm:truncate" title={t.sub}>{t.sub}</div>
           </div>
         ))}
       </div>

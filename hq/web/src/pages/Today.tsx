@@ -209,7 +209,7 @@ function CampaignsBlock({ c }: { c: TodayCampaigns | null }) {
                       {x.signals.map((s) => <Pill key={s} tone="warn">{s}</Pill>)}
                     </span>
                   </span>
-                  <span className="hidden shrink-0 sm:block"><Pill tone={x.how === 'look' ? 'bad' : 'good'}>{x.how === 'look' ? 'Needs a look' : 'Performing well'}</Pill></span>
+                  <span className="hidden shrink-0 sm:flex"><Pill tone={x.how === 'look' ? 'bad' : 'good'}>{x.how === 'look' ? 'Needs a look' : 'Performing well'}</Pill></span>
                 </button>
               </li>
             ))}
@@ -237,9 +237,9 @@ function WeekBlock({ w }: { w: TodayWeek | null }) {
           const up = t.now !== null && t.last !== null && t.now > t.last, down = t.now !== null && t.last !== null && t.now < t.last;
           return (
             <div key={t.label} className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-card">
-              <div className="text-xs font-medium leading-snug text-muted sm:truncate">{t.label}</div>
+              <div className="text-xs font-medium text-muted max-sm:leading-snug sm:truncate">{t.label}</div>
               <div className="tabular mt-1 text-[26px] font-bold leading-none tracking-tight text-fg">{n(t.now)}</div>
-              <div className="mt-1.5 flex items-start gap-1 text-xs leading-snug text-muted sm:items-center sm:truncate">
+              <div className="mt-1.5 flex items-start gap-1 text-xs text-muted max-sm:leading-snug sm:items-center sm:truncate">
                 {(up || down) && <Icon name={up ? 'trendUp' : 'trendDown'} size={13} className={cx('mt-0.5 sm:mt-0', up ? 'text-good' : 'text-bad')} />}
                 <span className="min-w-0 sm:truncate">Last week: {n(t.last)}</span>
               </div>

@@ -137,7 +137,7 @@ function KeyNumbers({ now, last }: { now: SalesMonth; last: SalesMonth }) {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {tiles.map((t) => (
           <div key={t.label} className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-card">
-            <div className="text-xs font-medium leading-snug text-muted sm:truncate">{t.label}</div>
+            <div className="text-xs font-medium text-muted max-sm:leading-snug sm:truncate">{t.label}</div>
             <div className="tabular mt-1 flex items-center gap-1.5 text-[22px] sm:text-[26px] font-bold leading-none tracking-tight text-fg">
               <span className="truncate">{t.v}{t.unit && <span className="text-sm font-semibold text-muted">{t.unit}</span>}</span>
               {t.up !== null && t.up !== 0 && <Icon name={t.up > 0 ? 'trendUp' : 'trendDown'} size={16} className={cx('shrink-0', t.up > 0 ? 'text-good' : 'text-bad')} />}
@@ -269,7 +269,7 @@ function HotRow({ h, rank }: { h: SalesHotDeal; rank: number }) {
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {h.dealId && <Button onClick={() => go(`sales/${h.dealId}`)} icon="chevronRight">Open deal</Button>}
             {h.dealId && <Button tone="accent" onClick={() => go(`sales/${h.dealId}/contract`)} icon="file">Draft contract</Button>}
-            {/^https:\/\//.test(h.closeUrl) && <ExtLink href={h.closeUrl} className="inline-flex min-h-10 items-center text-sm sm:min-h-0">Open in Close</ExtLink>}
+            {/^https:\/\//.test(h.closeUrl) && <ExtLink href={h.closeUrl} className="text-sm max-sm:inline-flex max-sm:min-h-10 max-sm:items-center">Open in Close</ExtLink>}
             {h.value ? <span className="tabular text-xs text-muted">{usd(h.value)}{h.valuePeriod === 'monthly' ? '/mo' : ''}</span> : null}
           </div>
         </div>
@@ -519,8 +519,8 @@ function AgreementLine({ g, links, folded }: { g: SalesDetail4a['deal']['agreeme
       {g.error && <div className="mt-1 break-words text-xs text-bad">{g.error}</div>}
       {(link?.url || link?.reviewDoc) && (
         <div className="mt-1.5 flex flex-wrap gap-3 text-sm">
-          {link?.url && <ExtLink href={link.url} className="inline-flex min-h-10 items-center sm:min-h-0">Open in Dulcy Sign</ExtLink>}
-          {link?.reviewDoc && <ExtLink href={link.reviewDoc} className="inline-flex min-h-10 items-center sm:min-h-0">Review document</ExtLink>}
+          {link?.url && <ExtLink href={link.url} className="max-sm:inline-flex max-sm:min-h-10 max-sm:items-center">Open in Dulcy Sign</ExtLink>}
+          {link?.reviewDoc && <ExtLink href={link.reviewDoc} className="max-sm:inline-flex max-sm:min-h-10 max-sm:items-center">Review document</ExtLink>}
         </div>
       )}
     </li>

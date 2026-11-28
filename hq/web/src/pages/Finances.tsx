@@ -344,9 +344,9 @@ const rangeOf = (m: FinanceMonth) => `${slashDate(m.from)} to ${slashDate(m.to)}
 function Tile({ label, v, sub, bad, onClick }: { label: string; v: string; sub?: string; bad?: boolean; onClick?: () => void }) {
   const inner = (
     <>
-      <div className="flex items-center justify-between gap-2"><span className="min-w-0 text-xs font-medium leading-snug text-muted sm:truncate">{label}</span>{onClick && <Icon name="chevronRight" size={14} className="shrink-0 text-muted" />}</div>
+      <div className="flex items-center justify-between gap-2"><span className="min-w-0 text-xs font-medium text-muted max-sm:leading-snug sm:truncate">{label}</span>{onClick && <Icon name="chevronRight" size={14} className="shrink-0 text-muted" />}</div>
       <div className={cx('tabular mt-1 text-[24px] font-bold leading-none tracking-tight', bad ? 'text-bad' : 'text-fg')}>{v}</div>
-      {sub && <div className="mt-1.5 text-xs leading-snug text-muted sm:truncate">{sub}</div>}
+      {sub && <div className="mt-1.5 text-xs text-muted max-sm:leading-snug sm:truncate">{sub}</div>}
     </>
   );
   const cls = 'min-w-0 rounded-2xl border border-line bg-surface p-4 text-left shadow-card';

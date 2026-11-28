@@ -264,9 +264,9 @@ function DecisionDeckCard({ d, decide, position, onMove }: { d: Decision; decide
             <div className="text-xs text-muted">{d.pile} · {timeAgo(d.created)}</div>
           </div>
           <div className="flex w-full items-center justify-between gap-1 sm:w-auto sm:shrink-0 sm:justify-start">
-            {onMove && <IconButton icon="arrowLeft" label="Previous card (←). Nothing is decided." onClick={() => onMove(-1)} className="border border-line sm:h-9 sm:w-9" />}
+            {onMove && <IconButton icon="arrowLeft" label="Previous card (←). Nothing is decided." onClick={() => onMove(-1)} className="border border-line" />}
             <span className="tabular min-w-[4.5rem] text-center text-xs font-medium text-muted">{position}</span>
-            {onMove && <IconButton icon="arrowRight" label="Next card (→). Nothing is decided." onClick={() => onMove(1)} className="border border-line sm:h-9 sm:w-9" />}
+            {onMove && <IconButton icon="arrowRight" label="Next card (→). Nothing is decided." onClick={() => onMove(1)} className="border border-line" />}
           </div>
         </div>
 

@@ -233,7 +233,7 @@ export function TeamBoardView() {
                   <div className="flex h-full min-w-0 flex-col rounded-2xl border border-line bg-surface p-4 shadow-card">
                     <div className="flex items-center gap-3">
                       <Avatar name={a.agent} size="sm" />
-                      <button onClick={() => set({ agent: f.agent === a.agent ? '' : a.agent })} className="min-h-10 min-w-0 flex-1 text-left" aria-label={`Show only ${a.agent}`}>
+                      <button onClick={() => set({ agent: f.agent === a.agent ? '' : a.agent })} className="min-w-0 flex-1 text-left max-sm:min-h-10" aria-label={`Show only ${a.agent}`}>
                         <span className="block text-[15px] font-semibold text-fg">{a.agent}</span>
                         <span className="block text-xs text-muted sm:truncate">{a.role}</span>
                       </button>

@@ -148,9 +148,9 @@ function FunnelRow({ s, i, total, prev }: { s: SalesFunnelSide['steps'][number];
 function Tile({ label, v, sub }: { label: string; v: string; sub: string }) {
   return (
     <div className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-card">
-      <div className="text-xs font-medium leading-snug text-muted sm:truncate">{label}</div>
+      <div className="text-xs font-medium text-muted max-sm:leading-snug sm:truncate">{label}</div>
       <div className="tabular mt-1 text-[24px] font-bold leading-none tracking-tight text-fg">{v}</div>
-      <div className="mt-1.5 text-xs leading-snug text-muted sm:truncate" title={sub}>{sub}</div>
+      <div className="mt-1.5 text-xs text-muted max-sm:leading-snug sm:truncate" title={sub}>{sub}</div>
     </div>
   );
 }
