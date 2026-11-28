@@ -15,6 +15,9 @@ export interface TriggerSpec { kind: string; recordId: string; input?: Record<st
 export type TriggerResult = 'queued' | 'coalesced' | 'rerun' | 'tail' | 'unknown_kind';
 
 const dryOf = (cfg: Config, kind: string) => cfg.dryRun && !cfg.liveStages.includes(kind);
+const globalWindow = (cfg: Config) => Math.max(5, cfg.instantWindowSec ?? 30);
+/** Seconds of the coalescing window for this job (the bounce check has its own, longer one). */
+export const windowSecFor = (cfg: Config, kind: string) => (kind === 'bounce.check' ? Math.max(globalWindow(cfg), cfg.bounceWindowSec ?? 120) : globalWindow(cfg));
 
 export async function trigger(db: Db, cfg: Config, t: TriggerSpec, now = Date.now()): Promise<TriggerResult> {
   const def = STAGES[t.kind];
@@ -29,7 +32,7 @@ export async function trigger(db: Db, cfg: Config, t: TriggerSpec, now = Date.no
   };
   const first = await active();
   if (first) return first;
-  const windowMs = Math.max(5, cfg.instantWindowSec ?? 30) * 1000;
+  const windowMs = windowSecFor(cfg, t.kind) * 1000;
   const slot = Math.floor(now / windowMs);
   const base = { kind: t.kind, recordId: t.recordId, input: t.input ?? {}, dryRun: dryOf(cfg, t.kind), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs };
   const r = await enqueue(db, { ...base, requestId: `instant:${t.kind}:${t.recordId}:${slot}` });
@@ -49,6 +52,8 @@ export async function consumeRerun(db: Db, cfg: Config, job: Pick<Job, 'id' | 'k
   const def = STAGES[job.kind];
   if (!def) return 'unknown_kind';
   // Right away (not at the end of the window): the run that just ended is the one that may have missed it.
-  const q = await enqueue(db, { kind: job.kind, recordId: job.record_id, input: r.input ?? {}, requestId: `instant:rerun:${job.id}`, dryRun: dryOf(cfg, job.kind), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs });
+  // A job with a longer window of its own (the bounce check) waits that window, so a busy workspace is not re-checked back to back.
+  const wait = windowSecFor(cfg, job.kind) > globalWindow(cfg) ? windowSecFor(cfg, job.kind) * 1000 : 0;
+  const q = await enqueue(db, { kind: job.kind, recordId: job.record_id, input: r.input ?? {}, requestId: `instant:rerun:${job.id}`, dryRun: dryOf(cfg, job.kind), maxAttempts: def.maxAttempts, deadlineMs: def.deadlineMs, runAfterMs: wait });
   return q.status === 'queued' ? 'queued' : 'coalesced';
 }

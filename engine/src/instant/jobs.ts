@@ -23,7 +23,7 @@ export interface InstantJob {
 
 export const INSTANT_JOBS: InstantJob[] = [
   { key: 'sean.draft', recordId: 'sean', sources: ['n8n', 'emailbison', 'airtable'], legacyEveryMin: (c) => c.seanEveryMin, event: 'a prospect reply (n8n reply intake wrote the Emails row, or EmailBison "Contact Replied" / "Contact Interested")' },
-  { key: 'bounce.check', recordId: 'bounce', sources: ['emailbison'], legacyEveryMin: (c) => c.bounceCheckEveryMin, event: 'EmailBison "Email Bounced" (only that workspace is checked)' },
+  { key: 'bounce.check', recordId: 'bounce', sources: ['n8n', 'emailbison'], legacyEveryMin: (c) => c.bounceCheckEveryMin, event: 'a bounce: n8n Bounce Data Tracker or EmailBison "Email Bounced" (only that workspace is checked)' },
   { key: 'riley.collect', recordId: 'riley-collect', sources: ['n8n', 'make'], legacyEveryMin: (c) => c.rileyEveryMin, event: 'an engine job failing (inside the engine), the n8n Error Workflow, a Make error' },
   { key: 'cole.review', recordId: 'cole-review', sources: ['fathom'], legacyEveryMin: (c) => c.coleEveryMin, event: 'Fathom "New meeting content ready"' },
   { key: 'sales.won_sync', recordId: 'sales-won_sync', sources: ['close'], legacyEveryMin: (c) => c.wonSyncEveryMin, event: 'Close opportunity created or changed' },

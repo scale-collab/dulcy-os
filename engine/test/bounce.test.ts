@@ -117,6 +117,18 @@ test('all workspaces (Alex, 2026-11-24): one key checks every workspace it can r
   assert.match(j.job.result.message, /in 2 workspaces: 2 paused, 1 to watch/);
 });
 
+test('instant (2026-11-28): a bounce webhook checks only its own workspace (onlyTeamId)', { skip }, async () => {
+  Object.assign(bison, { workspaces: [{ id: 2, name: 'Dulcy' }, { id: 78, name: 'The Marketing Cartel' }], campaigns: [
+    c(1, 50, 1000, 40), { ...c(7, 60, 1000, 50), team: 78 },
+  ] });
+  const q = await enqueue(db, { kind: 'bounce.check', recordId: 'bounce:all:78', input: { workspace: 'all', onlyTeamId: 78, readSkipList: true }, dryRun: true, maxAttempts: 3, deadlineMs: 60_000 });
+  let j: any;
+  for (let i = 0; i < 10; i++) { await runOnce(db, cfg()); j = await getJob(db, q.job.id); if (['succeeded', 'failed', 'needs_review'].includes(j.job.status)) break; }
+  assert.equal(j.job.status, 'succeeded', j.job.error);
+  assert.equal(j.job.result.workspaces, 1);
+  assert.deepEqual(j.job.result.wouldPause.map((p: any) => p.id), [7], 'only the client workspace the bounce came from');
+});
+
 test('stats sync: EmailBison numbers → Airtable Campaigns, only changed records, paused ones too', async () => {
   const { syncCampaignStats, SF } = await import('../src/campaign/statsSync.js');
   const recs = [

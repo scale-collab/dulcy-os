@@ -25,6 +25,11 @@ export interface Config {
   hookSecrets: Partial<Record<HookSource, string>>;
   /** Events for the same job within this many seconds become one run (default 30). */
   instantWindowSec: number;
+  /**
+   * The bounce check's own window (BOUNCE_CHECK_WINDOW_SEC, default 120): a busy workspace bounces every few seconds,
+   * so its check runs at most about every 2 minutes per workspace (still far sooner than the old 30-minute timer).
+   */
+  bounceWindowSec: number;
   /** Backup sweep per instant job or loop, in minutes (0 = off). Used only once that job's webhook source has a secret. */
   backupEveryMin: Record<string, number>;
   /** On switches that used to be "the timer is set": SEAN=on, BOUNCE_CHECK=on, ACCOUNT_HEALTH=on, LEDGER_CHECK=on (an old *_EVERY_MIN > 0 still counts as on). */
@@ -293,6 +298,7 @@ export function loadConfig(env = process.env): Config {
   return {
     hookSecrets: Object.fromEntries(HOOK_SOURCES.map((k) => [k, (env[`HOOK_SECRET_${k.toUpperCase()}`] ?? '').trim()]).filter(([, v]) => v.length >= 16)),
     instantWindowSec: Math.max(5, Math.min(300, num('INSTANT_WINDOW_SEC', 30, env))),
+    bounceWindowSec: Math.max(5, Math.min(3600, num('BOUNCE_CHECK_WINDOW_SEC', 120, env))),
     backupEveryMin: Object.fromEntries(INSTANT_KEYS.map((k) => [k, Math.max(0, num(backupEnvName(k), 360, env))])),
     seanOn: onOff('SEAN') || num('SEAN_EVERY_MIN', 0, env) > 0,
     bounceCheckOn: onOff('BOUNCE_CHECK') || num('BOUNCE_CHECK_EVERY_MIN', 0, env) > 0,

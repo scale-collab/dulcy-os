@@ -116,6 +116,9 @@ export function routeEvent(source: HookSource, body: any, headers: http.Incoming
     const why = `${source} ${ev}`;
     if (ev === 'reply' && source === 'n8n') return { event: ev, jobs: echoJobs(cfg, why), kicks: [] };
     if (ev === 'placement_results' && source === 'n8n') return { event: ev, jobs: healthJobs(cfg, why), kicks: [] };
+    // n8n already receives EmailBison's bounce and sent webhooks for every workspace (Bounce Data Tracker, Manual Emails Sent).
+    if (ev === 'bounce' && source === 'n8n') return { event: ev, jobs: bounceJobs(cfg, Number(b.workspace_id) || 0, str(b.workspace_name), `${why} (${str(b.workspace_name) || 'workspace ?'})`), kicks: [] };
+    if (ev === 'sent' && source === 'n8n') return { event: ev, jobs: seanIsOn(cfg) && cfg.seanFollowupsOn ? [{ kind: 'sean.followup', recordId: 'sean-followup', reason: why }] : [], kicks: [] };
     if (ev === 'error') {
       // Kept short: where it broke and the message (Riley's System Issues row is written by riley.collect).
       const info = { where: str(b.workflow ?? b.scenario ?? b.where).slice(0, 200), error: str(b.error ?? b.message).slice(0, 1000), url: str(b.executionUrl ?? b.url).slice(0, 300), execution: str(b.execution ?? b.executionId).slice(0, 60) };
