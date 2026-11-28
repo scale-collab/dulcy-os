@@ -143,7 +143,7 @@ test('lead list buttons: the screen\'s gates, the lock while a step runs, owner 
   assert.equal(filtersLine('{"country":["US","CA"],"employee_range":"11-50","x":[]}'), 'country: US, CA · employee_range: 11-50');
 });
 
-test('campaign buttons: build / launch / pause / senders / top up gates; Clone, Delete, Sync "come next"', () => {
+test('campaign buttons: build / launch / pause / senders / top up gates; nothing "comes next" (center parity built them)', () => {
   const rec = (f: Record<string, unknown>) => ({ id: 'recCAMP0000000001', fields: { [CX.name]: 'TWM - Roofers', ...f } });
   const ready = { id: 'recL', fields: { [LX.stage]: 'Ready', [LX.qa]: 'Passed' } };
   const v = (c: ReturnType<typeof campaignState>, key: string) => campaignActions(c, true, CFG).find((a) => a.key === key)!;
@@ -161,7 +161,7 @@ test('campaign buttons: build / launch / pause / senders / top up gates; Clone, 
   const busy = campaignState({ id: 'recCAMP0000000001', fields: { [CX.status]: 'Active', [CX.engineStatus]: 'Queued', ...idField(612) } }, ready);
   assert.equal(v(busy, 'pause').why, 'A step is running on this campaign: wait for its result.');
   const more = campaignActions(c, true, CFG).filter((a) => a.comesNext).map((a) => a.key);
-  assert.deepEqual(more, ['pick-inboxes', 'clone', 'sync', 'delete']);
+  assert.deepEqual(more, [], 'pick inboxes, Clone, Delete and Sync are built (centerParity.ts)');
   assert.equal(v(c, 'build').dryRun, true);
 });
 
@@ -351,7 +351,7 @@ test('API: campaign buttons (Pause on a live campaign), copy view, refused when 
   assert.equal(c.status, 200, c.text);
   assert.deepEqual(c.body.actions.filter((a: any) => a.enabled).map((a: any) => a.key), ['pause', 'senders']);
   assert.equal((await call('POST', '/hq/api/campaigns/recCAMPTWM000010A/action', cookie, { action: 'launch', confirm: true })).body.error, 'Already live.');
-  assert.equal((await call('POST', '/hq/api/campaigns/recCAMPTWM000010A/action', cookie, { action: 'clone', confirm: true })).body.error, 'That button comes next in HQ.');
+  assert.equal((await call('POST', '/hq/api/campaigns/recCAMPTWM000010A/action', cookie, { action: 'clone', confirm: true })).body.error, 'Clone is on the campaign\'s More tab.');
   const r = await call('POST', '/hq/api/campaigns/recCAMPTWM000010A/action', cookie, { action: 'pause', confirm: true });
   assert.equal(r.status, 200, r.text);
   assert.deepEqual(writes, [{ table: CAMPAIGNS_T, id: 'recCAMPTWM000010A', fields: { [CX.runsOnEngine]: true, [CX.engineAction]: 'Pause Campaign' } }]);
@@ -361,7 +361,7 @@ test('API: campaign buttons (Pause on a live campaign), copy view, refused when 
   assert.deepEqual(copy.body.review[0].versions.map((v: any) => [v.version, v.body]), [[1, 'Hi {FIRST_NAME}, ...'], [2, 'Hey {FIRST_NAME}, ...']], 'one email per version');
   assert.match(copy.body.review[0].versions[0].signature, /^--\n\{Best regards\|[^}]*\},\n\{SENDER_FULL_NAME\}/, 'the signature the build adds');
   assert.equal(copy.body.plan, null);
-  assert.deepEqual(copy.body.comesNext.map((x: any) => x.key), ['write', 'send-review'], 'a hand-made campaign: writing and sending for review come next');
+  assert.deepEqual(copy.body.comesNext, [], 'a hand-made campaign: its copy is written and sent for approval on the Copy tab');
   const build = await call('POST', '/hq/api/campaigns/recCAMPNEW000010A/action', cookie, { action: 'build', confirm: true });
   assert.equal(build.status, 409);
   assert.equal(build.body.error, 'The lead list must be Ready with QA Passed first.');
