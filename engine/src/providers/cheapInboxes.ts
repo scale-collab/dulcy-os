@@ -47,13 +47,26 @@ function priceOf(o: any, centsKeys: string[], dollarKeys: string[]): number | nu
 }
 const listOf = (body: any): any[] => (Array.isArray(body) ? body : Array.isArray(body?.data) ? body.data : Array.isArray(body?.domains) ? body.domains : Array.isArray(body?.mailboxes) ? body.mailboxes : Array.isArray(body?.items) ? body.items : Array.isArray(body?.results) ? body.results : []);
 
+/** The next yearly anniversary (YYYY-MM-DD) of an ISO date, on or after `now`. '' when unreadable. Pure. */
+export function nextAnniversary(iso: string, now = new Date()): string {
+  const t = Date.parse(iso); if (!iso || Number.isNaN(t)) return '';
+  const d = new Date(t); const today = now.toISOString().slice(0, 10);
+  for (let y = now.getUTCFullYear() - 1; y <= now.getUTCFullYear() + 1; y++) {
+    const c = new Date(Date.UTC(y, d.getUTCMonth(), d.getUTCDate())).toISOString().slice(0, 10);
+    if (c >= today && c > iso.slice(0, 10)) return c;
+  }
+  return '';
+}
 /** One domain object → CiDomain (null when it has no name). Pure. */
 export function parseDomain(o: any): CiDomain | null {
   const domain = str(firstOf(o, ['domain', 'name', 'domain_name', 'fqdn'])).toLowerCase();
   if (!domain || !domain.includes('.')) return null;
   return {
     domain,
-    renewal: dayOf(firstOf(o, ['renewal_date', 'renews_at', 'renewal_at', 'expires_at', 'expiry_date', 'expiration_date', 'expires_on', 'next_renewal_at', 'registration.expires_at'])),
+    renewal: dayOf(firstOf(o, ['renewal_date', 'renews_at', 'renewal_at', 'expires_at', 'expiry_date', 'expiration_date', 'expires_on', 'next_renewal_at', 'registration.expires_at']))
+      // Cheap Inboxes' documented domain record has created_at (purchase) and auto_renew but no renewal
+      // date: domains renew yearly, so the next renewal is the next anniversary of created_at.
+      || nextAnniversary(str(firstOf(o, ['created_at', 'purchased_at', 'registered_at']))),
     status: str(firstOf(o, ['status', 'state'])).toLowerCase(),
     mailboxes: Number(firstOf(o, ['mailbox_count', 'mailboxes_count', 'mailboxes.length'])) || 0,
     monthly: priceOf(o, ['mailbox_monthly_cents', 'monthly_cost_cents', 'monthly_price_cents'], ['mailbox_monthly', 'monthly_cost', 'monthly_price']),

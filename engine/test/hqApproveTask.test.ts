@@ -34,3 +34,11 @@ test('Riley sees what came into a failed n8n run: ids kept, emails masked, secre
   assert.ok(lines.some((l) => l.startsWith('body.data.reply.from_email_address: ') && !l.includes('bob@acme.com')));
   assert.ok(!lines.some((l) => /sk-secret|Bearer/.test(l)));
 });
+
+test('Cheap Inboxes: no renewal field → next yearly anniversary of created_at', async () => {
+  const { parseDomain, nextAnniversary } = await import('../src/providers/cheapInboxes.js');
+  assert.equal(nextAnniversary('2025-06-15T10:00:00.000Z', new Date('2026-11-28T00:00:00Z')), '2027-06-15');
+  assert.equal(nextAnniversary('2026-02-01T00:00:00Z', new Date('2026-01-10T00:00:00Z')), '2027-02-01');
+  const d = parseDomain({ domain: 'acme.com', created_at: '2025-12-01T00:00:00Z', auto_renew: true });
+  assert.ok(d && /^\d{4}-12-01$/.test(d.renewal));
+});
