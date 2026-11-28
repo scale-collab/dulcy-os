@@ -81,6 +81,13 @@ export function ConfirmSheet({ a, what, endpoint, extra, onClose, onDone }: { a:
 /** A row of buttons. Disabled buttons show why underneath (on a computer, also on hover). */
 export function ActionBar({ actions, what, endpoint, onDone, className, extra }: { actions: ActionR2[]; what: string; endpoint: string; onDone: () => void; className?: string; extra?: Record<string, unknown> }) {
   const [open, setOpen] = useState<ActionR2 | null>(null);
+  // Alex 2026-11-27: Pause acts at once (no "are you sure"); Launch keeps one last confirm.
+  const pauseNow = async (a: ActionR2) => {
+    try {
+      const r = await api<PressR2>(endpoint, { body: { action: a.key, confirm: true, ...extra } });
+      showToast({ text: r.message, tone: 'good', ms: 7000 }); onDone();
+    } catch (e) { showToast({ text: (e as Error).message, tone: 'bad', ms: 8000 }); }
+  };
   const live = actions.filter((a) => !a.comesNext);
   const next = actions.filter((a) => a.comesNext);
   if (!actions.length) return null;
@@ -90,7 +97,7 @@ export function ActionBar({ actions, what, endpoint, onDone, className, extra }:
         <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {live.map((a) => (
             <li key={a.key} className="min-w-0">
-              <Button tone={!a.enabled ? 'quiet' : a.tone === 'primary' ? 'primary' : a.tone === 'danger' ? 'danger' : 'quiet'} disabled={!a.enabled} onClick={() => setOpen(a)} title={a.enabled ? a.does : a.why} className="w-full">{a.label}</Button>
+              <Button tone={!a.enabled ? 'quiet' : a.tone === 'primary' ? 'primary' : a.tone === 'danger' ? 'danger' : 'quiet'} disabled={!a.enabled} onClick={() => (a.key === 'pause' ? void pauseNow(a) : setOpen(a))} title={a.enabled ? a.does : a.why} className="w-full">{a.label}</Button>
               <div className={cx('mt-1 px-1 text-xs leading-snug', a.enabled ? 'text-muted' : 'text-faint')}>{a.enabled ? (a.spends ? `Spends: ${a.spends}${a.dryRun ? ' (dry run)' : ''}` : 'Free') : a.why}</div>
             </li>
           ))}
