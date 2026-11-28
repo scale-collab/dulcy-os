@@ -69,6 +69,8 @@ import { kickFlush, notifyChatReply, pushRoute, webPushSender, type PushSender }
 import { personalRoute, plaidFor } from './plaid.js';
 // Voice mode (talk to the agents), Alex 2026-11-28.
 import { planTurn, runTurn, speakMessage, turnBodyLimit, voiceProvider, voiceState, type VoiceProvider } from './voice.js';
+// Agents start instantly (Alex 2026-11-28): an HQ action that makes work ready starts that work now.
+import { hqInstant } from '../instant/hq.js';
 
 export interface HqDeps {
   at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string;
@@ -410,6 +412,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         let task: unknown;
         if (!r.error && r.todo) task = (await fixIt(db, user, r.todo)).task; // approve = the agent does it
         json(res, r.status, r.error ? { error: r.error, ...(r.placeholders ? { placeholders: r.placeholders } : {}) } : { ok: true, status: r.result, ...(task ? { task } : {}) });
+        if (!r.error) await hqInstant(db, cfg, 'decision'); // the approved action starts now, not on the next poll
         return true;
       }
 
@@ -548,6 +551,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         if (!['approve', 'reject', 'edited'].includes(b.verdict)) { json(res, 400, { error: 'verdict must be approve, edited or reject' }); return true; }
         const r = await actOnThread(needAt(), m[1], b.verdict, user.name, owner, typeof b.text === 'string' ? b.text : undefined);
         json(res, r.status, r.error ? { error: r.error } : { ok: true, status: r.result });
+        if (!r.error) await hqInstant(db, cfg, 'decision');
         return true;
       }
       // Round 2 deliverability (Alex 2026-11-27): bulk limits preview; round 3: Buy (purchase request) and inbox cost. Owner only.
@@ -576,9 +580,9 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       if (p.startsWith('/hq/api/campaigns/')) {
         // Center parity (2026-11-28): the rest of the two Airtable screens (centerParity.ts).
         const rp = await parityRoutes(p, req, needAt, db, cfg, user, owner, deps.fetchImpl);
-        if (rp) { json(res, rp.status, rp.body); return true; }
+        if (rp) { json(res, rp.status, rp.body); if (write && rp.status < 300) await hqInstant(db, cfg, 'campaign'); return true; }
         const r2 = await round2Campaigns(p, req, url, needAt, db, cfg, user, owner);
-        if (r2) { json(res, r2.status, r2.body); return true; }
+        if (r2) { json(res, r2.status, r2.body); if (write && r2.status < 300) await hqInstant(db, cfg, 'campaign'); return true; }
       }
       m = p.match(/^\/hq\/api\/deliverability\/(bounces|verification|limits)$/);
       if (m && req.method === 'GET') {
@@ -660,6 +664,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
           if (!['approve', 'reject'].includes(b.verdict)) { json(res, 400, { error: 'verdict must be approve or reject' }); return true; }
           const r = await decideIdea(needAt(), db, cm[1], b.verdict, user.name);
           json(res, r.status, r.error ? { error: r.error } : { ok: true, ...r.result });
+          if (!r.error && b.verdict === 'approve') await hqInstant(db, cfg, 'idea'); // Sienna writes the script now
           return true;
         }
         const runDeps = () => ({ at: needAt(), db, cfg, fetchImpl: deps.fetchImpl, by: user.name });
