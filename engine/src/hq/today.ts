@@ -156,7 +156,7 @@ export function agentDay(rows: ActivityFact[], visible: readonly AgentName[]): A
     const rest = top.slice(3).reduce((a, [, n]) => a + n, 0);
     return {
       agent, count: mine.length, failed: mine.filter((r) => r.type === 'Step failed').length,
-      line: mine.length ? `${shown.join(' · ')}${rest ? ` · +${rest} more` : ''}` : 'Nothing logged in the last 24 h',
+      line: mine.length ? `${shown.join(' · ')}${rest ? ` · +${rest} more` : ''}` : 'Nothing done in the last 24 hours',
     };
   });
 }
