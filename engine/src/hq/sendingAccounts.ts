@@ -93,10 +93,10 @@ const md = (iso: string) => { const m = /^\d{4}-(\d{2})-(\d{2})/.exec(iso); retu
  * when there is no test in 21 days. Pure.
  */
 export function placementOf(i: Pick<InboxRow, 'score' | 'scoreAt'>, lastTest: string): Placement {
-  if (i.score === null) return { text: 'Not tested', why: `No inbox placement test for this inbox in the last ${TEST_WINDOW_DAYS} days: the weekly test did not include it.` };
+  if (i.score === null) return { text: 'Not tested', why: `No inbox placement test for this inbox in the last ${TEST_WINDOW_DAYS} days: ask Riley why it is missing from the weekly test.` };
   const pct = `${Math.round(i.score)}%`;
   if (!i.scoreAt) return { text: pct, why: `From an older test (over ${TEST_WINDOW_DAYS} days ago, Email Accounts → Last Inbox Placement Score): not in the recent weekly tests.` };
-  if (lastTest && i.scoreAt < lastTest) return { text: `${pct} · ${md(i.scoreAt)}`, why: `Not in the ${md(lastTest)} test: this is its ${md(i.scoreAt)} score.` };
+  if (lastTest && i.scoreAt < lastTest) return { text: `${pct} · ${md(i.scoreAt)}`, why: `No ${md(lastTest)} score yet (EmailGuard may still be testing it): this is its ${md(i.scoreAt)} score.` };
   return { text: pct, why: `Tested ${md(i.scoreAt)}.` };
 }
 /** The newest test date per client (from the inboxes' own scores). Pure. */

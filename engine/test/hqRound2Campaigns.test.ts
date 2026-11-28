@@ -93,7 +93,7 @@ test('sending accounts: counts as Airtable (warming overlaps), daily capacity vs
 
 test('placement cell: a score with its date, "not in the last test", or "Not tested" (never a blank)', () => {
   assert.deepEqual(placementOf({ score: 92, scoreAt: '2026-11-27' }, '2026-11-27'), { text: '92%', why: 'Tested 11/27.' });
-  assert.deepEqual(placementOf({ score: 80.4, scoreAt: '2026-11-20' }, '2026-11-27'), { text: '80% · 11/20', why: 'Not in the 11/27 test: this is its 11/20 score.' });
+  assert.deepEqual(placementOf({ score: 80.4, scoreAt: '2026-11-20' }, '2026-11-27'), { text: '80% · 11/20', why: 'No 11/27 score yet (EmailGuard may still be testing it): this is its 11/20 score.' });
   assert.equal(placementOf({ score: null, scoreAt: '' }, '2026-11-27').text, 'Not tested');
   assert.match(placementOf({ score: null, scoreAt: '' }, '2026-11-27').why, /last 21 days/);
   assert.match(placementOf({ score: 70, scoreAt: '' }, '2026-11-27').why, /older test/);
