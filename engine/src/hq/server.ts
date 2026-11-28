@@ -63,6 +63,8 @@ import { createInDulcySign, draftForm, pullFromClose, saveDraft } from './contra
 import { kickFlush, notifyChatReply, pushRoute, webPushSender, type PushSender } from './push.js';
 // Finances → Personal through Plaid (read only, owner only), Alex 2026-11-28.
 import { personalRoute, plaidFor } from './plaid.js';
+// Voice mode (talk to the agents), Alex 2026-11-28.
+import { planTurn, runTurn, speakMessage, turnBodyLimit, voiceProvider, voiceState, type VoiceProvider } from './voice.js';
 
 export interface HqDeps {
   at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string;
@@ -76,6 +78,8 @@ export interface HqDeps {
   pushSender?: PushSender;
   /** Round 5: Cole's take on the sales numbers (null = the rule line only; tests pass a fake). */
   coleTakeModel?: TakeModel | null;
+  /** Voice: speech to text and text to speech (default: OpenAI through fetchImpl). */
+  voice?: VoiceProvider;
 }
 
 const SECURITY_HEADERS: Record<string, string> = {
@@ -207,6 +211,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
   const sales: SalesDeps = deps.sales ?? salesDeps(db, cfg, deps.fetchImpl);
   const pushSender: PushSender = deps.pushSender ?? webPushSender();
   const takeModel: TakeModel | null = deps.coleTakeModel !== undefined ? deps.coleTakeModel : defaultTakeModel(cfg);
+  const voice: VoiceProvider = deps.voice ?? voiceProvider(cfg, deps.fetchImpl);
 
   return async function handle(req: http.IncomingMessage, res: http.ServerResponse, url: URL): Promise<boolean> {
     const host = hostOf(req);
@@ -834,6 +839,32 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         try { if (await notifyChatReply(db, user, r)) void kickFlush(db, cfg, pushSender); } catch (e) { console.error(JSON.stringify({ level: 'warn', message: 'chat push not queued', err: String((e as Error).message ?? e).slice(0, 200) })); }
         json(res, 200, r);
         return true;
+      }
+
+      // ---- Voice mode (Alex 2026-11-28): HQ Chat by voice. Read only like every chat. ----
+      if (p.startsWith('/hq/api/voice/')) {
+        const vs = voiceState(cfg, Boolean(deps.chatModel || cfg.anthropicApiKey), Boolean(deps.voice || cfg.openAiApiKey));
+        if (p === '/hq/api/voice/status' && req.method === 'GET') { json(res, 200, vs); return true; }
+        if (!vs.on) { json(res, 503, { error: vs.reason, off: true }); return true; }
+        if (p === '/hq/api/voice/turn' && req.method === 'POST') {
+          const plan = await planTurn(db, cfg, user, await readJson(req, turnBodyLimit(cfg)));
+          if ('error' in plan) { json(res, plan.status, { error: plan.error }); return true; }
+          // What was heard goes out first, then the answer: one JSON object per line.
+          res.writeHead(200, { 'content-type': 'application/x-ndjson; charset=utf-8', 'cache-control': 'no-store', 'x-accel-buffering': 'no', ...SECURITY_HEADERS });
+          const r = await runTurn({ db, cfg, at, chatModel: deps.chatModel, user, voice }, plan, (line) => { res.write(`${JSON.stringify(line)}\n`); });
+          res.end();
+          if (r) { try { if (await notifyChatReply(db, user, r)) void kickFlush(db, cfg, pushSender); } catch { /* a push problem never fails the answer */ } }
+          return true;
+        }
+        if (p === '/hq/api/voice/speak' && req.method === 'POST') {
+          const b = await readJson(req, 1_000);
+          const r = await speakMessage({ db, cfg, user, voice }, Number(b.messageId));
+          if ('error' in r) { json(res, r.status, { error: r.error }); return true; }
+          res.writeHead(200, { 'content-type': 'audio/mpeg', 'content-length': String(r.audio.length), 'cache-control': 'no-store', ...SECURITY_HEADERS });
+          res.end(Buffer.from(r.audio));
+          return true;
+        }
+        json(res, 404, { error: 'not found' }); return true;
       }
 
       json(res, 404, { error: 'not found' });
