@@ -384,7 +384,15 @@ export interface ContentItemFacts {
   update: string; error: string;
   details: { productionStage: string; status: string; editingRoute: string; opusStatus: string; shortJobState: string; thumbnailStatus: string; publishingStatus: string };
 }
-export interface ContentItem extends ContentPipelineRow { cc: ContentCcStage; thisWeek: boolean; awaiting: boolean; done: boolean; facts: ContentItemFacts }
+/** Round 4 (2026-11-28): each video's real workflow (engine/src/hq/content.ts videoSteps). */
+export type ContentStepWhere = 'hq' | 'sienna' | 'contentCenter' | 'byHand' | 'notAutomated';
+export interface ContentStepButton { kind: 'decide' | 'askSienna' | 'openScript' | 'copyGamma' | 'link' | 'contentCenter'; label: string; url?: string; task?: string }
+export interface ContentStep { key: string; title: string; state: 'done' | 'now' | 'later'; where: ContentStepWhere; text: string; optional?: boolean; buttons: ContentStepButton[] }
+export interface ContentPrep { script: string; titles: string[]; hooks: string[]; thumbnail: string; gamma: string; gammaUrl: string; youtube: string; checks: string[] }
+export interface ContentItem extends ContentPipelineRow {
+  cc: ContentCcStage; thisWeek: boolean; awaiting: boolean; done: boolean; facts: ContentItemFacts;
+  posted: boolean; postedDate: string; postedFrom: string; steps: ContentStep[]; prep: ContentPrep | null;
+}
 export type ContentCenterView = Omit<ContentView, 'pipeline'> & { pipeline: { stages: ContentView['pipeline']['stages']; ccStages: ContentCcStage[]; rows: ContentItem[]; leftOut: number } };
 
 /* ---------- Batch 3 (2026-11-27): Campaign Center layout, lead lists, inbox limits, bounces, verification ---------- */

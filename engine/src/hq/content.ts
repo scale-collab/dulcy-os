@@ -20,8 +20,14 @@
 // reviewed copy" writes Review Intent JSON and then calls an n8n webhook ([Content OS] Current Clip
 // Review and Preview) that checks the intent's Airtable author (Review Intent Author, lastModifiedBy)
 // against the owner; HQ can't do that (and never calls n8n), so those items link to the Content Center.
-// Nothing here posts, schedules, deletes, or calls OpusClip, Gamma, Frame.io, YouTube, Discord or n8n.
+// Nothing here posts, schedules, deletes, or calls OpusClip, Gamma, Frame.io, Discord or n8n. The one
+// outside read (round 4, 2026-11-28): a posted video with no saved posted date gets its date from its
+// channel's public YouTube feed (a plain GET of at most 2 feeds, cached 1 hour), so it shows "Posted 11/26".
 // Airtable reads: batched (6 list calls, no per-row calls), one cache for everyone, 60 seconds.
+//   - Round 4 (2026-11-28): the "This week" tab is gone (data problems are one line on Needs you), channel
+//     names are the real ones, and every item carries its real workflow (videoSteps): the one Next step
+//     with its button, and each step with where it happens (HQ, Sienna, a Content Center button, by hand,
+//     or "not automated yet").
 import type { Db } from '../db/pool.js';
 import type { AirtableRecord } from '../providers/airtable.js';
 import type { HqAirtable } from './decisions.js';
@@ -34,7 +40,8 @@ export const CONTENT_CACHE_MS = 60_000;
 export const CHANNELS = ['Alex Woung', 'Alex Woung Raw'] as const;
 export type Channel = (typeof CHANNELS)[number];
 export const CHANNEL_KEY: Record<Channel, string> = { 'Alex Woung': 'main', 'Alex Woung Raw': 'raw' };
-export const CHANNEL_LABEL: Record<Channel, string> = { 'Alex Woung': 'Main', 'Alex Woung Raw': 'Raw' };
+/** Round 4 (Alex, 2026-11-28): the real channel names everywhere, never "Main channel" / "Raw". */
+export const CHANNEL_LABEL: Record<Channel, string> = { 'Alex Woung': 'Alex Woung', 'Alex Woung Raw': 'Alex Woung Raw' };
 
 /** Content Channels field IDs beyond sienna.ts CF (from the Content Center's FIELD_IDS, checked with airtable/SCHEMA.md). */
 export const XF = {
@@ -347,15 +354,209 @@ export function contentFriday(now: number): string { const t = etYmd(now); retur
 export function weekOf(ymd: string): { start: string; end: string } { const start = addDays(ymd, -((dow(ymd) + 6) % 7)); return { start, end: addDays(start, 6) }; }
 const inRange = (d: string, a: string, b: string) => !!d && d >= a && d <= b;
 
+// ---------- the posted date (round 4, 2026-11-28) ----------
+// "Outbound Funnel Math" showed "No date yet": its row has the YouTube link and Publishing Status
+// "Published" but no Publish Date, no YouTube Published At and no Recording Date (the link was saved by
+// hand, and nothing stamps a date when it is saved). The calendar only read Recording / Publish Date.
+// Now a posted video's date is: YouTube Published At → Publish Date → the date YouTube itself gives in
+// the channel's public feed (youtube.com/feeds/videos.xml, the newest 15 videos; read-only, no key).
+/** The two channels' YouTube ids (from youtube.com/@alexwoung and /@alexwoungraw, checked 2026-11-28). */
+export const YOUTUBE_CHANNEL_IDS: Record<Channel, string> = { 'Alex Woung': 'UCy81ZFFJdQrAZydCV9XJ4kw', 'Alex Woung Raw': 'UCfXiWoFAPrs2Ll-Ecj-cSJQ' };
+/** The 11-character video id of a YouTube link ('' when it is not one). Pure. */
+export function youtubeId(url: string): string {
+  const m = /^https:\/\/(?:www\.|m\.)?(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:[^#]*&)?v=|shorts\/|live\/|embed\/))([A-Za-z0-9_-]{11})(?![A-Za-z0-9_-])/.exec(String(url ?? '').trim());
+  return m ? m[1] : '';
+}
+/** A channel feed → video id → the day it was published (New York). Pure. */
+export function feedDates(xml: string): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const e of String(xml ?? '').match(/<entry>[\s\S]*?<\/entry>/g) ?? []) {
+    const id = /<yt:videoId>([A-Za-z0-9_-]{11})<\/yt:videoId>/.exec(e)?.[1];
+    const t = Date.parse(/<published>([^<]+)<\/published>/.exec(e)?.[1] ?? '');
+    if (id && Number.isFinite(t)) out.set(id, etYmd(t));
+  }
+  return out;
+}
+export type FetchText = (url: string) => Promise<string>;
+const fetchText: FetchText = async (url) => {
+  const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
+  if (!r.ok) throw new Error(`YouTube answered ${r.status}`);
+  return (await r.text()).slice(0, 2_000_000);
+};
+/** channel → its feed's dates and when they were read: kept 1 hour (a failed read is retried after 15 minutes). */
+const feedCache = new Map<string, { dates: Map<string, string>; at: number; ok: boolean }>();
+export function _resetYoutubeCache() { feedCache.clear(); }
+/** Proof of posting but no saved date: the only rows HQ looks up on YouTube. */
+const needsYoutubeDate = (v: Video) => postedWithProof(v) && !v.youtubePublishedAt && !v.publishDate && !!youtubeId(v.youtubeUrl);
+/**
+ * YouTube's own dates for posted videos with no saved date. Reads at most the two channel feeds (only
+ * when such a video exists), 5 seconds each, cached; never throws. Video record id → YYYY-MM-DD.
+ */
+export async function youtubeDates(videos: Video[], get: FetchText = fetchText, now = Date.now()): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const want = videos.filter(needsYoutubeDate);
+  if (!want.length) return out;
+  const chans = [...new Set(want.map((v) => (v.channel ? [v.channel] : [...CHANNELS])).flat())] as Channel[];
+  await Promise.all(chans.map(async (ch) => {
+    const hit = feedCache.get(ch);
+    if (hit && now - hit.at < (hit.ok ? 3_600_000 : 15 * 60_000)) return;
+    try { feedCache.set(ch, { dates: feedDates(await get(`https://www.youtube.com/feeds/videos.xml?channel_id=${YOUTUBE_CHANNEL_IDS[ch]}`)), at: now, ok: true }); }
+    catch { feedCache.set(ch, { dates: new Map(), at: now, ok: false }); /* offline or blocked: shown as "no date saved" */ }
+  }));
+  for (const v of want) {
+    const id = youtubeId(v.youtubeUrl);
+    const d = (v.channel ? [v.channel] : [...CHANNELS]).map((ch) => feedCache.get(ch)?.dates.get(id)).find(Boolean);
+    if (d) out.set(v.id, d);
+  }
+  return out;
+}
+export type PostedFrom = 'YouTube Published At' | 'Publish Date' | 'YouTube' | '';
+/** When a video was posted, and where that date came from ('' when it is not posted or no date is known). Pure. */
+export function postedOn(v: Video, yt: Map<string, string> = new Map()): { date: string; from: PostedFrom } {
+  if (!postedWithProof(v)) return { date: '', from: '' };
+  if (v.youtubePublishedAt) { const p = Date.parse(v.youtubePublishedAt); const d = Number.isFinite(p) ? etYmd(p) : dateKey(v.youtubePublishedAt); if (d) return { date: d, from: 'YouTube Published At' }; }
+  if (v.publishDate) return { date: v.publishDate, from: 'Publish Date' };
+  const y = yt.get(v.id);
+  return y ? { date: y, from: 'YouTube' } : { date: '', from: '' };
+}
+/** "2026-11-27" → "11/27" (dates use slashes, no weekday: RULES 2026-11-27 and round 4). Pure. */
+export const slash = (ymd: string) => (/^\d{4}-\d{2}-\d{2}/.test(ymd) ? `${Number(ymd.slice(5, 7))}/${Number(ymd.slice(8, 10))}` : '');
+
+// ---------- the video's workflow (round 4, 2026-11-28): the real steps, where each happens, the one next step ----------
+// Alex: "Where do I click to generate the script? Where's the Gamma and how do I upload it? How do I
+// progress it?" Every step below exists in the Content OS today, in the Content Center's order
+// (nextStep in source.tsx). Where HQ can't press it, the step names the Content Center button that
+// does, or says "Not automated yet" with what to do by hand. HQ itself only writes the idea decision;
+// "Ask Sienna now" puts a task on Sienna's list (POST /fix-it) and writes nothing to Airtable.
+export type StepState = 'done' | 'now' | 'later';
+/** hq = a button in HQ · sienna = Sienna does it automatically · contentCenter = a Content Center button (n8n) · byHand · notAutomated. */
+export type StepWhere = 'hq' | 'sienna' | 'contentCenter' | 'byHand' | 'notAutomated';
+export interface StepButton { kind: 'decide' | 'askSienna' | 'openScript' | 'copyGamma' | 'link' | 'contentCenter'; label: string; url?: string; task?: string }
+export interface VideoStep { key: string; title: string; state: StepState; where: StepWhere; text: string; optional?: boolean; buttons: StepButton[] }
+export interface StepContext { gamma: string; gammaUrl: string; hasPrep: boolean; stuck: boolean; now: number; posted: string }
+/** The next sienna.prep run: the scheduler queues it every half hour, on the hour and at :30. Pure. */
+export function nextPrepAt(now: number): number { const step = 30 * 60_000; return Math.ceil((now + 1) / step) * step; }
+const etTime = (t: number) => new Date(t).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' });
+const httpsOnly = (u: string) => (/^https:\/\//.test(u) && !/airtable\.com/i.test(u) ? u : '');
+
+/** The video's steps in the Content Center's order, each done / now / later, with its buttons. Pure. */
+export function videoSteps(v: Video, clips: Clip[], x: StepContext): VideoStep[] {
+  const steps: VideoStep[] = [];
+  const add = (key: string, title: string, done: boolean, where: StepWhere, text: string, buttons: StepButton[] = [], doneText = '', doneButtons: StepButton[] = [], optional = false) =>
+    steps.push({ key, title, state: done ? 'done' : 'later', where, text: done ? doneText : text, buttons: done ? doneButtons : buttons, ...(optional ? { optional } : {}) });
+  const cc = (label: string): StepButton => ({ kind: 'contentCenter', label });
+  const main = v.channel === 'Alex Woung';
+  const approved = !needsApproval(v);
+  const recordingSynced = /recorded footage found|recording found|raw video found/i.test(v.message);
+  const longFormSubmitted = /long-form edit project (?:created|submitted)|long-form edit (?:submitted|processing)/i.test(v.message);
+  const onYoutube = !!v.youtubeUrl;
+  const finished = !!v.finalAssetUrl || onYoutube;
+  const recorded = RECORDED_ON.has(v.stage) || recordingSynced || finished;
+  const thumbnailApproved = /approved|complete/i.test(v.thumbnailStatus);
+  const clipCount = clips.filter((c) => c.parentId === v.id).length || v.clipIds.length;
+  const shortSubmitted = Boolean(v.shortProjectId || v.shortJobState || v.shortSourceAssetId);
+  const sourceMatches = Boolean(v.finalAssetId && v.shortSourceAssetId && v.finalAssetId === v.shortSourceAssetId);
+  const shortBlocked = shortSubmitted && (!sourceMatches || !v.shortProjectId || /submitting|error|failed|uncertain/i.test(v.shortJobState));
+  const dist = v.distributionStatus.toLowerCase();
+  const drafts = ['drafts ready', 'scheduled', 'published'].includes(dist) || dist.includes('complete') || v.distributionCount > 0;
+  const raw = httpsOnly(v.rawFolderUrl), final = httpsOnly(v.finalFolderUrl), yt = httpsOnly(v.youtubeUrl), thumb = httpsOnly(v.thumbnailUrl);
+  const today = etYmd(x.now);
+  const title = v.title.slice(0, 120);
+
+  // 1. The idea decision (HQ).
+  add('idea', 'Approve the idea', approved, 'hq', 'Approve puts it on the calendar (record and publish dates). Sienna then writes the script within 30 minutes. Reject keeps it in the history.',
+    [{ kind: 'decide', label: 'Approve or reject' }], 'Approved.');
+
+  // 2. The script (Sienna, automatic: sienna.prep; the Content Center's "Generate script" runs the same job in n8n).
+  const pastWindow = !!v.recordingDate && v.recordingDate < addDays(today, -2);
+  const scriptText = x.stuck ? 'Approved over a day ago and still no script: Sienna\'s automatic run did not write it. Ask her now (or press "Generate script" in the Content Center).'
+    : pastWindow ? `Sienna's automatic run skips it: the recording date (${slash(v.recordingDate)}) has passed. Ask her now, or press "Generate script" in the Content Center.`
+      : `Sienna writes it automatically by about ${etTime(nextPrepAt(x.now))} ET (she checks every 30 minutes for approved ideas with no script), with hooks, title options, a thumbnail idea${main ? ' and the Gamma outline' : ''}.`;
+  add('script', 'Script', v.hasScript || recorded, 'sienna', scriptText,
+    [{ kind: 'askSienna', label: 'Ask Sienna now', task: `Write the recording script for "${title}"` }],
+    v.hasScript ? (x.hasPrep ? 'Script ready.' : 'Script written (in the Content Center).') : 'Recorded without a script.', v.hasScript && x.hasPrep ? [{ kind: 'openScript', label: 'Open script' }] : []);
+
+  // 3. Gamma (Alex Woung only: the slides on screen). The outline is automatic; the Gamma doc is not.
+  if (main) {
+    const gammaUrl = httpsOnly(x.gammaUrl);
+    const outline = !!x.gamma;
+    add('gamma', 'Gamma (on-screen slides)', !!gammaUrl || recorded, 'notAutomated',
+      outline ? 'Not automated yet. Sienna wrote the slide outline with the script; the Gamma doc is made by hand: Copy outline, Open Gamma, Create → Paste in text, then paste the Gamma link into this video\'s Notes in the Content Center so "Open Gamma" shows here.'
+        : v.hasScript ? 'Not automated yet, and there is no outline: this script came from the Content Center button, which writes none. Ask Sienna for an outline, or build it in Gamma by hand.'
+          : 'Sienna writes the slide outline together with the script. The Gamma doc itself is made by hand (not automated yet).',
+      outline ? [{ kind: 'copyGamma', label: 'Copy outline' }, { kind: 'link', label: 'Open Gamma', url: 'https://gamma.app/' }]
+        : v.hasScript ? [{ kind: 'askSienna', label: 'Ask Sienna for an outline', task: `Write the Gamma outline for "${title}"` }] : [],
+      gammaUrl ? 'Gamma doc linked.' : 'Recorded (no Gamma link saved).', gammaUrl ? [{ kind: 'link', label: 'Open Gamma', url: gammaUrl }] : [], true);
+  }
+
+  // 4. The Frame.io folders (Content Center "Set up Frame.io" → n8n Frame.io Sync).
+  add('folder', 'Recording folder (Frame.io)', !!v.rawFolderUrl || recorded, 'contentCenter',
+    'Press "Set up Frame.io" on this video in the Content Center: it makes the Raw and Final folders in Frame.io. HQ can\'t press it yet.', [cc('Open the Content Center')], 'Folders ready.');
+
+  // 5. Record, upload, mark recorded (by hand + Content Center "Sync Frame.io", which sets Production Stage "Recorded").
+  add('record', 'Record, upload, mark recorded', recorded, 'byHand',
+    `Record it${v.recordingDate ? ` (recording date ${slash(v.recordingDate)})` : ''}. Upload the file to this video's Raw folder in Frame.io, then press "Sync Frame.io" in the Content Center: it finds the file and marks the video Recorded (there is no separate "mark recorded" button).${v.editingRoute ? '' : ' Also choose how it is edited ("Use OpusClip" or "Use DaVinci Resolve") on this video in the Content Center.'}`,
+    [...(raw ? [{ kind: 'link' as const, label: 'Upload to the Raw folder', url: raw }] : []), cc('Sync Frame.io in the Content Center')], 'Recording found.');
+
+  // 6. Edit (OpusClip or DaVinci Resolve).
+  const davinci = /manual editor|davinci resolve/i.test(v.editingRoute);
+  const inOpus = v.editingRoute === 'OpusClip' && recordingSynced && longFormSubmitted;
+  const editText = !v.editingRoute ? 'Choose how it is edited: "Use OpusClip" or "Use DaVinci Resolve" on this video in the Content Center.'
+    : davinci ? 'Edit it in DaVinci Resolve (by hand), upload the finished video to the Final folder in Frame.io, then press "Sync Frame.io" in the Content Center.'
+      : !recordingSynced ? 'Press "Sync Frame.io" in the Content Center so OpusClip can find the recording.'
+        : !longFormSubmitted ? 'Press "Edit full video" in the Content Center: it sends the recording to OpusClip (uses OpusClip credits).'
+          : 'In OpusClip now. Sienna\'s editor finishes the edit, exports it and uploads it to the Final folder; then "Sync Frame.io" in the Content Center picks it up.';
+  add('edit', 'Edit the video', finished, davinci ? 'byHand' : inOpus ? 'sienna' : 'contentCenter', editText,
+    [...(final && (davinci || longFormSubmitted) ? [{ kind: 'link' as const, label: 'Open the Final folder', url: final }] : []), cc('Open the Content Center')], 'Finished video in Frame.io.');
+
+  // 7. Thumbnail (Content Center "Generate thumbnail" → n8n; approved in the Content Center).
+  add('thumbnail', 'Thumbnail', thumbnailApproved || onYoutube, 'contentCenter',
+    !v.thumbnailUrl ? 'Press "Generate thumbnail" in the Content Center (it makes one from the title and your Frame.io portraits; uses image credits).'
+      : 'Look at it, then press "Approve thumbnail" (or "Request thumbnail changes") in the Content Center.',
+    [...(thumb ? [{ kind: 'link' as const, label: 'Open the thumbnail', url: thumb }] : []), cc('Open the Content Center')], 'Thumbnail approved.');
+
+  // 8. YouTube title and description (Content Center "Prepare YouTube details" → n8n).
+  add('details', 'YouTube title and description', (!!v.youtubeTitle && v.hasYoutubeDescription) || onYoutube, 'contentCenter',
+    'Press "Prepare YouTube details" in the Content Center: it writes the title and description for you to copy.', [cc('Open the Content Center')], 'Ready.');
+
+  // 9. Post on YouTube (by hand: HQ and Sienna never post).
+  add('youtube', 'Post on YouTube', onYoutube, 'byHand',
+    `${v.status === 'Scheduled' ? 'Marked "Scheduled" but no YouTube link is saved. ' : ''}Upload the finished video and thumbnail in YouTube Studio yourself (HQ and Sienna never post), then save the YouTube link on this video in the Content Center.`,
+    [{ kind: 'link', label: 'Open YouTube Studio', url: 'https://studio.youtube.com/' }, cc('Save the link in the Content Center')],
+    x.posted ? `Posted ${slash(x.posted)}.` : 'Posted (no date saved).', yt ? [{ kind: 'link', label: 'Watch on YouTube', url: yt }] : []);
+
+  // 10. Short clips (Content Center "Create short clips" → n8n OpusClip Submit and Refresh).
+  add('clips', 'Short clips', clipCount > 0, 'contentCenter',
+    shortBlocked ? 'The short-clips job needs a check (it may belong to another final video). Don\'t submit another; Riley checks it.'
+      : !v.finalAssetId ? 'Press "Sync Frame.io" in the Content Center so it registers the finished video, then "Create short clips".'
+        : !shortSubmitted ? 'Press "Create short clips" in the Content Center (OpusClip; uses credits). Sienna checks each clip before it comes to you.'
+          : 'OpusClip is making them. "Check clip status" in the Content Center brings them in.',
+    [cc('Open the Content Center')], `${clipCount} clip${clipCount === 1 ? '' : 's'}.`);
+
+  // 11. Posts (Content Center: choose outputs, "Generate posts"; approval and scheduling stay there).
+  add('posts', 'Posts from this video', drafts, 'contentCenter',
+    v.distributionChannels === 0 ? 'Choose the clips wanted and where the posts go on this video in the Content Center, then press "Generate posts".' : 'Press "Generate posts" in the Content Center (posts, captions, Reddit drafts, newsletter).',
+    [cc('Open the Content Center')], 'Drafts made.');
+  add('approve', 'Approve and schedule the posts', contentComplete(v), 'contentCenter',
+    'Review and approve the drafts in the Content Center (Posts). Scheduling stays there: HQ never schedules or posts.', [cc('Open the Content Center')], 'Done.');
+
+  // The first required step not done is "now"; an optional one before it (Gamma) is "now" too; the rest wait.
+  const first = steps.findIndex((s) => s.state !== 'done' && !s.optional);
+  steps.forEach((s, i) => { if (s.state !== 'done' && (i === first || (s.optional && (first === -1 || i < first)))) s.state = 'now'; });
+  return steps;
+}
+
 // ---------- source ----------
 export interface ContentSource {
   videos: Video[]; clips: Clip[]; settingsRows: AirtableRecord[]; heavy: Map<string, AirtableRecord>;
   stuck: { id: string; title: string; channel: string }[]; lastPrep: { status: string; at: string; error: string } | null; readAt: string;
+  /** Round 4: posted videos with no saved date → the date on their YouTube page (video record id → YYYY-MM-DD). */
+  ytDates?: Map<string, string>;
 }
 
 const idFormula = (xs: string[]) => `OR(${xs.map((x) => `RECORD_ID()='${x}'`).join(',')})`;
 /** One batched read: rows (light fields), the rows that have a script, clips, settings, stuck approvals, then the long text of the rows HQ shows. */
-export async function readContentSource(at: Pick<HqAirtable, 'list'>, db: Db | null, now = Date.now()): Promise<ContentSource> {
+export async function readContentSource(at: Pick<HqAirtable, 'list'>, db: Db | null, now = Date.now(), getYoutube?: FetchText): Promise<ContentSource> {
   const [rows, scriptRows, clipRows, settingsRows, stuckRows, prep] = await Promise.all([
     at.list(CONTENT, 'TRUE()', LIGHT, 5000),
     at.list(CONTENT, `{Script}!=''`, [CF.title], 5000),
@@ -368,16 +569,21 @@ export async function readContentSource(at: Pick<HqAirtable, 'list'>, db: Db | n
   const scripted = new Set(scriptRows.map((r) => r.id));
   const videos = rows.map((r) => videoOf(r, scripted));
   const clips = clipRows.map(clipOf);
-  // Long text only for what HQ shows: the ideas waiting (newest 40 per channel) and the Friday ideas.
+  // Long text only for what HQ shows: the ideas waiting (newest 40 per channel), the Friday ideas, and
+  // (round 4) the newest 60 scripted videos not recorded yet, so each video's page can open its script and Gamma outline.
   const fri = fridayCandidates(videos, now).map((v) => v.id);
   const waiting = CHANNELS.flatMap((ch) => videos.filter((v) => v.channel === ch && awaitingDecision(v)).sort(byNewest).slice(0, 40).map((v) => v.id));
-  const want = [...new Set([...fri, ...waiting])];
+  const since = addDays(etYmd(now), -60);
+  const scriptedOpen = videos.filter((v) => v.channel && v.hasScript && !ideaIsArchived(v.decision) && !RECORDED_ON.has(v.stage) && !v.finalAssetUrl && !v.youtubeUrl
+    && [v.recordingDate, v.publishDate, v.created ? etYmd(Date.parse(v.created)) : ''].some((d) => d && d >= since)).sort(byNewest).slice(0, 60).map((v) => v.id);
+  const want = [...new Set([...fri, ...waiting, ...scriptedOpen])];
   const heavy = new Map<string, AirtableRecord>();
   for (let i = 0; i < want.length; i += 50) {
     for (const r of await at.list(CONTENT, idFormula(want.slice(i, i + 50)), HEAVY, 50)) heavy.set(r.id, r);
   }
+  const ytDates = await youtubeDates(videos, getYoutube, now);
   return {
-    videos, clips, settingsRows, heavy,
+    videos, clips, settingsRows, heavy, ytDates,
     stuck: stuckRows.filter((r) => s(r.fields[CF.ideaDecision]) === 'Approved' && !s(r.fields[CF.script])).map((r) => ({ id: r.id, title: s(r.fields[CF.title]) || 'Untitled', channel: s(r.fields[CF.channel]) })),
     lastPrep: prep ? { status: String(prep.status), at: new Date(prep.updated_at).toISOString(), error: String(prep.error ?? '').slice(0, 200) } : null,
     readAt: new Date(now).toISOString(),
@@ -468,8 +674,17 @@ export function buildContent(src: ContentSource, baseId: string, now = Date.now(
 
   // Pipeline: recent rows (any date in the last 60 days or ahead), and everything still open.
   const since = addDays(today, -60);
-  const recent = (v: Video) => [v.recordingDate, v.publishDate, v.date, v.created ? etYmd(Date.parse(v.created)) : ''].some((d) => d && d >= since);
-  const pipeRows: { id: string; title: string; channel: string; key: string; stage: StageKey; cc: CcStage; thisWeek: boolean; awaiting: boolean; done: boolean; recordingDate: string; publishDate: string; status: string; productionStage: string; next: NextStep | null; flags: string[]; facts: ItemFacts }[] = [];
+  const yt = src.ytDates ?? new Map<string, string>();
+  const stuckIds = new Set(src.stuck.map((x) => x.id));
+  const recent = (v: Video) => [v.recordingDate, v.publishDate, v.date, postedOn(v, yt).date, v.created ? etYmd(Date.parse(v.created)) : ''].some((d) => d && d >= since);
+  const pipeRows: {
+    id: string; title: string; channel: string; key: string; stage: StageKey; cc: CcStage; thisWeek: boolean; awaiting: boolean; done: boolean; recordingDate: string; publishDate: string;
+    /** Round 4: when it was posted ('' = not posted, or posted with no date known) and where that date came from. */
+    posted: boolean; postedDate: string; postedFrom: PostedFrom;
+    status: string; productionStage: string; next: NextStep | null; flags: string[]; facts: ItemFacts;
+    /** Round 4: the real workflow, and Sienna's prep (script, hooks, Gamma outline) when HQ read it. */
+    steps: VideoStep[]; prep: (Prep & { script: string }) | null;
+  }[] = [];
   let leftOut = 0;
   for (const v of src.videos) {
     const st = v.channel ? stageOf(v, src.clips) : null;
@@ -478,16 +693,22 @@ export function buildContent(src: ContentSource, baseId: string, now = Date.now(
     if (v.stage === 'Blocked') flags.push('Blocked');
     if (v.error) flags.push('Automation error');
     if (v.status === 'Scheduled' && !postedWithProof(v)) flags.push('Scheduled, no proof');
+    const h = src.heavy.get(v.id)?.fields;
+    const prep = h && v.hasScript ? { ...parsePrep(s(h[CF.notes]), s(h[CF.description])), script: s(h[CF.script]) } : null;
+    const posted = postedOn(v, yt);
     pipeRows.push({
       id: v.id, title: v.title, channel: v.channel, key: CHANNEL_KEY[v.channel as Channel], stage: st, cc: ccStageOf(v), thisWeek: inRange(v.recordingDate, week.start, week.end),
       awaiting: needsApproval(v), done: contentComplete(v), recordingDate: v.recordingDate, publishDate: v.publishDate,
+      posted: postedWithProof(v), postedDate: posted.date, postedFrom: posted.from,
       status: v.status, productionStage: v.stage, next: st === 'posted' ? null : nextStep(v, src.clips), flags, facts: itemFacts(v, src.clips),
+      steps: videoSteps(v, src.clips, { gamma: prep?.gamma ?? '', gammaUrl: prep?.gammaUrl ?? '', hasPrep: !!prep?.script, stuck: stuckIds.has(v.id), now, posted: posted.date }),
+      prep: prep && prep.script ? prep : null,
     });
   }
   pipeRows.sort(scheduleOrder);
   // Needs you: the other Content Center steps waiting on Alex (link only).
   const alexSteps = pipeRows.filter((r) => r.next && r.next.who === 'Alex' && r.next.how !== 'hq')
-    .map((r) => ({ id: r.id, title: r.title, channel: r.channel, step: r.next!.title, how: r.next!.automation }));
+    .map((r) => ({ id: r.id, title: r.title, channel: r.channel, step: r.steps.find((x) => x.state === 'now' && !x.optional)?.title ?? r.next!.title, how: r.next!.automation }));
 
   // Friday.
   const candidates = fridayCandidates(src.videos, now);
@@ -541,10 +762,17 @@ export function contentNotes(src: ContentSource, c: { fri: string; fweek: { star
     const failed = src.lastPrep?.status === 'failed';
     out.push({ problem: 'Approved idea with no script after 1 day', data: `${src.stuck.length} approved in the last 14 days and still no script${eg(src.stuck)}. Last sienna.prep run: ${src.lastPrep ? `${src.lastPrep.status} ${src.lastPrep.at.slice(0, 16).replace('T', ' ')} UTC${src.lastPrep.error ? ` (${src.lastPrep.error})` : ''}` : 'none found'}`, fix: failed ? 'fix the sienna.prep job; it then writes the scripts on its next run.' : 'check sienna.prep (runs every 30 min). By hand: Content Center → Generate script.', why: 'Alex records on Friday; an idea without a script can\'t be recorded.', owner: failed ? 'Riley' : 'Sienna' });
   }
+  const undated = src.videos.filter((v) => postedWithProof(v) && !v.youtubePublishedAt && !v.publishDate
+    && (v.created ? etYmd(Date.parse(v.created)) >= addDays(c.today, -60) : false));
+  if (undated.length) {
+    const yt = src.ytDates ?? new Map<string, string>();
+    const found = undated.filter((v) => yt.get(v.id));
+    out.push({ problem: 'Posted, but no posted date saved', data: `${undated.length} posted video${undated.length === 1 ? ' has' : 's have'} a YouTube link but no Publish Date or YouTube Published At${eg(undated)}${found.length ? `. HQ read ${found.length === 1 ? 'its date' : `${found.length} dates`} from YouTube for now (${found.slice(0, 2).map((v) => slash(yt.get(v.id)!)).join(', ')})` : ''}`, fix: 'save the Publish Date on each in the Content Center when the YouTube link is saved.', why: 'Without it the calendar shows the video under "No date yet" and the week\'s posted count misses it.', owner: 'Sienna' });
+  }
   const unchecked = src.clips.filter((x) => x.status === 'Needs Review' && !siennaChecked(x));
   if (unchecked.length) out.push({ problem: 'Clips waiting for Sienna\'s check', data: `${unchecked.length} clip${unchecked.length === 1 ? '' : 's'} in Needs Review have no "Sienna QA" note`, fix: 'her editor (scheduled task) checks them with the 17-point list; only the ones she passes come to you.', why: 'Alex approves only final videos (content-system.md).', owner: 'Sienna' });
   const mainNotFriday = c.pipeline.filter((r) => r.channel === 'Alex Woung' && ['approved', 'script'].includes(r.stage) && inRange(r.recordingDate, c.fweek.start, c.fweek.end) && dow(r.recordingDate) !== 5);
-  if (mainNotFriday.length) out.push({ problem: 'Main-channel recording dates are not on Friday', data: `${mainNotFriday.length} approved main idea${mainNotFriday.length === 1 ? '' : 's'} this week record on ${[...new Set(mainNotFriday.map((r) => new Date(`${r.recordingDate}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })))].join(', ')}: the Content Center's approve sets "the Sunday before the publish week"`, fix: 'once Alex confirms Friday, change the Content Center rule (nextIdeaDates); HQ follows it.', why: 'Alex records every Friday morning; HQ writes the same dates as the Content Center so both agree.', owner: 'Riley' });
+  if (mainNotFriday.length) out.push({ problem: 'Alex Woung recording dates are not on Friday', data: `${mainNotFriday.length} approved Alex Woung idea${mainNotFriday.length === 1 ? '' : 's'} this week record on ${[...new Set(mainNotFriday.map((r) => new Date(`${r.recordingDate}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })))].join(', ')}: the Content Center's approve sets "the Sunday before the publish week"`, fix: 'once Alex confirms Friday, change the Content Center rule (nextIdeaDates); HQ follows it.', why: 'Alex records every Friday morning; HQ writes the same dates as the Content Center so both agree.', owner: 'Riley' });
   const old = src.videos.filter((v) => awaitingDecision(v) && v.created && Date.parse(v.created) < Date.parse(`${c.today}T12:00:00Z`) - 14 * DAY);
   if (old.length) out.push({ problem: 'Old ideas still waiting', data: `${old.length} idea${old.length === 1 ? '' : 's'} have waited 14+ days for a decision`, fix: 'reject the ones you won\'t record (one tap each in Needs you).', why: 'A short list is faster to decide on Friday.', owner: 'Alex' });
   return out;

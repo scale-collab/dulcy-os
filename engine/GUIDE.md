@@ -4,7 +4,7 @@ How the Dulcy lead engine works from start to finish, in plain words.
 **Keep this file current:** every engine change updates this guide in the same pull request (rule 2026-11-23).
 Technical details for developers are in `README.md`.
 
-Last updated: 2026-11-27 (HQ Clients: health on the KPI, EmailBison results, real MRR/LTV, owner money; before: "Content")
+Last updated: 2026-11-28 (HQ Content round 4: Next step per video, real channel names, posted dates; before: HQ Clients)
 
 ---
 
@@ -947,6 +947,13 @@ Where this differs from the two sections above, this wins.
      - **Content** = the Content Center's main view. Search, a channel dropdown (remembered on this device), a stage dropdown with counts, and "Show finished videos". Items are in the Content Center's order (earliest record or publish date first, undated last) with its own 10 stages: Idea, Script, Record, Edit, Finalize, Thumbnail, Upload, Clips, Distribute, Published. Tap an item for its page, the same blocks in the same order: stage and title, **Next step** (who and how; Approve / Reject right there for an idea), **Schedule** (idea review, score, record and publish dates), **Video** (script, recording folder, finished video, on YouTube), **Repurposing** (short-clips project, clips, post drafts), **Latest update / Needs attention**, and **Details** (production stage, statuses, editing route, idea source). On the phone the list and the item are two screens; from a tablet up they sit side by side. "Finished" = posted with proof and distribution done (HQ does not read the Content Distribution rows the Content Center also checks).
      - **Calendar** = the Content Center's recording and publishing calendar: purple = record, green = publish. Month grid from a tablet up, a list of days on the phone. Dropdowns for date kind and channel; items with no date are listed below. Ideas still waiting for you and finished videos are left out, like the Content Center.
      - **Data problems** now read Problem → Decision (with the owner) → what supports it; "why it matters" is one tap deeper.
+   - **Round 4 (Alex, 2026-11-28):**
+     - **"This week" tab removed.** The data problems are one line at the top of Needs you; open it for the list and one **Have Sienna fix it** button.
+     - **Real channel names everywhere:** "Alex Woung" and "Alex Woung Raw" (never "Main" / "Raw"). The channel filter is **Both / Alex Woung / Alex Woung Raw**.
+     - **Ideas to approve:** one closed dropdown per channel with its count; open one to approve or reject.
+     - **Dates with slashes, no weekday** (11/27).
+     - **Posted date:** a video on YouTube shows the day it was posted: YouTube Published At, else Publish Date, else the date YouTube gives in the channel's public feed (youtube.com/feeds/videos.xml; at most 2 reads, cached 1 hour, read-only). On the calendar it is a grey "Posted" chip, never under "No date yet". A data problem "Posted, but no posted date saved" asks Sienna to save the Publish Date.
+     - **Each video's page:** one **Next step** box at the top (what happens next, where it happens, the one button), then **Script, hooks and Gamma outline** (Open script / Copy script / Copy outline), then **All steps** in order, each done / next / later with where it runs: *In HQ* (approve), *Sienna, automatic* (script by the next half hour; **Ask Sienna now** puts a task on her list, nothing is written to Airtable), *Content Center button* (Set up Frame.io, Sync Frame.io, Edit full video, Generate thumbnail, Prepare YouTube details, Create short clips, Generate posts: HQ can't press these yet, the button opens the Content Center), *By hand* (record and upload to the Frame.io Raw folder; post in YouTube Studio), or *Not automated yet* (the Gamma doc: copy Sienna's outline into Gamma and paste the link into the video's Notes).
    - **Needs you** (default): only what needs you.
      - **Ideas to approve**, grouped Main / Raw, newest first, each with Sienna's hook, angle and "why now", and who proposed it (Sienna, or the n8n Reddit intake).
        - **Approve** writes exactly what the Content Center's "Approve & schedule" writes: Idea Decision "Approved", Production Stage "Idea Approved", and Recording Date + Publish Date from the same scheduling rule.

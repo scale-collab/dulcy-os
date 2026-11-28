@@ -1,30 +1,32 @@
-// Content (owner only). Batch 5 (2026-11-27): laid out like the Airtable Content Center, cleaner.
-//   Needs you — what Alex must decide (ideas, final clips, other steps), most important first.
-//   Content   — the Content Center's main view: every item with its stage, next step and blocks.
-//   Calendar  — the Content Center's recording and publishing calendar.
+// Content. Batch 5 (2026-11-27): laid out like the Airtable Content Center, cleaner.
+//   Needs you — what Alex must decide (ideas per channel, final clips, other steps), most important first.
+//   Content   — the Content Center's main view: every item with its Next step, its script and all its steps.
+//   Calendar  — the Content Center's recording, publishing and posted calendar.
 //   Friday    — recording day: one idea per screen with the script and hooks.
-//   Week      — this week vs target, and the data problems as Problem → Decision → support.
+// Round 4 (Alex, 2026-11-28): the "This week" tab is gone (its data problems are one line on Needs you,
+// with one "Have Sienna fix it"); the ideas per channel fold closed; the real channel names ("Alex Woung",
+// "Alex Woung Raw"); dates with slashes. Old #/content/week links open Needs you.
 // The only write is the idea decision (the Content Center's own Approve & schedule / Reject idea fields).
 // No Airtable record links (RULES 2026-11-27); the one link left is the Content Center page for the
-// clip approval HQ cannot do (it runs an owner check in n8n). Everything is rendered as escaped text.
+// steps HQ cannot do (clip approval, the n8n buttons). Everything is rendered as escaped text.
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { api, type ContentCenterView, type ContentIdea, type FridayIdea } from '../api';
 import { Button, Card, cx, Empty, ErrorBox, ExtLink, go, Icon, IconButton, Label, PageSkeleton, PageTitle, Pill, SectionHeader, setCount, timeAgo } from '../ui';
+import { FixItButton } from '../fixIt';
 import ContentItems from './content/ContentItems';
 import ContentCalendar from './content/ContentCalendar';
-import { DecideButtons, Head, Notes, dateOnly, day, shortLabel } from './content/shared';
+import { DecideButtons, GammaBlock, Head, Notes, dateOnly, day, shortLabel } from './content/shared';
 
 const VIEWS = [
   { key: 'needs', label: 'Needs you', short: 'Needs' },
   { key: 'items', label: 'Content', short: 'Content' },
   { key: 'calendar', label: 'Calendar', short: 'Calendar' },
   { key: 'friday', label: 'Friday', short: 'Friday' },
-  { key: 'week', label: 'This week', short: 'Week' },
 ] as const;
 type View = (typeof VIEWS)[number]['key'];
 const isView = (x?: string): x is View => VIEWS.some((v) => v.key === x);
 
-/** #/content[/needs | items[/<rec>] | calendar | friday[/main|raw[/<n>]] | week]; the old #/content/pipeline opens Content. */
+/** #/content[/needs | items[/<rec>] | calendar | friday[/main|raw[/<n>]]]; the old #/content/pipeline opens Content, #/content/week opens Needs you. */
 export default function Content({ a, b, c }: { a?: string; b?: string; c?: string }) {
   const view: View = a === 'pipeline' ? 'items' : isView(a) ? a : 'needs';
   const [d, setD] = useState<ContentCenterView | null>(null);
@@ -37,12 +39,12 @@ export default function Content({ a, b, c }: { a?: string; b?: string; c?: strin
   useEffect(() => load(), [load]);
 
   const fri = d?.friday;
-  const kicker = fri ? `Friday ${dateOnly(fri.date)} · ${fri.channels.map((x) => `${x.label} ${x.ready}/${x.target} ready`).join(' · ')}` : 'Main channel and Alex Woung Raw';
+  const kicker = fri ? `Friday ${dateOnly(fri.date)} · ${fri.channels.map((x) => `${x.label} ${x.ready}/${x.target} ready`).join(' · ')}` : 'Alex Woung and Alex Woung Raw';
   return (
     <div>
       <PageTitle title="Content" kicker={kicker} sub="Ideas, recording, editing, publishing and clips in one place."
         right={<IconButton icon="refresh" label="Refresh" onClick={() => load(true)} className={cx('border border-line bg-surface', busy && '[&_svg]:animate-spin')} />} />
-      <div role="tablist" aria-label="Content views" className="grid grid-cols-5 gap-1 rounded-2xl border border-line bg-sunken p-1 sm:inline-flex">
+      <div role="tablist" aria-label="Content views" className="grid grid-cols-4 gap-1 rounded-2xl border border-line bg-sunken p-1 sm:inline-flex">
         {VIEWS.map((x) => {
           const on = x.key === view;
           const n = x.key === 'needs' ? d?.counts.total ?? 0 : 0;
@@ -64,7 +66,6 @@ export default function Content({ a, b, c }: { a?: string; b?: string; c?: strin
           {view === 'items' && <ContentItems d={d} id={b} onChanged={() => load(true)} />}
           {view === 'calendar' && <ContentCalendar d={d} />}
           {view === 'friday' && <FridayView d={d} channel={b} index={Number(c) || 1} />}
-          {view === 'week' && <WeekView d={d} />}
           <p className="mt-8 text-xs text-muted">From the Content Center's tables, read {timeAgo(d.readAt) || 'just now'}; kept for 1 minute. HQ never posts, schedules or deletes.</p>
         </div>
       )}
@@ -79,25 +80,45 @@ function NeedsView({ d }: { d: ContentCenterView }) {
   const nothing = !nIdeas && !d.needs.finals.length && !d.needs.alexSteps.length;
   return (
     <div className="space-y-8">
+      {/* The data problems (they were the "This week" tab): one line; open it for the list and one Fix it button. */}
       {d.notes.length > 0 && (
-        <button onClick={() => go('content/week')} className="flex min-h-11 w-full items-center gap-2 rounded-xl border border-warn/25 bg-warn-soft px-4 text-left text-sm font-medium text-fg">
-          <Icon name="alert" size={16} className="shrink-0 text-warn" /><span className="min-w-0 flex-1 truncate">{d.notes.length} data problem{d.notes.length === 1 ? '' : 's'} · {d.notes[0].problem}</span><Icon name="chevronRight" size={16} className="shrink-0 text-muted" />
-        </button>
+        <details className="group rounded-xl border border-warn/25 bg-warn-soft text-sm">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 font-medium text-fg [&::-webkit-details-marker]:hidden">
+            <Icon name="alert" size={16} className="shrink-0 text-warn" />
+            <span className="min-w-0 flex-1 truncate">{d.notes.length} data problem{d.notes.length === 1 ? '' : 's'} · {d.notes[0].problem}</span>
+            <Icon name="chevronDown" size={16} className="shrink-0 text-muted transition group-open:rotate-180" />
+          </summary>
+          <div className="space-y-3 border-t border-warn/20 px-3 pb-3 pt-3">
+            <Notes notes={d.notes} />
+            <FixItButton agent="Sienna" title={`Content data problems (${d.notes.length})`} detail={d.notes.map((x) => `${x.problem}: ${x.data}. Fix (${x.owner}): ${x.fix}`).join('\n')} />
+          </div>
+        </details>
       )}
       {nothing && <Card><Empty icon="check" tone="good" title="Nothing needs you" sub="No ideas to decide and no final videos to check. Sienna adds ideas Friday at 7 AM." /></Card>}
 
-      {d.needs.ideas.filter((g) => g.items.length).map((g, n) => {
-        const left = g.items.filter((i) => !gone[i.id]).length;
-        return (
-          <section key={g.key}>
-            <Head title={`Ideas to approve · ${g.label}`} icon="sparkles" sub={n === 0 ? 'Approve puts it on the schedule; Sienna writes the script within 30 minutes. Reject keeps it in the history.' : undefined}
-              right={<span className="tabular shrink-0 text-xs text-muted">{left} waiting</span>} />
-            <div className="space-y-3">
-              {g.items.map((i) => <IdeaCard key={i.id} idea={i} done={gone[i.id]} onDone={(msg) => setGone((x) => ({ ...x, [i.id]: msg }))} />)}
-            </div>
-          </section>
-        );
-      })}
+      {/* Ideas per channel: one dropdown each, closed (Alex, round 4: "one big list is elongated to read"). */}
+      {d.needs.ideas.some((g) => g.items.length) && (
+        <section>
+          <Head title="Ideas to approve" icon="sparkles" sub="Open a channel. Approve puts the idea on the calendar and Sienna writes the script within 30 minutes; Reject keeps it in the history." />
+          <div className="space-y-2">
+            {d.needs.ideas.filter((g) => g.items.length).map((g) => {
+              const left = g.items.filter((i) => !gone[i.id]).length;
+              return (
+                <details key={g.key} className="group rounded-2xl border border-line bg-surface shadow-card">
+                  <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 sm:px-5 [&::-webkit-details-marker]:hidden">
+                    <span className="min-w-0 flex-1 truncate text-[15px] font-semibold text-fg">{g.label}</span>
+                    <span className={cx('tabular shrink-0 rounded-full px-2 text-xs font-semibold leading-6', left ? 'bg-accent-soft text-accent-ink' : 'bg-sunken text-muted')}>{left} to approve</span>
+                    <Icon name="chevronDown" size={18} className="shrink-0 text-muted transition group-open:rotate-180" />
+                  </summary>
+                  <div className="space-y-3 border-t border-line p-3 sm:p-4">
+                    {g.items.map((i) => <IdeaCard key={i.id} idea={i} done={gone[i.id]} onDone={(msg) => setGone((x) => ({ ...x, [i.id]: msg }))} />)}
+                  </div>
+                </details>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {d.needs.finals.length > 0 && (
         <section>
@@ -278,67 +299,11 @@ function FridayCard({ it, n, of, raw }: { it: FridayIdea; n: number; of: number;
       {it.thumbnail && <Block label="Thumbnail idea"><p className="text-[17px] text-fg">{it.thumbnail}</p></Block>}
       {!raw && (
         <Block label="Gamma (on screen)">
-          {it.gammaUrl && <p className="mb-2"><ExtLink href={it.gammaUrl}>Open the Gamma doc</ExtLink></p>}
-          {it.gamma ? <div className="whitespace-pre-wrap break-words text-[15px] leading-7 text-fg-2">{it.gamma}</div> : <p className="text-[15px] text-muted">No Gamma outline yet.</p>}
-          {!it.gammaUrl && it.gamma && <p className="mt-2 text-xs text-muted">Outline only: real Gamma docs are not made yet.</p>}
+          <GammaBlock gamma={it.gamma} gammaUrl={it.gammaUrl} scriptReady={it.scriptReady} />
         </Block>
       )}
       <div className="mt-6"><Button icon="list" onClick={() => go(`content/items/${it.id}`)}>See this video's steps</Button></div>
     </Card>
-  );
-}
-
-/* ---------- This week ---------- */
-function Stat({ label, n, target }: { label: string; n: number; target: number }) {
-  const pct = target ? Math.min(100, Math.round((n / target) * 100)) : 0;
-  return (
-    <div>
-      <div className="flex items-baseline justify-between gap-2"><span className="text-sm text-fg-2">{label}</span><span className="tabular text-sm"><span className={cx('text-lg font-bold', n >= target ? 'text-good' : 'text-fg')}>{n}</span><span className="text-muted"> / {target}</span></span></div>
-      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuemin={0} aria-valuemax={target} aria-valuenow={n} aria-label={label}><div className={cx('h-full rounded-full', n >= target ? 'bg-accent' : 'bg-line-strong')} style={{ width: `${pct}%` }} /></div>
-    </div>
-  );
-}
-function WeekView({ d }: { d: ContentCenterView }) {
-  return (
-    <div className="space-y-8">
-      <section>
-        <Head title={`This week · ${day(d.week.start)} to ${day(d.week.end)}`} icon="activity" sub="Each channel against its weekly target." />
-        <div className="grid gap-3 md:grid-cols-2">
-          {d.week.channels.map((c) => (
-            <Card key={c.key}>
-              <div className="flex items-center justify-between"><div className="text-[15px] font-semibold text-fg">{c.label}</div><span className="text-xs text-muted">target {c.target} a week</span></div>
-              <div className="mt-4 space-y-3">
-                <Stat label={`Ideas proposed${c.proposed ? ` (Sienna ${c.bySienna})` : ''}`} n={c.proposed} target={c.ideaTarget} />
-                <Stat label="Approved (recording this week)" n={c.approved} target={c.target} />
-                <Stat label="Recorded" n={c.recorded} target={c.target} />
-                <Stat label="Posted (with proof)" n={c.posted} target={c.target} />
-              </div>
-            </Card>
-          ))}
-        </div>
-      </section>
-      <section>
-        <Head title="Data problems" icon="alert" sub="Problem, then the decision and who owns it, then what supports it." right={<span className="tabular shrink-0 text-xs text-muted">{d.notes.length}</span>} />
-        {d.notes.length ? <Notes notes={d.notes} /> : <Card><Empty icon="check" tone="good" title="No data problems found" /></Card>}
-      </section>
-      <section className="space-y-3">
-        <Head title="How it runs" icon="layers" />
-        <details className="rounded-2xl border border-line bg-surface px-4 py-3 text-sm shadow-card sm:px-5">
-          <summary className="flex min-h-9 cursor-pointer items-center font-semibold text-fg">Which step runs where</summary>
-          <ul className="mt-2 list-disc space-y-1.5 pl-5 leading-relaxed text-fg-2">
-            <li><span className="font-medium text-fg">Ideas:</span> Sienna (Friday 7 AM) and the Reddit intakes (Saturday 9 AM) add them for you to decide.</li>
-            <li><span className="font-medium text-fg">Approve in HQ:</span> sets the decision, the stage and the record and publish dates, the same as the Content Center. Sienna then writes the script, hooks, titles, thumbnail idea and Gamma outline.</li>
-            <li><span className="font-medium text-fg">Frame.io, OpusClip, posts:</span> the Content Center's buttons start the n8n flows.</li>
-            <li><span className="font-medium text-fg">Thumbnail, YouTube details, clip review:</span> Content Center buttons (n8n).</li>
-            <li><span className="font-medium text-fg">Posting:</span> by hand. HQ never posts or schedules.</li>
-          </ul>
-        </details>
-        <details className="rounded-2xl border border-line bg-surface px-4 py-3 text-sm shadow-card sm:px-5">
-          <summary className="flex min-h-9 cursor-pointer items-center font-semibold text-fg">Clean-up for Riley (the same job twice)</summary>
-          <ul className="mt-2 list-disc space-y-1.5 pl-5 leading-relaxed text-fg-2">{d.overlaps.map((o) => <li key={o}>{o}</li>)}</ul>
-        </details>
-      </section>
-    </div>
   );
 }
 
