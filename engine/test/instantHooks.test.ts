@@ -298,13 +298,13 @@ test('kick: a burst of kicks while a tick runs = one more tick, not ten', async 
 });
 
 // ---------- Backup sweeps instead of timers ----------
-test('backup sweep: old timer until the webhook has a secret, then every 6 hours (env, 0 = off)', { skip }, async () => {
+test('backup sweep: old timer until the webhook has a secret, then every hour (env, 0 = off)', { skip }, async () => {
   const legacy = legacyConf({ seanEveryMin: 5, rileyOn: true, rileyEveryMin: 15 });
   assert.equal(isInstant(legacy, 'sean.draft'), false);
   assert.equal(sweepEveryMin(legacy, 'sean.draft'), 5, 'no secret yet: the old timer stays (nothing breaks before set-up)');
   assert.equal(sweepEveryMin(legacy, 'decisions.loop'), 0.5);
   assert.equal(isInstant(cfg, 'sean.draft'), true);
-  assert.equal(sweepEveryMin(cfg, 'sean.draft'), 360, 'default 6 hours');
+  assert.equal(sweepEveryMin(cfg, 'sean.draft'), 60, 'default 1 hour (Alex 2026-11-28)');
   assert.equal(sweepEveryMin(conf({ [backupEnvName('sean.draft')]: '0' }), 'sean.draft'), 0);
   assert.equal(backupEnvName('sean.draft'), 'SEAN_DRAFT_BACKUP_EVERY_MIN');
   assert.equal(backupEnvName('decisions.loop'), 'DECISIONS_LOOP_BACKUP_EVERY_MIN');
@@ -315,13 +315,13 @@ test('backup sweep: old timer until the webhook has a secret, then every 6 hours
   assert.equal(await seanTick(db, only(cfg), t0), 2, 'backup sweep: Echo + due follow-ups');
   assert.equal(await seanTick(db, only(cfg), t0 + 5 * 60_000), 0, 'not again 5 minutes later (the old timer would have)');
   await db.query(`UPDATE jobs SET status='succeeded'`);
-  assert.equal(await seanTick(db, only(cfg), t0 + 61 * 60_000), 1, 'follow-ups: their due-time check every hour');
+  assert.equal(await seanTick(db, only(cfg), t0 + 61 * 60_000), 2, 'the next hourly slot: Echo backup + follow-ups due-time check');
   await db.query(`UPDATE jobs SET status='succeeded'`);
-  assert.equal(await seanTick(db, only(cfg), t0 + 6 * 3_600_000), 2, 'the next 6-hour slot');
-  assert.ok((await jobs('sean.draft')).every((j) => j.request_id.startsWith('backup:sean.draft:360:')));
+  assert.equal(await seanTick(db, only(cfg), t0 + 6 * 3_600_000), 2, 'a later hourly slot');
+  assert.ok((await jobs('sean.draft')).every((j) => j.request_id.startsWith('backup:sean.draft:60:')));
   assert.equal(await seanTick(db, conf({ SEAN_DRAFT_BACKUP_EVERY_MIN: '0', SEAN_FOLLOWUP_EVERY_MIN: '0' }), t0 + 12 * 3_600_000), 0, '0 = off');
   await db.query('TRUNCATE jobs RESTART IDENTITY CASCADE');
-  // The other sweeps: one per 6 hours, then nothing until the next slot.
+  // The other sweeps: one per hour, then nothing until the next slot.
   const quiet = { ...cfg, atlasOn: false, siennaOn: true, hqSessionSecret: undefined } as Config;
   const n1 = await agentsTick(db, quiet, new Date(t0));
   assert.ok(n1 >= 4, `campaign.pipeline, sales.won_sync, riley.collect, cole.review, sienna.prep: ${n1}`);

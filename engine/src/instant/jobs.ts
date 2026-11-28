@@ -52,7 +52,7 @@ export function sweepEveryMin(cfg: Config, key: string): number {
   const j = instantJob(key);
   if (!j) return 0;
   if (!isInstant(cfg, key)) return Math.max(0, j.legacyEveryMin(cfg) || 0);
-  return Math.max(0, cfg.backupEveryMin?.[key] ?? 360);
+  return Math.max(0, cfg.backupEveryMin?.[key] ?? 60);
 }
 
 // On switches (an old *_EVERY_MIN > 0 still means on, so a server that had the timer keeps the agent on).
