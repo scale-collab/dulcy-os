@@ -80,22 +80,36 @@ export function parseMailbox(o: any): { domain: string; monthly: number | null; 
   return { domain, status: str(firstOf(o, ['status', 'state'])).toLowerCase(), monthly: priceOf(o, ['price_cents', 'monthly_price_cents', 'monthly_cost_cents', 'price.monthly_cents'], ['price', 'monthly_price', 'monthly_cost']) };
 }
 
-/** Read every page of a list endpoint (GET only), bounded. */
+/** Request headers for the key. */
+const authHeaders = (c: CheapInboxesConfig): Record<string, string> => (c.authHeader ? { [c.authHeader]: c.apiKey } : { authorization: `Bearer ${c.apiKey}` });
+async function getJson(c: CheapInboxesConfig, url: string, f: typeof fetch): Promise<any> {
+  const res = await f(url, { method: 'GET', headers: { accept: 'application/json', ...authHeaders(c) }, signal: AbortSignal.timeout(20_000) });
+  if (res.status === 401 || res.status === 403) throw new Error(`Cheap Inboxes refused the key (HTTP ${res.status})`);
+  if (!res.ok) throw new Error(`Cheap Inboxes: HTTP ${res.status} on ${url.replace(c.baseUrl, '').split('?')[0]}`);
+  return res.json().catch(() => null);
+}
+export const CI_PAGE = 100;
+/** Read every page of a list endpoint (GET only), bounded. Cheap Inboxes pages with limit/offset and
+ *  returns pagination.total (verified 2026-11-28: the first version read only the first 100 domains). */
 async function pages(c: CheapInboxesConfig, path: string, f: typeof fetch): Promise<any[]> {
   const out: any[] = [];
-  const headers: Record<string, string> = c.authHeader ? { [c.authHeader]: c.apiKey } : { authorization: `Bearer ${c.apiKey}` };
-  for (let page = 1; page <= CI_MAX_PAGES; page++) {
-    const res = await f(`${c.baseUrl}${path}?page=${page}&per_page=100&limit=100`, { method: 'GET', headers: { accept: 'application/json', ...headers }, signal: AbortSignal.timeout(20_000) });
-    if (res.status === 401 || res.status === 403) throw new Error(`Cheap Inboxes refused the key (HTTP ${res.status})`);
-    if (!res.ok) throw new Error(`Cheap Inboxes: HTTP ${res.status} on ${path}`);
-    const body = await res.json().catch(() => null);
+  for (let page = 0; page < CI_MAX_PAGES; page++) {
+    const offset = page * CI_PAGE;
+    const body = await getJson(c, `${c.baseUrl}${path}?limit=${CI_PAGE}&offset=${offset}`, f);
     const rows = listOf(body);
     out.push(...rows);
-    const more = body?.meta?.next_page ?? body?.next_page ?? body?.pagination?.next ?? body?.links?.next ?? (body?.has_more === true ? page + 1 : null);
-    const last = Number(body?.meta?.last_page ?? body?.last_page ?? body?.pagination?.total_pages ?? 0);
-    if (!rows.length || (!more && !(last && page < last))) break;
+    const total = Number(body?.pagination?.total ?? body?.meta?.total ?? body?.total ?? NaN);
+    if (!rows.length || rows.length < CI_PAGE) break;
+    if (Number.isFinite(total) && offset + rows.length >= total) break;
   }
   return out;
+}
+/** The per-mailbox monthly price (dollars) for `active` mailboxes, from the pricing tiers. Pure. */
+export function tierPrice(body: any, active: number): number | null {
+  const tiers: any[] = Array.isArray(body?.tiers) ? body.tiers : [];
+  const t = tiers.find((x) => active >= Number(x?.minQty ?? 0) && (x?.maxQty === null || x?.maxQty === undefined || active <= Number(x.maxQty)));
+  const cents = Number(t?.priceCents ?? body?.basePriceCents);
+  return Number.isFinite(cents) && cents > 0 ? cents / 100 : null;
 }
 
 /** Domains + mailboxes → one index by domain. Never throws: the error is in `error`. */
@@ -119,7 +133,14 @@ export async function readCheapInboxes(c: CheapInboxesConfig, f: typeof fetch = 
       if (x.priced) d.monthly = Math.round((x.sum / x.priced) * 100) / 100;
       domains.set(domain, d);
     }
-    const mailboxPrice = prices.length ? Math.round((prices.reduce((a, b) => a + b, 0) / prices.length) * 100) / 100 : null;
+    let mailboxPrice = prices.length ? Math.round((prices.reduce((a, b) => a + b, 0) / prices.length) * 100) / 100 : null;
+    // Mailbox records carry no price: the price is the volume tier for the active mailbox count.
+    if (mailboxPrice === null) {
+      const active = ms.filter((o) => !/cancel|inactive|deleted/.test(str(firstOf(o, ['status', 'state'])).toLowerCase())).length;
+      const body = await getJson(c, `${c.baseUrl}/discovery/pricing/mailboxes`, f).catch(() => null);
+      mailboxPrice = tierPrice(body, active);
+      if (mailboxPrice !== null) for (const d of domains.values()) if (d.monthly === null && d.mailboxes) d.monthly = mailboxPrice;
+    }
     return { domains, mailboxPrice, readAt: new Date().toISOString(), error: '' };
   } catch (e) {
     return { domains, mailboxPrice: null, readAt: new Date().toISOString(), error: String((e as Error).message ?? e).slice(0, 200) };

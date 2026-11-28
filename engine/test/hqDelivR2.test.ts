@@ -136,7 +136,7 @@ test('Cheap Inboxes: read-only, optional key, tolerant parsing, never throws', a
   const calls: { url: string; method: string; auth: string }[] = [];
   const fake = (async (u: string, init: any) => {
     calls.push({ url: u, method: init.method, auth: init.headers.authorization ?? init.headers['X-API-Key'] ?? '' });
-    const page = Number(new URL(u).searchParams.get('page'));
+    const page = Number(new URL(u).searchParams.get('offset')) === 0 ? 1 : 2;
     if (u.includes('/domains')) return new Response(JSON.stringify({ data: page === 1 ? [{ domain: 'acme-mail.com', renewal_date: '2027-01-15' }] : [], meta: { last_page: 1 } }));
     return new Response(JSON.stringify({ data: [{ email: 'a@acme-mail.com', monthly_price: '3.00' }, { email: 'b@acme-mail.com', monthly_price: 3 }] }));
   }) as unknown as typeof fetch;
