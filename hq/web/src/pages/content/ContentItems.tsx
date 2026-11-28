@@ -12,12 +12,15 @@
 // does each one the Content Center's way). The video page also has the YouTube copy and Distribution.
 // "Ask Sienna now" puts a task on Sienna's list (POST /fix-it). HQ never posts; it schedules only when Alex
 // presses Schedule on an approved Instagram / YouTube Shorts post. No Airtable record links (RULES 2026-11-27).
+// 2026-11-28: the final review (full video + each final clip: Approve / Request changes, ContentReview.tsx),
+// the Gamma link box, and "Make the resource" (#/content/items/<rec>/resource, ContentResource.tsx).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, type ContentCcStage, type ContentCenterView, type ContentItem, type ContentItemDetail, type ContentStep, type ContentStepButton } from '../../api';
 import type { ReactNode } from 'react';
 import { BackLink, Button, Card, cx, Empty, ErrorBox, ExtLink, go, Icon, Pill } from '../../ui';
 import { CHANNEL_OPTIONS, DecideButtons, GammaBlock, Head, Select, StatusLine, WHERE, copyText, dateOnly, day, readChannel, saveChannel, shortLabel, type ChannelKey } from './shared';
 import { Distribution, RunButton, YouTubeCopy } from './ContentActions';
+import { FinalReview, GammaBox } from './ContentReview';
 
 const stageTone = (s: ContentCcStage) => (s === 'Published' ? 'good' : s === 'Idea' ? 'accent' : 'plain') as 'good' | 'accent' | 'plain';
 /** "Record 11/27 · Publish 12/1", or "Posted 11/27" once it is on YouTube. */
@@ -138,6 +141,7 @@ function StepAction({ b, r, primary, onScript, onDone, detail, onDistribution }:
   if (b.kind === 'openScript') return <Button tone={primary ? 'primary' : 'quiet'} icon="file" onClick={onScript}>{b.label}</Button>;
   if (b.kind === 'run') return <RunButton id={r.id} b={b} primary={primary} onDone={onDone} detail={detail} />;
   if (b.kind === 'distribution') return <Button tone={primary ? 'primary' : 'quiet'} icon="send" onClick={onDistribution}>{b.label}</Button>;
+  if (b.kind === 'resource') return <Button tone={primary ? 'primary' : 'quiet'} icon="file" onClick={() => go(`content/items/${r.id}/resource`)}>{b.label}</Button>;
   if (b.kind === 'copyGamma') {
     const copy = async () => setCopied((await copyText(r.prep?.gamma ?? '')) ? 'Copied. In Gamma: Create → Paste in text.' : 'Copy did not work here: open the script below and copy the outline.');
     return <>{<Button tone={primary ? 'primary' : 'quiet'} icon="file" onClick={() => void copy()}>{b.label}</Button>}{copied && <span role="status" className="w-full text-sm text-good">{copied}</span>}</>;
@@ -255,6 +259,10 @@ function Item({ r, d, onChanged }: { r: ContentItem; d: ContentCenterView; onCha
 
       {/* 3b. Round 5: the YouTube title and description to copy (after "Prepare YouTube details") */}
       {detail && !f.video.youtube && <YouTubeCopy d={detail} />}
+
+      {/* 3c. 2026-11-28: the final review (full video + final clips) and the Gamma box / resource */}
+      {detail && <FinalReview id={r.id} d={detail} reload={() => { loadDetail(); onChanged(); }} />}
+      {detail && (main || detail.gamma?.outline || detail.gamma?.url) && <GammaBox key={detail.gamma?.url ?? ''} id={r.id} d={detail} reload={loadDetail} />}
 
       {/* 4. Every step of this video, in order, each with its HQ button */}
       <section>
