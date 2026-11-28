@@ -107,7 +107,7 @@ const card = (name: string, balance: number): CardDebt => ({ card: name, dueDate
 test('finances: Robinhood and Discover cards are Personal; every other card stays Company', () => {
   const s = splitCards([card('Amex Business', 300), card('Robinhood Gold', 120.5), card('DISCOVER it', 80), card('Chase Ink', 200)]);
   assert.deepEqual(s.company.map((c) => c.card), ['Amex Business', 'Chase Ink']);
-  assert.deepEqual(s.personal.map((c) => c.card), ['Robinhood Gold', 'DISCOVER it']);
+  assert.deepEqual(s.personal.map((c) => [c.card, c.key]), [['Robinhood Gold', 'robinhood'], ['DISCOVER it', 'discover']]);
   assert.deepEqual([s.companyTotals.balance, s.personalTotals.balance, s.personalTotals.minimum], [500, 200.5, 50]);
   const fin: Finance = {
     sheet: { billing: [], cards: [card('Amex Business', 300), card('Robinhood Gold', 120.5)], cardTotals: { statement: 420.5, balance: 420.5, minimum: 50 } },
@@ -118,8 +118,9 @@ test('finances: Robinhood and Discover cards are Personal; every other card stay
   assert.deepEqual(v.company.xero!.map((m) => [m.label, m.income, m.costs, m.net]), [['This month so far', 7100, 3100, 4000], ['Last month', 6900, 2900, 4000]]);
   assert.deepEqual(v.company.cards!.map((c) => c.card), ['Amex Business']);
   assert.deepEqual(v.personal.cards!.map((c) => c.card), ['Robinhood Gold']);
+  assert.equal(v.personal.expenses, null, 'no Home block on this sheet: no personal expenses');
   assert.match(v.sources.income, /Xero/);
-  assert.match(v.sources.personalRule, /Robinhood or Discover/);
+  assert.match(v.sources.personalRule, /Robinhood and Discover/);
   const none = financesView({ sheet: null, xero: null, errors: ['Xero is not connected on the server'], readAt: '' }, 0);
   assert.deepEqual([none.company.xero, none.company.cards, none.personal.cards, none.errors], [null, null, null, ['Xero is not connected on the server']]);
   assert.deepEqual(topLines([{ section: 'Operating Expenses', name: 'Software', amount: 900 }, { section: 'Operating Expenses', name: 'Nothing', amount: 0 }, { section: 'Cost of Sales', name: 'Inboxes', amount: 1200.456 }]).map((l) => [l.name, l.amount]), [['Inboxes', 1200.46], ['Software', 900]]);

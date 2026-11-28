@@ -11,7 +11,7 @@ import { createCipheriv, createDecipheriv, hkdfSync, randomBytes, createHash } f
 import type { Db } from '../db/pool.js';
 import type { Config } from '../config.js';
 import { createPlaidClient, plaidItemGone, type PlaidAccount, type PlaidAccountsResponse, type PlaidClient, type PlaidLiabilitiesResponse } from '../providers/plaid.js';
-import { PERSONAL_CARD_NAMES } from './finance.js';
+import { personalCardKey, type PersonalCardKey } from './finance.js';
 
 export const NOT_CONNECTED = 'Personal cards are not connected yet';
 export const PERSONAL_CACHE_MS = 60 * 60_000;
@@ -58,8 +58,8 @@ export interface PersonalTotals { cards: number; cardBalance: number; statement:
 export interface PersonalView {
   configured: boolean; message: string | null; env: 'sandbox' | 'production';
   connections: PersonalConnection[]; totals: PersonalTotals | null;
-  /** P/L sheet card names (robinhood, discover) a linked account now stands in for. */
-  replaces: string[];
+  /** P/L sheet personal cards (their keys: robinhood, discover, amex gold…) a linked account now stands in for. */
+  replaces: PersonalCardKey[];
   readAt: string;
 }
 
@@ -91,9 +91,18 @@ export function personalTotals(connections: PersonalConnection[]): PersonalTotal
   return { cards: cards.length, cardBalance: sum(cards.map((a) => a.current)), statement: sum(cards.map((a) => a.statement)), minimum: sum(cards.map((a) => a.minimum)), cash: sum(all.filter((a) => a.type === 'depository').map((a) => a.current)) };
 }
 
-/** Which P/L sheet rows (Robinhood, Discover) a linked institution or account now replaces. Pure. */
-export function sheetReplaced(connections: Pick<PersonalConnection, 'institution' | 'accounts' | 'error'>[]): string[] {
-  return PERSONAL_CARD_NAMES.filter((k) => connections.some((c) => !c.error && c.accounts.length > 0 && [c.institution, ...c.accounts.map((a) => a.name)].some((n) => n.toLowerCase().includes(k))));
+/**
+ * Which P/L sheet personal cards a linked account now replaces: the same name match as the sheet
+ * (personalCardKey), on the account name alone and with its institution in front ("American Express"
+ * + "Gold Card" = Amex Gold). A connection that failed, or has no accounts, replaces nothing. Pure.
+ */
+export function sheetReplaced(connections: Pick<PersonalConnection, 'institution' | 'accounts' | 'error'>[]): PersonalCardKey[] {
+  const keys = new Set<PersonalCardKey>();
+  for (const c of connections) {
+    if (c.error || !c.accounts.length) continue;
+    for (const a of c.accounts) for (const n of [a.name, `${c.institution} ${a.name}`]) { const k = personalCardKey(n); if (k) keys.add(k); }
+  }
+  return [...keys];
 }
 
 /** A Plaid failure as one line for Alex (the message never carries a token). */

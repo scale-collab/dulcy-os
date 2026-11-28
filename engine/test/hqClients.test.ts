@@ -149,7 +149,7 @@ const SHEET: string[][] = [
   ['', '', '', '', '', '', '', '', '', '', 'New Lead Inc', '', 'COMMAS', '$900', ''],
   ['', '', '', '', '', '', '', '', '', '', 'Revenue', '$1,500.00'],
 ];
-test('P/L sheet: billing lines and card debts found by their headers; personal lines never read out', () => {
+test('P/L sheet: billing lines and card debts found by their headers; personal lines only from the Home block (Round 5)', () => {
   assert.equal(money(' $ 1,234.50 '), 1234.5);
   assert.equal(money('-$1,664.26'), -1664.26);
   assert.equal(money(''), null);
@@ -157,12 +157,15 @@ test('P/L sheet: billing lines and card debts found by their headers; personal l
   assert.deepEqual(p.billing.map((b) => [b.name, b.monthly, b.perCall, b.day, b.processor]), [['Acme Co', 1000, 0, '1st', 'COMMAS'], ['Acme Co (Assets)', 500, 75, '8th', 'COMMAS'], ['Scroll Stop', 0, 80, '30th', 'WISE'], ['New Lead Inc', 0, 900, '', 'COMMAS']], 'no "Systems" (no amount), stops at Revenue');
   assert.deepEqual(p.cards.map((c) => [c.card, c.dueDate, c.statement, c.balance, c.minimum, c.available]), [['Card One', '12/10/2026', 100, 110.5, 40, 500], ['Card Two', '12/8/2026', 1000, -5, 0, -1664.26]], 'stops at the total row');
   assert.deepEqual(p.cardTotals, { statement: 1100, balance: 105.5, minimum: 40 });
-  assert.ok(!JSON.stringify(p).includes('Personal line'), 'only the two owner blocks');
+  // Round 5 (Alex 2026-11-28): the personal expenses go to Finances → Personal (owner only); the
+  // left-most column (due days, notes) is never read out.
+  assert.deepEqual(p.personal!.lines.map((l) => [l.name, l.amount]), [['Personal line', 1]]);
+  assert.ok(!JSON.stringify(p.personal).includes('"9"'), 'the left-most column is not read');
   const m = billingByClient(p.billing, ['acmeco', 'globalmediagroupltd'], clientKey, SHEET_ALIASES);
   assert.deepEqual(m.matched.get('acmeco'), [{ label: 'Monthly', monthly: 1000, perCall: 0 }, { label: 'Assets', monthly: 500, perCall: 75 }]);
   assert.deepEqual(m.matched.get('globalmediagroupltd'), [{ label: 'Per call', monthly: 0, perCall: 80 }], 'Scroll Stop = Global Media Group');
   assert.deepEqual(m.unmatched.map((x) => x.name), ['New Lead Inc']);
-  assert.deepEqual(parsePnlSheet([['nothing here']]), { billing: [], cards: [], cardTotals: { statement: 0, balance: 0, minimum: 0 } });
+  assert.deepEqual(parsePnlSheet([['nothing here']]), { billing: [], cards: [], cardTotals: { statement: 0, balance: 0, minimum: 0 }, personal: null });
 });
 
 test('call feedback and onboarding: per client; secrets never; members miss the money answers', () => {
