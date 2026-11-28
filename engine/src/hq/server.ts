@@ -55,7 +55,7 @@ import { numbersView, resolvePeriod } from './salesPeriods.js';
 import { closeFunnel, closePipeline, readCloseRange } from './salesClose.js';
 import { pricingView } from './pricing.js';
 import { agentConversation, agentConversations } from './agentTalk.js';
-import { createInDulcySign, draftForm, saveDraft } from './contracts.js';
+import { createInDulcySign, draftForm, pullFromClose, saveDraft } from './contracts.js';
 // Phone notifications (Web Push), Alex 2026-11-27.
 import { kickFlush, notifyChatReply, pushRoute, webPushSender, type PushSender } from './push.js';
 // Finances → Personal through Plaid (read only, owner only), Alex 2026-11-28.
@@ -664,14 +664,18 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
           json(res, 200, { settings: await saveCapacitySettings(db, await readJson(req, 2_000), user.name) });
           return true;
         }
-        m = p.match(/^\/hq\/api\/sales\/(rec[A-Za-z0-9]{14})\/contract$/) ?? p.match(/^\/hq\/api\/sales\/(rec[A-Za-z0-9]{14})\/contract\/create$/);
+        m = p.match(/^\/hq\/api\/sales\/(rec[A-Za-z0-9]{14})\/contract$/) ?? p.match(/^\/hq\/api\/sales\/(rec[A-Za-z0-9]{14})\/contract\/(create|close)$/);
         if (m) {
           const create = p.endsWith('/create');
+          const fromClose = p.endsWith('/close');
           const now = Date.now();
           const { deals } = await allDeals(needAt(), db, false, now, extras);
           const deal = deals.find((d) => d.id === m![1] || d.salesRec === m![1] || d.agreements.some((a) => a.id === m![1]));
           if (!deal) { json(res, 404, { error: 'no such deal' }); return true; }
-          if (!create && req.method === 'GET') { json(res, 200, await draftForm(db, deal, nyDay(now))); return true; }
+          // Round 5: "Pull from Close" reads the deal's Close lead (never writes; the form is saved separately).
+          if (fromClose && req.method === 'GET') { const r = await pullFromClose(sales.close, deal, url.searchParams.get('type')); json(res, r.status, r.body); return true; }
+          if (fromClose) { json(res, 405, { error: 'method not allowed' }); return true; }
+          if (!create && req.method === 'GET') { json(res, 200, await draftForm(db, deal, nyDay(now), !!sales.close)); return true; }
           if (!create && req.method === 'POST') { const r = await saveDraft(db, deal, await readJson(req, 20_000), user.name, nyDay(now)); json(res, r.status, r.body); return true; }
           if (create && req.method === 'POST') { const b = await readJson(req, 2_000); const r = await createInDulcySign(needAt(), db, deal, Number(b.draftId), user.name, nyDay(now)); json(res, r.status, r.body); return true; }
           json(res, 405, { error: 'method not allowed' }); return true;
