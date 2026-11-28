@@ -1,6 +1,9 @@
 // Content → "Calendar" (Batch 5, 2026-11-27): the Content Center's "Recording and publishing calendar".
 // Record days and publish days per month, filter by date kind and channel, and the active items that
 // have no date yet. Ideas still waiting for a decision are left out, like the Content Center does.
+// Round 4 (2026-11-28): a video on YouTube shows on the day it was POSTED (YouTube Published At, else
+// Publish Date, else its YouTube page's date: the engine's postedOn), never under "No date yet" just
+// because its plan dates were never filled ("Outbound Funnel Math", posted 11/27). Dates use slashes.
 // From a tablet up it is a month grid; on a phone, a list of the days that have something on them.
 // Tap an item to open it in Content. Read only.
 import { useMemo, useState } from 'react';
@@ -8,7 +11,7 @@ import type { ContentCenterView, ContentItem } from '../../api';
 import { Card, cx, Empty, go, IconButton } from '../../ui';
 import { CHANNEL_OPTIONS, Head, Select, day, readChannel, saveChannel, shortLabel, todayEt, type ChannelKey } from './shared';
 
-type Kind = 'Record' | 'Publish';
+type Kind = 'Record' | 'Publish' | 'Posted';
 type DateFilter = 'all' | 'recording' | 'publish';
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -26,11 +29,15 @@ export default function ContentCalendar({ d }: { d: ContentCenterView }) {
     const add = (k: string, r: ContentItem, kind: Kind) => m.set(k, [...(m.get(k) ?? []), { r, kind }]);
     for (const r of active) {
       if (r.recordingDate && filter !== 'publish') add(r.recordingDate, r, 'Record');
-      if (r.publishDate && filter !== 'recording') add(r.publishDate, r, 'Publish');
+      // Posted: the posted day replaces the planned publish day.
+      if (r.posted) { if (r.postedDate && filter !== 'recording') add(r.postedDate, r, 'Posted'); }
+      else if (r.publishDate && filter !== 'recording') add(r.publishDate, r, 'Publish');
     }
     return m;
   }, [active, filter]);
-  const unscheduled = active.filter((r) => (filter === 'recording' ? !r.recordingDate : filter === 'publish' ? !r.publishDate : !r.recordingDate && !r.publishDate));
+  const pub = (r: ContentItem) => (r.posted ? r.postedDate : r.publishDate);
+  // A posted video has nothing left to record: it is never "no recording date".
+  const unscheduled = active.filter((r) => (filter === 'recording' ? !r.recordingDate && !r.posted : filter === 'publish' ? !pub(r) : !r.recordingDate && !pub(r)));
   const start = new Date(month); start.setUTCDate(1 - month.getUTCDay());
   const grid = Array.from({ length: 42 }, (_, i) => { const x = new Date(start); x.setUTCDate(start.getUTCDate() + i); return ymd(x); });
   const daysWithEvents = [...events.keys()].filter((k) => k.startsWith(monthKey)).sort();
@@ -39,7 +46,7 @@ export default function ContentCalendar({ d }: { d: ContentCenterView }) {
   const chip = (e: { r: ContentItem; kind: Kind }, i: number, small = false) => (
     <button key={`${e.r.id}-${e.kind}-${i}`} onClick={() => go(`content/items/${e.r.id}`)}
       className={cx('block w-full min-w-0 rounded-lg border text-left font-semibold leading-snug transition hover:shadow-card', small ? 'px-1.5 py-1 text-[11px]' : 'px-3 py-2 text-sm',
-        e.kind === 'Record' ? 'border-accent/30 bg-accent-soft text-accent-ink' : 'border-good/30 bg-good-soft text-good')}>
+        e.kind === 'Record' ? 'border-accent/30 bg-accent-soft text-accent-ink' : e.kind === 'Posted' ? 'border-line-strong bg-sunken text-fg' : 'border-good/30 bg-good-soft text-good')}>
       <span className={cx('block font-bold uppercase tracking-wider opacity-75', small ? 'text-[9px]' : 'text-[10px]')}>{e.kind}{!channel ? ` · ${shortLabel(e.r.channel)}` : ''}</span>
       <span className={cx('block break-words', small && 'line-clamp-2')}>{e.r.title}</span>
     </button>
@@ -47,10 +54,10 @@ export default function ContentCalendar({ d }: { d: ContentCenterView }) {
 
   return (
     <div>
-      <Head title="Recording and publishing calendar" icon="calendar" sub="Purple is when you record. Green is when it publishes. Tap one to open it." />
+      <Head title="Recording and publishing calendar" icon="calendar" sub="Purple is when you record. Green is when it publishes. Grey is when it was posted. Tap one to open it." />
       <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
         <Select label="Dates" value={filter} onChange={setFilter} className="sm:w-48"
-          options={[{ value: 'all', label: 'All dates' }, { value: 'recording', label: 'Recording dates' }, { value: 'publish', label: 'Publish dates' }]} />
+          options={[{ value: 'all', label: 'All dates' }, { value: 'recording', label: 'Recording dates' }, { value: 'publish', label: 'Publish and posted dates' }]} />
         <Select label="Channel" value={channel} options={CHANNEL_OPTIONS} onChange={(x) => { setChannel(x); saveChannel(x); }} className="sm:w-48" />
         <div className="col-span-2 flex items-center gap-1 sm:ml-auto">
           <IconButton icon="arrowLeft" label="Previous month" onClick={() => setOffset(offset - 1)} className="border border-line bg-surface" />
@@ -95,7 +102,7 @@ export default function ContentCalendar({ d }: { d: ContentCenterView }) {
             {unscheduled.slice(0, 12).map((r) => (
               <button key={r.id} onClick={() => go(`content/items/${r.id}`)} className="min-w-0 rounded-xl border border-warn/30 bg-warn-soft px-3 py-2.5 text-left">
                 <span className="block break-words text-sm font-semibold text-fg">{r.title}</span>
-                <span className="block text-xs text-muted">{r.cc} · {shortLabel(r.channel)}</span>
+                <span className="block text-xs text-muted">{r.posted ? 'Posted, no date saved' : r.cc} · {shortLabel(r.channel)}</span>
               </button>
             ))}
           </div>
