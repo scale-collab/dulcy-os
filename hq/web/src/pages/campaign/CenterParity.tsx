@@ -8,8 +8,8 @@ import { api, type SendingBoxR2 } from '../../api';
 import { Button, Card, cx, ErrorBox, go, Pill, SkeletonCard, showToast } from '../../ui';
 import { num, Sheet, slash, slashTime } from './shared';
 
-/** Delete campaign from HQ: off until Alex decides (RULES 2026-11-23: Delete stays in n8n for now). */
-const DELETE_IN_HQ = false;
+/** Delete campaign from HQ: on (Alex 2026-11-29, same as the Campaign Center). */
+const DELETE_IN_HQ = true;
 
 type Kind = 'text' | 'long' | 'number' | 'date' | 'bool' | 'select' | 'multi' | 'time' | 'json' | 'url';
 interface Def { kind: Kind; label: string; choices: string[] | null }
@@ -210,7 +210,6 @@ export function CampaignCenterSection({ id, section, onDone }: { id: string; sec
               does="Creates a Draft copy of this campaign with the reusable build only (client, strategy, copy, sequence, schedule, bounce settings). Never the lead list, inboxes, EmailBison identity or results: link those before building." />
             <DoButton label="Clear saved status" path={doPath} body={{ action: 'clear-status' }} disabled={ro || d.locked || !(d.saved.processing || d.saved.message || d.saved.error)} why={d.locked ? 'A step is running.' : 'Nothing saved to clear.'} onDone={reload}
               does="Clears Processing Status, Workflow Message and Workflow Error on this campaign. Engine fields are not changed and nothing is stopped." />
-            {/* Hidden until Alex decides (rule 2026-11-23: "Delete stays in n8n for now"). */}
             {DELETE_IN_HQ && <DoButton label="Delete" tone="danger" typed="DELETE" path={doPath} body={{ action: 'delete' }} disabled={ro || d.locked} why={d.locked ? 'A step is running.' : 'Only Alex can press this.'} onDone={() => go('campaigns')}
               does="Sends Delete to the Airtable automation (Bison Action = Delete): it deletes the EmailBison campaign first when there is one, then this Airtable record. This cannot be undone." />}
           </div>
@@ -436,6 +435,10 @@ export function ListCenterSection({ id, tab, onDone }: { id: string; tab: ListTa
           <h3 className="text-[15px] font-semibold text-fg">Campaign</h3>
           <LinkPicker current={d.linked[0] ?? ''} options={d.campaigns.map((c) => ({ id: c.id, label: c.name }))} disabled={ro} onPick={(campaignId) => send(doPath, { action: 'link-campaign', campaignId }).then((ok) => ok && reload())} empty="No campaign of this client yet." />
           {d.bisonListId && <p className="mt-2 text-sm text-muted">EmailBison list {d.bisonListId}</p>}
+          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
+            <DoButton label="Delete lead list" tone="danger" typed="DELETE" path={doPath} body={{ action: 'delete' }} disabled={ro || d.locked} why={why} onDone={() => go('campaigns/lists')}
+              does="Removes this lead list from the Airtable Lead Lists table, the same as the Lead List Center's Delete. External lists, campaigns and files are not deleted. This cannot be undone." />
+          </div>
           {(d.saved.processing || d.saved.message || d.saved.error) && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <span className="text-sm text-fg-2">Saved status: {d.saved.processing || 'none'}</span>

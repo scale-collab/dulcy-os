@@ -457,8 +457,7 @@ export async function campaignDo(at: HqAirtable, db: Db, cfg: Config, id: string
       return ok(`Draft copy "${values[CX.name]}" created without the lead list or inboxes; link them before building.`, { id: newId });
     }
     case 'delete': {
-      // Off until Alex decides (RULES 2026-11-23: Delete stays in n8n for now). HQ_CAMPAIGN_DELETE=on enables it.
-      if (process.env.HQ_CAMPAIGN_DELETE !== 'on') return refuse(403, 'Delete campaign is off in HQ for now: delete stays in n8n until Alex decides.');
+      // On in HQ (Alex 2026-11-29: "it should have a delete button, same as the Campaign Center").
       if (String(body?.typed ?? '').trim() !== 'DELETE') return refuse(400, 'Type DELETE to delete this campaign.');
       if (locked) return refuse(409, 'A step is running on this campaign: wait for its result.');
       // The automation fires when Bison Action becomes non-empty: clear an older action first (the screen does the same).
@@ -642,8 +641,8 @@ export async function createListByHand(at: HqAirtable, db: Db, body: any, actor:
 }
 
 // ---------- lead list actions ----------
-const LIST_DO = ['clear-status', 'use-thesis', 'verify-route', 'leadmagic', 'manual-qa', 'link-campaign'] as const;
-export async function listDo(at: HqAirtable, db: Db, id: string, body: any, actor: string): Promise<ParityResult> {
+const LIST_DO = ['clear-status', 'use-thesis', 'verify-route', 'leadmagic', 'manual-qa', 'link-campaign', 'delete'] as const;
+export async function listDo(at: HqAirtable & { remove?: (t: string, id: string) => Promise<void> }, db: Db, id: string, body: any, actor: string): Promise<ParityResult> {
   const action = String(body?.action ?? '') as (typeof LIST_DO)[number];
   if (!LIST_DO.includes(action)) return refuse(400, 'unknown action');
   if (body?.confirm !== true) return refuse(400, 'confirm: true is required');
@@ -688,6 +687,17 @@ export async function listDo(at: HqAirtable, db: Db, id: string, body: any, acto
       try { update = manualQaUpdate(f, next); } catch (e) { return refuse(409, (e as Error).message); }
       await write(update, { status: next });
       return ok(next === 'Passed' ? 'Manual QA approval and lead-list readiness saved together.' : `QA status saved: ${next || 'cleared'}.`);
+    }
+    case 'delete': {
+      // Same as the Lead List Center's Delete (Alex 2026-11-29): removes only this Airtable Lead Lists
+      // record; external lists, campaigns and files are not deleted. Typed DELETE, nothing running.
+      if (String(body?.typed ?? '').trim() !== 'DELETE') return refuse(400, 'Type DELETE to delete this lead list.');
+      if (locked) return refuse(409, 'A step is running on this list: wait for its result.');
+      if (!at.remove) return refuse(503, 'Deleting is not available on this server. Nothing was deleted.');
+      await at.remove(LEAD_LISTS_T, id);
+      await audit(db, actor, 'list-delete', id, { list: name });
+      _resetCampaignsCache();
+      return ok(`"${name}" was deleted from Airtable. External lists, campaigns and files were not touched.`);
     }
     case 'link-campaign': {
       const cid = String(body?.campaignId ?? '');
