@@ -228,12 +228,13 @@ export interface SalesDealLite {
   id: string; name: string; company: string; stage: SalesStage; stageLabel: string; airtableStage: string; callDate: string; lost: boolean; signedDay: string;
   agreementState: AgreementState | null; client: string; needs: SalesAction[]; monthly?: number | null;
 }
-export interface SalesRate { n: number; of: number; text: string }
-export interface SalesMonth { month: string; label: string; booked: number; showed: number; closed: number; mrr?: number; mrrUnknown?: number }
+export interface SalesRate { n: number; of: number; text: string; pct?: number | null }
+export interface SalesConversion { from: string; to: string; n: number; of: number; pct: number | null }
+export interface SalesMonth { month: string; label: string; booked: number; showed: number; closed: number; showRate?: SalesRate; closeRate?: SalesRate; mrr?: number; mrrUnknown?: number }
 export interface SalesNote { problem: string; data: string; fix: string; why: string; owner: string }
 export interface SalesView {
   today: string; top: { thisMonth: SalesMonth; lastMonth: SalesMonth }; action: SalesDealLite[];
-  pipeline: { days: number; from: string; deals: number; canceled: number; upcoming: number; stages: { key: SalesStage; label: string; count: number; deals: SalesDealLite[] }[]; showRate: SalesRate; qualifiedRate: SalesRate; closeRate: SalesRate };
+  pipeline: { days: number; from: string; deals: number; canceled: number; upcoming: number; stages: { key: SalesStage; label: string; count: number; deals: SalesDealLite[] }[]; showRate: SalesRate; qualifiedRate: SalesRate; closeRate: SalesRate; conversions?: SalesConversion[]; overall?: SalesRate };
   notes: SalesNote[]; counts: { action: number; deals: number }; readAt: string; limits: { unsignedDays: number; callDays: number; contractDays: number };
 }
 export interface SalesAgreement {
@@ -264,7 +265,9 @@ export type DealType = 'retainer' | 'per_call' | 'both' | 'unknown';
 export interface ClientInsight { problem: string; decision: string; support: string }
 export type ResultsWindow = '10' | '30' | '60' | '120' | 'all';
 export interface ClientResults {
-  window: ResultsWindow; sent: number; replies: number; interested: number; meetings: number;
+  window: ResultsWindow | 'custom'; sent: number; replies: number; interested: number; meetings: number;
+  /** People contacted: unique leads emailed (EmailBison total_leads_contacted); null when not on record. */
+  contacted: number | null;
   emailsPerMeeting: number | null; emailsPerPositive: number | null; interestedToBooked: number | null; stale: boolean;
 }
 export interface ClientFeedback { calls: number; qualified: number; unqualified: number; noShow: number; rated: number; avgStars: number | null; recent: { status: string; stars: number | null; notes: string; when: string }[] }
@@ -277,7 +280,7 @@ export interface ClientDetailResults {
 export type ClientPeriod = 'this-month' | 'last-month' | '3m' | '6m' | '12m' | 'this-year';
 export interface ClientRangeNumbers { label: string; from: string; to: string; newClients: number; lost: number; net: number; activeAtStart: number; churnRate: number | null; newNames: string[]; lostNames: string[] }
 /** Owner only (members get 403). */
-export interface AgencyNumbers { period: ClientPeriod; mrr: number; activeClients: number; avgLtv: number | null; avgRetentionMonths: number | null; cur: ClientRangeNumbers; prev: ClientRangeNumbers; counted: number; noEndDate: string[] }
+export interface AgencyNumbers { period: ClientPeriod | 'custom'; mrr: number; activeClients: number; avgLtv: number | null; avgRetentionMonths: number | null; cur: ClientRangeNumbers; prev: ClientRangeNumbers; counted: number; noEndDate: string[] }
 export interface ClientFinance {
   mrr: number;
   xero: { thisMonth: { from: string; to: string; income: number; costs: number }; lastMonth: { from: string; to: string; income: number; costs: number }; invoices: { contact: string; amount: number; due: string; late: boolean }[] } | null;
@@ -285,6 +288,24 @@ export interface ClientFinance {
   cardTotals: { statement: number; balance: number; minimum: number } | null;
   billing: { name: string; day: string; monthly: number; perCall: number; processor: string }[] | null;
   notInAirtable: string[]; errors: string[]; readAt: string;
+}
+/* ---------- Round 4 (2026-11-28): custom range results, profit per client, Finances ---------- */
+export interface CustomRange { from: string; to: string }
+export interface ClientCustomResults { from: string; to: string; label: string; rows: { id: string; key: string; name: string; results: ClientResults | null; note: string }[]; errors: string[]; readAt: string }
+export interface ProfitCost { label: string; amount: number | null; note: string }
+export interface ClientProfit { id: string; key: string; name: string; months: number; revenue: number | null; revenueNote: string; costs: ProfitCost[]; knownCosts: number; profit: number | null; unknown: string[] }
+/** Owner only (members get 403). */
+export interface ClientProfitView {
+  period: ClientPeriod | 'custom'; range: { from: string; to: string; label: string }; clients: ClientProfit[];
+  totals: { revenue: number; knownCosts: number; profit: number; clientsWithRevenue: number }; rules: string[]; errors: string[]; readAt: string;
+}
+export interface FinanceCard { card: string; dueDate: string; statement: number; balance: number; minimum: number; available: number | null; apr: string }
+export interface FinanceMonth { from: string; to: string; income: number; costs: number; net: number; label: string; lines?: { section: string; name: string; amount: number }[] }
+/** Owner only (members get 403). */
+export interface FinancesData {
+  company: { xero: FinanceMonth[] | null; invoices: { contact: string; amount: number; due: string; late: boolean }[]; mrr: number; cards: FinanceCard[] | null; cardTotals: { statement: number; balance: number; minimum: number } | null };
+  personal: { cards: FinanceCard[] | null; cardTotals: { statement: number; balance: number; minimum: number } | null };
+  sources: { income: string; cards: string; personalRule: string }; errors: string[]; readAt: string;
 }
 // ---------- Batch 4b: Needs you (to-do), Team board, Chat threads and suggestions ----------
 /** One to-do on "Needs you": the problem (title), what to do (todo), why (why), one action. */
@@ -363,7 +384,15 @@ export interface ContentItemFacts {
   update: string; error: string;
   details: { productionStage: string; status: string; editingRoute: string; opusStatus: string; shortJobState: string; thumbnailStatus: string; publishingStatus: string };
 }
-export interface ContentItem extends ContentPipelineRow { cc: ContentCcStage; thisWeek: boolean; awaiting: boolean; done: boolean; facts: ContentItemFacts }
+/** Round 4 (2026-11-28): each video's real workflow (engine/src/hq/content.ts videoSteps). */
+export type ContentStepWhere = 'hq' | 'sienna' | 'contentCenter' | 'byHand' | 'notAutomated';
+export interface ContentStepButton { kind: 'decide' | 'askSienna' | 'openScript' | 'copyGamma' | 'link' | 'contentCenter'; label: string; url?: string; task?: string }
+export interface ContentStep { key: string; title: string; state: 'done' | 'now' | 'later'; where: ContentStepWhere; text: string; optional?: boolean; buttons: ContentStepButton[] }
+export interface ContentPrep { script: string; titles: string[]; hooks: string[]; thumbnail: string; gamma: string; gammaUrl: string; youtube: string; checks: string[] }
+export interface ContentItem extends ContentPipelineRow {
+  cc: ContentCcStage; thisWeek: boolean; awaiting: boolean; done: boolean; facts: ContentItemFacts;
+  posted: boolean; postedDate: string; postedFrom: string; steps: ContentStep[]; prep: ContentPrep | null;
+}
 export type ContentCenterView = Omit<ContentView, 'pipeline'> & { pipeline: { stages: ContentView['pipeline']['stages']; ccStages: ContentCcStage[]; rows: ContentItem[]; leftOut: number } };
 
 /* ---------- Batch 3 (2026-11-27): Campaign Center layout, lead lists, inbox limits, bounces, verification ---------- */
@@ -372,7 +401,10 @@ export type CampaignRowB3 = CampaignRow & { approach: string; strategy: string; 
 export interface ChannelB3 { key: 'email' | 'linkedin' | 'caller' | 'mail'; label: string; live: boolean; reason: string }
 export type CampaignListB3 = Omit<CampaignList, 'rows' | 'channels'> & { rows: CampaignRowB3[]; channels: ChannelB3[] };
 export type InboxHealthB3 = 'healthy' | 'risk' | 'spam' | 'resting';
-export interface CampaignAccountB3 { id: string; status: InboxHealthB3 | null; warmupOff: boolean; email: string; dailyLimit: number | null; warmupLimit: number | null; warmup: number | null; score: number | null }
+export interface CampaignAccountB3 {
+  id: string; status: InboxHealthB3 | null; warmupOff: boolean; email: string; dailyLimit: number | null; warmupLimit: number | null; warmup: number | null; score: number | null;
+  /** Round 4: the score's test date and the placement cell with its reason (never a blank). */ scoreAt?: string; placement?: PlacementR4;
+}
 export type CampaignDetailB3 = Omit<CampaignDetail, 'campaign' | 'lists' | 'links' | 'detail'> & {
   campaign: CampaignRowB3; lists: Omit<CampaignLeadList, 'airtableUrl'>[]; links: { bison: string }; accounts: CampaignAccountB3[];
   detail: CampaignDetail['detail'] & { thesis: string; approach: string; launchDate: string };
@@ -411,12 +443,17 @@ export type CampaignListR2 = Omit<CampaignListB3, 'rows'> & { rows: CampaignRowR
 /** One button: what it does, what it spends, why it is off; comesNext = no engine path yet. */
 export interface ActionR2 { key: string; label: string; section: string; does: string; spends: string; enabled: boolean; why: string; comesNext: boolean; dryRun: boolean; tone: 'primary' | 'quiet' | 'danger'; needsNotes?: boolean }
 export interface PressR2 { ok: true; message: string; dryRun?: boolean; planId?: number }
-export type BucketR2 = 'sending' | 'ready' | 'free' | 'warming' | 'risk' | 'resting' | 'spam' | 'disconnected';
-export interface AccountLineR2 { id: string; email: string; bucket: BucketR2; status: InboxHealthB3; dailyLimit: number | null; warmupLimit: number | null; warmup: number | null; score: number | null; bounce: number | null; contacted: number; warmupOff: boolean; campaigns: string[]; note: string }
+/** Round 4: the Airtable Campaign Center's sender states (Available · Sending · Releasing Soon · Reserved Next · Disconnected · Warming). */
+export type BucketR2 = 'available' | 'sending' | 'releasing' | 'reserved' | 'disconnected' | 'warming';
+export interface PlacementR4 { text: string; why: string }
+export interface AccountLineR2 {
+  id: string; email: string; bucket: BucketR2; warming: boolean; status: InboxHealthB3; dailyLimit: number | null; warmupLimit: number | null; warmup: number | null; score: number | null; scoreAt: string; placement: PlacementR4;
+  bounce: number | null; contacted: number; warmupOff: boolean; campaigns: string[]; note: string;
+}
 export interface SendingBoxR2 {
   client: string; clientKey: string; total: number; counts: Record<BucketR2, number>; capacity: { total: number; used: number; free: number; ready: number };
-  alert: string; accounts: AccountLineR2[]; buckets: { key: BucketR2; label: string; help: string }[]; warmMin: number;
-  byClient: { key: string; name: string; total: number; sending: number; free: number; ready: number; warming: number; resting: number; spam: number; capacity: number; used: number }[]; readAt: string;
+  alert: string; accounts: AccountLineR2[]; buckets: { key: BucketR2; label: string; help: string }[]; warmingDays: number;
+  byClient: { key: string; name: string; total: number; counts: Record<BucketR2, number>; capacity: number; used: number }[]; readAt: string;
 }
 export interface PlanR2 {
   id: number; client: string; clientKey: string; state: string; label: string; campaignName: string; campaignRec: string; leadListRec: string; error: string;
@@ -427,7 +464,9 @@ export interface PlansR2 { plans: PlanR2[]; atlasOn: boolean; planDryRun: boolea
 export interface AutomationR2 { engineAction: string; engineStatus: string; engineMessage: string; processing: string; locked: boolean; topupStatus?: string; topupMessage?: string; workflowMessage?: string; error?: string }
 export interface CampaignCenterR2 { actions: ActionR2[]; automation: AutomationR2; bison: number[]; inboxes: number; plan: PlanR2 | null; canAct: boolean }
 export interface CopyR2 {
-  id: string; name: string; stage: string; review: { step: number; subject: string; body: string; thread: boolean }[]; sequence: { step: number; variant: number; subject: string; body: string }[];
+  id: string; name: string; stage: string; sequence: { step: number; variant: number; subject: string; body: string }[];
+  /** Round 4: each email's versions (Scribe's "Variant N"), with the signature + P.S. the build adds, and the spintax sequence fields the build sends. */
+  review: { step: number; subject: string; body: string; thread: boolean; versions: { version: number; body: string; signature: string }[]; built: { variant: number; subject: string; body: string }[] }[];
   approval: { source: string; exception: boolean; submittedAt: string; autoApproveAt: string; clientFeedback: string; changeArea: string; feedback: string; context: string };
   scribe: { notes: string; questions: string[]; variables: { name: string; find: string; fallback: string }[]; claims: { claim: string; source: string }[]; flagged: string[] } | null;
   plan: PlanR2 | null; comesNext: { key: string; label: string; why: string }[]; readAt: string;
@@ -482,9 +521,13 @@ export interface SalesCloseView {
   pipeline: { pipeline: string; total: number; prevTotal: number; stages: SalesCloseStage[]; open: number; won: number; lost: number } | null;
   funnel: (SalesFunnelSide & { prev: SalesFunnelSide; order: 'close' | 'alex'; missing: string[] }) | null;
 }
-export interface PriceInput { ref: string; label: string; value: number; kind: 'money' | 'pct' | 'number' }
-export interface PriceOutput { ref: string; label: string; value: number | string | null; kind: 'money' | 'pct' | 'number'; formula: string; fromSheet: boolean; error?: string }
-export interface PricingModel { source: 'sheet' | 'builtin'; tab: string; readAt: string; inputs: PriceInput[]; outputs: PriceOutput[]; assumptions: string[]; error?: string }
+// Round 4: the P/L sheet's "OPEX Guide" plan blocks; inputs are only the sheet's lines.
+export interface PriceInput { key: string; label: string; value: number; kind: 'money' | 'number'; group: 'revenue' | 'volume' | 'monthly' | 'oneoff'; note?: string }
+export interface PriceOutput { key: string; label: string; value: number | null; kind: 'money' | 'pct'; note?: string }
+export interface PricingModel {
+  source: 'sheet' | 'builtin'; tab: string; readAt: string; plans: { key: string; name: string }[]; plan: string;
+  inputs: PriceInput[]; outputs: PriceOutput[]; assumptions: string[]; error?: string;
+}
 export interface CloseFieldChange { field: 'confidence' | 'value' | 'value_period'; from: string; to: string }
 export interface CloseUpdateRow { id: number; recordingId: string; leadId: string; oppId: string; prospect: string; status: 'updated' | 'planned' | 'unchanged' | 'no_lead' | 'no_opportunity' | 'failed'; changes: CloseFieldChange[]; note: string; applied: boolean; created: string; closeUrl: string }
 export interface AgentExchange { id: string; kind: 'ask' | 'handoff'; from: string; to: string; title: string; preview: string; at: string; messages: number; threadId?: number; parentId?: number | null; taskId?: number; status?: string }

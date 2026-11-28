@@ -465,8 +465,15 @@ export function coleNext(d: Pick<Deal, 'stages' | 'lost' | 'inactiveClient' | 'a
   return '';
 }
 
-export interface Rate { n: number; of: number; text: string }
-const rate = (k: number, of: number, word: string): Rate => ({ n: k, of, text: `${k} of ${of} ${word}` });
+export interface Rate { n: number; of: number; text: string; pct: number | null }
+/** "3 of 5 showed" plus the percent (one decimal; null when there is nothing to divide by). Round 4: percentages are the headline. Pure. */
+export const pctOf = (k: number, of: number): number | null => (of ? Math.round((k / of) * 1000) / 10 : null);
+export const rate = (k: number, of: number, word: string): Rate => ({ n: k, of, text: `${k} of ${of} ${word}`, pct: pctOf(k, of) });
+export interface Conversion { from: string; to: string; n: number; of: number; pct: number | null }
+/** Stage to stage: of the deals that reached a stage, how many reached the next one. Pure. */
+export function conversions(steps: { label: string; count: number }[]): Conversion[] {
+  return steps.slice(1).map((s, i) => ({ from: steps[i].label, to: s.label, n: s.count, of: steps[i].count, pct: pctOf(s.count, steps[i].count) }));
+}
 
 /** The pipeline for the last `days` days (by the call date, else the agreement date). Pure. */
 export function pipelineOf(deals: Deal[], days: number, today: string) {
@@ -483,6 +490,9 @@ export function pipelineOf(deals: Deal[], days: number, today: string) {
   return {
     days, from, deals: inWin.length,
     stages,
+    // Round 4 (Alex 2026-11-28: "where's the percentages?"): stage to stage, and booked → signed overall.
+    conversions: conversions(stages.map((x) => ({ label: STAGE_LABEL[x.key], count: x.count }))),
+    overall: rate(stages.find((x) => x.key === 'signed')?.count ?? 0, stages[0]?.count ?? 0, 'booked calls signed'),
     canceled: inWin.filter((d) => d.airtableStage === 'Canceled').length,
     upcoming: inWin.filter((d) => d.callDate && d.callDate >= today && !d.stages.showed).length,
     showRate: rate(showed.length, held.length, 'showed'),
@@ -499,11 +509,16 @@ export function topNumbers(deals: Deal[], today: string, canSeeMoney: boolean) {
   const now = monthOf(today), last = prevMonth(now);
   const calc = (m: string) => {
     const booked = deals.filter((d) => d.salesRec && monthOf(d.callDate) === m);
+    // Rates (Round 4): show rate = of the month's calls already past (canceled left out), how many showed;
+    // close rate = of those that showed, how many signed (any day). Same rules as the pipeline.
+    const held = booked.filter((d) => d.callDate < today && d.airtableStage !== 'Canceled');
+    const heldShowed = held.filter((d) => d.stages.showed);
     const closed = deals.filter((d) => d.stages.signed && monthOf(d.signedDay) === m);
     const mrr = closed.reduce((a, d) => a + (d.money?.monthly ?? 0), 0);
     const unknown = closed.filter((d) => d.money?.monthly == null).length;
     return {
       month: m, label: monthName(m), booked: booked.length, showed: booked.filter((d) => d.stages.showed && monthOf(d.heldDate || d.callDate) === m).length, closed: closed.length,
+      showRate: rate(heldShowed.length, held.length, 'showed'), closeRate: rate(heldShowed.filter((d) => d.stages.signed).length, heldShowed.length, 'signed'),
       ...(canSeeMoney ? { mrr, mrrUnknown: unknown } : {}),
     };
   };

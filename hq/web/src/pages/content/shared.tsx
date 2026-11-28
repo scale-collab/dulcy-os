@@ -5,11 +5,25 @@ import { useState, type ReactNode } from 'react';
 import { api, type ContentNote } from '../../api';
 import { Button, cx, ErrorBox, Icon } from '../../ui';
 
-export const day = (ymd: string) => (ymd ? new Date(`${ymd}T12:00:00Z`).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }) : '');
-export const dateOnly = (ymd: string) => (ymd ? new Date(`${ymd}T12:00:00Z`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' }) : '');
-export const shortLabel = (ch: string) => (ch === 'Alex Woung Raw' ? 'Raw' : ch === 'Alex Woung' ? 'Main' : ch || 'No channel');
+/** "2026-11-27" → "11/27": dates use slashes, no weekday (RULES 2026-11-27 and round 4); the year only when it is not this year. */
+export const day = (ymd: string) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(ymd ?? '');
+  if (!m) return '';
+  const md = `${Number(m[2])}/${Number(m[3])}`;
+  return Number(m[1]) === new Date().getFullYear() ? md : `${md}/${m[1]}`;
+};
+export const dateOnly = day;
+/** The real channel names (round 4, Alex 2026-11-28): "Alex Woung" and "Alex Woung Raw", never "Main" / "Raw". */
+export const shortLabel = (ch: string) => ch || 'No channel';
 export const todayEt = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 export const HOW: Record<string, string> = { hq: 'In HQ', engine: 'Automatic', field: 'Button in the Content Center', button: 'Button in the Content Center', manual: 'By hand' };
+/** Where a workflow step happens (round 4). */
+export const WHERE: Record<string, string> = { hq: 'In HQ', sienna: 'Sienna, automatic', contentCenter: 'Content Center button', byHand: 'By hand', notAutomated: 'Not automated yet' };
+
+/** Copy text to the clipboard; true when it worked (a private window or old browser may refuse). */
+export async function copyText(text: string): Promise<boolean> {
+  try { await navigator.clipboard.writeText(text); return true; } catch { return false; }
+}
 
 /** The channel filter, remembered on this device (a per-viewer convenience; never required). */
 export type ChannelKey = '' | 'main' | 'raw';
@@ -31,7 +45,7 @@ export function Select<T extends string>({ label, value, options, onChange, clas
   );
 }
 
-export const CHANNEL_OPTIONS: { value: ChannelKey; label: string }[] = [{ value: '', label: 'Both channels' }, { value: 'main', label: 'Main channel' }, { value: 'raw', label: 'Alex Woung Raw' }];
+export const CHANNEL_OPTIONS: { value: ChannelKey; label: string }[] = [{ value: '', label: 'Both' }, { value: 'main', label: 'Alex Woung' }, { value: 'raw', label: 'Alex Woung Raw' }];
 
 /** Approve / Reject an idea (the Content Center's "Approve & schedule" / "Reject idea"). */
 export function DecideButtons({ id, onDone, className }: { id: string; onDone: (msg: string) => void; className?: string }) {
@@ -102,3 +116,32 @@ export function Head({ title, sub, icon, right }: { title: string; sub?: string;
     </div>
   );
 }
+
+/**
+ * The Gamma slides for an Alex Woung video. Sienna writes the outline with the script; making the Gamma
+ * doc is not automated yet (by hand: copy the outline, paste it into Gamma, save the link in the video's
+ * Notes in the Content Center, then "Open Gamma" shows here).
+ */
+export function GammaBlock({ gamma, gammaUrl, scriptReady }: { gamma: string; gammaUrl: string; scriptReady: boolean }) {
+  const [copied, setCopied] = useState('');
+  const copy = async () => setCopied((await copyText(gamma)) ? 'Outline copied. In Gamma: Create → Paste in text.' : 'Copy did not work here: select the outline and copy it.');
+  return (
+    <div>
+      <div className="flex flex-wrap gap-2">
+        {gammaUrl && <a href={gammaUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-ink px-4 text-[15px] font-semibold text-ink-fg hover:bg-ink-hover"><Icon name="external" size={16} />Open Gamma</a>}
+        {!gammaUrl && gamma && <Button icon="file" onClick={() => void copy()}>Copy outline</Button>}
+        {!gammaUrl && gamma && <a href="https://gamma.app/" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line-strong bg-surface px-4 text-[15px] font-semibold text-fg hover:bg-hover"><Icon name="external" size={16} />Open Gamma</a>}
+      </div>
+      {copied && <p role="status" className="mt-2 text-sm text-good">{copied}</p>}
+      {!gammaUrl && (
+        <p className="mt-2 text-sm text-fg-2">
+          {gamma ? 'Not automated yet: Sienna wrote this outline; make the Gamma doc by hand (Copy outline → Open Gamma → Create → Paste in text), then paste the Gamma link into this video\'s Notes in the Content Center so "Open Gamma" shows here.'
+            : scriptReady ? 'No outline: this script came from the Content Center button, which writes none. Ask Sienna for one on the video\'s page, or build it in Gamma by hand.'
+              : 'Sienna writes the outline with the script.'}
+        </p>
+      )}
+      {gamma && <div className="mt-3 whitespace-pre-wrap break-words text-[15px] leading-7 text-fg-2">{gamma}</div>}
+    </div>
+  );
+}
+

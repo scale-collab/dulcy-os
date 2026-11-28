@@ -240,7 +240,10 @@ export const sectionOf = (group: Group, stage: string): SectionKey => (group ===
 export const isTest = (name: string) => /\b(test|testing|tests)\b|engine test|bridge check|\bdemo\b|\bsandbox\b/i.test(name);
 /** The campaign's sending inboxes by status (from Deliverability), when that read is there. */
 export interface SendingSummary { total: number; healthy: number; risk: number; spam: number; resting: number; warmupOff: number; unknown: number }
-export interface InboxLite { status: 'healthy' | 'risk' | 'spam' | 'resting'; warmupOff: boolean; email: string; dailyLimit: number | null; warmupLimit: number | null; warmup: number | null; score: number | null }
+export interface InboxLite {
+  status: 'healthy' | 'risk' | 'spam' | 'resting'; warmupOff: boolean; email: string; dailyLimit: number | null; warmupLimit: number | null; warmup: number | null; score: number | null;
+  /** Round 4 (sendingAccounts.senderIndex): the score's test date and the placement cell with its reason (never a blank). */ scoreAt?: string; placement?: { text: string; why: string };
+}
 /** Sending accounts summary from an inbox index. Pure. */
 export function sendingOf(accountIds: string[], inboxes?: Map<string, InboxLite>): SendingSummary | null {
   if (!inboxes) return null;
@@ -504,7 +507,7 @@ export async function campaignDetail(at: Pick<HqAirtable, 'list' | 'get'>, db: D
     },
     lists: lists.map(listOf),
     // Campaign Center "Sender accounts": each sending inbox with its Deliverability status (worst first).
-    accounts: f.accountIds.map((rec) => ({ id: rec, ...(inboxes?.get(rec) ?? { status: null, warmupOff: false, email: '', dailyLimit: null, warmupLimit: null, warmup: null, score: null }) }))
+    accounts: f.accountIds.map((rec) => ({ id: rec, ...(inboxes?.get(rec) ?? { status: null, warmupOff: false, email: '', dailyLimit: null, warmupLimit: null, warmup: null, score: null, placement: { text: 'Not tested', why: 'This inbox is not in Email Accounts for an active client, so it has no placement test here.' } }) }))
       .sort((a, b) => ACC_RANK(a.status) - ACC_RANK(b.status) || Number(b.warmupOff) - Number(a.warmupOff) || a.email.localeCompare(b.email)),
     plan: ownPlans[0] ?? null, next,
     history, activity,

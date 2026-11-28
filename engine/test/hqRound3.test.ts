@@ -18,7 +18,7 @@ import { _resetInsightCaches, availabilityWindows, calendarLinkState, dulcySlots
 import { buckets, bucketUnit, numbersView, resolvePeriod, runningTotals, type PeriodPick } from '../src/hq/salesPeriods.js';
 import { _resetCloseRangeCache, closeFunnel, closePipeline, nyStartIso, readCloseRange, stepOf } from '../src/hq/salesClose.js';
 import { createCloseClient, toOpportunity, toStatusChange } from '../src/providers/close.js';
-import { _resetPricingCache, builtinGrid, evaluate, numberOf, pricingModel, pricingSheetReader, pricingView, Unsupported, type SheetGrid } from '../src/hq/pricing.js';
+import { _resetPricingCache, evaluate, numberOf, parsePlans, pricingModel, pricingSheetReader, pricingView, Unsupported, type SheetGrid } from '../src/hq/pricing.js';
 import { agentConversation, agentConversations } from '../src/hq/agentTalk.js';
 
 const url = process.env.TEST_DATABASE_URL;
@@ -205,44 +205,65 @@ test('formula reader: math, percent, SUM/ROUND/IF/IFERROR; another tab or an unk
   assert.deepEqual(['$2,500.00', '45%', '(1,200)', 'abc', ''].map(numberOf), [2500, 0.45, -1200, null, null]);
 });
 
-// A FAKE calculator tab (made-up numbers; the real P/L figures are never in this repo).
-const FAKE: SheetGrid = {
-  tab: 'Pricing Calculator', readAt: '2026-11-27T15:00:00.000Z',
-  values: [['Inputs', ''], ['Leads a month', '1000'], ['Reply rate', '10%'], ['Cost a month', '$100.00'], ['Margin', '50%'], ['Replies', '100'], ['Price', '$200.00'], ['Other tab', '$7.00']],
-  formulas: [['Inputs', ''], ['Leads a month', '1000'], ['Reply rate', '0.1'], ['Cost a month', '100'], ['Margin', '0.5'], ['Replies', '=B2*B3'], ['Price', '=B4/(1-B5)'], ['Other tab', "='Costs'!B9"]],
+// A FAKE "OPEX Guide" tab (made-up numbers; the real P/L figures are never in this repo). Two plan blocks
+// in column E with the sheet's layout: lines, a blank row, then Cost Setup / Cost Monthly / Profit / Opex.
+const BLOCKS: [string, string | number, (string | number)?][] = [
+  ['Client Fulfillment - Starter', 'Cost'], ['Retainer', 1000], ['Rev Share 10%', 100], ['Cheap Inboxes', '=10*-3'], ['Domains ($1-2/yr)', -20],
+  ['Scraping Credits', '=SUM(1000 * G7)', -0.01], ['Verifcation Credits', '=SUM (1000*G8)', -0.002], ['Tool seat', -50], ['AI build', -500], ['', ''],
+  ['Cost Setup', '=SUM(F5:F10)'], ['Cost Monthly', '=SUM(F5:F9)'], ['Profit Monthly', '=(F3+F4+F13)'], ['Act. Opex Monthly', '=-F13/(F3+F4)'],
+  ['Client Fulfillment - Starter', 'Cost'], ['Retainer', 2000], ['Cheap Inboxes', '=20*-3'], ['Cost Monthly', '=SUM(F18:F18)'], ['Profit Monthly', '=F17+F19'],
+];
+const OPEX: SheetGrid = {
+  tab: 'OPEX Guide', readAt: '2026-11-28T15:00:00.000Z',
+  values: [['', 'Expected Rev', '$9.00'], ...BLOCKS.map(([l, v, u]) => ['', '', '', '', l, typeof v === 'string' && v.startsWith('=') ? '$0.00' : String(v), u === undefined ? '' : '$0.00'])],
+  formulas: [['', 'Expected Rev', '9'], ...BLOCKS.map(([l, v, u]) => ['', '', '', '', l, String(v), u === undefined ? '' : String(u)])],
 };
-test('pricing model: inputs are the numbers its formulas use; results worked out with the owner\'s changes; unknown = the sheet\'s value', () => {
-  const m = pricingModel(FAKE);
-  assert.deepEqual(m.inputs.map((i) => [i.ref, i.label, i.value, i.kind]), [['B2', 'Leads a month', 1000, 'number'], ['B3', 'Reply rate', 0.1, 'pct'], ['B4', 'Cost a month', 100, 'money'], ['B5', 'Margin', 0.5, 'pct']]);
-  assert.deepEqual(m.outputs.map((o) => [o.ref, o.label, o.value, o.fromSheet]), [['B6', 'Replies', 100, false], ['B7', 'Price', 200, false], ['B8', 'Other tab', 7, true]]);
-  const changed = pricingModel(FAKE, { B4: 300, B5: 0.25 });
-  assert.equal(changed.outputs.find((o) => o.ref === 'B7')!.value, 400);
-  const b = pricingModel(builtinGrid(), { B1: 10, B2: 2.5, B6: 10, B7: 50, B8: 15, B9: 22, B10: 0.01, B11: 0.5, B12: 0.8, B13: 0.5 });
-  const out = Object.fromEntries(b.outputs.map((o) => [o.label, o.value]));
-  assert.deepEqual([out['Monthly cost'], out['Cold emails a month'], out['Meetings a month'], out['Price a month at the target margin']], [525, 3300, 16.5, 1050]);
+test("pricing: the OPEX Guide's Client Fulfillment blocks are the only inputs; results are the sheet's sums; $2.50 per inbox from RULES", () => {
+  const plans = parsePlans(OPEX);
+  assert.deepEqual(plans.map((p) => [p.key, p.name]), [['p1', 'Starter · $1,000'], ['p2', 'Starter · $2,000']]);
+  assert.deepEqual(plans[0].inputs.map((i) => [i.key, i.value, i.group]), [
+    ['r3', 1000, 'revenue'], ['r4', 100, 'revenue'], ['inboxes', 10, 'volume'], ['inboxPrice', 2.5, 'monthly'], ['r6', 20, 'monthly'],
+    ['leads', 1000, 'volume'], ['u7', 0.01, 'monthly'], ['u8', 0.002, 'monthly'], ['r9', 50, 'monthly'], ['r10', 500, 'oneoff'],
+  ]);
+  assert.match(plans[0].inputs.find((i) => i.key === 'inboxPrice')!.note ?? '', /RULES 2026-11-28.*sheet line uses \$3\.00/);
+  const every = plans.flatMap((p) => p.inputs.map((i) => i.label)).join(' | ');
+  assert.doesNotMatch(every, /team hour|target margin|show rate|reply rate/i, 'nothing that is not in the sheet');
+  const m = pricingModel(plans, { source: 'sheet' });
+  const out = Object.fromEntries(m.outputs.map((o) => [o.key, o.value]));
+  // 10 × $2.50 + 1,000 × ($0.01 + $0.002) + $20 + $50 = $107 a month; $500 build in the first month only.
+  assert.deepEqual([out.revenue, out.cost, out.profit, out.opex, out.margin, out.costFirst, out.profitFirst], [1100, 107, 993, 0.097, 0.903, 607, 493]);
+  assert.equal(m.assumptions.length, 0, "with the sheet's $3 per inbox HQ gets the sheet's own profit ($988), so no check note");
+  const changed = pricingModel(plans, { plan: 'p1', overrides: { r3: 2000, inboxes: 0 }, source: 'sheet' });
+  assert.equal(changed.outputs.find((o) => o.key === 'profit')!.value, 2100 - 82);
+  const two = pricingModel(plans, { plan: 'p2', source: 'sheet' });
+  assert.deepEqual([two.plan, two.outputs.find((o) => o.key === 'profit')!.value, two.outputs.some((o) => o.key === 'costFirst')], ['p2', 1950, false]);
+  const off = pricingModel([{ ...plans[0], sheetProfit: 5000 }], { source: 'sheet' });
+  assert.match(off.assumptions.join(' '), /Check: .*\$988.*\$5,000/);
 });
 
-test('pricing reader: the first tab named like "Pricing"; formulas and values read (never written); no sheet = built-in with assumptions', async () => {
+test('pricing reader: the "OPEX Guide" tab; formulas and values read (never written); cached; no sheet = the same line names, empty', async () => {
   _resetPricingCache();
   const reads: string[] = [];
   const sheets = {
-    async meta() { reads.push('meta'); return { sheets: [{ properties: { sheetId: 1, title: 'P&L 2026' } }, { properties: { sheetId: 2, title: 'Pricing Calculator' } }] }; },
-    async tab(_id: string, tab: string) { reads.push(`values:${tab}`); return FAKE.values; },
-    async formulas(_id: string, tab: string) { reads.push(`formulas:${tab}`); return FAKE.formulas; },
+    async meta() { reads.push('meta'); return { sheets: [{ properties: { sheetId: 1, title: 'goal' } }, { properties: { sheetId: 2, title: 'OPEX Guide' } }] }; },
+    async tab(_id: string, tab: string) { reads.push(`values:${tab}`); return OPEX.values; },
+    async formulas(_id: string, tab: string) { reads.push(`formulas:${tab}`); return OPEX.formulas; },
   } as any;
   const read = pricingSheetReader(() => sheets);
-  const v = await pricingView(read, { B4: 300, B9: 5, 'X; DROP': 1 } as any);
+  const v = await pricingView(read, { r3: 2000, 'X; DROP': 1 } as any, 'p1');
   assert.equal(v.source, 'sheet');
-  assert.equal(v.tab, 'Pricing Calculator');
-  assert.deepEqual(reads, ['meta', 'values:Pricing Calculator', 'formulas:Pricing Calculator']);
-  assert.equal(v.outputs.find((o) => o.ref === 'B7')!.value, 600);
-  await pricingView(read);
+  assert.equal(v.tab, 'OPEX Guide');
+  assert.deepEqual(reads, ['meta', 'values:OPEX Guide', 'formulas:OPEX Guide']);
+  assert.equal(v.outputs.find((o) => o.key === 'profit')!.value, 1993);
+  assert.equal((await pricingView(read, {}, 'p2')).plan, 'p2');
   assert.equal(reads.length, 3, 'cached 10 minutes');
   _resetPricingCache();
   const none = await pricingView(pricingSheetReader(() => ({ async meta() { return { sheets: [{ properties: { sheetId: 1, title: 'P&L' } }] }; }, async tab() { return []; }, async formulas() { return []; } }) as any));
   assert.equal(none.source, 'builtin');
-  assert.match(none.error ?? '', /No tab named like "Pricing"/);
-  assert.match(none.assumptions[0], /NOT the sheet's formula/);
+  assert.match(none.error ?? '', /No "OPEX Guide"/);
+  assert.match(none.assumptions[0], /not read/);
+  assert.deepEqual(none.inputs.filter((i) => i.value).map((i) => [i.key, i.value]), [['inboxPrice', 2.5]], 'only the RULES inbox price is filled in');
+  assert.doesNotMatch(none.inputs.map((i) => i.label).join(' | '), /team hour|target margin/i);
   assert.equal((await pricingView(undefined)).source, 'builtin');
 });
 
@@ -308,6 +329,10 @@ test('routes: the new sales routes are owner only (members 403, nothing read); t
   assert.deepEqual([c.body.period.key, c.body.connected, c.body.ok], ['last30', true, true], 'the pipeline defaults to the last 30 days');
   assert.deepEqual([c.body.funnel.total, c.body.pipeline.total, c.body.funnel.prev.total], [5, 5, 2], 'created 10/29–11/27 vs 9/29–10/28');
   assert.ok(closeCalls.every((x) => x.method === 'GET'));
+  // Pricing with no sheet on this server: the sheet's line names, empty; the owner's numbers worked out.
+  const pr = await call('/hq/api/sales/pricing', alex, 'POST', { plan: 'p1', inputs: { r1: 1000, inboxes: 10 } });
+  assert.equal(pr.status, 200, pr.text);
+  assert.deepEqual([pr.body.source, pr.body.plan, pr.body.outputs.find((o: any) => o.key === 'profit').value], ['builtin', 'p1', 975]);
 });
 
 test('agent conversations: Ada asking agents + hand-offs, newest first, filter by agent; members never see Ledger or Sienna', { skip }, async () => {

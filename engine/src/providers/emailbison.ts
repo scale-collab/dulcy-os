@@ -220,6 +220,17 @@ export function createBisonClient(o: BisonOptions) {
     removeSenders: (campaignId: number, senderIds: string[]) =>
       call('DELETE', `/api/campaigns/${campaignId}/remove-sender-emails`, { sender_email_ids: senderIds.map(String) }, { write: true }),
     /** The campaign's inboxes with their (lifetime) send and bounce counts, for the bounce investigation. */
+    /**
+     * The workspace's totals for a date range (both days included), the same EmailBison call the
+     * n8n "Analytics - Email" flows write into Airtable's Email Analytics Overview. Read only.
+     * n8n sends start_date / end_date as a JSON body on a GET; fetch cannot, so they go in the query.
+     */
+    async workspaceStats(from: string, to: string): Promise<{ sent: number; contacted: number; replies: number; interested: number; bounced: number }> {
+      const r = await call('GET', `/api/workspaces/v1.1/stats?start_date=${encodeURIComponent(from)}&end_date=${encodeURIComponent(to)}`);
+      const d = r?.data ?? r ?? {};
+      const n = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+      return { sent: n(d.emails_sent), contacted: n(d.total_leads_contacted), replies: n(d.unique_replies_per_contact), interested: n(d.interested), bounced: n(d.bounced) };
+    },
     async campaignSenderStats(campaignId: number): Promise<{ id: string; email: string; status: string; sent: number; bounced: number; contacted: number }[]> {
       const rows = await pages<any>(`/api/campaigns/${campaignId}/sender-emails`, 100);
       const n = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : 0);

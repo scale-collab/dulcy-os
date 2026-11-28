@@ -1,4 +1,4 @@
-// Round 3 Pipeline and Funnel tabs, straight from Close (owner only). One period picker (default last
+// Round 3 Pipeline and Funnel tabs, straight from Close. One period picker (default last
 // 30 days; vs last month / quarter / year; custom). Pipeline: each Close stage with its share of the
 // period's opportunities (percent, not "3 of 5") next to the period before. Funnel: like Close's
 // "Opportunity Funnels" report: total, close rate, average time to close, average value per win and
@@ -19,14 +19,41 @@ function useClose() {
 const pct = (x: number | null) => (x === null ? '–' : `${x % 1 ? x.toFixed(1) : x}%`);
 const days = (x: number | null) => (x === null ? '–' : `${x % 1 ? x.toFixed(1) : x} d`);
 
-function Frame({ c, children }: { c: ReturnType<typeof useClose>; children: (d: SalesCloseView) => ReactNode }) {
+/** Round 4 (Alex 2026-11-28: "where's the percentages?"): the first thing in Pipeline and Funnel is the
+ *  close rate and each stage-to-stage conversion ("Call booked → Call done 62%"), counts underneath. */
+export function Conversions({ close, closeSub, steps, prevClose }: { close: number | null; closeSub: string; prevClose?: number | null; steps: { from: string; to: string; pct: number | null; n: number; of: number }[] }) {
+  return (
+    <section aria-label="Conversion rates" className="grid gap-3 sm:grid-cols-[minmax(0,13rem)_minmax(0,1fr)]">
+      <div className="min-w-0 rounded-2xl border border-accent/30 bg-accent-soft p-4">
+        <div className="text-xs font-semibold text-accent-ink">Close rate</div>
+        <div className="tabular mt-1 text-[34px] font-bold leading-none tracking-tight text-fg">{pct(close)}</div>
+        <div className="mt-1.5 text-xs text-fg-2">{closeSub}{prevClose !== undefined ? ` · before ${pct(prevClose)}` : ''}</div>
+      </div>
+      <ol className="grid min-w-0 grid-cols-2 gap-2 lg:grid-cols-[repeat(auto-fit,minmax(9.5rem,1fr))]">
+        {steps.map((s) => (
+          <li key={`${s.from}-${s.to}`} className="min-w-0 rounded-2xl border border-line bg-surface px-3.5 py-3 shadow-card" title={`${s.from} → ${s.to}: ${s.n} of ${s.of}`}>
+            <div className="text-xs font-medium leading-snug text-muted">{s.from}<Icon name="chevronRight" size={12} className="mx-0.5 inline align-[-1px] text-faint" /><span className="text-fg-2">{s.to}</span></div>
+            <div className={cx('tabular mt-1 text-[22px] font-bold leading-none', s.pct === null ? 'text-muted' : 'text-fg')}>{pct(s.pct)}</div>
+            <div className="tabular mt-1 text-[11px] text-muted">{s.n} of {s.of}</div>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+/** The Close funnel's steps as stage-to-stage conversions. */
+const closeSteps = (f: SalesFunnelSide) => f.steps.slice(1).map((s, i) => ({ from: f.steps[i].label, to: s.label, pct: s.pctOfPrev, n: s.reached, of: f.steps[i].reached }));
+
+function Frame({ c, fallback, children }: { c: ReturnType<typeof useClose>; fallback: ReactNode; children: (d: SalesCloseView) => ReactNode }) {
   const { d } = c;
+  // Close not connected (or not answering): one line, then what HQ's own Sales data can give.
+  const off = (line: ReactNode) => <><p className="rounded-xl border border-warn/30 bg-warn-soft px-4 py-2.5 text-sm text-fg-2">{line}</p>{fallback}</>;
   return (
     <div className="space-y-3">
-      <PeriodPicker value={c.period} onChange={c.setPeriod} pick={d?.period} />
-      {c.error && !d ? <ErrorBox error={c.error} retry={c.load} /> : !d ? <PageSkeleton kind="list" /> : !d.connected ? (
-        <Card className="border-warn/30 bg-warn-soft"><div className="text-sm text-fg-2"><span className="font-semibold text-fg">Connect Close.</span> Close is not connected on the server (CLOSE_API_KEY), so the pipeline and funnel cannot be read.</div></Card>
-      ) : !d.ok ? <Card className="border-bad-line bg-bad-soft"><div className="text-sm text-bad">Close did not answer: {d.error}</div></Card> : children(d)}
+      {c.error && !d ? <ErrorBox error={c.error} retry={c.load} /> : !d ? <PageSkeleton kind="list" />
+        : !d.connected ? off(<><span className="font-semibold text-fg">Close is not connected</span> (CLOSE_API_KEY on the server), so this is from HQ's Sales data (Airtable).</>)
+          : !d.ok ? off(<><span className="font-semibold text-fg">Close did not answer</span> ({d.error}), so this is from HQ's Sales data (Airtable).</>)
+            : <><PeriodPicker value={c.period} onChange={c.setPeriod} pick={d.period} />{children(d)}</>}
       {d?.ok && <p className="text-xs text-muted">From Close: opportunities created {d.period.now.label.toLowerCase()} vs {d.period.prev.label.toLowerCase()}, read {timeAgo(d.readAt) || 'just now'} (kept 5 minutes).{d.truncated ? ' Only the first 1,000 were read.' : ''}</p>}
     </div>
   );
@@ -36,12 +63,13 @@ export function ClosePipeline({ fallback }: { fallback: ReactNode }) {
   const c = useClose();
   return (
     <div className="space-y-6">
-      <Frame c={c}>{(d) => {
-        const p = d.pipeline!;
+      <Frame c={c} fallback={fallback}>{(d) => {
+        const p = d.pipeline!; const f = d.funnel;
         if (!p.total && !p.prevTotal) return <Card><Empty icon="layers" title="No opportunities in this period" sub="Nothing was created in Close in these dates." /></Card>;
         const max = Math.max(1, ...p.stages.map((s) => s.pct ?? 0));
         return (
           <>
+            {f && <Conversions close={f.closeRate} prevClose={f.prev.closeRate} closeSub={`${f.won} won of ${f.total}`} steps={closeSteps(f)} />}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <Tile label="Opportunities" v={String(p.total)} sub={`${p.prevTotal} before`} />
               <Tile label="Open" v={pct(p.total ? Math.round((p.open / p.total) * 1000) / 10 : null)} sub={`${p.open} still open`} />
@@ -66,25 +94,27 @@ export function ClosePipeline({ fallback }: { fallback: ReactNode }) {
           </>
         );
       }}</Frame>
-      <details className="rounded-2xl border border-line bg-surface">
-        <summary className="flex min-h-11 cursor-pointer items-center px-4 text-sm font-semibold text-fg-2 hover:bg-hover sm:px-5">HQ deals by stage (contracts, payment, onboarding)</summary>
-        <div className="px-4 pb-4 sm:px-5">{fallback}</div>
-      </details>
+      {c.d?.ok && (
+        <details className="rounded-2xl border border-line bg-surface">
+          <summary className="flex min-h-11 cursor-pointer items-center px-4 text-sm font-semibold text-fg-2 hover:bg-hover sm:px-5">HQ deals by stage (contracts, payment, onboarding)</summary>
+          <div className="px-4 pb-4 sm:px-5">{fallback}</div>
+        </details>
+      )}
     </div>
   );
 }
 
-export function CloseFunnel() {
+export function CloseFunnel({ fallback }: { fallback: ReactNode }) {
   const c = useClose();
   return (
-    <Frame c={c}>{(d) => {
+    <Frame c={c} fallback={fallback}>{(d) => {
       const f = d.funnel!;
       if (!f.total && !f.prev.total) return <Card><Empty icon="layers" title="No opportunities in this period" sub="Nothing was created in Close in these dates." /></Card>;
       return (
         <>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Conversions close={f.closeRate} prevClose={f.prev.closeRate} closeSub={`${f.won} won of ${f.total}`} steps={closeSteps(f)} />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <Tile label="Total opportunities" v={String(f.total)} sub={`${f.prev.total} before`} />
-            <Tile label="Close rate" v={pct(f.closeRate)} sub={`${f.won} won · before ${pct(f.prev.closeRate)}`} />
             <Tile label="Average time to close" v={days(f.avgDaysToClose)} sub={`created → won · before ${days(f.prev.avgDaysToClose)}`} />
             <Tile label="Average value per win" v={f.avgWinValue === null ? '–' : `${usd(f.avgWinValue)}${f.valuePeriod === 'monthly' ? '/mo' : ''}`} sub={`before ${f.prev.avgWinValue === null ? '–' : usd(f.prev.avgWinValue)}${f.valuePeriod === 'mixed' ? ' · mixed periods' : ''}`} />
           </div>

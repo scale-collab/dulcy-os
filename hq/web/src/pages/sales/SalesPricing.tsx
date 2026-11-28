@@ -1,86 +1,110 @@
-// Round 3 Pricing tab (owner only): the "Dulcy Media P/L" sheet's pricing calculator. The engine reads
-// the sheet's calculator tab (formulas and values, read only) and works out the results with the
-// inputs typed here. The sheet itself is never changed. If the sheet cannot be read, a built-in
-// calculator is shown with its assumptions written out.
+// Pricing tab: the "Dulcy Media P/L" sheet's calculator, read only. Round 4 (Alex 2026-11-28): the
+// inputs are ONLY the lines of the sheet's "OPEX Guide" plan blocks ("Client Fulfillment - <plan>"):
+// retainer, rev share, Cheap Inboxes (inboxes × price), domains, masking, the per-lead credits, tool
+// seats and one-off builds. No team hours, no target margin (they were never in the sheet). The one
+// value that is not the sheet's, the price per inbox ($2.50, RULES), says so next to it. Changing a
+// line here never changes the sheet.
 import { useEffect, useRef, useState } from 'react';
 import { api, type PriceInput, type PriceOutput, type PricingModel } from '../../api';
 import { Button, Card, cx, ErrorBox, PageSkeleton, Pill, SectionHeader, timeAgo, usd } from '../../ui';
 
-const show = (v: number | string | null, kind: PriceOutput['kind']) => {
-  if (v === null) return '–';
-  if (typeof v === 'string') return v;
-  if (kind === 'money') return Math.abs(v) < 100 && v % 1 ? `$${v.toFixed(2)}` : usd(v);
-  if (kind === 'pct') return `${Math.round(v * 1000) / 10}%`;
-  return Math.abs(v) >= 100 ? Math.round(v).toLocaleString('en-US') : String(Math.round(v * 100) / 100);
-};
-const toField = (i: PriceInput) => String(i.kind === 'pct' ? Math.round(i.value * 10000) / 100 : i.value);
-const fromField = (i: PriceInput, s: string) => { const n = Number(s.replace(/[$,%\s]/g, '')); return Number.isFinite(n) ? (i.kind === 'pct' ? n / 100 : n) : null; };
+const money = (v: number) => (Math.abs(v) < 1 && v ? `$${v.toPrecision(2).replace(/0+$/, '')}` : Math.abs(v) < 100 && v % 1 ? `$${v.toFixed(2)}` : usd(v));
+const show = (o: PriceOutput) => (o.value === null ? '–' : o.kind === 'pct' ? `${Math.round(o.value * 1000) / 10}%` : money(o.value));
+const GROUPS: { key: PriceInput['group']; title: string }[] = [
+  { key: 'revenue', title: 'What the client pays a month' }, { key: 'volume', title: 'Volume' },
+  { key: 'monthly', title: 'Costs a month' }, { key: 'oneoff', title: 'First month only' },
+];
 
 export default function SalesPricing() {
   const [m, setM] = useState<PricingModel | null>(null);
   const [error, setError] = useState('');
   const [fields, setFields] = useState<Record<string, string>>({});
   const timer = useRef<number | undefined>(undefined);
-  const first = useRef<PricingModel | null>(null);
-  const load = () => { setError(''); api<PricingModel>('/sales/pricing').then((x) => { first.current = x; setM(x); setFields(Object.fromEntries(x.inputs.map((i) => [i.ref, toField(i)]))); }).catch((e) => setError(e.message)); };
-  useEffect(load, []);
+  const fill = (x: PricingModel) => { setM(x); setFields(Object.fromEntries(x.inputs.map((i) => [i.key, String(i.value)]))); };
+  const load = (plan?: string) => { setError(''); api<PricingModel>('/sales/pricing', plan ? { body: { plan, inputs: {} } } : undefined).then(fill).catch((e) => setError(e.message)); };
+  useEffect(() => load(), []);
   const recalc = (next: Record<string, string>) => {
     setFields(next);
     window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => {
       if (!m) return;
       const inputs: Record<string, number> = {};
-      for (const i of m.inputs) { const v = fromField(i, next[i.ref] ?? ''); if (v !== null) inputs[i.ref] = v; }
-      api<PricingModel>('/sales/pricing', { body: { inputs } }).then(setM).catch((e) => setError(e.message));
+      for (const i of m.inputs) { const n = Number((next[i.key] ?? '').replace(/[$,\s]/g, '')); if (Number.isFinite(n)) inputs[i.key] = n; }
+      api<PricingModel>('/sales/pricing', { body: { plan: m.plan, inputs } }).then(setM).catch((e) => setError(e.message));
     }, 300);
   };
-  if (error && !m) return <ErrorBox error={error} retry={load} />;
+  if (error && !m) return <ErrorBox error={error} retry={() => load()} />;
   if (!m) return <PageSkeleton kind="list" />;
-  const reset = () => { if (first.current) { setM(first.current); setFields(Object.fromEntries(first.current.inputs.map((i) => [i.ref, toField(i)]))); } };
+  const head = m.outputs.filter((o) => o.key === 'profit' || o.key === 'margin');
   return (
     <div className="space-y-4">
-      <Card className={cx('py-3.5', m.source === 'builtin' && 'border-warn/30 bg-warn-soft')}>
-        <div className="flex flex-wrap items-center gap-2">
-          <Pill tone={m.source === 'sheet' ? 'good' : 'warn'}>{m.source === 'sheet' ? `P/L sheet · ${m.tab}` : 'Built-in (sheet not read)'}</Pill>
-          {m.readAt && <span className="text-xs text-muted">read {timeAgo(m.readAt) || 'just now'} (kept 10 minutes)</span>}
+      <div className="flex flex-wrap items-center gap-2">
+        <Pill tone={m.source === 'sheet' ? 'good' : 'warn'}>{m.source === 'sheet' ? `P/L sheet · ${m.tab}` : 'Sheet not read'}</Pill>
+        {m.plans.length > 1 && (
+          <label className="flex items-center gap-2 text-sm text-fg-2">Plan
+            <select value={m.plan} onChange={(e) => load(e.target.value)} className="min-h-10 rounded-xl border border-line bg-surface px-3 text-sm font-semibold text-fg">
+              {m.plans.map((p) => <option key={p.key} value={p.key}>{p.name}</option>)}
+            </select>
+          </label>
+        )}
+        {m.readAt && <span className="text-xs text-muted">read {timeAgo(m.readAt) || 'just now'}</span>}
+        <span className="ml-auto"><Button onClick={() => load(m.plan)}>Reset</Button></span>
+      </div>
+      {(m.error || m.assumptions.length > 0) && (
+        <div className={cx('rounded-xl px-4 py-2.5 text-xs leading-snug', m.source === 'builtin' ? 'border border-warn/30 bg-warn-soft text-fg-2' : 'text-muted')}>
+          {m.error && <div className="font-semibold text-fg">{m.error}</div>}
+          {m.assumptions.map((a) => <div key={a}>{a}</div>)}
         </div>
-        {m.error && <div className="mt-1.5 text-sm text-fg-2">{m.error}</div>}
-        <ul className="mt-1.5 space-y-0.5 text-xs text-muted">{m.assumptions.map((a) => <li key={a}>{a}</li>)}</ul>
-      </Card>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="min-w-0">
-          <SectionHeader title="Inputs" icon="pen" right={<Button onClick={reset}>Reset</Button>} />
-          <Card className="p-0">
-            <ul className="divide-y divide-line">
-              {m.inputs.map((i) => (
-                <li key={i.ref} className="flex items-center gap-3 px-4 py-2.5 sm:px-5">
-                  <label htmlFor={`in-${i.ref}`} className="min-w-0 flex-1 text-[15px] text-fg">{i.label}<span className="ml-1.5 text-[11px] text-faint">{i.ref}</span></label>
-                  <span className="relative">
-                    {i.kind === 'money' && <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted">$</span>}
-                    <input id={`in-${i.ref}`} inputMode="decimal" value={fields[i.ref] ?? ''} onChange={(e) => recalc({ ...fields, [i.ref]: e.target.value })}
-                      className={cx('tabular min-h-10 w-32 rounded-xl border border-line bg-surface px-3 text-right text-[15px] text-fg outline-none focus:border-accent focus:ring-4 focus:ring-accent-soft', i.kind === 'money' && 'pl-6', i.kind === 'pct' && 'pr-7')} />
-                    {i.kind === 'pct' && <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted">%</span>}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Card>
+      )}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+        <section className="min-w-0 space-y-4">
+          {GROUPS.map((g) => {
+            const xs = m.inputs.filter((i) => i.group === g.key);
+            if (!xs.length) return null;
+            return (
+              <div key={g.key}>
+                <SectionHeader title={g.title} />
+                <Card className="p-0">
+                  <ul className="divide-y divide-line">
+                    {xs.map((i) => (
+                      <li key={i.key} className="flex items-center gap-3 px-4 py-2.5 sm:px-5">
+                        <label htmlFor={`in-${i.key}`} className="min-w-0 flex-1"><span className="block text-[15px] text-fg">{i.label}</span>{i.note && <span className="block text-[11px] leading-snug text-muted">{i.note}</span>}</label>
+                        <span className="relative shrink-0">
+                          {i.kind === 'money' && <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted">$</span>}
+                          <input id={`in-${i.key}`} inputMode="decimal" value={fields[i.key] ?? ''} onChange={(e) => recalc({ ...fields, [i.key]: e.target.value })}
+                            className={cx('tabular min-h-10 w-28 rounded-xl border border-line bg-surface px-3 text-right text-[15px] text-fg outline-none focus:border-accent focus:ring-4 focus:ring-accent-soft sm:w-32', i.kind === 'money' && 'pl-6')} />
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
+              </div>
+            );
+          })}
         </section>
         <section className="min-w-0">
-          <SectionHeader title="Results" icon="dollar" />
+          <SectionHeader title="Results" />
+          <div className="mb-3 grid grid-cols-2 gap-3">
+            {head.map((o) => (
+              <div key={o.key} className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-card">
+                <div className="truncate text-xs font-medium text-muted">{o.label}</div>
+                <div className={cx('tabular mt-1 text-[26px] font-bold leading-none tracking-tight', (o.value ?? 0) < 0 ? 'text-bad' : 'text-fg')}>{show(o)}</div>
+              </div>
+            ))}
+          </div>
           <Card className="p-0">
             <ul className="divide-y divide-line">
-              {m.outputs.map((o) => (
-                <li key={o.ref} className="flex items-center gap-3 px-4 py-2.5 sm:px-5" title={o.formula}>
-                  <span className="min-w-0 flex-1"><span className="block text-[15px] text-fg">{o.label}</span>{o.fromSheet && <span className="block text-[11px] text-muted">from the sheet (not worked out here)</span>}{o.error && <span className="block text-[11px] text-bad">{o.error}</span>}</span>
-                  <span className={cx('tabular shrink-0 text-[17px] font-bold', /price/i.test(o.label) ? 'text-accent-ink' : 'text-fg')}>{show(o.value, o.kind)}</span>
+              {m.outputs.filter((o) => !head.includes(o)).map((o) => (
+                <li key={o.key} className="flex items-center gap-3 px-4 py-2.5 sm:px-5">
+                  <span className="min-w-0 flex-1"><span className="block text-[15px] text-fg">{o.label}</span>{o.note && <span className="block text-[11px] text-muted">{o.note}</span>}</span>
+                  <span className={cx('tabular shrink-0 text-[17px] font-bold', (o.value ?? 0) < 0 ? 'text-bad' : 'text-fg')}>{show(o)}</span>
                 </li>
               ))}
             </ul>
           </Card>
+          <p className="mt-2 text-xs text-muted">Changing a line here never changes the sheet. Reset puts the sheet's numbers back.</p>
         </section>
       </div>
-      <p className="text-xs text-muted">Owner only. Changing an input here never changes the sheet. Hover a result to see its formula.</p>
     </div>
   );
 }

@@ -15,8 +15,8 @@ import { upsertUser } from '../src/hq/auth.js';
 import { ACCOUNTS, EA } from '../src/stages/accountHealth.js';
 import { EX, _resetDelivCache } from '../src/hq/deliverability.js';
 import { CAMPAIGNS_T, KF, LEAD_LISTS_T, LF, LLF, WORKSPACES_T, _resetCampaignsCache, isTest, newestFirst, sectionOf } from '../src/hq/campaigns.js';
-import { CX, LX, campaignActions, campaignState, filtersLine, listActions, listNextStep, listState } from '../src/hq/centerActions.js';
-import { bucketOf, sendingBox, sendingByClient } from '../src/hq/sendingAccounts.js';
+import { CX, LX, campaignActions, campaignState, filtersLine, listActions, listNextStep, listState, signatureFor, splitVersions, unescapeCopy } from '../src/hq/centerActions.js';
+import { bucketOf, campaignSenderState, isWarming, lastTestByClient, placementOf, sendingBox, sendingByClient, WARMUP_START } from '../src/hq/sendingAccounts.js';
 import { DECISIONS, DF } from '../src/decisions/fields.js';
 import { CC } from '../src/agents/scribe.js';
 import { pollActions } from '../src/airtable/bridge.js';
@@ -37,44 +37,81 @@ const inbox = (o: Record<string, unknown> = {}) => ({
   dailyLimit: 15, warmupLimit: 30, score: 90, bounce: 1, contacted: 300, warmupOff: false, ...o,
 }) as any;
 
-test('sending accounts: one bucket per inbox, worst first (spam, resting, not connected, sending, ready, warming, at risk, free)', () => {
-  assert.equal(bucketOf(inbox({ status: 'spam' }), true, false), 'spam', 'spam wins even when still in a live campaign');
-  assert.equal(bucketOf(inbox({ stage: 'Replace Domain' }), false, false), 'spam');
-  assert.equal(bucketOf(inbox({ status: 'resting' }), true, false), 'resting');
-  assert.equal(bucketOf(inbox({ connection: 'Not connected' }), true, false), 'disconnected');
-  assert.equal(bucketOf(inbox({ connection: '' }), false, false), 'disconnected', 'unknown connection is not free');
-  assert.equal(bucketOf(inbox(), true, false), 'sending');
-  assert.equal(bucketOf(inbox({ status: 'risk' }), true, false), 'sending', 'an at-risk inbox in a live campaign is still sending');
-  assert.equal(bucketOf(inbox(), false, true), 'ready');
-  assert.equal(bucketOf(inbox({ warmup: 55 }), false, false), 'warming');
-  assert.equal(bucketOf(inbox({ warmup: null }), false, false), 'free', 'not scored yet counts as free (as Atlas does)');
-  assert.equal(bucketOf(inbox({ status: 'risk' }), false, false), 'risk');
-  assert.equal(bucketOf(inbox(), false, false), 'free');
+test('sending accounts: the Airtable Campaign Center states (disconnected, sending, reserved next, releasing soon, warming, available)', () => {
+  const w = (o: Partial<{ sending: boolean; queued: boolean; releasing: boolean; warming: boolean }> = {}) => ({ sending: false, queued: false, releasing: false, warming: false, ...o });
+  assert.equal(bucketOf(inbox({ connection: 'Not connected' }), w({ sending: true })), 'disconnected', 'disconnected wins');
+  assert.equal(bucketOf(inbox({ connection: '' }), w()), 'disconnected', 'unknown connection is not available');
+  assert.equal(bucketOf(inbox(), w({ sending: true, queued: true, warming: true })), 'sending');
+  assert.equal(bucketOf(inbox(), w({ queued: true, releasing: true })), 'reserved', 'reserved next beats releasing soon');
+  assert.equal(bucketOf(inbox(), w({ releasing: true, warming: true })), 'releasing');
+  assert.equal(bucketOf(inbox(), w({ warming: true })), 'warming');
+  assert.equal(bucketOf(inbox({ status: 'spam' }), w()), 'available', 'health is not part of this summary (Airtable shows it the same way)');
+  assert.equal(bucketOf(inbox(), w()), 'available');
+  // A campaign as the Airtable screen reads it.
+  assert.deepEqual(campaignSenderState({ status: 'Active', stage: 'Live', progress: 0.3 }), { finished: false, sending: true, releasing: false, queued: false });
+  assert.deepEqual(campaignSenderState({ status: 'Active', progress: 0.6 }), { finished: false, sending: false, releasing: true, queued: false });
+  assert.deepEqual(campaignSenderState({ status: 'Draft', stage: 'Paused', progress: 0.1 }), { finished: false, sending: true, releasing: false, queued: false }, 'a paused stage is still live');
+  assert.deepEqual(campaignSenderState({ status: 'Uploaded', stage: '' }), { finished: false, sending: false, releasing: false, queued: true });
+  assert.deepEqual(campaignSenderState({ status: 'Spintax Generated', stage: 'Build Ready' }), { finished: false, sending: false, releasing: false, queued: true });
+  assert.equal(campaignSenderState({ status: 'Emails Generated', stage: 'Approved' }).queued, false, 'approved copy alone does not reserve inboxes');
+  assert.equal(campaignSenderState({ status: 'Active', progress: 100 }).finished, true, '100% sent = finished');
+  assert.equal(campaignSenderState({ status: 'Completed' }).finished, true);
+  // Warming = warm-up started under 14 days ago.
+  const now = Date.parse('2026-11-28T12:00:00Z');
+  assert.deepEqual(['2026-11-20', '2026-11-14', '2026-11-15', '2026-12-01', '', 'junk'].map((d) => isWarming(d, now)), [true, false, true, false, false, false]);
 });
 
-test('sending accounts: counts, daily capacity vs used, the "nothing is sending" alert, per client', () => {
+test('sending accounts: counts as Airtable (warming overlaps), daily capacity vs used, the "nothing is sending" alert, per client', () => {
+  const now = Date.parse('2026-11-28T12:00:00Z');
   const rows = [
     inbox({ id: 'recACC00000000001', email: 'a@x.com' }), inbox({ id: 'recACC00000000002', email: 'b@x.com' }), inbox({ id: 'recACC00000000003', email: 'c@x.com', dailyLimit: 10 }),
-    inbox({ id: 'recACC00000000004', email: 'd@x.com', status: 'resting', dailyLimit: 0 }), inbox({ id: 'recACC00000000005', email: 'e@x.com', warmup: 40, dailyLimit: 5 }),
-    inbox({ id: 'recACC00000000006', email: 'f@x.com', status: 'spam' }), inbox({ id: 'recACC00000000007', email: 'g@dulcy.io', clientKey: 'dulcy', client: 'Dulcy' }),
+    inbox({ id: 'recACC00000000004', email: 'd@x.com', status: 'resting', dailyLimit: 0 }), inbox({ id: 'recACC00000000005', email: 'e@x.com', dailyLimit: 5 }),
+    inbox({ id: 'recACC00000000006', email: 'f@x.com', connection: 'Disconnected' }), inbox({ id: 'recACC00000000007', email: 'g@dulcy.io', clientKey: 'dulcy', client: 'Dulcy' }),
+    inbox({ id: 'recACC00000000008', email: 'h@x.com' }),
   ];
-  const camps = [{ id: 'recC1', name: 'TWM - Roofers', status: 'Active', clientKey: 'twentywestmedia', accountIds: ['recACC00000000001', 'recACC00000000006'] },
-    { id: 'recC2', name: 'TWM - Built', status: 'Uploaded', clientKey: 'twentywestmedia', accountIds: ['recACC00000000002'] },
-    { id: 'recC3', name: 'Old', status: 'Completed', clientKey: 'twentywestmedia', accountIds: ['recACC00000000003'] }];
-  const b = sendingBox(rows, camps, { clientKey: 'twentywestmedia', client: 'Twenty West', activeKeys: new Set() });
-  assert.equal(b.total, 6);
-  assert.deepEqual(b.counts, { sending: 1, ready: 1, free: 1, warming: 1, risk: 0, resting: 1, spam: 1, disconnected: 0 });
-  assert.deepEqual(b.capacity, { total: 45, used: 15, free: 10, ready: 15 }, 'spam and resting do not count as capacity; a completed campaign frees its inbox');
-  assert.deepEqual(b.accounts.map((a) => a.bucket), ['sending', 'ready', 'free', 'warming', 'resting', 'spam']);
-  assert.deepEqual(b.accounts[0].campaigns, ['TWM - Roofers']);
-  assert.equal(b.accounts.find((a) => a.bucket === 'spam')!.note, 'still in a live campaign');
+  const camps = [{ id: 'recC1', name: 'TWM - Roofers', status: 'Active', stage: 'Live', progress: 0.2, clientKey: 'twentywestmedia', accountIds: ['recACC00000000001', 'recACC00000000006'] },
+    { id: 'recC2', name: 'TWM - Built', status: 'Uploaded', stage: 'Launch Ready', progress: 0, clientKey: 'twentywestmedia', accountIds: ['recACC00000000002'] },
+    { id: 'recC3', name: 'Old', status: 'Completed', clientKey: 'twentywestmedia', accountIds: ['recACC00000000003'] },
+    { id: 'recC4', name: 'TWM - Nearly done', status: 'Active', stage: 'Live', progress: 0.75, clientKey: 'twentywestmedia', accountIds: ['recACC00000000008'] }];
+  const warmupStart = new Map([['recACC00000000005', '2026-11-25'], ['recACC00000000002', '2026-11-26'], ['recACC00000000003', '2026-10-01']]);
+  const b = sendingBox(rows, camps, { clientKey: 'twentywestmedia', client: 'Twenty West', activeKeys: new Set(), warmupStart, now });
+  assert.equal(b.total, 7);
+  assert.deepEqual(b.counts, { available: 2, sending: 1, releasing: 1, reserved: 1, disconnected: 1, warming: 2 }, 'the reserved inbox is warming too: counted in both, as in Airtable');
+  assert.deepEqual(b.capacity, { total: 60, used: 30, free: 10, ready: 15 }, 'disconnected is not capacity; a completed campaign frees its inbox');
+  assert.deepEqual(b.accounts.map((a) => [a.email, a.bucket]), [['c@x.com', 'available'], ['d@x.com', 'available'], ['a@x.com', 'sending'], ['h@x.com', 'releasing'], ['b@x.com', 'reserved'], ['f@x.com', 'disconnected'], ['e@x.com', 'warming']]);
+  assert.deepEqual(b.accounts.find((a) => a.email === 'a@x.com')!.campaigns, ['TWM - Roofers']);
+  assert.equal(b.accounts.find((a) => a.email === 'd@x.com')!.note, 'resting (spam protocol)');
+  assert.equal(b.accounts.find((a) => a.email === 'b@x.com')!.warming, true);
   assert.equal(b.alert, '');
-  const idle = sendingBox(rows, [], { clientKey: 'twentywestmedia', client: 'Twenty West', activeKeys: new Set() });
-  assert.equal(idle.alert, 'Nothing is sending for Twenty West: 3 free inboxes could be.');
-  const all = sendingBox(rows, camps, { clientKey: '', client: '', activeKeys: new Set(['twentywestmedia', 'dulcy']) });
-  assert.equal(all.total, 7);
-  const lines = sendingByClient(rows, camps, [{ key: 'twentywestmedia', name: 'Twenty West' }, { key: 'dulcy', name: 'Dulcy' }, { key: 'empty', name: 'No inboxes' }]);
-  assert.deepEqual(lines.map((l) => [l.name, l.sending, l.free]), [['Dulcy', 0, 1], ['Twenty West', 1, 1]], 'clients with nothing sending first; no inboxes = left out');
+  const idle = sendingBox(rows, [], { clientKey: 'twentywestmedia', client: 'Twenty West', activeKeys: new Set(), now });
+  assert.equal(idle.alert, 'Nothing is sending for Twenty West: 6 available inboxes could be.');
+  const all = sendingBox(rows, camps, { clientKey: '', client: '', activeKeys: new Set(['twentywestmedia', 'dulcy']), now });
+  assert.equal(all.total, 8);
+  const lines = sendingByClient(rows, camps, [{ key: 'twentywestmedia', name: 'Twenty West' }, { key: 'dulcy', name: 'Dulcy' }, { key: 'empty', name: 'No inboxes' }], warmupStart, now);
+  assert.deepEqual(lines.map((l) => [l.name, l.counts.sending, l.counts.available]), [['Dulcy', 0, 1], ['Twenty West', 1, 2]], 'clients with nothing sending first; no inboxes = left out');
+});
+
+test('placement cell: a score with its date, "not in the last test", or "Not tested" (never a blank)', () => {
+  assert.deepEqual(placementOf({ score: 92, scoreAt: '2026-11-27' }, '2026-11-27'), { text: '92%', why: 'Tested 11/27.' });
+  assert.deepEqual(placementOf({ score: 80.4, scoreAt: '2026-11-20' }, '2026-11-27'), { text: '80% · 11/20', why: 'No 11/27 score yet (EmailGuard may still be testing it): this is its 11/20 score.' });
+  assert.equal(placementOf({ score: null, scoreAt: '' }, '2026-11-27').text, 'Not tested');
+  assert.match(placementOf({ score: null, scoreAt: '' }, '2026-11-27').why, /last 21 days/);
+  assert.match(placementOf({ score: 70, scoreAt: '' }, '2026-11-27').why, /older test/);
+  assert.deepEqual([...lastTestByClient([{ clientKey: 'dulcy', scoreAt: '2026-11-20' }, { clientKey: 'dulcy', scoreAt: '2026-11-27' }, { clientKey: 'twm', scoreAt: '' }])], [['dulcy', '2026-11-27']]);
+  const rows = [inbox({ id: 'recACC00000000001', score: 90, scoreAt: '2026-11-27' }), inbox({ id: 'recACC00000000002', score: 85, scoreAt: '2026-11-20' }), inbox({ id: 'recACC00000000003', score: null, scoreAt: '' })];
+  const b = sendingBox(rows, [], { clientKey: 'twentywestmedia', client: 'Twenty West', activeKeys: new Set() });
+  assert.deepEqual(b.accounts.map((a) => a.placement.text), ['90%', '85% · 11/20', 'Not tested']);
+});
+
+test('copy view helpers: Markdown escapes removed, "Variant N" split into versions, the build\'s signature and P.S.', () => {
+  assert.equal(unescapeCopy('Hi {FIRST\\_NAME} at {COMPANY\\_NAME}, 1\\. ok'), 'Hi {FIRST_NAME} at {COMPANY_NAME}, 1. ok');
+  assert.deepEqual(splitVersions('Variant 1\nHi {FIRST_NAME},\n\nOne.\n\nVariant 2\nHey {FIRST_NAME},\n\nTwo.'), [{ version: 1, body: 'Hi {FIRST_NAME},\n\nOne.' }, { version: 2, body: 'Hey {FIRST_NAME},\n\nTwo.' }]);
+  assert.deepEqual(splitVersions('Just one body.'), [{ version: 1, body: 'Just one body.' }]);
+  assert.deepEqual(splitVersions(''), []);
+  const sig = signatureFor('Hi {FIRST_NAME},\n\nWorth a chat?', { brandName: 'Dulcy', senderTitle: 'Founder' });
+  assert.ok(sig.startsWith('--\n{Best regards|'), sig);
+  assert.match(sig, /\{SENDER_FULL_NAME\}\nFounder, Dulcy\n\n\{P\.S\.\|P\.s\.\|p\.s\.\} or tell me to pound sand/);
+  assert.equal(signatureFor('Hi,\n\nWorth a chat?\n\nBest regards,\n{SENDER_FULL_NAME}\n\nP.S. Or tell me to pound sand...', {}), '', 'a body with its own sign-off and P.S. gets nothing added');
 });
 
 /* ---------- the buttons (pure) ---------- */
@@ -86,7 +123,7 @@ test('lead list buttons: the screen\'s gates, the lock while a step runs, owner 
   assert.deepEqual([view(l, 'filters').enabled, view(l, 'sample').why], [true, 'Generate filters first.']);
   assert.equal(view(listState(listRec({ [LX.icp]: '' })), 'filters').why, 'Write the targeting sentence (ICP Description) first.');
   assert.equal(view(listState(listRec({ [LX.client]: [] })), 'filters').why, 'Link exactly one client to this list first.');
-  assert.equal(view(l, 'filters', false).why, 'Only Alex (owner) can press this.');
+  assert.equal(view(l, 'filters', false).why, 'Only Alex can press this.');
   assert.equal(view(l, 'filters').dryRun, true, 'leadlist.filters is not in LIVE_STAGES');
   assert.equal(listActions(l, true, { dryRun: true, liveStages: ['leadlist.filters'] }).find((a) => a.key === 'filters')!.dryRun, false);
   l = listState(listRec({ [LX.filtersJson]: '{"country":["US"]}', [LX.companyGood]: 80, [LX.companies]: 100, [LX.expansionTarget]: 1000 }));
@@ -211,7 +248,7 @@ function fixture() {
     recACCA000000001A: acct('a@twm-mail.com', 101),
     recACCB000000001A: acct('b@twm-mail.com', 102),
     recACCC000000001A: acct('c@twm-mail.com', 103, { [EA.stage]: 'Resting 7 Days', [EA.dailyLimit]: 0 }),
-    recACCD000000001A: acct('d@twm-mail.com', 104, { [EX.warmupScore]: 60 }),
+    recACCD000000001A: acct('d@twm-mail.com', 104, { [EX.warmupScore]: 60, [WARMUP_START]: ago(3).slice(0, 10) }),
   };
   tables[CAMPAIGNS_T] = {
     recCAMPTWM000010A: { [KF.name]: 'TWM - Roofers', [KF.status]: 'Active', [KF.stage]: 'Live', [KF.client]: ['recWSTWM00000010A'], [KF.sent]: 400, [KF.contacted]: 400, [KF.emailAccounts]: ['recACCA000000001A'], [KF.lists]: ['recLISTTWM000100A'], ...idField(612) },
@@ -232,12 +269,15 @@ test('API: the Sending accounts box per client and for all active clients', { sk
   const r = await call('GET', '/hq/api/campaigns/accounts?client=twentywestmedia', cookie);
   assert.equal(r.status, 200, r.text);
   assert.equal(r.body.total, 4);
-  assert.deepEqual([r.body.counts.sending, r.body.counts.free, r.body.counts.warming, r.body.counts.resting], [1, 1, 1, 1]);
+  assert.deepEqual(r.body.counts, { available: 2, sending: 1, releasing: 0, reserved: 0, disconnected: 0, warming: 1 }, 'the Airtable chips; resting is not part of the summary');
+  assert.deepEqual(r.body.buckets.map((b: any) => b.label), ['Available', 'Sending', 'Releasing Soon', 'Reserved Next', 'Disconnected', 'Warming'], 'Airtable\'s names and order');
   assert.deepEqual(r.body.capacity, { total: 45, used: 15, free: 15, ready: 0 });
-  assert.deepEqual(r.body.accounts.map((a: any) => [a.email, a.bucket]), [['a@twm-mail.com', 'sending'], ['b@twm-mail.com', 'free'], ['d@twm-mail.com', 'warming'], ['c@twm-mail.com', 'resting']]);
-  assert.equal(r.body.accounts[0].campaigns[0], 'TWM - Roofers');
+  assert.deepEqual(r.body.accounts.map((a: any) => [a.email, a.bucket]), [['b@twm-mail.com', 'available'], ['c@twm-mail.com', 'available'], ['a@twm-mail.com', 'sending'], ['d@twm-mail.com', 'warming']]);
+  assert.equal(r.body.accounts[2].campaigns[0], 'TWM - Roofers');
+  assert.equal(r.body.accounts[1].note, 'resting (spam protocol)');
+  assert.ok(r.body.accounts.every((a: any) => a.placement.text), 'every inbox has a placement cell');
   const all = await call('GET', '/hq/api/campaigns/accounts', cookie);
-  assert.deepEqual(all.body.byClient.map((c: any) => [c.name, c.sending, c.free]), [['Twenty West Media', 1, 1]]);
+  assert.deepEqual(all.body.byClient.map((c: any) => [c.name, c.counts.sending, c.counts.available]), [['Twenty West Media', 1, 2]]);
   assert.deepEqual(writes, [], 'reading writes nothing');
 });
 
@@ -265,7 +305,7 @@ test('API: one lead list with its buttons; a press writes exactly what the Airta
   // Member: reads, cannot press.
   const josh = await login('josh@dulcy.io', 'josh long password 1');
   const jd = await call('GET', '/hq/api/campaigns/lists/recLISTNEW000100A', josh);
-  assert.equal(jd.body.actions.find((a: any) => a.key === 'sample').why, 'Only Alex (owner) can press this.');
+  assert.equal(jd.body.actions.find((a: any) => a.key === 'sample').why, 'Only Alex can press this.');
   assert.equal((await call('POST', '/hq/api/campaigns/lists/recLISTNEW000100A/action', josh, { action: 'sample', confirm: true })).status, 403);
   // Owner: confirm required; then the exact screen write.
   const no = await call('POST', '/hq/api/campaigns/lists/recLISTNEW000100A/action', cookie, { action: 'sample' });
@@ -318,6 +358,8 @@ test('API: campaign buttons (Pause on a live campaign), copy view, refused when 
   const copy = await call('GET', '/hq/api/campaigns/recCAMPNEW000010A/copy', cookie);
   assert.equal(copy.status, 200, copy.text);
   assert.deepEqual(copy.body.review.map((x: any) => [x.step, x.subject, x.thread]), [[1, 'quick question', false], [2, '', true]]);
+  assert.deepEqual(copy.body.review[0].versions.map((v: any) => [v.version, v.body]), [[1, 'Hi {FIRST_NAME}, ...'], [2, 'Hey {FIRST_NAME}, ...']], 'one email per version');
+  assert.match(copy.body.review[0].versions[0].signature, /^--\n\{Best regards\|[^}]*\},\n\{SENDER_FULL_NAME\}/, 'the signature the build adds');
   assert.equal(copy.body.plan, null);
   assert.deepEqual(copy.body.comesNext.map((x: any) => x.key), ['write', 'send-review'], 'a hand-made campaign: writing and sending for review come next');
   const build = await call('POST', '/hq/api/campaigns/recCAMPNEW000010A/action', cookie, { action: 'build', confirm: true });

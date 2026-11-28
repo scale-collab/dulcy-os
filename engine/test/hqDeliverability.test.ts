@@ -131,10 +131,10 @@ test('domain rules: blacklisted sick, check failed / monitoring error (Riley) wa
 test('what the engine is doing: rested + retest Friday, health loop next run / start date / off, replacement waiting', () => {
   const ctx = { loopOn: true, live: true, healthFrom: '2026-11-26T12:00:00.000Z', replacement: null };
   const extra = { restStarted: '2026-11-24T15:00:00.000Z', retestDue: '2026-12-01T03:00:00.000Z', dailyLimit: 0, previousLimit: 30 };
-  assert.equal(inboxDoing({ ...base, ...extra, stage: 'Resting 7 Days' }, [], ctx), 'Rested 11/24, retest Fri 12/4 · limit 0 (was 30).');
+  assert.equal(inboxDoing({ ...base, ...extra, stage: 'Resting 7 Days' }, [], ctx), 'Rested 11/24, retest 12/4 · limit 0 (was 30).');
   const t = (at: string, processed = false) => ({ id: 'recT', email: 'a@x.com', score: 40, google: 40, outlook: 40, at, processed, outcome: '', error: '' });
   const sick = inboxReasons({ ...base, score: 40 });
-  assert.match(inboxDoing({ ...base, ...extra, score: 40, test: t('2026-11-21T15:00:00.000Z') }, sick, ctx), /^Test is from before the health loop started \(11\/26\): Friday's test decides\.$/);
+  assert.match(inboxDoing({ ...base, ...extra, score: 40, test: t('2026-11-21T15:00:00.000Z') }, sick, ctx), /^Test is from before the health loop started \(11\/26\): the next test decides\.$/);
   assert.equal(inboxDoing({ ...base, ...extra, score: 40, test: t('2026-11-27T15:00:00.000Z') }, sick, ctx), 'Health loop rests it on its next run.');
   assert.equal(inboxDoing({ ...base, ...extra, score: 40, test: t('2026-11-27T15:00:00.000Z') }, sick, { ...ctx, live: false }), 'Health loop rests it on its next run (dry run: it reports only).');
   assert.equal(inboxDoing({ ...base, ...extra, score: 40, test: t('2026-11-27T15:00:00.000Z') }, sick, { ...ctx, loopOn: false }), 'Health loop is off on the server: nothing automatic.');
@@ -165,9 +165,9 @@ test('stale-placement warning: Problem → Data → Fix, the audit\'s missing wo
   assert.equal(rest.length, 0);
   assert.equal(warn.level, 'warn');
   assert.equal(warn.owner, 'Riley');
-  assert.equal(warn.problem, "Friday 11/27's placement scores may not arrive.");
-  assert.match(warn.data, /^Newest score 11\/21 \(5 days ago\)\. The n8n Inbox Placement "Check Results" workflow \(xcteI9ofNLOqC0GO\) was not visible in the 11\/25 audit\. The health loop only reads tests from 11\/26, so it needs Friday 11\/27's\.$/);
-  assert.match(warn.fix, /^Riley: confirm the workflow runs before Friday 11\/27\.$/);
+  assert.equal(warn.problem, 'The 11/27 placement scores may not arrive.');
+  assert.match(warn.data, /^Newest score 11\/21 \(5 days ago\)\. The n8n Inbox Placement "Check Results" workflow \(xcteI9ofNLOqC0GO\) was not visible in the 11\/25 audit\. The health loop only reads tests from 11\/26, so it needs the 11\/27 test\.$/);
+  assert.match(warn.fix, /^Riley: confirm the workflow runs before 11\/27\.$/);
   assert.ok(warn.why.length > 0, 'every note says why');
   // Sunday 11-29 with nothing new: stale (8 days) and bad.
   const [bad] = freshnessNotes(placementFreshness(newest, new Date('2026-11-29T15:00:00Z')), opts);
@@ -175,7 +175,7 @@ test('stale-placement warning: Problem → Data → Fix, the audit\'s missing wo
   assert.match(bad.data, /xcteI9ofNLOqC0GO/);
   // Friday missing but not yet 7 days old.
   const [missing] = freshnessNotes(placementFreshness('2026-11-24T15:00:00.000Z', new Date('2026-11-29T15:00:00Z')), opts);
-  assert.deepEqual([missing.level, missing.problem], ['bad', "Friday 11/27's placement scores are missing."]);
+  assert.deepEqual([missing.level, missing.problem], ['bad', 'The 11/27 placement scores are missing.']);
   // Friday 11-27's scores arrived: no note.
   assert.deepEqual(freshnessNotes(placementFreshness('2026-11-27T18:00:00.000Z', new Date('2026-11-28T15:00:00Z')), opts), []);
   // The loop switched off is said too.
@@ -255,7 +255,7 @@ test('deliverability API: session needed; tiles; Needs attention shows sick + re
   assert.deepEqual([byTitle['listed.com'].kind, byTitle['listed.com'].inboxes, byTitle['listed.com'].reason], ['domain', 2, 'Blacklisted on 2: spamhaus barracuda']);
   assert.deepEqual([byTitle['a@twm-mail.com'].reason, byTitle['a@twm-mail.com'].owner], ['Placement 45% (11/21)', 'Atlas']);
   assert.match(byTitle['a@twm-mail.com'].doing, /before the health loop started/);
-  assert.deepEqual([byTitle['b@twm-mail.com'].status, byTitle['b@twm-mail.com'].doing], ['resting', 'Rested 11/24, retest Fri 12/4 · limit 0 (was 30).']);
+  assert.deepEqual([byTitle['b@twm-mail.com'].status, byTitle['b@twm-mail.com'].doing], ['resting', 'Rested 11/24, retest 12/4 · limit 0 (was 30).']);
   assert.deepEqual([byTitle['c@twm-reach.com'].owner, byTitle['c@twm-reach.com'].client], ['Riley', 'Twenty West']);
   assert.match(byTitle['h@dulcy-ok.com'].reason, /^Bounce 6% \(9 of 150\)$/);
   assert.match(byTitle['dulcy-ok.com'].reason, /^Expires in 10 days/);

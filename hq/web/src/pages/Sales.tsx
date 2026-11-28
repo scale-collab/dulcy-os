@@ -1,19 +1,21 @@
-// Sales (owner only): Dulcy's own deals from booked call to signed and paid. What needs action first;
+// Sales: Dulcy's own deals from booked call to signed and paid. What needs action first;
 // the hottest deals, the numbers (periods and capacity), the pipeline and each deal one tap deeper.
 // Batch 4a (Alex 2026-11-27): no Airtable links, no SignWell, no client tasks. The one write here is
 // "Draft contract" (its own page): a DRAFT in Dulcy Sign, never sent. Money comes from the server for
-// the owner only.
+// the owner only (only the owner sees Sales; no "owner only" label on screen, RULES 2026-11-28).
+// Round 4 (Alex 2026-11-28, "still sucks"): the first view is one row of key numbers for the month
+// (meetings booked, show rate, close rate, revenue signed), then Needs action. No Hottest strip.
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import {
   api, ApiError, type SalesAction, type SalesActionKind, type SalesDealLite4a, type SalesDetail4a, type SalesHotDeal, type SalesInsights,
-  type SalesMonth, type SalesNote, type SalesReviewLite, type SalesStage, type SalesView4a, type User,
+  type SalesMonth, type SalesNote, type SalesRate, type SalesReviewLite, type SalesStage, type SalesView4a, type User,
 } from '../api';
 import { Avatar, BackLink, Button, Card, cx, Empty, ErrorBox, ExtLink, go, Icon, IconButton, Label, PageSkeleton, PageTitle, Pill, SectionHeader, setCount, timeAgo, usd } from '../ui';
 import SalesContract from './SalesContract';
 import { slashDate } from '../dates';
 // Round 3 (Alex 2026-11-27): Numbers with a period picker and charts, Pipeline + Funnel from Close, Pricing, Cole's Close updates.
 import SalesNumbers from './sales/SalesNumbers';
-import { CloseFunnel, ClosePipeline } from './sales/SalesClose';
+import { CloseFunnel, ClosePipeline, Conversions } from './sales/SalesClose';
 import SalesPricing from './sales/SalesPricing';
 import DealCloseUpdates from './sales/DealCloseUpdates';
 import type { CloseUpdateRow } from '../api';
@@ -30,13 +32,14 @@ const day = (d: string) => (d ? slashDate(d.slice(0, 10)) : '');
 const when = (iso: string) => (iso ? slashDate(iso) : '');
 type View = 'action' | 'hot' | 'numbers' | 'pipeline' | 'funnel' | 'pricing';
 const VIEWS: { key: View; label: string }[] = [{ key: 'action', label: 'Needs action' }, { key: 'hot', label: 'Hottest' }, { key: 'numbers', label: 'Numbers' }, { key: 'pipeline', label: 'Pipeline' }, { key: 'funnel', label: 'Funnel' }, { key: 'pricing', label: 'Pricing' }];
-const viewPath = (v: View, days: number) => (v === 'action' ? 'sales' : v === 'pipeline' ? `sales/pipeline${days === 90 ? '/90' : ''}` : `sales/${v}`);
+const viewPath = (v: View, days: number) => (v === 'action' ? 'sales' : v === 'pipeline' || v === 'funnel' ? `sales/${v}${days === 90 ? '/90' : ''}` : `sales/${v}`);
+const pctText = (r: SalesRate) => (r.pct == null ? '–' : `${r.pct}%`);
 /** Old SignWell / PandaDoc agreements still count; the tool name is history, not a link. */
 const toolLabel = (tool: string) => (tool === 'Dulcy Sign' ? 'Dulcy Sign' : 'Old agreement');
 
 /** #/sales[/hot|/numbers|/pipeline[/90]] · #/sales/<record id> · #/sales/<record id>/contract */
 export default function Sales({ user, a, b }: { user: User; a?: string; b?: string }) {
-  if (user.role !== 'owner') return <><PageTitle title="Sales" /><Card><Empty icon="lock" title="Owner only" sub="Sales has money in it, so only the owner sees it." /></Card></>;
+  if (user.role !== 'owner') return <><PageTitle title="Sales" /><Card><Empty icon="lock" title="Not in your view" sub="Sales is not part of your HQ." /></Card></>;
   if (a && /^rec[A-Za-z0-9]{14}$/.test(a)) return b === 'contract' ? <SalesContract id={a} /> : <DealPage id={a} />;
   const view: View = a === 'pipeline' || a === 'hot' || a === 'numbers' || a === 'funnel' || a === 'pricing' ? a : 'action';
   return <SalesHome view={view} days={b === '90' ? 90 : 30} />;
@@ -49,14 +52,13 @@ function SalesHome({ view, days }: { view: View; days: 30 | 90 }) {
   const [insError, setInsError] = useState('');
   const [busy, setBusy] = useState(false);
   const wantInsights = view === 'hot' || view === 'numbers';
-  // Round 2 (Alex, 2026-11-27: "nothing changed"): the first view also shows the Hottest 3, so insights load there too (not blocking).
-  const wantStrip = view === 'action';
+  // Round 4 (Alex 2026-11-28): no "Hottest 3" strip on the first view (Hottest is its own tab).
   const load = useCallback((refresh = false) => {
     setBusy(true); setError('');
     api<SalesView4a>(`/sales?days=${days}${refresh ? '&refresh=1' : ''}`).then((x) => { setD(x); setCount('sales', x.counts.action); })
-      .catch((e) => setError(e instanceof ApiError && e.status === 403 ? 'Only the owner sees Sales.' : e.message)).finally(() => setBusy(false));
-    if (refresh || wantInsights || wantStrip) { setInsError(''); api<SalesInsights>(`/sales/insights${refresh ? '?refresh=1' : ''}`).then(setIns).catch((e) => setInsError(e.message)); }
-  }, [days, wantInsights, wantStrip]);
+      .catch((e) => setError(e instanceof ApiError && e.status === 403 ? 'Sales is not part of your HQ.' : e.message)).finally(() => setBusy(false));
+    if (wantInsights) { setInsError(''); api<SalesInsights>(`/sales/insights${refresh ? '?refresh=1' : ''}`).then(setIns).catch((e) => setInsError(e.message)); }
+  }, [days, wantInsights]);
   useEffect(() => load(), [load]);
   const title = (
     <PageTitle title="Sales" kicker={d ? `Dulcy's own deals · ${d.counts.action} need action` : "Dulcy's own deals"} sub="Booked call to signed and paid. What needs action first."
@@ -67,12 +69,7 @@ function SalesHome({ view, days }: { view: View; days: 30 | 90 }) {
   return (
     <div>
       {title}
-      {view === 'action' ? (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] [&>*]:min-w-0">
-          <TopNumbers now={d.top.thisMonth} last={d.top.lastMonth} compact />
-          <HotStrip ins={ins} error={insError} />
-        </div>
-      ) : <TopNumbers now={d.top.thisMonth} last={d.top.lastMonth} />}
+      <KeyNumbers now={d.top.thisMonth} last={d.top.lastMonth} />
       <div role="tablist" aria-label="Sales views" className="mt-5 grid grid-cols-3 gap-1 sm:flex">
         {VIEWS.map((x) => {
           const on = x.key === view;
@@ -88,7 +85,7 @@ function SalesHome({ view, days }: { view: View; days: 30 | 90 }) {
       <div className="mt-4">
         {view === 'action' && <ActionList rows={d.action} />}
         {view === 'pipeline' && <ClosePipeline fallback={<Pipeline p={d.pipeline} days={days} />} />}
-        {view === 'funnel' && <CloseFunnel />}
+        {view === 'funnel' && <CloseFunnel fallback={<Pipeline p={d.pipeline} days={days} tab="funnel" />} />}
         {view === 'pricing' && <SalesPricing />}
         {view === 'numbers' && (insError && !ins ? <ErrorBox error={insError} retry={() => load()} /> : <SalesNumbers ins={ins} onSaved={() => load(true)} />)}
         {view === 'hot' && (insError && !ins ? <ErrorBox error={insError} retry={() => load()} /> : !ins ? <PageSkeleton kind="list" /> : <Hottest ins={ins} />)}
@@ -97,78 +94,50 @@ function SalesHome({ view, days }: { view: View; days: 30 | 90 }) {
         <div className="mt-6">
           <SectionHeader title="Data to fix" icon="alert" right={<span className="text-xs text-muted">{d.notes.length}</span>} />
           <p className="-mt-1 mb-2 text-xs text-muted">Records in Airtable or Close that disagree. Fixing them at the source makes these numbers right; each says who fixes it.</p>
-          <Notes notes={d.notes} fold={2} />
+          <Notes notes={d.notes} fold={view === 'action' ? 0 : 2} />
         </div>
       )}
-      <p className="mt-5 text-xs text-muted">
-        From Airtable (Sales Data, New Client Intake, Contracts, Call Feedback, Workspace IDs, Client Invoices){d.xeroConnected ? ', Xero payments' : ''} and Cole's call reviews, read {timeAgo(d.readAt) || 'just now'}; kept for 1 minute.
-        Not signed = sent {d.limits.unsignedDays}+ days ago. Calls and no-shows: the last {d.limits.callDays} days.
-      </p>
+      {(view === "action" || view === "numbers") && <p className="mt-5 text-xs text-muted">
+        From Airtable sales records{d.xeroConnected ? ', Xero' : ''} and Cole's call reviews, read {timeAgo(d.readAt) || 'just now'}. Show rate = past calls that showed (canceled left out); close rate = shows that signed.
+        Not signed = sent {d.limits.unsignedDays}+ days ago.
+      </p>}
     </div>
   );
 }
 
-function TopNumbers({ now, last, compact }: { now: SalesMonth; last: SalesMonth; compact?: boolean }) {
-  const tiles: { label: string; v: number | undefined; prev: number | undefined; money?: boolean; sub?: string }[] = [
-    { label: 'Booked', v: now.booked, prev: last.booked },
-    { label: 'Showed', v: now.showed, prev: last.showed },
-    { label: 'Closed', v: now.closed, prev: last.closed, sub: 'signed' },
-    ...(now.mrr !== undefined ? [{ label: 'New MRR', v: now.mrr, prev: last.mrr, money: true, sub: now.mrrUnknown ? `${now.mrrUnknown} with no amount` : undefined }] : []),
+/** Round 4 (Alex 2026-11-28): one short row of the key numbers for the month (vs last), above Needs action:
+ *  meetings booked, show rate, close rate, revenue signed. Percentages are the headline, counts underneath. */
+function KeyNumbers({ now, last }: { now: SalesMonth; last: SalesMonth }) {
+  const p = (r?: SalesRate) => (r?.pct === null || r?.pct === undefined ? '–' : `${Math.round(r.pct)}%`);
+  const prev = last.label.slice(0, 3);
+  const tiles: { label: string; v: string; unit?: string; up: number | null; sub: string }[] = [
+    { label: 'Meetings booked', v: String(now.booked), up: now.booked - last.booked, sub: `${prev}: ${last.booked}` },
+    { label: 'Show rate', v: p(now.showRate), up: diff(now.showRate, last.showRate), sub: `${now.showRate ? `${now.showRate.n} of ${now.showRate.of} calls` : ''} · ${prev}: ${p(last.showRate)}` },
+    { label: 'Close rate', v: p(now.closeRate), up: diff(now.closeRate, last.closeRate), sub: `${now.closeRate ? `${now.closeRate.n} of ${now.closeRate.of} shows signed` : ''} · ${prev}: ${p(last.closeRate)}` },
+    ...(now.mrr !== undefined ? [{ label: 'Revenue signed', v: usd(now.mrr), unit: '/mo', up: (now.mrr ?? 0) - (last.mrr ?? 0), sub: `${now.closed} signed${now.mrrUnknown ? ` (${now.mrrUnknown} with no amount)` : ''} · ${prev}: ${usd(last.mrr)}` }] : []),
   ];
   return (
-    <section aria-label={`${now.label} vs ${last.label}`}>
+    <section aria-label={`${now.label} so far vs ${last.label}`}>
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-xs font-medium text-muted">This month vs last ({now.label} so far vs {last.label})</span>
-        {compact && <button onClick={() => go('sales/numbers')} className="inline-flex min-h-8 items-center gap-1 text-xs font-semibold text-accent-ink hover:underline">All numbers<Icon name="chevronRight" size={13} /></button>}
+        <span className="text-xs font-medium text-muted">{now.label} so far vs {last.label}</span>
+        <button onClick={() => go('sales/numbers')} className="inline-flex min-h-8 items-center gap-1 text-xs font-semibold text-accent-ink hover:underline">All numbers<Icon name="chevronRight" size={13} /></button>
       </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {tiles.map((t) => {
-          const up = (t.v ?? 0) > (t.prev ?? 0), down = (t.v ?? 0) < (t.prev ?? 0);
-          return (
-            <div key={t.label} className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-card">
-              <div className="truncate text-xs font-medium text-muted">{t.label}</div>
-              <div className="tabular mt-1 text-[26px] font-bold leading-none tracking-tight text-fg">{t.money ? usd(t.v) : t.v}</div>
-              <div className="mt-1.5 flex items-center gap-1 truncate text-xs text-muted">
-                {(up || down) && <Icon name={up ? 'trendUp' : 'trendDown'} size={13} className={up ? 'text-good' : 'text-bad'} />}
-                <span className="truncate">{last.label.slice(0, 3)}: {t.money ? usd(t.prev) : t.prev}{t.sub ? ` · ${t.sub}` : ''}</span>
-              </div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {tiles.map((t) => (
+          <div key={t.label} className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-card">
+            <div className="truncate text-xs font-medium text-muted">{t.label}</div>
+            <div className="tabular mt-1 flex items-center gap-1.5 text-[22px] sm:text-[26px] font-bold leading-none tracking-tight text-fg">
+              <span className="truncate">{t.v}{t.unit && <span className="text-sm font-semibold text-muted">{t.unit}</span>}</span>
+              {t.up !== null && t.up !== 0 && <Icon name={t.up > 0 ? 'trendUp' : 'trendDown'} size={16} className={cx('shrink-0', t.up > 0 ? 'text-good' : 'text-bad')} />}
             </div>
-          );
-        })}
+            <div className="mt-1.5 text-xs leading-snug text-muted">{t.sub}</div>
+          </div>
+        ))}
       </div>
     </section>
   );
 }
-
-/** The first view's "Hottest 3" (the Hottest tab has all of them, with the reasons). */
-function HotStrip({ ins, error }: { ins: SalesInsights | null; error: string }) {
-  const top = ins?.hottest.slice(0, 3) ?? [];
-  return (
-    <section aria-label="Hottest 3">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-xs font-medium text-muted">Hottest 3{ins && !ins.close.connected ? ' (Close not connected)' : ''}</span>
-        <button onClick={() => go('sales/hot')} className="inline-flex min-h-8 items-center gap-1 text-xs font-semibold text-accent-ink hover:underline">All hottest<Icon name="chevronRight" size={13} /></button>
-      </div>
-      <Card className="overflow-hidden p-0">
-        {!ins ? <div className="px-4 py-3.5 text-sm text-muted">{error ? `Not read: ${error}` : 'Reading the hottest deals…'}</div>
-          : !top.length ? <div className="px-4 py-3.5 text-sm text-muted">No hot deal right now.</div> : (
-            <ol className="divide-y divide-line">
-              {top.map((h, i) => (
-                <li key={h.key} className="flex items-center gap-3 px-4 py-2.5">
-                  <span className="tabular grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-accent-soft text-xs font-bold text-accent-ink">{i + 1}</span>
-                  <button onClick={() => (h.dealId ? go(`sales/${h.dealId}`) : go('sales/hot'))} className="min-w-0 flex-1 text-left">
-                    <span className="block truncate text-sm font-semibold text-fg">{h.name || h.company}{h.name && h.company && <span className="font-normal text-muted"> · {h.company}</span>}</span>
-                    <span className="block truncate text-xs text-fg-2">{h.reasons[0] ?? ''}{h.next ? ` · Next: ${h.next}` : ''}</span>
-                  </button>
-                  {h.dealId && <DraftButton id={h.dealId} accent />}
-                </li>
-              ))}
-            </ol>
-          )}
-      </Card>
-    </section>
-  );
-}
+const diff = (a?: SalesRate, b?: SalesRate) => (a?.pct == null || b?.pct == null ? null : a.pct - b.pct);
 /** A deal with no contract out yet can get one drafted (Dulcy Sign DRAFT, never sent). */
 const canDraft = (r: Pick<SalesDealLite4a, 'lost' | 'stage' | 'agreementState'>) => !r.lost && !['signed', 'paid', 'onboarded'].includes(r.stage) && (!r.agreementState || r.agreementState === 'draft' || r.agreementState === 'none');
 function DraftButton({ id, accent }: { id: string; accent?: boolean; small?: boolean }) {
@@ -197,7 +166,13 @@ function ReviewPill({ r }: { r: SalesReviewLite | null }) {
 
 function ActionList({ rows }: { rows: SalesDealLite4a[] }) {
   if (!rows.length) return <Card><Empty icon="check" tone="good" title="Nothing needs action" sub="No call today, nothing unsigned, unpaid or waiting to onboard." /></Card>;
+  // One line of what is waiting ("2 Call today · 1 Not paid"), in the list's own order.
+  const kinds = rows.reduce<Map<SalesActionKind, number>>((m, r) => m.set(r.needs[0].kind, (m.get(r.needs[0].kind) ?? 0) + 1), new Map());
   return (
+    <>
+    <div className="mb-2 flex flex-wrap items-center gap-1.5" aria-label="What needs action">
+      {[...kinds].map(([k, n]) => <Pill key={k} tone={ACTION[k].tone}>{`${n} ${ACTION[k].label}`}</Pill>)}
+    </div>
     <Card className="overflow-hidden p-0">
       <ul className="divide-y divide-line">
         {rows.map((r) => {
@@ -229,6 +204,7 @@ function ActionList({ rows }: { rows: SalesDealLite4a[] }) {
         })}
       </ul>
     </Card>
+    </>
   );
 }
 
@@ -291,7 +267,7 @@ function HotRow({ h, rank }: { h: SalesHotDeal; rank: number }) {
 // Numbers (period picker, charts, capacity): sales/SalesNumbers.tsx (Round 3).
 
 // ---------- Pipeline ----------
-function Pipeline({ p, days }: { p: SalesView4a['pipeline']; days: 30 | 90 }) {
+function Pipeline({ p, days, tab = 'pipeline' }: { p: SalesView4a['pipeline']; days: 30 | 90; tab?: 'pipeline' | 'funnel' }) {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const max = Math.max(1, p.stages[0]?.count ?? 1);
   return (
@@ -299,17 +275,19 @@ function Pipeline({ p, days }: { p: SalesView4a['pipeline']; days: 30 | 90 }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div role="radiogroup" aria-label="Period" className="grid grid-cols-2 gap-1 rounded-xl border border-line bg-sunken p-1">
           {([30, 90] as const).map((x) => (
-            <button key={x} role="radio" aria-checked={days === x} onClick={() => go(`sales/pipeline${x === 90 ? '/90' : ''}`)}
+            <button key={x} role="radio" aria-checked={days === x} onClick={() => go(`sales/${tab}${x === 90 ? '/90' : ''}`)}
               className={cx('min-h-9 rounded-lg px-4 text-sm font-semibold transition', days === x ? 'bg-surface text-fg shadow-card' : 'text-muted hover:text-fg')}>{x} days</button>
           ))}
         </div>
         <div className="text-xs text-muted">{p.deals} deals since {day(p.from)}{p.canceled ? ` · ${p.canceled} canceled` : ''}{p.upcoming ? ` · ${p.upcoming} upcoming` : ''}</div>
       </div>
-      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <Rate label="Show rate" r={p.showRate} note="past calls, canceled left out" />
-        <Rate label="Qualified" r={p.qualifiedRate} note="of the calls that showed" />
-        <Rate label="Close rate" r={p.closeRate} note="of the calls that showed" />
+      {/* Round 4: percentages first. Close rate = of the calls that showed, how many signed; then stage to stage. */}
+      <div className="mt-3">
+        <Conversions close={p.closeRate.pct ?? null} closeSub={`${p.closeRate.n} of ${p.closeRate.of} shows signed${p.overall?.pct != null ? ` · ${p.overall.pct}% of booked calls` : ''}`} steps={p.conversions ?? []} />
       </div>
+      <p className="mt-2 text-xs text-muted">
+        Show rate {pctText(p.showRate)} ({p.showRate.text}; past calls, canceled left out) · Qualified {pctText(p.qualifiedRate)} of the calls that showed. Booked → Showed counts upcoming calls too.
+      </p>
       <Card className="mt-3 overflow-hidden p-0">
         <ol className="divide-y divide-line">
           {p.stages.map((s) => {
@@ -352,19 +330,11 @@ function Pipeline({ p, days }: { p: SalesView4a['pipeline']; days: 30 | 90 }) {
   );
 }
 
-function Rate({ label, r, note }: { label: string; r: { n: number; of: number; text: string }; note: string }) {
-  return (
-    <div className="min-w-0 rounded-2xl border border-line bg-surface px-4 py-3 shadow-card">
-      <div className="flex items-baseline justify-between gap-2"><span className="text-xs font-medium text-muted">{label}</span><span className="tabular text-lg font-bold text-fg">{r.n} of {r.of}</span></div>
-      <div className="truncate text-xs text-muted">{r.text} · {note}</div>
-    </div>
-  );
-}
 
 /** Problem → Data → Fix → Why, one card each; folded after `fold`. */
 function Notes({ notes, fold }: { notes: SalesNote[]; fold?: number }) {
   const [all, setAll] = useState(false);
-  const shown = fold && !all ? notes.slice(0, fold) : notes;
+  const shown = fold !== undefined && !all ? notes.slice(0, fold) : notes;
   return (
     <>
       <ul className="space-y-2">
@@ -382,7 +352,7 @@ function Notes({ notes, fold }: { notes: SalesNote[]; fold?: number }) {
           </li>
         ))}
       </ul>
-      {fold !== undefined && notes.length > fold && <button onClick={() => setAll(!all)} className="mt-1.5 min-h-9 text-sm font-semibold text-accent-ink hover:underline">{all ? 'Show fewer' : `Show ${notes.length - fold} more`}</button>}
+      {fold !== undefined && notes.length > fold && <button onClick={() => setAll(!all)} className="mt-1.5 min-h-9 text-sm font-semibold text-accent-ink hover:underline">{all ? (fold ? 'Show fewer' : 'Hide') : fold ? `Show ${notes.length - fold} more` : `Show ${notes.length === 1 ? "it" : "them"}`}</button>}
     </>
   );
 }

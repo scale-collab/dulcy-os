@@ -22,6 +22,9 @@ import { clientKey, groupWorkspaces } from './clients.js';
 import { pendingDecisions, type DecisionCard, type HqAirtable } from './decisions.js';
 import { pileFor } from './agents.js';
 import { WORKSPACES } from './inbox.js';
+import { spamBriefs, warmupBrief } from './deliverabilityFix.js';
+import { pendingTests, readPendingTests, waitingForRun, type PendingTest } from './deliverabilityPending.js';
+import { warmVerification } from './bounceStats.js';
 import { cachedCheapInboxes, cheapInboxesConfig, type CiIndex } from '../providers/cheapInboxes.js';
 
 export const DELIV_CACHE_MS = 60_000;
@@ -100,7 +103,7 @@ export interface Item { key: string; kind: 'inbox' | 'domain'; status: Health; t
 export interface Freshness {
   newest: string; ageDays: number | null; stale: boolean; expectedFriday: string; fridayMissing: boolean;
   /** The next Friday test that has not run yet (Round 2: on Friday 11/27 with 11/27's scores in, it is 12/4). */ nextFriday: string; tests: number;
-  /** The last test date (= newest) and the next one, for "Last test 11/27 · Next test Fri 12/4". */ lastTest: string; nextTest: string;
+  /** The last test date (= newest) and the next one, for "Last test 11/27 · Next test 12/4" (Round 4: no weekday). */ lastTest: string; nextTest: string;
 }
 export interface EngineRun { kind: string; status: string; at: string; message: string; dryRun: boolean }
 export interface EngineState { healthLoop: { everyMin: number; live: boolean; from: string }; runs: EngineRun[] }
@@ -156,13 +159,13 @@ export function freshnessNotes(f: Freshness, opts: { healthFrom: string; loopOn:
   if (f.stale) {
     out.push({ level: 'bad', owner: 'Riley', problem: `Placement scores are ${f.ageDays === null ? 'missing' : `${f.ageDays} days old`}.`, data: `${newest}${noneSinceAudit ? ` ${writer}` : ''}`, fix: fixIt, why });
   } else if (f.fridayMissing) {
-    out.push({ level: 'bad', owner: 'Riley', problem: `Friday ${md(f.expectedFriday)}'s placement scores are missing.`, data: `${newest}${noneSinceAudit ? ` ${writer}` : ''}`, fix: fixIt, why });
+    out.push({ level: 'bad', owner: 'Riley', problem: `The ${md(f.expectedFriday)} placement scores are missing.`, data: `${newest}${noneSinceAudit ? ` ${writer}` : ''}`, fix: fixIt, why });
   } else if (noneSinceAudit) {
     const healthFrom = opts.healthFrom ? nyDate(opts.healthFrom) : '';
     out.push({
-      level: 'warn', owner: 'Riley', problem: `Friday ${md(since)}'s placement scores may not arrive.`,
-      data: `${newest} ${writer}${healthFrom && f.newest && f.newest < healthFrom ? ` The health loop only reads tests from ${md(healthFrom)}, so it needs Friday ${md(since)}'s.` : ''}`,
-      fix: `Riley: confirm the workflow runs before Friday ${md(since)}.`, why,
+      level: 'warn', owner: 'Riley', problem: `The ${md(since)} placement scores may not arrive.`,
+      data: `${newest} ${writer}${healthFrom && f.newest && f.newest < healthFrom ? ` The health loop only reads tests from ${md(healthFrom)}, so it needs the ${md(since)} test.` : ''}`,
+      fix: `Riley: confirm the workflow runs before ${md(since)}.`, why,
     });
   }
   if (!opts.loopOn) out.push({ level: 'info', owner: 'Riley', problem: 'The account health loop is off on the server.', data: 'ACCOUNT_HEALTH_EVERY_MIN is 0: no inbox is rested, recovered or replaced automatically.', fix: 'Alex: set ACCOUNT_HEALTH_EVERY_MIN (e.g. 60) when ready.', why: 'RULES 2026-11-25: resting and recovering are automatic.' });
@@ -262,14 +265,14 @@ export function inboxDoing(a: InboxFacts & { restStarted: string; retestDue: str
   if (a.stage === 'Resting 7 Days') {
     const fri = a.retestDue ? fridayOnOrAfter(nyDate(a.retestDue)) : '';
     const limit = a.dailyLimit !== null ? ` · limit ${a.dailyLimit}${a.previousLimit ? ` (was ${a.previousLimit})` : ''}` : '';
-    return `Rested ${a.restStarted ? md(nyDate(a.restStarted)) : 'UNKNOWN date'}, retest Fri ${fri ? md(fri) : 'UNKNOWN'}${limit}.`;
+    return `Rested ${a.restStarted ? md(nyDate(a.restStarted)) : 'UNKNOWN date'}, retest ${fri ? md(fri) : 'UNKNOWN'}${limit}.`;
   }
   if (a.stage === 'Manual Review') return 'Waiting for a person (Manual Review). Nothing automatic.';
   const placement = reasons.find((r) => r.code === 'placement' && r.level === 'spam');
   if (placement) {
     if (!ctx.loopOn) return 'Health loop is off on the server: nothing automatic.';
     const t = a.test;
-    if (t && ctx.healthFrom && Date.parse(t.at) < Date.parse(ctx.healthFrom)) return `Test is from before the health loop started (${md(nyDate(ctx.healthFrom))}): Friday's test decides.`;
+    if (t && ctx.healthFrom && Date.parse(t.at) < Date.parse(ctx.healthFrom)) return `Test is from before the health loop started (${md(nyDate(ctx.healthFrom))}): the next test decides.`;
     if (t?.processed && t.outcome === 'Failed') return 'Health loop could not process its test.';
     if (t && !t.processed) return `Health loop rests it on its next run${dry}.`;
     return `Waiting for the next placement test${dry}.`;
@@ -308,6 +311,7 @@ export const TESTS_CACHE_MS = 10 * 60_000;
 
 export interface DelivSource {
   ws: AirtableRecord[]; accounts: AirtableRecord[]; domains: AirtableRecord[]; tests: AirtableRecord[]; newestTest: AirtableRecord | null;
+  /** Round 4: tests still waiting at EmailGuard (Inbox Placement Tests base); null = that base cannot be read. */ pending?: AirtableRecord[] | null;
   queue: AirtableRecord[]; purchases: AirtableRecord[]; decisions: DecisionCard[]; runs: EngineRun[]; readAt: string;
   /** Round 3: Cheap Inboxes (real renewal dates and inbox prices); null when CHEAPINBOXES_API_KEY is not set. */ cheap?: CiIndex | null;
 }
@@ -315,12 +319,13 @@ export interface DelivSource {
 let ciReader: (refresh: boolean) => Promise<CiIndex> | null = (refresh) => cachedCheapInboxes(cheapInboxesConfig(), fetch, refresh);
 export function setCheapInboxesReader(fn: ((refresh: boolean) => Promise<CiIndex> | null) | null) { ciReader = fn ?? ((refresh) => cachedCheapInboxes(cheapInboxesConfig(), fetch, refresh)); }
 
-type TestsPart = Pick<DelivSource, 'tests' | 'newestTest'>;
+type TestsPart = Pick<DelivSource, 'tests' | 'newestTest' | 'pending'>;
 function readTests(at: HqAirtable): Promise<TestsPart> {
   return Promise.all([
     at.list(PLACEMENT, `AND({Overall Score}!='',IS_AFTER(CREATED_TIME(),DATEADD(NOW(),-${TEST_WINDOW_DAYS},'days')))`, TEST_FIELDS, 8000, { sortField: 'Test Date', sortDesc: true }),
     at.list(PLACEMENT, `{Overall Score}!=''`, [PT.email, PT.overall], 1, { sortField: 'Test Date', sortDesc: true }).then((r) => r[0] ?? null),
-  ]).then(([tests, newestTest]) => ({ tests, newestTest }));
+    readPendingTests(),
+  ]).then(([tests, newestTest, pending]) => ({ tests, newestTest, pending }));
 }
 
 export async function readDelivSource(at: HqAirtable, db: Db, tests?: Promise<TestsPart>, refresh = false): Promise<DelivSource> {
@@ -338,7 +343,7 @@ export async function readDelivSource(at: HqAirtable, db: Db, tests?: Promise<Te
     Promise.resolve(ciReader(refresh)).catch(() => null),
   ]);
   // The formulas already filter; filtered again here so a wider copy of the rows never shows.
-  return { ws, accounts, domains, tests: t.tests, newestTest: t.newestTest, queue: queue.filter((q) => !['Completed', 'Rejected'].includes(s(q.fields[SQ.status]))), purchases: purchases.filter((p) => !['Completed', 'Failed'].includes(s(p.fields[DPR.status]))), decisions, runs, readAt: new Date().toISOString(), cheap: cheap ?? null };
+  return { ws, accounts, domains, tests: t.tests, newestTest: t.newestTest, pending: t.pending ?? null, queue: queue.filter((q) => !['Completed', 'Rejected'].includes(s(q.fields[SQ.status]))), purchases: purchases.filter((p) => !['Completed', 'Failed'].includes(s(p.fields[DPR.status]))), decisions, runs, readAt: new Date().toISOString(), cheap: cheap ?? null };
 }
 
 let cache: { at: number; data: Promise<DelivSource> } | null = null;
@@ -366,6 +371,7 @@ export interface DelivModel {
   inboxes: InboxRow[]; domains: DomainRow[]; items: Item[]; replacements: Replacement[];
   clients: { key: string; name: string; tiles: Tiles; domains: number }[]; tiles: Tiles;
   tests: (TestFacts & { clientKey: string; client: string; domain: string })[]; freshness: Freshness; notes: DNote[]; engine: EngineState;
+  /** Round 4: tests still waiting at EmailGuard (active clients); null = not readable. */ pending: (PendingTest & { clientKey: string; date: string })[] | null;
   hidden: { inactiveInboxes: number; noClientInboxes: number; emptyDomains: number }; dataNotes: DNote[]; readAt: string;
   /** Round 3: is Cheap Inboxes connected (CHEAPINBOXES_API_KEY), and its average inbox price. */ cheap: { connected: boolean; error: string; domains: number; mailboxPrice: number | null; readAt: string };
 }
@@ -446,6 +452,8 @@ export function buildDeliverability(src: DelivSource, cfg: Pick<Config, 'airtabl
   for (const t of tests) if (!latestTest.has(t.email)) latestTest.set(t.email, t);
   const newestIso = tests[0]?.at || (src.newestTest ? src.newestTest.createdTime ?? s(src.newestTest.fields[PT.testDate]) : '');
   const freshness = placementFreshness(newestIso, now, tests.length);
+  const pending = src.pending ? pendingTests(src.pending).map((t) => ({ ...t, c: clientOf([], t.workspaceId) })).filter((t) => t.c?.active)
+    .map(({ c, ...t }) => ({ ...t, clientKey: c!.key, date: nyDate(t.at) })) : null;
 
   // Replacements (Spam Remediation Queue) and their decisions.
   const decisionFor = new Map<string, string>();
@@ -589,7 +597,7 @@ export function buildDeliverability(src: DelivSource, cfg: Pick<Config, 'airtabl
   const notes = freshnessNotes(freshness, { healthFrom: cfg.accountHealthFrom, loopOn });
   return {
     inboxes, domains, items, replacements, clients, tiles,
-    tests: tests.filter((t) => t.active).map(({ active: _a, ...t }) => t), freshness, notes,
+    tests: tests.filter((t) => t.active).map(({ active: _a, ...t }) => t), freshness, notes, pending,
     engine: { healthLoop: { everyMin: cfg.accountHealthEveryMin, live, from: cfg.accountHealthFrom }, runs: src.runs }, hidden, dataNotes: dataNotes(inboxes, domains, !!src.cheap && !src.cheap.error), readAt: src.readAt,
     cheap: { connected: !!src.cheap, error: src.cheap?.error ?? '', domains: src.cheap?.domains.size ?? 0, mailboxPrice: src.cheap?.mailboxPrice ?? null, readAt: src.cheap?.readAt ?? '' },
   };
@@ -680,6 +688,8 @@ export function attentionView(m: DelivModel, client?: string) {
     notes: m.notes, freshness: m.freshness, engine: m.engine, replacementsWaiting: m.replacements.filter((r) => r.status === 'Pending Review' && matchClient(r.clientKey, client)).length,
     hidden: m.hidden, readAt: m.readAt, warmup: warmupSummary(m.inboxes, client),
     renewalGap: renewalGap(m.domains, client),
+    // Round 4: one Fix it per problem (with the accounts in the brief), not a long list to read.
+    fixes: { warmup: warmupBrief(m.inboxes, client, c?.name ?? ''), spam: spamBriefs(items, client, c?.name ?? '') },
   };
 }
 
@@ -731,7 +741,11 @@ export function placementView(m: DelivModel, client?: string) {
   }).sort((a, b) => b.spam - a.spam || a.name.localeCompare(b.name));
   // Active clients with inboxes but no test in the window.
   const untested = m.clients.filter((c) => !byClient.has(c.key) && matchClient(c.key, client)).map((c) => ({ key: c.key, name: c.name, inboxes: c.tiles.total }));
-  return { freshness: m.freshness, notes: m.notes.filter((n) => n.owner === 'Riley'), clients, untested, runs: testRuns(m.tests, client), bands: SCORE_BANDS.map((b) => b.key), windowDays: TEST_WINDOW_DAYS, limits: { rest: LIMITS.placementRest, watch: LIMITS.placementWatch }, readAt: m.readAt };
+  const runs = testRuns(m.tests, client);
+  // Round 4: the newest run's tests still waiting at EmailGuard ("249 scored · 149 waiting for EmailGuard").
+  const since = runs[0]?.date ?? '';
+  const scored = new Set(m.tests.filter((t) => (t.date || nyDate(t.at)) >= since && matchClient(t.clientKey, client)).map((t) => t.email));
+  return { freshness: m.freshness, notes: m.notes.filter((n) => n.owner === 'Riley'), clients, untested, runs, pending: waitingForRun(m.pending, since, scored, client), bands: SCORE_BANDS.map((b) => b.key), windowDays: TEST_WINDOW_DAYS, limits: { rest: LIMITS.placementRest, watch: LIMITS.placementWatch }, readAt: m.readAt };
 }
 
 /** The next step of a purchase request in HQ (round 3): nothing moves by itself. Pure. */
@@ -784,7 +798,7 @@ export function domainsView(m: DelivModel, src: Pick<DelivSource, 'purchases' | 
     replacements: m.replacements.filter((r) => matchClient(r.clientKey, client)).map((r) => ({ ...r, client: clientName.get(r.clientKey) ?? '', link: r.status === 'Pending Review' ? { label: r.decisionId ? 'Decide' : 'Decisions', href: `decisions/${pileFor('Atlas')}` } : null })),
     purchases, notes: m.dataNotes, rule: 'Every domain has 2 inboxes (RULES 2026-11-25).', readAt: m.readAt,
     // Round 3: monthly inbox cost (owner only: money), the renewal-date gap, Cheap Inboxes state.
-    costs: owner ? inboxCosts(m, client) : null, costRule: `Inboxes x $${INBOX_MONTHLY_DEFAULT.toFixed(2)}/month (Dulcy's discounted Cheap Inboxes price).`,
+    costs: owner ? inboxCosts(m, client) : null, costRule: `Inboxes at $${INBOX_MONTHLY_DEFAULT.toFixed(2)} a month.`,
     renewalGap: renewalGap(m.domains, client), cheap: { connected: m.cheap.connected, error: m.cheap.error, readAt: m.cheap.readAt },
   };
 }
@@ -807,6 +821,8 @@ export async function deliverabilityView(at: HqAirtable, db: Db, cfg: Cfg, view:
   if (view === 'inboxes') return inboxesView(m, { client, q: params.get('q') ?? '', status: params.get('status') ?? '' });
   if (view === 'placement') return placementView(m, client);
   if (view === 'domains') return { ...domainsView(m, src, client, owner), renewalTask: await renewalTask(db) };
+  // Round 4: Verification is slow to read from scratch; start it now so the tab opens from the cache (reads only).
+  warmVerification(at);
   return attentionView(m, client);
 }
 

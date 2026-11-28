@@ -5,6 +5,7 @@ import { dealLine, HealthPill, InsightLines, num, pct1, WINDOW_LABEL } from './C
 import { InboxPanel, INBOX_TABS } from './Inbox';
 import ReplierPanel from './Replier';
 import { FixItButton } from '../fixIt';
+import { slashDate } from '../dates';
 
 interface Detail {
   client: Client;
@@ -87,12 +88,12 @@ export default function ClientPage({ id, user, tab, sub }: { id: string; user: U
 
       {owner && c.money && (
         <section className="mt-6">
-          <SectionHeader title="Money" icon="dollar" right={<span className="text-xs text-muted">owner only</span>} />
+          <SectionHeader title="Money" icon="dollar" />
           <Card className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <Money label="Deal" v={dealLine(c)} sub={c.money.dealLines.length > 1 ? c.money.dealLines.map((l) => `${l.label} ${usd(l.monthly || l.perCall)}`).join(' + ') : c.money.dealSource} />
             <Money label="LTV so far" v={usd(c.money.ltv)} sub={c.money.ltvNote} />
             <Money label={c.money.invoices.some((i) => i.late) ? 'Open invoices (some late)' : 'Coming up'} v={c.money.receivables ? usd(c.money.receivables) : '$0'} bad={c.money.invoices.some((i) => i.late)}
-              sub={c.money.invoices.length ? c.money.invoices.map((i) => `${usd(i.amount)} ${i.late ? 'late' : 'due'} ${i.due}`).join(' · ') : c.money.invoicesSource} />
+              sub={c.money.invoices.length ? c.money.invoices.map((i) => `${usd(i.amount)} ${i.late ? 'late' : 'due'} ${slashDate(i.due)}`).join(' · ') : c.money.invoicesSource} />
             <Money label="Months paying" v={c.money.months === null ? '–' : String(c.money.months)} sub={d.results.deals.roi ? `client ROI ${d.results.deals.roi}x` : undefined} />
             {c.money.feeNote && <div className="col-span-2 flex gap-2 text-xs text-muted sm:col-span-4"><Icon name="wrench" size={13} className="mt-0.5" />Atlas to fix in Airtable: {c.money.feeNote}</div>}
           </Card>
@@ -176,7 +177,7 @@ function ResultsOverTime({ d }: { d: Detail }) {
   const ws = d.results.windows;
   if (!ws.length) return <Card className="text-sm text-muted">No EmailBison numbers for this client yet (UNKNOWN).</Card>;
   const rows: [string, (r: Detail['results']['windows'][number]) => string][] = [
-    ['Emails sent', (r) => num(r.sent)], ['Interested', (r) => num(r.interested)], ['Meetings booked', (r) => num(r.meetings)],
+    ['Emails sent', (r) => num(r.sent)], ['People contacted', (r) => num(r.contacted)], ['Interested', (r) => num(r.interested)], ['Meetings booked', (r) => num(r.meetings)],
     ['Emails per meeting', (r) => num(r.emailsPerMeeting)], ['Emails per positive reply', (r) => num(r.emailsPerPositive)], ['Interested → booked', (r) => pct1(r.interestedToBooked)],
   ];
   return (

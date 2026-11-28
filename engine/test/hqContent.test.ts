@@ -17,6 +17,7 @@ import { CF, CONTENT, SETTINGS } from '../src/agents/sienna.js';
 import {
   CLIPS, KL, SF, XF, _resetContentCache, buildContent, ccStageOf, contentFriday, normalizedStage, contentNotes, ideaNeedsApproval, nextIdeaDates, nextStep, parsePrep, settingsOf,
   stageOf, targetsOf, videoOf, clipOf, weekOf, type ContentSource,
+  CHANNEL_LABEL, YOUTUBE_CHANNEL_IDS, _resetYoutubeCache, feedDates, nextPrepAt, postedOn, videoSteps, youtubeDates, youtubeId,
 } from '../src/hq/content.js';
 
 const url = process.env.TEST_DATABASE_URL;
@@ -159,7 +160,7 @@ test('content: Needs you groups ideas by channel and shows only clips Sienna pas
   const out = buildContent(source(rows, clips, { [rec(1)]: { [CF.description]: '**Angle:** Plain\n\n**Hook:** First line\n\n**Pillar:** cold outbound', [CF.ideaReason]: 'People ask.\n\nEvidence:\n- x' } }, {
     stuck: [{ id: rec(9), title: 'Stuck idea', channel: MAIN }], lastPrep: { status: 'failed', at: '2026-11-26T14:00:00.000Z', error: 'no ANTHROPIC_API_KEY' },
   }), 'appTEST', now);
-  assert.deepEqual(out.needs.ideas.map((g) => [g.label, g.items.map((i) => i.title)]), [['Main', ['Main idea']], ['Raw', ['Raw idea 1', 'Raw idea old']]], 'grouped by channel, newest first; rejected left out');
+  assert.deepEqual(out.needs.ideas.map((g) => [g.label, g.items.map((i) => i.title)]), [['Alex Woung', ['Main idea']], ['Alex Woung Raw', ['Raw idea 1', 'Raw idea old']]], 'grouped by channel, newest first; rejected left out');
   assert.deepEqual([out.needs.ideas[0].items[0].by, out.needs.ideas[1].items[0].by], ['Sienna', 'Reddit intake (n8n)']);
   assert.deepEqual([out.needs.ideas[0].items[0].angle, out.needs.ideas[0].items[0].hook, out.needs.ideas[0].items[0].why], ['Plain', 'First line', 'People ask.']);
   assert.deepEqual(out.needs.finals.map((f) => [f.title, f.clips.map((c) => c.name)]), [['Video with clips', ['Good clip']]], 'only clips Sienna passed');
@@ -204,6 +205,117 @@ test('content (Batch 5): the Content Center\'s 10 stages, its item order and the
   assert.equal(b.facts.details.productionStage, 'Editing');
   const c = out.pipeline.rows[2];
   assert.deepEqual([c.awaiting, c.facts.score, c.facts.source, c.facts.sourceUrl, c.next!.how], [true, 77, 'r/coldemail', 'https://reddit.com/r/x', 'hq']);
+});
+
+// ---------- round 4 (2026-11-28) ----------
+test('content (round 4): real channel names, never "Main" / "Raw"', () => {
+  assert.deepEqual(CHANNEL_LABEL, { 'Alex Woung': 'Alex Woung', 'Alex Woung Raw': 'Alex Woung Raw' });
+  const out = buildContent(source([v(1, { [CF.title]: 'x', [CF.channel]: MAIN, [CF.ideaDecision]: 'Needs Review' })]), 'appTEST', at12('2026-11-26').getTime());
+  assert.deepEqual(out.friday.channels.map((c) => c.label), ['Alex Woung', 'Alex Woung Raw']);
+  assert.equal(/"Main"|Main channel|"Raw"/.test(JSON.stringify(out)), false);
+});
+
+// The channel feed as YouTube serves it (trimmed; the real entries for Alex Woung on 2026-11-28).
+const FEED = `<feed><title>Alex Woung</title><published>2022-12-10T19:15:35+00:00</published>
+<entry><id>yt:video:X7mq617jlmE</id><yt:videoId>X7mq617jlmE</yt:videoId><title>This Cold Email Could Be One Sentence</title><published>2026-11-27T17:00:52+00:00</published></entry>
+<entry><id>yt:video:KYb_fCs1klg</id><yt:videoId>KYb_fCs1klg</yt:videoId><title>Outbound Funnel Math: Work Backward From Your Client Goal</title><published>2026-11-26T07:26:49+00:00</published></entry>
+</feed>`;
+
+test('content (round 4): posted date = YouTube Published At, else Publish Date, else the channel\'s YouTube feed (Outbound Funnel Math)', async () => {
+  assert.equal(youtubeId('https://youtu.be/KYb_fCs1klg'), 'KYb_fCs1klg');
+  assert.equal(youtubeId('https://www.youtube.com/watch?si=x&v=KYb_fCs1klg&t=3'), 'KYb_fCs1klg');
+  assert.equal(youtubeId('https://www.youtube.com/shorts/KYb_fCs1klg'), 'KYb_fCs1klg');
+  assert.equal(youtubeId('https://evil.example/youtu.be/KYb_fCs1klg'), '');
+  assert.equal(youtubeId('http://youtu.be/KYb_fCs1klg'), '', 'https only');
+  assert.deepEqual([...feedDates(FEED)], [['X7mq617jlmE', '2026-11-27'], ['KYb_fCs1klg', '2026-11-26']], 'entries only (not the feed\'s own date), in New York');
+  assert.equal(feedDates('<html>blocked</html>').size, 0);
+  // The real row: YouTube link + Publishing Status Published, no Publish Date, no YouTube Published At.
+  const funnel = videoOf(v(1, { [CF.title]: 'Outbound Funnel Math', [CF.channel]: MAIN, [CF.stage]: 'Script', [XF.youtubeUrl]: 'https://youtu.be/KYb_fCs1klg', [XF.publishingStatus]: 'Published' }, '2026-11-25T23:18:27.000Z'), new Set());
+  assert.deepEqual(postedOn(funnel), { date: '', from: '' }, 'no saved date');
+  _resetYoutubeCache();
+  const asked: string[] = [];
+  const get = async (u: string) => { asked.push(u); return FEED; };
+  const now = at12('2026-11-28').getTime();
+  assert.equal((await youtubeDates([videoOf(v(9, { [CF.channel]: MAIN }), new Set())], get, now)).size, 0);
+  assert.deepEqual(asked, [], 'nothing to look up: no request');
+  const yt = await youtubeDates([funnel], get, now);
+  assert.deepEqual(asked, [`https://www.youtube.com/feeds/videos.xml?channel_id=${YOUTUBE_CHANNEL_IDS['Alex Woung']}`], 'only that channel\'s feed');
+  assert.deepEqual(postedOn(funnel, yt), { date: '2026-11-26', from: 'YouTube' });
+  await youtubeDates([funnel], get, now + 60_000);
+  assert.equal(asked.length, 1, 'cached for an hour');
+  await youtubeDates([funnel], get, now + 61 * 60_000);
+  assert.equal(asked.length, 2, 'read again after an hour');
+  const saved = videoOf(v(2, { [CF.channel]: MAIN, [XF.youtubeUrl]: 'https://youtu.be/AAAAAAAAAAA', [XF.publishingStatus]: 'Published', [XF.youtubePublishedAt]: '2026-11-28T02:30:00.000Z', [XF.publishDate]: '2026-11-30' }), new Set());
+  assert.deepEqual(postedOn(saved), { date: '2026-11-27', from: 'YouTube Published At' }, 'the published time, in New York');
+  const planned = videoOf(v(3, { [CF.channel]: RAW, [XF.youtubeUrl]: 'https://youtu.be/BBBBBBBBBBB', [XF.publishingStatus]: 'Published', [XF.publishDate]: '2026-11-24' }), new Set());
+  assert.deepEqual(postedOn(planned), { date: '2026-11-24', from: 'Publish Date' });
+  assert.deepEqual(postedOn(videoOf(v(4, { [CF.channel]: RAW, [XF.publishDate]: '2026-11-24' }), new Set())), { date: '', from: '' }, 'no proof of posting = not posted');
+  // Bounded: at most one read per channel (14 videos → 1 feed); a failing read never throws and waits 15 minutes.
+  _resetYoutubeCache();
+  const many = Array.from({ length: 14 }, (_, i) => videoOf(v(100 + i, { [CF.channel]: RAW, [XF.youtubeUrl]: `https://youtu.be/${String(i).padStart(11, 'x')}`, [XF.publishingStatus]: 'Published' }), new Set()));
+  let n = 0;
+  const failing = async () => { n++; throw new Error('offline'); };
+  assert.equal((await youtubeDates(many, failing, now)).size, 0);
+  await youtubeDates(many, failing, now + 60_000);
+  assert.equal(n, 1);
+  _resetYoutubeCache();
+  // In the view: the row carries the posted date (so it is not "No date yet"); the data note says why.
+  const out = buildContent(source([v(1, { [CF.title]: 'Outbound Funnel Math', [CF.channel]: MAIN, [CF.stage]: 'Script', [XF.youtubeUrl]: 'https://youtu.be/KYb_fCs1klg', [XF.publishingStatus]: 'Published' }, '2026-11-25T23:18:27.000Z')], [], {}, { ytDates: yt }), 'appTEST', now);
+  const row = out.pipeline.rows.find((r) => r.id === rec(1))!;
+  assert.deepEqual([row.posted, row.postedDate, row.postedFrom], [true, '2026-11-26', 'YouTube']);
+  assert.equal(row.steps.find((s) => s.key === 'youtube')!.text, 'Posted 11/26.');
+  const note = out.notes.find((x) => x.problem === 'Posted, but no posted date saved')!;
+  assert.match(note.data, /^1 posted video has a YouTube link but no Publish Date.*"Outbound Funnel Math".*HQ read its date from YouTube for now \(11\/26\)/);
+  assert.equal(note.owner, 'Sienna');
+});
+
+test('content (round 4): each video\'s steps, the one Next step, and where each happens', () => {
+  const now = at12('2026-11-26').getTime(); // 10:00 ET
+  type Ctx = Parameters<typeof videoSteps>[2];
+  const steps = (f: Record<string, unknown>, x: Partial<Ctx> = {}) =>
+    videoSteps(videoOf(v(1, { [CF.title]: 'T', [CF.channel]: MAIN, [CF.ideaDecision]: 'Approved', ...f }), new Set(f[CF.script] ? [rec(1)] : [])), [], { gamma: '', gammaUrl: '', hasPrep: false, stuck: false, now, posted: '', ...x });
+  const nowKeys = (ss: ReturnType<typeof steps>) => ss.filter((s) => s.state === 'now').map((s) => s.key);
+  assert.equal(nextPrepAt(now), now + 30 * 60_000, 'the next half hour');
+  // Idea waiting: the decision, in HQ.
+  const idea = steps({ [CF.ideaDecision]: 'Needs Review' });
+  assert.deepEqual([nowKeys(idea), idea[0].where, idea[0].buttons[0].kind], [['idea'], 'hq', 'decide']);
+  // Approved, no script: Sienna writes it by the next half hour; "Ask Sienna now" is a task, not a write.
+  const noScript = steps({});
+  const sc = noScript.find((s) => s.key === 'script')!;
+  assert.deepEqual([nowKeys(noScript), sc.where, sc.buttons[0].kind], [['script'], 'sienna', 'askSienna']);
+  assert.match(sc.text, /by about 10:30 AM ET/);
+  assert.match(steps({}, { stuck: true }).find((s) => s.key === 'script')!.text, /over a day ago/);
+  assert.match(steps({ [CF.recordingDate]: '2026-11-20' }).find((s) => s.key === 'script')!.text, /skips it: the recording date \(11\/20\) has passed/);
+  // Script ready: Open script; Gamma is "not automated yet" with Copy outline and Open Gamma, next to the folder step.
+  const ready = steps({ [CF.script]: 'x' }, { hasPrep: true, gamma: '1. Slide' });
+  assert.deepEqual(ready.find((s) => s.key === 'script')!.buttons.map((b) => b.kind), ['openScript']);
+  const g = ready.find((s) => s.key === 'gamma')!;
+  assert.deepEqual([g.state, g.where, g.optional, g.buttons.map((b) => b.kind)], ['now', 'notAutomated', true, ['copyGamma', 'link']]);
+  assert.deepEqual(nowKeys(ready), ['gamma', 'folder']);
+  assert.equal(ready.find((s) => s.key === 'folder')!.where, 'contentCenter');
+  assert.equal(steps({ [CF.script]: 'x' }, { hasPrep: true, gamma: '1', gammaUrl: 'https://gamma.app/docs/x' }).find((s) => s.key === 'gamma')!.state, 'done');
+  assert.equal(steps({ [CF.channel]: RAW, [CF.script]: 'x' }).some((s) => s.key === 'gamma'), false, 'Raw has no Gamma');
+  // Folder ready: record, upload to the Raw folder (Frame.io link); Sync Frame.io marks it Recorded.
+  const rec1 = steps({ [CF.script]: 'x', [XF.rawFolderUrl]: 'https://next.frame.io/raw', [CF.recordingDate]: '2026-11-27' });
+  const r = rec1.find((s) => s.key === 'record')!;
+  assert.deepEqual([r.state, r.where, r.buttons.map((b) => [b.kind, b.url ?? ''])], ['now', 'byHand', [['link', 'https://next.frame.io/raw'], ['contentCenter', '']]]);
+  assert.match(r.text, /recording date 11\/27.*Sync Frame\.io.*marks the video Recorded/);
+  // Recorded on OpusClip, full edit submitted: Sienna's editor finishes it.
+  const ed = steps({ [CF.script]: 'x', [XF.rawFolderUrl]: 'https://f.io/r', [XF.editingRoute]: 'OpusClip', [XF.message]: 'Recording found. Long-form edit submitted' });
+  assert.deepEqual([nowKeys(ed), ed.find((s) => s.key === 'edit')!.where], [['edit'], 'sienna']);
+  // Finished, thumbnail approved, details ready: post on YouTube by hand (HQ never posts).
+  const up = steps({ [CF.script]: 'x', [XF.rawFolderUrl]: 'https://f.io/r', [XF.finalAssetUrl]: 'https://f.io/f', [XF.finalThumbnailUrl]: 'https://f.io/t', [XF.thumbnailStatus]: 'Approved', [CF.ytTitle]: 'T', [XF.youtubeDescription]: 'D' });
+  const y = up.find((s) => s.key === 'youtube')!;
+  assert.deepEqual([nowKeys(up), y.where, y.buttons[0].url], [['youtube'], 'byHand', 'https://studio.youtube.com/']);
+  // Posted (Outbound Funnel Math): everything up to YouTube done, clips next; the stale "Script" stage is ignored.
+  const posted = steps({ [CF.stage]: 'Script', [XF.youtubeUrl]: 'https://youtu.be/KYb_fCs1klg', [XF.publishingStatus]: 'Published' }, { posted: '2026-11-27' });
+  assert.deepEqual(nowKeys(posted), ['clips']);
+  assert.deepEqual(posted.find((s) => s.key === 'youtube')!.buttons.map((b) => b.url), ['https://youtu.be/KYb_fCs1klg']);
+  // No Airtable links anywhere; one Next step at most.
+  for (const ss of [idea, noScript, ready, rec1, ed, up, posted]) {
+    assert.equal(JSON.stringify(ss).includes('airtable.com'), false);
+    assert.ok(ss.filter((s) => s.state === 'now' && !s.optional).length <= 1, 'one Next step');
+  }
 });
 
 // ---------- the API ----------
