@@ -236,6 +236,21 @@ export interface Config {
   vapidPrivateKey?: string;
   /** VAPID subject: mailto:<address> or an https:// URL (default: HQ_PUBLIC_URL). No personal address in code. */
   vapidSubject?: string;
+  /**
+   * Talk to the agents by voice in HQ (Alex 2026-11-28). VOICE=on switches it on (default off). Speech to
+   * text and text to speech use OpenAI (OPENAI_API_KEY); the answer itself is the normal chat (Claude).
+   */
+  voiceOn: boolean;
+  /** OPENAI_STT_MODEL (default gpt-4o-mini-transcribe; whisper-1 also works). */
+  openAiSttModel: string;
+  /** OPENAI_TTS_MODEL (default gpt-4o-mini-tts) and OPENAI_TTS_VOICE (default coral). */
+  openAiTtsModel: string;
+  openAiTtsVoice: string;
+  /** Optional voice per agent: OPENAI_TTS_VOICES="Ada:coral,Atlas:ash" (others use OPENAI_TTS_VOICE). */
+  openAiTtsVoices: Record<string, string>;
+  /** Longest clip (seconds, at most 60) and voice turns per person per hour. */
+  voiceMaxSeconds: number;
+  voiceTurnsPerHour: number;
 }
 
 export function loadConfig(env = process.env): Config {
@@ -394,5 +409,13 @@ export function loadConfig(env = process.env): Config {
     vapidPublicKey: (env.VAPID_PUBLIC_KEY ?? '').trim() || undefined,
     vapidPrivateKey: (env.VAPID_PRIVATE_KEY ?? '').trim() || undefined,
     vapidSubject: (env.VAPID_SUBJECT ?? '').trim() || undefined,
+    voiceOn: (env.VOICE || 'off').trim().toLowerCase() === 'on',
+    openAiSttModel: (env.OPENAI_STT_MODEL || 'gpt-4o-mini-transcribe').trim(),
+    openAiTtsModel: (env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts').trim(),
+    openAiTtsVoice: (env.OPENAI_TTS_VOICE || 'coral').trim().toLowerCase(),
+    openAiTtsVoices: Object.fromEntries((env.OPENAI_TTS_VOICES || '').split(',').map((x) => x.split(':').map((y) => y.trim()))
+      .filter((x) => x.length === 2 && /^[A-Za-z]+$/.test(x[0]) && /^[a-z_]+$/i.test(x[1])).map(([a, v]) => [a[0].toUpperCase() + a.slice(1).toLowerCase(), v.toLowerCase()])),
+    voiceMaxSeconds: Math.max(5, Math.min(60, num('VOICE_MAX_SECONDS', 60, env))),
+    voiceTurnsPerHour: Math.max(1, Math.min(600, num('VOICE_TURNS_PER_HOUR', 60, env))),
   };
 }
