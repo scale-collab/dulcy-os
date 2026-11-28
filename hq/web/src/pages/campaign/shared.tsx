@@ -78,6 +78,40 @@ export function ConfirmSheet({ a, what, endpoint, extra, onClose, onDone }: { a:
   );
 }
 
+/**
+ * Round 4 (Alex 2026-11-28: the campaign page "could look easier, it's so elongated"): one small row of
+ * buttons. A button that cannot be pressed stays visible, greyed; tapping it says why (a toast, so it
+ * works on the phone too). Pause acts at once; every other press opens its confirm sheet.
+ */
+export function CompactActions({ actions, what, endpoint, onDone, className, extra }: { actions: ActionR2[]; what: string; endpoint: string; onDone: () => void; className?: string; extra?: Record<string, unknown> }) {
+  const [open, setOpen] = useState<ActionR2 | null>(null);
+  const pauseNow = async (a: ActionR2) => {
+    try {
+      const r = await api<PressR2>(endpoint, { body: { action: a.key, confirm: true, ...extra } });
+      showToast({ text: r.message, tone: 'good', ms: 7000 }); onDone();
+    } catch (e) { showToast({ text: (e as Error).message, tone: 'bad', ms: 8000 }); }
+  };
+  const live = actions.filter((a) => !a.comesNext);
+  const next = actions.filter((a) => a.comesNext);
+  if (!actions.length) return null;
+  return (
+    <div className={cx('flex flex-wrap items-center gap-1.5', className)} role="toolbar" aria-label="Campaign actions">
+      {live.map((a) => (
+        <button key={a.key} type="button" aria-disabled={!a.enabled} title={a.enabled ? `${a.does}${a.spends ? ` Spends: ${a.spends}${a.dryRun ? ' (dry run)' : ''}` : ''}` : a.why}
+          onClick={() => (!a.enabled ? showToast({ text: `${a.label}: ${a.why}`, tone: 'plain', ms: 6000 }) : a.key === 'pause' ? void pauseNow(a) : setOpen(a))}
+          className={cx('inline-flex min-h-10 items-center rounded-lg px-3 text-sm font-semibold transition sm:min-h-9',
+            !a.enabled ? 'cursor-default border border-line bg-surface text-faint'
+              : a.tone === 'primary' ? 'bg-ink text-ink-fg shadow-card hover:bg-ink-hover'
+                : a.tone === 'danger' ? 'border border-bad-line bg-surface text-bad hover:bg-bad-soft' : 'border border-line-strong bg-surface text-fg hover:bg-hover')}>
+          {a.label}{a.enabled && a.dryRun && <span className="ml-1.5 text-[11px] font-medium opacity-70">dry run</span>}
+        </button>
+      ))}
+      {next.length > 0 && <span className="px-1 text-xs text-faint" title={next.map((a) => `${a.label}: ${a.does}`).join('\n')}>+{next.length} coming ({next.map((a) => a.label).join(', ')})</span>}
+      {open && <ConfirmSheet a={open} what={what} endpoint={endpoint} extra={extra} onClose={() => setOpen(null)} onDone={onDone} />}
+    </div>
+  );
+}
+
 /** A row of buttons. Disabled buttons show why underneath (on a computer, also on hover). */
 export function ActionBar({ actions, what, endpoint, onDone, className, extra }: { actions: ActionR2[]; what: string; endpoint: string; onDone: () => void; className?: string; extra?: Record<string, unknown> }) {
   const [open, setOpen] = useState<ActionR2 | null>(null);

@@ -35,6 +35,7 @@ import { actOnThread, listInbox, threadDetail } from './inbox.js';
 import { calendarInvite, replierDetail, saveReplier } from './replier.js';
 import { campaignDetail, listCampaigns, listLeadLists } from './campaigns.js';
 import { howOfRows, round2Campaigns } from './campaignRoutes.js';
+import { senderIndex } from './sendingAccounts.js';
 import { deliverabilityView, inboxIndex } from './deliverability.js';
 // Batch 3: inbox limits + ramp, bounce analytics, verification (Fix it is Batch 1's fixIt.ts).
 import { limitsView, previewLimitChange, requestLimitChange } from './inboxLimits.js';
@@ -525,7 +526,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       }
       m = p.match(/^\/hq\/api\/campaigns\/(rec[A-Za-z0-9]{14})$/);
       if (m && req.method === 'GET') {
-        const d = await campaignDetail(needAt(), db, m[1], owner, await inboxIndex(needAt(), db, cfg));
+        const d = await campaignDetail(needAt(), db, m[1], owner, await senderIndex(needAt(), db, cfg));
         if (!d) json(res, 404, { error: 'no such campaign' }); else json(res, 200, d);
         return true;
       }
