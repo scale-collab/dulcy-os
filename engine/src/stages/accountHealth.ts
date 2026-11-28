@@ -146,7 +146,8 @@ export const accountHealthStage: Stage = async (ctx) => {
   if (!cfg.airtableApiKey) throw new PermanentError('no AIRTABLE_API_KEY on the server');
   const at = createAirtableClient({ apiKey: cfg.airtableApiKey, baseId: cfg.airtableBaseId, baseUrl: cfg.airtableBaseUrl });
   const from = String(ctx.job.input.from ?? cfg.accountHealthFrom);
-  const tests = await at.list(PLACEMENT, `AND(NOT({Spam Protocol Processed}),IS_AFTER(CREATED_TIME(),'${from}'),{Overall Score}!='')`, Object.values(PT), Number(ctx.job.input.max ?? 300), { sortField: 'Test Date' });
+  // LEN(…&'') keeps a real 0% score: Airtable treats 0 as equal to '' (11/28: 30 inboxes at 0% were skipped).
+  const tests = await at.list(PLACEMENT, `AND(NOT({Spam Protocol Processed}),IS_AFTER(CREATED_TIME(),'${from}'),LEN({Overall Score}&'')>0)`, Object.values(PT), Number(ctx.job.input.max ?? 300), { sortField: 'Test Date' });
   const out = { tests: tests.length, rested: [] as string[], recovered: [] as string[], replace: [] as string[], held: 0, ok: 0, failed: [] as string[] };
 
   for (const t of tests) {
