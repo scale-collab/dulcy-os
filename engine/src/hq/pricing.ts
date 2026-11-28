@@ -1,22 +1,26 @@
-// Round 3 (Alex 2026-11-27): the pricing calculator from the "Dulcy Media P/L" Google Sheet, in Sales
-// (owner only), to set what to charge a client. The sheet is read at runtime (read only, cached 10
-// minutes): its calculator tab's formulas and values. In HQ the owner changes the inputs; the sheet's
-// own formulas are worked out here (a small formula reader: + - * / ^ %, SUM, AVERAGE, MIN, MAX,
-// ROUND/UP/DOWN, IF, IFERROR, ABS, AND, OR). Nothing is written to the sheet. No figure from the sheet
-// is ever kept in this repo: tests use a fake sheet.
-// Assumptions (UNKNOWN until checked on the real sheet):
-//   - The tab: the first whose name has "pricing" or "calculator" (else "Pricing Calculator").
-//   - A row reads "label | value": the label is the nearest text to the left of a number/formula.
-//   - Inputs = typed numbers that a formula uses; results = formula cells. A formula this reader does
-//     not know (or one that points at another tab) keeps the sheet's own value, marked "from the sheet".
-//   - "$" in the shown value = money, "%" = a percent (kept as a fraction, like Sheets).
-// When the sheet cannot be read, a built-in calculator (BUILTIN, below) is shown, with every
-// assumption written next to it, and all money inputs empty.
+// Round 3 (Alex 2026-11-27): the pricing calculator from the "Dulcy Media P/L" Google Sheet, in Sales,
+// to set what to charge a client. The sheet is read at runtime (read only, cached 10 minutes). Nothing
+// is written to the sheet. No figure from the sheet is ever kept in this repo: tests use a fake sheet.
+// Round 4 (Alex 2026-11-28: "inbox cost per team hour, team hours a month, target margin: this was not
+// in my sheet"): those came from a built-in fallback HQ showed because no tab of the P/L sheet is named
+// "Pricing" or "Calculator". The sheet's calculator is the "OPEX Guide" tab: one block per plan, headed
+// "Client Fulfillment - <plan>" with a "Cost" column:
+//   Retainer · Rev Share · Cheap Inboxes (inboxes × price) · Domains · Domain Masking ·
+//   Scraping / Verification / LinkedIn Verify / Company Verify credits (leads × cost per lead) ·
+//   tool seats (HeyReach, RB2B…) · one-off builds (first month only),
+//   then Cost Monthly, Profit Monthly, Act. Opex Monthly (cost ÷ revenue), Profit Margin Monthly, and
+//   the same "Setup" lines for the first month.
+// HQ reads those blocks and uses ONLY their lines as inputs (pick a plan, change any line); the results
+// are the sheet's own sums. No team hours, no target margin. One value is not the sheet's: the price
+// per inbox is Dulcy's $2.50 (RULES 2026-11-28, Cheap Inboxes discount), labelled so on screen.
+// When the sheet cannot be read, the same line names are shown empty (only $2.50 per inbox filled in).
+// The formula reader (evaluate) works out the sheet's line formulas (+ - * / ^ %, SUM, AVERAGE, MIN,
+// MAX, ROUND/UP/DOWN, IF, IFERROR, ABS, AND, OR).
 import type { SheetsClient } from '../providers/google.js';
 
 export const PNL_SHEET_ID = '1nUf28kpRs2olqUIIfdrVdyH1q67hRT-zhmaD9UL3knM';
-export const PRICING_TAB_DEFAULT = 'Pricing Calculator';
-export const PRICING_TAB_RE = /pricing|calculator/i;
+/** The calculator tab: "OPEX Guide" (Round 4: Alex's sheet has no tab named Pricing), else one named like Pricing / Calculator. */
+export const PRICING_TAB_RE = /opex|pricing|calculator/i;
 export interface SheetGrid { tab: string; values: string[][]; formulas: string[][]; readAt: string }
 
 // ---------- cells ----------
@@ -35,7 +39,6 @@ export function numberOf(shown: string): number | null {
   const n = Number(t) * (pct ? 0.01 : 1) * (neg ? -1 : 1);
   return Number.isFinite(n) ? n : null;
 }
-const kindOf = (shown: string): 'money' | 'pct' | 'number' => (/\$/.test(shown) ? 'money' : /%\s*$/.test(shown) ? 'pct' : 'number');
 
 // ---------- the formula reader ----------
 export class Unsupported extends Error {}
@@ -138,85 +141,160 @@ export function evaluate(formula: string, get: (ref: string) => Val): number | s
   return v;
 }
 
-// ---------- the calculator model ----------
-export interface PriceInput { ref: string; label: string; value: number; kind: 'money' | 'pct' | 'number'; note?: string }
-export interface PriceOutput { ref: string; label: string; value: number | string | null; kind: 'money' | 'pct' | 'number'; formula: string; fromSheet: boolean; error?: string }
-export interface PricingModel { source: 'sheet' | 'builtin'; tab: string; readAt: string; inputs: PriceInput[]; outputs: PriceOutput[]; assumptions: string[]; error?: string }
-
-function labelFor(values: string[][], r: number, c: number): string {
-  for (let k = c - 1; k >= 0; k--) { const t = (values[r]?.[k] ?? '').trim(); if (t && numberOf(t) === null) return t.slice(0, 120); }
-  for (let k = r - 1; k >= 0; k--) { const t = (values[k]?.[c] ?? '').trim(); if (t && numberOf(t) === null) return t.slice(0, 120); }
-  return refOf(r, c);
+// ---------- the calculator model (the OPEX Guide "Client Fulfillment" blocks) ----------
+export type PriceGroup = 'revenue' | 'volume' | 'monthly' | 'oneoff';
+export interface PriceInput { key: string; label: string; value: number; kind: 'money' | 'number'; group: PriceGroup; note?: string }
+export interface PriceOutput { key: string; label: string; value: number | null; kind: 'money' | 'pct'; note?: string }
+export interface PricePlan { key: string; name: string; inputs: PriceInput[]; sheetProfit: number | null; sheetInboxPrice?: number }
+export interface PricingModel {
+  source: 'sheet' | 'builtin'; tab: string; readAt: string; plans: { key: string; name: string }[]; plan: string;
+  inputs: PriceInput[]; outputs: PriceOutput[]; assumptions: string[]; error?: string;
 }
 
-/** The calculator from a tab: inputs (numbers a formula uses) and results (formulas), worked out with overrides. Pure. */
-export function pricingModel(g: SheetGrid, overrides: Record<string, number> = {}, source: 'sheet' | 'builtin' = 'sheet', assumptions: string[] = []): PricingModel {
+/** Dulcy's price per inbox a month (RULES 2026-11-28: Cheap Inboxes discount). Not a sheet figure. */
+export const INBOX_PRICE = 2.5;
+export const PLAN_HEADER_RE = /^\s*client fulfil+ment\s*[-–—:]\s*(.+?)\s*$/i;
+const RESULT_RE = /^\s*(cost|profit|alex profit|kevin profit|act\.?\s*opex|opex|profit margin)\b/i;
+const REVENUE_RE = /retainer|rev(enue)?\s*share|upfront|charge|setup fee/i;
+const INBOX_RE = /cheap\s*inbox|inboxes/i;
+const usd0 = (x: number) => `${x < 0 ? '-' : ''}$${Math.abs(Math.round(x)).toLocaleString('en-US')}`;
+
+/** Every "Client Fulfillment - <plan>" block of a tab, as calculator inputs (only the sheet's own lines). Pure. */
+export function parsePlans(g: SheetGrid): PricePlan[] {
+  const raw = (r: number, c: number) => String(g.formulas[r]?.[c] ?? '').trim();
+  const shownAt = (r: number, c: number) => String(g.values[r]?.[c] ?? '').trim();
+  const memo = new Map<string, Val>(); const busy = new Set<string>();
+  // A cell's number: a typed number as written (full precision, "-0.0048"), else its formula worked out, else the shown value.
+  const get = (ref: string): Val => {
+    const x = parseRef(ref); if (!x) return '';
+    if (memo.has(ref)) return memo.get(ref)!;
+    const f = raw(x.r, x.c);
+    let v: Val;
+    if (f.startsWith('=')) {
+      if (busy.has(ref)) throw new Unsupported('circular');
+      busy.add(ref);
+      try { v = evaluate(f, get); } catch { v = numberOf(shownAt(x.r, x.c)) ?? shownAt(x.r, x.c); } finally { busy.delete(ref); }
+    } else v = numberOf(f) ?? numberOf(shownAt(x.r, x.c)) ?? shownAt(x.r, x.c);
+    memo.set(ref, v); return v;
+  };
+  const num = (r: number, c: number): number | null => { const v = get(refOf(r, c)); return typeof v === 'number' && Number.isFinite(v) ? v : null; };
+  const text = (r: number, c: number) => shownAt(r, c) || (raw(r, c).startsWith('=') ? '' : raw(r, c));
   const rows = Math.max(g.values.length, g.formulas.length);
-  const formula = (ref: string) => { const x = parseRef(ref); const f = x ? String(g.formulas[x.r]?.[x.c] ?? '') : ''; return f.startsWith('=') ? f : ''; };
-  const shown = (ref: string) => { const x = parseRef(ref); return x ? String(g.values[x.r]?.[x.c] ?? '') : ''; };
-  const used = new Set<string>();
-  const outputs: string[] = [];
+  const heads: { r: number; c: number; name: string }[] = [];
   for (let r = 0; r < rows; r++) {
     const width = Math.max(g.values[r]?.length ?? 0, g.formulas[r]?.length ?? 0);
-    for (let c = 0; c < width; c++) {
-      const ref = refOf(r, c); const f = formula(ref);
-      if (!f) continue;
-      outputs.push(ref);
-      for (const m of f.matchAll(/(\$?[A-Za-z]{1,3}\$?\d+)(?::(\$?[A-Za-z]{1,3}\$?\d+))?/g)) {
-        const a = parseRef(m[1].replace(/\$/g, '')), b = m[2] ? parseRef(m[2].replace(/\$/g, '')) : a;
-        if (!a || !b) continue;
-        for (let rr = Math.min(a.r, b.r); rr <= Math.max(a.r, b.r) && rr - a.r < 200; rr++) for (let cc = Math.min(a.c, b.c); cc <= Math.max(a.c, b.c) && cc - a.c < 30; cc++) used.add(refOf(rr, cc));
-      }
-    }
+    for (let c = 0; c < width; c++) { const m = PLAN_HEADER_RE.exec(text(r, c)); if (m) heads.push({ r, c, name: m[1].slice(0, 60) }); }
   }
-  const inputs: PriceInput[] = [...used].filter((ref) => !formula(ref) && numberOf(shown(ref) || String(g.formulas[parseRef(ref)!.r]?.[parseRef(ref)!.c] ?? '')) !== null)
-    .sort((a, b) => parseRef(a)!.r - parseRef(b)!.r || parseRef(a)!.c - parseRef(b)!.c)
-    .map((ref) => { const x = parseRef(ref)!; const s = shown(ref) || String(g.formulas[x.r]?.[x.c] ?? ''); return { ref, label: labelFor(g.values, x.r, x.c), value: numberOf(s) as number, kind: kindOf(s) }; });
-  const inputVal = new Map(inputs.map((i) => [i.ref, Number.isFinite(overrides[i.ref]) ? overrides[i.ref] : i.value]));
-  const memo = new Map<string, Val>(); const busy = new Set<string>(); const fixed = new Set<string>();
-  const get = (ref: string): Val => {
-    if (inputVal.has(ref)) return inputVal.get(ref)!;
-    if (memo.has(ref)) return memo.get(ref)!;
-    const f = formula(ref);
-    if (!f) { const s = shown(ref); return numberOf(s) ?? s; }
-    if (busy.has(ref)) throw new Unsupported('circular');
-    busy.add(ref);
-    let v: Val;
-    try { v = evaluate(f, get); } catch (e) {
-      if (!(e instanceof Unsupported)) { busy.delete(ref); throw e; }
-      fixed.add(ref); v = numberOf(shown(ref)) ?? shown(ref);
+  const rangeRows = (f: string) => { const m = /SUM\s*\(\s*\$?[A-Z]{1,3}\$?(\d+)\s*:\s*\$?[A-Z]{1,3}\$?(\d+)\s*\)/i.exec(f); return m ? [Number(m[1]) - 1, Number(m[2]) - 1] as const : null; };
+  const plans: PricePlan[] = [];
+  for (const h of heads) {
+    const end = heads.find((o) => o.c === h.c && o.r > h.r)?.r ?? rows;
+    const lines: { r: number; label: string }[] = []; const results: { r: number; label: string; f: string }[] = [];
+    for (let r = h.r + 1; r < end; r++) {
+      const label = text(r, h.c); if (!label) continue;
+      if (RESULT_RE.test(label) && !REVENUE_RE.test(label)) { results.push({ r, label, f: raw(r, h.c + 1) }); continue; }
+      if (results.length) break; // a new list below the results: not this block
+      if (num(r, h.c + 1) === null) continue;
+      lines.push({ r, label: label.slice(0, 80) });
     }
-    busy.delete(ref); memo.set(ref, v); return v;
-  };
-  const outs: PriceOutput[] = outputs.map((ref) => {
-    const x = parseRef(ref)!; const s = shown(ref);
-    let value: number | string | null = null; let error: string | undefined;
-    try { const v = get(ref); value = Array.isArray(v) ? null : typeof v === 'number' ? Math.round(v * 1e6) / 1e6 : v; } catch (e) { error = String((e as Error).message ?? e).slice(0, 40); }
-    return { ref, label: labelFor(g.values, x.r, x.c), value, kind: kindOf(s), formula: formula(ref), fromSheet: fixed.has(ref), ...(error ? { error } : {}) };
-  }).filter((o) => o.value !== '' || o.error);
-  return { source, tab: g.tab, readAt: g.readAt, inputs: inputs.map((i) => ({ ...i, value: inputVal.get(i.ref)! })), outputs: outs, assumptions };
+    if (!lines.length) continue;
+    // Monthly lines = the rows in "Cost Monthly"'s SUM range; the rest (in "Cost Setup") are first month only.
+    const monthly = rangeRows(results.find((x) => /^\s*cost monthly/i.test(x.label))?.f ?? '');
+    const inputs: PriceInput[] = []; let leads: number | null = null; let sheetInboxPrice: number | undefined;
+    for (const l of lines) {
+      const f = raw(l.r, h.c + 1); const v = num(l.r, h.c + 1) ?? 0; const key = `r${l.r + 1}`;
+      if (REVENUE_RE.test(l.label)) { inputs.push({ key, label: l.label, value: v, kind: 'money', group: 'revenue' }); continue; }
+      const inbox = INBOX_RE.test(l.label) ? /^=\s*\(?\s*(\d+(?:\.\d+)?)\s*\*\s*\(?\s*-?\s*\$?(\d+(?:\.\d+)?)\s*\)?\s*$/.exec(f) : null;
+      if (inbox && !inputs.some((i) => i.key === 'inboxes')) {
+        sheetInboxPrice = Number(inbox[2]);
+        inputs.push({ key: 'inboxes', label: 'Inboxes', value: Number(inbox[1]), kind: 'number', group: 'volume', note: `the sheet's ${l.label} line (inboxes × price)` });
+        inputs.push({ key: 'inboxPrice', label: 'Price per inbox a month', value: INBOX_PRICE, kind: 'money', group: 'monthly', note: `Dulcy's Cheap Inboxes price (RULES 2026-11-28)${sheetInboxPrice !== INBOX_PRICE ? `; the sheet line uses $${sheetInboxPrice.toFixed(2)}` : ''}` });
+        continue;
+      }
+      const perLead = /^=\s*(?:SUM\s*\(\s*)?(\d+(?:\.\d+)?)\s*\*\s*(\$?[A-Z]{1,3}\$?\d+)\s*\)?\s*$/i.exec(f);
+      const unitRef = perLead ? parseRef(perLead[2].replace(/\$/g, '')) : null;
+      const unit = unitRef ? num(unitRef.r, unitRef.c) : null;
+      if (perLead && unit !== null) {
+        if (leads === null) { leads = Number(perLead[1]); inputs.push({ key: 'leads', label: 'Leads a month', value: leads, kind: 'number', group: 'volume', note: "the lead count in the sheet's credit lines" }); }
+        inputs.push({ key: `u${l.r + 1}`, label: `${l.label} per lead`, value: Math.abs(unit), kind: 'money', group: 'monthly' });
+        continue;
+      }
+      const oneoff = monthly ? l.r < monthly[0] || l.r > monthly[1] : false;
+      inputs.push({ key, label: l.label, value: Math.abs(v), kind: 'money', group: oneoff ? 'oneoff' : 'monthly', ...(oneoff ? { note: 'first month only' } : {}) });
+    }
+    // The sheet's own monthly profit for this block, to check HQ adds it up the same way.
+    const pr = results.find((x) => /^\s*(alex\s+)?profit monthly/i.test(x.label));
+    plans.push({ key: '', name: h.name, inputs, sheetProfit: pr ? num(pr.r, h.c + 1) : null, ...(sheetInboxPrice !== undefined ? { sheetInboxPrice } : {}) });
+  }
+  // Names: the plan; with its retainer when two plans share a name; then a number.
+  const named = plans.map((p) => { const ret = p.inputs.find((i) => i.group === 'revenue'); return plans.filter((q) => q.name === p.name).length > 1 && ret ? `${p.name} · ${usd0(ret.value)}` : p.name; });
+  return plans.map((p, i) => { const dup = named.slice(0, i).filter((x) => x === named[i]).length; return { ...p, key: `p${i + 1}`, name: dup ? `${named[i]} (${dup + 1})` : named[i] }; });
 }
 
-// ---------- built-in calculator (the sheet could not be read) ----------
-/** Every money input starts empty (0): the real numbers live in the P/L sheet, never in this repo. */
-export const BUILTIN_ROWS: [string, string][] = [
-  ['Inboxes for the client', '0'], ['Cost per inbox a month', '$2.50'], ['Domains', '0'], ['Cost per domain a month', '$0.00'],
-  ['Data, verification and tools a month', '$0.00'], ['Team hours a month', '0'], ['Cost per team hour', '$0.00'],
-  ['Cold emails per inbox a day', '15'], ['Sending days a month', '22'], ['Positive reply rate', '0%'], ['Meetings booked from positive replies', '0%'],
-  ['Show rate', '0%'], ['Target margin', '0%'],
-  ['Monthly cost', '=B1*B2+B3*B4+B5+B6*B7'], ['Cold emails a month', '=B1*B8*B9'], ['Meetings a month', '=B15*B10*B11'], ['Shows a month', '=B16*B12'],
-  ['Price a month at the target margin', '=IF(B13>=1,0,B14/(1-B13))'], ['Price per meeting', '=IF(B16>0,B18/B16,0)'], ['Price per show', '=IF(B17>0,B18/B17,0)'],
-];
-export const BUILTIN_ASSUMPTIONS = [
-  'Built-in calculator: the P/L sheet could not be read, so this is NOT the sheet\'s formula.',
-  'Price = monthly cost ÷ (1 − target margin). Monthly cost = inboxes × inbox cost + domains × domain cost + tools + team hours × hourly cost.',
-  'Meetings = inboxes × cold emails a day × sending days × positive reply rate × booked rate. Shows = meetings × show rate.',
-  'Inbox cost $2.50 a month and 15 cold emails a day per inbox come from RULES (Cheap Inboxes; the new-client ramp cap). 22 sending days = weekdays. Every other number starts at 0: fill it in.',
-];
-export function builtinGrid(): SheetGrid {
-  const values = BUILTIN_ROWS.map(([l, v]) => [l, v.startsWith('=') ? (/(Price|cost)/i.test(l) ? '$0.00' : '0') : v]);
-  return { tab: 'Built-in', values, formulas: BUILTIN_ROWS.map(([l, v]) => [l, v]), readAt: '' };
+/** The results for one plan with the owner's changes: the sheet's sums (cost, profit, opex, margin; the first month when it has one-off lines). Pure. */
+export function priceResults(inputs: PriceInput[]): PriceOutput[] {
+  const v = (k: string) => inputs.find((i) => i.key === k)?.value ?? 0;
+  const isUnit = (i: PriceInput) => /^u\d+$/.test(i.key);
+  const sum = (xs: PriceInput[]) => xs.reduce((a, i) => a + i.value, 0);
+  const revenue = sum(inputs.filter((i) => i.group === 'revenue'));
+  const cost = v('inboxes') * v('inboxPrice') + v('leads') * sum(inputs.filter(isUnit))
+    + sum(inputs.filter((i) => i.group === 'monthly' && i.key !== 'inboxPrice' && !isUnit(i)));
+  const once = sum(inputs.filter((i) => i.group === 'oneoff'));
+  const r2 = (x: number) => Math.round(x * 100) / 100;
+  const share = (x: number) => (revenue ? Math.round((x / revenue) * 1000) / 1000 : null);
+  const out: PriceOutput[] = [
+    { key: 'revenue', label: 'Revenue a month', value: r2(revenue), kind: 'money', note: 'retainer + rev share' },
+    { key: 'cost', label: 'Cost a month', value: r2(cost), kind: 'money', note: 'the sheet\'s "Cost Monthly"' },
+    { key: 'profit', label: 'Profit a month', value: r2(revenue - cost), kind: 'money', note: 'the sheet\'s "Profit Monthly"' },
+    { key: 'opex', label: 'Opex', value: share(cost), kind: 'pct', note: 'cost ÷ revenue (the sheet\'s "Act. Opex Monthly")' },
+    { key: 'margin', label: 'Profit margin', value: share(revenue - cost), kind: 'pct', note: '1 − opex' },
+  ];
+  if (inputs.some((i) => i.group === 'oneoff')) {
+    out.push(
+      { key: 'costFirst', label: 'Cost, first month', value: r2(cost + once), kind: 'money', note: 'monthly cost + one-off lines (the sheet\'s "Cost Setup")' },
+      { key: 'profitFirst', label: 'Profit, first month', value: r2(revenue - cost - once), kind: 'money', note: 'the sheet\'s "Profit Setup"' },
+      { key: 'marginFirst', label: 'Profit margin, first month', value: share(revenue - cost - once), kind: 'pct' },
+    );
+  }
+  return out;
 }
+
+/** The calculator for one plan (default: the first), with the owner's changes by input key. Pure. */
+export function pricingModel(plans: PricePlan[], opts: { plan?: string; overrides?: Record<string, number>; source?: 'sheet' | 'builtin'; tab?: string; readAt?: string; assumptions?: string[] } = {}): PricingModel {
+  const p = plans.find((x) => x.key === opts.plan) ?? plans[0];
+  const o = opts.overrides ?? {};
+  const inputs = (p?.inputs ?? []).map((i) => (Number.isFinite(o[i.key]) ? { ...i, value: o[i.key] } : i));
+  const assumptions = [...(opts.assumptions ?? [])];
+  // Check: with the sheet's own numbers (its inbox price too), HQ's profit must match the sheet's Profit Monthly.
+  if (p && p.sheetProfit !== null && (opts.source ?? 'sheet') === 'sheet') {
+    const asSheet = priceResults(p.inputs.map((i) => (i.key === 'inboxPrice' && p.sheetInboxPrice !== undefined ? { ...i, value: p.sheetInboxPrice } : i))).find((x) => x.key === 'profit')!.value ?? 0;
+    if (Math.abs(asSheet - p.sheetProfit) > 1) assumptions.push(`Check: with the sheet's own numbers HQ gets ${usd0(asSheet)} profit a month; the sheet says ${usd0(p.sheetProfit)}. A line HQ did not read: tell Riley.`);
+  }
+  return { source: opts.source ?? 'sheet', tab: opts.tab ?? '', readAt: opts.readAt ?? '', plans: plans.map((x) => ({ key: x.key, name: x.name })), plan: p?.key ?? '', inputs, outputs: priceResults(inputs), assumptions };
+}
+
+// ---------- built-in (the sheet could not be read) ----------
+/** The sheet's line names with no figures: every amount 0 except Dulcy's $2.50 per inbox (RULES). */
+export function builtinPlan(): PricePlan {
+  return {
+    key: 'p1', name: 'Client plan', sheetProfit: null,
+    inputs: [
+      { key: 'r1', label: 'Retainer', value: 0, kind: 'money', group: 'revenue' },
+      { key: 'r2', label: 'Rev Share', value: 0, kind: 'money', group: 'revenue' },
+      { key: 'inboxes', label: 'Inboxes', value: 0, kind: 'number', group: 'volume', note: 'Cheap Inboxes line (inboxes × price)' },
+      { key: 'leads', label: 'Leads a month', value: 0, kind: 'number', group: 'volume' },
+      { key: 'inboxPrice', label: 'Price per inbox a month', value: INBOX_PRICE, kind: 'money', group: 'monthly', note: "Dulcy's Cheap Inboxes price (RULES 2026-11-28)" },
+      { key: 'r3', label: 'Domains', value: 0, kind: 'money', group: 'monthly' },
+      { key: 'r4', label: 'Domain Masking', value: 0, kind: 'money', group: 'monthly' },
+      { key: 'u5', label: 'Scraping Credits per lead', value: 0, kind: 'money', group: 'monthly' },
+      { key: 'u6', label: 'Verification Credits per lead', value: 0, kind: 'money', group: 'monthly' },
+    ],
+  };
+}
+export const BUILTIN_ASSUMPTIONS = [
+  'The P/L sheet was not read, so these are its "OPEX Guide" line names with no numbers: fill them in.',
+  "Only the price per inbox is filled in: $2.50, Dulcy's Cheap Inboxes price (RULES 2026-11-28).",
+];
 
 // ---------- reader (read only, cached) ----------
 let cache: { at: number; data: Promise<SheetGrid | null> } | null = null;
@@ -233,8 +311,8 @@ export function pricingSheetReader(sheets: () => SheetsClient | null, sheetId = 
       if (!s?.formulas) { lastError = 'Google Sheets is not set up on this server.'; return null; }
       try {
         const titles = (await s.meta(sheetId)).sheets.map((x) => x.properties.title);
-        const tab = titles.find((t) => PRICING_TAB_RE.test(t)) ?? (titles.includes(PRICING_TAB_DEFAULT) ? PRICING_TAB_DEFAULT : '');
-        if (!tab) { lastError = `No tab named like "Pricing" or "Calculator" in the P/L sheet (tabs: ${titles.slice(0, 8).join(', ')}).`; return null; }
+        const tab = titles.find((t) => /opex/i.test(t)) ?? titles.find((t) => PRICING_TAB_RE.test(t)) ?? '';
+        if (!tab) { lastError = `No "OPEX Guide" (or Pricing / Calculator) tab in the P/L sheet (tabs: ${titles.slice(0, 8).join(', ')}).`; return null; }
         const [values, formulas] = await Promise.all([s.tab(sheetId, tab), s.formulas(sheetId, tab)]);
         lastError = '';
         return { tab, values: values.slice(0, 300), formulas: formulas.slice(0, 300), readAt: new Date(now).toISOString() };
@@ -246,15 +324,17 @@ export function pricingSheetReader(sheets: () => SheetsClient | null, sheetId = 
   };
 }
 
-/** GET/POST /sales/pricing: the sheet's calculator (or the built-in one), worked out with the owner's inputs. */
-export async function pricingView(read: (() => Promise<SheetGrid | null>) | undefined, overrides: Record<string, number> = {}): Promise<PricingModel> {
+/** GET/POST /sales/pricing: the sheet's plans (or the built-in lines), one plan worked out with the owner's changes. */
+export async function pricingView(read: (() => Promise<SheetGrid | null>) | undefined, overrides: Record<string, number> = {}, plan?: string): Promise<PricingModel> {
   const g = read ? await read().catch(() => null) : null;
   const clean: Record<string, number> = {};
-  for (const [k, v] of Object.entries(overrides ?? {}).slice(0, 200)) if (/^[A-Z]{1,3}\d{1,4}$/.test(k) && Number.isFinite(Number(v)) && Math.abs(Number(v)) < 1e9) clean[k] = Number(v);
+  for (const [k, v] of Object.entries(overrides ?? {}).slice(0, 200)) if (/^[a-z]{1,12}\d{0,4}$/i.test(k) && Number.isFinite(Number(v)) && Math.abs(Number(v)) < 1e9) clean[k] = Number(v);
+  const pick = typeof plan === 'string' && /^p\d{1,3}$/.test(plan) ? plan : undefined;
+  const builtin = (error: string): PricingModel => ({ ...pricingModel([builtinPlan()], { overrides: clean, source: 'builtin', assumptions: BUILTIN_ASSUMPTIONS }), error });
   if (g) {
-    const m = pricingModel(g, clean, 'sheet', [`Read from the P/L sheet, tab "${g.tab}". Inputs are the numbers its formulas use; change them here (the sheet is not changed).`]);
-    if (m.outputs.length) return m;
-    return { ...pricingModel(builtinGrid(), clean, 'builtin', BUILTIN_ASSUMPTIONS), error: `The tab "${g.tab}" has no formulas HQ can read.` };
+    const plans = parsePlans(g);
+    if (plans.length) return pricingModel(plans, { plan: pick, overrides: clean, source: 'sheet', tab: g.tab, readAt: g.readAt, assumptions: [`From the P/L sheet, tab "${g.tab}": its "Client Fulfillment" plans and their lines. Change any line here; the sheet is not changed.`] });
+    return builtin(`The tab "${g.tab}" has no "Client Fulfillment - <plan>" block HQ can read.`);
   }
-  return { ...pricingModel(builtinGrid(), clean, 'builtin', BUILTIN_ASSUMPTIONS), error: read ? pricingError() || 'The P/L sheet could not be read.' : 'Google Sheets is not set up on this server.' };
+  return builtin(read ? pricingError() || 'The P/L sheet could not be read.' : 'Google Sheets is not set up on this server.');
 }

@@ -17,7 +17,7 @@ import { createCloseClient, type CloseActivity, type CloseClient, type CloseOppo
 import { calendarStatus, type CalendarState } from '../agents/calendar.js';
 import { createSheetsClient } from '../providers/google.js';
 import { pricingSheetReader } from './pricing.js';
-import { coleNext, companyKey, latestReview, nyDay, pipelineOf, shortDay, type Deal, type Rate, type XeroPayment } from './sales.js';
+import { coleNext, companyKey, latestReview, nyDay, pipelineOf, rate, shortDay, type Deal, type Rate, type XeroPayment } from './sales.js';
 
 const DAY = 86_400_000;
 /** Dulcy's own Workspace IDs record: its calendar is Alex's sales calendar (clients/dulcy.md). */
@@ -26,7 +26,6 @@ const dayMs = (d: string) => Date.parse(`${d}T12:00:00Z`);
 const addDays = (d: string, k: number) => nyDay(dayMs(d) + k * DAY);
 const daysBetween = (a: string, b: string) => Math.round((dayMs(b) - dayMs(a)) / DAY);
 const day10 = (x: string) => (x ? (/^\d{4}-\d{2}-\d{2}$/.test(x) ? x : Number.isFinite(Date.parse(x)) ? nyDay(x) : '') : '');
-const rate = (k: number, of: number, word: string): Rate => ({ n: k, of, text: `${k} of ${of} ${word}` });
 const pct = (r: Rate) => (r.of ? Math.round((r.n / r.of) * 100) : null);
 
 // ---------- periods ----------
