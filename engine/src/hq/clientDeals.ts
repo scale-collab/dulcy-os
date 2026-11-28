@@ -112,7 +112,7 @@ export function periodRanges(p: Period, now: Date): { cur: Range; prev: Range } 
 export interface BookClient { key: string; name: string; active: boolean; start: string; end: string; retainer: number; ltv: number | null }
 export interface RangeNumbers { label: string; from: string; to: string; newClients: number; lost: number; net: number; activeAtStart: number; churnRate: number | null; newNames: string[]; lostNames: string[] }
 export interface AgencyNumbers {
-  period: Period; mrr: number; activeClients: number; avgLtv: number | null; avgRetentionMonths: number | null;
+  period: Period | 'custom'; mrr: number; activeClients: number; avgLtv: number | null; avgRetentionMonths: number | null;
   cur: RangeNumbers; prev: RangeNumbers;
   /** Paying clients counted, and inactive ones with no end date (left out of "lost"). */
   counted: number; noEndDate: string[];
@@ -130,9 +130,25 @@ export function rangeNumbers(book: BookClient[], r: Range): RangeNumbers {
     churnRate: activeAtStart ? Math.round((lost.length / activeAtStart / months) * 1000) / 10 : null, newNames: neu.map((c) => c.name), lostNames: lost.map((c) => c.name),
   };
 }
+/** Round 4 (Alex 2026-11-28): every period picker gets a Custom range. Longest custom range, in days. */
+export const CUSTOM_MAX_DAYS = 3 * 366;
+const isDay = (x: unknown): x is string => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x) && Number.isFinite(day(x));
+const slashDay = (d: string) => `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}/${d.slice(0, 4)}`;
+/**
+ * A custom range: from and to are both included ("12/1 to 12/31"), so [from, to + 1 day). The
+ * range before it has the same number of days. null when a date is bad, to is before from or the
+ * range is longer than CUSTOM_MAX_DAYS. Pure.
+ */
+export function customRanges(from: unknown, to: unknown): { cur: Range; prev: Range } | null {
+  if (!isDay(from) || !isDay(to) || to < from) return null;
+  const days = Math.round((day(to) - day(from)) / DAY) + 1;
+  if (days > CUSTOM_MAX_DAYS) return null;
+  const end = ymd(day(to) + DAY); const prevFrom = ymd(day(from) - days * DAY);
+  return { cur: { from, to: end, label: `${slashDay(from)} to ${slashDay(to)}` }, prev: { from: prevFrom, to: from, label: `The ${days} days before` } };
+}
 /** The Clients screen's agency numbers. LTV and retention cover every paying client ever. Pure. */
-export function agencyNumbers(book: BookClient[], period: Period, now: Date): AgencyNumbers {
-  const { cur, prev } = periodRanges(period, now);
+export function agencyNumbers(book: BookClient[], period: Period | 'custom', now: Date, ranges?: { cur: Range; prev: Range }): AgencyNumbers {
+  const { cur, prev } = ranges ?? periodRanges(period === 'custom' ? 'this-month' : period, now);
   const active = book.filter((c) => c.active);
   const ltvs = book.map((c) => c.ltv).filter((x): x is number => (x ?? 0) > 0);
   const tenure = book.map((c) => (c.start ? monthsBetween(c.start, c.active || !c.end ? now : c.end) : null)).filter((x): x is number => x !== null);
@@ -149,9 +165,12 @@ export function agencyNumbers(book: BookClient[], period: Period, now: Date): Ag
 export const WINDOWS = ['10', '30', '60', '120', 'all'] as const;
 export type Window = typeof WINDOWS[number];
 export const WINDOW_PERIOD: Record<Window, string> = { 10: 'Last 10 days', 30: 'Last 30 days', 60: 'Last 60 days', 120: 'Last 120 days', all: 'All time' };
-export interface OverviewRow { period: string; clientId: string; sent: number; replies: number; interested: number; meetings: number; updatedAt: string }
+/** contacted = "Total Leads Contacted" (EmailBison total_leads_contacted for the window: unique leads emailed). */
+export interface OverviewRow { period: string; clientId: string; sent: number; replies: number; interested: number; meetings: number; updatedAt: string; contacted?: number }
 export interface Results {
-  window: Window; sent: number; replies: number; interested: number; meetings: number;
+  window: Window | 'custom'; sent: number; replies: number; interested: number; meetings: number;
+  /** People contacted: unique leads emailed in the window (EmailBison total_leads_contacted); null when no row has it. */
+  contacted: number | null;
   /** Emails sent per meeting booked / per interested (positive) reply; null when there are none. */
   emailsPerMeeting: number | null; emailsPerPositive: number | null; interestedToBooked: number | null;
   /** True when every row for this window is older than 3 days (the sync stopped). */
@@ -170,10 +189,20 @@ export function resultsFor(rows: OverviewRow[], bisonIds: string[], w: Window, n
   const use = fresh.length ? fresh : mine;
   const sum = (k: 'sent' | 'replies' | 'interested' | 'meetings') => use.reduce((a, r) => a + (r[k] || 0), 0);
   const sent = sum('sent'), interested = sum('interested'), meetings = sum('meetings');
+  const withContacted = use.filter((r) => typeof r.contacted === 'number');
   return {
     window: w, sent, replies: sum('replies'), interested, meetings,
+    contacted: withContacted.length ? withContacted.reduce((a, r) => a + (r.contacted ?? 0), 0) : null,
     emailsPerMeeting: ratio(sent, meetings), emailsPerPositive: ratio(sent, interested), interestedToBooked: interested > 0 ? Math.round((meetings / interested) * 1000) / 1000 : null,
     stale: !fresh.length,
+  };
+}
+/** Results from plain totals (a custom range: EmailBison stats for the dates + meetings booked in them). Pure. */
+export function resultsOf(w: Window | 'custom', t: { sent: number; replies: number; interested: number; meetings: number; contacted: number | null }): Results {
+  return {
+    window: w, sent: t.sent, replies: t.replies, interested: t.interested, meetings: t.meetings, contacted: t.contacted,
+    emailsPerMeeting: ratio(t.sent, t.meetings), emailsPerPositive: ratio(t.sent, t.interested), interestedToBooked: t.interested > 0 ? Math.round((t.meetings / t.interested) * 1000) / 1000 : null,
+    stale: false,
   };
 }
 

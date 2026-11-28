@@ -84,10 +84,16 @@ export function billingByClient(lines: BillingLine[], clientKeys: string[], keyO
   return { matched, unmatched };
 }
 
+export interface CostLine { section: string; name: string; amount: number }
 export interface XeroMoney {
-  thisMonth: { from: string; to: string; income: number; costs: number };
-  lastMonth: { from: string; to: string; income: number; costs: number };
+  /** lines: the biggest cost lines of the month (Xero P&L rows of the cost sections), largest first. */
+  thisMonth: { from: string; to: string; income: number; costs: number; lines?: CostLine[] };
+  lastMonth: { from: string; to: string; income: number; costs: number; lines?: CostLine[] };
   invoices: { contact: string; amount: number; due: string; late: boolean }[];
+}
+/** The 10 biggest cost lines (zero lines dropped), largest first. Pure. */
+export function topLines(lines: CostLine[] | undefined, max = 10): CostLine[] {
+  return (lines ?? []).filter((l) => l.amount !== 0).sort((a, b) => b.amount - a.amount).slice(0, max).map((l) => ({ section: l.section, name: l.name, amount: Math.round(l.amount * 100) / 100 }));
 }
 const monthStart = (d: Date) => `${etYmd(d).slice(0, 8)}01`;
 /** Xero P&L this month and last month, and open client invoices (ACCREC, AUTHORISED). */
@@ -100,7 +106,7 @@ export async function readXeroMoney(x: Pick<XeroClient, 'get' | 'pages'>, now: D
     x.pages('Invoices', 'Invoices', { Statuses: 'AUTHORISED', summaryOnly: 'true' }, 5),
   ]);
   return {
-    thisMonth: { from, to: today, income: cur.income, costs: cur.costs }, lastMonth: { from: lastFrom, to: lastEnd, income: prev.income, costs: prev.costs },
+    thisMonth: { from, to: today, income: cur.income, costs: cur.costs, lines: topLines(cur.lines) }, lastMonth: { from: lastFrom, to: lastEnd, income: prev.income, costs: prev.costs, lines: topLines(prev.lines) },
     invoices: inv.filter((i: any) => i.Type === 'ACCREC' && Number(i.AmountDue) > 0).map((i: any) => {
       const t = xeroDate(i.DueDateString ?? i.DueDate);
       return { contact: String(i.Contact?.Name ?? 'unknown'), amount: Number(i.AmountDue), due: Number.isFinite(t) ? etYmd(new Date(t)) : '', late: Number.isFinite(t) && t < now.getTime() - 86_400_000 };
@@ -126,4 +132,55 @@ export function readFinance(deps: FinanceDeps, now = new Date(), refresh = false
   })();
   cache = { at: Date.now(), data };
   return data;
+}
+
+// ---------- Round 4 (Alex 2026-11-28): Finances = company money; Personal under it ----------
+/**
+ * Which P/L sheet cards are Alex's own: Robinhood and Discover (Alex named them, 2026-11-28).
+ * The sheet does not say which card is business or personal, so only these names go to Personal;
+ * every other card stays under Company until Alex says otherwise.
+ */
+export const PERSONAL_CARD = /robinhood|discover/i;
+export interface CardSplit { company: CardDebt[]; personal: CardDebt[]; companyTotals: PnlSheet['cardTotals']; personalTotals: PnlSheet['cardTotals'] }
+const totals = (cards: CardDebt[]): PnlSheet['cardTotals'] => {
+  const sum = (k: 'statement' | 'balance' | 'minimum') => Math.round(cards.reduce((a, c) => a + c[k], 0) * 100) / 100;
+  return { statement: sum('statement'), balance: sum('balance'), minimum: sum('minimum') };
+};
+/** Cards split into company and personal by name (PERSONAL_CARD), each with its own totals. Pure. */
+export function splitCards(cards: CardDebt[]): CardSplit {
+  const personal = cards.filter((c) => PERSONAL_CARD.test(c.card)); const company = cards.filter((c) => !PERSONAL_CARD.test(c.card));
+  return { company, personal, companyTotals: totals(company), personalTotals: totals(personal) };
+}
+export interface FinancesView {
+  company: {
+    /** Xero P&L (the tool, not the hand-kept sheet): income and costs, this month so far and last month. */
+    xero: (XeroMoney['thisMonth'] & { net: number; label: string })[] | null;
+    invoices: XeroMoney['invoices'];
+    /** Retainers of active clients (deal terms), for comparison with Xero income. */
+    mrr: number;
+    cards: CardDebt[] | null; cardTotals: PnlSheet['cardTotals'] | null;
+  };
+  personal: { cards: CardDebt[] | null; cardTotals: PnlSheet['cardTotals'] | null };
+  sources: { income: string; cards: string; personalRule: string };
+  errors: string[]; readAt: string;
+}
+/** GET /finances (owner only, checked in the route). Pure. */
+export function financesView(fin: Finance, mrr: number): FinancesView {
+  const x = fin.xero;
+  const split = fin.sheet ? splitCards(fin.sheet.cards) : null;
+  const month = (m: XeroMoney['thisMonth'], label: string) => ({ ...m, label, net: Math.round((m.income - m.costs) * 100) / 100 });
+  return {
+    company: {
+      xero: x ? [month(x.thisMonth, 'This month so far'), month(x.lastMonth, 'Last month')] : null,
+      invoices: x?.invoices ?? [], mrr,
+      cards: split ? split.company : null, cardTotals: split ? split.companyTotals : null,
+    },
+    personal: { cards: split ? split.personal : null, cardTotals: split ? split.personalTotals : null },
+    sources: {
+      income: 'Xero profit and loss (read only)',
+      cards: 'Dulcy Media P/L sheet (kept by hand; Xero has no card balances in HQ yet)',
+      personalRule: 'Personal = cards named Robinhood or Discover (Alex, 2026-11-28). The sheet does not mark business vs personal, so every other card shows under Company.',
+    },
+    errors: fin.errors, readAt: fin.readAt,
+  };
 }
