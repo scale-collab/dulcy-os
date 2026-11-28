@@ -116,8 +116,9 @@ export function targetsOf(rows: AirtableRecord[]): Record<Channel, number> {
 
 /**
  * The Content Center's nextIdeaDates, unchanged: the recording and publish dates "Approve & schedule"
- * writes. Main: one publication each Tuesday/Thursday, recorded the Sunday one week before its
- * publication week (or today when that is past). Raw: the Friday of the current Monday–Sunday week,
+ * writes. Main: one publication each Tuesday/Thursday, recorded on the FRIDAY before the week before
+ * its publication week (Alex 2026-11-28: "change to Friday"; was the Sunday), or the next Friday when
+ * that has passed. Raw: the Friday of the current Monday–Sunday week,
  * publish 2 days after the first free day that keeps the spacing and the weekly limit. Pure.
  */
 export function nextIdeaDates(occupied: Array<{ recording: string; publish: string }>, settings: ChannelIdeaSettings, now = new Date(), channel: Channel = 'Alex Woung Raw'): { recording: string; publish: string } {
@@ -132,8 +133,12 @@ export function nextIdeaDates(occupied: Array<{ recording: string; publish: stri
       if (![2, 4].includes(publish.getUTCDay())) continue;
       const key = publish.toISOString().slice(0, 10);
       if (booked.has(key)) continue;
-      const plannedRecording = publish.getTime() - (publish.getUTCDay() + 7) * day;
-      const recording = new Date(Math.max(today.getTime(), plannedRecording));
+      // Alex records on Fridays (2026-11-28): the Friday 9-13 days before (Tue/Thu pair share it).
+      const plannedRecording = publish.getTime() - (publish.getUTCDay() + 9) * day;
+      const nextFriday = today.getTime() + ((5 - today.getUTCDay() + 7) % 7) * day;
+      const recording = new Date(plannedRecording >= today.getTime() ? plannedRecording : nextFriday);
+      // Too soon to record on a Friday and still edit before it goes out: take a later slot.
+      if (recording.getTime() > publish.getTime() - 4 * day) continue;
       return { recording: recording.toISOString().slice(0, 10), publish: key };
     }
     throw new Error('No Tuesday or Thursday publishing slot is available.');
