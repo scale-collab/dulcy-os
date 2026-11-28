@@ -11,6 +11,7 @@
 // No Airtable record links (RULES 2026-11-27); the one Content Center link left is the final-clip
 // approval (its owner check). Everything is rendered as escaped text.
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { api, type ContentCenterView, type ContentIdea, type FridayIdea } from '../api';
 import { Button, Card, cx, Empty, ErrorBox, ExtLink, go, Icon, IconButton, Label, PageSkeleton, PageTitle, Pill, SectionHeader, setCount, timeAgo } from '../ui';
 import { FixItButton } from '../fixIt';
@@ -200,7 +201,7 @@ function IdeaCard({ idea, done, onDone }: { idea: ContentIdea; done?: string; on
         <span>By {idea.by}</span>
         {idea.proposed && <span>· {timeAgo(idea.proposed)}</span>}
         {idea.decision !== 'Needs Review' && <Pill tone="info">{idea.decision}</Pill>}
-        {idea.sourceUrl && <ExtLink href={idea.sourceUrl}>{idea.source || 'Source'}</ExtLink>}
+        {idea.sourceUrl && <ExtLink href={idea.sourceUrl} className="inline-flex min-h-10 items-center sm:min-h-0">{idea.source || 'Source'}</ExtLink>}
       </div>
       {(idea.angle || idea.hook || idea.why) && (
         <dl className="mt-3 space-y-1.5 text-sm leading-snug">
@@ -399,10 +400,12 @@ function Teleprompter({ title, text, onClose }: { title: string; text: string; o
     const prev = document.body.style.overflow; document.body.style.overflow = 'hidden';
     return () => { window.removeEventListener('keydown', on); document.body.style.overflow = prev; };
   }, [onClose]);
-  return (
-    <div role="dialog" aria-modal="true" aria-label={`Teleprompter: ${title}`} className="fixed inset-0 z-50 flex flex-col bg-black text-white">
-      <div ref={box} onClick={() => setPlaying((x) => !x)} className="flex-1 overflow-y-auto px-5 pb-[60vh] pt-[30vh] sm:px-16">
-        <div className="mx-auto max-w-4xl whitespace-pre-wrap break-words font-semibold" style={{ fontSize: `${size}px`, lineHeight: 1.45 }}>{text}</div>
+  // On <body> (phone pass 2026-11-28): inside the page's fade-in it sat under the sticky header and the bottom bar.
+  return createPortal(
+    <div role="dialog" aria-modal="true" aria-label={`Teleprompter: ${title}`} className="fixed inset-0 z-50 flex flex-col bg-black pt-[env(safe-area-inset-top)] text-white">
+      {/* The 30vh / 60vh room is on the text, not the scroll box: as box padding it pushed Close and the size buttons off a phone screen. */}
+      <div ref={box} onClick={() => setPlaying((x) => !x)} className="min-h-0 flex-1 overflow-y-auto px-5 sm:px-16">
+        <div className="mx-auto max-w-4xl whitespace-pre-wrap break-words pb-[60vh] pt-[30vh] font-semibold" style={{ fontSize: `${size}px`, lineHeight: 1.45 }}>{text}</div>
       </div>
       <div className="pointer-events-none absolute inset-x-0 top-[30vh] h-0.5 bg-white/25" aria-hidden="true" />
       <div className="flex flex-wrap items-center justify-center gap-2 border-t border-white/15 bg-black/90 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
@@ -419,7 +422,8 @@ function Teleprompter({ title, text, onClose }: { title: string; text: string; o
         <button onClick={() => { if (box.current) box.current.scrollTop = 0; setPlaying(false); }} className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-white/25 px-4 font-semibold"><Icon name="undo" size={16} />Top</button>
         <button onClick={onClose} className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-white/25 px-4 font-semibold"><Icon name="x" size={16} />Close</button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
