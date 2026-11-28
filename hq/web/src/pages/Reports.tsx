@@ -16,7 +16,7 @@ export function ReportCard({ r }: { r: Report }) {
           <span className="font-medium text-fg-2">{r.agent}</span><span aria-hidden="true">·</span><span>{timeAgo(r.created)}</span>
           {r.urgent && <Pill tone="bad">urgent</Pill>}{r.dryRun && <Pill>dry run</Pill>}
         </div>
-        <div className="mt-0.5 truncate text-[15px] font-semibold text-fg">{r.title}</div>
+        <div className="mt-0.5 break-words text-[15px] font-semibold text-fg sm:truncate">{r.title}</div>
         {r.summary && <div className="mt-0.5 line-clamp-2 text-sm text-muted">{r.summary}</div>}
       </div>
       <Icon name="chevronRight" size={18} className="mt-2.5 text-faint transition group-hover:translate-x-0.5 group-hover:text-muted" />

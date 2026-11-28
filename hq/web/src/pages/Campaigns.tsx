@@ -91,7 +91,7 @@ function Shell({ channel, section, view = 'all', client }: { channel: string; se
             <IconButton icon="refresh" label="Refresh" onClick={() => { setRefresh((x) => x + 1); load(true); }} className={cx('border border-line bg-surface', busy && '[&_svg]:animate-spin')} />
           </div>
         )} />
-      <div role="tablist" aria-label="Channel" className="grid grid-cols-4 gap-1 rounded-xl border border-line bg-sunken p-1 sm:inline-grid sm:grid-flow-col sm:auto-cols-fr">
+      <div role="tablist" aria-label="Channel" className="grid grid-cols-2 gap-1 rounded-xl border border-line bg-sunken p-1 sm:inline-grid sm:grid-flow-col sm:auto-cols-fr">
         {channels.map((x) => (
           <button key={x.key} role="tab" aria-selected={channel === x.key} onClick={() => go(x.key === 'email' ? 'campaigns' : `campaigns/${x.key}`)}
             className={cx('flex min-h-10 min-w-0 items-center justify-center gap-1.5 rounded-lg px-1.5 text-[13px] font-semibold transition sm:px-4 sm:text-sm', channel === x.key ? 'bg-surface text-fg shadow-card' : 'text-muted hover:text-fg')}>

@@ -256,16 +256,17 @@ function DecisionDeckCard({ d, decide, position, onMove }: { d: Decision; decide
   return (
     <>
       <Card className="mt-5 p-0 anim-in">
-        <div className="flex items-center gap-3 border-b border-line px-5 py-4 sm:px-6">
+        {/* Phone: the card arrows get their own row under the agent and client (they squeezed the client name). */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5 border-b border-line px-5 py-4 sm:flex-nowrap sm:px-6">
           <Avatar name={d.agent || '?'} />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"><span className="font-semibold text-fg">{d.agent || 'Agent'}</span>{d.client && <Pill>{d.client}</Pill>}</div>
             <div className="text-xs text-muted">{d.pile} · {timeAgo(d.created)}</div>
           </div>
-          <div className="flex shrink-0 items-center gap-1">
-            {onMove && <IconButton icon="arrowLeft" label="Previous card (←). Nothing is decided." onClick={() => onMove(-1)} className="h-9 w-9 border border-line" />}
+          <div className="flex w-full items-center justify-between gap-1 sm:w-auto sm:shrink-0 sm:justify-start">
+            {onMove && <IconButton icon="arrowLeft" label="Previous card (←). Nothing is decided." onClick={() => onMove(-1)} className="border border-line" />}
             <span className="tabular min-w-[4.5rem] text-center text-xs font-medium text-muted">{position}</span>
-            {onMove && <IconButton icon="arrowRight" label="Next card (→). Nothing is decided." onClick={() => onMove(1)} className="h-9 w-9 border border-line" />}
+            {onMove && <IconButton icon="arrowRight" label="Next card (→). Nothing is decided." onClick={() => onMove(1)} className="border border-line" />}
           </div>
         </div>
 

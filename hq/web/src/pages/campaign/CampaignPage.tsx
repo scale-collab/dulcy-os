@@ -184,10 +184,10 @@ function Numbers({ c }: { c: CampaignDetailB3['campaign'] }) {
     <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
       {items.map((x) => (
         <div key={x.label} className="min-w-0 rounded-2xl border border-line bg-sunken px-4 py-3.5">
-          <dt className="truncate text-[13px] font-medium text-muted">{x.label}</dt>
+          <dt className="text-[13px] font-medium text-muted max-sm:leading-snug sm:truncate">{x.label}</dt>
           <dd className={cx('tabular mt-1 truncate text-[28px] font-bold leading-none tracking-tight text-fg sm:text-[30px]', x.tone)}>{x.v}</dd>
           {x.bar !== undefined && <div className="mt-2.5"><Bar v={x.bar} /></div>}
-          {x.sub && <dd className="mt-1.5 truncate text-[13px] text-muted">{x.sub}</dd>}
+          {x.sub && <dd className="mt-1.5 text-[13px] text-muted max-sm:leading-snug sm:truncate">{x.sub}</dd>}
         </div>
       ))}
     </dl>
@@ -225,7 +225,7 @@ function AutomationLine({ a }: { a: AutomationR2 }) {
       <div className="min-w-0">
         <span className="font-semibold text-fg">Engine:</span> {st && <Pill tone={tone as 'bad' | 'good' | 'info' | 'plain'}>{st}</Pill>}{' '}
         {text && <span className={cx('break-words', !more && 'line-clamp-1')}>{text}</span>}
-        {text.length > 90 && <button onClick={() => setMore(!more)} className="ml-1 text-xs font-semibold text-accent-ink hover:underline">{more ? 'less' : 'more'}</button>}
+        {text.length > 90 && <button onClick={() => setMore(!more)} className="ml-1 text-xs font-semibold text-accent-ink hover:underline max-sm:-my-3 max-sm:inline-block max-sm:py-3">{more ? 'less' : 'more'}</button>}
       </div>
     </div>
   );
@@ -373,7 +373,7 @@ function CopyTab({ id, onDone }: { id: string; onDone: () => void }) {
         : d.review.map((x) => <EmailCard key={x.step} x={x} firstSubject={firstSubject} />)}
       {hasNotes && d.scribe && (
         <details className="rounded-2xl border border-line bg-surface p-4 text-sm text-fg-2 shadow-card">
-          <summary className="flex cursor-pointer items-center gap-2 font-semibold text-fg"><Avatar name="Scribe" size="xs" />Scribe's notes{(d.scribe.flagged.length + d.scribe.questions.length) > 0 && <Pill tone="warn">{d.scribe.flagged.length + d.scribe.questions.length} open</Pill>}</summary>
+          <summary className="flex min-h-10 cursor-pointer items-center gap-2 font-semibold text-fg sm:min-h-0"><Avatar name="Scribe" size="xs" />Scribe's notes{(d.scribe.flagged.length + d.scribe.questions.length) > 0 && <Pill tone="warn">{d.scribe.flagged.length + d.scribe.questions.length} open</Pill>}</summary>
           {d.scribe.notes && <p className="mt-2 whitespace-pre-wrap leading-6">{d.scribe.notes}</p>}
           {d.scribe.flagged.length > 0 && <p className="mt-2 text-warn">Still flagged: {d.scribe.flagged.join(' · ')}</p>}
           {d.scribe.questions.length > 0 && <p className="mt-2 text-warn">Questions for you: {d.scribe.questions.join(' · ')}</p>}

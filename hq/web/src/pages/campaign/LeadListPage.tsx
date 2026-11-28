@@ -58,7 +58,7 @@ export function LeadListPage({ id }: { id: string }) {
           </div>
         </div>
         <div className="mt-4 flex items-start gap-2 rounded-xl bg-accent-soft px-3.5 py-3 text-[15px] text-fg"><Icon name="arrowRight" size={18} className="mt-0.5 shrink-0 text-accent-ink" /><span><span className="font-semibold">Next: </span>{d.next}</span>
-          {SECTION_OF_STAGE[l.stage] && tab === 'overview' && <button onClick={() => setTab(SECTION_OF_STAGE[l.stage])} className="ml-auto shrink-0 text-sm font-semibold text-accent-ink hover:underline">Go to {TABS.find((t) => t.key === SECTION_OF_STAGE[l.stage])?.label}</button>}
+          {SECTION_OF_STAGE[l.stage] && tab === 'overview' && <button onClick={() => setTab(SECTION_OF_STAGE[l.stage])} className="-my-2.5 ml-auto shrink-0 py-2.5 text-sm font-semibold text-accent-ink hover:underline sm:my-0 sm:py-0">Go to {TABS.find((t) => t.key === SECTION_OF_STAGE[l.stage])?.label}</button>}
         </div>
         <AutomationStatus a={l.automation} className="mt-4" />
       </Card>

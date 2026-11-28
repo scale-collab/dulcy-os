@@ -289,7 +289,7 @@ function BlockedHint() {
 function Switch({ on, onChange, label, disabled }: { on: boolean; onChange: () => void; label: string; disabled?: boolean }) {
   return (
     <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={onChange} disabled={disabled}
-      className={cx('relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition disabled:opacity-45', on ? 'border-accent bg-accent' : 'border-line-strong bg-sunken')}>
+      className={cx("relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition before:absolute before:-inset-2 before:content-[''] disabled:opacity-45", on ? 'border-accent bg-accent' : 'border-line-strong bg-sunken')}>
       <span aria-hidden="true" className={cx('inline-block h-5 w-5 rounded-full bg-surface shadow-card transition', on ? 'translate-x-6' : 'translate-x-1')} />
     </button>
   );

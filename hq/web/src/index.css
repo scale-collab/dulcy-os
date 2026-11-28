@@ -144,6 +144,24 @@
   :focus { outline: none; }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 10px; }
   input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offset: 0; }
+  /* A box that scrolls sideways holds its screen-reader-only labels (sr-only is absolute): without this
+     a label in a wide table's off-screen column widened the whole page on a phone (2026-11-28). */
+  .overflow-x-auto, .overflow-auto { position: relative; }
+}
+
+/*
+ * Phone pass (2026-11-28): on a phone the small print reads one step bigger. Tailwind's text-xs reads
+ * this variable, so every small line (meta, help, table heads) grows from 12 to 13 px under 640 px and
+ * the desktop is unchanged. Body text is text-sm (14 px) or larger. HQ only (main.tsx sets .hq; the
+ * portal keeps its own sizes).
+ */
+@media (max-width: 639px) {
+  :root.hq { --text-xs: 0.8125rem; }
+  /* Tap targets: the small text buttons and chips (32-36 px on a computer) are at least 40 px tall. */
+  :root.hq :is(.min-h-7, .min-h-8, .min-h-9) { min-height: 2.5rem; }
+  /* A wide table scrolls inside its own box; its first column (the name) stays in view. */
+  :root.hq .sticky-first :is(th, td):first-child { position: sticky; left: 0; z-index: 1; background: var(--surface); box-shadow: 1px 0 0 var(--line); }
+  :root.hq .sticky-first :is(thead, tfoot) :is(th, td):first-child { background: var(--sunken); }
 }
 
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }

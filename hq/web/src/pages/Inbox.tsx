@@ -197,7 +197,7 @@ function Row({ r, showClient }: { r: InboxRow; showClient: boolean }) {
       <button onClick={() => go(`thread/${r.id}`)} className="group flex w-full items-start gap-3 px-4 py-3.5 text-left transition hover:bg-hover sm:px-5">
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-3">
-            <div className="min-w-0 truncate text-[15px] font-semibold text-fg">{r.prospect}{r.company && <span className="font-normal text-muted"> · {r.company}</span>}</div>
+            <div className="min-w-0 break-words text-[15px] font-semibold text-fg sm:truncate">{r.prospect}{r.company && <span className="font-normal text-muted"> · {r.company}</span>}</div>
             <span className={cx('tabular shrink-0 text-xs', r.tab === 'waiting' ? 'font-medium text-fg-2' : 'text-muted')}>{when}</span>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -414,7 +414,7 @@ function ThreadBody({ t, reload }: { t: InboxThread; reload: () => void }) {
               <RowPills r={{ ...r, pressed: done ? (done === 'skipped' ? 'Skip' : 'Approve Draft') : r.pressed, bookingLink: false, gap: false }} />
               <span className="text-xs text-muted">{timeAgo(r.at)}</span>
             </div>
-            {(t.subject || r.email) && <div className="mt-1.5 truncate text-xs text-muted">{[r.email, t.subject && `“${t.subject}”`].filter(Boolean).join(' · ')}</div>}
+            {(t.subject || r.email) && <div className="mt-1.5 break-words text-xs text-muted [overflow-wrap:anywhere] sm:truncate">{[r.email, t.subject && `“${t.subject}”`].filter(Boolean).join(' · ')}</div>}
           </div>
           {t.threadUrl && <ExtLink href={t.threadUrl} className="inline-flex min-h-11 shrink-0 items-center gap-1 text-sm"><Icon name="external" size={14} /><span className="hidden sm:inline">Open in EmailBison</span><span className="sm:hidden">EmailBison</span></ExtLink>}
         </div>

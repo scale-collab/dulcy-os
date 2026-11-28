@@ -96,7 +96,7 @@ export default function ContentItems({ d, id, onChanged, history, onHistory }: {
                   <span className="flex min-w-0 items-center gap-1.5"><Pill tone={stageTone(r.cc)}>{r.cc}</Pill><span className="truncate text-muted">{shortLabel(r.channel)}</span></span>
                   <span className="text-muted">{dates(r) || r.status || 'Unscheduled'}</span>
                 </div>
-                {now && <div className="mt-1.5 truncate text-xs font-medium text-fg-2">Next: {now.title}</div>}
+                {now && <div className="mt-1.5 text-xs font-medium text-fg-2 sm:truncate">Next: {now.title}</div>}
               </button>
             </li>
           );

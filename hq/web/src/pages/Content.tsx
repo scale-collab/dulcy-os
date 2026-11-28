@@ -12,6 +12,7 @@
 // the video's page: Approve / Request changes), and #/content/items/<rec>/resource is the resource document.
 // Everything is rendered as escaped text.
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { api, type ContentCenterView, type ContentIdea, type FridayIdea } from '../api';
 import { Button, Card, cx, Empty, ErrorBox, ExtLink, go, Icon, IconButton, Label, PageSkeleton, PageTitle, Pill, SectionHeader, setCount, timeAgo } from '../ui';
 import { FixItButton } from '../fixIt';
@@ -97,9 +98,9 @@ function NeedsView({ d, onChanged }: { d: ContentCenterView; onChanged: () => vo
       {/* The data problems (they were the "This week" tab): one line; open it for the list and one Fix it button. */}
       {d.notes.length > 0 && (
         <details className="group rounded-xl border border-warn/25 bg-warn-soft text-sm">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 font-medium text-fg [&::-webkit-details-marker]:hidden">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 py-2 font-medium text-fg sm:py-0 [&::-webkit-details-marker]:hidden">
             <Icon name="alert" size={16} className="shrink-0 text-warn" />
-            <span className="min-w-0 flex-1 truncate">{d.notes.length} data problem{d.notes.length === 1 ? '' : 's'} · {d.notes[0].problem}</span>
+            <span className="min-w-0 flex-1 sm:truncate">{d.notes.length} data problem{d.notes.length === 1 ? '' : 's'} · {d.notes[0].problem}</span>
             <Icon name="chevronDown" size={16} className="shrink-0 text-muted transition group-open:rotate-180" />
           </summary>
           <div className="space-y-3 border-t border-warn/20 px-3 pb-3 pt-3">
@@ -221,7 +222,7 @@ function IdeaCard({ idea, done, onDone, noChannel, onChanged }: { idea: ContentI
         <span>By {idea.by}</span>
         {idea.proposed && <span>· {timeAgo(idea.proposed)}</span>}
         {idea.decision !== 'Needs Review' && <Pill tone="info">{idea.decision}</Pill>}
-        {idea.sourceUrl && <ExtLink href={idea.sourceUrl}>{idea.source || 'Source'}</ExtLink>}
+        {idea.sourceUrl && <ExtLink href={idea.sourceUrl} className="max-sm:inline-flex max-sm:min-h-10 max-sm:items-center">{idea.source || 'Source'}</ExtLink>}
       </div>
       {(idea.angle || idea.hook || idea.why) && (
         <dl className="mt-3 space-y-1.5 text-sm leading-snug">
@@ -329,7 +330,7 @@ function FridayCard({ it, n, of, raw, onNextIdea }: { it: FridayIdea; n: number;
             <button onClick={() => setStep(k)} aria-current={k === step ? 'step' : undefined}
               className={cx('flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg px-1 text-[13px] font-semibold transition sm:text-sm', k === step ? 'bg-surface text-fg shadow-card' : k < step ? 'text-good' : 'text-muted hover:text-fg')}>
               <span className={cx('tabular hidden h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] sm:grid', k === step ? 'bg-accent text-accent-fg' : k < step ? 'bg-good-soft text-good' : 'border border-line-strong')}>{k < step ? <Icon name="check" size={11} strokeWidth={2.8} /> : k + 1}</span>
-              <span className="truncate sm:hidden">{k + 1} {label === 'Teleprompter' ? 'Prompter' : label}</span><span className="hidden truncate sm:inline">{label}</span>
+              <span className="truncate sm:hidden">{label === 'Teleprompter' ? 'Prompter' : label}</span><span className="hidden truncate sm:inline">{label}</span>
             </button>
           </li>
         ))}
@@ -421,10 +422,12 @@ function Teleprompter({ title, text, onClose }: { title: string; text: string; o
     const prev = document.body.style.overflow; document.body.style.overflow = 'hidden';
     return () => { window.removeEventListener('keydown', on); document.body.style.overflow = prev; };
   }, [onClose]);
-  return (
-    <div role="dialog" aria-modal="true" aria-label={`Teleprompter: ${title}`} className="fixed inset-0 z-50 flex flex-col bg-black text-white">
-      <div ref={box} onClick={() => setPlaying((x) => !x)} className="flex-1 overflow-y-auto px-5 pb-[60vh] pt-[30vh] sm:px-16">
-        <div className="mx-auto max-w-4xl whitespace-pre-wrap break-words font-semibold" style={{ fontSize: `${size}px`, lineHeight: 1.45 }}>{text}</div>
+  // On <body> (phone pass 2026-11-28): inside the page's fade-in it sat under the sticky header and the bottom bar.
+  return createPortal(
+    <div role="dialog" aria-modal="true" aria-label={`Teleprompter: ${title}`} className="fixed inset-0 z-50 flex flex-col bg-black pt-[env(safe-area-inset-top)] text-white">
+      {/* The 30vh / 60vh room is on the text, not the scroll box: as box padding it pushed Close and the size buttons off a phone screen. */}
+      <div ref={box} onClick={() => setPlaying((x) => !x)} className="min-h-0 flex-1 overflow-y-auto px-5 sm:px-16">
+        <div className="mx-auto max-w-4xl whitespace-pre-wrap break-words pb-[60vh] pt-[30vh] font-semibold" style={{ fontSize: `${size}px`, lineHeight: 1.45 }}>{text}</div>
       </div>
       <div className="pointer-events-none absolute inset-x-0 top-[30vh] h-0.5 bg-white/25" aria-hidden="true" />
       <div className="flex flex-wrap items-center justify-center gap-2 border-t border-white/15 bg-black/90 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
@@ -441,7 +444,8 @@ function Teleprompter({ title, text, onClose }: { title: string; text: string; o
         <button onClick={() => { if (box.current) box.current.scrollTop = 0; setPlaying(false); }} className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-white/25 px-4 font-semibold"><Icon name="undo" size={16} />Top</button>
         <button onClick={onClose} className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-white/25 px-4 font-semibold"><Icon name="x" size={16} />Close</button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
