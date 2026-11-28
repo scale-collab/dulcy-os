@@ -173,6 +173,52 @@ export function replierNotes(found: boolean, rows: number, v: ReplierValues | nu
   return out;
 }
 
+// ---------- Which replier mode applies (the Inbox thread panel) ----------
+export type ReplierModeKey = 'off' | 'draft-only' | 'approval' | 'auto';
+export interface ReplierMode { mode: ReplierModeKey; label: string; why: string; lines: string[]; clientId: string; clientName: string; found: boolean }
+const AUTO = ['Auto High Confidence', 'Autopilot'];
+
+/**
+ * The mode one client's replies run in, in plain words. Pure.
+ *   off        Enabled is off, or the client answers all its own replies: Echo does not draft.
+ *   draft-only Echo drafts, but the engine's reply sender is not live: Send does not send yet.
+ *   approval   Every draft waits for Josh or Alex; Send sends it.
+ *   auto       Some replies send by themselves (the client's own settings, inside office hours).
+ * engine.senderLive: REPLY_SENDER=on and reply.send live. engine.autoOn: SEAN_AUTO_SEND.
+ */
+export function replierModeOf(found: boolean, v: ReplierValues | null, sum: ReturnType<typeof summaries> | null, engine: { senderLive: boolean; autoOn: boolean }): Omit<ReplierMode, 'clientId' | 'clientName'> {
+  const lines: string[] = [];
+  if (!found || !v || !sum) {
+    return { mode: engine.senderLive ? 'approval' : 'draft-only', label: engine.senderLive ? 'Approval' : 'Draft only', found: false,
+      why: 'No AI replier settings for this client: Echo drafts with the default rules and every draft waits for Josh or Alex.', lines: [] };
+  }
+  if (!v.enabled) return { mode: 'off', label: 'Off', found, why: 'The AI replier is switched off for this client (Enabled is off): Echo does not draft here.', lines };
+  if (v.handoff === 'All Replies') return { mode: 'off', label: 'Off', found, why: 'The client answers its own replies (Client reply handoff: All replies): Echo does not draft here.', lines };
+  if (v.handoff === 'After First Agent Reply') lines.push('The client takes over after our first reply.');
+  const autoParts: string[] = [];
+  if (AUTO.includes(v.defaultMode)) autoParts.push(v.defaultMode === 'Autopilot' ? 'every reply type (Autopilot)' : `confident replies (${v.minConfidence}% or more)`);
+  for (const g of sum.routing) { const m = /^(Auto High Confidence|Autopilot):\s*(.*)$/.exec(g); if (m) autoParts.push(`${m[2]} (${m[1]})`); }
+  if (v.oooMode === 'Auto Send') autoParts.push('out-of-office replies');
+  if (v.alwaysReview.length) lines.push(`Always need a person: ${v.alwaysReview.join(', ')}.`);
+  const c = sum.calendar;
+  const connected = c.status === 'Connected' || c.jsonStatus === 'connected';
+  lines.push(c.timesOff ? 'Calendar times are off: drafts fall back to the booking link.' : connected ? 'Calendar connected: Echo offers two real times.' : 'Calendar not connected: drafts fall back to the booking link.');
+  if (!engine.senderLive) return { mode: 'draft-only', label: 'Draft only', found, why: 'Echo drafts, but the engine\'s reply sender is not live (REPLY_SENDER / reply.send): pressing Send does not send yet.', lines };
+  if (autoParts.length && engine.autoOn) return { mode: 'auto', label: 'Approval + some auto', found, why: `Sends by itself inside office hours (max ${v.maxAuto} a thread): ${autoParts.join('; ')}. Everything else waits for Josh or Alex.`, lines };
+  if (autoParts.length) lines.push('The client is set to send some replies by itself, but automatic sending is off on the engine (SEAN_AUTO_SEND).');
+  return { mode: 'approval', label: 'Approval', found, why: 'Every draft waits for Josh or Alex. Send sends it; nothing goes out by itself.', lines };
+}
+
+/** The mode for the client of one workspace record (null = no such client). */
+export async function replierModeFor(c: { at: HqAirtable; cfg: Pick<Config, 'replySenderOn' | 'dryRun' | 'liveStages' | 'seanAutoSendOn'> }, wsRec: string): Promise<ReplierMode | null> {
+  if (!/^rec[A-Za-z0-9]{14}$/.test(wsRec)) return null;
+  const l = await load(c.at, wsRec);
+  if (!l) return null;
+  const f = l.row?.fields ?? null;
+  const engine = { senderLive: c.cfg.replySenderOn && (!c.cfg.dryRun || c.cfg.liveStages.includes('reply.send')), autoOn: c.cfg.seanAutoSendOn };
+  return { ...replierModeOf(!!f, f ? valuesOf(f) : null, f ? summaries(f) : null, engine), clientId: l.group[0].id, clientName: l.name };
+}
+
 export interface ReplierCtx { db: Db; cfg: Config; at: HqAirtable; fetchImpl?: typeof fetch }
 
 /** The client (workspace group) and its settings row. */
