@@ -746,9 +746,17 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
   3. saves the whole workflow as it was, in the engine (this is the rollback);
   4. saves the change in n8n, and switches the workflow off and on again if it was on, so n8n picks it up;
   5. marks the issue Applied, with what changed and the undo line.
-- It never touches passwords, keys, tokens or logins in n8n. A fix that would is refused, and stays a manual step for you.
-- **Undo:** on the server, `docker compose exec engine node dist/src/cli.js riley-n8n-rollback <System Issue record ID>`. That shows what it would put back; add `--yes` to do it. It refuses if someone edited the workflow again after the fix (add `--force` to put it back anyway). The issue goes to Fix failed so Riley looks again.
+- **What Riley can change this way (2026-11-28, Alex: "Riley should fix n8n herself, not give me click steps"):**
+  - a node's settings (parameters), or one line inside a Code node;
+  - a node's own settings: On Error (e.g. "Continue (using error output)"), Retry On Fail, Max Tries, Wait Between Tries, Always Output Data, Execute Once, Notes, on/off;
+  - add a node (e.g. a Slack alert), or copy an existing node under a new name with a few settings changed;
+  - connect or disconnect two nodes, including a node's error output;
+  - workflow settings: Available in MCP, Error Workflow, Timeout, Save Execution Progress, who may call the workflow.
+  The Decision card says each change in plain words, e.g. "add node 'Reply refused alert' (Slack)", "connect 'Validate Unique Email Identity' error output → 'Reply refused alert'". All changes in one fix go in together or not at all.
+- It never touches passwords, keys, tokens or logins in n8n. A new node can only reuse a login the workflow already has (e.g. the same Slack connection as another Slack node). A fix that would add a new login, a new trigger or webhook, or anything with a key in it is refused, and stays a manual step for you (e.g. connecting a new OAuth account).
+- **Undo:** on the server, `docker compose exec engine node dist/src/cli.js riley-n8n-rollback <System Issue record ID>`. It puts back the whole workflow as it was (added nodes and wires go, settings go back). That shows what it would put back; add `--yes` to do it. It refuses if someone edited the workflow again after the fix (add `--force` to put it back anyway). The issue goes to Fix failed so Riley looks again.
 - Until `riley.n8n_apply` is in `LIVE_STAGES`, a ✅ only checks the change still fits, changes nothing in n8n, and Riley sends you the steps as before.
+- Saving a fix keeps the workflow's "Available in MCP" setting as it was (so Riley can still read it afterwards).
 
 **Switch on:**
 - `RILEY=on`, and add `riley.collect,riley.apply` to `LIVE_STAGES`.
