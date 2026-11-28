@@ -26,6 +26,7 @@ import type { HqAirtable } from './decisions.js';
 import { clientKey } from './clients.js';
 import { WORKSPACES_T } from './campaigns.js';
 import { closeUpdatesFor } from './closeUpdates.js';
+import { dealCalls } from './salesCalls.js';
 
 // ---------- tables and fields (airtable/SCHEMA.md; field IDs, so a rename never breaks HQ) ----------
 export const SALES_T = 'tblmEyHVAXDRwPxN9'; // Sales Data: one row per opportunity (Make 1.0 Booked Meeting; stage from Close)
@@ -202,7 +203,11 @@ export const ACTION_LABEL: Record<ActionKind, string> = {
 export interface ActionLine { kind: ActionKind; owner: Owner; text: string; link?: string }
 
 export interface FeedbackRow { id: string; status: string; rating: number | null; notes: string; link: string; newDate: string; created: string }
-export interface ColeReport { id: number; kind: string; title: string; summary: string; link: string; score: number | null; created: string; temperature?: string; nextStep?: string; verdict?: string }
+export interface ColeReport {
+  id: number; kind: string; title: string; summary: string; link: string; score: number | null; created: string; temperature?: string; nextStep?: string; verdict?: string;
+  /** Round 5: the Fathom meeting title (the calendar event name), Cole's call type, Fathom's one line on the meeting, when it was recorded. */
+  meetingTitle?: string; callType?: string; about?: string; meetingAt?: string;
+}
 export interface ClientRef { id: string; name: string; status: string; paid: boolean; formDone: boolean; onboardingLinked: boolean; start: string }
 export interface InvoiceRow { id: string; amount: number | null; date: string; type: string; status: string; client: string }
 
@@ -525,7 +530,26 @@ export function topNumbers(deals: Deal[], today: string, canSeeMoney: boolean) {
   return { thisMonth: calc(now), lastMonth: calc(last) };
 }
 
-export interface Note { problem: string; data: string; fix: string; why: string; owner: Owner | 'Riley' }
+/** Round 5: one "Have <agent> fix it" task per agent named in the fix (Fix it queues it on that agent's list; nothing changes until Alex approves). */
+export interface NoteAction { agent: 'Cole' | 'Atlas' | 'Ledger' | 'Riley'; title: string; detail: string }
+export interface Note { problem: string; data: string; fix: string; why: string; owner: Owner | 'Riley'; actions?: NoteAction[] }
+const FIX_AGENTS = ['Cole', 'Atlas', 'Ledger', 'Riley'] as const;
+/**
+ * The agent tasks for a data note: the fix text names who does what ("Ledger: tick … Riley: make …");
+ * each agent gets its own part. Alex's parts get no button (he does them himself). Pure.
+ */
+export function noteActions(n: Pick<Note, 'problem' | 'data' | 'fix' | 'why' | 'owner'>): NoteAction[] {
+  const parts = [...n.fix.matchAll(/(?:^|[.;]\s+|\s)(Cole|Atlas|Ledger|Riley|Alex):\s+(.+?)(?=(?:\s(?:Cole|Atlas|Ledger|Riley|Alex):\s)|$)/g)].map((m) => ({ agent: m[1], text: m[2].trim() }));
+  const mine = parts.filter((p): p is { agent: NoteAction['agent']; text: string } => (FIX_AGENTS as readonly string[]).includes(p.agent));
+  const list = mine.length ? mine : (FIX_AGENTS as readonly string[]).includes(n.owner) ? [{ agent: n.owner as NoteAction['agent'], text: n.fix }] : [];
+  const many = new Set(list.map((p) => p.agent)).size > 1;
+  return list.map((p) => ({
+    agent: p.agent,
+    title: `Sales data: ${n.problem}${many ? ` (${p.agent}'s part)` : ''}`.slice(0, 200),
+    detail: [`Data: ${n.data}`, `Your part: ${p.text}`, `Why: ${n.why}`,
+      "Approval rules apply: prepare the change and wait for Alex's ✅ in HQ before changing Close, Airtable or Dulcy Sign. Nothing is sent to anyone."].join('\n').slice(0, 2000),
+  }));
+}
 /** Real data problems (Problem → Data → Fix → Why). Read only: HQ never fixes them. Pure. */
 export function salesNotes(deals: Deal[], src: Pick<SalesSource, 'sales' | 'feedback'>, today: string): Note[] {
   const out: Note[] = [];
@@ -560,11 +584,11 @@ export function salesNotes(deals: Deal[], src: Pick<SalesSource, 'sales' | 'feed
   const formBox = deals.filter((d) => d.stages.signed && d.client && d.client.onboardingLinked && !d.client.formDone);
   if (formBox.length) out.push({ problem: 'Onboarding form submitted, checkbox unticked', data: few(formBox.map((d) => `${label(d)} → "${d.client!.name}": Onboarding record linked, Onboarding_form_submitted unticked`)), fix: 'Riley: add "Onboarding_form_submitted = true" to the n8n "2.3 POSTCALL Onboarding Form Complete" update (the old Make scenario that ticked it is off). Atlas: tick it for these clients.', why: 'Screens that read the checkbox show the form as not done. HQ Sales counts the linked record.', owner: 'Riley' });
   const dupes = deals.filter((d) => d.agreementRoles.filter((r) => !r.primary).length >= 2);
-  if (dupes.length) out.push({ problem: 'One deal, several agreement records', data: few(dupes.map((d) => `${label(d)}: ${d.agreements.length} records (${[...new Set(d.agreementRoles.filter((r) => !r.primary).map((r) => r.why))].join('; ')})`)), fix: 'Nothing to send. Atlas: void or mark Test Only the old ones in Dulcy Sign / New Client Intake if they are not needed.', why: 'HQ shows the current agreement and folds the others with the reason.', owner: 'Atlas' });
+  if (dupes.length) out.push({ problem: 'One deal, several agreement records', data: few(dupes.map((d) => `${label(d)}: ${d.agreements.length} records (${[...new Set(d.agreementRoles.filter((r) => !r.primary).map((r) => r.why))].join('; ')})`)), fix: 'Atlas: void the old ones or mark them Test Only in Dulcy Sign / New Client Intake (nothing goes to the client).', why: 'HQ shows the current agreement and folds the others with the reason.', owner: 'Atlas' });
   const signedDeals = deals.filter((d) => d.salesRec && d.stages.signed);
   const won = src.sales.filter((r) => s(r.fields[SF.stage]) === 'Won' || yes(r.fields[SF.closed]) || s(r.fields[SF.closedDate]));
   if (signedDeals.length && !won.length) out.push({ problem: 'No Sales Data row is marked Won', data: `${signedDeals.length} signed · 0 of ${src.sales.length} Sales Data rows have Won, Deal Closed? or Deal Closed Date`, fix: 'Cole: move signed deals to Won in Close.', why: 'Sales Goals (close rate, revenue to goal) read those fields, so they show 0 closed. HQ counts signed agreements instead.', owner: 'Cole' });
-  return out;
+  return out.map((x) => ({ ...x, actions: noteActions(x) }));
 }
 
 /** Cut money for anyone but the owner: no money keys, and no amounts in any text. Pure. */
@@ -606,8 +630,14 @@ export function cachedSales(at: Pick<HqAirtable, 'list'>, refresh = false, now =
 }
 /** Cole's call reviews and preps (hq_reports), newest first. */
 export async function coleReports(db: Db): Promise<ColeReport[]> {
-  const r = await db.query(`SELECT id, kind, title, summary, link, data, created_at FROM hq_reports WHERE agent='Cole' AND kind IN ('call_review','call_prep') ORDER BY id DESC LIMIT 300`);
+  // Round 5: the meeting title and Cole's call type come from cole_reviews (same recording, dedupe key cole:<id>).
+  const r = await db.query(`SELECT r.id, r.kind, r.title, r.summary, r.link, r.data, r.created_at, c.title AS meeting_title, c.review->'classify'->>'call_type' AS call_type
+    FROM hq_reports r LEFT JOIN cole_reviews c ON r.dedupe_key = 'cole:' || c.recording_id
+    WHERE r.agent='Cole' AND r.kind IN ('call_review','call_prep') ORDER BY r.id DESC LIMIT 300`);
+  const text = (v: unknown, max: number) => (typeof v === 'string' ? v.slice(0, max) : '');
   return r.rows.map((x) => ({
+    meetingTitle: text(x.data?.meetingTitle, 200) || text(x.meeting_title, 200), callType: text(x.data?.callType, 30) || text(x.call_type, 30),
+    about: text(x.data?.about, 240), meetingAt: text(x.data?.meetingAt, 40),
     id: Number(x.id), kind: x.kind, title: x.title, summary: x.summary, link: httpsOnly(String(x.link ?? '')),
     score: x.data?.score !== undefined && x.data?.score !== null && Number.isFinite(Number(x.data.score)) ? Number(x.data.score) : null, created: new Date(x.created_at).toISOString(),
     temperature: typeof x.data?.temperature === 'string' ? x.data.temperature : '', nextStep: typeof x.data?.nextStep === 'string' ? x.data.nextStep.slice(0, 300) : '',
@@ -651,12 +681,8 @@ export async function dealDetail(at: Pick<HqAirtable, 'list'>, db: Db, id: strin
     { step: 'Onboarding started', done: deal.onboardingStarted, note: a?.forwardedAt ? `n8n started it ${shortDay(a.forwardedAt)}` : deal.client ? `Client record "${deal.client.name}"` : '' },
     { step: 'Onboarding form', done: deal.stages.onboarded, note: deal.client?.formDone ? 'Submitted' : deal.client?.onboardingLinked ? 'Submitted (Onboarding record linked; the checkbox is not ticked)' : 'Not submitted' },
   ];
-  const calls = [
-    ...(deal.callDate ? [{ what: deal.stages.showed ? 'Call held' : deal.airtableStage === 'Canceled' ? 'Call canceled' : deal.callDate >= today ? 'Call booked' : 'Call (no outcome)', day: deal.heldDate || deal.callDate, link: '' }] : []),
-    ...deal.feedback.filter((f) => f.newDate).map((f) => ({ what: 'New date (Call Feedback)', day: f.newDate, link: '' })),
-    ...deal.reviews.map((r) => ({ what: `Recorded call · Cole ${r.score ?? '?'}/10`, day: dayOf(r.created), link: r.link })),
-    ...deal.feedback.filter((f) => f.link).map((f) => ({ what: 'Sales call link (Call Feedback)', day: dayOf(f.created), link: f.link })),
-  ].sort((x, y) => y.day.localeCompare(x.day));
+  // Round 5: each call named by its type, one line on what it was about, the Fathom link when known.
+  const calls = dealCalls(deal, today).map((c) => ({ ...c, what: [c.name, c.status].filter(Boolean).join(' · ') }));
   const roles = new Map(deal.agreementRoles.map((r) => [r.id, r]));
   const out = {
     deal: {
