@@ -32,6 +32,8 @@ export const BF = {
 export const VL = {
   name: 'fldbg5PAnKyFHc3uy', fileName: 'fldlOo9lL9jvvhGo9', genericVerifier: 'fldX8cOpx3TcGX2jf', directVerifier: 'fldlJtYONrHGdyXoh',
   finalGeneric: 'fld0FHomkh3uyx0FD', finalDirect: 'fldQZJCpTofahmTkl', contactSource: 'fldwoK7IcKH6NYgVJ', sourceType: 'fldJSSY0QTMU5pzsQ',
+  /** Round 4: the list-level verifier, the MillionVerifier job and the route the engine took ("MV-first v2", "Direct → LeadMagic"). */
+  listProvider: 'fldscHbLN6C72xbRj', mvJob: 'fld4B7jLPdcgzdkgF', route: 'fldkSwOgZ3tqz8tx9',
 } as const;
 /** Verification Performance (the old n8n job's cohorts; read when present, may be stale). */
 export const VERIF_PERF = 'tblem2vNdX0hzHdxg';
@@ -102,9 +104,41 @@ export function bounceOf(r: AirtableRecord, clients: Map<string, { key: string; 
     verifier: normVerifier(val(f[BF.verifier])), emailType: /generic/i.test(val(f[BF.emailType])) ? 'Generic' : /direct/i.test(val(f[BF.emailType])) ? 'Direct' : '',
   };
 }
-/** Round 2: the verifiers in use are MillionVerifier and LeadMagic; any other named one is "Other" ('' = none recorded). */
-export const VERIFIERS = ['MillionVerifier', 'LeadMagic', 'Other'] as const;
-export const normVerifier = (v: string) => (/million/i.test(v) ? 'MillionVerifier' : /lead ?magic/i.test(v) ? 'LeadMagic' : v.trim() && !/^(none|unknown|n\/a)$/i.test(v.trim()) ? 'Other' : '');
+/**
+ * Round 4 (Alex, 2026-11-28): "There is no verified by other. It's just MillionVerifier", unless the
+ * client verified their own list. So HQ never says "Other": MillionVerifier, LeadMagic (the engine's
+ * fallback for direct emails), "Client verified", or "Not recorded" when nothing says who verified.
+ */
+export const CLIENT_VERIFIED = 'Client verified';
+export const NOT_RECORDED = 'Not recorded';
+export const VERIFIERS = ['MillionVerifier', 'LeadMagic', CLIENT_VERIFIED, NOT_RECORDED] as const;
+/** A recorded verifier name ('' = none recorded: empty, None, Unknown). A real other name is kept as written. Pure. */
+export const normVerifier = (v: string) => {
+  const t = v.trim();
+  if (/million|^mv\b/i.test(t)) return 'MillionVerifier';
+  if (/lead ?magic/i.test(t)) return 'LeadMagic';
+  if (/client/i.test(t)) return CLIENT_VERIFIED;
+  return t && !/^(none|unknown|n\/a|other|-)$/i.test(t) ? t.slice(0, 40) : '';
+};
+/** A list or campaign the client verified themselves (no Airtable field for it: the name says so, e.g. "(client verified)"). Pure. */
+export const CLIENT_VERIFIED_RE = /\bclient[\s-]*(verified|provided|supplied|list)\b|\bverified by (the )?client\b/i;
+export const isClientVerified = (...names: string[]) => names.some((n) => CLIENT_VERIFIED_RE.test(n));
+/**
+ * Who verified a list's direct or generic emails, from what the list records: the client (by name),
+ * the Direct / Generic Verification Provider field, the engine's route ("Generic → MillionVerifier ·
+ * Direct → LeadMagic"), a MillionVerifier job (or an "MV-first" route), the list-level Verification
+ * Provider; else "Not recorded". Pure.
+ */
+export function verifierFor(l: Pick<ListVerifiers, 'direct' | 'generic' | 'listProvider' | 'mvJob' | 'route' | 'clientVerified'>, type: 'Direct' | 'Generic'): string {
+  if (l.clientVerified) return CLIENT_VERIFIED;
+  const field = normVerifier(type === 'Direct' ? l.direct : l.generic);
+  if (field) return field;
+  const route = l.route ?? '';
+  const part = normVerifier(new RegExp(`${type}\\s*(?:→|->)\\s*([A-Za-z ]+)`, 'i').exec(route)?.[1] ?? '');
+  if (part) return part;
+  if (l.mvJob || /\bmv\b|million/i.test(route)) return 'MillionVerifier';
+  return normVerifier(l.listProvider ?? '') || NOT_RECORDED;
+}
 
 /* ---------- Grouping and the one conclusion (pure) ---------- */
 export interface Slice { key: string; label: string; n: number; share: number }
@@ -181,11 +215,13 @@ export function bounceSummary(all: BounceRow[], f: BounceFilter) {
 }
 
 /* ---------- Verification performance (pure) ---------- */
-export interface ListVerifiers { id: string; name: string; direct: string; generic: string; directCount: number; genericCount: number; source: string }
-export interface CampaignRef { id: string; name: string; clientKey: string; client: string; contacted: number; bounce: number; status: string; lists: string[] }
+export interface ListVerifiers {
+  id: string; name: string; direct: string; generic: string; directCount: number; genericCount: number; source: string;
+  /** Round 4: more evidence of who verified (see verifierFor). */ listProvider?: string; mvJob?: string; route?: string; clientVerified?: boolean;
+}
+export interface CampaignRef { id: string; name: string; clientKey: string; client: string; contacted: number; bounce: number; status: string; lists: string[]; /** Round 4: the client verified this campaign's list. */ clientVerified?: boolean }
 export interface Cohort { verifier: string; emailType: string; source: string; leads: number | null; contacted: number | null; contactedEstimated: boolean; bounces: number; notFound: number; rate: number | null }
 export interface VerifCampaign { id: string; name: string; client: string; clientKey: string; status: string; contacted: number; bounce: number; bounces: number; notFound: number; cohorts: Cohort[]; verdict: 'problem' | 'watch' | 'ok' | 'few'; line: string }
-const verifierName = (v: string) => normVerifier(v);
 /** Per campaign and verifier: emails, contacted (from the old cohorts, else estimated from the list mix), bounces, "address not found". Pure. */
 export function verificationRows(campaigns: CampaignRef[], lists: Map<string, ListVerifiers>, bounces: BounceRow[], cohortRows: { campaignRec: string; campaignName: string; provider: string; emailType: string; leads: number; contacted: number; bounces: number }[]): VerifCampaign[] {
   const out: VerifCampaign[] = [];
@@ -201,17 +237,25 @@ export function verificationRows(campaigns: CampaignRef[], lists: Map<string, Li
       cohorts.set(k, x);
       return x;
     };
+    // Round 4: a client-verified campaign is "Client verified" whatever the default tags say; nothing is ever "Other".
+    const byClient = !!c.clientVerified;
+    const listOf = (l: ListVerifiers, t: 'Direct' | 'Generic') => (byClient ? CLIENT_VERIFIED : verifierFor(l, t));
+    const fallback = byClient ? CLIENT_VERIFIED : NOT_RECORDED;
     for (const l of ls) {
-      if (l.directCount) { const x = get(verifierName(l.direct) || 'Other', 'Direct', l.source); x.leads = (x.leads ?? 0) + l.directCount; }
-      if (l.genericCount) { const x = get(verifierName(l.generic) || 'Other', 'Generic', 'Company emails'); x.leads = (x.leads ?? 0) + l.genericCount; }
+      if (l.directCount) { const x = get(listOf(l, 'Direct'), 'Direct', l.source); x.leads = (x.leads ?? 0) + l.directCount; }
+      if (l.genericCount) { const x = get(listOf(l, 'Generic'), 'Generic', 'Company emails'); x.leads = (x.leads ?? 0) + l.genericCount; }
     }
+    // Untagged rows take the verifier of the list's emails of that type (any type the list has when the row has none).
+    const fromList = (emailType: string) => {
+      const types = /^(Direct|Generic)$/.test(emailType) ? [emailType as 'Direct' | 'Generic'] : (['Direct', 'Generic'] as const).filter((t) => ls.some((l) => (t === 'Direct' ? l.directCount : l.genericCount)));
+      return types.flatMap((t) => ls.map((l) => listOf(l, t))).find((v) => v !== NOT_RECORDED) ?? '';
+    };
     for (const b of mine) {
-      const fromList = b.emailType ? ls.map((l) => verifierName(b.emailType === 'Generic' ? l.generic : l.direct)).find(Boolean) : '';
-      const x = get(b.verifier || fromList || 'Other', b.emailType || 'Unknown');
+      const x = get(byClient ? CLIENT_VERIFIED : b.verifier || fromList(b.emailType) || fallback, b.emailType || 'Unknown');
       x.bounces++; if (b.kind === 'not_found') x.notFound++;
     }
     const old = cohortRows.filter((r) => r.campaignRec === c.id || (!r.campaignRec && r.campaignName === c.name));
-    for (const r of old) { const x = get(verifierName(r.provider) || 'Other', r.emailType || 'Unknown'); x.contacted = (x.contacted ?? 0) + r.contacted; if (x.leads === null) x.leads = r.leads; }
+    for (const r of old) { const x = get(byClient ? CLIENT_VERIFIED : normVerifier(r.provider) || fromList(r.emailType) || fallback, r.emailType || 'Unknown'); x.contacted = (x.contacted ?? 0) + r.contacted; if (x.leads === null) x.leads = r.leads; }
     for (const x of cohorts.values()) {
       if (x.contacted === null && x.leads && listTotal && c.contacted) { x.contacted = Math.round((c.contacted * x.leads) / listTotal); x.contactedEstimated = true; }
       x.rate = x.contacted ? Math.round((x.bounces / x.contacted) * 1000) / 10 : null;
@@ -221,7 +265,7 @@ export function verificationRows(campaigns: CampaignRef[], lists: Map<string, Li
     const worst = list.find((x) => x.bounces >= BOUNCE_LIMITS.minToJudge && x.notFound / x.bounces >= BOUNCE_LIMITS.majority);
     const verdict: VerifCampaign['verdict'] = bouncesN < BOUNCE_LIMITS.minToJudge ? 'few' : worst && (c.bounce > 2.5 || (worst.rate ?? 0) > 2.5) ? 'problem' : nf / bouncesN >= BOUNCE_LIMITS.majority ? 'watch' : 'ok';
     const line = verdict === 'few' ? `${bouncesN} bounce${bouncesN === 1 ? '' : 's'}: too few to judge.`
-      : verdict === 'problem' ? `${worst!.verifier} (${worst!.emailType}) emails: ${worst!.notFound} of ${worst!.bounces} bounces are "address not found" → a verification problem: re-verify before the next send.`
+      : verdict === 'problem' ? `${worst!.verifier === NOT_RECORDED ? 'Emails with no verifier recorded' : worst!.verifier === CLIENT_VERIFIED ? 'Client-verified emails' : `${worst!.verifier} emails`} (${worst!.emailType}): ${worst!.notFound} of ${worst!.bounces} bounces are "address not found" → a verification problem: re-verify ${worst!.verifier === CLIENT_VERIFIED ? 'with MillionVerifier ' : ''}before the next send.`
         : verdict === 'watch' ? `${pc(nf / bouncesN)} of ${bouncesN} bounces are "address not found", bounce ${c.bounce}% → watch the verifier.`
           : `Bounces are not mostly "address not found" (${pc(nf / Math.max(1, bouncesN))}) → verification looks fine.`;
     out.push({ id: c.id, name: c.name, client: c.client, clientKey: c.clientKey, status: c.status, contacted: c.contacted, bounce: c.bounce, bounces: bouncesN, notFound: nf, cohorts: list, verdict, line });
@@ -256,7 +300,6 @@ async function mxFor(domains: string[]): Promise<Map<string, string>> {
 }
 export { providerOfMx };
 
-interface BounceSource { rows: BounceRow[]; days: number; capped: boolean; mxLooked: number; readAt: string; activity: ActivityRow[]; campaigns: CampaignTotals[] }
 
 /* ---------- Round 2: the other stats, lightly (sent, replies, interested, meetings) ---------- */
 export const INTERESTED_STATUSES = ['Interested', 'Meeting Request', 'Info Request', 'Information Request'];
@@ -289,25 +332,73 @@ export function statsRow(activity: ActivityRow[], campaigns: CampaignTotals[], b
       : `Replies, interested and meetings in the last ${days} days. Sent = ${f.campaign ? 'this campaign\'s total' : `the total of the ${camps.length} campaign${camps.length === 1 ? '' : 's'} sending in the period`}.`,
   };
 }
-const cache = new Map<number, { at: number; data: Promise<BounceSource> }>();
-export function _resetBounceCache() { cache.clear(); mxCache.clear(); verifCache = null; }
+/**
+ * Round 4 (Alex: "Verification takes a bit to load"): the reads are split so the Verification tab
+ * never waits for what only the Bounces tab draws. Before, opening Verification read (all at once,
+ * 100 rows a page, one page after another): the bounced Emails rows, the workspaces, a SECOND Emails
+ * read of every reply / meeting (up to 5,000 rows = 50 pages) and every campaign's counters (up to
+ * 3,000 = 30 pages) for the Bounces stats row, then its own campaigns, workspaces, the old cohorts,
+ * and the lead lists in up to 10 RECORD_ID() batches. Airtable allows 5 requests a second per base,
+ * so that was well over 100 requests (half a minute or more, and a 429 failed the whole view).
+ * Now: the bounced rows (+ workspaces + MX) are one cache shared by both tabs; the replies /
+ * meetings / campaign counters are read only for the Bounces tab; the lead lists are one paged read
+ * (about 140 lists = 2 pages); and the Deliverability screen warms the Verification cache in the
+ * background (warmVerification), so the tab opens from the cache. Every part is kept 10 minutes.
+ */
+interface BounceCore { rows: BounceRow[]; days: number; capped: boolean; mxLooked: number; readAt: string }
+interface BounceActivity { activity: ActivityRow[]; campaigns: CampaignTotals[] }
+type Clients = Map<string, { key: string; name: string; active: boolean }>;
+const coreCache = new Map<number, { at: number; data: Promise<BounceCore> }>();
+const actCache = new Map<number, { at: number; data: Promise<BounceActivity> }>();
+let wsCache: { at: number; data: Promise<{ clients: Clients; bison: Clients }> } | null = null;
+export function _resetBounceCache() { coreCache.clear(); actCache.clear(); wsCache = null; mxCache.clear(); verifCache = null; }
 
-async function readBounces(at: Pick<HqAirtable, 'list'>, days: number): Promise<BounceSource> {
-  const since = `DATEADD(NOW(),-${days},'days')`;
-  const [recs, ws, act, camps] = await Promise.all([
+/** One cached copy (per key) of a read: refresh re-reads a copy older than 10 seconds; a failed read is dropped. */
+function cached<T>(m: Map<number, { at: number; data: Promise<T> }>, key: number, read: () => Promise<T>, refresh: boolean, now = Date.now()): Promise<T> {
+  const hit = m.get(key);
+  if (hit && now - hit.at < (refresh ? 10_000 : BOUNCE_LIMITS.cacheMs)) return hit.data;
+  const data = read();
+  m.set(key, { at: now, data });
+  data.catch(() => { if (m.get(key)?.data === data) m.delete(key); });
+  return data;
+}
+/** The workspaces → clients (and EmailBison workspace id → client), shared by every read here. */
+function cachedClients(at: Pick<HqAirtable, 'list'>, refresh: boolean, now = Date.now()) {
+  if (!wsCache || now - wsCache.at >= (refresh ? 10_000 : BOUNCE_LIMITS.cacheMs)) {
+    const data = at.list(WORKSPACES_T, `{Name}!=''`, ['Name', 'Status', 'Client Type', 'Client', 'ID'], 300, { byName: true }).then((ws) => {
+      const clients = clientIndex(ws);
+      const bison: Clients = new Map();
+      for (const w of ws) { const c = clients.get(w.id); const id = val(w.fields.ID); if (c && id) bison.set(id, c); }
+      return { clients, bison };
+    });
+    wsCache = { at: now, data };
+    data.catch(() => { if (wsCache?.data === data) wsCache = null; });
+  }
+  return wsCache.data;
+}
+const activeKeys = (clients: Clients) => new Set([...clients.values()].filter((c) => c.active).map((c) => c.key));
+
+async function readBounceCore(at: Pick<HqAirtable, 'list'>, days: number, refresh: boolean): Promise<BounceCore> {
+  const [recs, { clients, bison }] = await Promise.all([
     at.list(EMAILS, `AND({Lead Status}='Bounced',IS_AFTER({Status timestamp},DATEADD(NOW(),-${days},'days')))`, Object.values(BF), BOUNCE_LIMITS.maxRows, { sortField: 'Status timestamp', sortDesc: true }),
-    at.list(WORKSPACES_T, `{Name}!=''`, ['Name', 'Status', 'Client Type', 'Client', 'ID'], 300, { byName: true }),
-    // Round 2: replies and meetings in the period (one capped read; never the message text).
-    at.list(EMAILS, `OR(IS_AFTER({Latest Reply Time},${since}),IS_AFTER({Meeting Booked At},${since}),IS_AFTER({Date of Call Booked},${since}))`, ACT_FIELDS, BOUNCE_LIMITS.maxRows).catch(() => [] as AirtableRecord[]),
-    at.list(CAMPAIGNS_T, `{Emails Sent}>0`, [KF.name, KF.status, KF.client, KF.sent, KF.contacted, KF.replies, KF.interested, KF.booked, KF.bouncedPct, KF.statusModified, KF.completedAt], 3000).catch(() => [] as AirtableRecord[]),
+    cachedClients(at, refresh),
   ]);
-  const clients = clientIndex(ws);
-  const bison = new Map<string, { key: string; name: string; active: boolean }>();
-  for (const w of ws) { const c = clients.get(w.id); const id = val(w.fields.ID); if (c && id) bison.set(id, c); }
   // MX only for bounces whose provider is empty (bounded, cached a day).
   const need = recs.filter((r) => !val(r.fields[BF.provider])).map((r) => val(r.fields[BF.lead]).toLowerCase().split('@')[1] ?? '');
   const mx = await mxFor(need);
+  const active = activeKeys(clients);
   const rows = recs.filter((r) => /bounced/i.test(val(r.fields[BF.status])) || !val(r.fields[BF.status])).map((r) => bounceOf(r, clients, bison, mx));
+  return { rows: rows.filter((r) => r.clientKey === 'none' || active.has(r.clientKey)), days, capped: recs.length >= BOUNCE_LIMITS.maxRows, mxLooked: mx.size, readAt: new Date().toISOString() };
+}
+
+/** Round 2: replies / meetings in the period and the campaigns' counters (the Bounces tab's stats row only). */
+async function readActivity(at: Pick<HqAirtable, 'list'>, days: number, refresh: boolean): Promise<BounceActivity> {
+  const since = `DATEADD(NOW(),-${days},'days')`;
+  const [act, camps, { clients, bison }] = await Promise.all([
+    at.list(EMAILS, `OR(IS_AFTER({Latest Reply Time},${since}),IS_AFTER({Meeting Booked At},${since}),IS_AFTER({Date of Call Booked},${since}))`, ACT_FIELDS, BOUNCE_LIMITS.maxRows).catch(() => [] as AirtableRecord[]),
+    at.list(CAMPAIGNS_T, `{Emails Sent}>0`, [KF.name, KF.status, KF.client, KF.sent, KF.contacted, KF.replies, KF.interested, KF.booked, KF.bouncedPct, KF.statusModified, KF.completedAt], 3000).catch(() => [] as AirtableRecord[]),
+    cachedClients(at, refresh),
+  ]);
   const wsOf = (f: Record<string, unknown>) => clients.get((Array.isArray(f[BF.clients]) ? (f[BF.clients] as any[]).map((x) => (typeof x === 'string' ? x : x?.id)) : [])[0] ?? '') ?? bison.get(val(f[BF.bisonWs])) ?? null;
   const activity: ActivityRow[] = act.map((r) => {
     const f = r.fields;
@@ -323,63 +414,76 @@ async function readBounces(at: Pick<HqAirtable, 'list'>, days: number): Promise<
     const changed = Math.max(Date.parse(x.statusModified) || 0, Date.parse(x.completedAt) || 0);
     return { id: x.id, name: x.name, clientKey: c?.key ?? 'none', sent: x.sent, contacted: x.contacted, replies: x.replies, interested: x.interested, booked: x.booked, bounce: x.bounce, activeInPeriod: x.status === 'Active' || changed >= from, active: c?.active ?? false };
   }).filter((c) => c.active).map(({ active: _a, ...c }) => c);
-  return { rows: rows.filter((r) => r.clientKey === 'none' || [...clients.values()].some((c) => c.key === r.clientKey && c.active)), days, capped: recs.length >= BOUNCE_LIMITS.maxRows, mxLooked: mx.size, readAt: new Date().toISOString(), activity, campaigns };
+  return { activity, campaigns };
 }
-function cachedBounces(at: Pick<HqAirtable, 'list'>, days: number, refresh = false, now = Date.now()): Promise<BounceSource> {
-  const hit = cache.get(days);
-  if (hit && now - hit.at < (refresh ? 10_000 : BOUNCE_LIMITS.cacheMs)) return hit.data;
-  const data = readBounces(at, days);
-  cache.set(days, { at: now, data });
-  data.catch(() => { if (cache.get(days)?.data === data) cache.delete(days); });
-  return data;
-}
+const cachedCore = (at: Pick<HqAirtable, 'list'>, days: number, refresh = false) => cached(coreCache, days, () => readBounceCore(at, days, refresh), refresh);
+const cachedActivity = (at: Pick<HqAirtable, 'list'>, days: number, refresh = false) => cached(actCache, days, () => readActivity(at, days, refresh), refresh);
 const periodOf = (p: string | null) => (BOUNCE_LIMITS.periods as readonly number[]).includes(Number(p)) ? Number(p) : 30;
 const keyParam = (p: string | null) => (p ?? '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 80);
 
 /** GET /deliverability/bounces?client=&campaign=&account=&days= */
 export async function bouncesView(at: Pick<HqAirtable, 'list'>, params: URLSearchParams) {
   const days = periodOf(params.get('days'));
-  const src = await cachedBounces(at, days, params.get('refresh') === '1');
+  const refresh = params.get('refresh') === '1';
+  const [src, act] = await Promise.all([cachedCore(at, days, refresh), cachedActivity(at, days, refresh)]);
   const f: BounceFilter = { client: keyParam(params.get('client')) || undefined, campaign: String(params.get('campaign') ?? '').slice(0, 200) || undefined, account: String(params.get('account') ?? '').toLowerCase().slice(0, 200) || undefined };
-  return { ...bounceSummary(src.rows, f), stats: statsRow(src.activity, src.campaigns, src.rows, f, days), filter: { ...f, days }, periods: BOUNCE_LIMITS.periods, capped: src.capped, maxRows: BOUNCE_LIMITS.maxRows, readAt: src.readAt };
+  return { ...bounceSummary(src.rows, f), stats: statsRow(act.activity, act.campaigns, src.rows, f, days), filter: { ...f, days }, periods: BOUNCE_LIMITS.periods, capped: src.capped, maxRows: BOUNCE_LIMITS.maxRows, readAt: src.readAt };
 }
 
-let verifCache: { at: number; data: Promise<{ campaigns: CampaignRef[]; lists: Map<string, ListVerifiers>; cohorts: Parameters<typeof verificationRows>[3]; readAt: string }> } | null = null;
-async function readVerif(at: Pick<HqAirtable, 'list'>) {
-  const [camps, ws, perf] = await Promise.all([
+type VerifSource = { campaigns: CampaignRef[]; lists: Map<string, ListVerifiers>; cohorts: Parameters<typeof verificationRows>[3]; readAt: string };
+let verifCache: { at: number; data: Promise<VerifSource> } | null = null;
+/** The lead list → who verified it (one paged read of every list: about 140 lists = 2 pages). Pure. */
+export function listVerifiersOf(r: AirtableRecord): ListVerifiers {
+  const f = r.fields;
+  const name = val(f[VL.name]) || val(f[VL.fileName]) || 'Lead list';
+  return {
+    id: r.id, name, direct: val(f[VL.directVerifier]), generic: val(f[VL.genericVerifier]), directCount: Number(val(f[VL.finalDirect])) || 0, genericCount: Number(val(f[VL.finalGeneric])) || 0,
+    source: val(f[VL.contactSource]) || val(f[VL.sourceType]), listProvider: val(f[VL.listProvider]), mvJob: val(f[VL.mvJob]), route: val(f[VL.route]), clientVerified: isClientVerified(name),
+  };
+}
+async function readVerif(at: Pick<HqAirtable, 'list'>, refresh: boolean): Promise<VerifSource> {
+  const [camps, { clients }, perf, listRecs] = await Promise.all([
     at.list(CAMPAIGNS_T, `{Total Leads Contacted}>0`, [KF.name, KF.status, KF.client, KF.contacted, KF.bouncedPct, KF.lists, KF.sent], 1500),
-    at.list(WORKSPACES_T, `{Name}!=''`, ['Name', 'Status', 'Client Type', 'Client', 'ID'], 300, { byName: true }),
+    cachedClients(at, refresh),
     at.list(VERIF_PERF, 'TRUE()', Object.values(VP), 3000).catch(() => [] as AirtableRecord[]),
+    at.list(LEAD_LISTS_T, 'TRUE()', Object.values(VL), 2000),
   ]);
-  const clients = clientIndex(ws);
+  const lists = new Map<string, ListVerifiers>(listRecs.map((l) => [l.id, listVerifiersOf(l)]));
   const campaigns: CampaignRef[] = camps.map((r) => factsOf(r)).map((f) => ({ f, c: clients.get(f.clientRec) })).filter((x) => x.c?.active)
-    .map(({ f, c }) => ({ id: f.id, name: f.name, clientKey: c!.key, client: c!.name, contacted: f.contacted, bounce: f.bounce, status: f.status, lists: f.listIds }));
-  const listIds = [...new Set(campaigns.flatMap((c) => c.lists))].slice(0, 600);
-  const parts = await Promise.all(Array.from({ length: Math.ceil(listIds.length / 60) }, (_, i) => listIds.slice(i * 60, i * 60 + 60))
-    .map((ch) => at.list(LEAD_LISTS_T, `OR(${ch.map((id) => `RECORD_ID()='${id}'`).join(',')})`, Object.values(VL), ch.length)));
-  const lists = new Map<string, ListVerifiers>();
-  for (const l of parts.flat()) {
-    const f = l.fields;
-    lists.set(l.id, { id: l.id, name: val(f[VL.name]) || val(f[VL.fileName]) || 'Lead list', direct: val(f[VL.directVerifier]), generic: val(f[VL.genericVerifier]), directCount: Number(val(f[VL.finalDirect])) || 0, genericCount: Number(val(f[VL.finalGeneric])) || 0, source: val(f[VL.contactSource]) || val(f[VL.sourceType]) });
-  }
+    .map(({ f, c }) => {
+      const mine = f.listIds.map((id) => lists.get(id)).filter((x): x is ListVerifiers => !!x);
+      return { id: f.id, name: f.name, clientKey: c!.key, client: c!.name, contacted: f.contacted, bounce: f.bounce, status: f.status, lists: f.listIds, clientVerified: isClientVerified(f.name) || (mine.length > 0 && mine.every((l) => l.clientVerified)) };
+    });
   const cohorts = perf.map((r) => ({
     campaignRec: (Array.isArray(r.fields[VP.campaign]) ? val(r.fields[VP.campaign]) : '') || '', campaignName: val(r.fields[VP.campaignName]), provider: val(r.fields[VP.provider]), emailType: val(r.fields[VP.emailType]),
     leads: Number(val(r.fields[VP.leads])) || 0, contacted: Number(val(r.fields[VP.contacted])) || 0, bounces: Number(val(r.fields[VP.bounces])) || 0,
   }));
   return { campaigns, lists, cohorts, readAt: new Date().toISOString() };
 }
+function cachedVerif(at: Pick<HqAirtable, 'list'>, refresh: boolean, now = Date.now()): Promise<VerifSource> {
+  if (!verifCache || now - verifCache.at >= (refresh ? 10_000 : BOUNCE_LIMITS.cacheMs)) {
+    const data = readVerif(at, refresh);
+    verifCache = { at: now, data };
+    data.catch(() => { if (verifCache?.data === data) verifCache = null; });
+  }
+  return verifCache.data;
+}
+/**
+ * Start the Verification reads in the background (the Deliverability screen calls it), so the tab
+ * opens from the cache. Reads only, at most once per cache window; never throws.
+ */
+export function warmVerification(at: Pick<HqAirtable, 'list'>): void {
+  try { void Promise.all([cachedVerif(at, false), cachedCore(at, VERIFY_DAYS)]).catch(() => undefined); } catch { /* not connected */ }
+}
+export const VERIFY_DAYS = 90;
 
 /** GET /deliverability/verification?client=&days= (bounces from the same period; 90 days by default). */
 export async function verificationView(at: Pick<HqAirtable, 'list'>, _db: Db, params: URLSearchParams) {
   const refresh = params.get('refresh') === '1';
-  const days = (BOUNCE_LIMITS.periods as readonly number[]).includes(Number(params.get('days'))) ? Number(params.get('days')) : 90;
+  const days = (BOUNCE_LIMITS.periods as readonly number[]).includes(Number(params.get('days'))) ? Number(params.get('days')) : VERIFY_DAYS;
   const client = keyParam(params.get('client')) || undefined;
-  if (!verifCache || Date.now() - verifCache.at >= (refresh ? 10_000 : BOUNCE_LIMITS.cacheMs)) {
-    const data = readVerif(at);
-    verifCache = { at: Date.now(), data };
-    data.catch(() => { if (verifCache?.data === data) verifCache = null; });
-  }
-  const [v, b] = await Promise.all([verifCache.data, cachedBounces(at, days, refresh)]);
+  // Round 4: only the bounced rows (shared with the Bounces tab), never its replies / campaign counters.
+  const [v, b] = await Promise.all([cachedVerif(at, refresh), cachedCore(at, days, refresh)]);
   const camps = v.campaigns.filter((c) => !client || c.clientKey === client);
   const rows = verificationRows(camps, v.lists, filterBounces(b.rows, { client }), v.cohorts).filter((r) => r.bounces > 0 || r.cohorts.some((c) => c.leads));
   const totals = verifierTotals(rows);
@@ -387,7 +491,7 @@ export async function verificationView(at: Pick<HqAirtable, 'list'>, _db: Db, pa
   const top = totals.find((t) => t.bounces >= BOUNCE_LIMITS.minToJudge && (t.notFoundShare ?? 0) >= BOUNCE_LIMITS.majority);
   const conclusion: Conclusion = problems.length
     ? { problem: `${problems.length} campaign${problems.length === 1 ? ' has' : 's have'} mostly "address not found" bounces`, decision: 're-verify those lists before they send more (Scout)', support: problems.slice(0, 3).map((p) => p.name).join(', '), tone: 'bad', text: '' }
-    : top ? { problem: `${top.verifier}: ${pc(top.notFoundShare!)} of its ${top.bounces} bounces are "address not found"`, decision: 'watch that verifier', support: `${top.notFound} of ${top.bounces} bounces.`, tone: 'warn', text: '' }
+    : top ? { problem: `${top.verifier === NOT_RECORDED ? 'Emails with no verifier recorded' : top.verifier}: ${pc(top.notFoundShare!)} of their ${top.bounces} bounces are "address not found"`, decision: top.verifier === CLIENT_VERIFIED ? 'ask the client to re-verify their list (Atlas)' : top.verifier === NOT_RECORDED ? 're-verify with MillionVerifier before more sends (Scout)' : 'watch that verifier', support: `${top.notFound} of ${top.bounces} bounces.`, tone: 'warn', text: '' }
       : { problem: 'No verification problem in this view', decision: 'nothing to change', support: `${rows.length} campaigns, ${b.rows.length} bounces in ${days} days.`, tone: 'good', text: '' };
   conclusion.text = `${conclusion.problem} → ${conclusion.decision}`;
   return { campaigns: rows.slice(0, 200), totals, conclusion, days, periods: BOUNCE_LIMITS.periods, oldCohorts: v.cohorts.length, readAt: v.readAt };

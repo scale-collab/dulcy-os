@@ -6,7 +6,7 @@
 // performance; no Airtable links. Text is rendered escaped.
 // Round 2/3 (Alex, 2026-11-27): warm-up off by reason (resting = expected; only unexpected is red),
 // bulk limit edits (tick inboxes / all shown → preview → one job), SMTP codes, placement bands per
-// test date ("Last test 11/27 · Next test Fri 12/4"), slash dates, renewal gap (Atlas task), monthly
+// test date ("Last test 11/27 · Next test 12/4"; Round 4: no weekday), slash dates, renewal gap (Atlas task), monthly
 // inbox cost (owner) and Buy (Draft → quote → your OK).
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { api, type ClientCostR2, type PurchaseR2, type RenewalGapR2, type TestRunR2, type WarmupSummaryR2, type WarmupWhyR2 } from '../api';
@@ -15,13 +15,14 @@ import { ClientPicker, rememberedClient } from '../clientPicker';
 import { FixItButton } from '../fixIt';
 import { Select } from '../charts';
 import { BouncesTab, LimitEditor, LimitHistory, RampCard, useLimits, VerificationTab } from './DeliverabilityMore';
-import { BuyPanel, CostLine, CostTotal, PlacementRuns, RenewalCard, sd, WarmupLine } from './DeliverabilityR2';
+import { BuyPanel, CostLine, CostTotal, PlacementRuns, RenewalCard, sd, WarmupLine, type PendingR4 } from './DeliverabilityR2';
 import { BulkLimits, type BulkScope } from './DeliverabilityBulk';
 
 /* ---------- API shapes (engine/src/hq/deliverability.ts) ---------- */
 type Health = 'healthy' | 'risk' | 'spam' | 'resting';
 interface Reason { code: string; level: 'spam' | 'risk'; text: string; owner: string; fromDomain?: boolean }
 interface DLink { label: string; href: string }
+interface FixBrief { agent: string; title: string; detail: string; count: number }
 interface DNote { level: 'bad' | 'warn' | 'info'; problem: string; data: string; fix: string; why: string; owner: string }
 interface Tiles { healthy: number; risk: number; spam: number; resting: number; total: number }
 interface ClientTiles { key: string; name: string; tiles: Tiles; domains: number }
@@ -32,6 +33,7 @@ interface Attention {
   tiles: Tiles; clients: ClientTiles[]; client: string; items: Item[]; counts: { spam: number; resting: number; risk: number; warmupOff: number }; notes: DNote[]; freshness: Freshness;
   engine: { healthLoop: { everyMin: number; live: boolean; from: string }; runs: EngineRun[] }; replacementsWaiting: number; hidden: { inactiveInboxes: number; noClientInboxes: number; emptyDomains: number }; readAt: string;
   warmup: WarmupSummaryR2; renewalGap: RenewalGapR2;
+  /** Round 4: the Fix it briefs (warm-up off unexpectedly; spam per owner). */ fixes?: { warmup: FixBrief | null; spam: FixBrief[] };
 }
 interface InboxRow {
   id: string; email: string; domain: string; client: string; clientKey: string; status: Health; reasons: Reason[]; doing: string; score: number | null; scoreAt: string;
@@ -44,6 +46,7 @@ interface PlacementView {
   freshness: Freshness; notes: DNote[]; clients: { key: string; name: string; newest: string; ageDays: number | null; stale: boolean; spam: number; domains: PlacementDomain[] }[];
   untested: { key: string; name: string; inboxes: number }[]; windowDays: number; limits: { rest: number; watch: number }; readAt: string;
   runs: TestRunR2[]; bands: string[];
+  /** Round 4: the newest run's tests still waiting at EmailGuard. */ pending?: PendingR4;
 }
 interface DomainRow { renewalSource?: string; id: string; name: string; status: Health; reasons: Reason[]; doing: string; inboxes: number; renewal: string; renewalEstimated: boolean; daysToRenewal: number | null; blacklist: string; blacklistText: string; blacklistWhy: string; provider: string; replacement: { status: string } | null; links: DLink[] }
 interface DomainsView {
@@ -142,18 +145,21 @@ function AttentionTab({ client, refresh, setBusy }: { client: string; refresh: n
   if (!d) return <PageSkeleton kind="list" />;
   const off = d.items.filter((i) => i.redFlag);
   const main = d.items.filter((i) => !i.redFlag && i.status !== 'risk');
+  const spam = main.filter((i) => i.status === 'spam');
+  const resting = main.filter((i) => i.status === 'resting');
   const risk = d.items.filter((i) => !i.redFlag && i.status === 'risk');
+  const clientName = d.clients.find((x) => x.key === client)?.name ?? '';
+  const w = d.warmup;
+  const expected = (['resting', 'replacing', 'spam', 'bounces'] as const).filter((k) => w.byWhy[k]).map((k) => `${w.byWhy[k].toLocaleString('en-US')} ${WHY_WORD[k]}`);
   return (
     <div className="space-y-4">
       {error && <ErrorBox error={error} retry={load} />}
       <TileRow tiles={d.tiles} client={client} />
       {off.length > 0 ? (
-        <Card className="overflow-hidden border-bad-line p-0">
-          <div className="flex items-center gap-2 border-b border-bad-line bg-bad-soft px-4 py-2.5 sm:px-5"><Icon name="alert" size={16} className="text-bad" /><h2 className="font-semibold text-bad">Warm-up OFF for no known reason on {off.length} inbox{off.length === 1 ? '' : 'es'}</h2></div>
-          <div className="px-4 pt-3 sm:px-5"><WarmupLine w={d.warmup} client={client} /></div>
-          <ul className="divide-y divide-line">{off.map((i) => <ItemRow key={i.key} i={i} showClient={!client} />)}</ul>
-        </Card>
-      ) : <WarmupLine w={d.warmup} client={client} />}
+        <ProblemCard tone="bad" title={`${off.length.toLocaleString('en-US')} account${off.length === 1 ? ' has' : 's have'} warm-up off unexpectedly`}
+          sub={`${w.disconnected ? `${w.disconnected} of them disconnected (reconnect first). ` : ''}${expected.length ? `Not counted: ${expected.join(', ')} (warm-up off on purpose).` : ''}`}
+          fixes={d.fixes?.warmup ? [d.fixes.warmup] : []} client={clientName} items={off} showClient={!client} />
+      ) : <WarmupLine w={w} />}
       <AgentNotes notes={d.notes} />
       {d.renewalGap.missing > 0 && (
         <button onClick={() => route('domains', client)} className="flex min-h-11 w-full items-center gap-2 rounded-xl border border-line bg-surface px-4 text-left text-sm hover:bg-hover">
@@ -161,10 +167,15 @@ function AttentionTab({ client, refresh, setBusy }: { client: string; refresh: n
         </button>
       )}
       {limits && <RampCard limits={limits} onApplied={reload} />}
-      <Card className="overflow-hidden p-0">
-        {main.length ? <ul className="divide-y divide-line">{main.map((i) => <ItemRow key={i.key} i={i} showClient={!client} />)}</ul>
-          : <Empty icon="check" tone="good" title="No spam or resting inbox" sub={risk.length ? `${risk.length} at risk below.` : 'Every inbox and domain looks fine.'} />}
-      </Card>
+      {spam.length > 0 && (
+        <ProblemCard tone="bad" title={`${countWords(spam)} in spam`} sub="The spam protocol: rest it, retest it, replace it if the retest fails. Buying a replacement waits for your OK."
+          fixes={d.fixes?.spam ?? []} client={clientName} items={spam} showClient={!client} />
+      )}
+      {resting.length > 0 && (
+        <ProblemCard tone="info" title={`${countWords(resting)} resting`} sub="Paused on purpose by the spam protocol; the engine retests them. Nothing to do."
+          fixes={[]} client={clientName} items={resting} showClient={!client} />
+      )}
+      {!main.length && <Card className="p-0"><Empty icon="check" tone="good" title="No spam or resting inbox" sub={risk.length ? `${risk.length} at risk below.` : 'Every inbox and domain looks fine.'} /></Card>}
       {risk.length > 0 && (
         <div>
           <button onClick={() => setShowRisk((x) => !x)} aria-expanded={showRisk} className="flex min-h-11 w-full items-center gap-2 rounded-xl px-1 text-sm font-semibold text-fg-2 hover:text-fg">
@@ -220,6 +231,42 @@ function ClientCounts({ clients }: { clients: ClientTiles[] }) {
           </li>
         ))}
       </ul>
+    </Card>
+  );
+}
+
+const WHY_WORD: Record<'resting' | 'replacing' | 'spam' | 'bounces', string> = { resting: 'resting', replacing: 'being replaced', spam: 'in spam review', bounces: 'paused by EmailBison' };
+/** "12 inboxes and 1 domain" for a problem's one line. */
+function countWords(items: Item[]): string {
+  const d = items.filter((i) => i.kind === 'domain').length, n = items.length - d;
+  return [n ? `${n.toLocaleString('en-US')} inbox${n === 1 ? '' : 'es'}` : '', d ? `${d.toLocaleString('en-US')} domain${d === 1 ? '' : 's'}` : ''].filter(Boolean).join(' and ');
+}
+
+/**
+ * Round 4 (Alex, 2026-11-28): one line per problem and ONE "Have <agent> fix it" (the brief lists the
+ * accounts for the agent), not a long list to read. The accounts stay one tap away ("Show accounts").
+ */
+function ProblemCard({ tone, title, sub, fixes, client, items, showClient }: { tone: 'bad' | 'info'; title: string; sub: string; fixes: FixBrief[]; client: string; items: Item[]; showClient: boolean }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Card className={cx('overflow-hidden p-0', tone === 'bad' && 'border-bad-line')}>
+      <div className={cx('flex gap-3 px-4 py-3.5 sm:px-5', tone === 'bad' && 'bg-bad-soft')}>
+        <Icon name={tone === 'bad' ? 'alert' : 'pause'} size={16} className={cx('mt-0.5 shrink-0', tone === 'bad' ? 'text-bad' : 'text-info')} />
+        <div className="min-w-0 flex-1 space-y-2">
+          <h2 className={cx('font-semibold leading-snug', tone === 'bad' ? 'text-bad' : 'text-fg')}>{title}</h2>
+          {sub && <p className="text-sm leading-snug text-fg-2">{sub}</p>}
+          {fixes.map((f) => (
+            <div key={f.agent} className="space-y-1">
+              {fixes.length > 1 && <div className="text-xs font-medium text-fg-2">{f.title}</div>}
+              <FixItButton agent={f.agent} title={f.title} detail={f.detail} client={client} />
+            </div>
+          ))}
+          <button onClick={() => setOpen((x) => !x)} aria-expanded={open} className="inline-flex min-h-9 items-center gap-1 text-sm font-medium text-accent-ink hover:underline">
+            <Icon name={open ? 'chevronDown' : 'chevronRight'} size={15} />{open ? 'Hide accounts' : `Show accounts (${items.length.toLocaleString('en-US')})`}
+          </button>
+        </div>
+      </div>
+      {open && <ul className="divide-y divide-line border-t border-line bg-surface">{items.map((i) => <ItemRow key={i.key} i={i} showClient={showClient} />)}</ul>}
     </Card>
   );
 }
@@ -453,13 +500,13 @@ function PlacementTab({ client, refresh, setBusy }: { client: string; refresh: n
   return (
     <div className="space-y-4">
       <Card className={cx('flex flex-wrap items-center gap-x-6 gap-y-3', bad && 'border-bad-line')}>
-        <Fact label="Last test" v={f.lastTest ? md(f.lastTest) : 'none'} sub={f.ageDays === null ? 'no tests found' : `${f.ageDays === 0 ? 'today' : `${f.ageDays} day${f.ageDays === 1 ? '' : 's'} ago`}${f.fridayMissing ? ` · Fri ${md(f.expectedFriday)} scores missing` : ''}`} bad={f.stale || f.fridayMissing} />
-        <Fact label="Next test" v={`Fri ${md(f.nextTest)}`} sub="every Friday" />
+        <Fact label="Last test" v={f.lastTest ? md(f.lastTest) : 'none'} sub={f.ageDays === null ? 'no tests found' : `${f.ageDays === 0 ? 'today' : `${f.ageDays} day${f.ageDays === 1 ? '' : 's'} ago`}${f.fridayMissing ? ` · ${md(f.expectedFriday)} scores missing` : ''}`} bad={f.stale || f.fridayMissing} />
+        <Fact label="Next test" v={md(f.nextTest)} sub="weekly test" />
         <Fact label="Tests read" v={f.tests.toLocaleString('en-US')} sub={`last ${d.windowDays} days`} />
         <div className="text-xs text-muted sm:ml-auto">Under {d.limits.rest}% = rested 7 days · under {d.limits.watch}% = at risk</div>
       </Card>
       <AgentNotes notes={d.notes} />
-      <PlacementRuns runs={d.runs} bands={d.bands} />
+      <PlacementRuns runs={d.runs} bands={d.bands} pending={d.pending} />
       {!d.clients.length && <Card><Empty icon="activity" title="No placement tests" sub={`None in the last ${d.windowDays} days for ${client ? 'this client' : 'active clients'}.`} /></Card>}
       <div className="grid gap-3 lg:grid-cols-2">
         {d.clients.map((c) => (
@@ -475,7 +522,7 @@ function PlacementTab({ client, refresh, setBusy }: { client: string; refresh: n
         ))}
       </div>
       {d.untested.length > 0 && <p className="text-sm text-muted">No test in {d.windowDays} days: {d.untested.map((u) => `${u.name} (${u.inboxes} inboxes)`).join(', ')}.</p>}
-      <p className="text-xs text-muted">From Airtable (Inbox Placement Testing), read {timeAgo(d.readAt) || 'just now'}; tests are kept 10 minutes (they come in on Fridays). The score per domain is its worst inbox.</p>
+      <p className="text-xs text-muted">From Airtable (Inbox Placement Testing), read {timeAgo(d.readAt) || 'just now'}; tests are kept 10 minutes (they come in once a week). The score per domain is its worst inbox.</p>
     </div>
   );
 }

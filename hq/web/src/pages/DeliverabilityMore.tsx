@@ -202,7 +202,7 @@ export function VerificationTab({ client, refresh }: { client: string; refresh: 
           ))}
         </ul>
       )}
-      <p className="text-xs text-muted">Verifiers in use: MillionVerifier and LeadMagic; Other = any other verifier or none recorded. The verifier comes from each lead list (Direct / Generic verifier) or the bounced row's own tag. Rates use contacted from the old n8n cohorts when there ({d.oldCohorts} rows), else an estimate from the list mix ("est."). Computed when you open it; kept 10 minutes. Read {timeAgo(d.readAt) || 'just now'}.</p>
+      <p className="text-xs text-muted">Dulcy verifies with MillionVerifier (LeadMagic as the fallback for direct emails). Client verified = a list the client verified themselves (its name says "client verified"). Not recorded = the list and the bounced row say nothing about who verified it. The verifier comes from each lead list (its verifier fields, the engine's route or its MillionVerifier job) or the bounced row's own tag. Rates use contacted from the old n8n cohorts when there ({d.oldCohorts} rows), else an estimate from the list mix ("est."). Read in the background when Deliverability opens; kept 10 minutes. Read {timeAgo(d.readAt) || 'just now'}.</p>
     </div>
   );
 }

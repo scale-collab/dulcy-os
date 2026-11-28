@@ -69,7 +69,7 @@ test('warm-up off: expected when the spam protocol rested / replaces / reviews i
   assert.equal(warmupSummary(rows, 'b').unexpected, 1, 'per client');
 });
 
-test('placement: bands per test date like the old screen; "Last test 11/27 · Next test Fri 12/4"; slash dates', () => {
+test('placement: bands per test date like the old screen; "Last test 11/27 · Next test 12/4"; slash dates', () => {
   const t = (email: string, score: number, date: string, clientKey = 'a') => ({ email, score, at: `${date}T18:00:00.000Z`, date, clientKey });
   const runs = testRuns([t('1@x', 10, '2026-11-27'), t('2@x', 30, '2026-11-27'), t('3@x', 60, '2026-11-27'), t('4@x', 90, '2026-11-27'), t('5@x', 100, '2026-11-27'), t('1@x', 80, '2026-11-20'), t('9@y', 5, '2026-11-27', 'b')], 'a');
   assert.deepEqual(runs.map((r) => [r.date, r.tested, r.bands.join('/'), r.underRest]), [['2026-11-27', 5, '1/1/1/2', 2], ['2026-11-20', 1, '0/0/0/1', 0]]);
