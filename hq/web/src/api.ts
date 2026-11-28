@@ -113,15 +113,42 @@ export interface InboxRow {
   bookedLine: string; bookedUrl: string;
   /** "Wed Dec 3, 5:00 PM ET": Send books this time first. */
   booksAt: string;
+  kind: 'reply' | 'followup'; lastSentByUs: boolean;
+  /** A pending draft with a booking link instead of two specific times. */
+  linkDraft: { links: string[]; times: number; noTimesThen: boolean; askedForLink: boolean } | null;
 }
 export interface InboxList {
   tab: InboxTab; client: string; rows: InboxRow[]; total: number; page: number; pages: number; counts: Record<InboxTab, number>;
   clients: { key: string; name: string; count: number }[]; notes: Note[]; readAt: string;
+  /** Every client with threads: its workspace record opens #/clients/<wsRec>/replier. */
+  replierClients: { key: string; name: string; wsRec: string }[];
+  /** Pending drafts with a booking link (the "Old drafts with a link" filter). */
+  linkDrafts: number;
 }
 export interface InboxMsg { who: 'them' | 'us' | 'unknown'; head: string; body: string; quoted: string }
+/** One message of the thread, oldest first. */
+export interface ThreadMsg {
+  who: 'them' | 'us' | 'unknown'; name: string; email: string; at: string; body: string; quoted: string;
+  kind: 'sequence' | 'reply' | 'message'; step: number | null; stepFrom: 'copy' | 'order' | null; latest: boolean;
+}
+export interface ReplierMode { mode: 'off' | 'draft-only' | 'approval' | 'auto'; label: string; why: string; lines: string[]; clientId: string; clientName: string; found: boolean }
 export interface InboxThread {
-  row: InboxRow; subject: string; campaign: string; latest: string; messages: InboxMsg[]; draft: string; reason: string; question: string;
+  row: InboxRow; subject: string; campaign: string; latest: string; messages: InboxMsg[]; timeline: ThreadMsg[]; stepsFromCopy: boolean; draft: string; reason: string; question: string;
   offeredTimes: string[]; bookingLinks: string[]; threadUrl: string; decisionId: string; canAct: boolean; canEdit: boolean; sentAt: string; dueAt: string; notes: Note[];
+  replier: ReplierMode | null;
+}
+export interface LinkDraftRow {
+  id: string; prospect: string; company: string; client: string; clientKey: string; wsRec: string; at: string; kind: 'reply' | 'followup';
+  links: string[]; times: number; noTimesThen: boolean; askedForLink: boolean; gap: boolean; blocked: string;
+  task: { status: string; note: string; updated: string } | null;
+}
+export interface LinkDraftsReport { total: number; pending: number; byClient: { name: string; count: number }[]; rows: LinkDraftRow[]; readAt: string }
+export interface RedoResult { queued: { id: string; jobId: number; dryRun: boolean; task: number }[]; skipped: { id: string; why: string }[] }
+export interface EchoLive {
+  since: string; waiting: number; waitingOldest: string | null; readAt: string;
+  counts: { drafted: number; needInput: number; noReply: number; leftToClient: number; other: number; dryRun: number; redone: number };
+  recent: { id: string; at: string; action: string; kind: string; prospect: string; client: string; waiting: boolean; reason: string }[];
+  lastRuns: { kind: string; status: string; dryRun: boolean; at: string; message: string }[];
 }
 
 /* ---------- Client hub → AI replier ---------- */
