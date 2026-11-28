@@ -102,8 +102,8 @@ const ICONS: Record<string, ReactNode> = {
 export const lightTone: Record<string, Tone> = { red: 'bad', yellow: 'warn', green: 'good', inactive: 'idle' };
 export const lightLabel: Record<string, string> = { red: 'Red', yellow: 'Yellow', green: 'Green', inactive: 'Inactive' };
 export const usd = (x: number | null | undefined) => (x === null || x === undefined ? 'UNKNOWN' : `$${Math.round(x).toLocaleString('en-US')}`);
-/** Same rule as the server (engine/src/hq/clients.ts clientKey): the name without "(…)" and a trailing Internal / Free Campaigns / Trial. */
-export const clientKey = (name: string) => String(name ?? '').toLowerCase().replace(/^client:\s*/, '').replace(/\([^)]*\)/g, ' ').replace(/\b(internal|free campaigns?|trial)\s*$/g, ' ').replace(/[^a-z0-9]+/g, '');
+/** Same rule as the server (engine/src/hq/clients.ts clientKey): the name without "(…)" and a trailing Internal / Trial. "Dulcy Free Campaigns" stays its own client (Alex 2026-11-28). */
+export const clientKey = (name: string) => String(name ?? '').toLowerCase().replace(/^client:\s*/, '').replace(/\([^)]*\)/g, ' ').replace(/\b(internal|trial)\s*$/g, ' ').replace(/[^a-z0-9]+/g, '');
 export type IconName = keyof typeof ICONS;
 export function Icon({ name, size = 18, className, strokeWidth = 1.8 }: { name: string; size?: number; className?: string; strokeWidth?: number }) {
   return (

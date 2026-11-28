@@ -1,7 +1,9 @@
 // HQ Clients. One list of every client led by its health against the promised KPI, results from
 // EmailBison, money (owner only) and one short insight; one page per client. Read only.
 //   - Workspaces that are the same client count once ("Twenty West Media" + "Twenty West Media
-//     (Internal)", "Dulcy" + "Dulcy Free Campaigns"): the active record leads, results add up.
+//     (Internal)"): the active record leads, results add up. "Dulcy" (EmailBison workspace 2) and
+//     "Dulcy Free Campaigns" (workspace 41: free campaigns for prospects, e.g. Chop Shop) are two
+//     separate clients and are never merged (Alex 2026-11-28, RULES.md; merging them was an old mistake).
 //   - Results (emails sent, replies, interested, meetings) come from Airtable's "Email Analytics
 //     Overview" (EmailBison, synced every night, windows 10/30/60/120 days and all time). The
 //     Emails table missed most bookings: they are marked WON / Booked Meeting with no booking date
@@ -73,19 +75,26 @@ const ids = (x: unknown): string[] => (Array.isArray(x) ? x : x ? [x] : []).map(
 
 /**
  * Which workspaces are one client: a "Client" link to another Workspace IDs record wins; otherwise
- * the name without "(…)" and a trailing "Internal" / "Free Campaigns" / "Trial". Pure.
+ * the name without "(…)" and a trailing "Internal" / "Trial". "Free Campaigns" is NOT stripped:
+ * "Dulcy Free Campaigns" is its own client (key "dulcyfreecampaigns"), never Dulcy (Alex 2026-11-28). Pure.
  */
 export function clientKey(name: string): string {
-  return String(name ?? '').toLowerCase().replace(/^client:\s*/, '').replace(/\([^)]*\)/g, ' ').replace(/\b(internal|free campaigns?|trial)\s*$/g, ' ').replace(/[^a-z0-9]+/g, '');
+  return String(name ?? '').toLowerCase().replace(/^client:\s*/, '').replace(/\([^)]*\)/g, ' ').replace(/\b(internal|trial)\s*$/g, ' ').replace(/[^a-z0-9]+/g, '');
 }
+/** A free-campaigns workspace ("Dulcy Free Campaigns", EmailBison 41): its own client, never folded into another (Alex 2026-11-28). Pure. */
+export const isFreeCampaigns = (name: string) => /\bfree campaigns?\b/i.test(String(name ?? ''));
 const isActive = (w: AirtableRecord) => s(w.fields.Status) === 'Active';
 const isInternal = (type: string) => /internal|free|trial/i.test(type);
+/** The label of a client Dulcy does not bill: Dulcy itself, or its free campaigns for prospects. Pure. */
+export const internalLabel = (name: string) => (isFreeCampaigns(name) ? 'Free campaigns' : 'Dulcy itself');
 
 /** Group Workspace IDs records into clients; the main record first (active, then paying, then the shortest name). Pure. */
 export function groupWorkspaces(ws: AirtableRecord[]): AirtableRecord[][] {
   const byId = new Map(ws.map((w) => [w.id, w]));
   const keyOf = (w: AirtableRecord): string => {
-    const link = (Array.isArray(w.fields.Client) ? w.fields.Client : []).map((x: any) => (typeof x === 'string' ? x : x?.id)).find((id: string) => id && id !== w.id && byId.has(id));
+    // A Client link between a free-campaigns workspace and another one is not followed: they stay two clients.
+    const link = (Array.isArray(w.fields.Client) ? w.fields.Client : []).map((x: any) => (typeof x === 'string' ? x : x?.id))
+      .find((id: string) => id && id !== w.id && byId.has(id) && isFreeCampaigns(s(w.fields.Name)) === isFreeCampaigns(s(byId.get(id)!.fields.Name)));
     return link ? clientKey(s(byId.get(link)!.fields.Name)) : clientKey(s(w.fields.Name));
   };
   const groups = new Map<string, AirtableRecord[]>();
@@ -247,8 +256,8 @@ export function buildAll(src: ClientsSource, canSeeMoney: boolean, now = new Dat
     const row: ClientRow = {
       id: main.id, key, name, workspaces: group.map((x) => ({ id: x.id, name: s(x.fields.Name), status: s(x.fields.Status), bisonId: s(x.fields.ID) })),
       active, internal, type, typeSource, startDate: start, endDate: active ? '' : deal.endDate, inactiveReason: active ? '' : s(f['Inactive Reason']),
-      health: hl.health, healthLabel: internal && hl.health === 'unknown' ? 'Dulcy itself' : HEALTH_LABEL[hl.health], light: LIGHT[hl.health], insight: hl.insight, pace: hl.pace,
-      kpi, kpiSource, meetings30, results, dealType: internal ? 'unknown' : deal.type, dealLabel: internal ? 'Dulcy itself' : DEAL_LABEL[deal.type],
+      health: hl.health, healthLabel: internal && hl.health === 'unknown' ? internalLabel(name) : HEALTH_LABEL[hl.health], light: LIGHT[hl.health], insight: hl.insight, pace: hl.pace,
+      kpi, kpiSource, meetings30, results, dealType: internal ? 'unknown' : deal.type, dealLabel: internal ? internalLabel(name) : DEAL_LABEL[deal.type],
       interested7: c.interested7, interestedPrev7: c.interestedPrev7, interested30: c.interested30, booked7: c.booked7, bookedPrev7: c.bookedPrev7, booked30: c.booked30,
       waitingApproval, seanWaiting, campaigns, note: hl.insight ? [hl.insight.problem] : [],
     };

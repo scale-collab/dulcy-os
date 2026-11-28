@@ -53,7 +53,7 @@ export default function Clients({ user }: { user: User }) {
   }, [win, winRange]);
   const toggle = () => { const v = !all; setAll(v); save('hq-clients-all', v ? '1' : '0'); };
   const s = d?.summary;
-  const kicker = s ? `${s.active} active client${s.active === 1 ? '' : 's'}${s.internal ? ' + Dulcy' : ''}${s.attention ? ` · ${s.attention} need${s.attention === 1 ? 's' : ''} attention` : ''}` : 'Clients';
+  const kicker = s ? `${s.active} active client${s.active === 1 ? '' : 's'}${s.internal === 1 ? ' + Dulcy' : s.internal === 2 ? ' + Dulcy and Dulcy Free Campaigns' : s.internal ? ` + ${s.internal} of Dulcy's own` : ''}${s.attention ? ` · ${s.attention} need${s.attention === 1 ? 's' : ''} attention` : ''}` : 'Clients';
   const right = (
     <>
       <button role="switch" aria-checked={all} onClick={toggle} className="inline-flex min-h-10 items-center gap-2.5 rounded-xl border border-line bg-surface px-3 text-sm font-medium text-fg-2 shadow-card hover:bg-hover">
