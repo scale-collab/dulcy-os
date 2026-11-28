@@ -291,6 +291,6 @@ Format: `- [date] rule. (why / source)`
 - **Campaigns and Lead lists in HQ follow the Airtable Campaign Center and Lead List Center** (same sections and actions), cleaner; Alex must always see which accounts are sending and how many are free.
 - **Bulk edits, not one by one** (inbox limits per client / selection / all).
 - **Cole keeps Close current (Alex, 2026-11-27):** after each call review, Cole updates that opportunity's close likelihood and value in Close (Alex no longer does it by hand). Reads/writes only Dulcy's own sales records; never sends anything to a prospect.
-- **Inbox cost:** Dulcy's inboxes cost about $2.50/month each (Cheap Inboxes); real renewal dates come from Cheap Inboxes.
+- **Inbox cost:** $2.50 per inbox per month: Dulcy has a special Cheap Inboxes discount (Alex, 2026-11-28). The Cheap Inboxes API shows the public tier ($2.80 at Dulcy volume); ignore it, it is not what Dulcy pays. Cheap Inboxes gives the domain list and renewal dates (next yearly anniversary of the purchase date; it has no renewal field).
 
 - **Launch / Pause in HQ (Alex, 2026-11-27):** Pause acts at once (no "are you sure"). Launch asks one last time before it goes live. Alex approves the direction (plan, copy) and the agents work toward getting it done.

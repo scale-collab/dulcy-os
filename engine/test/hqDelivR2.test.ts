@@ -80,12 +80,12 @@ test('placement: bands per test date like the old screen; "Last test 11/27 · Ne
   assert.deepEqual([md('2026-12-04'), md('2026-11-27'), md('')], ['12/4', '11/27', '']);
 });
 
-test('inbox cost: inboxes × $2.50 by default, the Cheap Inboxes price when known (owner only on screen)', () => {
+test('inbox cost: inboxes x the Dulcy $2.50 always, never the API price (owner only on screen)', () => {
   const d = (clientKey: string, inboxes: number, inboxMonthly: number | null = null) => ({ clientKey, client: clientKey, inboxes, inboxMonthly }) as any;
   const m = { domains: [d('a', 2), d('a', 2), d('b', 2, 3), d('none', 2)], clients: [{ key: 'a', name: 'Alpha' }, { key: 'b', name: 'Beta' }] as any, cheap: { connected: false, error: '', domains: 0, mailboxPrice: null, readAt: '' } };
   assert.equal(INBOX_MONTHLY_DEFAULT, 2.5);
-  assert.deepEqual(inboxCosts(m).map((c) => [c.name, c.domains, c.inboxes, c.monthly, c.source]), [['Alpha', 2, 4, 10, 'default'], ['Beta', 1, 2, 6, 'cheapinboxes']]);
-  assert.deepEqual(inboxCosts({ ...m, cheap: { ...m.cheap, connected: true, mailboxPrice: 3.25 } }).map((c) => c.monthly), [13, 6], 'the account average when a domain has no own price');
+  assert.deepEqual(inboxCosts(m).map((c) => [c.name, c.domains, c.inboxes, c.monthly, c.source]), [['Alpha', 2, 4, 10, 'cheapinboxes'], ['Beta', 1, 2, 5, 'cheapinboxes']]);
+  assert.deepEqual(inboxCosts({ ...m, cheap: { ...m.cheap, connected: true, mailboxPrice: 3.25 } }).map((c) => c.monthly), [10, 5], 'the public $2.80-style tier is ignored (Alex 2026-11-28)');
 });
 
 test('stats row: replies, interested and meetings in the period; sent from the campaigns sending in it', () => {
@@ -262,7 +262,7 @@ test('API: domains: renewal from Cheap Inboxes (else estimated), monthly cost ow
   assert.equal(est.status, 200, est.text);
   const d0 = est.body.clients[0].domains[0];
   assert.deepEqual([d0.renewal, d0.renewalEstimated, d0.renewalSource], ['2027-01-10', true, 'estimated']);
-  assert.deepEqual(est.body.costs.map((c: any) => [c.name, c.inboxes, c.monthly, c.source]), [['Twenty West', 4, 10, 'default']]);
+  assert.deepEqual(est.body.costs.map((c: any) => [c.name, c.inboxes, c.monthly, c.source]), [['Twenty West', 4, 10, 'cheapinboxes']]);
   assert.equal(est.body.renewalGap.missing, 1);
   assert.deepEqual([est.body.purchases[0].quoteToday, est.body.purchases[0].next, est.body.purchases[0].client], [61.5, 'approve', 'Twenty West']);
   // Cheap Inboxes connected: the real date and price.
@@ -271,7 +271,7 @@ test('API: domains: renewal from Cheap Inboxes (else estimated), monthly cost ow
   const real = await call('GET', '/hq/api/deliverability/domains', cookie);
   const d1 = real.body.clients[0].domains[0];
   assert.deepEqual([d1.renewal, d1.renewalEstimated, d1.renewalSource], ['2027-01-12', false, 'cheapinboxes']);
-  assert.deepEqual(real.body.costs.map((c: any) => [c.monthly, c.source]), [[12, 'cheapinboxes']]);
+  assert.deepEqual(real.body.costs.map((c: any) => [c.monthly, c.source]), [[10, 'cheapinboxes']]);
   assert.equal(real.body.renewalGap.missing, 0);
   const josh = await login('josh@dulcy.io', 'josh long password 1');
   const m = await call('GET', '/hq/api/deliverability/domains', josh);
@@ -280,7 +280,7 @@ test('API: domains: renewal from Cheap Inboxes (else estimated), monthly cost ow
   assert.equal(m.body.purchases[0].quoteToday, null);
   assert.equal((await call('GET', '/hq/api/deliverability/costs', josh)).status, 403);
   const c = await call('GET', '/hq/api/deliverability/costs', cookie);
-  assert.deepEqual(c.body.costs.map((x: any) => x.monthly), [12]);
+  assert.deepEqual(c.body.costs.map((x: any) => x.monthly), [10]);
 });
 
 test('API: Buy creates a Draft request (nothing bought); quote → Generate Domains; approve only Ready for Approval with the same total; owner only', { skip }, async () => {

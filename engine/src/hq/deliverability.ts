@@ -43,7 +43,8 @@ export const DPR = {
   // Round 3: the quote (money: owner only on screen) and the request's choices. Never "Mailbox Password".
   quoteToday: 'fldpSYgv1IVC4MEGs', monthlyCost: 'fld9ZLjeMfmvRXCGT', quoteAt: 'fldbPg1APbu6eVnZE', available: 'fldJq4s2nUHYShEmZ', tlds: 'fldCoyVisjmsbmSnf', orderId: 'fldWeAhhhnUZQPtUy',
 } as const;
-/** Round 3 (RULES.md "Inbox cost"): an inbox costs about $2.50 a month unless Cheap Inboxes says otherwise. */
+/** RULES.md "Inbox cost" (Alex 2026-11-28): Dulcy pays $2.50 an inbox a month (a special discount).
+ *  This is the real price: Cheap Inboxes' API shows the public $2.80 tier, which is NOT what Dulcy pays. */
 export const INBOX_MONTHLY_DEFAULT = 2.5;
 /** Email Accounts fields the engine's health loop does not keep (warm-up, connection, counts). */
 export const EX = {
@@ -621,9 +622,8 @@ export function inboxCosts(m: Pick<DelivModel, 'domains' | 'clients' | 'cheap'>,
   for (const d of m.domains) {
     if (d.clientKey === 'none' || !matchClient(d.clientKey, client)) continue;
     const x = out.get(d.clientKey) ?? { key: d.clientKey, name: name.get(d.clientKey) ?? d.client, domains: 0, inboxes: 0, monthly: 0, perInbox: 0, source: 'default' as ClientCost['source'], real: 0 };
-    const price = d.inboxMonthly ?? m.cheap.mailboxPrice ?? INBOX_MONTHLY_DEFAULT;
-    x.domains++; x.inboxes += d.inboxes; x.monthly += d.inboxes * price;
-    if (d.inboxMonthly !== null || m.cheap.mailboxPrice !== null) x.real += d.inboxes;
+    // Dulcy's discounted price is the real one (Alex 2026-11-28), never the API's public tier.
+    x.domains++; x.inboxes += d.inboxes; x.monthly += d.inboxes * INBOX_MONTHLY_DEFAULT; x.real += d.inboxes;
     out.set(d.clientKey, x);
   }
   return [...out.values()].map(({ real, ...x }) => ({
@@ -784,7 +784,7 @@ export function domainsView(m: DelivModel, src: Pick<DelivSource, 'purchases' | 
     replacements: m.replacements.filter((r) => matchClient(r.clientKey, client)).map((r) => ({ ...r, client: clientName.get(r.clientKey) ?? '', link: r.status === 'Pending Review' ? { label: r.decisionId ? 'Decide' : 'Decisions', href: `decisions/${pileFor('Atlas')}` } : null })),
     purchases, notes: m.dataNotes, rule: 'Every domain has 2 inboxes (RULES 2026-11-25).', readAt: m.readAt,
     // Round 3: monthly inbox cost (owner only: money), the renewal-date gap, Cheap Inboxes state.
-    costs: owner ? inboxCosts(m, client) : null, costRule: `Inboxes x $${INBOX_MONTHLY_DEFAULT.toFixed(2)}/month unless Cheap Inboxes gives the real price.`,
+    costs: owner ? inboxCosts(m, client) : null, costRule: `Inboxes x $${INBOX_MONTHLY_DEFAULT.toFixed(2)}/month (Dulcy's discounted Cheap Inboxes price).`,
     renewalGap: renewalGap(m.domains, client), cheap: { connected: m.cheap.connected, error: m.cheap.error, readAt: m.cheap.readAt },
   };
 }

@@ -133,14 +133,7 @@ export async function readCheapInboxes(c: CheapInboxesConfig, f: typeof fetch = 
       if (x.priced) d.monthly = Math.round((x.sum / x.priced) * 100) / 100;
       domains.set(domain, d);
     }
-    let mailboxPrice = prices.length ? Math.round((prices.reduce((a, b) => a + b, 0) / prices.length) * 100) / 100 : null;
-    // Mailbox records carry no price: the price is the volume tier for the active mailbox count.
-    if (mailboxPrice === null) {
-      const active = ms.filter((o) => !/cancel|inactive|deleted/.test(str(firstOf(o, ['status', 'state'])).toLowerCase())).length;
-      const body = await getJson(c, `${c.baseUrl}/discovery/pricing/mailboxes`, f).catch(() => null);
-      mailboxPrice = tierPrice(body, active);
-      if (mailboxPrice !== null) for (const d of domains.values()) if (d.monthly === null && d.mailboxes) d.monthly = mailboxPrice;
-    }
+    const mailboxPrice = prices.length ? Math.round((prices.reduce((a, b) => a + b, 0) / prices.length) * 100) / 100 : null;
     return { domains, mailboxPrice, readAt: new Date().toISOString(), error: '' };
   } catch (e) {
     return { domains, mailboxPrice: null, readAt: new Date().toISOString(), error: String((e as Error).message ?? e).slice(0, 200) };
