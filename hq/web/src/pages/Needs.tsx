@@ -1,4 +1,4 @@
-// "Needs you" = your to-do list for today (Alex, 2026-11-27: "what do I need to do today for the
+// "To-do" (was "Needs you", renamed by Alex 2026-11-28) = your to-do list for today (Alex, 2026-11-27: "what do I need to do today for the
 // business to succeed?"), not a copy of Decisions. One numbered list, most important first (Ada's
 // order, built on the server): every card is Problem → Do → Why with one action button.
 // Members (Josh) get their own list from the server (no money, no owner-only agents).
@@ -87,7 +87,7 @@ export default function Needs({ user }: { user: User }) {
 
   const refresh = <span className="hidden sm:block"><IconButton icon="refresh" label="Refresh" onClick={load} className={cx('border border-line bg-surface', refreshing && '[&_svg]:animate-spin')} /></span>;
   const refreshPhone = <button onClick={load} aria-label="Refresh" className="-my-2 -mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-xl text-muted hover:bg-hover hover:text-fg sm:hidden"><Icon name="refresh" size={17} className={refreshing ? 'animate-spin' : undefined} /></button>;
-  const title = 'Needs you';
+  const title = 'To-do';
   const switcher = <DaySwitch day={day} onPick={pick} />;
   if (error && !d) return <><PageTitle title={title} right={refresh} />{switcher}<ErrorBox error={error} retry={load} /></>;
   if (!d || d.day !== day) return <><PageTitle title={title} right={refresh} />{switcher}<PageSkeleton kind="list" /></>;

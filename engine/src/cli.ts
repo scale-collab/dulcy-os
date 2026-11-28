@@ -323,7 +323,7 @@ async function main() {
           const res = j.result;
           console.log(res.message);
           if (res.made?.length) console.log(`\n${liveRun ? 'Created' : 'Would create'}:\n${res.made.map((x: string) => `  ${x}`).join('\n')}`);
-          if (res.asks?.length) console.log(`\n${res.mode === 'check' ? 'Not in Xero after 3+ days' : 'Needs you'}:\n${res.asks.join('\n')}`);
+          if (res.asks?.length) console.log(`\n${res.mode === 'check' ? 'Not in Xero after 3+ days' : 'HQ To-do'}:\n${res.asks.join('\n')}`);
           if (res.failed?.length) console.log(`\nXero refused:\n${res.failed.join('\n')}`);
           break;
         }

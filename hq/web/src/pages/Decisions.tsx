@@ -135,7 +135,7 @@ export default function Decisions({ user: _user, pile, client }: { user: User; p
           )}
           <div className="mt-8 grid w-full max-w-sm grid-cols-2 gap-2">
             <Button onClick={() => { go('decisions'); load(); }}>Back to piles</Button>
-            <Button tone="primary" onClick={() => go('needs')} icon="bell">Needs you</Button>
+            <Button tone="primary" onClick={() => go('needs')} icon="bell">To-do</Button>
           </div>
         </Card>
       </div>

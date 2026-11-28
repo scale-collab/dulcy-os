@@ -276,6 +276,8 @@ Format: `- [date] rule. (why / source)`
 - **Rule:** a new client's inboxes start at **5 cold emails / 10 warm-up per day**. After one week of sending: **10 / 20**. After another week: **15 / 30**, and that is the cap.
 - **Why:** Alex's standard ramp for every new client ("when I start a new client, it's always 5 cold emails, 10 warm up…").
 
+- [2026-11-28] **Menu (Alex):** keep all 11 menu items; cut nothing. "Needs you" is renamed **To-do**: Alex's to-do for today, not a copy of Decisions (Decisions shows there as one line). Deliverability and Chat stay their own items. Why: Alex, Needs you is "the to-do list thing"; Decisions is a separate yes/no list.
+
 ## HQ phone notifications (Alex, 2026-11-27)
 - **Rule:** HQ pings phones (iPhone from the Home Screen app, and computers) by Web Push for four kinds: **(1) new decisions** (each new Decisions card; several within ~3 minutes = one grouped ping "4 new decisions"), **(2) agent messages to you** (a chat answer when you are not on that chat; asks and tasks waiting on you), **(3) urgent problems** (campaign over 4% bounce or paused, inbox in spam, warm-up off, a fix or engine run that failed and needs Alex), **(4) good news** (meeting booked, client signed or paid). Tapping a ping opens that exact item in HQ.
 - **Always on:** no quiet hours. Each person can switch any of the 4 kinds off on HQ → Notifications (all on by default).
