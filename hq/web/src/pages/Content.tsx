@@ -306,8 +306,8 @@ function FridayCard({ it, n, of, raw, onNextIdea }: { it: FridayIdea; n: number;
           <li key={label}>
             <button onClick={() => setStep(k)} aria-current={k === step ? 'step' : undefined}
               className={cx('flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg px-1 text-[13px] font-semibold transition sm:text-sm', k === step ? 'bg-surface text-fg shadow-card' : k < step ? 'text-good' : 'text-muted hover:text-fg')}>
-              <span className={cx('tabular grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px]', k === step ? 'bg-accent text-accent-fg' : k < step ? 'bg-good-soft text-good' : 'border border-line-strong')}>{k < step ? <Icon name="check" size={11} strokeWidth={2.8} /> : k + 1}</span>
-              <span className="truncate">{label}</span>
+              <span className={cx('tabular hidden h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] sm:grid', k === step ? 'bg-accent text-accent-fg' : k < step ? 'bg-good-soft text-good' : 'border border-line-strong')}>{k < step ? <Icon name="check" size={11} strokeWidth={2.8} /> : k + 1}</span>
+              <span className="truncate sm:hidden">{k + 1} {label === 'Teleprompter' ? 'Prompter' : label}</span><span className="hidden truncate sm:inline">{label}</span>
             </button>
           </li>
         ))}
