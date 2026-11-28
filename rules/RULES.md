@@ -292,6 +292,12 @@ Format: `- [date] rule. (why / source)`
 - **Bounded:** at most 1 ping a minute per person (the rest grouped into one), at most 60 a day, never the same thing twice, and nothing that existed before notifications were turned on.
 - **Why:** Alex wants HQ on his phone to tell him when something needs him or went well, without opening it to check. How to turn it on: `engine/GUIDE.md` → HQ → "Phone notifications".
 
+## HQ voice: talk to the agents (Alex, 2026-11-28)
+- **Rule:** voice in HQ is HQ Chat by voice (Talk button, full-screen voice mode), not a phone number yet. What Alex says is a normal message in the same chat thread; the agent answers through the normal chat path, in 1-3 spoken sentences.
+- **Approval rules do not change by voice:** agents stay read-only / draft-only. Voice never approves a decision, sends, launches, pauses, spends or changes anything; whatever needs approval stays a card in Decisions for Alex. Members talk only in their own chats; money (Ledger, Sienna) stays owner-only.
+- **Bounded:** `VOICE=on` switch (off by default), clips at most 60 s and never stored, 60 voice turns per person per hour.
+- **Why:** Alex: "What about being able to call and talk to the agents, like how GPT does it?" How to switch it on and the cost: `engine/GUIDE.md` → HQ → "Talk to the agents (voice mode)". A real phone number (Twilio / ElevenLabs) is a later step, not built.
+
 ## HQ round 2 rules (Alex, 2026-11-27 evening)
 - **Bounce is one signal, not the headline.** Don't make HQ or the agents bounce-centric; group campaigns by how they're doing (performing well, on pace, needs more time, needs a look).
 - **Soft bounce = any 4xx code.** Show bounce codes as SMTP codes (550, 551, 552…), with the 5.x.x enhanced code only as detail.

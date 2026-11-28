@@ -824,6 +824,7 @@ If a step fails, the plan stops (`stuck`, the reason shows in `campaign-plans`).
    - When an agent isn't sure, it says "Here's what I found" and who should handle it.
    - Ada can ask another agent for you. That conversation is saved: tap "Read Ada ↔ Atlas" under her answer, or History → "Ada's conversations with the team".
    - Cost: each answer makes at most 5 calls (4 look-up rounds) with capped length (`HQ_CHAT_MAX_ROUNDS`, `HQ_CHAT_MAX_TOKENS`).
+   - **Talk** (2026-11-28): the same chat by voice. See "Talk to the agents (voice mode)" below (switch on with `VOICE=on`).
 
 7. **Inbox** (Step 3, 2026-11-25): every reply thread for every client, straight from the Airtable Emails table. It replaces the Reply Queue and the reply pages in Airtable for daily use. HQ only reads and presses the same buttons; Echo's drafting and the engine sender are unchanged.
    - **Tabs** (with counts): **To approve** (Dulcy Reply Agent State = Needs Approval, follow-ups included), **Waiting on prospect** (we wrote last and a follow-up is Scheduled; shows the next follow-up date), **Booked** (last 60 days), **Handed to client** (Client Handling or Reply Ownership = Handoff, last 30 days), **Skipped** (last 30 days).
@@ -1227,6 +1228,38 @@ Your own cards and bank accounts (Robinhood, Discover…) on **Finances → Pers
 - **Testing without real accounts:** `PLAID_ENV=sandbox` with the Sandbox secret; Plaid's test login is `user_good` / `pass_good`. Personal then says "Plaid test mode".
 
 **How it works (for Riley):** `engine/src/providers/plaid.ts` (fetch on Plaid's REST API: `/link/token/create`, `/item/public_token/exchange`, `/accounts/balance/get` with `/accounts/get` as fallback, `/liabilities/get`, `/item/remove`; nothing else) and `engine/src/hq/plaid.ts` (routes, cache, parsing). Routes: `GET /hq/api/finances/personal[?refresh=1]`, `POST …/personal/link-token`, `POST …/personal/connect`, `POST …/personal/<id>/remove`. Owner only: members and "view as" get 403; POSTs need the same-site Origin like every HQ write. Access tokens are sealed with **AES-256-GCM** in Postgres (`hq_plaid_items.access_token_enc`; key derived from `ENGINE_SECRET` with HKDF, bound to the item id). They are never logged, returned or shown. **If `ENGINE_SECRET` ever changes**, saved connections can't be read: Remove them and connect again. The HQ page's Content-Security-Policy allows only Plaid's Link script and frame (`cdn.plaid.com`); the portal and the API keep the strict policy. Web: `hq/web/src/pages/FinancesPersonal.tsx`.
+
+### Talk to the agents (voice mode) (2026-11-28)
+Talk to Ada (or any agent you can chat with) out loud, like ChatGPT voice. In **Chat**, press **Talk** (next to Send; also on the agent chat box beside Finances). A full screen opens: the orb shows **Listening**, **Thinking…** or **Speaking**, your words and the answers show underneath, **End** closes it.
+- **Hands-free:** just talk. About 1 second of quiet ends your turn; the agent answers in 1 to 3 sentences and reads it out; then it listens again. **Talk while it speaks to interrupt it.** A clip is at most 60 seconds.
+- **It is the same chat:** what you say is a normal message in that HQ Chat thread, and the answers stay there (with their sources). After End, the chat shows the whole conversation.
+- **Read only, like every chat:** voice never approves a decision, sends, launches, pauses or changes anything. "Approve them" gets "it's waiting as a card in Decisions for you". Josh (members) can talk only in his own chats, never to Ledger or Sienna; money stays owner-only.
+- **Limits:** 60 voice turns per person per hour (`VOICE_TURNS_PER_HOUR`), 60 s per clip (`VOICE_MAX_SECONDS`, never more). Recordings are **not stored**: each clip is sent once to OpenAI to be turned into text and dropped; HQ keeps only a count (time, length) for the limit and the cost.
+- **iPhone (Home Screen app):** the first Talk asks for the microphone: Allow. iPhone may ask again after HQ was closed. With the mic on, iPhone plays a little quieter; AirPods or headphones work best (and stop the agent hearing itself). Said no by mistake: **Settings → Apps → Safari → Microphone → Ask**, then open HQ again.
+- **Off:** without `VOICE=on` the Talk button opens a screen that says voice is off and how to switch it on.
+
+**Switch it on (Alex, once).** `OPENAI_API_KEY` is already on the server (lead-list profiles); voice uses it.
+```
+ssh -o ServerAliveInterval=30 root@178.156.132.86
+cd /opt/dulcy-os/engine/deploy
+cp .env .env.bak-$(date +%F-%H%M) && chmod 600 .env.bak-*
+grep -c '^OPENAI_API_KEY=.' .env     # expect 1 (counts, shows no value)
+sed -i '/^VOICE=/d' .env && echo 'VOICE=on' >> .env
+bash /opt/dulcy-os/engine/deploy/deploy.sh
+```
+Optional settings: `OPENAI_STT_MODEL` (default `gpt-4o-mini-transcribe`; `whisper-1` also works), `OPENAI_TTS_MODEL` (default `gpt-4o-mini-tts`), `OPENAI_TTS_VOICE` (default `coral`), `OPENAI_TTS_VOICES=Ada:coral,Atlas:ash` (a voice per agent).
+
+**Cost (estimate, from OpenAI's and Anthropic's public prices; check the bills):**
+| Part | Price used | Per minute of talking |
+|---|---|---|
+| Your words → text (`gpt-4o-mini-transcribe`) | ~$0.003 per audio minute (`whisper-1` ~$0.006) | ~$0.002 (a clip also holds up to ~5 s of quiet before you start) |
+| Answer read aloud (`gpt-4o-mini-tts`) | ~$0.015 per minute of speech | ~$0.008 |
+| The agent's answer (Claude Opus 5.5, the same call as a typed chat answer) | $4 / $20 per 1M tokens in / out, $0.20 cached | ~$0.06-0.30 (about 3 answers a minute at ~$0.02-0.10 each: skill + RULES mostly cached, up to 4 look-ups, short answers) |
+- So the voice part adds about **$0.01 a minute**; almost all the cost is the agent's answers, as in typed chat. A 10-minute talk ≈ **$1-3**. The hourly limit (60 turns) caps it.
+
+**How it works (for Riley):** `engine/src/hq/voice.ts` (checks, limits, `runTurn`, `speakMessage`), `engine/src/providers/openai.ts` (`transcribe`, `speech`), the voice flag in `engine/src/hq/chat.ts` (`VOICE_GUIDE`, added to the agent's instructions only for voice turns). Routes: `GET /hq/api/voice/status`; `POST /hq/api/voice/turn` (`{agent, threadId?, audio: base64, mime, seconds}`; answers as NDJSON lines: `{heard}` then `{done, threadId, reply, speak}` or `{error}`); `POST /hq/api/voice/speak` (`{messageId}` of an agent answer in a chat you may read → one mp3). Owner and members only (clients get 403), same-site JSON writes, "view as" read only. Table `hq_voice_uses` (counts only). Web: `hq/web/src/pages/VoiceMode.tsx` (screen, Talk button) and `voiceSession.ts` (mic, voice-activity check, recorder, playback). Tests: `engine/test/hqVoice.test.ts` (fake OpenAI fetch).
+
+**Next: phone calls (not built).** Calling a real number to reach the agents would need: a phone number (Twilio, or ElevenLabs Agents on a Twilio number); a public WebSocket on the engine for the call's audio (Twilio Media Streams) behind Traefik; real-time speech both ways (OpenAI Realtime or ElevenLabs, with the agent's answer still coming from HQ's chat path through a webhook, so the rules and read-only tools stay the same); who may call (an allow-list of Alex's and Josh's numbers plus a PIN) and how to pick the agent ("Ada" by default, "Atlas please"); a per-call and per-day minute cap; recording off. Prices: UNKNOWN until checked on Twilio's and ElevenLabs' pricing pages (number per month + per minute, on top of the speech and Claude costs above).
 
 ### Switch HQ on (Alex, once)
 1. **DNS:** where dulcy.io's DNS is managed, add an **A record**: name `hq`, value = the server's IP (the same IP as the `engine` record), proxy off / DNS only.
