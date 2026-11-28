@@ -16,7 +16,7 @@ import { ACCOUNTS, EA } from '../src/stages/accountHealth.js';
 import { EX, _resetDelivCache } from '../src/hq/deliverability.js';
 import { CAMPAIGNS_T, KF, LEAD_LISTS_T, LF, LLF, WORKSPACES_T, _resetCampaignsCache, isTest, newestFirst, sectionOf } from '../src/hq/campaigns.js';
 import { CX, LX, campaignActions, campaignState, filtersLine, listActions, listNextStep, listState, signatureFor, splitVersions, unescapeCopy } from '../src/hq/centerActions.js';
-import { bucketOf, campaignSenderState, isWarming, lastTestByClient, placementOf, sendingBox, sendingByClient, WARMUP_START, _resetWarmupCache } from '../src/hq/sendingAccounts.js';
+import { bucketOf, campaignSenderState, isWarming, lastTestByClient, placementOf, sendingBox, sendingByClient, WARMUP_START } from '../src/hq/sendingAccounts.js';
 import { DECISIONS, DF } from '../src/decisions/fields.js';
 import { CC } from '../src/agents/scribe.js';
 import { pollActions } from '../src/airtable/bridge.js';
@@ -227,7 +227,7 @@ before(async () => {
 });
 after(async () => { if (!skip) { server.close(); await db.end(); } });
 beforeEach(async () => {
-  tables = {}; writes = []; atlasOn = false; _resetDelivCache(); _resetCampaignsCache(); _resetWarmupCache();
+  tables = {}; writes = []; atlasOn = false; _resetDelivCache(); _resetCampaignsCache();
   if (skip) return;
   await db.query('TRUNCATE hq_users, hq_sessions, hq_login_attempts, jobs, steps, receipts, events, campaign_plans, airtable_jobs, hq_settings_log RESTART IDENTITY CASCADE');
   await upsertUser(db, 'alex@dulcy.io', 'owner', PW, 'Alex');

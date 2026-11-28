@@ -23,8 +23,7 @@
 import type { Db } from '../db/pool.js';
 import type { HqAirtable } from './decisions.js';
 import type { AirtableRecord } from '../providers/airtable.js';
-import { ACCOUNTS } from '../stages/accountHealth.js';
-import { buildDeliverability, cachedDeliv, TEST_WINDOW_DAYS, type InboxRow } from './deliverability.js';
+import { buildDeliverability, cachedDeliv, EX, TEST_WINDOW_DAYS, type InboxRow } from './deliverability.js';
 import { cachedCampaigns, clientIndex, factsOf, type InboxLite } from './campaigns.js';
 
 export type Bucket = 'available' | 'sending' | 'releasing' | 'reserved' | 'disconnected' | 'warming';
@@ -41,7 +40,7 @@ export const WARMING_DAYS = 14;
 /** Airtable: a live campaign at 60%+ sent is "Releasing Soon". */
 export const RELEASE_AT = 0.6;
 /** Email Accounts → Warmup Start Date. */
-export const WARMUP_START = 'fldURrj0qP1DnAKyD';
+export const WARMUP_START = EX.warmupStart;
 const DAY = 86_400_000;
 
 export interface AccountCampaign { id: string; name: string; status: string; stage?: string; progress?: number; clientKey: string; accountIds: string[] }
@@ -161,18 +160,8 @@ export function sendingByClient(inboxes: InboxRow[], campaigns: AccountCampaign[
 }
 
 // ---------- reads ----------
-/** Warmup Start Date per Email Accounts record, recent ones only (kept 5 minutes; it changes when inboxes are added). */
-let warmCache: { at: number; data: Promise<Map<string, string>> } | null = null;
-export function _resetWarmupCache() { warmCache = null; }
-function warmupStarts(at: HqAirtable, refresh = false): Promise<Map<string, string>> {
-  const now = Date.now();
-  if (warmCache && now - warmCache.at < (refresh ? 10_000 : 5 * 60_000)) return warmCache.data;
-  const data = at.list(ACCOUNTS, `IS_AFTER({Warmup Start Date},DATEADD(TODAY(),-${WARMING_DAYS + 1},'days'))`, [WARMUP_START], 3000)
-    .then((rows: AirtableRecord[]) => new Map(rows.map((r) => [r.id, String(r.fields[WARMUP_START] ?? '')] as [string, string]).filter(([, d]) => !!d)));
-  warmCache = { at: now, data };
-  data.catch(() => { if (warmCache?.data === data) warmCache = null; });
-  return data;
-}
+/** Warmup Start Date per Email Accounts record, from the Deliverability read (it already reads the field: no extra Airtable call). */
+const warmupStarts = (accounts: AirtableRecord[]) => new Map(accounts.map((a) => [a.id, String(a.fields[WARMUP_START] ?? '')] as [string, string]).filter(([, d]) => !!d));
 
 type DelivCfg = Parameters<typeof buildDeliverability>[1];
 const accountCampaigns = (src: Awaited<ReturnType<typeof cachedCampaigns>>, ws: ReturnType<typeof clientIndex>): AccountCampaign[] =>
@@ -181,8 +170,9 @@ const accountCampaigns = (src: Awaited<ReturnType<typeof cachedCampaigns>>, ws: 
 // ---------- GET /hq/api/campaigns/accounts?client= ----------
 /** The box for the picked client (or every active client), plus one line per client in the all-clients view. */
 export async function sendingAccountsView(at: HqAirtable, db: Db, cfg: DelivCfg, opts: { client?: string; refresh?: boolean } = {}) {
-  const [deliv, src, warm] = await Promise.all([cachedDeliv(at, db, opts.refresh), cachedCampaigns(at, db, opts.refresh), warmupStarts(at, opts.refresh).catch(() => new Map<string, string>())]);
+  const [deliv, src] = await Promise.all([cachedDeliv(at, db, opts.refresh), cachedCampaigns(at, db, opts.refresh)]);
   const model = buildDeliverability(deliv, cfg);
+  const warm = warmupStarts(deliv.accounts);
   const ws = clientIndex(src.ws);
   const clients = [...new Map([...ws.values()].filter((c) => c.active).map((c) => [c.key, c])).values()];
   const activeKeys = new Set(clients.map((c) => c.key));
