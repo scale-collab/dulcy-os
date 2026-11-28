@@ -164,7 +164,7 @@ export function parsePlans(g: SheetGrid): PricePlan[] {
   const raw = (r: number, c: number) => String(g.formulas[r]?.[c] ?? '').trim();
   const shownAt = (r: number, c: number) => String(g.values[r]?.[c] ?? '').trim();
   const memo = new Map<string, Val>(); const busy = new Set<string>();
-  // A cell's number: a typed number as written (full precision, "-0.0048"), else its formula worked out, else the shown value.
+  // A cell's number: a typed number as written (full precision, e.g. "-0.0012"), else its formula worked out, else the shown value.
   const get = (ref: string): Val => {
     const x = parseRef(ref); if (!x) return '';
     if (memo.has(ref)) return memo.get(ref)!;
