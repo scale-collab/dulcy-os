@@ -83,7 +83,7 @@ function Shell({ channel, section, view = 'all', client }: { channel: string; se
         kicker={d ? `${d.counts.live} live · ${d.counts.building} building${clientName ? ` · ${clientName}` : ''}` : 'Every campaign, every active client'}
         sub={section === 'lists' ? 'Build, verify, enrich and check lead lists. Tap a list for its steps and buttons.' : 'Plan, approve, launch and watch campaigns. Tap a campaign for its buttons, copy, lead list and inboxes.'}
         right={(
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 max-sm:flex-wrap">
             {section === 'campaigns' && <Button tone="primary" icon="plus" onClick={() => setCreating(true)} disabled={!plans?.canAct} title={plans?.canAct ? 'Atlas plans a new campaign for a client' : 'Alex starts new campaigns'}>New campaign</Button>}
             {section === 'campaigns' && plans?.canAct && <Button icon="plus" onClick={() => setByHand(true)} title="A Draft campaign and its lead list, made by hand (the Airtable Campaign Center's New Campaign)">By hand</Button>}
             {section === 'campaigns' && plans?.canAct && <SyncButton which="campaigns" />}

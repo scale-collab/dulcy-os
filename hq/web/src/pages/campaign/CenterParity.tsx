@@ -158,7 +158,7 @@ export function CampaignCenterSection({ id, section, onDone }: { id: string; sec
           <h3 className="text-[15px] font-semibold text-fg">Lead list</h3>
           <LinkPicker current={d.listId} options={d.lists.map((l) => ({ id: l.id, label: `${l.name}${l.stage ? ` · ${l.stage}` : ''}${l.qa === 'Passed' ? ' · QA Passed' : ''}` }))} disabled={ro || d.locked}
             onPick={(listId) => send(doPath, { action: 'link-list', listId }).then((ok) => ok && reload())} empty="No lead list of this client yet: make one in Lead lists → New lead list." />
-          {d.listId && <button onClick={() => go(`campaigns/list/${d.listId}`)} className="mt-2 text-sm font-semibold text-accent-ink hover:underline">Open the lead list</button>}
+          {d.listId && <button onClick={() => go(`campaigns/list/${d.listId}`)} className="mt-2 text-sm font-semibold text-accent-ink hover:underline max-sm:flex max-sm:min-h-10 max-sm:items-center">Open the lead list</button>}
         </Card>
         {d.pivots && (
           <Card className="p-4 sm:p-5">
@@ -282,7 +282,7 @@ function SequenceEditor({ d, path, doPath, onDone }: { d: CampaignFieldsP; path:
           <div key={st}>
             <FieldGroup title={`Email ${st}`} keys={[...(st > 1 ? [`thread${st}`] : []), ...keys]} d={d} path={path} onSaved={onDone} wide={keys.filter((k) => k.endsWith('s'))} />
             <div className="mt-1.5 flex flex-wrap gap-2 px-1">
-              {count < 10 && d.canAct && <button onClick={() => setExtra((x) => ({ ...x, [st]: count + 1 }))} className="text-sm font-semibold text-accent-ink hover:underline">+ Add variant {st}{'ABCDEFGHIJ'[count]}</button>}
+              {count < 10 && d.canAct && <button onClick={() => setExtra((x) => ({ ...x, [st]: count + 1 }))} className="text-sm font-semibold text-accent-ink hover:underline max-sm:inline-flex max-sm:min-h-10 max-sm:items-center">+ Add variant {st}{'ABCDEFGHIJ'[count]}</button>}
               {count > 1 && filled(st, count) && <DoButton label={`Delete variant ${st}${'ABCDEFGHIJ'[count - 1]}`} tone="danger" path={doPath} body={{ action: 'delete-variant', step: st, variant: count }} disabled={ro} why="Only Alex can press this." onDone={onDone} does="Clears this variant's saved subject and email copy." />}
             </div>
           </div>
@@ -367,7 +367,7 @@ function TopUpList({ d, doPath, onDone }: { d: CampaignFieldsP; doPath: string; 
     <Card className="p-4 sm:p-5">
       <h3 className="text-[15px] font-semibold text-fg">Top-up lead list</h3>
       <p className="mt-1 text-sm text-muted">Copies this campaign's targeting into a new list and excludes the contacts already in its lists. Build it in Lead lists, then press Top up (the engine button checks the top-up rule again).</p>
-      {t.list && <div className="mt-2 text-sm text-fg-2">Linked: <button onClick={() => go(`campaigns/list/${t.list!.id}`)} className="font-semibold text-accent-ink hover:underline">{t.list.name}</button> · {t.list.stage || 'no stage'}{t.list.qa ? ` · QA ${t.list.qa}` : ''} · {num(t.list.leads)} leads</div>}
+      {t.list && <div className="mt-2 text-sm text-fg-2">Linked: <button onClick={() => go(`campaigns/list/${t.list!.id}`)} className="font-semibold text-accent-ink hover:underline max-sm:inline-flex max-sm:min-h-10 max-sm:items-center">{t.list.name}</button> · {t.list.stage || 'no stage'}{t.list.qa ? ` · QA ${t.list.qa}` : ''} · {num(t.list.leads)} leads</div>}
       {t.status && <div className="mt-1 text-sm text-fg-2">Last top-up: {t.status} · {num(t.added)} added · {num(t.skipped)} skipped · {num(t.failed)} failed{t.lastRun ? ` · ${slashTime(t.lastRun)}` : ''}{t.message ? ` · ${t.message}` : ''}</div>}
       <div className="mt-3">
         <DoButton label="Top up · Create lead list" tone="primary" path={doPath} body={{ action: 'create-topup' }} disabled={!d.canAct} why="Only Alex can press this." onDone={onDone}

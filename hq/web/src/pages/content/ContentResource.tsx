@@ -16,6 +16,7 @@ import { copyText } from './shared';
 // 13.333in page are the same slide at two sizes.
 export const CSS = `
 .rs-deck{display:flex;flex-direction:column;gap:20px}
+@media (max-width:639px){.rs-screen{overflow-x:auto;padding-bottom:8px}.rs-screen .rs-deck{width:720px}}
 .rs-slide{position:relative;width:100%;aspect-ratio:16/9;container-type:inline-size;overflow:hidden;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.12),0 8px 24px rgba(0,0,0,.08);
   font-family:system-ui,-apple-system,"Segoe UI",Roboto,"DejaVu Sans","Helvetica Neue",Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;color:#1b211f;background:#f3f1ec}
 .rs-in{position:absolute;inset:0;padding:3.1cqw 4.2cqw 2.6cqw;display:flex;flex-direction:column}
@@ -188,7 +189,7 @@ export default function ContentResource({ id }: { id: string }) {
             <p className="mt-2 text-xs text-muted">Download PDF opens your browser's print window: choose "Save as PDF". The pages are already 16:9.</p>
             {copied && <p role="status" className="mt-1 text-sm text-good">{copied}</p>}
           </Card>
-          <Deck d={d} />
+          <div className="rs-screen"><Deck d={d} /></div>
           {root && createPortal(<Deck d={d} />, root)}
         </>
       )}

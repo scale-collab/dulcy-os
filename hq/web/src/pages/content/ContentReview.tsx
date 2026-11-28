@@ -73,7 +73,7 @@ function ClipRow({ c, videoId, blocked, reload }: { c: ContentReviewClip; videoI
       </div>
       {c.qa && <div className="mt-1 text-sm text-good">{c.qa}</div>}
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-        {c.watchUrl ? <ExtLink href={c.watchUrl}>Watch this copy</ExtLink> : <span className="text-muted">No preview yet</span>}
+        {c.watchUrl ? <ExtLink href={c.watchUrl} className="max-sm:inline-flex max-sm:min-h-10 max-sm:items-center">Watch this copy</ExtLink> : <span className="text-muted">No preview yet</span>}
         <span className="text-xs text-muted">{c.verified ? `Checked copy ${c.verified.clipId} · review ${c.verified.version}` : 'Not checked yet: get the current copy first'}</span>
       </div>
       {error && <div className="mt-2"><ErrorBox error={error} /></div>}

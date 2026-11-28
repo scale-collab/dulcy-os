@@ -46,6 +46,24 @@
 
 **Totals (per screen, on top of the shared fixes):** 65 problems found, 63 fixed, 2 not fixed (by choice, above).
 
+## Round 2: screens merged after the first pass
+
+Same checks at 390 × 664 and 375 × 667, plus a 1440 px desktop pixel diff against the merged build before these fixes (31 screens: identical apart from spinning icons and the live dot). All fixes are phone-only (`max-sm:`), so desktop does not change.
+
+| Screen | Problems found | Fixed / not fixed (why) |
+|---|---|---|
+| Inbox (thread cards, Email 1/2/3, Echo last-hour strip, #/inbox/links, thread panel) | 1: Replier settings menu ran 47 px off the left edge (client names cut) | Fixed (menu opens from the button's left edge on a phone) |
+| Campaigns (header, By hand sheet, Sync, New lead list sheet) | 1: New campaign / By hand / Sync / Refresh in one row scrolled the page sideways (558 px) | Fixed (buttons wrap to 2 rows on a phone); both sheets fit and scroll inside |
+| Campaign tabs (Copy, Sequence, Settings, Variants, More, Senders, Plan) | 3: top-up "Linked" list link 20 px (More); "Open the lead list" 20 px (Plan); "+ Add variant" 20 px (Variants) | 3 fixed (40 px tap area; looks the same) |
+| Lead list (+ Source, Verification, QA tab fields) | 0 | – |
+| Content (Settings wrench panel, Add idea, channel picker, dates, history toggle, YouTube boxes, distribution, Gamma box, Delete) | 1: Final review "Watch this copy" link 20 px | Fixed (40 px tap area) |
+| Resource page (#/content/items/…/resource, screen preview) | 1: slides shrank to the phone width, text 3.6–7 px | Fixed: on a phone the slides keep a 720 px width and swipe sideways inside their own box (headlines and body readable). Slide footer captions stay 7–8 px, the same proportion as the PDF. Print copy untouched |
+| Voice mode (Talk in Chat and in the Finances / Sales chat box) | 0 (full screen, Close and status visible at both sizes) | – |
+| Sales (goals card, Won sync line) and Deal (Calls) | 0 | – |
+| Finances (Ledger chat box) | 0 | – |
+
+**Round 2 totals:** 7 problems found, 7 fixed, 0 not fixed. 30 screens × 2 sizes: no sideways page scroll, no tap under 40 px, no text under 13 px outside the slide previews.
+
 ## For Alex to judge on the real phone
 
 1. The Home Screen app: header under the status bar, bottom bar above the home line (checked in an emulator only).
@@ -53,4 +71,5 @@
 3. Wide tables (Clients results and profit, cards, sender accounts): swipe sideways with the name column fixed. Good enough, or should they become cards?
 4. The teleprompter on the device while recording (now full screen with all buttons visible).
 5. Sticky Send / Approve / Save bars with the keyboard open (Safari moves them; not testable in the emulator).
-6. A 320 px wide phone (first iPhone SE): the header's 7 icons do not fit. Not a target; HQ needs 360 px or more.
+6. The resource preview on a phone: swipe the slides sideways, or is "Download PDF" enough there?
+7. A 320 px wide phone (first iPhone SE): the header's 7 icons do not fit. Not a target; HQ needs 360 px or more.

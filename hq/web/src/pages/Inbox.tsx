@@ -166,7 +166,7 @@ function ReplierLinks({ clients, current }: { clients: { key: string; name: stri
     <div ref={box} className="relative">
       <Button icon="wrench" onClick={() => setOpen((v) => !v)} className="min-h-10 px-3 text-sm">Replier settings<Icon name="chevronDown" size={14} className={cx('transition', open && 'rotate-180')} /></Button>
       {open && (
-        <ul role="menu" aria-label="AI replier settings per client" className="absolute right-0 z-30 mt-1.5 max-h-80 w-64 overflow-y-auto rounded-xl border border-line bg-surface p-1 shadow-pop">
+        <ul role="menu" aria-label="AI replier settings per client" className="absolute right-0 z-30 mt-1.5 max-h-80 w-64 overflow-y-auto max-sm:left-0 max-sm:right-auto max-sm:max-w-[calc(100vw-2rem)] rounded-xl border border-line bg-surface p-1 shadow-pop">
           {clients.map((c) => (
             <li key={c.key}><button role="menuitem" onClick={() => go(`clients/${c.wsRec}/replier`)} className="flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-3 text-left text-sm text-fg hover:bg-hover">{c.name}<Icon name="chevronRight" size={15} className="text-faint" /></button></li>
           ))}
