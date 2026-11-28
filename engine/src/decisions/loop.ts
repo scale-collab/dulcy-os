@@ -13,6 +13,7 @@ import { STAGES } from '../stages/index.js';
 import { DECISIONS, DF } from './fields.js';
 import { EMAILS } from '../agents/emailsFields.js';
 import { RA } from '../agents/emailsFields.js';
+import { fireAgent } from '../agents/fire.js';
 
 const YES = new Set(['white_check_mark', 'heavy_check_mark', 'ballot_box_with_check', '+1']);
 const NO = new Set(['x', 'negative_squared_cross_mark', 'no_entry', 'no_entry_sign', '-1']);
@@ -112,6 +113,14 @@ export async function decisionsTick(db: Db, cfg: Config, at: Pick<AirtableClient
     const say = async (msg: string) => { if (ch && ts) await slack.post(ch, msg, ts); };
     if (!kind) {
       await at.update(DECISIONS, r.id, { [DF.status]: 'Done', [DF.result]: action && action !== 'None' ? `Unknown action "${action}": nothing done` : 'Approved (no automatic action)' });
+      // Agents start instantly (Alex 2026-11-28): a ✅ on a card that runs nothing (e.g. Riley's
+      // "Manual (Alex)" fixes) starts that agent's routine now, when it has one.
+      if (!action || action === 'None') {
+        const agent = text(r.fields[DF.agent]); const title = text(r.fields[DF.title]);
+        await fireAgent(db, cfg, agent, `${text(r.fields[DF.decidedBy]) || 'Alex'} approved: ${title} (Decision ${r.id})`,
+          [text(r.fields[DF.issue]) && `Issue: ${text(r.fields[DF.issue])}`, text(r.fields[DF.fix]) && `Approved fix: ${text(r.fields[DF.fix])}`, text(r.fields[DF.details]) && `Details: ${text(r.fields[DF.details])}`,
+            agent === 'Riley' ? 'Do step 1 of agents/riley-session.md for this now (a manual fix: check whether Alex has done his part, then verify), then the rest of the runbook.' : 'Do this now, then the rest of your runbook.'].filter(Boolean).join('\n'), `decision:${r.id}`);
+      }
       finished++;
       continue;
     }

@@ -1,6 +1,10 @@
-# Riley: scheduled systems check (runbook)
+# Riley: systems check (runbook)
 
-Runs as a Claude scheduled task every 2 hours, 8 a.m. to 8 p.m. ET. Read `CLAUDE.md`, `rules/RULES.md`, `skills/riley-systems-repair/SKILL.md` (and its references) and `rules/build-error-playbook.md` first.
+Runs as a Claude Code routine that the **engine starts the moment there is work** (Alex 2026-11-28: agents start instantly, never on a timer): a Riley Decision approved, a new System Issue, or a "Have Riley fix it" task in HQ. It can also be started by hand. Read
+
+**If a `<routine-fire-payload>` block is present** in the message that started you, handle those items first, in order: each line says what happened (e.g. "Alex approved: … (System Issue rec…)" → step 1 for that issue; "New System Issue: …" → step 3 for it; "Alex asked in HQ (Fix it): …" → do that task) and what to do. Then run the rest of this runbook as usual. Steps 4 and 5 ("first run of the day") run on the first run that starts after 8 a.m. ET.
+
+Read `CLAUDE.md`, `rules/RULES.md`, `skills/riley-systems-repair/SKILL.md` (and its references) and `rules/build-error-playbook.md` first.
 
 **Autonomy (Alex, 2026-11-25):** Riley explains why, **prepares** the fix, and waits for Alex's ✅ before anything goes live. This holds until Alex says Riley may fix freely. Read-only checks need no approval.
 

@@ -14,6 +14,7 @@ import {
   OAUTH_COOKIE, SESSION_COOKIE, VIEW_HEADER, cookie, createSession, endSession, googleFinish, googleOn, googleRedirectUri, googleStart, passwordLogin, sessionUser, userByEmail, viewAs, type HqUser,
 } from './auth.js';
 import { fixIt } from './fixIt.js';
+import { recentFires } from '../agents/fire.js';
 import { decide, groupByPile, pendingDecisions, type HqAirtable } from './decisions.js';
 import { listTasks, markDone, notYet, quickAdd, validNewTask } from './tasks.js';
 import { agentActivity, agentRuns, agentTasks, finishAgentTask, jobHealth, teamCheck, isBoardDue, isBoardStatus, loadTeamBoard } from './team.js';
@@ -365,7 +366,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
 
       // ---- Batch 1 (2026-11-27): Fix it = put an agent's suggestion on that agent's own task list ----
       if (p === '/hq/api/fix-it' && req.method === 'POST') {
-        const r = await fixIt(db, user, await readJson(req, 10_000));
+        const r = await fixIt(db, user, await readJson(req, 10_000), { cfg });
         json(res, r.status, r.error ? { error: r.error } : { ok: true, task: r.task });
         return true;
       }
@@ -408,7 +409,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         if (!['approve', 'reject', 'edited'].includes(b.verdict)) { json(res, 400, { error: 'verdict must be approve, edited or reject' }); return true; }
         const r = await decide(needAt(), m[1], b.verdict, user.name, { canSeeMoney: owner, editedText: typeof b.text === 'string' ? b.text : undefined });
         let task: unknown;
-        if (!r.error && r.todo) task = (await fixIt(db, user, r.todo)).task; // approve = the agent does it
+        if (!r.error && r.todo) task = (await fixIt(db, user, r.todo, { cfg, how: 'approved', fireKey: `decision:${m[1]}` })).task; // approve = the agent does it
         json(res, r.status, r.error ? { error: r.error, ...(r.placeholders ? { placeholders: r.placeholders } : {}) } : { ok: true, status: r.result, ...(task ? { task } : {}) });
         return true;
       }
@@ -672,7 +673,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
           return true;
         }
         // Sienna's list for a "Request changes" note (the Fix it path: a task only, nothing sent).
-        const askSienna = async (x?: { title: string; detail: string }, id = '') => { if (x) await fixIt(db, user, { agent: 'Sienna', title: x.title, detail: x.detail, link: id ? `content/items/${id}` : '' }); };
+        const askSienna = async (x?: { title: string; detail: string }, id = '') => { if (x) await fixIt(db, user, { agent: 'Sienna', title: x.title, detail: x.detail, link: id ? `content/items/${id}` : '' }, { cfg, how: 'changes' }); };
         if (im && im[2] === 'resource' && req.method === 'GET') { const r = await contentResource(needAt(), im[1]); json(res, r.status, r.error ? { error: r.error } : r.doc); return true; }
         if (im && im[2] === 'gamma' && req.method === 'POST') {
           const r = await saveGammaLink(runDeps(), im[1], (await readJson(req, 2_000)).url);
@@ -834,7 +835,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       if (m && req.method === 'GET') {
         const a = agentByName(m[1]);
         if (!a || !canTalkTo(user, a)) { json(res, 404, { error: 'no such agent' }); return true; }
-        json(res, 200, await agentDetail(db, at, user, a));
+        json(res, 200, await agentDetail(db, cfg, at, user, a));
         return true;
       }
       m = p.match(/^\/hq\/api\/agent-tasks\/(\d+)\/done$/);
@@ -1042,14 +1043,16 @@ async function agentCards(db: Db, at: HqAirtable | undefined, user: HqUser) {
   });
 }
 
-async function agentDetail(db: Db, at: HqAirtable | undefined, user: HqUser, a: AgentName) {
-  const [runs, decisions, activity, tasks, recent, health] = await Promise.all([
+async function agentDetail(db: Db, cfg: Config, at: HqAirtable | undefined, user: HqUser, a: AgentName) {
+  const [runs, decisions, activity, tasks, recent, health, starts] = await Promise.all([
     agentRuns(db, a, 10),
     at ? pendingDecisions(at).then((d) => d.filter((x) => x.agent === a)).catch(() => []) : Promise.resolve([]),
     at ? agentActivity(at, a, 10).catch(() => []) : Promise.resolve([]),
     agentTasks(db, a, true),
     reports(db, user.role === 'owner', a, 10),
     jobHealth(db),
+    // Agents start instantly (2026-11-28): the last routine starts ("Started now · session link").
+    recentFires(db, cfg, a, 5).catch(() => ({ configured: false, fires: [], waiting: [] })),
   ]);
-  return { agent: AGENTS[a], status: teamCheck(health, decisions, Date.now(), [a])[0], lastOk: health.get(a)?.lastOk ?? null, lastFail: health.get(a)?.lastFail ?? null, runs, decisions, activity, tasks, work: workSummary(tasks, [a])[0], reports: recent };
+  return { agent: AGENTS[a], status: teamCheck(health, decisions, Date.now(), [a])[0], lastOk: health.get(a)?.lastOk ?? null, lastFail: health.get(a)?.lastFail ?? null, runs, decisions, activity, tasks, work: workSummary(tasks, [a])[0], reports: recent, starts };
 }

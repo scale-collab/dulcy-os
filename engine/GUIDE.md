@@ -1311,6 +1311,55 @@ Optional settings: `OPENAI_STT_MODEL` (default `gpt-4o-mini-transcribe`; `whispe
 
 **Next: phone calls (not built).** Calling a real number to reach the agents would need: a phone number (Twilio, or ElevenLabs Agents on a Twilio number); a public WebSocket on the engine for the call's audio (Twilio Media Streams) behind Traefik; real-time speech both ways (OpenAI Realtime or ElevenLabs, with the agent's answer still coming from HQ's chat path through a webhook, so the rules and read-only tools stay the same); who may call (an allow-list of Alex's and Josh's numbers plus a PIN) and how to pick the agent ("Ada" by default, "Atlas please"); a per-call and per-day minute cap; recording off. Prices: UNKNOWN until checked on Twilio's and ElevenLabs' pricing pages (number per month + per minute, on top of the speech and Claude costs above).
 
+### Agents start instantly (2026-11-28)
+Alex: "I don't want any agents to run on schedules; it should be like an instant webhook." Riley and Sienna's editor are Claude Code **routines**. The engine now starts a routine **the moment that agent has work**, through the routine's API trigger, instead of waiting for a timer.
+
+**What starts whom:**
+| Agent | Starts when | What the routine is told |
+|---|---|---|
+| Riley | a Riley Decision is approved (✅ in Slack or HQ on "Apply Riley Fix"; after the engine marks the issue Approved/Applied) | "Alex approved: <title> (System Issue rec…). Do step 1 for this issue now" |
+| Riley | a "Manual (Alex)" card (Action None) is approved | "Alex approved: <title> (Decision rec…)" + the fix, step 1 |
+| Riley | the engine's check opens a **new** System Issue (repeats don't count) | "New System Issue: <title> (rec…). Do step 3 (diagnose)" |
+| Riley | **Have Riley fix it** in HQ makes a new task | "Alex asked in HQ (Fix it): <title> (HQ task #…)" + the details |
+| Sienna | **Ask Sienna now** / a Sienna Fix it task in HQ | "Alex asked in HQ (Fix it): <title>" + the details |
+| Sienna | **Request changes** on a final clip or the full video | "Alex requested changes: Clip changes: <name>" + Alex's note + the HQ link |
+
+The text arrives inside a `<routine-fire-payload>` block; both runbooks (`agents/riley-session.md`, `agents/sienna-editor.md`) say "handle those items first, then the rest of the runbook". Approval rules are unchanged: a start only means the agent looks now.
+
+**Safety built in:**
+- **One start per 2 minutes per agent.** Things that happen inside that window wait and go out together as **one** start when it ends (the queue is in the database, so a restart loses nothing). At most **20 starts an hour** per agent (the API allows 30).
+- **Never twice:** each start opens a new session and the API has no "same request" key. If the API doesn't answer (timeout, dropped connection) the start is marked "not confirmed" and is **not** sent again. Only clear server errors (5xx, no session made) are retried, 3 times. A "slow down" answer (429) is respected (Retry-After), then one start goes out.
+- The token is only in `.env`; it is never logged, stored, shown or returned.
+- **Without the settings nothing changes:** the log says once "RILEY_FIRE_URL not set: Riley runs only when started by hand".
+- **HQ:** Team → Riley (or Sienna) → **Instant starts**: each start ("Started now", time, the reasons, **Open the session**), and what is waiting for the next one.
+
+**Set it up (Alex, once per agent):**
+1. In Claude Code, open the routine (Riley's systems check; Sienna's editor) and add an **API trigger** in its trigger settings. Copy the **fire URL** (`https://api.anthropic.com/v1/claude_code/routines/…/fire`) and the **token** (shown once).
+2. In the same routine, **remove its schedule** (the timer). Keep its saved prompt as it is; it already points to the runbook.
+3. On the server (the values never show on screen):
+   ```
+   ssh -o ServerAliveInterval=30 root@178.156.132.86
+   cd /opt/dulcy-os/engine/deploy
+   cp .env .env.bak-$(date +%F-%H%M) && chmod 600 .env.bak-*
+   read -r -s -p "Riley fire URL: " FURL; echo
+   read -r -s -p "Riley fire token: " FTOK; echo
+   sed -i '/^RILEY_FIRE_URL=/d;/^RILEY_FIRE_TOKEN=/d' .env
+   printf 'RILEY_FIRE_URL=%s\nRILEY_FIRE_TOKEN=%s\n' "$FURL" "$FTOK" >> .env
+   unset FURL FTOK
+   read -r -s -p "Sienna fire URL: " FURL; echo
+   read -r -s -p "Sienna fire token: " FTOK; echo
+   sed -i '/^SIENNA_FIRE_URL=/d;/^SIENNA_FIRE_TOKEN=/d' .env
+   printf 'SIENNA_FIRE_URL=%s\nSIENNA_FIRE_TOKEN=%s\n' "$FURL" "$FTOK" >> .env
+   unset FURL FTOK
+   grep -c '_FIRE_' .env        # expect 4 (counts the lines, shows no values)
+   ```
+4. **Deploy** (after this branch is merged to main): `cd /opt/dulcy-os && git pull && bash engine/deploy/deploy.sh`.
+5. **Check:** press **Have Riley fix it** on any suggestion in HQ (or approve a Riley card). Team → Riley → Instant starts shows "Started now" with **Open the session** within seconds. If it says "token was refused", do step 3 again with a fresh token.
+
+**Another agent later:** give its routine an API trigger and add `<AGENT>_FIRE_URL` + `<AGENT>_FIRE_TOKEN` (e.g. `ECHO_FIRE_URL`), then add its hooks in the code (`fireAgent(db, cfg, 'Echo', reason, details)`).
+
+**How it works (for Riley):** `engine/src/agents/fire.ts` (`fireAgent`, `flushAgent`, the 15-second sweep `startAgentFires`, `recentFires` for HQ). Tables `agent_fire_pending` (reasons waiting; `dedupe_key` makes one event one reason, e.g. a card approved in HQ and then seen by the Slack loop), `agent_fires` (each start: status started / not confirmed / waiting / failed, reasons, session link), `agent_fire_state` (last start, 429 wait, in-flight lease). Hooks: `rileyApplyStage` and `rileyCollectStage` (`engine/src/agents/riley.ts`), `fixIt` (`engine/src/hq/fixIt.ts`; HQ passes `how` = fixit / approved / changes), Action-None approvals in `engine/src/decisions/loop.ts`. Config: `agentFire` from `<AGENT>_FIRE_URL/_TOKEN` (https only). Web: `hq/web/src/pages/AgentPage.tsx` (Instant starts). Tests: `engine/test/agentFire.test.ts` (fake fetch). The engine's own checks (riley.collect every 15 minutes, etc.) still run on the engine's clock; only the agents' routines lost their timers.
+
 ### Switch HQ on (Alex, once)
 1. **DNS:** where dulcy.io's DNS is managed, add an **A record**: name `hq`, value = the server's IP (the same IP as the `engine` record), proxy off / DNS only.
 2. **Settings:** in `engine/deploy/.env` on the server, add:

@@ -19,6 +19,7 @@ import { val } from './emailsFields.js';
 import { logActivity } from '../activity.js';
 import { saveReport } from '../hq/reports.js';
 import { maskEmail } from '../verify/rules.js';
+import { fireAgent } from './fire.js';
 
 export const ISSUES = 'tblZvXQongRlV0vsl';
 export const IF = {
@@ -124,10 +125,10 @@ export async function enrichOpenN8nIssues(at: Pick<AirtableClient, 'list' | 'upd
 }
 
 /** Add or update the System Issues rows. Returns how many new issues were opened (or reopened). */
-export async function upsertIssues(at: Pick<AirtableClient, 'list' | 'create' | 'update'>, found: Found[]): Promise<{ opened: string[]; repeated: number }> {
+export async function upsertIssues(at: Pick<AirtableClient, 'list' | 'create' | 'update'>, found: Found[]): Promise<{ opened: string[]; repeated: number; openedIds: string[] }> {
   const groups = new Map<string, Found[]>();
   for (const f of found) { const s = signature(f.source, f.where, f.error); groups.set(s, [...(groups.get(s) ?? []), f]); }
-  const opened: string[] = []; let repeated = 0;
+  const opened: string[] = []; const openedIds: string[] = []; let repeated = 0;
   for (const [sig, fs] of groups) {
     const last = fs[fs.length - 1];
     const ids = { jobIds: fs.flatMap((f) => (f.details.jobIds as number[] | undefined) ?? []), executionIds: fs.flatMap((f) => (f.details.executionIds as string[] | undefined) ?? []) };
@@ -137,14 +138,14 @@ export async function upsertIssues(at: Pick<AirtableClient, 'list' | 'create' | 
       const merged = { ...prev, ...last.details, jobIds: [...new Set([...(prev.jobIds ?? []), ...ids.jobIds])].slice(-20), executionIds: [...new Set([...(prev.executionIds ?? []), ...ids.executionIds])].slice(-20) };
       const reopen = CLOSED.has(val(existing.fields[IF.status])) && val(existing.fields[IF.status]) !== 'Ignored';
       await at.update(ISSUES, existing.id, { [IF.occurrences]: (Number(val(existing.fields[IF.occurrences])) || 0) + fs.length, [IF.lastSeen]: last.at, [IF.error]: last.error.slice(0, 5000), [IF.details]: JSON.stringify(merged).slice(0, 20_000), ...(reopen ? { [IF.status]: 'New', [IF.result]: `Came back after it was marked ${val(existing.fields[IF.status])} (${last.at}).` } : {}) });
-      if (reopen) opened.push(last.title); else repeated += fs.length;
+      if (reopen) { opened.push(last.title); openedIds.push(existing.id); } else repeated += fs.length;
       continue;
     }
-    await at.create(ISSUES, { [IF.title]: last.title.slice(0, 200), [IF.source]: last.source, [IF.status]: 'New', [IF.signature]: sig, [IF.where]: last.where.slice(0, 250), [IF.error]: last.error.slice(0, 5000),
+    const id = await at.create(ISSUES, { [IF.title]: last.title.slice(0, 200), [IF.source]: last.source, [IF.status]: 'New', [IF.signature]: sig, [IF.where]: last.where.slice(0, 250), [IF.error]: last.error.slice(0, 5000),
       [IF.occurrences]: fs.length, [IF.firstSeen]: fs[0].at, [IF.lastSeen]: last.at, [IF.details]: JSON.stringify({ ...last.details, ...ids }).slice(0, 20_000) });
-    opened.push(last.title);
+    opened.push(last.title); openedIds.push(id);
   }
-  return { opened, repeated };
+  return { opened, repeated, openedIds };
 }
 
 export const rileyCollectStage: Stage = async (ctx) => {
@@ -158,20 +159,41 @@ export const rileyCollectStage: Stage = async (ctx) => {
   if (cfg.n8nApiKey) { try { found.push(...await n8nProblems(cfg.n8nBaseUrl, cfg.n8nApiKey, since)); } catch (e) { n8nNote = ` (n8n not read: ${(e as Error).message})`; } }
   if (ctx.dryRun) return { message: `Would log ${found.length} problem(s) to System Issues (dry run)${n8nNote}` };
   if (cfg.n8nApiKey) { try { const e = await enrichOpenN8nIssues(at, cfg.n8nBaseUrl, cfg.n8nApiKey); if (e) n8nNote += ` (${e} open n8n issue(s): run input attached)`; } catch { /* next sweep */ } }
-  const r = found.length ? await upsertIssues(at, found) : { opened: [], repeated: 0 };
+  const r = found.length ? await upsertIssues(at, found) : { opened: [], repeated: 0, openedIds: [] as string[] };
   if (r.opened.length) await saveReport(ctx.db, { agent: 'Riley', kind: 'system_issues', title: `Riley: ${r.opened.length} new system issue${r.opened.length === 1 ? '' : 's'}`,
     summary: r.opened.slice(0, 2).join(' · '), body: `${r.opened.map((x) => `• ${x}`).join('\n')}\n\nRiley prepares a fix for each one and asks you in Decisions (Fixes).${r.repeated ? `\n${r.repeated} repeat(s) of known issues.` : ''}`,
     jobId: ctx.job.id, dedupeKey: `riley:${ctx.job.id}` });
+  // Agents start instantly (Alex 2026-11-28): a NEW issue starts Riley's routine now (step 3: diagnose).
+  if (r.opened.length) {
+    const list = r.opened.map((t, k) => `${t} (System Issue ${r.openedIds[k] ?? '?'})`);
+    await fireAgent(ctx.db, cfg, 'Riley', `New System Issue${list.length === 1 ? '' : 's'}: ${list.slice(0, 5).join('; ')}${list.length > 5 ? ` and ${list.length - 5} more` : ''}`,
+      `Do step 3 (diagnose) of agents/riley-session.md for ${list.length === 1 ? 'it' : 'these'} now: ${r.openedIds.join(', ')}. Then the rest of the runbook.`);
+  }
   return { message: `${found.length} problem(s): ${r.opened.length} new issue(s)${r.opened.length ? ` (${r.opened.slice(0, 5).join('; ')})` : ''}, ${r.repeated} repeat(s)${n8nNote}` };
 };
 
-/** ✅ on "Apply Riley Fix": a Retry re-runs the failed engine jobs; anything else is handed to the Riley session (Approved). */
+/**
+ * ✅ on "Apply Riley Fix": a Retry re-runs the failed engine jobs; anything else is handed to the Riley
+ * session (Approved). Then Riley's routine is started at once (Alex 2026-11-28: agents start instantly)
+ * to make the fix live or verify it (step 1 of agents/riley-session.md).
+ */
 export const rileyApplyStage: Stage = async (ctx) => {
   const cfg = ctx.cfg; const i = ctx.job.input as { issueId: string };
   const at = createAirtableClient({ apiKey: cfg.airtableApiKey, baseId: cfg.airtableBaseId, baseUrl: cfg.airtableBaseUrl });
   const issue = await at.get(ISSUES, i.issueId, [IF.title, IF.status, IF.fixType, IF.details, IF.fix, IF.rollback]);
   if (!issue) throw new PermanentError(`System Issue ${i.issueId} not found`);
   if (val(issue.fields[IF.status]) !== 'Waiting for Alex') return { message: `Issue is ${val(issue.fields[IF.status])}; nothing to do` };
+  const r = await applyApproved(ctx, at, issue);
+  if (!ctx.dryRun) {
+    const title = val(issue.fields[IF.title]); const type = val(issue.fields[IF.fixType]) || 'fix';
+    await fireAgent(ctx.db, cfg, 'Riley', `Alex approved: ${title} (System Issue ${issue.id}, ${type})`,
+      `Engine result: ${String(r.message ?? '').slice(0, 600)}\nDo step 1 of agents/riley-session.md for this issue now (make it live, or verify what the engine applied), then the rest of the runbook.`);
+  }
+  return r;
+};
+
+async function applyApproved(ctx: Parameters<Stage>[0], at: AirtableClient, issue: NonNullable<Awaited<ReturnType<AirtableClient['get']>>>): Promise<Awaited<ReturnType<Stage>>> {
+  const cfg = ctx.cfg;
   const type = val(issue.fields[IF.fixType]);
   // n8n change with an exact n8nPatch: the engine applies it through the n8n API (Alex 2026-11-27).
   if (type === 'n8n change') {

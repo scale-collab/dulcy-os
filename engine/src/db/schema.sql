@@ -684,3 +684,42 @@ CREATE TABLE IF NOT EXISTS hq_voice_uses (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS hq_voice_uses_recent ON hq_voice_uses (user_id, kind, created_at DESC);
+
+-- Agents start instantly (Alex 2026-11-28: "like an instant webhook, not a schedule"). The engine
+-- starts an agent's Claude Code routine through its API trigger when the agent has work. One row per
+-- reason waiting to be sent (reasons within 2 minutes go out as ONE start), one row per start (what
+-- was sent, when, the session link), and per agent the last start and any 429 wait. The routine
+-- token is never stored here (it lives only in the server's .env).
+CREATE TABLE IF NOT EXISTS agent_fire_pending (
+  id          BIGSERIAL PRIMARY KEY,
+  agent       TEXT NOT NULL,                   -- 'Riley', 'Sienna', ...
+  reason      TEXT NOT NULL,                   -- one line: what happened
+  details     TEXT NOT NULL DEFAULT '',        -- what the routine should do with it
+  fire_id     BIGINT,                          -- the start it went out with (NULL = still waiting)
+  dedupe_key  TEXT,                            -- one event = one reason (e.g. 'decision:rec…' from HQ and Slack)
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS agent_fire_pending_open ON agent_fire_pending (agent, id) WHERE fire_id IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS agent_fire_pending_key ON agent_fire_pending (agent, dedupe_key) WHERE dedupe_key IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS agent_fires (
+  id           BIGSERIAL PRIMARY KEY,
+  agent        TEXT NOT NULL,
+  status       TEXT NOT NULL,                  -- sending | started | uncertain | waiting | failed
+  reasons      JSONB NOT NULL DEFAULT '[]',
+  session_id   TEXT NOT NULL DEFAULT '',
+  session_url  TEXT NOT NULL DEFAULT '',
+  http_status  INT,
+  attempts     INT NOT NULL DEFAULT 0,
+  error        TEXT NOT NULL DEFAULT '',
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  finished_at  TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS agent_fires_recent ON agent_fires (agent, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS agent_fire_state (
+  agent           TEXT PRIMARY KEY,
+  last_fire_at    TIMESTAMPTZ,                 -- last start that may have made a session
+  blocked_until   TIMESTAMPTZ,                 -- 429 Retry-After, or a pause after 5xx
+  in_flight_until TIMESTAMPTZ                  -- a start is being sent right now (lease)
+);
