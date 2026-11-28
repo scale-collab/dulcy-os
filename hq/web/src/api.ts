@@ -436,7 +436,7 @@ export type ContentStepWhere = 'hq' | 'sienna' | 'byHand' | 'notAutomated';
 /** Round 5: the Content Center's buttons, as HQ buttons (engine contentActions.ts RUN_KEYS). */
 export type ContentRunKey = 'setupFrame' | 'syncFrame' | 'routeOpus' | 'routeDavinci' | 'editFull' | 'script' | 'thumbnail' | 'thumbnailRevise' | 'thumbnailApprove'
   | 'youtubeDetails' | 'youtubeUrl' | 'shortClips' | 'refreshClips' | 'posts' | 'postsBrief' | 'postsRetry';
-export interface ContentStepButton { kind: 'decide' | 'askSienna' | 'openScript' | 'copyGamma' | 'link' | 'run' | 'distribution'; label: string; url?: string; task?: string; run?: ContentRunKey; input?: 'url' | 'changes' | 'brief' }
+export interface ContentStepButton { kind: 'decide' | 'askSienna' | 'openScript' | 'copyGamma' | 'resource' | 'link' | 'run' | 'distribution'; label: string; url?: string; task?: string; run?: ContentRunKey; input?: 'url' | 'changes' | 'brief' }
 export interface ContentStep { key: string; title: string; state: 'done' | 'now' | 'later'; where: ContentStepWhere; text: string; optional?: boolean; buttons: ContentStepButton[] }
 export interface ContentPrep { script: string; titles: string[]; hooks: string[]; thumbnail: string; gamma: string; gammaUrl: string; youtube: string; checks: string[] }
 export interface ContentItem extends ContentPipelineRow {
@@ -458,6 +458,17 @@ export interface ContentItemDetail {
   thumbnail: { url: string; status: string };
   brief: { channels: string[]; count: number; minScore: number; options: string[]; clips: number };
   distribution: { status: string; platforms: ContentPlatform[]; posted: number; totals: { posts: number; views: number; likes: number; comments: number } };
+  /** 2026-11-28: the final review (clips + full video) and the Gamma box. */
+  review?: { path: 'owner' | 'signed' | 'blocked' | 'unknown'; clips: ContentReviewClip[]; video: { finalUrl: string } };
+  gamma?: { url: string; outline: boolean };
+}
+export interface ContentReviewClip { id: string; name: string; status: string; score: number | null; qa: string; watchUrl: string; finalClipId: string; verified: { version: number; clipId: string } | null; canDecide: boolean }
+/** GET /content/items/<rec>/resource: Sienna's Gamma outline as a document (nothing saved). */
+export interface ContentResourceDoc {
+  id: string; title: string; topic: string; channel: string;
+  cover: { headline: string; subtitle: string; pill: string; footnote: string };
+  sections: { n: number; headline: string; points: { title: string; body: string }[]; layout: 'statement' | 'callout' | 'cards' | 'grid' | 'list' }[];
+  cta: { label: string; text: string; url: string; video: string; videoUrl: string }; footer: string; text: string;
 }
 export type ContentCenterView = Omit<ContentView, 'pipeline'> & { pipeline: { stages: ContentView['pipeline']['stages']; ccStages: ContentCcStage[]; rows: ContentItem[]; leftOut: number } };
 

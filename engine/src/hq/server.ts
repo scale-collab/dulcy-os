@@ -48,6 +48,7 @@ import { bouncesView, verificationView } from './bounceStats.js';
 import { portalRoute, resolvePortalClient } from './portal.js';
 import { contentSummary, contentView, decideIdea } from './content.js';
 import { contentItemDetail, decideDraft, isRunKey, recordPost, runContentAction, scheduleDraft } from './contentActions.js';
+import { contentResource, contentReviewDetail, reviewClip, reviewVideo, saveGammaLink } from './contentReview.js';
 import { allDeals, dealDetail, nyDay, salesView } from './sales.js';
 // Batch 4a: Sales insights (periods, capacity, Close hottest deals) and the contract draft.
 import { DULCY_WS, insightsView, saveCapacitySettings, salesDeps, type SalesDeps } from './salesInsights.js';
@@ -616,8 +617,39 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
           return true;
         }
         const runDeps = () => ({ at: needAt(), db, cfg, fetchImpl: deps.fetchImpl, by: user.name });
-        const im = p.match(/^\/hq\/api\/content\/items\/(rec[A-Za-z0-9]{14})(?:\/(run|posted))?$/);
-        if (im && !im[2] && req.method === 'GET') { const r = await contentItemDetail(needAt(), db, im[1]); json(res, r.status, r.error ? { error: r.error } : r.item); return true; }
+        const im = p.match(/^\/hq\/api\/content\/items\/(rec[A-Za-z0-9]{14})(?:\/(run|posted|video-review|gamma|resource))?$/);
+        if (im && !im[2] && req.method === 'GET') {
+          const r = await contentItemDetail(needAt(), db, im[1]);
+          if (r.error) { json(res, r.status, { error: r.error }); return true; }
+          // Final review (clips + full video) and the Gamma box (2026-11-28).
+          json(res, r.status, { ...r.item, ...(await contentReviewDetail(needAt(), im[1], cfg.contentReviewSecret)) });
+          return true;
+        }
+        // Sienna's list for a "Request changes" note (the Fix it path: a task only, nothing sent).
+        const askSienna = async (x?: { title: string; detail: string }, id = '') => { if (x) await fixIt(db, user, { agent: 'Sienna', title: x.title, detail: x.detail, link: id ? `content/items/${id}` : '' }); };
+        if (im && im[2] === 'resource' && req.method === 'GET') { const r = await contentResource(needAt(), im[1]); json(res, r.status, r.error ? { error: r.error } : r.doc); return true; }
+        if (im && im[2] === 'gamma' && req.method === 'POST') {
+          const r = await saveGammaLink(runDeps(), im[1], (await readJson(req, 2_000)).url);
+          json(res, r.status, r.error ? { error: r.error } : { ok: true, message: r.message });
+          return true;
+        }
+        if (im && im[2] === 'video-review' && req.method === 'POST') {
+          const b = await readJson(req, 5_000);
+          if (!['approve', 'changes'].includes(b.verdict)) { json(res, 400, { error: 'verdict must be approve or changes' }); return true; }
+          const r = await reviewVideo(runDeps(), im[1], b.verdict, b.note);
+          if (!r.error) await askSienna(r.askSienna, im[1]);
+          json(res, r.status, r.error ? { error: r.error } : { ok: true, message: r.message });
+          return true;
+        }
+        const km = p.match(/^\/hq\/api\/content\/clips\/(rec[A-Za-z0-9]{14})\/review$/);
+        if (km && req.method === 'POST') {
+          const b = await readJson(req, 5_000);
+          if (!['refresh', 'approve', 'changes'].includes(b.action)) { json(res, 400, { error: 'action must be refresh, approve or changes' }); return true; }
+          const r = await reviewClip(runDeps(), km[1], b.action, { finalClipId: b.finalClipId, note: b.note });
+          if (!r.error) await askSienna(r.askSienna, typeof b.videoId === 'string' && /^rec[A-Za-z0-9]{14}$/.test(b.videoId) ? b.videoId : '');
+          json(res, r.status, r.error ? { error: r.error } : { ok: true, message: r.message });
+          return true;
+        }
         if (im && im[2] === 'run' && req.method === 'POST') {
           const b = await readJson(req, 5_000);
           if (!isRunKey(b.action)) { json(res, 400, { error: 'unknown action' }); return true; }

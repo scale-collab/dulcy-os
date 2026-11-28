@@ -108,6 +108,12 @@ export interface Config {
    */
   contentHooks: Record<string, string>;
   contentWebhookBase: string;
+  /**
+   * Final-clip approval from HQ (2026-11-28): CONTENT_REVIEW_SECRET (32+ characters; the same value as the
+   * n8n variable of that name). Only used when the engine's Airtable token is not Alex's own login: HQ then
+   * signs the Review Intent it wrote (HMAC-SHA256) so the n8n clip-review check can accept it. '' = off.
+   */
+  contentReviewSecret: string;
   siennaIdeasHour: number;
   siennaPrepHour: number;
   siennaChannel: string;
@@ -302,9 +308,10 @@ export function loadConfig(env = process.env): Config {
     rileyEveryMin: num('RILEY_EVERY_MIN', 15, env),
     n8nApiKey: env.N8N_API_KEY || '',
     n8nBaseUrl: env.N8N_BASE_URL || 'http://localhost:5678',
-    contentHooks: Object.fromEntries(['SCRIPT', 'THUMBNAIL', 'THUMBNAIL_REVISE', 'YOUTUBE', 'DISTRIBUTION', 'SCHEDULE', 'NEWSLETTER', 'FRAMER']
+    contentHooks: Object.fromEntries(['SCRIPT', 'THUMBNAIL', 'THUMBNAIL_REVISE', 'YOUTUBE', 'DISTRIBUTION', 'SCHEDULE', 'NEWSLETTER', 'FRAMER', 'CLIP_REVIEW']
       .map((k) => [k, (env[`CONTENT_HOOK_${k}`] || '').trim()]).filter(([, v]) => /^https:\/\/[^\s]+$/.test(v))),
     contentWebhookBase: (env.CONTENT_WEBHOOK_BASE || 'https://n8n.dulcy.io').trim().replace(/\/+$/, ''),
+    contentReviewSecret: (env.CONTENT_REVIEW_SECRET || '').trim().length >= 32 ? (env.CONTENT_REVIEW_SECRET || '').trim() : '',
     siennaIdeasHour: num('SIENNA_IDEAS_HOUR', 7, env),
     siennaPrepHour: num('SIENNA_PREP_HOUR', 10, env),
     discordBotToken: env.DISCORD_BOT_TOKEN || undefined,

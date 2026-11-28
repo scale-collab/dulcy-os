@@ -30,6 +30,9 @@
 //   - Round 5 (2026-11-28): every Content Center button is an HQ button (contentActions.ts does each one
 //     the Content Center's way), and Distribution (per platform: review, approve, record where / when /
 //     stats) lives on the video's page. Only the final-clip approval still opens the Content Center.
+//   - 2026-11-28: the final-clip approval moved into HQ too (contentReview.ts: the same Review Intent and
+//     webhook; the n8n owner check is met when the engine's token writes as Alex, else by the signed-intent
+//     n8n change waiting for Alex's OK), plus the Gamma link box and the resource document.
 import type { Db } from '../db/pool.js';
 import type { AirtableRecord } from '../providers/airtable.js';
 import type { HqAirtable } from './decisions.js';
@@ -441,7 +444,7 @@ export type StepState = 'done' | 'now' | 'later';
 /** hq = a button in HQ (round 5: also the ones that run an n8n flow) · sienna = Sienna does it automatically · byHand · notAutomated. */
 export type StepWhere = 'hq' | 'sienna' | 'byHand' | 'notAutomated';
 /** run = an HQ button that does what the Content Center's button does (contentActions.ts); input = what it asks for first. */
-export interface StepButton { kind: 'decide' | 'askSienna' | 'openScript' | 'copyGamma' | 'link' | 'run' | 'distribution'; label: string; url?: string; task?: string; run?: RunKey; input?: 'url' | 'changes' | 'brief' }
+export interface StepButton { kind: 'decide' | 'askSienna' | 'openScript' | 'copyGamma' | 'resource' | 'link' | 'run' | 'distribution'; label: string; url?: string; task?: string; run?: RunKey; input?: 'url' | 'changes' | 'brief' }
 export interface VideoStep { key: string; title: string; state: StepState; where: StepWhere; text: string; optional?: boolean; buttons: StepButton[] }
 export interface StepContext { gamma: string; gammaUrl: string; hasPrep: boolean; stuck: boolean; now: number; posted: string }
 /** The next sienna.prep run: the scheduler queues it every half hour, on the hour and at :30. Pure. */
@@ -486,17 +489,20 @@ export function videoSteps(v: Video, clips: Clip[], x: StepContext): VideoStep[]
       : [{ kind: 'askSienna', label: 'Ask Sienna now', task: `Write the recording script for "${title}"` }, { kind: 'run', run: 'script', label: 'Generate script now' }],
     v.hasScript ? (x.hasPrep ? 'Script ready.' : 'Script written (in the Content Center).') : 'Recorded without a script.', v.hasScript && x.hasPrep ? [{ kind: 'openScript', label: 'Open script' }] : []);
 
-  // 3. Gamma (Alex Woung only: the slides on screen). The outline is automatic; the Gamma doc is not.
+  // 3. Gamma (Alex Woung only: the slides on screen). The outline is automatic. 2026-11-28: Gamma's API needs a
+  // paid plan, so "Make the resource" turns the outline into a branded document in HQ (print to PDF); a Gamma
+  // doc made by hand is still linked with the Gamma link box on the video's page (saved in its Notes).
   if (main) {
     const gammaUrl = httpsOnly(x.gammaUrl);
     const outline = !!x.gamma;
-    add('gamma', 'Gamma (on-screen slides)', !!gammaUrl || recorded, 'notAutomated',
-      outline ? 'Not automated yet. Sienna wrote the slide outline with the script; the Gamma doc is made by hand: Copy outline, Open Gamma, Create → Paste in text, then paste the Gamma link into this video\'s Notes in the Content Center so "Open Gamma" shows here.'
-        : v.hasScript ? 'Not automated yet, and there is no outline: this script came from the Content Center button, which writes none. Ask Sienna for an outline, or build it in Gamma by hand.'
-          : 'Sienna writes the slide outline together with the script. The Gamma doc itself is made by hand (not automated yet).',
-      outline ? [{ kind: 'copyGamma', label: 'Copy outline' }, { kind: 'link', label: 'Open Gamma', url: 'https://gamma.app/' }]
+    add('gamma', 'Slides and resource (Gamma outline)', !!gammaUrl || recorded, outline ? 'hq' : 'notAutomated',
+      outline ? 'Sienna wrote the slide outline with the script. Press "Make the resource": HQ turns it into a branded document you can download as a PDF. Made a Gamma doc by hand instead? Paste its link in the Gamma box below.'
+        : v.hasScript ? 'There is no outline: this script came from the Content Center button, which writes none. Ask Sienna for an outline.'
+          : 'Sienna writes the slide outline together with the script. Then "Make the resource" turns it into a document here.',
+      outline ? [{ kind: 'resource', label: 'Make the resource' }, { kind: 'copyGamma', label: 'Copy outline' }]
         : v.hasScript ? [{ kind: 'askSienna', label: 'Ask Sienna for an outline', task: `Write the Gamma outline for "${title}"` }] : [],
-      gammaUrl ? 'Gamma doc linked.' : 'Recorded (no Gamma link saved).', gammaUrl ? [{ kind: 'link', label: 'Open Gamma', url: gammaUrl }] : [], true);
+      gammaUrl ? 'Gamma doc linked.' : 'Recorded (no Gamma link saved).',
+      [...(gammaUrl ? [{ kind: 'link' as const, label: 'Open Gamma', url: gammaUrl }] : []), ...(outline ? [{ kind: 'resource' as const, label: 'Open the resource' }] : [])], true);
   }
 
   // 4–12 (round 5, 2026-11-28): every Content Center button is an HQ button (contentActions.ts runs it the

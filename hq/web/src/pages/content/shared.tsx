@@ -118,9 +118,9 @@ export function Head({ title, sub, icon, right }: { title: string; sub?: string;
 }
 
 /**
- * The Gamma slides for an Alex Woung video. Sienna writes the outline with the script; making the Gamma
- * doc is not automated yet (by hand: copy the outline, paste it into Gamma, save the link in the video's
- * Notes in the Content Center, then "Open Gamma" shows here).
+ * The Gamma slides for an Alex Woung video. Sienna writes the outline with the script. 2026-11-28: the
+ * video's page turns it into the resource document, and its Gamma box saves a hand-made Gamma link (in
+ * the video's Notes, where "Open Gamma" reads it).
  */
 export function GammaBlock({ gamma, gammaUrl, scriptReady }: { gamma: string; gammaUrl: string; scriptReady: boolean }) {
   const [copied, setCopied] = useState('');
@@ -135,7 +135,7 @@ export function GammaBlock({ gamma, gammaUrl, scriptReady }: { gamma: string; ga
       {copied && <p role="status" className="mt-2 text-sm text-good">{copied}</p>}
       {!gammaUrl && (
         <p className="mt-2 text-sm text-fg-2">
-          {gamma ? 'Not automated yet: Sienna wrote this outline; make the Gamma doc by hand (Copy outline → Open Gamma → Create → Paste in text), then paste the Gamma link into this video\'s Notes in the Content Center so "Open Gamma" shows here.'
+          {gamma ? 'Sienna wrote this outline. On the video\'s page, "Make the resource" turns it into a branded document (download as PDF). Made a Gamma doc by hand? Paste its link in the Gamma box there.'
             : scriptReady ? 'No outline: this script came from the Content Center button, which writes none. Ask Sienna for one on the video\'s page, or build it in Gamma by hand.'
               : 'Sienna writes the outline with the script.'}
         </p>

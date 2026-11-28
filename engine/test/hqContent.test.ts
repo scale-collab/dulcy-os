@@ -292,7 +292,9 @@ test('content (round 4): each video\'s steps, the one Next step, and where each 
   const ready = steps({ [CF.script]: 'x' }, { hasPrep: true, gamma: '1. Slide' });
   assert.deepEqual(ready.find((s) => s.key === 'script')!.buttons.map((b) => b.kind), ['openScript']);
   const g = ready.find((s) => s.key === 'gamma')!;
-  assert.deepEqual([g.state, g.where, g.optional, g.buttons.map((b) => b.kind)], ['now', 'notAutomated', true, ['copyGamma', 'link']]);
+  // 2026-11-28 (no paid Gamma API): the outline becomes the HQ resource ("Make the resource"), Copy outline stays.
+  assert.deepEqual([g.state, g.where, g.optional, g.buttons.map((b) => b.kind)], ['now', 'hq', true, ['resource', 'copyGamma']]);
+  assert.equal(steps({ [CF.script]: 'x' }, { hasPrep: false, gamma: '' }).find((s) => s.key === 'gamma')!.where, 'notAutomated', 'no outline: nothing to make yet');
   assert.deepEqual(nowKeys(ready), ['gamma', 'folder']);
   // Round 5: the Content Center's "Set up Frame.io" is an HQ button now.
   assert.deepEqual([ready.find((s) => s.key === 'folder')!.where, ready.find((s) => s.key === 'folder')!.buttons.map((b) => [b.kind, b.run])], ['hq', [['run', 'setupFrame']]]);
