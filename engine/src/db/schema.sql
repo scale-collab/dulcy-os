@@ -722,6 +722,7 @@ CREATE TABLE IF NOT EXISTS agent_fire_state (
   last_fire_at    TIMESTAMPTZ,                 -- last start that may have made a session
   blocked_until   TIMESTAMPTZ,                 -- 429 Retry-After, or a pause after 5xx
   in_flight_until TIMESTAMPTZ                  -- a start is being sent right now (lease)
+);
 
 -- Instant webhooks (Alex 2026-11-28: agents start on events, never on a timer).
 -- One row per accepted POST /hooks/<source>: what came in and which jobs it started. A provider's own event id
