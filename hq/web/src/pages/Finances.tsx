@@ -260,20 +260,20 @@ function Expenses({ d }: { d: FinancesData }) {
         <>
           <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
             <Tile label="Every month" v={usd(e.total)} sub={e.totalFrom === 'sheet' ? "the sheet's total" : `${e.lines.length} lines added up`} />
-            {e.asideTotal > 0 && <Tile label="Beside the list" v={usd(e.asideTotal)} sub="not in the sheet's total" />}
+            {e.asideTotal > 0 && <Tile label="Coming up" v={usd(e.asideTotal)} sub="not paying yet, not in left over" />}
           </div>
           <Card className="p-0">
             <ul className="divide-y divide-line">
               {e.lines.map((l, i) => (
                 <li key={`${l.name}-${i}`} className="flex justify-between gap-3 px-4 py-2.5 text-sm sm:px-5">
-                  <span className="min-w-0"><span className="block truncate text-fg-2">{l.name}</span>{(l.note || l.aside !== null) && <span className="block truncate text-xs text-muted">{l.aside !== null ? 'beside the list, not in the total' : l.note}</span>}</span>
+                  <span className="min-w-0"><span className="block truncate text-fg-2">{l.name}</span>{(l.note || l.aside !== null) && <span className="block truncate text-xs text-muted">{l.aside !== null ? 'coming up: not paying yet' : l.note}</span>}</span>
                   <span className={cx('tabular shrink-0', l.amount === null ? 'text-muted' : 'font-semibold text-fg')}>{usd(l.amount ?? l.aside)}</span>
                 </li>
               ))}
             </ul>
           </Card>
           {e.paidWith.length > 0 && <Line>Paid with: {e.paidWith.map((x) => `${x.name} ${usd(x.amount)}`).join(' · ')}</Line>}
-          <Line>{d.sources.expenses}. A figure beside the list (not in the amount column) is shown, but the sheet's own total leaves it out, and so does Both.</Line>
+          <Line>{d.sources.expenses}. Coming up = costs you will pay but not yet (beside the list in the sheet): shown here, left out of the total and of Both until you start paying them.</Line>
         </>
       )}
     </section>
