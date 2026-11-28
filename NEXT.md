@@ -13,6 +13,7 @@ Last updated: 2026-11-27 (evening)
   - Proposal: A/B owner vs generic email (500+ each side) on one list.
   - Which menu items to drop (only reordered so far). Inbox limit edits are dry run until `inbox.limits` is in LIVE_STAGES.
   - Optional Airtable fixes: Monthly Fee (GMG, MJJ, Cartel, Twenty West), Client Type (MJJ, Cartel), Client End Dates.
+- **HQ desktop round 2/3 merged (2026-11-27 night, PRs #214-#217, 572 tests):** Today (Do now, grouped campaigns, scorecard), Decisions arrows, View as in Users, Campaigns/Lead lists rebuilt like the Airtable centers with their buttons + sending-accounts box, Deliverability (bulk limits, SMTP codes, placement bands, costs, Buy), Sales (Cole updates Close, period charts, Close pipeline + funnel, pricing, capacity fix), Team agent conversations. Account-health date-field bug fixed (Riley checking inboxes possibly stuck at 0/day). **Next: Alex deploys + switch-on lines; then mobile pass; then Inbox.** Open question: Launch/Pause without confirm (RULES 11-23)?
 - **Phone notifications live (2026-11-27):** Web Push from HQ (decisions, agent messages, urgent, good news; always on; Josh own items; Slack kept). Test push reached Alex's iPhone. Riley n8n fixes live (`riley.n8n_apply`); Approve = agent does it.
 - **Echo reply cards:** 118 stale ones cleared 2026-11-27 (Josh handles replies by hand meanwhile).
 
