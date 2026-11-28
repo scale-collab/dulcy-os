@@ -6,6 +6,8 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { api, ApiError, type FinanceCard, type FinanceMonth, type FinancesData, type User } from '../api';
 import { Card, cx, Empty, ErrorBox, go, IconButton, PageSkeleton, PageTitle, SectionHeader, timeAgo, usd } from '../ui';
 import { slashDate } from '../dates';
+import PersonalPlaid from './FinancesPersonal';
+import type { PersonalData } from '../api';
 
 type View = 'company' | 'personal';
 const VIEWS: { key: View; label: string }[] = [{ key: 'company', label: 'Company' }, { key: 'personal', label: 'Personal' }];
@@ -16,6 +18,8 @@ export default function Finances({ user, a }: { user: User; a?: string }) {
   const [d, setD] = useState<FinancesData | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  // Bumped by the page Refresh: the Personal tab rereads Plaid too.
+  const [tick, setTick] = useState(0);
   const load = useCallback((refresh = false) => {
     setBusy(true); setError('');
     api<FinancesData>(`/finances${refresh ? '?refresh=1' : ''}`).then(setD)
@@ -25,7 +29,7 @@ export default function Finances({ user, a }: { user: User; a?: string }) {
   if (user.role !== 'owner') return <><PageTitle title="Finances" /><Card><Empty icon="lock" title="Not available" /></Card></>;
   const title = (
     <PageTitle title="Finances" kicker={view === 'company' ? 'Dulcy Media LLC' : 'Personal'} sub={view === 'company' ? 'Income and costs from Xero. Read only.' : 'Your own cards, kept apart from the company.'}
-      right={<IconButton icon="refresh" label="Refresh" onClick={() => load(true)} className={cx('border border-line bg-surface', busy && '[&_svg]:animate-spin')} />} />
+      right={<IconButton icon="refresh" label="Refresh" onClick={() => { load(true); if (view === 'personal') setTick((t) => t + 1); }} className={cx('border border-line bg-surface', busy && '[&_svg]:animate-spin')} />} />
   );
   const tabs = (
     <div role="tablist" aria-label="Finances views" className="mb-5 grid grid-cols-2 gap-1 sm:flex">
@@ -42,7 +46,7 @@ export default function Finances({ user, a }: { user: User; a?: string }) {
       {title}
       {tabs}
       {error && <div className="mb-4"><ErrorBox error={error} retry={() => load()} /></div>}
-      {view === 'company' ? <Company d={d} /> : <Personal d={d} />}
+      {view === 'company' ? <Company d={d} /> : <Personal d={d} tick={tick} />}
       {d.errors.map((e) => <Line key={e} warn>{e}</Line>)}
       <p className="mt-6 text-xs text-muted">Read {timeAgo(d.readAt) || 'just now'}; kept for 5 minutes.</p>
     </div>
@@ -104,23 +108,38 @@ function Company({ d }: { d: FinancesData }) {
   );
 }
 
-function Personal({ d }: { d: FinancesData }) {
+function Personal({ d, tick }: { d: FinancesData; tick: number }) {
   const p = d.personal;
+  const [plaid, setPlaid] = useState<PersonalData | null>(null);
+  // Linked accounts (Plaid) replace the sheet's Robinhood / Discover rows they stand for.
+  const replaced = plaid?.replaces ?? [];
+  const cards = p.cards ? p.cards.filter((c) => !replaced.some((k) => c.card.toLowerCase().includes(k))) : null;
+  const totals = cards ? sumCards(cards) : null;
+  const allReplaced = Boolean(p.cards?.length) && cards !== null && cards.length === 0;
   return (
-    <section>
-      <SectionHeader title="Personal cards" icon="layers" right={<span className="text-xs text-muted">P/L sheet</span>} />
-      {p.cardTotals && p.cards && p.cards.length > 0 && (
-        <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <Tile label="Balance" v={usd(p.cardTotals.balance)} sub={`${p.cards.length} card${p.cards.length === 1 ? '' : 's'}`} />
-          <Tile label="Statements" v={usd(p.cardTotals.statement)} />
-          <Tile label="Minimums due" v={usd(p.cardTotals.minimum)} />
-        </div>
+    <div className="space-y-8">
+      <PersonalPlaid tick={tick} onData={setPlaid} />
+      {!allReplaced && (
+        <section>
+          <SectionHeader title="Personal cards" icon="layers" right={<span className="text-xs text-muted">P/L sheet</span>} />
+          {totals && cards && cards.length > 0 && (
+            <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <Tile label="Balance" v={usd(totals.balance)} sub={`${cards.length} card${cards.length === 1 ? '' : 's'}`} />
+              <Tile label="Statements" v={usd(totals.statement)} />
+              <Tile label="Minimums due" v={usd(totals.minimum)} />
+            </div>
+          )}
+          <Cards cards={cards} totals={null} empty="No Robinhood or Discover card on the P/L sheet." />
+          <Line>{d.sources.personalRule}{replaced.length ? ` Linked accounts replace the sheet's ${replaced.map((k) => k[0].toUpperCase() + k.slice(1)).join(' and ')} rows.` : ''}</Line>
+        </section>
       )}
-      <Cards cards={p.cards} totals={null} empty="No Robinhood or Discover card on the P/L sheet." />
-      <Line>{d.sources.personalRule}</Line>
-    </section>
+    </div>
   );
 }
+const sumCards = (cards: FinanceCard[]) => {
+  const s = (k: 'statement' | 'balance' | 'minimum') => Math.round(cards.reduce((a, c) => a + c[k], 0) * 100) / 100;
+  return { statement: s('statement'), balance: s('balance'), minimum: s('minimum') };
+};
 
 function Cards({ cards, totals, empty }: { cards: FinanceCard[] | null; totals: FinancesData['company']['cardTotals']; empty: string }) {
   if (cards === null) return <Card className="text-sm text-muted">P/L sheet not read: cards UNKNOWN.</Card>;
