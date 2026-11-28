@@ -6,6 +6,7 @@ import { STAGES } from './stages/index.js';
 import { NeedsReviewError, PermanentError, WaitError } from './errors.js';
 import { alert, logEvent } from './log.js';
 import { logJobOutcome } from './activity.js';
+import { afterJob } from './instant/afterJob.js';
 
 /** Run one job if there is one. Returns true when a job was processed. */
 export async function runOnce(db: Db, cfg: Config): Promise<boolean> {
@@ -26,6 +27,7 @@ async function runJob(db: Db, cfg: Config, job: Job): Promise<void> {
   if (job.deadline_at && new Date(job.deadline_at).getTime() < Date.now()) {
     await fail(db, job, 'job passed its time limit', { retryable: false });
     await notify(cfg, job, 'failed', 'job passed its time limit');
+    await afterJob(db, cfg, job, 'failed');
     return;
   }
   // Keep the lease alive while the stage runs.
@@ -36,10 +38,13 @@ async function runJob(db: Db, cfg: Config, job: Job): Promise<void> {
     await finish(db, job.id, result);
     await ctx.log('job succeeded', { result: brief(result) });
     await logJobOutcome(cfg, job, true, String((result as any)?.message ?? 'Done'));
+    // Instant (2026-11-28): what this job made ready starts now, not on the next timer.
+    await afterJob(db, cfg, job, 'succeeded');
   } catch (e) {
     if (e instanceof WaitError) {
       await snooze(db, job.id, e.waitMs, e.message);
       await ctx.log('job waiting', { progress: e.message, nextCheckMs: e.waitMs });
+      await afterJob(db, cfg, job, 'waiting');
       return;
     }
     const msg = String((e as Error).message ?? e);
@@ -49,6 +54,8 @@ async function runJob(db: Db, cfg: Config, job: Job): Promise<void> {
     });
     await logEvent(db, 'error', `job ${outcome}`, { error: msg }, job.id);
     if (outcome !== 'retrying') { await notify(cfg, job, outcome, msg); await logJobOutcome(cfg, job, false, msg); }
+    // A failed job goes to Riley at once (riley.collect), and a rerun waiting on it starts.
+    await afterJob(db, cfg, job, outcome);
   } finally {
     clearInterval(renew);
   }

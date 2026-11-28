@@ -5,6 +5,7 @@ import type { Config } from './config.js';
 import { enqueue, getJob } from './queue.js';
 import { STAGES } from './stages/index.js';
 import { createHqHandler, type HqDeps } from './hq/server.js';
+import { handleHook } from './instant/hooks.js';
 
 /**
  * Requests are signed: header `x-dulcy-timestamp` (ms since epoch) and
@@ -50,6 +51,10 @@ export function createServer(db: Db, cfg: Config, hqDeps: HqDeps = {}) {
         await db.query('SELECT 1');
         return send(res, 200, { ok: true, dryRun: cfg.dryRun });
       }
+      // Instant webhooks (2026-11-28): POST /hooks/<source> on the engine host (never on HQ_HOST / PORTAL_HOST).
+      // Each source has its own secret or provider signature (src/instant/hooks.ts); no ENGINE_SECRET signature here.
+      const host = String(req.headers.host ?? '').split(':')[0].toLowerCase();
+      if (url.pathname.startsWith('/hooks/') && host !== cfg.hqHost && host !== cfg.portalHost && await handleHook(db, cfg, req, res, url)) return;
       // Dulcy HQ: /hq/* on any host, everything on HQ_HOST (the engine's signed API is not reachable there).
       if (await hq(req, res, url)) return;
 

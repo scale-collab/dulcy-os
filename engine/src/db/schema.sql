@@ -723,3 +723,29 @@ CREATE TABLE IF NOT EXISTS agent_fire_state (
   blocked_until   TIMESTAMPTZ,                 -- 429 Retry-After, or a pause after 5xx
   in_flight_until TIMESTAMPTZ                  -- a start is being sent right now (lease)
 );
+
+-- Instant webhooks (Alex 2026-11-28: agents start on events, never on a timer).
+-- One row per accepted POST /hooks/<source>: what came in and which jobs it started. A provider's own event id
+-- (Slack event_id, Fathom webhook-id, Close event id) is kept once, so a retried delivery starts nothing twice.
+-- info holds a short summary only (a Make/n8n error: scenario + message), never lead rows or email bodies.
+CREATE TABLE IF NOT EXISTS hook_events (
+  id          BIGSERIAL PRIMARY KEY,
+  source      TEXT NOT NULL,
+  event       TEXT NOT NULL,
+  event_id    TEXT,
+  jobs        TEXT[] NOT NULL DEFAULT '{}',
+  info        JSONB NOT NULL DEFAULT '{}',
+  received_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS hook_events_once ON hook_events (source, event_id) WHERE event_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS hook_events_recent ON hook_events (source, received_at DESC);
+-- An event that arrives while its job is already running: run it once more right after (the running job may
+-- have read its data before the event). One row per job and record, however many events came in.
+CREATE TABLE IF NOT EXISTS job_reruns (
+  kind        TEXT NOT NULL,
+  record_id   TEXT NOT NULL,
+  input       JSONB NOT NULL DEFAULT '{}',
+  reason      TEXT NOT NULL DEFAULT '',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (kind, record_id)
+);

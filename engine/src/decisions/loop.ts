@@ -51,9 +51,16 @@ export function reactionDue(id: string, postedAt: number, now = Date.now(), seen
   const every = age < 2 * 3_600_000 ? 0 : age < 24 * 3_600_000 ? 2 * 60_000 : 10 * 60_000;
   return now - seen >= every;
 }
-export function _resetReactionPolling() { lastRead.clear(); slackBackoffUntil = 0; }
+export function _resetReactionPolling() { lastRead.clear(); slackBackoffUntil = 0; priority.clear(); }
+/** Slack messages an approver just reacted on (Slack Events, 2026-11-28): read first on the next tick, whatever their age. */
+const priority = new Set<string>();
+export function wantReactions(ts: string): void { if (ts) priority.add(ts); }
 
-export async function decisionsTick(db: Db, cfg: Config, at: Pick<AirtableClient, 'list' | 'update'>, slack: Pick<SlackClient, 'post' | 'reactions' | 'react'>): Promise<{ posted: number; decided: number; started: number; finished: number }> {
+/**
+ * opts.reactions: 'all' (default; the old poll and the backup sweep) reads reactions on Waiting rows by age;
+ * 'priority' (an instant kick once Slack Events are on) reads only the messages Slack said were reacted on.
+ */
+export async function decisionsTick(db: Db, cfg: Config, at: Pick<AirtableClient, 'list' | 'update'>, slack: Pick<SlackClient, 'post' | 'reactions' | 'react'>, opts: { reactions?: 'all' | 'priority' } = {}): Promise<{ posted: number; decided: number; started: number; finished: number }> {
   let posted = 0, decided = 0, started = 0, finished = 0;
   const now = () => new Date().toISOString();
 
@@ -77,8 +84,10 @@ export async function decisionsTick(db: Db, cfg: Config, at: Pick<AirtableClient
   // Slack allows ~50 reactions.get a minute: read at most REACTION_BUDGET rows a tick, recent ones most
   // often, and stop (not fail) on a rate limit so approved actions below still start (Alex, 2026-11-25).
   const waiting = await at.list(DECISIONS, `{Status}='Waiting'`, ALL, 100);
-  const due = waiting.filter((r) => reactionDue(r.id, tsAge(text(r.fields[DF.slackTs]))))
-    .sort((a, b) => (lastRead.get(a.id) ?? 0) - (lastRead.get(b.id) ?? 0)).slice(0, REACTION_BUDGET);
+  const pri = new Set(priority); priority.clear();
+  const isPri = (r: AirtableRecord) => pri.has(text(r.fields[DF.slackTs]));
+  const due = waiting.filter((r) => isPri(r) || (opts.reactions !== 'priority' && reactionDue(r.id, tsAge(text(r.fields[DF.slackTs])))))
+    .sort((a, b) => Number(isPri(b)) - Number(isPri(a)) || (lastRead.get(a.id) ?? 0) - (lastRead.get(b.id) ?? 0)).slice(0, REACTION_BUDGET);
   for (const r of due) {
     const ch = text(r.fields[DF.slackChannel]), ts = text(r.fields[DF.slackTs]);
     if (!ch || !ts) continue;

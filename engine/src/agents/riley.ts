@@ -38,7 +38,24 @@ export function signature(source: string, where: string, error: string): string 
   return `${source}:${where}:${e}`.slice(0, 250);
 }
 
-export interface Found { source: 'Engine' | 'n8n'; where: string; title: string; error: string; details: Record<string, unknown>; key: string; at: string }
+export interface Found { source: 'Engine' | 'n8n' | 'Make'; where: string; title: string; error: string; details: Record<string, unknown>; key: string; at: string }
+
+/**
+ * Errors that n8n / Make reported to the engine by webhook (POST /hooks/n8n|make, event "error", 2026-11-28).
+ * Make's always count (the engine cannot read Make runs); n8n's only when the n8n API is not connected
+ * (with N8N_API_KEY the executions are read from n8n itself, with their input).
+ */
+export async function hookProblems(db: Db, since: Date, withN8n: boolean): Promise<Found[]> {
+  const rows = (await db.query(`SELECT id, source, info, received_at FROM hook_events WHERE event='error' AND source = ANY($1) AND received_at > $2 ORDER BY id`,
+    [withN8n ? ['make', 'n8n'] : ['make'], since])).rows;
+  return rows.map((r) => {
+    const i = (r.info ?? {}) as Record<string, string>;
+    const src = r.source === 'make' ? 'Make' as const : 'n8n' as const;
+    const where = String(i.where || `${src} (name not sent)`);
+    return { source: src, where, title: `${src}: ${where}: error`, error: String(i.error || 'error (no message sent)'),
+      details: { hookEvent: Number(r.id), url: i.url ?? '', execution: i.execution ?? '' }, key: `hook:${r.id}`, at: new Date(r.received_at).toISOString() };
+  });
+}
 
 /** Engine jobs that went wrong since `since`: failed, needs review, or running past their lease by 15+ minutes. */
 export async function engineProblems(db: Db, since: Date): Promise<Found[]> {
@@ -155,6 +172,7 @@ export const rileyCollectStage: Stage = async (ctx) => {
   const last = (await ctx.db.query(`SELECT max(created_at) AS t FROM jobs WHERE kind='riley.collect' AND status='succeeded'`)).rows[0]?.t;
   const since = last ? new Date(last) : new Date(Date.now() - 24 * 3_600_000);
   const found = await engineProblems(ctx.db, since);
+  found.push(...await hookProblems(ctx.db, since, !cfg.n8nApiKey));
   let n8nNote = '';
   if (cfg.n8nApiKey) { try { found.push(...await n8nProblems(cfg.n8nBaseUrl, cfg.n8nApiKey, since)); } catch (e) { n8nNote = ` (n8n not read: ${(e as Error).message})`; } }
   if (ctx.dryRun) return { message: `Would log ${found.length} problem(s) to System Issues (dry run)${n8nNote}` };

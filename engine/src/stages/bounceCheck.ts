@@ -60,7 +60,15 @@ async function checkWorkspace(ctx: Parameters<Stage>[0], bison: ReturnType<typeo
 export const bounceCheckStage: Stage = async (ctx) => {
   const workspace = String(ctx.job.input.workspace ?? '').toLowerCase();
   if (!workspace) throw new PermanentError('input.workspace is required');
-  const skip = new Set((Array.isArray(ctx.job.input.skipPauseCampaignIds) ? ctx.job.input.skipPauseCampaignIds : []).map(Number));
+  // A check started by a webhook (input.readSkipList) reads the Skip Bounce Pause list itself, at run time; if Airtable
+  // cannot be read it waits and retries (a check without the list could pause a campaign Alex said not to).
+  let skipIds: unknown[] = Array.isArray(ctx.job.input.skipPauseCampaignIds) ? ctx.job.input.skipPauseCampaignIds : [];
+  if (ctx.job.input.readSkipList === true && !Array.isArray(ctx.job.input.skipPauseCampaignIds) && ctx.cfg.airtableApiKey) {
+    const { skipBouncePauseIds } = await import('../airtable/campaignActions.js');
+    const at = createAirtableClient({ apiKey: ctx.cfg.airtableApiKey, baseId: ctx.cfg.airtableBaseId, baseUrl: ctx.cfg.airtableBaseUrl });
+    skipIds = await ctx.step('skip-list', () => skipBouncePauseIds(at));
+  }
+  const skip = new Set(skipIds.map(Number));
 
   // "all" (Alex, 2026-11-24): one key reaches every client workspace; check each in turn.
   let targets: { label: string; bison: ReturnType<typeof bisonFor>; teamId?: number; name?: string }[];
@@ -68,7 +76,10 @@ export const bounceCheckStage: Stage = async (ctx) => {
     const keyName = ctx.cfg.bounceCheckKey;
     const apiKey = ctx.cfg.emailBisonKeys[keyName];
     if (!apiKey) throw new PermanentError(`no EmailBison key on the server named EMAILBISON_KEY_${keyName.toUpperCase()} (BOUNCE_CHECK_KEY)`);
-    const teams = await ctx.step('workspaces', () => createBisonClient({ apiKey, baseUrl: ctx.cfg.emailBisonBaseUrl }).listWorkspaces());
+    const listed = await ctx.step('workspaces', () => createBisonClient({ apiKey, baseUrl: ctx.cfg.emailBisonBaseUrl }).listWorkspaces());
+    // A bounce webhook names its workspace: only that one is checked (input.onlyTeamId), right away.
+    const only = Number(ctx.job.input.onlyTeamId) || 0;
+    const teams = only ? listed.filter((t) => Number(t.id) === only) : listed;
     targets = teams.map((t) => ({ label: `${t.name} (${t.id})`, teamId: t.id, name: t.name, bison: createBisonClient({ apiKey, baseUrl: ctx.cfg.emailBisonBaseUrl, teamId: t.id }) as ReturnType<typeof bisonFor> }));
   } else {
     const apiKey = ctx.cfg.emailBisonKeys[workspace];

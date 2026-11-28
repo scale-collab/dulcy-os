@@ -385,7 +385,8 @@ async function main() {
       const id = Number(args[0]); const notes = args.slice(1).filter((a) => !a.startsWith('--')).join(' ').trim();
       if (!id || !notes) throw new Error('usage: campaign-copy <plan id> "<what to change>"');
       const r = (await db.query(`UPDATE campaign_plans SET copy_state='queued', copy_round=copy_round+1, copy_feedback=$2, state=CASE WHEN state IN ('copy_rejected','approval2') THEN 'approval2_wait' ELSE state END, updated_at=now() WHERE id=$1 RETURNING state, copy_round`, [id, notes])).rows[0];
-      console.log(r ? `Plan ${id}: Scribe rewrites (round ${r.copy_round}) within a few minutes; approval 2 comes back to Slack.` : `No plan ${id}`);
+      if (r) await (await import('./instant/afterJob.js')).planWork(db, cfg); // Scribe starts now
+      console.log(r ? `Plan ${id}: Scribe rewrites (round ${r.copy_round}) now; approval 2 comes back to Slack.` : `No plan ${id}`);
     } else if (cmd === 'jobs') {
       // What the engine is doing: running jobs, the queue, and the last 15 that finished.
       const age = (t: string) => { const m = Math.round((Date.now() - new Date(t).getTime()) / 60_000); return m < 60 ? `${m}m` : `${Math.round(m / 60)}h`; };
@@ -399,7 +400,18 @@ async function main() {
       // Run a set-aside (stuck) plan's planning again; it reuses the Campaign record and the Claude answer it already has.
       const id = Number(args[0]); if (!id) throw new Error('usage: campaign-plan-retry <plan id>');
       const r = (await db.query(`UPDATE campaign_plans SET state='planning', plan_round=plan_round+1, plan_error=NULL, updated_at=now() WHERE id=$1 AND state IN ('stuck','planning') RETURNING plan_round`, [id])).rows[0];
-      console.log(r ? `Plan ${id}: planning again (round ${r.plan_round}) within a minute.` : `Plan ${id} is not stuck.`);
+      if (r) await (await import('./instant/afterJob.js')).planWork(db, cfg); // Atlas starts now
+      console.log(r ? `Plan ${id}: planning again (round ${r.plan_round}) now.` : `Plan ${id} is not stuck.`);
+    } else if (cmd === 'hooks') {
+      // Instant webhooks (2026-11-28): which sources are set up, what each job runs on, and the last events received.
+      const { HOOK_SOURCES } = await import('./config.js');
+      const { INSTANT_JOBS, isInstant, sweepEveryMin } = await import('./instant/jobs.js');
+      const last = new Map((await db.query(`SELECT source, count(*) FILTER (WHERE received_at > now() - interval '24 hours')::int AS n, max(received_at) AS at FROM hook_events GROUP BY source`)).rows.map((r) => [r.source, r]));
+      console.log('Webhook sources (URL https://<ENGINE_HOST>/hooks/<source>):');
+      for (const s of HOOK_SOURCES) { const l = last.get(s); console.log(`  ${s.padEnd(10)} ${cfg.hookSecrets[s] ? 'secret set' : 'no secret (404)'} · ${l ? `${l.n} in 24 h, last ${new Date(l.at).toISOString().slice(0, 16)}` : 'nothing received yet'}`); }
+      console.log('Jobs:');
+      for (const j of INSTANT_JOBS) { const every = sweepEveryMin(cfg, j.key); console.log(`  ${j.key.padEnd(18)} ${isInstant(cfg, j.key) ? `INSTANT · backup sweep ${every ? `every ${every} min` : 'off'}` : `old timer ${every ? `every ${Math.round(every * 10) / 10} min` : 'off'} (set HOOK_SECRET_${j.sources.map((s) => s.toUpperCase()).join(j.all ? ' + ' : ' or ')})`}`); }
+      for (const e of (await db.query(`SELECT source, event, jobs, received_at FROM hook_events ORDER BY id DESC LIMIT 10`)).rows) console.log(`  ${new Date(e.received_at).toISOString().slice(0, 19)} ${e.source} ${e.event} → ${(e.jobs ?? []).join(', ') || 'nothing'}`);
     } else if (cmd === 'campaign-plans') {
       for (const p of (await db.query(`SELECT id, client, state, copy_state, copy_round, plan->>'campaign_name' AS name, plan_error, updated_at FROM campaign_plans ORDER BY id DESC LIMIT 20`)).rows) console.log(`${p.id} · ${p.client} · ${p.state}${p.copy_state ? ` · copy ${p.copy_state} (round ${p.copy_round})` : ''} · ${p.name ?? ''} · ${new Date(p.updated_at).toISOString().slice(0, 16)}${p.plan_error ? `\n    ${String(p.plan_error).slice(0, 200)}` : ''}`);
     } else if (cmd === 'agent') {
