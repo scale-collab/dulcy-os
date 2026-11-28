@@ -31,7 +31,8 @@ Issues with Status **Approved** (Alex ✅'d). The engine already did two kinds i
 - **n8n change:**
   - With an `n8nPatch` the engine applied it on the ✅ (Status **Applied**). If the engine stopped instead, the issue says why:
     - **New** + "changed since diagnosis": the workflow was edited after you read it. Diagnose it again (step 3), write a new patch and post a new Decision (the old one is closed).
-    - **Fix failed** + "refused": the patch touched a credential/key/token/password/auth value. Those stay **Manual (Alex)**.
+    - **Fix failed** + "refused": the patch touched a credential/key/token/password/auth value, a new login, or a trigger/webhook. Those stay **Manual (Alex)**.
+    - **Fix failed** + "not applied … Riley corrects the patch": the patch can't work as written (e.g. an error output wired without On Error = continueErrorOutput). Fix the patch and post a new Decision.
     - **Approved** + "n8n apply is off" or "no N8N_API_KEY": the engine checked but changed nothing. Post Alex the exact steps (workflow, node, field, old → new) and set **Applied** once he confirms.
   - Without an `n8nPatch` (old issues): post Alex the exact steps as above.
 - **Make change / Airtable change:** apply exactly the prepared change with the Make / Airtable tools. Keep the saved previous version (the Rollback).
@@ -58,7 +59,7 @@ Issue in **Waiting for Alex** and its Decision is **Rejected**: set the issue to
      - run `npx tsc` and the tests you can;
      - commit and push the branch (no PR yet, never merge before the ✅);
      - Fix Type **Code PR**, with the branch name in Fix Ref. On ✅ step 1 opens the PR, tests, merges and pings Alex to deploy.
-   - **n8n problem (a node's parameters):** write the exact patch; the engine applies it on Alex's ✅ (see "n8n patches" below). No "your hands" for n8n parameter changes. Fix Type **n8n change**.
+   - **n8n problem** (a parameter, a node's settings, a missing node or wire, a workflow setting): write the exact patch; the engine applies it on Alex's ✅ (see "n8n patches" below). No click steps for Alex. Fix Type **n8n change**.
    - **Make / Airtable problem:** write the exact change (where, old → new) and the Rollback. Fix Type to match.
    - **Needs a business decision or Alex's hands** (a key expired, a payment failed): Fix Type **Manual (Alex)**, with exact steps.
 3. **Fill in Why, Fix and Rollback** in plain words. Why = the root cause, with evidence. Fix = what changes, the risk, and how it is tested.
@@ -100,26 +101,34 @@ Issue in **Waiting for Alex** and its Decision is **Rejected**: set the issue to
 - **New error patterns** go into `rules/build-error-playbook.md`. Update the repo snapshot of anything changed (`automations/`, `airtable/automations/`).
 - **Commits:** on `claude/riley-*` branches only. No model names in commits.
 
-## n8n patches (Alex 2026-11-27: Riley fixes n8n end to end after the ✅)
+## n8n patches (Alex 2026-11-27: Riley fixes n8n end to end after the ✅; 2026-11-28: "Riley should fix n8n herself, not give me click steps")
 Your n8n connector only reads; the engine on the server has the n8n key and makes the change when Alex presses ✅.
-1. Read the live workflow with the n8n MCP tool **get_workflow_details** (never the repo snapshot). Copy the node **name** and the current value exactly.
-2. Write the patch into the issue's **Details** JSON under `n8nPatch` (keep the other keys in Details):
+1. Read the live workflow with the n8n MCP tool **get_workflow_details** (never the repo snapshot). Copy node **names** and current values exactly. (The connector hides credentials; you never need their ids.)
+2. Write the patch into the issue's **Details** JSON under `n8nPatch` (keep the other keys in Details). `changes` is a list, applied **in order** on the engine's copy, **all or nothing** (max 25):
    ```json
    {"n8nPatch": {"workflowId": "xcteI9ofNLOqC0GO", "changes": [
      {"node": "Check Results", "path": "rule.interval.0.minutesInterval", "old": 1, "new": 30},
-     {"node": "Schedule next approval-required follow-up", "path": "$disabled", "old": false, "new": true}
+     {"nodeSetting": {"node": "Validate", "key": "onError", "old": null, "new": "continueErrorOutput"}},
+     {"addNode": {"name": "Refused alert", "type": "n8n-nodes-base.slack", "typeVersion": 2.3, "position": [672, 2880],
+       "parameters": {"select": "channel", "channelId": {"__rl": true, "value": "C07SH62A46L", "mode": "id"}, "text": "=Refused: {{$json.error}}"},
+       "credentials": {"slackApi": {"fromNode": "Send a message"}}}},
+     {"connect": {"from": "Validate", "output": "error", "to": "Refused alert"}}
    ]}}
    ```
-   - `path` is inside the node's `parameters`, dots between keys, numbers for list positions (`rule.interval.0.minutesInterval`). `"$disabled"` switches a whole node off (`true`) or on (`false`).
-   - `old` = exactly what get_workflow_details shows now (`null` if the parameter is absent). The engine stops if it no longer matches ("changed since diagnosis").
-   - `new` = the value to set (`null` removes it). Whole objects and lists are fine (e.g. a Code node's full `jsCode`).
-   - **Text edit inside a long string** (e.g. one line of a Code node's `jsCode`): use `{"node": "...", "path": "jsCode", "find": "<exact text>", "replace": "<new text>"}` instead of old/new. `find` must appear exactly once in the live value, else the engine stops ("no longer there" / "appears N times"). Prefer this for Code nodes: copying a whole script exactly is fragile.
-   - Parameters only: no new nodes, no new connections. If the fix needs those, use **Manual (Alex)** with click-by-click steps.
-   - **Never** a credential, key, token, password or auth setting (paths like `authentication`, `apiKey`, a header named `Authorization`): the engine refuses them. Those are **Manual (Alex)**.
-3. Put the same change in plain words in **Fix** (node › field: old → new, the risk) and the human Rollback in **Rollback**. On ✅ the engine saves the full previous workflow and adds the rollback line itself (`riley-n8n-rollback <issueId> --yes` on the server).
+   The kinds:
+   - **Parameter** `{"node", "path", "old", "new"}`: `path` is inside the node's `parameters` (dots, numbers for list positions). `"$disabled"` switches a whole node off (`true`) or on (`false`). `old` = exactly what you read (`null` if absent); `new` = the value (`null` removes it).
+   - **Text edit** `{"node", "path": "jsCode", "find", "replace"}`: `find` must appear exactly once in the live value. Prefer this for Code nodes.
+   - **addNode** `{name, type, typeVersion, position: [x, y], parameters, credentials?}`: `name` must be new. Copy `type`/`typeVersion` from a node of the same kind in the workflow. `credentials` may only **reuse a login the workflow already has**: `{"<credential type>": {"fromNode": "<node of the same type>"}}` (the usual way) or `{"<type>": {"id", "name"}}` of one already used. No keys/tokens/passwords/`authentication` in `parameters`. No triggers or webhooks.
+   - **copyNode** `{from, name, position, parameterOverrides?}`: copies type, parameters, settings and login reference of `from` under a new name; `parameterOverrides` is `{"<path>": <new value>}` (e.g. `{"columns.value.id": "={{ $('Search records1').item.json.id }}"}`).
+   - **connect** / **disconnect** `{from, output?: "main"|"error", fromIndex?: 0, to, toIndex?: 0}`: both nodes must exist (an addNode/copyNode earlier in the same patch counts). An IF's `fromIndex` 0 = true, 1 = false. `output: "error"` = the node's error output: also set that node's `onError` to `continueErrorOutput` (nodeSetting) in the same patch, or the engine stops. A Switch's error output: use `output: "main"` with the exact index.
+   - **nodeSetting** `{node, key, old, new}`, key one of `onError` (stopWorkflow | continueRegularOutput | continueErrorOutput), `retryOnFail`, `maxTries` (2-5), `waitBetweenTries` (ms, 0-5000), `alwaysOutputData`, `executeOnce`, `notes`, `disabled`. `old: null` = not set (n8n's default).
+   - **workflowSetting** `{key, old, new}`, key one of `availableInMCP`, `errorWorkflow` (only replacing one already set), `executionTimeout`, `saveExecutionProgress`, `callerPolicy` (any | none | workflowsFromSameOwner).
+   - The engine stops with "changed since diagnosis" if any `old` no longer matches, a new name already exists, a node is missing, or a wire is already there / not there.
+3. Put the same change in plain words in **Fix** (e.g. "add node 'Refused alert' (Slack); connect 'Validate' error output → 'Refused alert'", the risk) and the human Rollback in **Rollback**. On ✅ the engine saves the full previous workflow and adds the rollback line itself (`riley-n8n-rollback <issueId> --yes` on the server puts nodes, wires and settings back).
 4. Verify on a later run (step 1): the next execution of that workflow succeeds → **Fixed**.
+5. **Manual (Alex)** only for what the engine truly can't do: a **new credential or OAuth login**, a key that expired, a new trigger/webhook, or anything with a secret in it. Then give exact click-by-click steps.
 
 ## Reading n8n runs (Alex 2026-11-27)
 - For n8n issues, the engine attaches what came into the failed run to the issue's **Details** as `input` (ids, masked emails, the failing `node`), every sweep, using the server's `N8N_API_KEY`. Read it there.
 - **Never ask Alex to open an n8n execution** to find a lead or a value. If `input` is missing, say so in the card ("engine has no n8n key" or "run older than 7 days") and diagnose from the workflow and Airtable instead.
-- "Manual (Alex)" is only for things no tool can do (credentials, adding nodes or connections, a key that expired); then give exact click-by-click steps. n8n parameter changes go through an `n8nPatch`, not Alex's hands.
+- "Manual (Alex)" is only for things no tool can do (a new credential or OAuth login, a key that expired, a new trigger/webhook); then give exact click-by-click steps. Everything else in n8n (parameters, node settings, new nodes, copies, wires, workflow settings) goes through an `n8nPatch`, not Alex's hands.

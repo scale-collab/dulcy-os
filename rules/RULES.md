@@ -181,6 +181,7 @@ Format: `- [date] rule. (why / source)`
   - **Code:** on ✅ Riley opens the PR from his `claude/riley-*` branch, runs the tests, merges to `main` and DMs Alex exactly "Fixed: <title>. Please deploy: `cd /opt/dulcy-os && git pull && bash engine/deploy/deploy.sh`". If the push is refused, he says so once in his Slack report.
   - **Make / Airtable:** unchanged (Riley applies them with his tools after the ✅).
   - **Why:** Alex wants n8n fixed end to end after he presses Approve, and only a "please deploy" ping for code.
+- **2026-11-28 (Alex): "Riley should fix n8n herself, not give me click steps."** An `n8nPatch` can also add a node, copy a node, connect/disconnect nodes (incl. error outputs), and change node settings (On Error, retries…) and workflow settings (Available in MCP…). New nodes only reuse a login the workflow already has. **Manual (Alex)** only for what the engine truly can't do: a new credential or OAuth login, a new trigger/webhook, anything with a secret in it. Still nothing live without the ✅. **Why:** Riley's 11-28 run handed Alex click steps for a Slack alert, an On Error switch, two copied nodes and an MCP toggle.
 
 ## Campaign creation, last step: client approval → live (Alex, 2026-11-25)
 - **Inboxes:** Atlas gives a new campaign the client's free healthy inboxes: Healthy or ungraded, connected, not resting or being replaced, warmup 70+ when scored, and not sending in another Active or Uploaded campaign. If none are free, Atlas asks Alex (Daily Run / Slack) and builds as soon as he picks them in Campaign Center.

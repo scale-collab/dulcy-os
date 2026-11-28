@@ -4,11 +4,16 @@
 //   {"n8nPatch": {"workflowId": "abc123", "changes": [
 //     {"node": "Check Results", "path": "rule.interval.0.minutesInterval", "old": 1, "new": 30}]}}
 // `path` is inside the node's parameters (dots; numbers index lists). "$disabled" switches a
-// whole node off/on. On ✅ (riley.apply, Fix Type "n8n change"): read the workflow, check every
-// `old` still matches (else stop: "changed since diagnosis"), save the full previous workflow
-// (riley_n8n_rollbacks), PUT the new one, re-activate it if it was active, mark the issue Applied.
-// Live only when riley.n8n_apply is in LIVE_STAGES. Credentials and anything that looks like a
-// key, token, password or auth setting are never touched. Undo: `riley-n8n-rollback <issueId>`.
+// whole node off/on. Since 2026-11-28 (Alex: "Riley should fix n8n herself, not give me click
+// steps") a change can also be {addNode}, {copyNode}, {connect}, {disconnect}, {nodeSetting} or
+// {workflowSetting} (see validateKind). On ✅ (riley.apply, Fix Type "n8n change"): read the
+// workflow, apply every change in order on a copy, stop if any `old` no longer matches ("changed
+// since diagnosis"), save the full previous workflow (riley_n8n_rollbacks), PUT the new one,
+// re-activate it if it was active, mark the issue Applied. All or nothing. Live only when
+// riley.n8n_apply is in LIVE_STAGES. Credentials and anything that looks like a key, token,
+// password or auth setting are never touched; a new node may only reuse a login the workflow
+// already has. Undo: `riley-n8n-rollback <issueId>`.
+import { randomUUID } from 'node:crypto';
 import type { JobContext } from '../context.js';
 import type { Db } from '../db/pool.js';
 import type { Config } from '../config.js';
@@ -24,13 +29,170 @@ const F = { title: 'fldWzB0PQnRKmH580', status: 'fldM2brGop7OH65B7', fix: 'fldAY
 
 /** A whole-value change ({old, new}), or a text edit inside a string parameter ({find, replace}, e.g. one
  *  line of a Code node's jsCode): `find` must occur exactly once in the live value (Alex 2026-11-28). */
-export interface N8nChange { node: string; path: string; old: unknown; new: unknown; find?: string; replace?: string }
+export interface N8nParamChange { node: string; path: string; old: unknown; new: unknown; find?: string; replace?: string }
+/** Credentials on a new node may only point at a login the workflow already uses: copy it from a node of the
+ *  same type (`fromNode`, the n8n MCP hides credential ids), or name it by the id + name another node uses. */
+export type N8nCredentialRef = { fromNode: string } | { id: string; name: string };
+export interface N8nNewNode { name: string; type: string; typeVersion: number; position: [number, number]; parameters: Record<string, unknown>; credentials?: Record<string, N8nCredentialRef> }
+/** One wire. output "error" = the node's error output (n8n stores it in `main`, right after the regular outputs). */
+export interface N8nLink { from: string; output: 'main' | 'error'; fromIndex: number; to: string; toIndex: number }
+export interface N8nAddNode { addNode: N8nNewNode }
+export interface N8nCopyNode { copyNode: { from: string; name: string; position: [number, number]; parameterOverrides?: Record<string, unknown> } }
+export interface N8nConnect { connect: N8nLink }
+export interface N8nDisconnect { disconnect: N8nLink }
+export interface N8nNodeSetting { nodeSetting: { node: string; key: string; old: unknown; new: unknown } }
+export interface N8nWorkflowSetting { workflowSetting: { key: string; old: unknown; new: unknown } }
+/** Every kind of change an n8nPatch can hold (Alex 2026-11-28: "Riley should fix n8n herself, not give me click steps"). */
+export type N8nChange = N8nParamChange | N8nAddNode | N8nCopyNode | N8nConnect | N8nDisconnect | N8nNodeSetting | N8nWorkflowSetting;
 export interface N8nPatch { workflowId: string; changes: N8nChange[] }
+
+const KINDS = ['addNode', 'copyNode', 'connect', 'disconnect', 'nodeSetting', 'workflowSetting'] as const;
+type Kind = typeof KINDS[number] | 'param';
+export const kindOf = (c: N8nChange): Kind => (KINDS.find((k) => k in (c as object)) ?? 'param');
+const isParam = (c: N8nChange): c is N8nParamChange => kindOf(c) === 'param';
 
 /** Anything that looks like a credential, key, token, password or auth setting: never changed by the engine. */
 export const SECRETISH = /credential|password|passwd|secret|token|api[-_ ]?key|apikey|auth|bearer|cookie|private[-_ ]?key|signature|session|^key$/i;
 const SEGMENT = /^[A-Za-z0-9_-]{1,100}$/;
 const BAD_SEGMENTS = new Set(['__proto__', 'prototype', 'constructor']);
+const NODE_TYPE = /^(@[a-z0-9-]+\/)?[A-Za-z0-9-]+\.[A-Za-z0-9]+$/;
+/** New triggers and webhooks open a new way in: never added by the engine (Manual (Alex)). */
+const isTriggerType = (t: string) => /trigger$/i.test(t) || /\.(webhook|form|mcpTrigger)$/i.test(t);
+/** Selector parameters that go with a node's login (not secrets themselves): copied from the node whose login is reused. */
+const AUTH_SELECTORS = ['authentication', 'nodeCredentialType', 'genericAuthType'];
+
+/** Node settings outside `parameters` the engine may change, with n8n's value when the key is absent. */
+const NODE_SETTINGS: Record<string, { label: string; dflt: unknown; check: (v: unknown) => boolean; hint: string }> = {
+  onError: { label: 'On Error', dflt: 'stopWorkflow', check: (v) => ['stopWorkflow', 'continueRegularOutput', 'continueErrorOutput'].includes(v as string), hint: 'stopWorkflow, continueRegularOutput or continueErrorOutput' },
+  retryOnFail: { label: 'Retry On Fail', dflt: false, check: (v) => typeof v === 'boolean', hint: 'true or false' },
+  maxTries: { label: 'Max Tries', dflt: 3, check: (v) => Number.isInteger(v) && (v as number) >= 2 && (v as number) <= 5, hint: 'a whole number from 2 to 5' },
+  waitBetweenTries: { label: 'Wait Between Tries (ms)', dflt: 1000, check: (v) => Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 5000, hint: 'milliseconds from 0 to 5000' },
+  alwaysOutputData: { label: 'Always Output Data', dflt: false, check: (v) => typeof v === 'boolean', hint: 'true or false' },
+  executeOnce: { label: 'Execute Once', dflt: false, check: (v) => typeof v === 'boolean', hint: 'true or false' },
+  notes: { label: 'Notes', dflt: '', check: (v) => typeof v === 'string' && v.length <= 5000, hint: 'text up to 5000 characters' },
+  disabled: { label: 'Deactivated', dflt: false, check: (v) => typeof v === 'boolean', hint: 'true or false' },
+};
+/** Workflow settings the engine may change (each one is in putBody's SETTINGS, so the PUT really sends it). */
+const WORKFLOW_SETTINGS: Record<string, { label: string; dflt: unknown; check: (v: unknown) => boolean; hint: string }> = {
+  availableInMCP: { label: 'Available in MCP', dflt: false, check: (v) => typeof v === 'boolean', hint: 'true or false' },
+  errorWorkflow: { label: 'Error Workflow', dflt: null, check: (v) => typeof v === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(v), hint: 'an n8n workflow ID' },
+  executionTimeout: { label: 'Timeout Workflow (seconds)', dflt: -1, check: (v) => v === -1 || (Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 604800), hint: '-1 (no timeout) or seconds up to 604800' },
+  saveExecutionProgress: { label: 'Save Execution Progress', dflt: false, check: (v) => typeof v === 'boolean', hint: 'true or false' },
+  callerPolicy: { label: 'This workflow can be called by', dflt: 'workflowsFromSameOwner', check: (v) => ['any', 'none', 'workflowsFromSameOwner'].includes(v as string), hint: 'any, none or workflowsFromSameOwner (a caller list is Manual (Alex))' },
+};
+
+const cleanName = (v: unknown): string => (typeof v === 'string' && v.trim() && v.length <= 128 && !/[\u0000-\u001f]/.test(v) ? v : '');
+const isPos = (v: unknown): v is [number, number] => Array.isArray(v) && v.length === 2 && v.every((x) => typeof x === 'number' && Number.isFinite(x) && Math.abs(x) <= 1e6);
+const badKeyIn = (v: unknown, depth = 0): boolean => !!v && typeof v === 'object' && depth <= 20 && Object.entries(v as object).some(([k, c]) => BAD_SEGMENTS.has(k) || badKeyIn(c, depth + 1));
+/** A {name: "Authorization", value: ...} pair anywhere inside: its value is a secret. */
+const secretPairIn = (v: unknown, depth = 0): boolean => !!v && typeof v === 'object' && depth <= 20
+  && ((typeof (v as any).name === 'string' && SECRETISH.test((v as any).name) && 'value' in (v as object)) || Object.values(v as object).some((c) => secretPairIn(c, depth + 1)));
+const badPath = (path: string) => { const segs = path.split('.'); return !path || segs.some((s) => !SEGMENT.test(s) || BAD_SEGMENTS.has(s)); };
+const intIn = (v: unknown, dflt: number, max: number) => (v === undefined || v === null ? dflt : Number.isInteger(v) && (v as number) >= 0 && (v as number) <= max ? (v as number) : NaN);
+
+function validLink(raw: unknown, what: string): { link: N8nLink } | { error: string } {
+  const l = raw as Record<string, unknown>;
+  if (!l || typeof l !== 'object' || Array.isArray(l)) return { error: `${what} must be an object {from, output?, fromIndex?, to, toIndex?}` };
+  const from = cleanName(l.from), to = cleanName(l.to);
+  if (!from || !to) return { error: `${what}: "from" and "to" (node names) are required` };
+  if (from === to) return { error: `${what}: a node can't be wired to itself` };
+  const output = l.output === undefined ? 'main' : l.output;
+  if (output !== 'main' && output !== 'error') return { error: `${what}: "output" is "main" or "error"` };
+  const fromIndex = intIn(l.fromIndex, 0, 20), toIndex = intIn(l.toIndex, 0, 20);
+  if (Number.isNaN(fromIndex) || Number.isNaN(toIndex)) return { error: `${what}: "fromIndex"/"toIndex" must be whole numbers from 0 to 20` };
+  if (output === 'error' && fromIndex !== 0) return { error: `${what}: the error output has no "fromIndex" (n8n puts it after the regular outputs)` };
+  return { link: { from, output, fromIndex, to, toIndex } };
+}
+
+function validCredentials(raw: unknown, where: string): { credentials?: Record<string, N8nCredentialRef> } | { error: string } {
+  if (raw === undefined || raw === null) return {};
+  if (typeof raw !== 'object' || Array.isArray(raw)) return { error: `${where}: "credentials" must be {<credential type>: {"fromNode": "<node>"}} or {<credential type>: {"id", "name"}}` };
+  const out: Record<string, N8nCredentialRef> = {};
+  const entries = Object.entries(raw as Record<string, unknown>);
+  if (entries.length > 3) return { error: `${where}: at most 3 credentials` };
+  for (const [type, ref] of entries) {
+    if (!/^[A-Za-z0-9]{1,100}$/.test(type)) return { error: `${where}: "${type}" is not a credential type name` };
+    const r = ref as Record<string, unknown>;
+    const keys = r && typeof r === 'object' && !Array.isArray(r) ? Object.keys(r).sort().join(',') : '';
+    if (keys === 'fromNode' && cleanName(r.fromNode)) out[type] = { fromNode: r.fromNode as string };
+    else if (keys === 'id,name' && typeof r.id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(r.id) && cleanName(r.name)) out[type] = { id: r.id, name: r.name as string };
+    else return { error: `refused: ${where} credential "${type}" must only point at a login the workflow already uses ({"fromNode": "<node>"} or {"id", "name"}); the engine never creates or embeds credentials (Manual (Alex))` };
+  }
+  return { credentials: out };
+}
+
+/** Validate one change of the new kinds; null = it is a parameter change (validated by the caller). */
+function validateKind(c: Record<string, unknown>, i: number): { change: N8nChange; key: string; newName?: string } | { error: string } | null {
+  const kinds = KINDS.filter((k) => k in c);
+  if (!kinds.length) return null;
+  const at = `change ${i + 1}`;
+  if (kinds.length > 1 || Object.keys(c).length > 1) return { error: `${at}: one change per entry (found ${Object.keys(c).join(', ')})` };
+  const kind = kinds[0];
+  const b = c[kind] as Record<string, unknown>;
+  if (!b || typeof b !== 'object' || Array.isArray(b)) return { error: `${at}: "${kind}" must be an object` };
+  if (kind === 'addNode') {
+    const name = cleanName(b.name);
+    if (!name) return { error: `${at} (addNode): "name" is missing or too long` };
+    const type = typeof b.type === 'string' ? b.type : '';
+    if (!NODE_TYPE.test(type)) return { error: `${at} (addNode "${name}"): "type" must be an n8n node type like "n8n-nodes-base.slack"` };
+    if (isTriggerType(type)) return { error: `refused: ${at} adds a trigger or webhook node ("${type}"); new ways into n8n stay Manual (Alex)` };
+    if (typeof b.typeVersion !== 'number' || !(b.typeVersion > 0 && b.typeVersion <= 100)) return { error: `${at} (addNode "${name}"): "typeVersion" must be a number like 2.3 (copy it from a node of the same type)` };
+    if (!isPos(b.position)) return { error: `${at} (addNode "${name}"): "position" must be [x, y]` };
+    const parameters = b.parameters ?? {};
+    if (typeof parameters !== 'object' || Array.isArray(parameters)) return { error: `${at} (addNode "${name}"): "parameters" must be an object` };
+    if (JSON.stringify(parameters).length > 100_000) return { error: `${at} (addNode "${name}"): "parameters" too long` };
+    if (badKeyIn(parameters)) return { error: `${at} (addNode "${name}"): "parameters" holds a forbidden key` };
+    if (secretKeyIn(parameters) || secretPairIn(parameters)) return { error: `refused: the parameters of new node "${name}" hold a credential/key/token/password/auth field; the engine never sets those (reuse a login with "credentials", or Manual (Alex))` };
+    const cr = validCredentials(b.credentials, `new node "${name}"`); if ('error' in cr) return cr;
+    const extra = Object.keys(b).filter((k) => !['name', 'type', 'typeVersion', 'position', 'parameters', 'credentials'].includes(k));
+    if (extra.length) return { error: `${at} (addNode "${name}"): unknown field(s) ${extra.join(', ')} (node settings go in a "nodeSetting" change)` };
+    const node: N8nNewNode = { name, type, typeVersion: b.typeVersion, position: [...b.position] as [number, number], parameters: structuredClone(parameters as Record<string, unknown>), ...(cr.credentials ? { credentials: cr.credentials } : {}) };
+    return { change: { addNode: node }, key: `node\u0000${name}`, newName: name };
+  }
+  if (kind === 'copyNode') {
+    const from = cleanName(b.from), name = cleanName(b.name);
+    if (!from || !name) return { error: `${at} (copyNode): "from" (the node to copy) and "name" (the copy's new name) are required` };
+    if (!isPos(b.position)) return { error: `${at} (copyNode "${name}"): "position" must be [x, y]` };
+    const ov = b.parameterOverrides ?? {};
+    if (typeof ov !== 'object' || Array.isArray(ov)) return { error: `${at} (copyNode "${name}"): "parameterOverrides" must be {"<parameter path>": <new value>}` };
+    const entries = Object.entries(ov as Record<string, unknown>);
+    if (entries.length > 25) return { error: `${at} (copyNode "${name}"): at most 25 parameter overrides` };
+    for (const [path, v] of entries) {
+      if (badPath(path)) return { error: `${at} (copyNode "${name}"): path "${path}" is not a parameter path like "columns.value.id"` };
+      if (path.split('.').some((s) => SECRETISH.test(s))) return { error: `refused: "${name} › ${path}" looks like a credential, key, token, password or auth setting; the engine never changes those (Manual (Alex))` };
+      if (secretKeyIn(v) || secretPairIn(v) || badKeyIn(v)) return { error: `refused: the new value for "${name} › ${path}" holds a credential/key/token/password field; the engine never changes those (Manual (Alex))` };
+    }
+    const extra = Object.keys(b).filter((k) => !['from', 'name', 'position', 'parameterOverrides'].includes(k));
+    if (extra.length) return { error: `${at} (copyNode "${name}"): unknown field(s) ${extra.join(', ')}` };
+    return { change: { copyNode: { from, name, position: [...b.position] as [number, number], ...(entries.length ? { parameterOverrides: structuredClone(ov as Record<string, unknown>) } : {}) } }, key: `node\u0000${name}`, newName: name };
+  }
+  if (kind === 'connect' || kind === 'disconnect') {
+    const r = validLink(b, `${at} (${kind})`); if ('error' in r) return r;
+    const l = r.link;
+    const change = kind === 'connect' ? { connect: l } : { disconnect: l };
+    return { change, key: `link\u0000${l.from}\u0000${l.output}\u0000${l.fromIndex}\u0000${l.to}\u0000${l.toIndex}` };
+  }
+  if (kind === 'nodeSetting') {
+    const node = cleanName(b.node); const key = typeof b.key === 'string' ? b.key : '';
+    if (!node) return { error: `${at} (nodeSetting): "node" (the node's name) is missing` };
+    const spec = NODE_SETTINGS[key];
+    if (!spec) return { error: `${at} (nodeSetting "${node}"): "${key}" is not a node setting the engine changes (allowed: ${Object.keys(NODE_SETTINGS).join(', ')})` };
+    if (!('old' in b) || !('new' in b)) return { error: `${at} (nodeSetting "${node}" ${key}): both "old" and "new" are required (old = the value Riley read, null if absent)` };
+    if (b.old !== null && !spec.check(b.old)) return { error: `${at} (nodeSetting "${node}" ${key}): "old" must be null or ${spec.hint}` };
+    if (b.new !== null && !spec.check(b.new)) return { error: `${at} (nodeSetting "${node}" ${key}): "new" must be ${spec.hint} (or null to clear it)` };
+    return { change: { nodeSetting: { node, key, old: b.old, new: b.new } }, key: `nodeSetting\u0000${node}\u0000${key}` };
+  }
+  // workflowSetting
+  const key = typeof b.key === 'string' ? b.key : '';
+  const spec = WORKFLOW_SETTINGS[key];
+  if (!spec) return { error: `${at} (workflowSetting): "${key}" is not a workflow setting the engine changes (allowed: ${Object.keys(WORKFLOW_SETTINGS).join(', ')})` };
+  if (!('old' in b) || !('new' in b)) return { error: `${at} (workflowSetting ${key}): both "old" and "new" are required (old = the value Riley read, null if absent)` };
+  if (b.old !== null && !spec.check(b.old)) return { error: `${at} (workflowSetting ${key}): "old" must be null or ${spec.hint}` };
+  if (!spec.check(b.new)) return { error: `${at} (workflowSetting ${key}): "new" must be ${spec.hint}` };
+  // n8n merges settings on save, so a setting that was absent can only be undone if it has a value to put back.
+  if (spec.dflt === null && b.old === null) return { error: `${at} (workflowSetting ${key}): setting an ${spec.label} where none is set can't be undone by the engine's rollback; Manual (Alex)` };
+  return { change: { workflowSetting: { key, old: b.old, new: b.new } }, key: `workflowSetting\u0000${key}` };
+}
 
 /** Validate a patch Riley wrote. Returns the patch or a plain reason it is refused. */
 export function validateN8nPatch(p: unknown): { patch: N8nPatch } | { error: string } {
@@ -44,10 +206,16 @@ export function validateN8nPatch(p: unknown): { patch: N8nPatch } | { error: str
   const changes: N8nChange[] = [];
   for (const [i, raw] of o.changes.entries()) {
     const c = raw as Record<string, unknown>;
-    if (!c || typeof c !== 'object') return { error: `change ${i + 1} is not an object` };
+    if (!c || typeof c !== 'object' || Array.isArray(c)) return { error: `change ${i + 1} is not an object` };
+    const k = validateKind(c, i);
+    if (k) {
+      if ('error' in k) return k;
+      if (seen.has(k.key)) return { error: k.newName ? `"${k.newName}" is added twice in one patch` : `change ${i + 1} repeats an earlier change in the same patch` };
+      seen.add(k.key); changes.push(k.change); continue;
+    }
     const node = typeof c.node === 'string' ? c.node : '';
     const path = typeof c.path === 'string' ? c.path.trim() : '';
-    if (!node.trim() || node.length > 200) return { error: `change ${i + 1}: "node" (the node's name) is missing` };
+    if (!node.trim() || node.length > 200) return { error: `change ${i + 1}: "node" (the node's name) is missing (or use addNode, copyNode, connect, disconnect, nodeSetting, workflowSetting)` };
     const textEdit = typeof c.find === 'string' || typeof c.replace === 'string';
     if (textEdit) {
       if (typeof c.find !== 'string' || !c.find || typeof c.replace !== 'string') return { error: `change ${i + 1} (${node}): a text edit needs a non-empty "find" and a "replace" string` };
@@ -57,15 +225,14 @@ export function validateN8nPatch(p: unknown): { patch: N8nPatch } | { error: str
     if (path === '$disabled') {
       if (typeof c.new !== 'boolean') return { error: `change ${i + 1} (${node}): "$disabled" takes true or false` };
     } else {
-      const segs = path.split('.');
-      if (!path || segs.some((s) => !SEGMENT.test(s) || BAD_SEGMENTS.has(s))) return { error: `change ${i + 1} (${node}): path "${path}" is not a parameter path like "rule.interval.0.minutesInterval"` };
-      if (segs.some((s) => SECRETISH.test(s))) return { error: `refused: "${node} › ${path}" looks like a credential, key, token, password or auth setting; the engine never changes those (Manual (Alex))` };
+      if (badPath(path)) return { error: `change ${i + 1} (${node}): path "${path}" is not a parameter path like "rule.interval.0.minutesInterval"` };
+      if (path.split('.').some((s) => SECRETISH.test(s))) return { error: `refused: "${node} › ${path}" looks like a credential, key, token, password or auth setting; the engine never changes those (Manual (Alex))` };
     }
     if (textEdit && SECRETISH.test(String(c.replace))) return { error: `refused: the replacement text for "${node} › ${path}" mentions a credential, key, token, password or auth setting; the engine never changes those (Manual (Alex))` };
     if (secretKeyIn(c.new)) return { error: `refused: the new value for "${node} › ${path}" holds a credential/key/token/password field; the engine never changes those (Manual (Alex))` };
-    const k = `${node}\u0000${path}`;
-    if (seen.has(k)) return { error: `"${node} › ${path}" is changed twice in one patch` };
-    seen.add(k);
+    const key = `${node}\u0000${path}`;
+    if (seen.has(key)) return { error: `"${node} › ${path}" is changed twice in one patch` };
+    seen.add(key);
     changes.push(textEdit ? { node, path, old: undefined, new: undefined, find: c.find as string, replace: c.replace as string } : { node, path, old: c.old, new: c.new });
   }
   return { patch: { workflowId, changes } };
@@ -106,7 +273,7 @@ const short = (v: unknown) => { const s = v === undefined ? 'null' : JSON.string
 
 const occurrences = (text: string, find: string) => text.split(find).length - 1;
 /** A text edit made concrete against the live value: {old, new}, or why it can't be applied. */
-export function resolveTextEdit(value: unknown, c: N8nChange): { old: string; new: string } | { error: string } {
+export function resolveTextEdit(value: unknown, c: N8nParamChange): { old: string; new: string } | { error: string } {
   if (typeof value !== 'string') return { error: `"${c.node} › ${c.path}" is not text (a text edit needs a string parameter)` };
   const n = occurrences(value, c.find as string);
   if (n !== 1) return { error: `"${c.node} › ${c.path}": the text Riley read ${n ? `appears ${n} times` : 'is no longer there'} (${short(c.find)})` };
@@ -119,9 +286,10 @@ function nodeFor(wf: any, name: string): { node: any } | { error: string } {
   if (list.length !== 1) return { error: list.length ? `node "${name}" appears ${list.length} times` : `node "${name}" not found` };
   return { node: list[0] };
 }
+const hasNode = (wf: any, name: string) => (Array.isArray(wf?.nodes) ? wf.nodes : []).some((n: any) => n?.name === name);
 
-/** The value a change targets in `wf` right now (undefined = absent). */
-export function currentValue(wf: any, c: N8nChange): { value: unknown; container?: any } | { error: string } {
+/** The value a parameter change targets in `wf` right now (undefined = absent). */
+export function currentValue(wf: any, c: N8nParamChange): { value: unknown; container?: any } | { error: string } {
   const f = nodeFor(wf, c.node); if ('error' in f) return f;
   if (c.path === '$disabled') return { value: Boolean(f.node.disabled) };
   let cur: any = f.node.parameters ?? {}; let container: any;
@@ -133,60 +301,282 @@ export function currentValue(wf: any, c: N8nChange): { value: unknown; container
   return { value: cur, container };
 }
 
-export interface PatchPlan { next: any; mismatches: string[]; refused: string[]; lines: string[] }
+/** Set `path` inside `params` (creating objects/lists on the way); null removes it. Returns the container. */
+function setPath(params: any, path: string, value: unknown): any {
+  const segs = path.split('.');
+  let cur: any = params;
+  for (const [i, s] of segs.slice(0, -1).entries()) {
+    if (cur[s] === undefined || cur[s] === null) cur[s] = /^\d+$/.test(segs[i + 1]) ? [] : {};
+    if (typeof cur[s] !== 'object') throw new Error(`a part of the path "${path}" is not an object`);
+    cur = cur[s];
+  }
+  const last = segs[segs.length - 1];
+  if (value === null || value === undefined) { if (Array.isArray(cur)) cur[Number(last)] = null; else delete cur[last]; } else cur[last] = structuredClone(value);
+  return cur;
+}
+
+/** How many regular outputs a node has; its error output comes right after them (n8n stores it in `main`). */
+function errorOutputIndex(node: any): number | { error: string } {
+  const t = String(node?.type ?? '');
+  if (/\.(switch|textClassifier)$/i.test(t)) return { error: `"${node.name}" (${typeLabel(t)}) has a variable number of outputs; wire its error output with output "main" and the exact fromIndex instead` };
+  if (/\.(if|splitInBatches)$/.test(t)) return 2;
+  if (/\.compareDatasets$/.test(t)) return 4;
+  return 1;
+}
+const outIndex = (wf: any, l: N8nLink): number | { error: string } => {
+  if (l.output === 'main') return l.fromIndex;
+  const f = nodeFor(wf, l.from); if ('error' in f) return f;
+  return errorOutputIndex(f.node);
+};
+const linkAt = (wf: any, l: N8nLink, idx: number) => (wf?.connections?.[l.from]?.main?.[idx] ?? []) as any[];
+const linkExists = (wf: any, l: N8nLink, idx: number) => linkAt(wf, l, idx).some((x) => x?.node === l.to && (x?.type ?? 'main') === 'main' && (x?.index ?? 0) === l.toIndex);
+
+const nodeSettingNow = (node: any, key: string) => node?.[key] ?? NODE_SETTINGS[key].dflt;
+const wfSettingNow = (wf: any, key: string) => wf?.settings?.[key] ?? WORKFLOW_SETTINGS[key].dflt;
+const eff = (v: unknown, dflt: unknown) => (v === null || v === undefined ? dflt : v);
+
+/** Plain words for a node type: "n8n-nodes-base.slack" → "Slack", "n8n-nodes-base.httpRequest" → "HTTP Request". */
+export function typeLabel(t: string): string {
+  const base = String(t).split('.').pop() ?? String(t);
+  const known: Record<string, string> = { httpRequest: 'HTTP Request', if: 'If', openAi: 'OpenAI', executeWorkflow: 'Execute Workflow' };
+  return known[base] ?? base.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase());
+}
+const ON_ERROR_WORDS: Record<string, string> = { stopWorkflow: 'Stop Workflow', continueRegularOutput: 'Continue', continueErrorOutput: 'Continue (using error output)' };
+const settingWords = (key: string, v: unknown) => (key === 'onError' && typeof v === 'string' ? ON_ERROR_WORDS[v] ?? v : typeof v === 'boolean' ? (v ? 'on' : 'off') : short(v));
+function linkWords(wf: any, l: N8nLink, idx?: number): string {
+  const src = (Array.isArray(wf?.nodes) ? wf.nodes : []).find((n: any) => n?.name === l.from);
+  let out = '';
+  if (l.output === 'error') out = ' error output';
+  else if (/\.if$/.test(String(src?.type ?? '')) && l.fromIndex <= 1) out = l.fromIndex === 0 ? ' true output' : ' false output';
+  else if (l.fromIndex > 0) out = ` output ${(idx ?? l.fromIndex) + 1}`;
+  return `'${l.from}'${out} → '${l.to}'${l.toIndex > 0 ? ` (input ${l.toIndex + 1})` : ''}`;
+}
+
+/** One change in plain words, for the Decision card and the issue's Result line. */
+export function describeN8nChange(c: N8nChange, wf?: any): string {
+  const k = kindOf(c);
+  if (k === 'addNode') {
+    const n = (c as N8nAddNode).addNode; const from = Object.values(n.credentials ?? {}).map((r) => ('fromNode' in r ? `'${r.fromNode}'` : `"${r.name}"`));
+    return `add node '${n.name}' (${typeLabel(n.type)})${from.length ? `, reusing the login of ${from.join(', ')}` : ''}`;
+  }
+  if (k === 'copyNode') {
+    const n = (c as N8nCopyNode).copyNode; const ov = Object.keys(n.parameterOverrides ?? {});
+    return `copy node '${n.from}' as '${n.name}'${ov.length ? `, changing ${ov.join(', ')}` : ''}`;
+  }
+  if (k === 'connect') return `connect ${linkWords(wf, (c as N8nConnect).connect)}`;
+  if (k === 'disconnect') return `disconnect ${linkWords(wf, (c as N8nDisconnect).disconnect)}`;
+  if (k === 'nodeSetting') {
+    const s = (c as N8nNodeSetting).nodeSetting; const spec = NODE_SETTINGS[s.key];
+    return `'${s.node}' setting ${spec.label}: ${settingWords(s.key, eff(s.old, spec.dflt))} → ${settingWords(s.key, eff(s.new, spec.dflt))}`;
+  }
+  if (k === 'workflowSetting') {
+    const s = (c as N8nWorkflowSetting).workflowSetting; const spec = WORKFLOW_SETTINGS[s.key];
+    return `workflow setting ${spec.label}: ${settingWords(s.key, eff(s.old, spec.dflt))} → ${settingWords(s.key, s.new)}`;
+  }
+  const p = c as N8nParamChange;
+  return p.find !== undefined ? `${p.node} › ${p.path}: text ${short(p.find)} → ${short(p.replace)}` : `${p.node} › ${p.path}: ${short(p.old)} → ${short(p.new)}`;
+}
+
+/** mismatches = the workflow changed since Riley read it; refused = secrets or new credentials; invalid = the patch can't work on this workflow. */
+export interface PatchPlan { next: any; mismatches: string[]; refused: string[]; invalid: string[]; lines: string[] }
 
 /**
- * Apply the patch to a copy of the workflow. Every `old` must equal what is there now (null =
- * absent); otherwise it is a mismatch and nothing should be saved.
+ * Apply the patch to a copy of the workflow, change by change in order (a connect can use a node added
+ * just before it). Every `old` must equal what is there now (null = absent); otherwise it is a mismatch
+ * and nothing should be saved. Any mismatch, refusal or invalid change = nothing is saved (all or nothing).
  */
 export function planN8nPatch(wf: any, patch: N8nPatch): PatchPlan {
   const next = structuredClone(wf);
-  const mismatches: string[] = [], refused: string[] = [], lines: string[] = [];
+  if (!Array.isArray(next.nodes)) next.nodes = [];
+  if (!next.connections || typeof next.connections !== 'object') next.connections = {};
+  const mismatches: string[] = [], refused: string[] = [], invalid: string[] = [], lines: string[] = [];
+  const errorLinks: N8nLink[] = [];
   for (const c of patch.changes) {
-    const now = currentValue(wf, c);
+    const k = kindOf(c);
+    if (k === 'addNode' || k === 'copyNode') {
+      let node: any;
+      if (k === 'addNode') {
+        const n = (c as N8nAddNode).addNode;
+        if (hasNode(next, n.name)) { mismatches.push(`node "${n.name}" already exists`); continue; }
+        node = { id: randomUUID(), name: n.name, type: n.type, typeVersion: n.typeVersion, position: [...n.position], parameters: structuredClone(n.parameters ?? {}) };
+        const creds: Record<string, unknown> = {};
+        let bad = false;
+        for (const [type, ref] of Object.entries(n.credentials ?? {})) {
+          if ('fromNode' in ref) {
+            const src = nodeFor(next, ref.fromNode);
+            if ('error' in src) { mismatches.push(`the login for "${n.name}" comes from ${src.error}`); bad = true; break; }
+            if (src.node.type !== n.type) { invalid.push(`"${n.name}" can only reuse the login of a node of the same type ('${ref.fromNode}' is ${typeLabel(src.node.type)})`); bad = true; break; }
+            const cred = src.node.credentials?.[type];
+            if (!cred?.id) { invalid.push(`'${ref.fromNode}' has no "${type}" login to reuse`); bad = true; break; }
+            creds[type] = { id: cred.id, name: cred.name };
+            for (const a of AUTH_SELECTORS) if (typeof src.node.parameters?.[a] === 'string') node.parameters[a] = src.node.parameters[a];
+          } else {
+            const used = next.nodes.some((x: any) => x?.credentials?.[type]?.id === ref.id && x?.credentials?.[type]?.name === ref.name);
+            if (!used) { refused.push(`"${n.name}" would use a "${type}" login (${ref.name}) that no node in this workflow uses; the engine never adds new credentials`); bad = true; break; }
+            creds[type] = { id: ref.id, name: ref.name };
+          }
+        }
+        if (bad) continue;
+        if (Object.keys(creds).length) node.credentials = creds;
+      } else {
+        const n = (c as N8nCopyNode).copyNode;
+        const src = nodeFor(next, n.from);
+        if ('error' in src) { mismatches.push(src.error); continue; }
+        if (hasNode(next, n.name)) { mismatches.push(`node "${n.name}" already exists`); continue; }
+        if (isTriggerType(String(src.node.type))) { refused.push(`"${n.from}" is a trigger or webhook node; copies of those stay Manual (Alex)`); continue; }
+        // Never spread a key that is typed into a node (e.g. an x-api-key header) to a second node.
+        if (secretPairIn(src.node.parameters) || secretKeyIn(Object.fromEntries(Object.entries(src.node.parameters ?? {}).filter(([key]) => !AUTH_SELECTORS.includes(key))))) {
+          refused.push(`"${n.from}" holds a key, token or password in its parameters; copying it would spread that secret (Manual (Alex))`); continue;
+        }
+        node = structuredClone(src.node);
+        node.id = randomUUID(); node.name = n.name; node.position = [...n.position];
+        if (node.webhookId) node.webhookId = randomUUID();
+        node.parameters ??= {};
+        let bad = false;
+        for (const [path, v] of Object.entries(n.parameterOverrides ?? {})) {
+          try {
+            const container = setPath(node.parameters, path, v);
+            if (typeof container?.name === 'string' && SECRETISH.test(container.name)) { refused.push(`"${n.name} › ${path}" is the value of "${container.name}"`); bad = true; break; }
+          } catch (e) { invalid.push(`"${n.name} › ${path}": ${(e as Error).message}`); bad = true; break; }
+        }
+        if (bad) continue;
+      }
+      next.nodes.push(node);
+      lines.push(describeN8nChange(c, next));
+      continue;
+    }
+    if (k === 'connect' || k === 'disconnect') {
+      const l = k === 'connect' ? (c as N8nConnect).connect : (c as N8nDisconnect).disconnect;
+      const missing = [l.from, l.to].filter((name) => !hasNode(next, name));
+      if (missing.length) { mismatches.push(missing.map((m) => `node "${m}" not found`).join('; ')); continue; }
+      const idx = outIndex(next, l);
+      if (typeof idx !== 'number') { invalid.push(idx.error); continue; }
+      const exists = linkExists(next, l, idx);
+      if (k === 'connect') {
+        if (exists) { mismatches.push(`${linkWords(next, l, idx)} is already connected`); continue; }
+        const outs = ((next.connections[l.from] ??= {}).main ??= []) as any[];
+        while (outs.length <= idx) outs.push([]);
+        (outs[idx] ??= []).push({ node: l.to, type: 'main', index: l.toIndex });
+        if (l.output === 'error') errorLinks.push(l);
+      } else {
+        if (!exists) { mismatches.push(`${linkWords(next, l, idx)} is not connected`); continue; }
+        const outs = next.connections[l.from].main as any[];
+        outs[idx] = outs[idx].filter((x: any) => !(x?.node === l.to && (x?.type ?? 'main') === 'main' && (x?.index ?? 0) === l.toIndex));
+      }
+      lines.push(describeN8nChange(c, next));
+      continue;
+    }
+    if (k === 'nodeSetting') {
+      const s = (c as N8nNodeSetting).nodeSetting; const spec = NODE_SETTINGS[s.key];
+      const f = nodeFor(next, s.node);
+      if ('error' in f) { mismatches.push(f.error); continue; }
+      const now = nodeSettingNow(f.node, s.key);
+      if (!sameValue(now, eff(s.old, spec.dflt))) { mismatches.push(`"${s.node}" setting ${spec.label} is now ${short(now)} (Riley read ${short(eff(s.old, spec.dflt))})`); continue; }
+      if (s.new === null) delete f.node[s.key]; else f.node[s.key] = s.new;
+      lines.push(describeN8nChange(c, next));
+      continue;
+    }
+    if (k === 'workflowSetting') {
+      const s = (c as N8nWorkflowSetting).workflowSetting; const spec = WORKFLOW_SETTINGS[s.key];
+      const now = wfSettingNow(next, s.key);
+      if (!sameValue(now, eff(s.old, spec.dflt))) { mismatches.push(`workflow setting ${spec.label} is now ${short(now)} (Riley read ${short(eff(s.old, spec.dflt))})`); continue; }
+      next.settings = { ...(next.settings ?? {}), [s.key]: s.new };
+      lines.push(describeN8nChange(c, next));
+      continue;
+    }
+    // A parameter change ({old, new} or {find, replace}).
+    const p = c as N8nParamChange;
+    const now = currentValue(next, p);
     if ('error' in now) { mismatches.push(now.error); continue; }
     // A header/query pair like {name: "Authorization", value: "..."}: the value is a secret.
     const pairName = now.container && typeof now.container.name === 'string' ? now.container.name : '';
-    if (SECRETISH.test(pairName)) { refused.push(`"${c.node} › ${c.path}" is the value of "${pairName}"`); continue; }
-    let newValue: unknown = c.new;
-    if (c.find !== undefined) {
-      const r = resolveTextEdit(now.value, c);
+    if (SECRETISH.test(pairName)) { refused.push(`"${p.node} › ${p.path}" is the value of "${pairName}"`); continue; }
+    let newValue: unknown = p.new;
+    if (p.find !== undefined) {
+      const r = resolveTextEdit(now.value, p);
       if ('error' in r) { mismatches.push(r.error); continue; }
       newValue = r.new;
-    } else if (c.path === '$disabled' ? Boolean(now.value) !== Boolean(c.old ?? false) : !sameValue(now.value, c.old)) {
-      mismatches.push(`"${c.node} › ${c.path}" is now ${short(now.value)} (Riley read ${short(c.old)})`); continue;
+    } else if (p.path === '$disabled' ? Boolean(now.value) !== Boolean(p.old ?? false) : !sameValue(now.value, p.old)) {
+      mismatches.push(`"${p.node} › ${p.path}" is now ${short(now.value)} (Riley read ${short(p.old)})`); continue;
     }
-    const f = nodeFor(next, c.node) as { node: any };
-    if (c.path === '$disabled') { f.node.disabled = c.new === true; if (!f.node.disabled) delete f.node.disabled; }
-    else {
-      const segs = c.path.split('.');
-      let cur: any = (f.node.parameters ??= {});
-      for (const [i, s] of segs.slice(0, -1).entries()) {
-        if (cur[s] === undefined || cur[s] === null) cur[s] = /^\d+$/.test(segs[i + 1]) ? [] : {};
-        cur = cur[s];
-      }
-      const last = segs[segs.length - 1];
-      if (newValue === null || newValue === undefined) { if (Array.isArray(cur)) cur[Number(last)] = null; else delete cur[last]; } else cur[last] = structuredClone(newValue);
-    }
-    lines.push(c.find !== undefined ? `${c.node} › ${c.path}: text ${short(c.find)} → ${short(c.replace)}` : `${c.node} › ${c.path}: ${short(c.old)} → ${short(c.new)}`);
+    const f = nodeFor(next, p.node) as { node: any };
+    if (p.path === '$disabled') { f.node.disabled = p.new === true; if (!f.node.disabled) delete f.node.disabled; }
+    else setPath((f.node.parameters ??= {}), p.path, newValue);
+    lines.push(describeN8nChange(c, next));
   }
-  return { next, mismatches, refused, lines };
+  // An error output only fires when the node is set to "Continue (using error output)".
+  for (const l of errorLinks) {
+    const f = nodeFor(next, l.from);
+    if (!('error' in f) && f.node.onError !== 'continueErrorOutput') invalid.push(`'${l.from}' error output is wired, but its On Error setting is not "Continue (using error output)" (add a nodeSetting onError → continueErrorOutput)`);
+  }
+  return { next, mismatches, refused, invalid, lines };
 }
 
-/** Does the workflow already hold every `new` value (the PUT went through)? every `old` (it did not)? */
+/** Does the workflow already hold every change (the PUT went through)? none of them (it did not)? */
 export function patchState(wf: any, patch: N8nPatch): 'applied' | 'not_applied' | 'mixed' {
-  const text = (c: N8nChange) => { const n = currentValue(wf, c); return 'error' in n || typeof n.value !== 'string' ? null : n.value; };
-  const is = (c: N8nChange, v: unknown) => { const n = currentValue(wf, c); return !('error' in n) && (c.path === '$disabled' ? Boolean(n.value) === Boolean(v ?? false) : sameValue(n.value, v)); };
-  // Text edits: applied = the replacement is there and the found text is gone (or is part of it).
-  const done = (c: N8nChange) => (c.find !== undefined ? (() => { const t = text(c); return t !== null && t.includes(c.replace as string) && occurrences(t, c.find as string) <= occurrences(c.replace as string, c.find as string); })() : is(c, c.new));
-  const notYet = (c: N8nChange) => (c.find !== undefined ? (() => { const t = text(c); return t !== null && occurrences(t, c.find as string) === 1 && !t.includes(c.replace as string); })() : is(c, c.old));
+  const done = (c: N8nChange): boolean => {
+    const k = kindOf(c);
+    if (k === 'addNode') { const n = (c as N8nAddNode).addNode; return (wf?.nodes ?? []).some((x: any) => x?.name === n.name && x?.type === n.type); }
+    if (k === 'copyNode') return hasNode(wf, (c as N8nCopyNode).copyNode.name);
+    if (k === 'connect' || k === 'disconnect') {
+      const l = k === 'connect' ? (c as N8nConnect).connect : (c as N8nDisconnect).disconnect;
+      const idx = outIndex(wf, l); const exists = typeof idx === 'number' && linkExists(wf, l, idx);
+      return k === 'connect' ? exists : typeof idx === 'number' && !exists;
+    }
+    if (k === 'nodeSetting') { const s = (c as N8nNodeSetting).nodeSetting; const f = nodeFor(wf, s.node); return !('error' in f) && sameValue(nodeSettingNow(f.node, s.key), eff(s.new, NODE_SETTINGS[s.key].dflt)); }
+    if (k === 'workflowSetting') { const s = (c as N8nWorkflowSetting).workflowSetting; return sameValue(wfSettingNow(wf, s.key), s.new); }
+    return paramIs(c as N8nParamChange, 'new');
+  };
+  const notYet = (c: N8nChange): boolean => {
+    const k = kindOf(c);
+    if (k === 'addNode') return !hasNode(wf, (c as N8nAddNode).addNode.name);
+    if (k === 'copyNode') return !hasNode(wf, (c as N8nCopyNode).copyNode.name);
+    if (k === 'connect' || k === 'disconnect') {
+      const l = k === 'connect' ? (c as N8nConnect).connect : (c as N8nDisconnect).disconnect;
+      const idx = outIndex(wf, l); const exists = typeof idx === 'number' && linkExists(wf, l, idx);
+      return k === 'connect' ? !exists : exists;
+    }
+    if (k === 'nodeSetting') { const s = (c as N8nNodeSetting).nodeSetting; const spec = NODE_SETTINGS[s.key]; const f = nodeFor(wf, s.node); return !('error' in f) && sameValue(nodeSettingNow(f.node, s.key), eff(s.old, spec.dflt)); }
+    if (k === 'workflowSetting') { const s = (c as N8nWorkflowSetting).workflowSetting; const spec = WORKFLOW_SETTINGS[s.key]; return sameValue(wfSettingNow(wf, s.key), eff(s.old, spec.dflt)); }
+    return paramIs(c as N8nParamChange, 'old');
+  };
+  // Parameter changes. Text edits: applied = the replacement is there and the found text is gone (or is part of it).
+  function paramIs(c: N8nParamChange, side: 'old' | 'new'): boolean {
+    const n = currentValue(wf, c);
+    if ('error' in n) return false;
+    if (c.find !== undefined) {
+      if (typeof n.value !== 'string') return false;
+      const t = n.value;
+      return side === 'new'
+        ? t.includes(c.replace as string) && occurrences(t, c.find) <= occurrences(c.replace as string, c.find)
+        : occurrences(t, c.find) === 1 && !t.includes(c.replace as string);
+    }
+    const v = side === 'new' ? c.new : c.old;
+    return c.path === '$disabled' ? Boolean(n.value) === Boolean(v ?? false) : sameValue(n.value, v);
+  }
   if (patch.changes.every(done)) return 'applied';
   if (patch.changes.every(notYet)) return 'not_applied';
   return 'mixed';
 }
 
-// The n8n public API PUT accepts only these settings keys (from automations/n8n-fix.mjs).
-const SETTINGS = ['executionOrder', 'errorWorkflow', 'timezone', 'saveDataErrorExecution', 'saveDataSuccessExecution', 'saveManualExecutions', 'saveExecutionProgress', 'executionTimeout', 'callerPolicy', 'callerIds'];
+/**
+ * Settings to send with a rollback: n8n merges the settings it is sent into the saved ones, so a setting
+ * the fix added (absent before) must be put back to n8n's default explicitly.
+ */
+export function rollbackSettings(previous: any, patch: N8nPatch): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...(previous?.settings ?? {}) };
+  for (const c of patch.changes) {
+    if (kindOf(c) !== 'workflowSetting') continue;
+    const { key } = (c as N8nWorkflowSetting).workflowSetting;
+    if (out[key] === undefined && WORKFLOW_SETTINGS[key]?.dflt !== null) out[key] = WORKFLOW_SETTINGS[key].dflt;
+  }
+  return out;
+}
+
+// The n8n public API PUT accepts only these settings keys (from automations/n8n-fix.mjs; availableInMCP is in the
+// public API since n8n 1.119, the same release as callerPolicy). n8n merges what is sent into the saved settings.
+const SETTINGS = ['executionOrder', 'errorWorkflow', 'timezone', 'saveDataErrorExecution', 'saveDataSuccessExecution', 'saveManualExecutions', 'saveExecutionProgress', 'executionTimeout', 'callerPolicy', 'callerIds', 'availableInMCP'];
+for (const k of Object.keys(WORKFLOW_SETTINGS)) if (!SETTINGS.includes(k)) throw new Error(`workflowSetting ${k} must be in putBody's SETTINGS`);
 /** Only the fields the public API PUT accepts: name, nodes, connections, settings, staticData. */
 export function putBody(w: any): Record<string, unknown> {
   const settings = Object.fromEntries(Object.entries(w.settings ?? {}).filter(([k]) => SETTINGS.includes(k)));
@@ -249,6 +639,7 @@ export async function applyN8nPatch(ctx: JobContext, at: Pick<AirtableClient, 'u
   if (!live) {
     const { wf, plan } = await check();
     if (plan.refused.length) return stop('Fix failed', `n8n fix refused: ${plan.refused.join('; ')}. The engine never changes credentials, keys, tokens or passwords. Nothing changed.`);
+    if (plan.invalid.length) return stop('Fix failed', `n8n fix not applied: ${plan.invalid.join('; ')}. Nothing changed; Riley corrects the patch.`);
     if (plan.mismatches.length) return stop('New', `n8n fix not applied: "${wf.name}" changed since diagnosis: ${plan.mismatches.join('; ')}. Nothing changed; Riley diagnoses it again.`);
     const what = `${plan.lines.length} change(s) in "${wf.name}": ${plan.lines.join('; ')}`;
     if (ctx.dryRun) return { message: `Would apply ${what} (dry run)`, dryRun: true };
@@ -259,6 +650,7 @@ export async function applyN8nPatch(ctx: JobContext, at: Pick<AirtableClient, 'u
   const saved = await ctx.step('n8n:check', async () => {
     const { wf, plan } = await check();
     if (plan.refused.length) return { refused: plan.refused };
+    if (plan.invalid.length) return { invalid: plan.invalid };
     if (plan.mismatches.length) return { mismatches: plan.mismatches, name: String(wf.name ?? '') };
     const row = (await ctx.db.query(
       `INSERT INTO riley_n8n_rollbacks (issue_id, workflow_id, workflow_name, job_id, previous, patch, was_active) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
@@ -266,6 +658,7 @@ export async function applyN8nPatch(ctx: JobContext, at: Pick<AirtableClient, 'u
     return { rollbackId: Number(row.id), name: String(wf.name ?? ''), active: Boolean(wf.active), lines: plan.lines };
   });
   if (saved.refused) return stop('Fix failed', `n8n fix refused: ${saved.refused.join('; ')}. The engine never changes credentials, keys, tokens or passwords. Nothing changed.`);
+  if (saved.invalid) return stop('Fix failed', `n8n fix not applied: ${saved.invalid.join('; ')}. Nothing changed; Riley corrects the patch.`);
   if (saved.mismatches) return stop('New', `n8n fix not applied: "${saved.name}" changed since diagnosis: ${saved.mismatches.join('; ')}. Nothing changed; Riley diagnoses it again.`);
   const rollbackId = saved.rollbackId!;
   const prev = (await ctx.db.query('SELECT previous FROM riley_n8n_rollbacks WHERE id=$1', [rollbackId])).rows[0].previous;
@@ -335,7 +728,7 @@ export async function rollbackN8nFix(db: Db, cfg: Pick<Config, 'n8nApiKey' | 'n8
   }
   const plan = `put back "${row.workflow_name}" (${row.workflow_id}) as it was on ${new Date(row.created_at).toISOString()} (rollback #${row.id})${now.active ? ', then re-activate it' : ''}`;
   if (!opts.yes) return `Would ${plan}. Run again with --yes to do it.`;
-  await n8n.put(row.workflow_id, { ...row.previous, staticData: now.staticData });
+  await n8n.put(row.workflow_id, { ...row.previous, settings: rollbackSettings(row.previous, row.patch as N8nPatch), staticData: now.staticData });
   if (now.active) await n8n.reactivate(row.workflow_id);
   await db.query('UPDATE riley_n8n_rollbacks SET rolled_back_at=now() WHERE id=$1', [row.id]);
   const note = `Rolled back by hand on ${new Date().toISOString()}: "${row.workflow_name}" is back to the version before Riley's fix (rollback #${row.id}). Riley diagnoses it again.`;
