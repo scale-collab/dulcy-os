@@ -294,13 +294,14 @@ test('content (round 4): each video\'s steps, the one Next step, and where each 
   const g = ready.find((s) => s.key === 'gamma')!;
   assert.deepEqual([g.state, g.where, g.optional, g.buttons.map((b) => b.kind)], ['now', 'notAutomated', true, ['copyGamma', 'link']]);
   assert.deepEqual(nowKeys(ready), ['gamma', 'folder']);
-  assert.equal(ready.find((s) => s.key === 'folder')!.where, 'contentCenter');
+  // Round 5: the Content Center's "Set up Frame.io" is an HQ button now.
+  assert.deepEqual([ready.find((s) => s.key === 'folder')!.where, ready.find((s) => s.key === 'folder')!.buttons.map((b) => [b.kind, b.run])], ['hq', [['run', 'setupFrame']]]);
   assert.equal(steps({ [CF.script]: 'x' }, { hasPrep: true, gamma: '1', gammaUrl: 'https://gamma.app/docs/x' }).find((s) => s.key === 'gamma')!.state, 'done');
   assert.equal(steps({ [CF.channel]: RAW, [CF.script]: 'x' }).some((s) => s.key === 'gamma'), false, 'Raw has no Gamma');
   // Folder ready: record, upload to the Raw folder (Frame.io link); Sync Frame.io marks it Recorded.
   const rec1 = steps({ [CF.script]: 'x', [XF.rawFolderUrl]: 'https://next.frame.io/raw', [CF.recordingDate]: '2026-11-27' });
   const r = rec1.find((s) => s.key === 'record')!;
-  assert.deepEqual([r.state, r.where, r.buttons.map((b) => [b.kind, b.url ?? ''])], ['now', 'byHand', [['link', 'https://next.frame.io/raw'], ['contentCenter', '']]]);
+  assert.deepEqual([r.state, r.where, r.buttons.map((b) => [b.kind, b.url ?? b.run ?? ''])], ['now', 'byHand', [['link', 'https://next.frame.io/raw'], ['run', 'syncFrame'], ['run', 'routeOpus'], ['run', 'routeDavinci']]]);
   assert.match(r.text, /recording date 11\/27.*Sync Frame\.io.*marks the video Recorded/);
   // Recorded on OpusClip, full edit submitted: Sienna's editor finishes it.
   const ed = steps({ [CF.script]: 'x', [XF.rawFolderUrl]: 'https://f.io/r', [XF.editingRoute]: 'OpusClip', [XF.message]: 'Recording found. Long-form edit submitted' });

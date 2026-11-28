@@ -204,6 +204,8 @@ export interface ContentNext { title: string; who: string; how: 'hq' | 'engine' 
 export interface FridayIdea {
   id: string; title: string; recordingDate: string; publishDate: string; late: boolean; scriptReady: boolean; script: string; angle: string; ideaHook: string;
   titles: string[]; hooks: string[]; thumbnail: string; gamma: string; gammaUrl: string; youtube: string; checks: string[]; airtable: string;
+  /** Round 5: the video's Raw folder in Frame.io ('' = not set up yet). */
+  rawFolderUrl: string;
 }
 export interface ContentPipelineRow { id: string; title: string; channel: string; key: string; stage: ContentStage; recordingDate: string; publishDate: string; status: string; productionStage: string; next: ContentNext | null; flags: string[]; airtable: string }
 export interface ContentView {
@@ -430,13 +432,32 @@ export interface ContentItemFacts {
   details: { productionStage: string; status: string; editingRoute: string; opusStatus: string; shortJobState: string; thumbnailStatus: string; publishingStatus: string };
 }
 /** Round 4 (2026-11-28): each video's real workflow (engine/src/hq/content.ts videoSteps). */
-export type ContentStepWhere = 'hq' | 'sienna' | 'contentCenter' | 'byHand' | 'notAutomated';
-export interface ContentStepButton { kind: 'decide' | 'askSienna' | 'openScript' | 'copyGamma' | 'link' | 'contentCenter'; label: string; url?: string; task?: string }
+export type ContentStepWhere = 'hq' | 'sienna' | 'byHand' | 'notAutomated';
+/** Round 5: the Content Center's buttons, as HQ buttons (engine contentActions.ts RUN_KEYS). */
+export type ContentRunKey = 'setupFrame' | 'syncFrame' | 'routeOpus' | 'routeDavinci' | 'editFull' | 'script' | 'thumbnail' | 'thumbnailRevise' | 'thumbnailApprove'
+  | 'youtubeDetails' | 'youtubeUrl' | 'shortClips' | 'refreshClips' | 'posts' | 'postsBrief' | 'postsRetry';
+export interface ContentStepButton { kind: 'decide' | 'askSienna' | 'openScript' | 'copyGamma' | 'link' | 'run' | 'distribution'; label: string; url?: string; task?: string; run?: ContentRunKey; input?: 'url' | 'changes' | 'brief' }
 export interface ContentStep { key: string; title: string; state: 'done' | 'now' | 'later'; where: ContentStepWhere; text: string; optional?: boolean; buttons: ContentStepButton[] }
 export interface ContentPrep { script: string; titles: string[]; hooks: string[]; thumbnail: string; gamma: string; gammaUrl: string; youtube: string; checks: string[] }
 export interface ContentItem extends ContentPipelineRow {
   cc: ContentCcStage; thisWeek: boolean; awaiting: boolean; done: boolean; facts: ContentItemFacts;
   posted: boolean; postedDate: string; postedFrom: string; steps: ContentStep[]; prep: ContentPrep | null;
+  /** Round 5: the Content Automation Action in the field now ('' = nothing running). */
+  running: string;
+}
+/** Round 5: GET /content/items/<rec> — YouTube copy, the posts brief and Distribution (fresh reads). */
+export interface ContentPostStats { slot: string; platform: string; url: string; postedOn: string; views: number | null; likes: number | null; comments: number | null; by: string; at: string }
+export interface ContentDraft {
+  id: string; platform: string; outputType: string; title: string; body: string; media: string; approval: string; publishing: string;
+  scheduledAt: string; postUrl: string; lastError: string; hasClip: boolean; canSchedule: boolean; stats: ContentPostStats | null;
+}
+export interface ContentPlatform { platform: string; drafts: ContentDraft[]; manual: ContentPostStats | null; chosen: boolean }
+export interface ContentItemDetail {
+  id: string; title: string; running: string;
+  youtube: { title: string; description: string; chapters: string; url: string };
+  thumbnail: { url: string; status: string };
+  brief: { channels: string[]; count: number; minScore: number; options: string[]; clips: number };
+  distribution: { status: string; platforms: ContentPlatform[]; posted: number; totals: { posts: number; views: number; likes: number; comments: number } };
 }
 export type ContentCenterView = Omit<ContentView, 'pipeline'> & { pipeline: { stages: ContentView['pipeline']['stages']; ccStages: ContentCcStage[]; rows: ContentItem[]; leftOut: number } };
 
