@@ -54,7 +54,7 @@ export default function ClientPage({ id, user, tab, sub }: { id: string; user: U
               <HealthPill c={c} />
             </div>
             <div className="mt-1 text-sm text-muted">
-              {[c.internal ? 'Dulcy itself' : c.dealLabel, c.startDate ? `paying since ${c.startDate}` : '', !c.active && c.endDate ? `ended ${c.endDate}` : '', !c.active && c.inactiveReason ? c.inactiveReason : '', c.kpi ? `KPI ${c.kpi} meetings/mo (${c.kpiSource})` : 'KPI UNKNOWN'].filter(Boolean).join(' · ')}
+              {[c.dealLabel, c.startDate ? `paying since ${c.startDate}` : '', !c.active && c.endDate ? `ended ${c.endDate}` : '', !c.active && c.inactiveReason ? c.inactiveReason : '', c.kpi ? `KPI ${c.kpi} meetings/mo (${c.kpiSource})` : 'KPI UNKNOWN'].filter(Boolean).join(' · ')}
             </div>
             <div className="mt-1 text-xs text-muted">Workspaces: {c.workspaces.map((w) => `${w.name} (${w.status || 'no status'}${w.bisonId ? `, #${w.bisonId}` : ''})`).join(' · ')}</div>
           </div>

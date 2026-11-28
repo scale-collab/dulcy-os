@@ -256,7 +256,7 @@ test('cole: one line for the next step on each deal', () => {
 });
 
 // ---------- the contract draft (pure) ----------
-test('contract draft: checks the form; retainer / per call / both map to Dulcy Sign; never Action, Status or Review Status', () => {
+test('contract draft: checks the form; retainer / per call (an old "both" = per call) map to Dulcy Sign; never Action, Status or Review Status', () => {
   const bad = validateDraft({ dealType: 'both', monthly: 1500, signerEmail: 'nope' }, TODAY);
   assert.deepEqual(bad.errors, ['Per-call fee: needed for pay per call.', 'Start date: pick a day.', 'Signer name: who signs for the client.', 'Signer email: a valid email.', 'Company: the client\'s company or brand.']);
   const ok = validateDraft({ dealType: 'both', monthly: '1,500', perCall: 250, startDate: '2026-12-01', signerName: 'Raana', signerEmail: 'R@Human.com', company: 'Human Marketing', scope: 'Cold email', bogus: 'x' }, TODAY);
@@ -333,7 +333,7 @@ beforeEach(async () => {
 test('routes: members get 403 on every new sales route; nothing read, nothing leaks', { skip }, async () => {
   await upsertUser(db, 'josh@dulcy.io', 'member', 'josh long password 1', 'Josh');
   const josh = await login('josh@dulcy.io', 'josh long password 1');
-  const routes: [string, string][] = [['GET', '/hq/api/sales/insights'], ['POST', '/hq/api/sales/settings'], ['GET', '/hq/api/sales/recSMJJ0000000001/contract'], ['POST', '/hq/api/sales/recSMJJ0000000001/contract'], ['POST', '/hq/api/sales/recSMJJ0000000001/contract/create']];
+  const routes: [string, string][] = [['GET', '/hq/api/sales/insights'], ['POST', '/hq/api/sales/settings'], ['GET', '/hq/api/sales/recSMJJ0000000001/contract'], ['POST', '/hq/api/sales/recSMJJ0000000001/contract'], ['POST', '/hq/api/sales/recSMJJ0000000001/contract/create'], ['GET', '/hq/api/sales/recSMJJ0000000001/contract/close']];
   for (const [method, p] of routes) {
     const r = await call(p, josh, method, { dealType: 'retainer', monthly: 2000, draftId: 1 });
     assert.equal(r.status, 403, `${method} ${p}`);
@@ -400,4 +400,34 @@ test('routes: contract draft — prefill, save (Postgres), create ONE Contracts 
   assert.deepEqual([twice.status, twice.body.already, writes.length], [200, true, 1], 'never a second Contracts row');
   assert.equal((await call('/hq/api/sales/recSMJJ0000000001/contract/create', cookie, 'POST', { draftId: 999 })).status, 404);
   assert.equal((await call('/hq/api/sales/recSMJJ0000000001/contract', cookie)).body.saved.status, 'created', 'the form shows the created draft');
+});
+
+test('routes (round 5): Pull from Close reads the lead (GETs only, nothing saved); an old "both" draft opens as pay per call', { skip }, async (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: NOW });
+  const calls: { url: string; method: string }[] = [];
+  deps.close = createCloseClient('k', (async (u: string | URL, init?: RequestInit) => {
+    const q = new URL(String(u)); calls.push({ url: String(u), method: String(init?.method ?? 'GET') });
+    if (q.pathname.endsWith('/lead/')) return new Response(JSON.stringify({ data: [{ id: 'lead_mjj1', display_name: 'Brilliant Jewelers', contacts: [{ emails: [{ email: 'chris@mjjbrilliant.com' }] }] }] }), { status: 200 });
+    if (q.pathname.endsWith('/lead/lead_mjj1/')) return new Response(JSON.stringify({
+      id: 'lead_mjj1', display_name: 'Brilliant Jewelers', custom: { 'Legal Name': 'MJJ Brilliant Inc.' },
+      contacts: [{ name: 'Chris Awad', emails: [{ email: 'chris@mjjbrilliant.com' }], phones: [{ phone: '+15550111' }] }],
+      addresses: [{ address_1: '5 Gem Rd', city: 'Edison', state: 'NJ', zipcode: '08817' }],
+      opportunities: [{ id: 'oppo_m1', lead_id: 'lead_mjj1', status_type: 'active', status_label: 'Contract', value: 200000, value_period: 'monthly', date_updated: iso(-1) }],
+    }), { status: 200 });
+    return new Response('{}', { status: 404 });
+  }) as typeof fetch);
+  const cookie = await login('alex@dulcy.io', PW);
+  const g = await call('/hq/api/sales/recSMJJ0000000001/contract', cookie);
+  assert.deepEqual([g.body.closeConnected, g.body.types.map((x: any) => x.key), g.body.draft.serviceKey, g.body.options.clientRespondsClause.slice(0, 24)], [true, ['retainer', 'per_call'], 'cold_email', 'Client responds to leads']);
+  const r = await call('/hq/api/sales/recSMJJ0000000001/contract/close?type=retainer', cookie);
+  assert.equal(r.status, 200, r.text);
+  assert.deepEqual([r.body.found, r.body.lead.id, r.body.patch.legalName, r.body.patch.signerPhone, r.body.patch.address, r.body.patch.monthly, r.body.missing], [true, 'lead_mjj1', 'MJJ Brilliant Inc.', '+15550111', '5 Gem Rd, Edison, NJ 08817', 2000, []]);
+  assert.ok(calls.length === 2 && calls.every((c) => c.method === 'GET'), 'Close is only read');
+  assert.deepEqual(writes, [], 'nothing written to Airtable');
+  assert.equal((await db.query('SELECT count(*)::int AS n FROM hq_contract_drafts')).rows[0].n, 0, 'nothing saved: the form is saved separately');
+  assert.equal((await call('/hq/api/sales/recSMJJ0000000001/contract/close', cookie, 'POST', {})).status, 405);
+  // An old draft saved with "both" (before round 5) still opens: pay per call with its monthly tech fee and its own texts.
+  await db.query(`INSERT INTO hq_contract_drafts (deal_id, input, created_by) VALUES ($1, $2, 'Alex')`, ['recSMJJ0000000001', JSON.stringify({ dealType: 'both', monthly: 1500, perCall: 250, initialFee: null, startDate: '2026-12-01', signerName: 'Chris', signerEmail: 'chris@mjjbrilliant.com', legalName: '', company: 'MJJ', address: '', service: 'Cold email', scope: 'Lists', term: 'Monthly', specialTerms: '', channels: { linkedin: false, aiCaller: false, directMail: false } })]);
+  const old = await call('/hq/api/sales/recSMJJ0000000001/contract', cookie);
+  assert.deepEqual([old.body.saved.input.dealType, old.body.saved.input.monthly, old.body.saved.input.perCall, old.body.saved.input.scope, old.body.draft.dealType], ['per_call', 1500, 250, 'Lists', 'per_call']);
 });

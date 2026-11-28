@@ -10,6 +10,7 @@ import { z } from 'zod';
 import type { Stage } from '../stages/index.js';
 import { PermanentError } from '../errors.js';
 import { createFathomClient, type FathomMeeting } from '../providers/fathom.js';
+import { fathomAbout } from '../hq/salesCalls.js';
 import { createClaude } from '../providers/claude.js';
 import { createSlackClient } from '../providers/slack.js';
 import { readKnowledge } from './knowledge.js';
@@ -138,7 +139,11 @@ export const coleReviewStage: Stage = async (ctx) => {
     await saveReport(ctx.db, {
       agent: 'Cole', kind: 'call_review', title: `Call review: ${c.prospect || 'prospect'}${c.company ? ` (${c.company})` : ''}`,
       summary: `Score ${Math.min(10, Math.max(1, Math.round(r.score)))}/10 · ${r.verdict}`, body: `${msg.main}\n\n${msg.draft}`, link: m.url,
-      data: { score: Math.min(10, Math.max(1, Math.round(r.score))), verdict: r.verdict, temperature: r.deal_temperature, fixes, nextStep: r.next_step, drill: r.drill, followUp: r.follow_up_email, pacing: p },
+      data: {
+        score: Math.min(10, Math.max(1, Math.round(r.score))), verdict: r.verdict, temperature: r.deal_temperature, fixes, nextStep: r.next_step, drill: r.drill, followUp: r.follow_up_email, pacing: p,
+        // Round 5 (HQ Sales calls list): the meeting's own name and Fathom's one line on what it was about, as recorded.
+        meetingTitle: m.title.slice(0, 200), callType: c.call_type, about: fathomAbout(m.summary), meetingAt: m.createdAt,
+      },
       jobId: ctx.job.id, dedupeKey: `cole:${m.id}`,
     });
     if (slack && slackReports(cfg)) {

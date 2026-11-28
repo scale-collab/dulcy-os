@@ -643,7 +643,10 @@ test('Atlas tasks: generator writes once, closes when the plan starts; done from
 // ---------- Clients (Step 2) ----------
 test('clients: one key per client; the active record leads a group; the note for today', () => {
   assert.equal(clientKey('Twenty West Media (Internal)'), clientKey('Twenty West Media'));
-  assert.equal(clientKey('Dulcy Free Campaigns'), 'dulcy');
+  // Alex 2026-11-28: Dulcy (EmailBison 2) and Dulcy Free Campaigns (41) are two clients, never merged.
+  assert.equal(clientKey('Dulcy Free Campaigns'), 'dulcyfreecampaigns');
+  assert.notEqual(clientKey('Dulcy Free Campaigns'), clientKey('Dulcy'));
+  assert.equal(clientKey('Dulcy (Internal)'), 'dulcy', 'the (Internal) copy is still the same client');
   assert.notEqual(clientKey('Human Marketing'), clientKey('The Marketing Cartel'));
   const g = groupWorkspaces([
     { id: 'recA', fields: { Name: 'Twenty West Media', Status: 'Inactive', 'Client Type': 'Paying Client' } },
@@ -652,6 +655,11 @@ test('clients: one key per client; the active record leads a group; the note for
     { id: 'recD', fields: { Name: 'GLOBALMEDIAGROUP LTD', Status: 'Active' } },
   ]);
   assert.deepEqual(g.map((x) => x.map((w) => w.id)), [['recB', 'recA'], ['recC', 'recD']], 'a Client link to another record groups them too');
+  const dg = groupWorkspaces([
+    { id: 'recE', fields: { Name: 'Dulcy', Status: 'Active', 'Client Type': 'Internal', ID: 2 } },
+    { id: 'recF', fields: { Name: 'Dulcy Free Campaigns', Status: 'Active', 'Client Type': 'Free / Trial', ID: 41, Client: ['recE'] } },
+  ]);
+  assert.deepEqual(dg.map((x) => x.map((w) => w.id)), [['recE'], ['recF']], 'a Client link from Free Campaigns to Dulcy does not merge them');
   const base = { active: true, internal: false, waitingApproval: 0, seanWaiting: 0, interested30: 0, booked30: 0, interested7: 0, kpi: null };
   const camp = (o: Record<string, unknown>) => ({ id: 'c', name: 'X', progress: 0.3, bounce: 1, sent: 1, interested: 0, perThousand: null, flag: null, next: false, planExists: false, ...o }) as any;
   assert.deepEqual(noteFor({ ...base, campaigns: [] }), ['No active campaign.']);
@@ -714,8 +722,8 @@ test('clients API: active by default, the Twenty West pair counted once, health 
   const r = await call('GET', '/hq/api/clients', { cookie });
   assert.equal(r.status, 200, JSON.stringify(r.body));
   const names = r.body.clients.map((c: any) => c.name);
-  assert.deepEqual([...names].sort(), ['Brilliant Jewelers / MJJ Inc. (MJJ Brilliant)', 'Dulcy', 'Twenty West Media']);
-  assert.deepEqual({ active: r.body.summary.active, internal: r.body.summary.internal, inactive: r.body.summary.inactive }, { active: 2, internal: 1, inactive: 1 });
+  assert.deepEqual([...names].sort(), ['Brilliant Jewelers / MJJ Inc. (MJJ Brilliant)', 'Dulcy', 'Dulcy Free Campaigns', 'Twenty West Media']);
+  assert.deepEqual({ active: r.body.summary.active, internal: r.body.summary.internal, inactive: r.body.summary.inactive }, { active: 2, internal: 2, inactive: 1 });
   const twm = r.body.clients.find((c: any) => c.name === 'Twenty West Media');
   assert.equal(twm.id, 'recTWMINT00000001', 'the active record leads');
   assert.equal(twm.workspaces.length, 2);
@@ -738,9 +746,13 @@ test('clients API: active by default, the Twenty West pair counted once, health 
   assert.equal(mjj.health, 'unknown', 'no KPI on record = UNKNOWN');
   const dulcy = r.body.clients.find((c: any) => c.name === 'Dulcy');
   assert.equal(dulcy.internal, true);
-  assert.equal(dulcy.workspaces.length, 2, 'Dulcy Free Campaigns folds into Dulcy');
-  assert.equal(dulcy.booked30, 1);
+  assert.equal(dulcy.workspaces.length, 1, 'Dulcy Free Campaigns is its own client (Alex 2026-11-28)');
+  assert.equal(dulcy.booked30, 0, "the meeting booked in workspace 41 is Free Campaigns', not Dulcy's");
   assert.equal(dulcy.money, undefined, 'no money block for Dulcy itself');
+  assert.equal(dulcy.dealLabel, 'Dulcy itself');
+  const free = r.body.clients.find((c: any) => c.name === 'Dulcy Free Campaigns');
+  assert.deepEqual([free.key, free.internal, free.workspaces.map((w: any) => w.bisonId), free.booked30, free.dealLabel], ['dulcyfreecampaigns', true, ['41'], 1, 'Free campaigns']);
+  assert.equal(free.money, undefined, 'no money block for the free campaigns');
 
   const w10 = await call('GET', '/hq/api/clients?window=10', { cookie });
   assert.equal(w10.body.clients.find((c: any) => c.name === 'Twenty West Media').results.meetings, 1, 'window filter');

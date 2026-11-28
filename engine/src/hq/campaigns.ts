@@ -8,7 +8,8 @@
 //   - Needs action: bounce pause (> 4%) / watch (> 2.5%), 60%+ with no next plan, stuck in a stage,
 //     copy waiting for client review, low interested per 1,000 sent, a failed engine step.
 //     One line each, with the reason and the agent that owns it.
-//   - All live / Building, a client filter (workspaces that are one client count once, as clients.ts).
+//   - All live / Building / Past, a client filter (workspaces that are one client count once, as clients.ts;
+//     Dulcy and Dulcy Free Campaigns are two clients).
 //   - Pipeline: list → copy → client review → launch → live → 60% → next, from the same stage and
 //     status fields the engine uses (Workflow Stage, Campaign Status, Lead List Stage + QA, the
 //     approval fields, campaign_plans).
@@ -24,6 +25,7 @@ import { ACTIVITY, AF, STEP_NAMES, canonAgent } from '../activity.js';
 import { rate } from '../agents/campaignPlan.js';
 import { clientKey, groupWorkspaces } from './clients.js';
 import { OWNER_ONLY, type AgentName } from './agents.js';
+import { atlasTake } from './atlasTake.js';
 
 export const CAMPAIGNS_T = 'tblAVAA6uBPaMj28P';
 export const LEAD_LISTS_T = 'tblVOg9BkPOMmnitt';
@@ -222,6 +224,8 @@ export interface CampaignRow {
   approach: string; strategy: string; launchDate: string; accounts: number; sending: SendingSummary | null;
   /** Round 2: the Campaign Center stage section (Workflow Stage, live first); a test campaign by its name. */
   section: SectionKey; test: boolean;
+  /** Round 5: when it started sending and when it ended (Completed / Inactive: Completed At, else the last status change). */
+  started: string; ended: string;
 }
 /** Round 2 (Alex 2026-11-27): campaigns by stage, as in the Airtable Campaign Center (Workflow Stage), live first. */
 export const SECTIONS = [
@@ -252,7 +256,7 @@ export function sendingOf(accountIds: string[], inboxes?: Map<string, InboxLite>
   return out;
 }
 
-/** Workspace record → client (the Twenty West pair and Dulcy + Dulcy Free Campaigns count once). Pure. */
+/** Workspace record → client (the Twenty West pair counts once; Dulcy and Dulcy Free Campaigns are two clients, Alex 2026-11-28). Pure. */
 export function clientIndex(ws: AirtableRecord[]): Map<string, ClientRef> {
   const out = new Map<string, ClientRef>();
   for (const group of groupWorkspaces(ws)) {
@@ -271,6 +275,9 @@ export function nextPlanFor(c: Pick<CampaignFacts, 'id' | 'clientRec'>, plans: P
   return plans.find((p) => p.triggerKey === `next:${c.id}`)
     ?? plans.find((p) => !!c.clientRec && p.wsRec === c.clientRec && p.campaignRec !== c.id && !PLAN_ENDED.has(p.state) && now - Date.parse(p.created) < 30 * DAY) ?? null;
 }
+
+/** When a finished campaign ended: Completed At, else its last status change, else its last update. Pure. */
+export const endedAt = (c: Pick<CampaignFacts, 'completedAt' | 'statusModified' | 'updatedAt'>) => c.completedAt || c.statusModified || c.updatedAt || '';
 
 /** Rows from the source. Pure (now passed in). */
 export function buildRows(src: CampaignsSource, now = Date.now(), inboxes?: Map<string, InboxLite>): CampaignRow[] {
@@ -299,6 +306,7 @@ export function buildRows(src: CampaignsSource, now = Date.now(), inboxes?: Map<
       lastChange, needs, owner: needs[0]?.agent ?? null, listIds: c.listIds,
       approach: c.approach, strategy: c.thesis.slice(0, 220), launchDate: c.launchDate, accounts: c.accountIds.length, sending: sendingOf(c.accountIds, inboxes),
       section: sectionOf(group, c.stage), test: isTest(c.name),
+      started: c.startedAt || c.launchDate, ended: group === 'done' ? endedAt(c) : '',
     };
   });
 }
@@ -324,7 +332,9 @@ export function campaignNotes(rows: CampaignRow[]): Note[] {
 }
 
 // ---------- reads (batched, one cache for everyone) ----------
-const CURRENT_FORMULA = `OR(AND({Campaign Status}!='Completed',{Campaign Status}!='Inactive'),{Emails Sent}>=${CAMPAIGN_LIMITS.minSentToJudge})`;
+// Current campaigns, plus finished ones that sent anything (round 5: the Past view; the agency average
+// still counts only campaigns with 500+ sent, campaignPlan.rate).
+const CURRENT_FORMULA = `OR(AND({Campaign Status}!='Completed',{Campaign Status}!='Inactive'),{Emails Sent}>0)`;
 const chunk = <T,>(xs: T[], size: number) => Array.from({ length: Math.ceil(xs.length / size) }, (_, i) => xs.slice(i * size, i * size + size));
 
 async function readLists(at: Pick<HqAirtable, 'list'>, wanted: string[]): Promise<AirtableRecord[]> {
@@ -343,7 +353,7 @@ function planRow(x: any): PlanInfo {
   };
 }
 
-/** Every row the area needs: Campaigns (current + 500+ sent for the agency average), their lead lists, Workspace IDs, plans and the engine's last job per record. */
+/** Every row the area needs: Campaigns (current + finished ones that sent anything: the Past view and the agency average), their lead lists, Workspace IDs, plans and the engine's last job per record. */
 export async function readCampaignsSource(at: Pick<HqAirtable, 'list'>, db: Db): Promise<CampaignsSource> {
   const [rows, ws, plans] = await Promise.all([
     at.list(CAMPAIGNS_T, CURRENT_FORMULA, C_READ, 3000),
@@ -351,7 +361,7 @@ export async function readCampaignsSource(at: Pick<HqAirtable, 'list'>, db: Db):
     db.query(`SELECT id, trigger_key, ws_rec, client, state, campaign_rec, lead_list_rec, plan_error, created_at, updated_at FROM campaign_plans ORDER BY id`).then((r) => r.rows.map(planRow)),
   ]);
   // The formula already filters; filtered again so a copy of the rows can never widen it.
-  const campaigns = rows.filter((r) => groupOf(s(r.fields[KF.status])) !== 'done' || n(r.fields[KF.sent]) >= CAMPAIGN_LIMITS.minSentToJudge);
+  const campaigns = rows.filter((r) => groupOf(s(r.fields[KF.status])) !== 'done' || n(r.fields[KF.sent]) > 0);
   const building = campaigns.filter((r) => groupOf(s(r.fields[KF.status])) === 'building');
   const lists = await readLists(at, building.flatMap((r) => ids(r.fields[KF.lists])));
   const recs = [...new Set([...campaigns.map((r) => r.id), ...lists.map((l) => l.id)])];
@@ -390,6 +400,11 @@ export const CHANNELS: Channel[] = [
 ];
 
 // ---------- GET /campaigns ----------
+/** The agency's interested per email (campaigns with 500+ sent). Pure. */
+export const agencyRateOf = (src: Pick<CampaignsSource, 'campaigns'>) =>
+  rate(src.campaigns.map(factsOf).map((c) => ({ id: c.id, name: c.name, client: c.clientRec, sent: c.sent, interested: c.interested, progress: c.progress, status: c.status, canNewOffer: false })));
+/** Past campaigns: the one that ended last first. Pure. */
+export const pastFirst = (a: Pick<CampaignRow, 'ended' | 'name'>, b: Pick<CampaignRow, 'ended' | 'name'>) => (Date.parse(b.ended) || 0) - (Date.parse(a.ended) || 0) || a.name.localeCompare(b.name);
 const sortRows = (rows: CampaignRow[]) => [...rows].sort((a, b) => {
   const ka = a.needs[0] ? NEED_ORDER.indexOf(a.needs[0].kind) : 99, kb = b.needs[0] ? NEED_ORDER.indexOf(b.needs[0].kind) : 99;
   return ka - kb || b.bounce - a.bounce || b.progress - a.progress || a.name.localeCompare(b.name);
@@ -414,11 +429,13 @@ export async function listCampaigns(at: Pick<HqAirtable, 'list'>, db: Db, opts: 
     e.count++; if (r.needs.length) e.action++;
     byKey.set(r.clientKey, e);
   }
-  const facts = src.campaigns.map(factsOf);
-  const agencyRate = rate(facts.map((c) => ({ id: c.id, name: c.name, client: c.clientRec, sent: c.sent, interested: c.interested, progress: c.progress, status: c.status, canNewOffer: false })));
+  const agencyRate = agencyRateOf(src);
+  // Round 5 (Alex 2026-11-28): "an option to see past campaigns (inactive) for past data". Read only, newest ended first.
+  const past = all.filter((r) => r.group === 'done' && (!client || r.clientKey === client)).sort(pastFirst);
   return {
     rows: (() => { const how = opts.how?.(all); return sortRows(mine).map((r) => (how ? { ...r, how: how.get(r.id) ?? null } : r)); })(),
-    counts: { action: mine.filter((r) => r.needs.length).length, live: mine.filter((r) => r.group === 'live').length, building: mine.filter((r) => r.group === 'building').length },
+    past,
+    counts: { action: mine.filter((r) => r.needs.length).length, live: mine.filter((r) => r.group === 'live').length, building: mine.filter((r) => r.group === 'building').length, past: past.length },
     client, clients: [...byKey.values()].sort((a, b) => b.action - a.action || a.name.localeCompare(b.name)),
     notes: campaignNotes(client ? all.filter((r) => r.clientKey === client) : all),
     channels: CHANNELS, limits: CAMPAIGN_LIMITS, agencyPerThousand: agencyRate ? Math.round(agencyRate * 10_000) / 10 : null, readAt: src.readAt,
@@ -494,10 +511,18 @@ export async function campaignDetail(at: Pick<HqAirtable, 'list' | 'get'>, db: D
   const row = buildRows(one, Date.now(), inboxes).find((r) => r.id === id)!;
   const ownPlans = src.plans.filter((p) => p.campaignRec === id || (p.leadListRec && f.listIds.includes(p.leadListRec)));
   const next = nextPlanFor(f, src.plans, Date.now());
-  const [history, activity] = await Promise.all([
+  const [history, activity, storedPlan] = await Promise.all([
     engineHistory(db, [id, ...f.listIds], ownPlans),
     campaignActivity(at, { id, name: f.name, listIds: f.listIds }, owner),
+    db.query(`SELECT id, plan FROM campaign_plans WHERE campaign_rec = $1 AND plan IS NOT NULL ORDER BY id DESC LIMIT 1`, [id]).then((r) => r.rows[0] ?? null).catch(() => null),
   ]);
+  // Round 5: Atlas's take (2-3 sentences) from the numbers, his stored plan and his newest note. Never invents.
+  const atlasNote = activity.find((a) => a.agent === 'Atlas');
+  const take = atlasTake({ ...row }, {
+    agencyRate: agencyRateOf(src),
+    plan: storedPlan?.plan?.why_move ? { id: Number(storedPlan.id), move: String(storedPlan.plan.move ?? ''), why: String(storedPlan.plan.why_move) } : null,
+    note: atlasNote ? { when: atlasNote.when, event: atlasNote.event } : null,
+  });
   return {
     campaign: row,
     detail: {
@@ -509,7 +534,7 @@ export async function campaignDetail(at: Pick<HqAirtable, 'list' | 'get'>, db: D
     // Campaign Center "Sender accounts": each sending inbox with its Deliverability status (worst first).
     accounts: f.accountIds.map((rec) => ({ id: rec, ...(inboxes?.get(rec) ?? { status: null, warmupOff: false, email: '', dailyLimit: null, warmupLimit: null, warmup: null, score: null, placement: { text: 'Not tested', why: 'This inbox is not in Email Accounts for an active client, so it has no placement test here.' } }) }))
       .sort((a, b) => ACC_RANK(a.status) - ACC_RANK(b.status) || Number(b.warmupOff) - Number(a.warmupOff) || a.email.localeCompare(b.email)),
-    plan: ownPlans[0] ?? null, next,
+    plan: ownPlans[0] ?? null, next, take,
     history, activity,
     links: { bison: /^https:\/\//i.test(f.bisonUrl) ? f.bisonUrl : '' },
     readAt: src.readAt,

@@ -210,7 +210,9 @@ test('campaigns API: needs a session; needs action first, the Twenty West pair o
   const r = await call('/hq/api/campaigns', cookie);
   assert.equal(r.status, 200, r.text);
   assert.deepEqual(r.body.rows.map((x: any) => x.name), ['TWM - Contractors', 'MJJ - Jewelers', 'TWM - Roofers'], 'needs action first; finished campaigns are left out');
-  assert.deepEqual(r.body.counts, { action: 2, live: 2, building: 1 });
+  assert.deepEqual(r.body.counts, { action: 2, live: 2, building: 1, past: 2 });
+  // Round 5: finished campaigns that sent anything are in Past, read only, with their final numbers.
+  assert.deepEqual(r.body.past.map((x: any) => [x.name, x.group, x.sent, x.needs.length]), [['Old finished', 'done', 5000, 0], ['Small finished', 'done', 100, 0]]);
   const twm = r.body.rows[0];
   assert.deepEqual(twm.needs.map((x: any) => [x.kind, x.agent]), [['pause', 'Atlas'], ['next', 'Atlas']]);
   assert.equal(r.body.rows[1].needs[0].kind, 'low', '3.3 per 1,000 vs the agency average (40+10+2)/(5000+2000+600) = 6.8');
@@ -223,7 +225,8 @@ test('campaigns API: needs a session; needs action first, the Twenty West pair o
 
   const one = await call('/hq/api/campaigns?client=twentywestmedia', cookie);
   assert.deepEqual(one.body.rows.map((x: any) => x.id), ['recCTWM0000000001', 'recCTWM0000000002'], 'both Twenty West records under one client');
-  assert.deepEqual(one.body.counts, { action: 1, live: 1, building: 1 });
+  assert.deepEqual(one.body.counts, { action: 1, live: 1, building: 1, past: 0 });
+  assert.deepEqual((await call('/hq/api/campaigns?client=mjjbrilliant', cookie)).body.past.map((x: any) => x.name), ['Old finished'], 'Past follows the client picker');
   assert.equal((await call('/hq/api/campaigns?client=nope', cookie)).body.client, '', 'an unknown client shows all');
 
   // One batched read per table; cached 60 seconds; no writes ever.
@@ -259,8 +262,15 @@ test('campaigns API: the campaign page (stats, steps, engine history, Activity l
   assert.ok(!/airtable\.com/.test(r.text), 'no Airtable links anywhere');
   assert.equal(r.body.links.bison, 'https://send.dulcy.io/campaigns/1');
   assert.equal(r.body.plan.state, 'live');
+  // Round 5: Atlas's take, from the campaign's own numbers (2-3 sentences, nothing invented).
+  assert.deepEqual(r.body.take.lines, [
+    '72% of the list used (1,800 of 2,500 leads): 10 interested replies and 2 meetings from 2,000 emails.',
+    'Bounce is 4.6%, over the 4% limit: it should be paused and the list checked.',
+    'Next: At 72% sent: plan the next campaign.',
+  ]);
+  assert.equal(r.body.take.basis, 'numbers');
 
-  // A finished campaign under 500 sent is not in the cached read: read by its id.
+  // A finished campaign under 500 sent (round 5: now in the cached read for Past).
   const done = await call('/hq/api/campaigns/recCSMALL00000001', cookie);
   assert.equal(done.status, 200);
   assert.equal(done.body.campaign.group, 'done');

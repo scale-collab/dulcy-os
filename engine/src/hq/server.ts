@@ -25,7 +25,7 @@ import { bisonStatsFrom, customResults, profitView, type BisonStatsFn } from './
 import { createSheetsClient, type SheetsClient } from '../providers/google.js';
 import { createXeroClient, type XeroClient } from '../providers/xero.js';
 import { PERIODS, type Period } from './clientDeals.js';
-import type { FinanceDeps } from './finance.js';
+import { readInvoice, XERO_ID, type FinanceDeps } from './finance.js';
 import { PORTAL_SIGNUP_SENT, SIGNUP_SENT, addUser, googleSignUp, listUsers, manageUser, pendingCount, signUp } from './users.js';
 import { portalWrite, recentPortalWrites } from './portalWrites.js';
 import { forgotPassword, inviteSoftrUser, linkPortalUser, listSoftrUsers, makeSetupLink, portalGoogleNewUser, setPasswordWithToken, suggestedClient, updateOwnAccount } from './portalAccounts.js';
@@ -47,15 +47,18 @@ import { buildDeliverability, cachedDeliv, inboxCosts } from './deliverability.j
 import { bouncesView, verificationView } from './bounceStats.js';
 import { portalRoute, resolvePortalClient } from './portal.js';
 import { contentSummary, contentView, decideIdea } from './content.js';
+import { contentItemDetail, decideDraft, isRunKey, recordPost, runContentAction, scheduleDraft } from './contentActions.js';
 import { allDeals, dealDetail, nyDay, salesView } from './sales.js';
 // Batch 4a: Sales insights (periods, capacity, Close hottest deals) and the contract draft.
 import { DULCY_WS, insightsView, saveCapacitySettings, salesDeps, type SalesDeps } from './salesInsights.js';
 // Round 3: period picker numbers, Close pipeline + funnel, pricing calculator, agent conversations.
 import { numbersView, resolvePeriod } from './salesPeriods.js';
 import { closeFunnel, closePipeline, readCloseRange } from './salesClose.js';
+// Round 5: Sales goals (read from Airtable Sales Goals) and Cole's take.
+import { defaultTakeModel, readGoalRows, salesGoalsView, type TakeModel } from './salesGoals.js';
 import { pricingView } from './pricing.js';
 import { agentConversation, agentConversations } from './agentTalk.js';
-import { createInDulcySign, draftForm, saveDraft } from './contracts.js';
+import { createInDulcySign, draftForm, pullFromClose, saveDraft } from './contracts.js';
 // Phone notifications (Web Push), Alex 2026-11-27.
 import { kickFlush, notifyChatReply, pushRoute, webPushSender, type PushSender } from './push.js';
 // Finances → Personal through Plaid (read only, owner only), Alex 2026-11-28.
@@ -71,6 +74,8 @@ export interface HqDeps {
   sales?: SalesDeps;
   /** Phone notifications: the push sender (tests pass a fake; nothing goes out from tests). */
   pushSender?: PushSender;
+  /** Round 5: Cole's take on the sales numbers (null = the rule line only; tests pass a fake). */
+  coleTakeModel?: TakeModel | null;
 }
 
 const SECURITY_HEADERS: Record<string, string> = {
@@ -201,6 +206,7 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
   // Batch 4a: read-only Close / Xero / calendar readers for Sales (tests pass fakes).
   const sales: SalesDeps = deps.sales ?? salesDeps(db, cfg, deps.fetchImpl);
   const pushSender: PushSender = deps.pushSender ?? webPushSender();
+  const takeModel: TakeModel | null = deps.coleTakeModel !== undefined ? deps.coleTakeModel : defaultTakeModel(cfg);
 
   return async function handle(req: http.IncomingMessage, res: http.ServerResponse, url: URL): Promise<boolean> {
     const host = hostOf(req);
@@ -468,6 +474,17 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         json(res, r.status, r.body);
         return true;
       }
+      // Round 5: one open client invoice in detail (Xero, read only: one GET). Owner only.
+      if (p.startsWith('/hq/api/finances/invoices/') && req.method === 'GET') {
+        if (!owner) { json(res, 403, { error: 'only the owner sees money' }); return true; }
+        const invoiceId = p.slice('/hq/api/finances/invoices/'.length);
+        if (!XERO_ID.test(invoiceId)) { json(res, 400, { error: 'not a Xero invoice id' }); return true; }
+        const x = financeDeps().xero;
+        if (!x) { json(res, 503, { error: 'Xero is not connected on the server' }); return true; }
+        const inv = await readInvoice(x, invoiceId);
+        if (!inv) json(res, 404, { error: 'no such client invoice in Xero' }); else json(res, 200, inv);
+        return true;
+      }
       // Batch 2: agency numbers and money, owner only (members get 403, nothing else).
       // Round 4: profit per client and Finances (company + personal), owner only too.
       if ((p === '/hq/api/clients/numbers' || p === '/hq/api/clients/finance' || p === '/hq/api/clients/profit' || p === '/hq/api/finances') && req.method === 'GET') {
@@ -582,7 +599,9 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
       m = p.match(/^\/hq\/api\/deliverability(?:\/(inboxes|placement|domains))?$/);
       if (m && req.method === 'GET') { json(res, 200, await deliverabilityView(needAt(), db, cfg, m[1] ?? 'attention', url.searchParams, owner)); return true; }
 
-      // Content (Step 3, 2026-11-26): owner only (content is Alex-only; members get 403). One write: the idea decision.
+      // Content (Step 3, 2026-11-26): owner only (content is Alex-only; members get 403). Round 5 (2026-11-28): every
+      // Content Center button (run), Distribution (draft approve / schedule) and the posted stats. Writes need the
+      // same-origin check above; nothing posts.
       if (p === '/hq/api/content' || p.startsWith('/hq/api/content/')) {
         if (!owner) { json(res, 403, { error: 'only the owner sees content' }); return true; }
         if (p === '/hq/api/content' && req.method === 'GET') { json(res, 200, await contentView(needAt(), db, cfg.airtableBaseId, { refresh: url.searchParams.get('refresh') === '1' })); return true; }
@@ -593,6 +612,30 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
           if (!['approve', 'reject'].includes(b.verdict)) { json(res, 400, { error: 'verdict must be approve or reject' }); return true; }
           const r = await decideIdea(needAt(), db, cm[1], b.verdict, user.name);
           json(res, r.status, r.error ? { error: r.error } : { ok: true, ...r.result });
+          return true;
+        }
+        const runDeps = () => ({ at: needAt(), db, cfg, fetchImpl: deps.fetchImpl, by: user.name });
+        const im = p.match(/^\/hq\/api\/content\/items\/(rec[A-Za-z0-9]{14})(?:\/(run|posted))?$/);
+        if (im && !im[2] && req.method === 'GET') { const r = await contentItemDetail(needAt(), db, im[1]); json(res, r.status, r.error ? { error: r.error } : r.item); return true; }
+        if (im && im[2] === 'run' && req.method === 'POST') {
+          const b = await readJson(req, 5_000);
+          if (!isRunKey(b.action)) { json(res, 400, { error: 'unknown action' }); return true; }
+          const r = await runContentAction(runDeps(), im[1], b.action, b);
+          json(res, r.status, r.error ? { error: r.error } : { ok: true, message: r.message });
+          return true;
+        }
+        if (im && im[2] === 'posted' && req.method === 'POST') {
+          const r = await recordPost(runDeps(), im[1], await readJson(req, 5_000));
+          json(res, r.status, r.error ? { error: r.error } : { ok: true, message: r.message });
+          return true;
+        }
+        const dm = p.match(/^\/hq\/api\/content\/drafts\/(rec[A-Za-z0-9]{14})(?:\/schedule)?$/);
+        const scheduling = !!dm && p.endsWith('/schedule');
+        if (dm && req.method === 'POST') {
+          const b = await readJson(req, 2_000);
+          if (!scheduling && !['approve', 'changes'].includes(b.verdict)) { json(res, 400, { error: 'verdict must be approve or changes' }); return true; }
+          const r = scheduling ? await scheduleDraft(runDeps(), dm[1], String(b.at ?? '')) : await decideDraft(runDeps(), dm[1], b.verdict);
+          json(res, r.status, r.error ? { error: r.error } : { ok: true, message: r.message });
           return true;
         }
         json(res, 404, { error: 'not found' }); return true;
@@ -660,18 +703,29 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
           json(res, 200, await insightsView(deals, db, sales, owner, { now, refresh: url.searchParams.get('refresh') === '1' }));
           return true;
         }
+        // Round 5: goals vs actuals and Cole's take (reads only; Cole's words cached for the day).
+        if (p === '/hq/api/sales/goals' && req.method === 'GET') {
+          const now = Date.now(); const refresh = url.searchParams.get('refresh') === '1';
+          const [{ deals }, rows] = await Promise.all([allDeals(needAt(), db, refresh, now, extras), readGoalRows(needAt(), refresh, now).catch(() => null)]);
+          json(res, 200, await salesGoalsView(db, takeModel, rows, deals, nyDay(now), owner));
+          return true;
+        }
         if (p === '/hq/api/sales/settings' && req.method === 'POST') {
           json(res, 200, { settings: await saveCapacitySettings(db, await readJson(req, 2_000), user.name) });
           return true;
         }
-        m = p.match(/^\/hq\/api\/sales\/(rec[A-Za-z0-9]{14})\/contract$/) ?? p.match(/^\/hq\/api\/sales\/(rec[A-Za-z0-9]{14})\/contract\/create$/);
+        m = p.match(/^\/hq\/api\/sales\/(rec[A-Za-z0-9]{14})\/contract$/) ?? p.match(/^\/hq\/api\/sales\/(rec[A-Za-z0-9]{14})\/contract\/(create|close)$/);
         if (m) {
           const create = p.endsWith('/create');
+          const fromClose = p.endsWith('/close');
           const now = Date.now();
           const { deals } = await allDeals(needAt(), db, false, now, extras);
           const deal = deals.find((d) => d.id === m![1] || d.salesRec === m![1] || d.agreements.some((a) => a.id === m![1]));
           if (!deal) { json(res, 404, { error: 'no such deal' }); return true; }
-          if (!create && req.method === 'GET') { json(res, 200, await draftForm(db, deal, nyDay(now))); return true; }
+          // Round 5: "Pull from Close" reads the deal's Close lead (never writes; the form is saved separately).
+          if (fromClose && req.method === 'GET') { const r = await pullFromClose(sales.close, deal, url.searchParams.get('type')); json(res, r.status, r.body); return true; }
+          if (fromClose) { json(res, 405, { error: 'method not allowed' }); return true; }
+          if (!create && req.method === 'GET') { json(res, 200, await draftForm(db, deal, nyDay(now), !!sales.close)); return true; }
           if (!create && req.method === 'POST') { const r = await saveDraft(db, deal, await readJson(req, 20_000), user.name, nyDay(now)); json(res, r.status, r.body); return true; }
           if (create && req.method === 'POST') { const b = await readJson(req, 2_000); const r = await createInDulcySign(needAt(), db, deal, Number(b.draftId), user.name, nyDay(now)); json(res, r.status, r.body); return true; }
           json(res, 405, { error: 'method not allowed' }); return true;

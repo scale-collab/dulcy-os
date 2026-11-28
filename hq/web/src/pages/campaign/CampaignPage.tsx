@@ -1,14 +1,17 @@
 // One campaign, as the Airtable Campaign Center's record panel. Round 4 (Alex 2026-11-28: "it could look
-// easier, it's so elongated and spaced out"): a compact header (name, client, status, the numbers in one
-// strip, one small row of buttons: Launch, Pause, Top up, Update senders…), then a few tabs:
+// easier, it's so elongated and spaced out"): one header, then a few tabs:
 // Overview · Copy · Lead list · Senders · Plan · History.
+// Round 5 (Alex 2026-11-28: "the campaign name and status look too small, too congested"): the header
+// is big and clear: the name as a large title, client and status as clear pills, the key numbers in
+// large tiles with room to breathe, the buttons in one tidy row under a line. Overview opens with
+// Atlas's take (2-3 sentences from the numbers, his plan and his newest note; never invented).
 // Pause acts at once; Launch (and every other press) asks one last time (RULES 2026-11-27).
 // Copy: each email shown like an email (subject, body, then the signature the build adds), every
 // version of it, and what EmailBison gets (the spintax sequence fields) behind a toggle.
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { api, type CampaignAccountB3, type CampaignCenterR2, type CampaignDetailB3, type CopyR2 } from '../../api';
+import { api, type AtlasTakeR5, type CampaignAccountB3, type CampaignCenterR2, type CampaignDetailB3, type CopyR2 } from '../../api';
 import { Avatar, BackLink, Card, cx, ErrorBox, go, Icon, PageSkeleton, Pill, StatusDot, timeAgo } from '../../ui';
-import { NEED, StatusPill, Steps } from './bits';
+import { Bar, NEED, Steps } from './bits';
 import { PlanCard } from './Plans';
 import { CompactActions, num, rate, slash, slashTime, Tabs } from './shared';
 import type { AutomationR2 } from '../../api';
@@ -46,22 +49,30 @@ export function CampaignPage({ id, tab }: { id: string; tab?: string }) {
   return (
     <div>
       {back}
-      <Card className="p-4 sm:p-5">
+      <Card className="p-5 sm:p-7">
         <div className="flex items-start justify-between gap-3">
-          <h1 className="min-w-0 break-words text-[19px] font-bold leading-snug tracking-tight sm:text-[21px]">{c.name}</h1>
+          <h1 className="min-w-0 break-words text-[24px] font-bold leading-[1.15] tracking-tight text-fg sm:text-[32px]">{c.name}</h1>
           {d.links.bison && /^https:\/\//i.test(d.links.bison) && (
-            <a href={d.links.bison} target="_blank" rel="noopener noreferrer" title="Open in EmailBison" className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg border border-line px-2.5 text-sm font-semibold text-fg-2 hover:bg-hover"><Icon name="external" size={15} /><span className="hidden sm:inline">EmailBison</span></a>
+            <a href={d.links.bison} target="_blank" rel="noopener noreferrer" title="Open in EmailBison" className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-lg border border-line px-3 text-sm font-semibold text-fg-2 hover:bg-hover"><Icon name="external" size={16} /><span className="hidden sm:inline">EmailBison</span></a>
           )}
         </div>
-        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-muted">
-          {c.client ? <button onClick={() => go(`clients/${c.clientRec}`)} className="font-medium text-accent-ink hover:underline">{c.client}</button> : <span className="text-warn">No client link</span>}
-          <StatusPill r={c} />
-          {c.stage && <Pill>{c.stage}</Pill>}
-          {d.detail.skipBouncePause && <Pill tone="warn">Skip Bounce Pause on</Pill>}
-          {center && center.bison.length > 0 && <span className="text-xs">EmailBison {center.bison.join(' + ')}</span>}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {c.client
+            ? <button onClick={() => go(`clients/${c.clientRec}`)} className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 text-[15px] font-semibold text-fg hover:bg-hover"><Icon name="users" size={15} className="text-muted" />{c.client}</button>
+            : <span className="inline-flex min-h-9 items-center rounded-full bg-warn-soft px-3.5 text-[15px] font-semibold text-warn">No client link</span>}
+          <BigStatus r={c} />
+          {c.stage && c.stage !== 'Live' && <span className="inline-flex min-h-9 items-center rounded-full border border-line bg-sunken px-3.5 text-[15px] font-medium text-fg-2">{c.stage}</span>}
+          {d.detail.skipBouncePause && <span className="inline-flex min-h-9 items-center rounded-full bg-warn-soft px-3.5 text-sm font-semibold text-warn">Skip Bounce Pause on</span>}
         </div>
+        {(c.started || c.ended || (center && center.bison.length > 0)) && (
+          <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
+            {c.started && <span>Started {slash(c.started)}</span>}
+            {c.ended && <span>Ended {slash(c.ended)}</span>}
+            {center && center.bison.length > 0 && <span>EmailBison {center.bison.join(' + ')}</span>}
+          </div>
+        )}
         <Numbers c={c} />
-        {center && <CompactActions className="mt-3" actions={center.actions} what={c.name} endpoint={`/campaigns/${id}/action`} onDone={load} />}
+        {center && center.actions.length > 0 && <div className="mt-5 border-t border-line pt-4"><CompactActions actions={center.actions} what={c.name} endpoint={`/campaigns/${id}/action`} onDone={load} /></div>}
         {center && <AutomationLine a={center.automation} />}
       </Card>
 
@@ -69,6 +80,7 @@ export function CampaignPage({ id, tab }: { id: string; tab?: string }) {
 
       {t === 'overview' && (
         <div className="mt-3 space-y-3">
+          {d.take && <AtlasTakeCard take={d.take} />}
           {c.needs.length > 0 && (
             <ul className="space-y-1.5">
               {c.needs.map((x) => (
@@ -134,25 +146,59 @@ export function CampaignPage({ id, tab }: { id: string; tab?: string }) {
   );
 }
 
-/** The numbers in one strip (no big cards). */
+/** The status as a big, clear pill with its dot: Active (green; amber or red on a bounce flag), building (blue), finished (grey). */
+function BigStatus({ r }: { r: { group: string; status: string; flag?: 'pause' | 'watch' | null } }) {
+  const word = r.group === 'live' ? 'Active' : r.status || (r.group === 'building' ? 'Draft' : 'Done');
+  const tone = r.group === 'live' ? (r.flag === 'pause' ? 'bad' : r.flag === 'watch' ? 'warn' : 'good') : r.group === 'building' ? 'info' : 'plain';
+  const cls = { good: 'bg-good-soft text-good', warn: 'bg-warn-soft text-warn', bad: 'bg-bad-soft text-bad', info: 'bg-info-soft text-info', plain: 'border border-line bg-sunken text-fg-2' }[tone];
+  const dot = { good: 'bg-dot-good', warn: 'bg-dot-warn', bad: 'bg-dot-bad', info: 'bg-info', plain: 'bg-dot-idle' }[tone];
+  return (
+    <span className={cx('inline-flex min-h-9 items-center gap-2 rounded-full px-3.5 text-[15px] font-semibold', cls)}>
+      <span aria-hidden="true" className={cx('h-2.5 w-2.5 rounded-full', dot)} />{word}
+      {r.group === 'live' && r.flag && <span className="text-sm font-medium opacity-80">· bounce {r.flag === 'pause' ? 'over 4%' : 'watch'}</span>}
+    </span>
+  );
+}
+
+/** The key numbers: large tiles with room to breathe (2 across on the phone, 3 on a tablet, 6 on a computer). */
 function Numbers({ c }: { c: CampaignDetailB3['campaign'] }) {
-  const items: { label: string; v: string; sub?: string; tone?: string }[] = [
-    { label: 'Sent', v: num(c.sent) },
-    { label: 'Replies', v: num(c.replies), sub: rate(c.replies, c.contacted) },
+  const used = Math.round(c.progress * 100);
+  const items: { label: string; v: string; sub?: string; tone?: string; bar?: number }[] = [
+    { label: 'Sent', v: num(c.sent), sub: c.contacted ? `to ${num(c.contacted)} leads` : undefined },
+    { label: 'Replies', v: num(c.replies), sub: c.contacted ? `${rate(c.replies, c.contacted)} of leads` : undefined },
     { label: 'Interested', v: num(c.interested), sub: c.replies ? `${rate(c.interested, c.replies)} of replies` : undefined },
-    { label: 'Meetings', v: num(c.booked) },
-    { label: 'Bounce', v: `${c.bounce}%`, sub: c.flag === 'pause' ? 'over 4%' : c.flag === 'watch' ? 'watch' : undefined, tone: c.flag === 'pause' ? 'text-bad' : c.flag === 'watch' ? 'text-warn' : undefined },
-    { label: 'Leads used', v: `${Math.round(c.progress * 100)}%`, sub: c.totalLeads ? `${num(c.contacted)} of ${num(c.totalLeads)}` : undefined },
+    { label: 'Meetings', v: num(c.booked), sub: c.interested ? `${rate(c.booked, c.interested)} of interested` : undefined },
+    // The limits (RULES.md): over 2.5% = watch, over 4% = pause. A finished campaign keeps its colour, without the action.
+    { label: 'Bounce', v: `${c.bounce}%`, sub: !c.sent ? undefined : c.bounce > 4 ? (c.group === 'live' ? 'over 4%: pause' : 'over 4%') : c.bounce > 2.5 ? (c.group === 'live' ? 'over 2.5%: watch' : 'over 2.5%') : 'under 2.5%', tone: c.bounce > 4 ? 'text-bad' : c.bounce > 2.5 ? 'text-warn' : undefined },
+    { label: 'Leads used', v: `${used}%`, sub: c.totalLeads ? `${num(c.contacted)} of ${num(c.totalLeads)}` : undefined, bar: c.progress },
   ];
   return (
-    <dl className="mt-3 grid grid-cols-3 gap-x-3 gap-y-2 rounded-xl bg-sunken px-3 py-2.5 sm:grid-cols-6">
+    <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
       {items.map((x) => (
-        <div key={x.label} className="min-w-0">
-          <dt className="truncate text-[11px] font-medium text-muted">{x.label}</dt>
-          <dd className={cx('tabular text-[17px] font-bold leading-tight text-fg', x.tone)}>{x.v}{x.sub && <span className="ml-1 text-[11px] font-medium text-muted">{x.sub}</span>}</dd>
+        <div key={x.label} className="min-w-0 rounded-2xl border border-line bg-sunken px-4 py-3.5">
+          <dt className="truncate text-[13px] font-medium text-muted">{x.label}</dt>
+          <dd className={cx('tabular mt-1 truncate text-[28px] font-bold leading-none tracking-tight text-fg sm:text-[30px]', x.tone)}>{x.v}</dd>
+          {x.bar !== undefined && <div className="mt-2.5"><Bar v={x.bar} /></div>}
+          {x.sub && <dd className="mt-1.5 truncate text-[13px] text-muted">{x.sub}</dd>}
         </div>
       ))}
     </dl>
+  );
+}
+
+/** Atlas's take: 2-3 sentences on how the campaign is doing (rule-based, from its own numbers; never invented). */
+function AtlasTakeCard({ take }: { take: AtlasTakeR5 }) {
+  return (
+    <Card className="p-4 sm:p-5">
+      <div className="flex items-start gap-3">
+        <Avatar name="Atlas" size="md" />
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-fg">Atlas's take</div>
+          <p className="mt-1 text-[15px] leading-6 text-fg-2">{take.text}</p>
+          <p className="mt-1.5 text-xs text-muted">{take.source}</p>
+        </div>
+      </div>
+    </Card>
   );
 }
 

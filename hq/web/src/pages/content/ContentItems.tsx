@@ -7,12 +7,17 @@
 // every step of the video in order (done / now / later) with where each runs: In HQ, Sienna (automatic),
 // a Content Center button (HQ can't press those yet: the button opens the Content Center), by hand, or
 // "Not automated yet". The steps come from the engine (content.ts videoSteps), never invented here.
-// Writes: only the idea decision. "Ask Sienna now" puts a task on Sienna's list (POST /fix-it); it writes
-// nothing to Airtable. HQ never posts, schedules or publishes. No Airtable record links (RULES 2026-11-27).
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { api, type ContentCcStage, type ContentCenterView, type ContentItem, type ContentStep, type ContentStepButton } from '../../api';
-import { BackLink, Button, Card, cx, Empty, ExtLink, go, Icon, Pill } from '../../ui';
+// Round 5 (Alex, 2026-11-28: "I don't want what's in Airtable to stay in Airtable"): every Content Center
+// button is an HQ button here, in the Next step box and in the steps list (ContentActions.tsx; the engine
+// does each one the Content Center's way). The video page also has the YouTube copy and Distribution.
+// "Ask Sienna now" puts a task on Sienna's list (POST /fix-it). HQ never posts; it schedules only when Alex
+// presses Schedule on an approved Instagram / YouTube Shorts post. No Airtable record links (RULES 2026-11-27).
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { api, type ContentCcStage, type ContentCenterView, type ContentItem, type ContentItemDetail, type ContentStep, type ContentStepButton } from '../../api';
+import type { ReactNode } from 'react';
+import { BackLink, Button, Card, cx, Empty, ErrorBox, ExtLink, go, Icon, Pill } from '../../ui';
 import { CHANNEL_OPTIONS, DecideButtons, GammaBlock, Head, Select, StatusLine, WHERE, copyText, dateOnly, day, readChannel, saveChannel, shortLabel, type ChannelKey } from './shared';
+import { Distribution, RunButton, YouTubeCopy } from './ContentActions';
 
 const stageTone = (s: ContentCcStage) => (s === 'Published' ? 'good' : s === 'Idea' ? 'accent' : 'plain') as 'good' | 'accent' | 'plain';
 /** "Record 11/27 · Publish 12/1", or "Posted 11/27" once it is on YouTube. */
@@ -123,19 +128,21 @@ function AskSienna({ b, r, primary }: { b: ContentStepButton; r: ContentItem; pr
   );
 }
 
-/** One step button. Links open in a new tab (Frame.io, Gamma, YouTube); "contentCenter" opens the Content Center page. */
-function StepAction({ b, r, d, primary, onScript, onDone }: { b: ContentStepButton; r: ContentItem; d: ContentCenterView; primary?: boolean; onScript: () => void; onDone: (msg: string) => void }) {
+/** One step button: an HQ button (run), or a link that opens in a new tab (Frame.io, Gamma, YouTube). */
+function StepAction({ b, r, primary, onScript, onDone, detail, onDistribution }: { b: ContentStepButton; r: ContentItem; primary?: boolean; onScript: () => void; onDone: (msg: string) => void; detail: ContentItemDetail | null; onDistribution: () => void }) {
   const [copied, setCopied] = useState('');
   const solid = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-[15px] font-semibold';
   const look = primary ? `${solid} bg-ink text-ink-fg hover:bg-ink-hover` : `${solid} border border-line-strong bg-surface text-fg hover:bg-hover`;
   if (b.kind === 'decide') return r.facts.decision === 'Duplicate' ? <p className="text-sm text-warn">A duplicate: the primary idea is named in its review reason.</p> : <DecideButtons id={r.id} onDone={onDone} />;
   if (b.kind === 'askSienna') return <AskSienna b={b} r={r} primary={primary} />;
   if (b.kind === 'openScript') return <Button tone={primary ? 'primary' : 'quiet'} icon="file" onClick={onScript}>{b.label}</Button>;
+  if (b.kind === 'run') return <RunButton id={r.id} b={b} primary={primary} onDone={onDone} detail={detail} />;
+  if (b.kind === 'distribution') return <Button tone={primary ? 'primary' : 'quiet'} icon="send" onClick={onDistribution}>{b.label}</Button>;
   if (b.kind === 'copyGamma') {
     const copy = async () => setCopied((await copyText(r.prep?.gamma ?? '')) ? 'Copied. In Gamma: Create → Paste in text.' : 'Copy did not work here: open the script below and copy the outline.');
     return <>{<Button tone={primary ? 'primary' : 'quiet'} icon="file" onClick={() => void copy()}>{b.label}</Button>}{copied && <span role="status" className="w-full text-sm text-good">{copied}</span>}</>;
   }
-  const href = b.kind === 'contentCenter' ? d.links.contentCenter : b.url ?? '';
+  const href = b.url ?? '';
   if (!/^https:\/\//.test(href)) return null;
   return <a href={href} target="_blank" rel="noopener noreferrer" className={look}><Icon name="external" size={16} />{b.label}</a>;
 }
@@ -154,6 +161,19 @@ function Item({ r, d, onChanged }: { r: ContentItem; d: ContentCenterView; onCha
   const also = r.steps.filter((s) => s.state === 'now' && s.optional);
   const openScript = () => { setScriptOpen(true); requestAnimationFrame(() => scriptRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })); };
   const nDone = r.steps.filter((s) => s.state === 'done').length;
+  // Round 5: the video's own detail (YouTube copy, the posts brief, Distribution), read fresh when it opens.
+  const [detail, setDetail] = useState<ContentItemDetail | null>(null);
+  const [detailError, setDetailError] = useState('');
+  const loadDetail = useCallback(() => {
+    if (r.awaiting) return;
+    api<ContentItemDetail>(`/content/items/${r.id}`).then((x) => { setDetail(x); setDetailError(''); }).catch((e) => setDetailError((e as Error).message));
+  }, [r.id, r.awaiting]);
+  useEffect(() => loadDetail(), [loadDetail]);
+  const distRef = useRef<HTMLDivElement>(null);
+  const openDistribution = () => distRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const finished = (msg: string) => { setDone(msg); loadDetail(); };
+  const showDistribution = !!detail && (f.video.youtube || f.repurposing.drafts || detail.distribution.platforms.some((p) => p.drafts.length || p.manual));
+  const act = (b: ContentStepButton, i: number, primary: boolean) => <StepAction key={`${b.kind}-${b.run ?? ''}-${i}`} b={b} r={r} primary={primary} onScript={openScript} onDone={finished} detail={detail} onDistribution={openDistribution} />;
   return (
     <div className="space-y-4">
       {/* 1. Stage, title, dates */}
@@ -163,6 +183,7 @@ function Item({ r, d, onChanged }: { r: ContentItem; d: ContentCenterView; onCha
           {r.thisWeek && <Pill tone="good">Record this week</Pill>}
           {r.flags.map((x) => <Pill key={x} tone="warn">{x}</Pill>)}
           <span className="text-xs text-muted">{shortLabel(r.channel)}</span>
+          {r.running && <Pill tone="info" icon="clock">Running: {r.running}</Pill>}
         </div>
         <h2 className="mt-2 break-words text-xl font-bold leading-snug tracking-tight text-fg sm:text-2xl">{r.title}</h2>
         {dates(r) && <p className="mt-1 text-sm text-fg-2">{dates(r)}{r.posted && r.postedDate && r.postedFrom === 'YouTube' ? <span className="text-muted"> (from YouTube; no date saved in the Content Center)</span> : null}</p>}
@@ -173,7 +194,7 @@ function Item({ r, d, onChanged }: { r: ContentItem; d: ContentCenterView; onCha
       <section aria-labelledby={`next-${r.id}`} className="rounded-2xl border-2 border-accent/40 bg-accent-soft/40 p-4 shadow-card sm:p-5">
         <div className="text-xs font-bold uppercase tracking-wider text-accent-ink">Next step</div>
         {done ? (
-          <div className="mt-2 flex items-start gap-2.5"><Icon name="check" size={18} className="mt-0.5 text-good" /><div className="min-w-0"><p className="text-[15px] text-fg">{done}</p><Button className="mt-3" icon="refresh" onClick={onChanged}>Refresh</Button></div></div>
+          <div role="status" className="mt-2 flex items-start gap-2.5"><Icon name="check" size={18} className="mt-0.5 text-good" /><div className="min-w-0"><p className="text-[15px] text-fg">{done}</p><Button className="mt-3" icon="refresh" onClick={() => { setDone(''); onChanged(); }}>Refresh</Button></div></div>
         ) : next ? (
           <>
             <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -190,17 +211,17 @@ function Item({ r, d, onChanged }: { r: ContentItem; d: ContentCenterView; onCha
             )}
             {next.buttons.length > 0 && (
               <div className="mt-4 flex flex-wrap items-center gap-2">
-                {next.buttons.map((b, i) => <StepAction key={`${b.kind}-${i}`} b={b} r={r} d={d} primary={i === 0} onScript={openScript} onDone={setDone} />)}
+                {next.buttons.map((b, i) => act(b, i, i === 0))}
               </div>
             )}
-            {next.where === 'contentCenter' && <p className="mt-2 text-xs text-muted">HQ can't press this button yet: it runs an n8n flow from the Content Center. The button above opens the Content Center; pick this video there.</p>}
+            {r.running && <p className="mt-2 text-xs text-muted">"{r.running}" is running for this video: the automation buttons work again when it finishes (Refresh).</p>}
           </>
         ) : <p className="mt-1 text-[15px] text-fg-2">Nothing left to do.</p>}
         {!done && also.map((s) => (
           <div key={s.key} className="mt-4 border-t border-accent/20 pt-3">
             <div className="flex flex-wrap items-center gap-2"><span className="text-sm font-semibold text-fg">Also before you record: {s.title}</span><Pill tone={whereTone(s.where)}>{WHERE[s.where]}</Pill></div>
             <p className="mt-1 break-words text-sm text-fg-2">{s.text}</p>
-            {s.buttons.length > 0 && <div className="mt-2 flex flex-wrap items-center gap-2">{s.buttons.map((b, i) => <StepAction key={`${b.kind}-${i}`} b={b} r={r} d={d} onScript={openScript} onDone={setDone} />)}</div>}
+            {s.buttons.length > 0 && <div className="mt-2 flex flex-wrap items-center gap-2">{s.buttons.map((b, i) => act(b, i, false))}</div>}
           </div>
         ))}
         {(r.prep || fri) && (
@@ -232,15 +253,24 @@ function Item({ r, d, onChanged }: { r: ContentItem; d: ContentCenterView; onCha
         </details>
       )}
 
-      {/* 4. Every step of this video, in order */}
+      {/* 3b. Round 5: the YouTube title and description to copy (after "Prepare YouTube details") */}
+      {detail && !f.video.youtube && <YouTubeCopy d={detail} />}
+
+      {/* 4. Every step of this video, in order, each with its HQ button */}
       <section>
-        <Head title="All steps" icon="list" sub={`${nDone} of ${r.steps.length} done. Each step says where it happens.`} />
+        <Head title="All steps" icon="list" sub={`${nDone} of ${r.steps.length} done. Each step says where it happens; the buttons work right here.`} />
         <Card className="overflow-hidden p-0">
           <ol className="divide-y divide-line">
-            {r.steps.map((s, i) => <StepRow key={s.key} s={s} n={i + 1} />)}
+            {r.steps.map((s, i) => <StepRow key={s.key} s={s} n={i + 1} buttons={s.state !== 'done' && s.buttons.length > 0 && !done ? <div className="mt-2 flex flex-wrap items-center gap-2">{s.buttons.map((b, k) => act(b, k, false))}</div> : null} />)}
           </ol>
         </Card>
       </section>
+
+      {/* 4b. Round 5: Distribution — each platform's post, approve, post, record where / when / stats */}
+      <div ref={distRef} className="scroll-mt-4">
+        {detailError && <ErrorBox error={detailError} retry={loadDetail} />}
+        {showDistribution && <Distribution id={r.id} d={detail} reload={loadDetail} />}
+      </div>
 
       {/* 5. Schedule */}
       <section>
@@ -293,8 +323,8 @@ function CopyButton({ text, label }: { text: string; label: string }) {
   return <Button tone="ghost" icon={ok === 'yes' ? 'check' : 'file'} className="min-h-9 px-3 text-sm" onClick={() => void copyText(text).then((x) => setOk(x ? 'yes' : 'no'))}>{ok === 'yes' ? 'Copied' : ok === 'no' ? 'Select and copy' : label}</Button>;
 }
 
-/** One step: done (check), now (accent), later (number); its title, where it happens, and the one line. */
-function StepRow({ s, n }: { s: ContentStep; n: number }) {
+/** One step: done (check), now (accent), later (number); its title, where it happens, the one line and its buttons. */
+function StepRow({ s, n, buttons }: { s: ContentStep; n: number; buttons?: ReactNode }) {
   return (
     <li className={cx('flex items-start gap-3 px-4 py-3 sm:px-5', s.state === 'now' && 'bg-accent-soft/40')}>
       <span aria-hidden="true" className={cx('mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold',
@@ -310,8 +340,8 @@ function StepRow({ s, n }: { s: ContentStep; n: number }) {
         </div>
         {/* Steps still to come stay one line; "How" opens what to do there. */}
         {s.text && (s.state === 'later'
-          ? <details className="mt-0.5 text-sm text-muted"><summary className="min-h-7 cursor-pointer select-none font-medium text-fg-2">How</summary><p className="mt-0.5 break-words">{s.text}</p></details>
-          : <p className="mt-0.5 break-words text-sm text-fg-2">{s.text}</p>)}
+          ? <details className="mt-0.5 text-sm text-muted"><summary className="min-h-7 cursor-pointer select-none font-medium text-fg-2">How</summary><p className="mt-0.5 break-words">{s.text}</p>{buttons}</details>
+          : <><p className="mt-0.5 break-words text-sm text-fg-2">{s.text}</p>{buttons}</>)}
       </div>
     </li>
   );

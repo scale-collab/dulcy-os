@@ -204,6 +204,8 @@ export interface ContentNext { title: string; who: string; how: 'hq' | 'engine' 
 export interface FridayIdea {
   id: string; title: string; recordingDate: string; publishDate: string; late: boolean; scriptReady: boolean; script: string; angle: string; ideaHook: string;
   titles: string[]; hooks: string[]; thumbnail: string; gamma: string; gammaUrl: string; youtube: string; checks: string[]; airtable: string;
+  /** Round 5: the video's Raw folder in Frame.io ('' = not set up yet). */
+  rawFolderUrl: string;
 }
 export interface ContentPipelineRow { id: string; title: string; channel: string; key: string; stage: ContentStage; recordingDate: string; publishDate: string; status: string; productionStage: string; next: ContentNext | null; flags: string[]; airtable: string }
 export interface ContentView {
@@ -299,13 +301,31 @@ export interface ClientProfitView {
   period: ClientPeriod | 'custom'; range: { from: string; to: string; label: string }; clients: ClientProfit[];
   totals: { revenue: number; knownCosts: number; profit: number; clientsWithRevenue: number }; rules: string[]; errors: string[]; readAt: string;
 }
-export interface FinanceCard { card: string; dueDate: string; statement: number; balance: number; minimum: number; available: number | null; apr: string }
-export interface FinanceMonth { from: string; to: string; income: number; costs: number; net: number; label: string; lines?: { section: string; name: string; amount: number }[] }
+/** key: which personal card it is (Round 5: cash preferred, amex gold, chase personal, robinhood, discover). */
+export interface FinanceCard { card: string; dueDate: string; statement: number; balance: number; minimum: number; available: number | null; apr: string; key?: string }
+export interface FinanceCostLine { section: string; name: string; amount: number }
+/** lines: the 10 biggest; allLines: every cost line of the month (Round 5 drill-down). */
+export interface FinanceMonth { from: string; to: string; income: number; costs: number; net: number; label: string; lines?: FinanceCostLine[]; allLines?: FinanceCostLine[] }
+export interface FinanceInvoice { id: string; number: string; contact: string; amount: number; due: string; late: boolean }
+/** One open client invoice in detail (GET /finances/invoices/<id>; Xero, read only). */
+export interface FinanceInvoiceDetail {
+  id: string; number: string; reference: string; contact: string; status: string; currency: string;
+  date: string; due: string; daysOverdue: number; total: number | null; paid: number | null; amountDue: number | null;
+  lines: { description: string; quantity: number | null; unitAmount: number | null; amount: number | null }[];
+  xeroUrl: string;
+}
+export interface PersonalExpenses {
+  lines: { name: string; amount: number | null; note: string; aside: number | null }[];
+  total: number; totalFrom: 'sheet' | 'sum'; asideTotal: number; paidWith: { name: string; amount: number }[];
+}
+/** Both (Round 5): left = company income − company costs − personal expenses; null = UNKNOWN (see unknown). */
+export interface FinanceLeftover { label: string; from: string; to: string; left: number | null; parts: { label: string; amount: number | null; source: string }[]; unknown: string[] }
 /** Owner only (members get 403). */
 export interface FinancesData {
-  company: { xero: FinanceMonth[] | null; invoices: { contact: string; amount: number; due: string; late: boolean }[]; mrr: number; cards: FinanceCard[] | null; cardTotals: { statement: number; balance: number; minimum: number } | null };
-  personal: { cards: FinanceCard[] | null; cardTotals: { statement: number; balance: number; minimum: number } | null };
-  sources: { income: string; cards: string; personalRule: string }; errors: string[]; readAt: string;
+  company: { xero: FinanceMonth[] | null; invoices: FinanceInvoice[]; mrr: number; cards: FinanceCard[] | null; cardTotals: { statement: number; balance: number; minimum: number } | null };
+  personal: { cards: FinanceCard[] | null; cardTotals: { statement: number; balance: number; minimum: number } | null; expenses: PersonalExpenses | null };
+  both: { months: FinanceLeftover[]; notCounted: string[] };
+  sources: { income: string; cards: string; personalRule: string; expenses: string }; errors: string[]; readAt: string;
 }
 /** Finances → Personal through Plaid (GET /finances/personal). Read only; no token ever reaches the page. */
 export interface PersonalAccount {
@@ -318,7 +338,7 @@ export interface PersonalData {
   configured: boolean; message: string | null; env: 'sandbox' | 'production';
   connections: PersonalConnection[];
   totals: { cards: number; cardBalance: number; statement: number; minimum: number; cash: number } | null;
-  /** Sheet card names (robinhood, discover) a linked account now replaces. */
+  /** Sheet personal cards (their keys: robinhood, discover, amex gold…) a linked account now replaces. */
   replaces: string[]; readAt: string;
 }
 // ---------- Batch 4b: Needs you (to-do), Team board, Chat threads and suggestions ----------
@@ -376,16 +396,29 @@ export type SalesDetail4a = Omit<SalesDetail, 'deal' | 'links' | 'tasks'> & {
   deal: Omit<SalesDeal, 'agreements'> & { agreements: SalesAgreement4a[]; review: SalesReviewLite | null; coleNext: string; closeLead: string; paidDay: string; stages: Record<SalesStage, boolean> };
   links: { close: string; agreements: { id: string; tool: string; title: string; state: AgreementState; url: string; reviewDoc: string }[] };
 };
-export type SalesDealType = 'retainer' | 'per_call' | 'both';
+// Round 5 (Alex 2026-11-28): two deal types only (pay per call carries the monthly tech fee); choices, not typing.
+export type SalesDealType = 'retainer' | 'per_call';
 export interface SalesContractDraft {
   dealType: SalesDealType; monthly: number | null; perCall: number | null; initialFee: number | null; startDate: string;
-  signerName: string; signerEmail: string; legalName: string; company: string; address: string; service: string; scope: string; term: string; specialTerms: string;
+  signerName: string; signerEmail: string; signerPhone: string; legalName: string; company: string; address: string;
+  serviceKey: string; termKey: string; scopeKeys: string[]; clientRespondsToLeads: boolean;
+  service: string; scope: string; term: string; specialTerms: string;
   channels: { linkedin: boolean; aiCaller: boolean; directMail: boolean };
 }
 export interface SalesSavedDraft { id: number; dealId: string; status: 'saved' | 'creating' | 'created' | 'failed'; input: SalesContractDraft; contractsRec: string; error: string; by: string; created: string; updated: string }
+export interface SalesContractOptions {
+  services: { key: string; label: string }[]; terms: { key: string; label: string; type: SalesDealType; text: string }[];
+  scope: { key: string; label: string; type: SalesDealType }[]; clientRespondsClause: string;
+}
 export interface SalesContractForm {
   deal: { id: string; name: string; company: string; email: string; closeLead: string; client: { id: string; name: string; status: string } | null; agreement: { state: AgreementState; tool: string; title: string } | null };
-  draft: SalesContractDraft; saved: SalesSavedDraft | null; missing: string[]; types: { key: SalesDealType; label: string }[];
+  draft: SalesContractDraft; saved: SalesSavedDraft | null; missing: string[]; types: { key: SalesDealType; label: string; sub: string }[];
+  options: SalesContractOptions; closeConnected: boolean;
+}
+/** GET /sales/<id>/contract/close: what Close has for the contract (read only). */
+export interface SalesClosePull {
+  connected: boolean; found?: boolean; error?: string; lead?: { id: string; name: string; url: string };
+  patch?: Partial<SalesContractDraft>; filled?: { label: string; value: string }[]; missing?: string[]; notes?: string[];
 }
 
 /* ---------- Content, Batch 5 (2026-11-27): laid out like the Airtable Content Center ----------
@@ -399,13 +432,32 @@ export interface ContentItemFacts {
   details: { productionStage: string; status: string; editingRoute: string; opusStatus: string; shortJobState: string; thumbnailStatus: string; publishingStatus: string };
 }
 /** Round 4 (2026-11-28): each video's real workflow (engine/src/hq/content.ts videoSteps). */
-export type ContentStepWhere = 'hq' | 'sienna' | 'contentCenter' | 'byHand' | 'notAutomated';
-export interface ContentStepButton { kind: 'decide' | 'askSienna' | 'openScript' | 'copyGamma' | 'link' | 'contentCenter'; label: string; url?: string; task?: string }
+export type ContentStepWhere = 'hq' | 'sienna' | 'byHand' | 'notAutomated';
+/** Round 5: the Content Center's buttons, as HQ buttons (engine contentActions.ts RUN_KEYS). */
+export type ContentRunKey = 'setupFrame' | 'syncFrame' | 'routeOpus' | 'routeDavinci' | 'editFull' | 'script' | 'thumbnail' | 'thumbnailRevise' | 'thumbnailApprove'
+  | 'youtubeDetails' | 'youtubeUrl' | 'shortClips' | 'refreshClips' | 'posts' | 'postsBrief' | 'postsRetry';
+export interface ContentStepButton { kind: 'decide' | 'askSienna' | 'openScript' | 'copyGamma' | 'link' | 'run' | 'distribution'; label: string; url?: string; task?: string; run?: ContentRunKey; input?: 'url' | 'changes' | 'brief' }
 export interface ContentStep { key: string; title: string; state: 'done' | 'now' | 'later'; where: ContentStepWhere; text: string; optional?: boolean; buttons: ContentStepButton[] }
 export interface ContentPrep { script: string; titles: string[]; hooks: string[]; thumbnail: string; gamma: string; gammaUrl: string; youtube: string; checks: string[] }
 export interface ContentItem extends ContentPipelineRow {
   cc: ContentCcStage; thisWeek: boolean; awaiting: boolean; done: boolean; facts: ContentItemFacts;
   posted: boolean; postedDate: string; postedFrom: string; steps: ContentStep[]; prep: ContentPrep | null;
+  /** Round 5: the Content Automation Action in the field now ('' = nothing running). */
+  running: string;
+}
+/** Round 5: GET /content/items/<rec> — YouTube copy, the posts brief and Distribution (fresh reads). */
+export interface ContentPostStats { slot: string; platform: string; url: string; postedOn: string; views: number | null; likes: number | null; comments: number | null; by: string; at: string }
+export interface ContentDraft {
+  id: string; platform: string; outputType: string; title: string; body: string; media: string; approval: string; publishing: string;
+  scheduledAt: string; postUrl: string; lastError: string; hasClip: boolean; canSchedule: boolean; stats: ContentPostStats | null;
+}
+export interface ContentPlatform { platform: string; drafts: ContentDraft[]; manual: ContentPostStats | null; chosen: boolean }
+export interface ContentItemDetail {
+  id: string; title: string; running: string;
+  youtube: { title: string; description: string; chapters: string; url: string };
+  thumbnail: { url: string; status: string };
+  brief: { channels: string[]; count: number; minScore: number; options: string[]; clips: number };
+  distribution: { status: string; platforms: ContentPlatform[]; posted: number; totals: { posts: number; views: number; likes: number; comments: number } };
 }
 export type ContentCenterView = Omit<ContentView, 'pipeline'> & { pipeline: { stages: ContentView['pipeline']['stages']; ccStages: ContentCcStage[]; rows: ContentItem[]; leftOut: number } };
 
@@ -420,7 +472,7 @@ export interface CampaignAccountB3 {
   /** Round 4: the score's test date and the placement cell with its reason (never a blank). */ scoreAt?: string; placement?: PlacementR4;
 }
 export type CampaignDetailB3 = Omit<CampaignDetail, 'campaign' | 'lists' | 'links' | 'detail'> & {
-  campaign: CampaignRowB3; lists: Omit<CampaignLeadList, 'airtableUrl'>[]; links: { bison: string }; accounts: CampaignAccountB3[];
+  campaign: CampaignRowB3 & { started?: string; ended?: string }; lists: Omit<CampaignLeadList, 'airtableUrl'>[]; links: { bison: string }; accounts: CampaignAccountB3[]; take?: AtlasTakeR5;
   detail: CampaignDetail['detail'] & { thesis: string; approach: string; launchDate: string };
 };
 export interface LeadListRowB3 {
@@ -452,8 +504,11 @@ export interface LimitResultB3 { ok: true; jobId: number; dryRun: boolean; dupli
 /* ---------- Round 2 campaigns (2026-11-27): Campaign Center + Lead List Center buttons, sending accounts ---------- */
 export type SectionKeyR2 = 'live' | 'launch' | 'build' | 'review' | 'internal' | 'draft' | 'none';
 /** how: Today's group for a live campaign (well / pace / time / look); #/campaigns/live?how= filters to it. */
-export type CampaignRowR2 = CampaignRowB3 & { section: SectionKeyR2; test: boolean; how?: 'well' | 'pace' | 'time' | 'look' | null };
-export type CampaignListR2 = Omit<CampaignListB3, 'rows'> & { rows: CampaignRowR2[]; sections: { key: SectionKeyR2; label: string }[] };
+/** Round 5: started / ended (a finished campaign's last day); past = finished campaigns, newest ended first (read only). */
+export type CampaignRowR2 = CampaignRowB3 & { section: SectionKeyR2; test: boolean; how?: 'well' | 'pace' | 'time' | 'look' | null; started?: string; ended?: string };
+export type CampaignListR2 = Omit<CampaignListB3, 'rows' | 'counts'> & { rows: CampaignRowR2[]; sections: { key: SectionKeyR2; label: string }[]; past?: CampaignRowR2[]; counts: CampaignListB3['counts'] & { past?: number } };
+/** Round 5: Atlas's take on one campaign (2-3 sentences, rule-based from its numbers, his plan and his newest note). */
+export interface AtlasTakeR5 { lines: string[]; text: string; basis: 'plan' | 'note' | 'numbers'; source: string }
 /** One button: what it does, what it spends, why it is off; comesNext = no engine path yet. */
 export interface ActionR2 { key: string; label: string; section: string; does: string; spends: string; enabled: boolean; why: string; comesNext: boolean; dryRun: boolean; tone: 'primary' | 'quiet' | 'danger'; needsNotes?: boolean }
 export interface PressR2 { ok: true; message: string; dryRun?: boolean; planId?: number }
