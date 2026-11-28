@@ -38,6 +38,8 @@ export interface CloseClient {
   activities(leadId: string, limit?: number): Promise<CloseActivity[]>;
   /** Opportunities created between two ISO times (bounded: maxPages x 100). truncated = more exist. */
   opportunitiesCreated(fromIso: string, toIso: string, maxPages?: number): Promise<{ opps: CloseOpportunity[]; truncated: boolean }>;
+  /** Won opportunities updated since an ISO time, newest first (bounded: maxPages x 100, at most 5). truncated = more exist. */
+  wonOpportunities(sinceIso: string, maxPages?: number): Promise<{ opps: CloseOpportunity[]; truncated: boolean }>;
   /** Pipelines with their statuses in Close's own order. */
   pipelines(): Promise<ClosePipeline[]>;
   /** Opportunity status changes since an ISO time (bounded). */
@@ -168,6 +170,21 @@ export function createCloseClient(apiKey: string | undefined, f: typeof fetch = 
       // The window is checked here too (a server that ignores the filter never widens the answer).
       const lo = Date.parse(fromIso), hi = Date.parse(toIso);
       return { opps: out.filter((o) => o.id && leadOk(o.leadId) && Date.parse(o.created) >= lo && Date.parse(o.created) <= hi), truncated };
+    },
+    async wonOpportunities(sinceIso, maxPages = 3) {
+      const out: CloseOpportunity[] = [];
+      const pages = Math.min(5, Math.max(1, maxPages));
+      let truncated = false;
+      for (let page = 0; page < pages; page++) {
+        const j = await get('opportunity/', { status_type: 'won', date_updated__gte: sinceIso, _limit: 100, _skip: page * 100, _order_by: '-date_updated' });
+        const rows: any[] = Array.isArray(j?.data) ? j.data : [];
+        out.push(...rows.map(toOpportunity));
+        if (!j?.has_more || rows.length < 100) break;
+        if (page === pages - 1) truncated = true;
+      }
+      // Checked here too: a server that ignores a filter never widens the answer.
+      const lo = Date.parse(sinceIso);
+      return { opps: out.filter((o) => o.id && leadOk(o.leadId) && o.statusType === 'won' && !(Date.parse(o.updated) < lo)), truncated };
     },
     async pipelines() {
       const j = await get('pipeline/', {});

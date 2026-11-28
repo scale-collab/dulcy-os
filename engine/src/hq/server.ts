@@ -56,6 +56,7 @@ import { numbersView, resolvePeriod } from './salesPeriods.js';
 import { closeFunnel, closePipeline, readCloseRange } from './salesClose.js';
 // Round 5: Sales goals (read from Airtable Sales Goals) and Cole's take.
 import { defaultTakeModel, readGoalRows, salesGoalsView, type TakeModel } from './salesGoals.js';
+import { wonSyncView } from './wonSync.js';
 import { pricingView } from './pricing.js';
 import { agentConversation, agentConversations } from './agentTalk.js';
 import { createInDulcySign, draftForm, pullFromClose, saveDraft } from './contracts.js';
@@ -707,7 +708,8 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
         if (p === '/hq/api/sales/goals' && req.method === 'GET') {
           const now = Date.now(); const refresh = url.searchParams.get('refresh') === '1';
           const [{ deals }, rows] = await Promise.all([allDeals(needAt(), db, refresh, now, extras), readGoalRows(needAt(), refresh, now).catch(() => null)]);
-          json(res, 200, await salesGoalsView(db, takeModel, rows, deals, nyDay(now), owner));
+          const [view, wonSync] = await Promise.all([salesGoalsView(db, takeModel, rows, deals, nyDay(now), owner), wonSyncView(db, cfg, nyDay(now).slice(0, 7)).catch(() => null)]);
+          json(res, 200, { ...view, wonSync });
           return true;
         }
         if (p === '/hq/api/sales/settings' && req.method === 'POST') {

@@ -126,6 +126,9 @@ export async function ledgerTick(db: Db, cfg: Config, now = new Date()): Promise
   return q;
 }
 
+/** The Won sync runs when Close and Airtable are both connected and WON_SYNC_EVERY_MIN > 0. */
+export const wonSyncOn = (cfg: Pick<Config, 'closeApiKey' | 'airtableApiKey' | 'wonSyncEveryMin'>) => !!cfg.closeApiKey && !!cfg.airtableApiKey && cfg.wonSyncEveryMin > 0;
+
 /** Atlas (Mon), Cole (every COLE_EVERY_MIN), Sienna (Mon ideas, Thu scripts). Each is off unless switched on. */
 export async function agentsTick(db: Db, cfg: Config, now = new Date()): Promise<number> {
   const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
@@ -153,6 +156,8 @@ export async function agentsTick(db: Db, cfg: Config, now = new Date()): Promise
   if (cfg.hqSessionSecret && cfg.airtableApiKey) n += await q('atlas.tasks', `atlas-tasks:${Math.floor(now.getTime() / (30 * 60_000))}`);
   // Batch 3: the new-client inbox ramp check, once a day (it only proposes; Alex applies in HQ).
   if (cfg.hqSessionSecret && cfg.airtableApiKey) n += await q('atlas.ramp', `atlas-ramp:${date}`);
+  // Close → Airtable Won sync (Alex 2026-11-28): every WON_SYNC_EVERY_MIN (30) once Close and Airtable are connected; dry run unless in LIVE_STAGES.
+  if (wonSyncOn(cfg)) n += await q('sales.won_sync', `won-sync:${Math.floor(now.getTime() / (cfg.wonSyncEveryMin * 60_000))}`);
   if (cfg.rileyOn && cfg.rileyEveryMin > 0) n += await q('riley.collect', `riley:${Math.floor(now.getTime() / (cfg.rileyEveryMin * 60_000))}`);
   if (cfg.coleOn && cfg.fathomApiKey && cfg.coleEveryMin > 0) n += await q('cole.review', `cole:${Math.floor(now.getTime() / (cfg.coleEveryMin * 60_000))}`);
   // Alex 2026-11-25: ideas land Friday morning (for the next Friday's recording); scripts Thursday.
@@ -163,7 +168,7 @@ export async function agentsTick(db: Db, cfg: Config, now = new Date()): Promise
 }
 
 export function startScheduler(db: Db, cfg: Config, signal: AbortSignal): void {
-  if ((!cfg.bounceCheckEveryMin || cfg.bounceCheckWorkspaces.length === 0) && !cfg.seanEveryMin && !cfg.accountHealthEveryMin && !cfg.adaBriefOn && !cfg.ledgerOn && !cfg.atlasOn && !cfg.atlasCampaignsOn && !cfg.rileyOn && !cfg.coleOn && !cfg.siennaOn && !cfg.hqSessionSecret) return;
+  if ((!cfg.bounceCheckEveryMin || cfg.bounceCheckWorkspaces.length === 0) && !cfg.seanEveryMin && !cfg.accountHealthEveryMin && !cfg.adaBriefOn && !cfg.ledgerOn && !cfg.atlasOn && !cfg.atlasCampaignsOn && !cfg.rileyOn && !cfg.coleOn && !cfg.siennaOn && !cfg.hqSessionSecret && !wonSyncOn(cfg)) return;
   const err = (e: unknown) => console.error(JSON.stringify({ level: 'error', message: 'scheduler tick failed', err: String(e) }));
   const tick = () => { void scheduleTick(db, cfg).catch(err); void seanTick(db, cfg).catch(err); void accountHealthTick(db, cfg).catch(err); void adaTick(db, cfg).catch(err); void ledgerTick(db, cfg).catch(err); void agentsTick(db, cfg).catch(err); };
   tick();
