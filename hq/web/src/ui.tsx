@@ -196,7 +196,9 @@ const CHIP: Record<ChipTone, string> = {
   accent: 'bg-accent-soft text-accent-ink',
 };
 export function Pill({ children, tone = 'plain', className, icon }: { children: ReactNode; tone?: ChipTone; className?: string; icon?: string }) {
-  return <span className={cx('inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium', CHIP[tone], className)}>{icon && <Icon name={icon} size={12} strokeWidth={2.2} />}{children}</span>;
+  // Plain text truncates inside the pill (phone pass 2026-11-28): a long client name never spills over its neighbours.
+  const body = typeof children === 'string' || typeof children === 'number' ? <span className="min-w-0 truncate">{children}</span> : children;
+  return <span className={cx('inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium', CHIP[tone], className)}>{icon && <Icon name={icon} size={12} strokeWidth={2.2} />}{body}</span>;
 }
 export function Count({ n, strong }: { n: number; strong?: boolean }) {
   return <span className={cx('tabular inline-flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-xs font-bold', strong && n ? 'bg-ink text-ink-fg' : 'bg-sunken text-muted border border-line')}>{n}</span>;
@@ -207,8 +209,8 @@ export function Label({ children, className }: { children: ReactNode; className?
 }
 export function SectionHeader({ title, icon, right, className }: { title: ReactNode; icon?: string; right?: ReactNode; className?: string }) {
   return (
-    <div className={cx('mb-3 flex min-h-6 items-center justify-between gap-3', className)}>
-      <h2 className="flex items-center gap-2 text-sm font-semibold text-fg">{icon && <Icon name={icon} size={16} className="text-muted" />}{title}</h2>
+    <div className={cx('mb-3 flex min-h-6 flex-wrap items-center justify-between gap-x-3 gap-y-1', className)}>
+      <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-fg">{icon && <Icon name={icon} size={16} className="text-muted" />}{title}</h2>
       {right}
     </div>
   );
@@ -299,7 +301,8 @@ export function PageTitle({ kicker, title, sub, right }: { kicker?: ReactNode; t
         <h1 className="text-[26px] font-bold leading-tight tracking-tight text-fg sm:text-[28px]">{title}</h1>
         {sub && <div className="mt-1 text-[15px] text-muted">{sub}</div>}
       </div>
-      {right && <div className="flex shrink-0 items-center gap-2">{right}</div>}
+      {/* Phone: the buttons wrap on their own line(s) instead of pushing the page sideways. */}
+      {right && <div className="flex max-w-full flex-wrap items-center gap-2 sm:shrink-0">{right}</div>}
     </div>
   );
 }
@@ -414,7 +417,7 @@ export function Toaster() {
   }, [t]);
   if (!t) return null;
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-16 z-50 flex justify-center px-4 md:bottom-6 md:top-auto md:pl-64">
+    <div className="pointer-events-none fixed inset-x-0 top-[calc(4rem+env(safe-area-inset-top))] z-50 flex justify-center px-4 md:bottom-6 md:top-auto md:pl-64">
       <div role="status" aria-live="polite" className={cx('anim-in pointer-events-auto flex min-h-12 max-w-lg items-center gap-3 rounded-2xl px-4 py-2.5 text-[15px] font-medium shadow-pop',
         t.tone === 'bad' ? 'bg-bad text-surface' : 'bg-ink text-ink-fg')}>
         <Icon name={t.tone === 'bad' ? 'alert' : t.tone === 'good' ? 'check' : 'sparkles'} size={17} strokeWidth={2.2} />

@@ -106,7 +106,8 @@ export default function App() {
           <div key={viewKey} className="anim-in">{body}</div>
         </main>
       </div>
-      <TabBar active={active === 'sales' || active === 'finances' ? 'clients' : active} />
+      {/* Phone pass (2026-11-28): Sales and Finances are not in the bottom bar, so nothing is highlighted there (it used to light up Clients). */}
+      <TabBar active={active} />
       <Toaster />
     </div>
   );
@@ -115,7 +116,7 @@ export default function App() {
 function ViewingBanner() {
   const who = viewingAsWho();
   return (
-    <div role="status" className="sticky top-14 z-20 border-b border-warn/40 bg-warn-soft md:top-0">
+    <div role="status" className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 border-b border-warn/40 bg-warn-soft md:top-0">
       <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 py-2 sm:px-6 lg:px-10">
         <Icon name="user" size={17} className="shrink-0 text-warn" />
         <span className="min-w-0 flex-1 text-sm font-medium text-fg">Viewing as {who.name} ({who.role}). Read only.</span>
@@ -186,7 +187,7 @@ function MobileHeader({ onSignOut, owner, active }: { onSignOut: () => void; own
   const i = THEMES.findIndex((t) => t.mode === mode);
   const next = THEMES[(i + 1) % THEMES.length];
   return (
-    <header className="sticky top-0 z-20 border-b border-line bg-bg/85 backdrop-blur-md md:hidden">
+    <header className="sticky top-0 z-20 border-b border-line bg-bg/85 pt-[env(safe-area-inset-top)] backdrop-blur-md md:hidden">
       <div className="flex h-14 items-center justify-between pl-4 pr-2">
         <button onClick={() => go('today')} className="flex min-h-11 items-center gap-2.5 font-semibold tracking-tight"><Logo className="h-7 w-7" /><span className="sr-only">Dulcy HQ</span></button>
         <div className="flex items-center">
@@ -195,7 +196,7 @@ function MobileHeader({ onSignOut, owner, active }: { onSignOut: () => void; own
           <IconButton icon="mail" label={c.deliverability ? `Deliverability: ${c.deliverability} need attention` : 'Deliverability'} active={active === 'deliverability'} onClick={() => go('deliverability')} />
           {owner && (
             <span className="relative">
-              <IconButton icon="shield" label={c.signups ? `Users: ${c.signups} sign-up${c.signups === 1 ? '' : 's'} waiting` : 'Users'} onClick={() => go('users')} />
+              <IconButton icon="shield" label={c.signups ? `Users: ${c.signups} sign-up${c.signups === 1 ? '' : 's'} waiting` : 'Users'} active={active === 'users'} onClick={() => go('users')} />
               {!!c.signups && <span aria-hidden="true" className="tabular pointer-events-none absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-bad px-1 text-[10px] font-bold leading-none text-surface">{c.signups}</span>}
             </span>
           )}
