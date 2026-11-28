@@ -90,6 +90,8 @@ export interface Config {
   fathomBaseUrl: string;
   /** Close CRM API key (read only, HQ Sales: hottest deals, touches per close). Optional: without it HQ says "Connect Close". */
   closeApiKey?: string;
+  /** Close → Airtable Won sync (sales.won_sync) every WON_SYNC_EVERY_MIN (default 30; 0 = off). Needs CLOSE_API_KEY + AIRTABLE_API_KEY. Dry run unless in LIVE_STAGES. */
+  wonSyncEveryMin: number;
   /** Sienna: Monday content ideas (SIENNA_IDEAS_HOUR) and Thursday scripts for Friday (SIENNA_PREP_HOUR), ET. */
   siennaOn: boolean;
   /** Riley (RILEY=on): logs failed/stuck engine jobs and n8n errors to System Issues every RILEY_EVERY_MIN. */
@@ -294,6 +296,7 @@ export function loadConfig(env = process.env): Config {
     fathomApiKey: env.FATHOM_API_KEY || undefined,
     fathomBaseUrl: env.FATHOM_BASE_URL || 'https://api.fathom.ai/external/v1',
     closeApiKey: env.CLOSE_API_KEY || undefined,
+    wonSyncEveryMin: num('WON_SYNC_EVERY_MIN', 30, env),
     siennaOn: (env.SIENNA || 'off').toLowerCase() === 'on',
     rileyOn: (env.RILEY || 'off').toLowerCase() === 'on',
     rileyEveryMin: num('RILEY_EVERY_MIN', 15, env),
