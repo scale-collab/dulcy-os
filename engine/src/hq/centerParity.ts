@@ -252,7 +252,7 @@ const SEQ_T = 'tblmHKxDLELPkj5xk';
 const SQ = { campaign: 'fldOj7Uk9JSNnI1kF', step: 'fldbgt319A6pym3Ni', variant: 'fldqPCQ7mcynXjSUL', subject: 'fldZGv33auxBB7F9e', sent: 'fldWasIzQZHOeHlig', replies: 'fldIvQkJnFcZlImqA', interested: 'fldAcRMZyCly08iDj', bounces: 'fldcZ6ICxoCsyyDBb' } as const;
 const quote = (x: string) => `"${x.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 const PIVOT = { vertical: 'fldY5tnIicC48grKq', offer: 'fld9HliYa3igd1Uri' } as const;
-const LIST_READ = [...new Set([...Object.values(LX), ...Object.values(LL), ...Object.values(LIST_EDIT).map((d) => d.id)])];
+const LIST_READ = [...new Set([...Object.values(LX), ...Object.values(LL), ...Object.values(LIST_EDIT).map((d) => d.id), 'fldJCxECBr4wD09a3', 'fldsYLxPFzapgvw5N', 'fld0KlQqxFEG6wgfU', 'fldmyD4PJ9mXdCJZ8'])];
 
 /** Sequence Analytics rows for one campaign (the Campaign Center's Analytics tab). Pure on rows. */
 export function variantRows(rows: AirtableRecord[], campaignId: string) {
@@ -302,6 +302,25 @@ export async function campaignFieldsView(at: HqAirtable, db: Db, id: string, can
   };
 }
 
+const ESP = { pre: 'fldJCxECBr4wD09a3', production: 'fldsYLxPFzapgvw5N', deepResults: 'fld0KlQqxFEG6wgfU', needsReview: 'fldmyD4PJ9mXdCJZ8' } as const;
+const ESP_CATS = ['Google', 'Outlook', 'Custom Mail Server', 'Zoho', 'Mimecast', 'Proofpoint', 'Barracuda', 'Other', 'Unknown'];
+/** The Lead List Center's email provider breakdown (ESP Breakdown JSON / Production ESP Breakdown JSON): counts per provider group. Pure; null when not valid. */
+export function espOf(raw: string): { total: number; updatedAt: string; counts: { name: string; count: number }[] } | null {
+  try {
+    const x = JSON.parse(raw || '');
+    const isCount = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v >= 0;
+    if (!isCount(x?.total) || !x.counts || typeof x.counts !== 'object' || Array.isArray(x.counts) || typeof x.updatedAt !== 'string' || Number.isNaN(Date.parse(x.updatedAt))) return null;
+    const counts: Record<string, number> = Object.fromEntries(ESP_CATS.map((c) => [c, 0]));
+    for (const [p, c] of Object.entries(x.counts)) {
+      if (!isCount(c)) return null;
+      const k = p.trim().toLowerCase();
+      const cat = ['microsoft / outlook', 'microsoft', 'outlook'].includes(k) ? 'Outlook' : ESP_CATS.find((e) => e.toLowerCase() === k) ?? (k ? 'Other' : 'Unknown');
+      counts[cat] += c;
+    }
+    return { total: x.total, updatedAt: x.updatedAt, counts: ESP_CATS.map((name) => ({ name, count: counts[name] })).filter((r) => r.count > 0).sort((a, b) => b.count - a.count) };
+  } catch { return null; }
+}
+
 /** GET /hq/api/campaigns/lists/:rec/fields: the Lead List Center's editable fields. */
 export async function listFieldsView(at: HqAirtable, db: Db, id: string, canAct: boolean) {
   const rec = await at.get(LEAD_LISTS_T, id, LIST_READ);
@@ -319,6 +338,8 @@ export async function listFieldsView(at: HqAirtable, db: Db, id: string, canAct:
     qa: { status: l.qa, summary: s(f[LL.qaSummary]).slice(0, 2000), requiredFields: s(f[LL.requiredFields]), duplicateCheck: s(f[LL.duplicateCheck]), finalSchema: s(f[LL.finalSchema]), duplicates: n(f[LL.duplicateCount]), rejected: n(f[LL.rejectedCount]) },
     saved: { processing: l.processing, message: s(f[LX.workflowMessage]).slice(0, 1500), error: s(f[LX.lastError]).slice(0, 1500) },
     bisonListId: s(f[LL.bisonListId]), sourceType: s(f[LL.sourceType]) || 'DiscoLike', campaigns, linked: l.campaigns,
+    esp: { pre: espOf(s(f[ESP.pre])), production: espOf(s(f[ESP.production])) },
+    deepReview: { results: /^https:\/\//.test(s(f[ESP.deepResults])) ? s(f[ESP.deepResults]) : '', needsReview: n(f[ESP.needsReview]) },
     locked: listLocked(l), canAct, readAt: new Date().toISOString(),
   };
 }

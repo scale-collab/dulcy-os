@@ -14,7 +14,7 @@ import { ACCOUNTS, EA } from '../src/stages/accountHealth.js';
 import { EX, _resetDelivCache } from '../src/hq/deliverability.js';
 import { CAMPAIGNS_T, KF, LEAD_LISTS_T, LF, LLF, WORKSPACES_T, _resetCampaignsCache } from '../src/hq/campaigns.js';
 import { CX, LX } from '../src/hq/centerActions.js';
-import { CAMPAIGN_EDIT, CF, CLONE_FIELDS, LIST_EDIT, LL, TOP_UP_COPY_FIELDS, addWeekdayHours, approvalOf, checkEdits, checkValue, clientPrefixed, manualQaUpdate, parseReviewVariants, seqField, sequenceFromReview } from '../src/hq/centerParity.js';
+import { CAMPAIGN_EDIT, CF, CLONE_FIELDS, LIST_EDIT, LL, TOP_UP_COPY_FIELDS, addWeekdayHours, approvalOf, checkEdits, checkValue, clientPrefixed, espOf, manualQaUpdate, parseReviewVariants, seqField, sequenceFromReview } from '../src/hq/centerParity.js';
 import { CC } from '../src/agents/scribe.js';
 import { CAMPAIGN_FIELDS } from '../src/campaign/campaignFields.js';
 
@@ -78,6 +78,13 @@ test('the Campaign Center\'s Variant parser, sequence refresh, approval reading,
   for (const k of [CX.lists, CX.accounts, CX.topupList, CF.bisonId, KF.sent, CF.bisonAction, CF.createSpintax, CX.engineAction, CX.status, CX.stage]) assert.ok(!CLONE_FIELDS.includes(k), k);
   assert.ok(CLONE_FIELDS.includes(seqField(3, 4).body) && CLONE_FIELDS.includes(CC.review[3].body) && CLONE_FIELDS.includes(CF.skipBouncePause));
   assert.equal(TOP_UP_COPY_FIELDS.length, 36);
+});
+
+test('email provider breakdown: the Lead List Center\'s groups (Microsoft = Outlook, unknown names = Other)', () => {
+  assert.deepEqual(espOf(JSON.stringify({ version: 2, total: 10, updatedAt: '2026-11-27T10:00:00Z', counts: { Google: 5, Microsoft: 3, Proofpoint: 1, Fastmail: 1 } })),
+    { total: 10, updatedAt: '2026-11-27T10:00:00Z', counts: [{ name: 'Google', count: 5 }, { name: 'Outlook', count: 3 }, { name: 'Proofpoint', count: 1 }, { name: 'Other', count: 1 }] });
+  assert.equal(espOf('{"total":-1,"counts":{},"updatedAt":"2026-11-27"}'), null);
+  assert.equal(espOf('not json'), null);
 });
 
 test('manual QA: the Lead List Center\'s own gate (Passed only after the workflow reached QA and finished)', () => {

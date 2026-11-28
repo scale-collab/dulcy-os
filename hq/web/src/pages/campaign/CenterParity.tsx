@@ -27,7 +27,9 @@ export interface ListFieldsP {
   qa: { status: string; summary: string; requiredFields: string; duplicateCheck: string; finalSchema: string; duplicates: number; rejected: number };
   saved: { processing: string; message: string; error: string }; bisonListId: string; sourceType: string;
   campaigns: { id: string; name: string }[]; linked: string[]; locked: boolean; canAct: boolean; readAt: string;
+  esp: { pre: Esp | null; production: Esp | null }; deepReview: { results: string; needsReview: number };
 }
+interface Esp { total: number; updatedAt: string; counts: { name: string; count: number }[] }
 interface Ok { ok: true; message: string; id?: string }
 
 const input = 'mt-1.5 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[15px] text-fg outline-none placeholder:text-faint focus:border-accent focus:ring-4 focus:ring-accent-soft disabled:opacity-60';
@@ -438,6 +440,23 @@ export function ListCenterSection({ id, tab, onDone }: { id: string; tab: ListTa
           )}
         </Card>
       </>}
+      {tab === 'overview' && (d.esp.pre || d.esp.production) && (
+        <Card className="p-4 sm:p-5">
+          <h3 className="text-[15px] font-semibold text-fg">Email provider breakdown</h3>
+          <p className="mt-1 text-sm text-muted">Where these emails are hosted (Google, Outlook, gateways). Each uses its own saved list and date; the difference is not a verification pass rate.</p>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2">
+            {([['Before verification', d.esp.pre], ['Final (production)', d.esp.production]] as const).filter(([, e]) => e).map(([label, e]) => (
+              <div key={label}>
+                <div className="text-sm font-semibold text-fg">{label} · {num(e!.total)} emails <span className="font-normal text-muted">· {slash(e!.updatedAt)}</span></div>
+                <ul className="mt-2 space-y-1.5">{e!.counts.map((r) => (
+                  <li key={r.name} className="text-sm"><div className="flex justify-between gap-2"><span className="text-fg-2">{r.name}</span><span className="tabular font-medium text-fg">{num(r.count)} · {e!.total ? Math.round((r.count / e!.total) * 1000) / 10 : 0}%</span></div>
+                    <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-line"><div className="h-full rounded-full bg-accent" style={{ width: `${e!.total ? Math.min(100, (r.count / e!.total) * 100) : 0}%` }} /></div></li>
+                ))}</ul>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
       {tab === 'source' && <>
         <FieldGroup title="Targeting" keys={['icp', 'employeeRange']} d={d} path={path} onSaved={reload} note="Generate filters reads the targeting sentence; save it first." />
         {d.linked[0] && <div className="px-1"><DoButton label="Use campaign thesis as targeting sentence" path={doPath} body={{ action: 'use-thesis' }} disabled={ro} why={why} onDone={reload} does="Copies the linked campaign's thesis into the targeting sentence (replacing it). Review it, then Generate filters." /></div>}
@@ -445,6 +464,7 @@ export function ListCenterSection({ id, tab, onDone }: { id: string; tab: ListTa
       </>}
       {tab === 'companies' && <>
         <FieldGroup title="Sample and target" keys={['sampleSize', 'target']} d={d} path={path} onSaved={reload} note="Usable company target = where Expand companies stops." />
+        {(d.deepReview.results || d.deepReview.needsReview > 0) && <Card className="p-4 text-sm text-fg-2">Deep review: {d.deepReview.needsReview > 0 && <>{num(d.deepReview.needsReview)} companies need review. </>}{d.deepReview.results && <a href={d.deepReview.results} target="_blank" rel="noopener noreferrer" className="font-semibold text-accent-ink hover:underline">Open the DiscoGen results</a>}</Card>}
         <FieldGroup title="Optional deeper qualification (DiscoGen deep review)" keys={['useDeepReview', 'deepReviewPrompt', 'deepReviewExtra']} d={d} path={path} onSaved={reload} note="When ticked, the company deep review runs by itself after the sample and each expand (it spends DiscoGen credits). Saving starts nothing." />
       </>}
       {tab === 'contacts' && <FieldGroup title="Contacts" keys={['persona', 'contactSampleSize', 'contactFilters']} d={d} path={path} onSaved={reload} note="Persona = who to find (DiscoLike Contacts Run). People per company is results_by_company in the contact filters JSON; seniority, person_country and person_state live there too." />}
