@@ -67,7 +67,7 @@ export default function Today({ user }: { user: User }) {
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0 space-y-8">
-          <Block icon="bell" tone="ink" title="Do now" sub={d.needs.counts.total ? `Your to-do for today · top ${d.needs.top.length} of ${d.needs.counts.total} in Needs you` : 'Your to-do for today'}>
+          <Block icon="bell" tone="ink" title="Do now" sub={d.needs.counts.total ? `Top ${d.needs.top.length} of ${d.needs.counts.total} on your To-do` : 'Your to-do for today'}>
             <DoNow items={d.needs.top} counts={d.needs.counts} piles={d.decisions} errors={d.needs.errors} />
           </Block>
           <Block icon="megaphone" tone="accent" title="Campaigns" sub={d.campaigns ? `${d.campaigns.live} live, grouped by how they are doing` : 'How the live campaigns are doing'}>
@@ -155,7 +155,7 @@ function DoNow({ items, counts, piles, errors }: { items: Need[]; counts: NeedCo
       ) : <div className="flex items-center gap-2 px-5 py-4 text-sm text-muted"><Icon name="check" size={15} />Nothing on your list right now.</div>}
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-4 py-3 sm:px-5">
         <span className="text-xs text-muted">{errors.length ? `Not read: ${errors.join(', ')}` : 'Most important first. Done items drop off.'}</span>
-        <Button onClick={() => go('needs')} icon="bell">{counts.total > items.length ? `See all ${counts.total}` : 'Open Needs you'}</Button>
+        <Button onClick={() => go('needs')} icon="bell">{counts.total > items.length ? `See all ${counts.total}` : 'Open To-do'}</Button>
       </div>
     </Card>
   );

@@ -25,7 +25,7 @@ const TABS: { key: string; label: string; icon: string; count: string; ownerOnly
   { key: 'today', label: 'Today', icon: 'sun', count: '' },
   { key: 'decisions', label: 'Decisions', icon: 'inbox', count: 'decisions' },
   { key: 'inbox', label: 'Inbox', icon: 'reply', count: 'inbox' },
-  { key: 'needs', label: 'Needs you', icon: 'bell', count: 'needs' },
+  { key: 'needs', label: 'To-do', icon: 'bell', count: 'needs' },
   { key: 'clients', label: 'Clients', icon: 'briefcase', count: '' },
   // Sales: owner only (money). Phone: reached from the Clients page (the header is full at 390 px).
   { key: 'sales', label: 'Sales', icon: 'dollar', count: 'sales', ownerOnly: true },
