@@ -282,6 +282,8 @@ Format: `- [date] rule. (why / source)`
 
 - [2026-11-28] **Alex answers (round 4):** (1) Campaign sender boxes use Airtable's names: Available, Sending, Releasing Soon, Reserved Next, Disconnected, Warming. (2) Alex Woung videos are recorded on a **Friday** (the Friday before the week before publishing, never later than 4 days before it goes out); Raw stays the Friday of the current week. (3) Personal cards in Finances: connect them with a bank link (Plaid), read only. Why: Alex's answers to the round 4 questions.
 
+- [2026-11-28] **Dulcy vs Dulcy Free Campaigns (Alex):** two separate clients and EmailBison workspaces (2 = Dulcy, 41 = Dulcy Free Campaigns: free campaigns for prospects, e.g. Chop Shop, with 20 of Alex's inboxes). Never merge them in HQ, counts or reports. Merging them was an old mistake. **HQ round 5:** the content workflow moves fully into HQ (no Airtable Content Center links); draft contracts take no typing (dropdowns/checkboxes, "Pull from Close"); every "data to fix" gets its agent's fix button.
+
 ## HQ phone notifications (Alex, 2026-11-27)
 - **Rule:** HQ pings phones (iPhone from the Home Screen app, and computers) by Web Push for four kinds: **(1) new decisions** (each new Decisions card; several within ~3 minutes = one grouped ping "4 new decisions"), **(2) agent messages to you** (a chat answer when you are not on that chat; asks and tasks waiting on you), **(3) urgent problems** (campaign over 4% bounce or paused, inbox in spam, warm-up off, a fix or engine run that failed and needs Alex), **(4) good news** (meeting booked, client signed or paid). Tapping a ping opens that exact item in HQ.
 - **Always on:** no quiet hours. Each person can switch any of the 4 kinds off on HQ → Notifications (all on by default).
