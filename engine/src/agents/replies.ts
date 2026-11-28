@@ -161,7 +161,7 @@ export const replySendStage: Stage = async (ctx) => {
       'AI Draft': val(f[RA.draft]), 'Approved Reply': body, 'Review Status': 'Approved', Outcome: 'Unknown', Source: `Engine sender (${via})`,
     });
   } catch (e) { await ctx.log('reply learning row not written', { err: String((e as Error).message) }, 'warn'); }
-  const nextNote = arm[RA.state] === 'Scheduled' ? ` Next follow-up drafted ${new Date(String(arm[RA.dueAt])).toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' })} if they don't answer.` : arm[RA.state] === 'Thread Complete' ? ' That was the last follow-up.' : '';
+  const nextNote = arm[RA.state] === 'Scheduled' ? ` Next follow-up drafted ${new Date(String(arm[RA.dueAt])).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'numeric', day: 'numeric' })} if they don't answer.` : arm[RA.state] === 'Thread Complete' ? ' That was the last follow-up.' : '';
   await mirrorToSlack(at, slackFor(cfg), recId, 'Done', `:white_check_mark: Sent (approved in ${via}${action === 'Send Edited Reply' ? ', edited' : ''}).${nextNote}`);
   return { message: `Sent to the prospect${cc.length ? ` with ${cc.length} cc` : ''}${bcc.length ? ` and ${bcc.length} bcc` : ''}.${nextNote}`, sentReplyId: sent.id, next: arm[RA.state] };
 };

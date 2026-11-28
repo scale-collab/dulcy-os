@@ -337,7 +337,9 @@ export function dueLabel(due: string): string {
   if (diff < 0) return `${-diff} d overdue`;
   if (diff === 0) return 'due today';
   if (diff === 1) return 'due tomorrow';
-  return `due ${new Date(`${d}T12:00:00Z`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+  // Slashes (RULES 2026-11-27): "due 12/4"; the year only when it is not this year.
+  const [y, m, day] = d.split('-').map(Number);
+  return `due ${m}/${day}${y !== Number(today.slice(0, 4)) ? `/${y}` : ''}`;
 }
 
 /** Safe link: only http(s), opens in a new tab without the opener. */

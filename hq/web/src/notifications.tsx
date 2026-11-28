@@ -228,7 +228,7 @@ export default function Notifications({ user }: { user: User }) {
               <Switch on={data.settings[k]} label={text[k].label} onChange={() => flip(k)} disabled={readOnly} />
             </li>
           ))}
-          {role === 'member' && <li className="px-5 py-3.5 text-sm text-muted">Urgent problems, money and the owner's own work go to the owner only.</li>}
+          {role === 'member' && <li className="px-5 py-3.5 text-sm text-muted">Urgent problems, money and Alex's own work go to Alex.</li>}
         </ul>
         <p className="border-t border-line px-5 py-3 text-xs text-muted">Always on, no quiet hours. At most one ping a minute (more are grouped into one) and {data.limits.perDay} a day. Tapping a ping opens that item in HQ.</p>
       </Card>

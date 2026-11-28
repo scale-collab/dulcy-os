@@ -6,14 +6,15 @@
 // from "Not now" + due tomorrow. Phone: one column, the action full width at the bottom of each card.
 import { useCallback, useEffect, useState } from 'react';
 import { api, type Need, type NeedCounts, type NeedDay, type NeedLink, type TodoItem, type User } from '../api';
+import { slashDate } from '../dates';
 import { FixItButton } from '../fixIt';
 import { Avatar, Button, cx, Empty, ErrorBox, go, Icon, IconButton, Label, Markdown, PageSkeleton, PageTitle, Pill, setCount, timeAgo, useRoute } from '../ui';
 
 interface NeedsData { day?: NeedDay; date?: string; items: TodoItem[]; counts: NeedCounts; errors: string[] }
 const DAYS: NeedDay[] = ['yesterday', 'today', 'tomorrow'];
 const DAY_LABEL: Record<NeedDay, string> = { yesterday: 'Yesterday', today: 'Today', tomorrow: 'Tomorrow' };
-/** "Wed, Nov 25" for a YYYY-MM-DD (New York) date. */
-const dateLabel = (ymd?: string) => (ymd ? new Date(`${ymd}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }) : '');
+/** "11/25" for a YYYY-MM-DD (New York) date: slashes, no weekday (RULES 2026-11-27, round 4). */
+const dateLabel = (ymd?: string) => (ymd ? slashDate(ymd) : '');
 const nyToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 const shift = (ymd: string, n: number) => { const d = new Date(`${ymd}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 

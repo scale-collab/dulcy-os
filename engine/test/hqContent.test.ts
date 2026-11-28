@@ -181,6 +181,16 @@ test('content: Needs you groups ideas by channel and shows only clips Sienna pas
   assert.match(contentNotes(source(many), { fri: '2026-11-27', fweek: weekOf('2026-11-27'), today: '2026-11-26', pipeline: [] })[0].data, /^17 rows have Status Scheduled/);
 });
 
+test('content (QA 11/29): an Alex Woung recording date off Friday is a Sienna note, worded after Alex confirmed Friday', () => {
+  const notes = contentNotes(source([]), { fri: '2026-11-27', fweek: weekOf('2026-11-27'), today: '2026-11-26', pipeline: [{ recordingDate: '2026-11-29', channel: 'Alex Woung', stage: 'approved' }] });
+  const n = notes.find((x) => x.problem === 'Alex Woung recording dates are not on Friday');
+  assert.ok(n, 'the note is there');
+  assert.equal(n!.owner, 'Sienna');
+  assert.match(n!.data, /record on Sunday: their dates were set before the Friday rule/);
+  assert.doesNotMatch(`${n!.data} ${n!.fix}`, /once Alex confirms/, 'Alex confirmed Friday on 11/28');
+  assert.match(n!.fix, /Recording date/);
+});
+
 test('content (Batch 5): the Content Center\'s 10 stages, its item order and the blocks each item shows', () => {
   const cc = (f: Record<string, unknown>, clipIds: string[] = []) => ccStageOf(videoOf(v(1, { [CF.channel]: MAIN, ...f, ...(clipIds.length ? { [XF.clips]: clipIds } : {}) }), new Set()));
   assert.deepEqual(['', 'Idea Approved', 'Script', 'Scheduled to Record', 'Recorded', 'Editing', 'Ready for Thumbnail', 'Ready for Clips', 'Ready to Publish', 'Final Review'].map((x) => normalizedStage(x)),

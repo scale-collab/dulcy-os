@@ -48,7 +48,7 @@ export default function Content({ a, b, c }: { a?: string; b?: string; c?: strin
   useEffect(() => load(), [load]);
 
   const fri = d?.friday;
-  const kicker = fri ? `Friday ${dateOnly(fri.date)} · ${fri.channels.map((x) => `${x.label} ${x.ready}/${x.target} ready`).join(' · ')}` : 'Alex Woung and Alex Woung Raw';
+  const kicker = fri ? `Recording ${dateOnly(fri.date)} · ${fri.channels.map((x) => `${x.label} ${x.ready}/${x.target} ready`).join(' · ')}` : 'Alex Woung and Alex Woung Raw';
   return (
     <div>
       <PageTitle title="Content" kicker={kicker} sub="Ideas, recording, editing, publishing and clips in one place."
@@ -255,7 +255,7 @@ function FridayView({ d, channel, index }: { d: ContentCenterView; channel?: str
   if (!ch) return null;
   return (
     <div>
-      <Head title={`Recording day · Friday ${dateOnly(d.friday.date)}`} icon="film" sub="This Friday's approved ideas in recording order. One per screen, step by step: hook, script, teleprompter, upload." />
+      <Head title={`Recording day · ${dateOnly(d.friday.date)}`} icon="film" sub="This Friday's approved ideas in recording order. One per screen, step by step: hook, script, teleprompter, upload." />
       <div role="tablist" aria-label="Channel" className="grid grid-cols-2 gap-1 rounded-xl border border-line bg-sunken p-1 sm:inline-grid sm:min-w-80">
         {chans.map((x) => (
           <button key={x.key} role="tab" aria-selected={x.key === ch.key} onClick={() => go(`content/friday/${x.key}`)}
@@ -460,7 +460,7 @@ export function ContentCard() {
       <SectionHeader title="Content" icon="film" />
       <Card onClick={() => go(d.counts.total ? 'content/needs' : 'content/friday')} label="Open Content" className="p-4">
         <div className="text-[15px] font-semibold text-fg">{lines.length ? lines.join(' · ') : 'Nothing needs you'}</div>
-        <div className="mt-1 text-sm text-fg-2">Friday {dateOnly(d.friday.date)}: {d.friday.channels.map((c) => `${c.label} ${c.ready}/${c.target} ready`).join(' · ')}</div>
+        <div className="mt-1 text-sm text-fg-2">Recording {dateOnly(d.friday.date)}: {d.friday.channels.map((c) => `${c.label} ${c.ready}/${c.target} ready`).join(' · ')}</div>
         <div className="mt-2 flex items-center gap-1 text-sm font-semibold text-accent-ink">Open Content<Icon name="chevronRight" size={16} /></div>
       </Card>
     </section>
