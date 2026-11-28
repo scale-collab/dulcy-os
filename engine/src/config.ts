@@ -23,6 +23,12 @@ export interface Config {
    * A source without a secret answers 404 and its jobs keep their old timer.
    */
   hookSecrets: Partial<Record<HookSource, string>>;
+  /** HOOK_SECRET_<SOURCE> from .env only (they override the hook_secrets table; see instant/secrets.ts). */
+  hookSecretsEnv?: Partial<Record<HookSource, string>>;
+  /** Secrets in the hook_secrets table whose provider is not wired yet: events are accepted, the jobs keep their old timer. */
+  hookPending?: Partial<Record<HookSource, string>>;
+  /** The engine's public address for webhooks (ENGINE_PUBLIC_URL, else https://ENGINE_HOST, default https://engine.dulcy.io). */
+  enginePublicUrl: string;
   /** Events for the same job within this many seconds become one run (default 30). */
   instantWindowSec: number;
   /**
@@ -316,6 +322,9 @@ export function loadConfig(env = process.env): Config {
   const onOff = (name: string) => (env[name] || '').toLowerCase() === 'on';
   return {
     hookSecrets: Object.fromEntries(HOOK_SOURCES.map((k) => [k, (env[`HOOK_SECRET_${k.toUpperCase()}`] ?? '').trim()]).filter(([, v]) => v.length >= 16)),
+    hookSecretsEnv: Object.fromEntries(HOOK_SOURCES.map((k) => [k, (env[`HOOK_SECRET_${k.toUpperCase()}`] ?? '').trim()]).filter(([, v]) => v.length >= 16)),
+    hookPending: {},
+    enginePublicUrl: (env.ENGINE_PUBLIC_URL || `https://${(env.ENGINE_HOST || 'engine.dulcy.io').trim().toLowerCase()}`).trim().replace(/\/+$/, ''),
     instantWindowSec: Math.max(5, Math.min(300, num('INSTANT_WINDOW_SEC', 30, env))),
     bounceWindowSec: Math.max(5, Math.min(3600, num('BOUNCE_CHECK_WINDOW_SEC', 120, env))),
     backupEveryMin: Object.fromEntries(INSTANT_KEYS.map((k) => [k, Math.max(0, num(backupEnvName(k), 60, env))])),

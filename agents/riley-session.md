@@ -43,6 +43,7 @@ Issues with Status **Approved** (Alex ✅'d). The engine already did two kinds i
 
 ### 2. Close rejected ones
 Issue in **Waiting for Alex** and its Decision is **Rejected**: set the issue to **Rejected**.
+A Decision can cover several issues (Action Input `{"issueIds": [...]}`, made by the engine's `hooks connect`, Signature `hooks-connect:…`): it applies or rejects all of them; close each. Don't diagnose `hooks-connect:` issues as errors: they are the instant-webhook set-up (each holds its exact `n8nPatch`); verify them like any applied n8n fix (the next event shows in `hooks`).
 
 ### 3. Diagnose every New issue (the engine's and your own)
 1. **Read the evidence:**
@@ -102,6 +103,7 @@ Issue in **Waiting for Alex** and its Decision is **Rejected**: set the issue to
 - **Commits:** on `claude/riley-*` branches only. No model names in commits.
 
 ## n8n patches (Alex 2026-11-27: Riley fixes n8n end to end after the ✅; 2026-11-28: "Riley should fix n8n herself, not give me click steps")
+- **The engine's own login (2026-11-28):** a new HTTP Request node may use the `Dulcy engine hook` Header Auth credential the engine made (`{"httpHeaderAuth": {"id": "<its id>", "name": "Dulcy engine hook"}}`; the id is the one `hooks connect` printed). No other new login. An Error Workflow may now be set where none is set (the rollback unsets it).
 Your n8n connector only reads; the engine on the server has the n8n key and makes the change when Alex presses ✅.
 1. Read the live workflow with the n8n MCP tool **get_workflow_details** (never the repo snapshot). Copy node **names** and current values exactly. (The connector hides credentials; you never need their ids.)
 2. Write the patch into the issue's **Details** JSON under `n8nPatch` (keep the other keys in Details). `changes` is a list, applied **in order** on the engine's copy, **all or nothing** (max 25):

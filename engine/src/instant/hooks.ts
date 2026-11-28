@@ -12,6 +12,7 @@ import { trigger, type TriggerSpec, type TriggerResult } from './trigger.js';
 import { kick } from './kick.js';
 import { accountHealthIsOn, bounceIsOn, campaignsAreOn, atlasTasksOn, coleIsOn, ledgerCheckIsOn, seanIsOn, wonSyncIsOn } from './jobs.js';
 import { wantReactions } from '../decisions/loop.js';
+import { hookSecretNow, promoteOnEvent } from './secrets.js';
 
 const MAX_AGE_S = 5 * 60; // signed timestamps older than 5 minutes are refused (replay)
 
@@ -179,13 +180,19 @@ export async function handleHook(db: Db, cfg: Config, req: http.IncomingMessage,
   const m = url.pathname.match(/^\/hooks\/([a-z0-9]+)\/?$/);
   if (!m) return false;
   const source = m[1] as HookSource;
-  const secret = (HOOK_SOURCES as readonly string[]).includes(source) ? cfg.hookSecrets?.[source] : undefined;
-  if (!secret) { send(res, 404, { error: 'not found' }); return true; }
+  // .env or the hook_secrets table (instant/secrets.ts); a pending one is accepted and becomes connected on its first signed event.
+  // In memory = answered in this tick (no await); only an unknown source looks in the table.
+  const listed = (HOOK_SOURCES as readonly string[]).includes(source);
+  const inMemory = listed && cfg.hookSecrets?.[source] ? { secret: cfg.hookSecrets[source]!, pending: false } : listed && cfg.hookPending?.[source] ? { secret: cfg.hookPending[source]!, pending: true } : null;
+  const known = inMemory ?? (listed ? await hookSecretNow(db, cfg, source) : null);
+  if (!known) { send(res, 404, { error: 'not found' }); return true; }
+  const secret = known.secret;
   if (req.method !== 'POST') { send(res, 405, { error: 'POST only' }); return true; }
   let raw: string;
   try { raw = await readRaw(req); } catch (e) { send(res, (e as any).status ?? 400, { error: String((e as Error).message) }); return true; }
   const bad = verifyHook(source, secret, req.headers, url, raw);
   if (bad) { console.error(JSON.stringify({ level: 'warn', message: 'hook refused', source, why: bad })); send(res, 401, { error: bad }); return true; }
+  if (known.pending) await promoteOnEvent(db, cfg, source).catch(() => undefined);
   let body: unknown = {};
   if (raw.trim()) { try { body = JSON.parse(raw); } catch { send(res, 400, { error: 'invalid JSON' }); return true; } }
   const r = routeEvent(source, body, req.headers, cfg);

@@ -196,9 +196,11 @@ export const rileyCollectStage: Stage = async (ctx) => {
  * to make the fix live or verify it (step 1 of agents/riley-session.md).
  */
 export const rileyApplyStage: Stage = async (ctx) => {
-  const cfg = ctx.cfg; const i = ctx.job.input as { issueId: string };
+  const cfg = ctx.cfg; const i = ctx.job.input as { issueId?: string; issueIds?: string[] };
   const at = createAirtableClient({ apiKey: cfg.airtableApiKey, baseId: cfg.airtableBaseId, baseUrl: cfg.airtableBaseUrl });
-  const issue = await at.get(ISSUES, i.issueId, [IF.title, IF.status, IF.fixType, IF.details, IF.fix, IF.rollback]);
+  // One Decision can approve a group of issues (hooks connect: the same engine call added to several n8n workflows).
+  if (Array.isArray(i.issueIds)) return applyGroup(ctx, at, i.issueIds);
+  const issue = await at.get(ISSUES, String(i.issueId ?? ''), [IF.title, IF.status, IF.fixType, IF.details, IF.fix, IF.rollback]);
   if (!issue) throw new PermanentError(`System Issue ${i.issueId} not found`);
   if (val(issue.fields[IF.status]) !== 'Waiting for Alex') return { message: `Issue is ${val(issue.fields[IF.status])}; nothing to do` };
   const r = await applyApproved(ctx, at, issue);
@@ -210,13 +212,40 @@ export const rileyApplyStage: Stage = async (ctx) => {
   return r;
 };
 
-async function applyApproved(ctx: Parameters<Stage>[0], at: AirtableClient, issue: NonNullable<Awaited<ReturnType<AirtableClient['get']>>>): Promise<Awaited<ReturnType<Stage>>> {
+/**
+ * ✅ on a Decision for several issues ({"issueIds": [...]}, at most 40): each issue is applied on its own (its own
+ * rollback, its own step keys), in order. An issue that is no longer Waiting for Alex (already applied by an
+ * earlier try) is skipped. One that is refused is marked on its issue and the others still go; the job fails at
+ * the end if any was refused, so the Decision says which.
+ */
+async function applyGroup(ctx: Parameters<Stage>[0], at: AirtableClient, ids: string[]): Promise<Awaited<ReturnType<Stage>>> {
+  const list = [...new Set(ids.map(String))].filter((x) => /^rec[A-Za-z0-9]{14}$/.test(x));
+  if (!list.length || list.length > 40) throw new PermanentError('issueIds must list 1 to 40 System Issue record IDs');
+  const done: string[] = [], failed: string[] = [], skipped: string[] = [];
+  for (const id of list) {
+    const issue = await at.get(ISSUES, id, [IF.title, IF.status, IF.fixType, IF.details, IF.fix, IF.rollback]);
+    if (!issue) { failed.push(`${id}: not found`); continue; }
+    const title = val(issue.fields[IF.title]);
+    if (val(issue.fields[IF.status]) !== 'Waiting for Alex') { skipped.push(`${title} (${val(issue.fields[IF.status])})`); continue; }
+    try { const r = await applyApproved(ctx, at, issue, id); done.push(`${title}: ${String(r.message ?? '').slice(0, 300)}`); }
+    catch (e) { if (e instanceof PermanentError) failed.push(`${title}: ${e.message.slice(0, 300)}`); else throw e; }
+  }
+  const message = `${done.length} applied${failed.length ? `, ${failed.length} not applied` : ''}${skipped.length ? `, ${skipped.length} already handled` : ''}. ${[...done, ...failed.map((f) => `NOT applied: ${f}`)].join(' | ')}`.slice(0, 4000);
+  if (!ctx.dryRun && (done.length || failed.length)) {
+    await fireAgent(ctx.db, ctx.cfg, 'Riley', `Alex approved a group of ${list.length} fixes`,
+      `Engine result: ${message.slice(0, 600)}\nIssues: ${list.join(', ')}. Do step 1 of agents/riley-session.md for each (verify what the engine applied), then the rest of the runbook.`);
+  }
+  if (failed.length) throw new PermanentError(message);
+  return { message };
+}
+
+async function applyApproved(ctx: Parameters<Stage>[0], at: AirtableClient, issue: NonNullable<Awaited<ReturnType<AirtableClient['get']>>>, stepPrefix?: string): Promise<Awaited<ReturnType<Stage>>> {
   const cfg = ctx.cfg;
   const type = val(issue.fields[IF.fixType]);
   // n8n change with an exact n8nPatch: the engine applies it through the n8n API (Alex 2026-11-27).
   if (type === 'n8n change') {
     const { applyN8nPatch } = await import('./rileyN8n.js');
-    const r = await applyN8nPatch(ctx, at, issue);
+    const r = await applyN8nPatch(ctx, at, issue, fetch, { stepPrefix });
     if (r) return r;
   }
   if (type !== 'Retry') {

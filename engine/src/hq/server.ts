@@ -72,6 +72,7 @@ import { personalRoute, plaidFor } from './plaid.js';
 import { planTurn, runTurn, speakMessage, turnBodyLimit, voiceProvider, voiceState, type VoiceProvider } from './voice.js';
 // Agents start instantly (Alex 2026-11-28): an HQ action that makes work ready starts that work now.
 import { hqInstant } from '../instant/hq.js';
+import { connectionsView } from './connections.js';
 
 export interface HqDeps {
   at?: HqAirtable; chatModel?: ChatModel; fetchImpl?: typeof fetch; webDir?: string;
@@ -867,6 +868,11 @@ export function createHqHandler(db: Db, cfg: Config, deps: HqDeps = {}) {
 
       // Batch 4b: Team board ("what everyone is working on"), chat like Slack (latest chat, archive),
       // suggested questions per agent per day. All read-only except archive (HQ's own chat table).
+      // Team → Connections: each webhook source, Connected / Waiting for a card / Needs Alex, last event. No secrets.
+      if (p === '/hq/api/team/connections' && req.method === 'GET') {
+        json(res, 200, await connectionsView(db, cfg));
+        return true;
+      }
       if (p === '/hq/api/team/work' && req.method === 'GET') {
         const visible = AGENT_NAMES.filter((x) => canTalkTo(user, x));
         const q = (k: string) => url.searchParams.get(k) ?? '';
